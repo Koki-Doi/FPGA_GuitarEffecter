@@ -1132,9 +1132,8 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net axis_subset_converter_1_M_AXIS [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM] [get_bd_intf_pins axis_subset_converter_1/M_AXIS]
   connect_bd_intf_net -intf_net axis_switch_sink_M00_AXIS [get_bd_intf_pins axis_switch_sink/M00_AXIS] [get_bd_intf_pins i2s_to_stream_0/axis_hp]
   connect_bd_intf_net -intf_net axis_switch_sink_M01_AXIS [get_bd_intf_pins axis_subset_converter_1/S_AXIS] [get_bd_intf_pins axis_switch_sink/M01_AXIS]
-  connect_bd_intf_net -intf_net axis_switch_source_M00_AXIS [get_bd_intf_pins axis_switch_source/M00_AXIS] [get_bd_intf_pins fx_gain_0/s_axis]
+  connect_bd_intf_net -intf_net axis_switch_source_M00_AXIS [get_bd_intf_pins axis_switch_source/M00_AXIS] [get_bd_intf_pins axis_switch_sink/S00_AXIS]
   connect_bd_intf_net -intf_net axis_switch_source_M01_AXIS [get_bd_intf_pins axis_data_fifo_0/S_AXIS] [get_bd_intf_pins axis_switch_source/M01_AXIS]
-  connect_bd_intf_net -intf_net fx_gain_0_m_axis [get_bd_intf_pins axis_switch_sink/S00_AXIS] [get_bd_intf_pins fx_gain_0/m_axis]
   connect_bd_intf_net -intf_net clash_lowpass_fir_0_axis_out [get_bd_intf_pins axis_switch_sink/S01_AXIS] [get_bd_intf_pins clash_lowpass_fir_0/axis_out]
   connect_bd_intf_net -intf_net i2s_to_stream_0_axis_li [get_bd_intf_pins axis_switch_source/S00_AXIS] [get_bd_intf_pins i2s_to_stream_0/axis_li]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins processing_system7_0/DDR]
@@ -1197,5 +1196,4 @@ proc create_root_design { parentCell } {
 ##################################################################
 
 create_root_design ""
-
 
