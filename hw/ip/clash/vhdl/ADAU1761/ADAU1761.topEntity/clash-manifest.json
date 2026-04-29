@@ -1,0 +1,182 @@
+{
+    "components": [
+        "ADAU1761_topEntity_trueDualPortBlockRamWrapper",
+        "ADAU1761_topEntity_trueDualPortBlockRamWrapper_0",
+        "i2s_to_stream"
+    ],
+    "dependencies": {
+        "transitive": []
+    },
+    "domains": {
+        "DSP": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 20833,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveLow"
+        },
+        "I2S": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 333333,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveLow"
+        },
+        "IntelSystem": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveHigh"
+        },
+        "System": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveHigh"
+        },
+        "XilinxSystem": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Synchronous",
+            "reset_polarity": "ActiveHigh"
+        }
+    },
+    "files": [
+        {
+            "name": "i2s_to_stream.sdc",
+            "sha256": "63becad4d78ce397071838f01484f53ec29a22c8c812f4d3fe34be8164cce64c"
+        },
+        {
+            "name": "i2s_to_stream_types.vhdl",
+            "sha256": "a459e2e0e7b14e46ce3815a23bae410dbdc0205c61dd00057282cfc62e12af9d"
+        },
+        {
+            "name": "ADAU1761_topEntity_trueDualPortBlockRamWrapper.vhdl",
+            "sha256": "d3aefe6f999617efdd3da2d5627d1ec11c78b36348aa305404a02ea3e8ff7ddd"
+        },
+        {
+            "name": "ADAU1761_topEntity_trueDualPortBlockRamWrapper_0.vhdl",
+            "sha256": "38553167ab0e8041f1e5a15f700efc6305e7b4d9076bc5710e861149ef2a4b8c"
+        },
+        {
+            "name": "i2s_to_stream.vhdl",
+            "sha256": "5d8f5af229e2d755336eac56124c539b6c226acc0f36eaea4bd4484023001225"
+        }
+    ],
+    "flags": [
+        20,
+        20
+    ],
+    "hash": "d9c8f262ad673776f235036f3d5ea42dad2f1bcab0b4d17803eca1aafcd8fc15",
+    "top_component": {
+        "name": "i2s_to_stream",
+        "ports_flat": [
+            {
+                "direction": "in",
+                "domain": "DSP",
+                "is_clock": true,
+                "name": "clk",
+                "type_name": "clk.i2s_to_stream_types.clk_DSP",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "domain": "DSP",
+                "is_clock": false,
+                "name": "resetn",
+                "type_name": "resetn.i2s_to_stream_types.rst_DSP",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "domain": "I2S",
+                "is_clock": true,
+                "name": "bclk",
+                "type_name": "bclk.i2s_to_stream_types.clk_I2S",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "domain": "I2S",
+                "is_clock": false,
+                "name": "i2s_rst",
+                "type_name": "i2s_rst.i2s_to_stream_types.rst_I2S",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "lrclk",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "si",
+                "type_name": "std_logic",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_hp_tdata",
+                "type_name": "std_logic_vector(47 downto 0)",
+                "width": 48
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_hp_tvalid",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_li_tready",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "so",
+                "type_name": "std_logic",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_hp_tready",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_li_tdata",
+                "type_name": "std_logic_vector(47 downto 0)",
+                "width": 48
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_li_tvalid",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_li_tlast",
+                "type_name": "boolean",
+                "width": 1
+            }
+        ]
+    },
+    "version": "unstable"
+}

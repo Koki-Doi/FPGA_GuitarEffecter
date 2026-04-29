@@ -1,0 +1,135 @@
+{
+    "components": [
+        "clash_lowpass_fir"
+    ],
+    "dependencies": {
+        "transitive": []
+    },
+    "domains": {
+        "AudioDomain": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveLow"
+        },
+        "IntelSystem": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveHigh"
+        },
+        "System": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Asynchronous",
+            "reset_polarity": "ActiveHigh"
+        },
+        "XilinxSystem": {
+            "active_edge": "Rising",
+            "init_behavior": "Defined",
+            "period": 10000,
+            "reset_kind": "Synchronous",
+            "reset_polarity": "ActiveHigh"
+        }
+    },
+    "files": [
+        {
+            "name": "clash_lowpass_fir.sdc",
+            "sha256": "13d4c1aafcc09a84d81d3b60d513cb901384a10e27e5a5a16572a600f15895f3"
+        },
+        {
+            "name": "clash_lowpass_fir_types.vhdl",
+            "sha256": "e9b39321547b11556eff1df43ca290d053dde1282b6bebd576af33ec5b0bc3e3"
+        },
+        {
+            "name": "clash_lowpass_fir.vhdl",
+            "sha256": "7ace14d667abbf4f22e88050f9d4d409945fbd88c7dd2f697437d6f334970cc4"
+        }
+    ],
+    "flags": [
+        20,
+        20
+    ],
+    "hash": "2e04a96e65ef08c040fe9f1137a387a4caaecfd1533a5eb606ee4cda4b105b93",
+    "top_component": {
+        "name": "clash_lowpass_fir",
+        "ports_flat": [
+            {
+                "direction": "in",
+                "domain": "AudioDomain",
+                "is_clock": true,
+                "name": "clk",
+                "type_name": "clk.clash_lowpass_fir_types.clk_AudioDomain",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "domain": "AudioDomain",
+                "is_clock": false,
+                "name": "aresetn",
+                "type_name": "aresetn.clash_lowpass_fir_types.rst_AudioDomain",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_in_tdata",
+                "type_name": "std_logic_vector(47 downto 0)",
+                "width": 48
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_in_tvalid",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_in_tlast",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "axis_out_tready",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_out_tdata",
+                "type_name": "std_logic_vector(47 downto 0)",
+                "width": 48
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_out_tvalid",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_out_tlast",
+                "type_name": "boolean",
+                "width": 1
+            },
+            {
+                "direction": "out",
+                "is_clock": false,
+                "name": "axis_in_tready",
+                "type_name": "boolean",
+                "width": 1
+            }
+        ]
+    },
+    "version": "unstable"
+}
