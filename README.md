@@ -55,3 +55,8 @@ $ make Pynq-Z2
 ## License
 
 WTFPL.
+
+## FX gain HLS IP
+- The block design inserts `fx_gain_0` (VLNV `user.org:hls:fx_gain:1.0`) inline on the audio AXI-Stream path: `axis_switch_source/M00_AXIS → fx_gain_0/s_axis → fx_gain_0/m_axis → axis_switch_sink/S00_AXIS`.
+- `s_axi_CTRL` is tied to PS `M_AXI_GP0` and mapped at `0x43C20000` (64KB). Clock is `FCLK_CLK0` (100MHz); reset uses `peripheral_aresetn`.
+- Make sure the HLS IP is registered in the Vivado IP catalog (default `ip_repo_paths` is `hw/ip`; adjust if you store it elsewhere).

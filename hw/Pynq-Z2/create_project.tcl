@@ -1,5 +1,8 @@
 set proj_name "audio_lab"
 set origin_dir "."
+set board_repo_paths [list /home/doi20/board_files /home/doi20/vivado-board-repo]
+set_param board.repoPaths $board_repo_paths
+
 set iprepo_dir $origin_dir/../ip
 
 # Create project

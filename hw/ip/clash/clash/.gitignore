@@ -1,0 +1,7 @@
+src/*.hi
+src/*.o
+tmp_vivado
+vhdl
+_tmp_ip.cache
+_tmp_ip.hw
+_tmp_ip.xpr
