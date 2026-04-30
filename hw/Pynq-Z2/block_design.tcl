@@ -283,6 +283,46 @@ proc create_root_design { parentCell } {
   # Create instance: fx_gain_0, and set properties
   set fx_gain_0 [ create_bd_cell -type ip -vlnv user.org:hls:fx_gain:1.0 fx_gain_0 ]
 
+  # Create instance: axi_gpio_gate, and set properties
+  set axi_gpio_gate [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_gate ]
+  set_property -dict [ list \
+   CONFIG.C_ALL_OUTPUTS {1} \
+   CONFIG.C_DOUT_DEFAULT {0x00000000} \
+   CONFIG.C_GPIO_WIDTH {32} \
+ ] $axi_gpio_gate
+
+  # Create instance: axi_gpio_overdrive, and set properties
+  set axi_gpio_overdrive [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_overdrive ]
+  set_property -dict [ list \
+   CONFIG.C_ALL_OUTPUTS {1} \
+   CONFIG.C_DOUT_DEFAULT {0x00000000} \
+   CONFIG.C_GPIO_WIDTH {32} \
+ ] $axi_gpio_overdrive
+
+  # Create instance: axi_gpio_distortion, and set properties
+  set axi_gpio_distortion [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_distortion ]
+  set_property -dict [ list \
+   CONFIG.C_ALL_OUTPUTS {1} \
+   CONFIG.C_DOUT_DEFAULT {0x00000000} \
+   CONFIG.C_GPIO_WIDTH {32} \
+ ] $axi_gpio_distortion
+
+  # Create instance: axi_gpio_eq, and set properties
+  set axi_gpio_eq [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_eq ]
+  set_property -dict [ list \
+   CONFIG.C_ALL_OUTPUTS {1} \
+   CONFIG.C_DOUT_DEFAULT {0x00000000} \
+   CONFIG.C_GPIO_WIDTH {32} \
+ ] $axi_gpio_eq
+
+  # Create instance: axi_gpio_delay, and set properties
+  set axi_gpio_delay [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_delay ]
+  set_property -dict [ list \
+   CONFIG.C_ALL_OUTPUTS {1} \
+   CONFIG.C_DOUT_DEFAULT {0x00000000} \
+   CONFIG.C_GPIO_WIDTH {32} \
+ ] $axi_gpio_delay
+
   # Create instance: axi_gpio_reverb, and set properties
   set axi_gpio_reverb [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_reverb ]
   set_property -dict [ list \
@@ -1118,7 +1158,7 @@ proc create_root_design { parentCell } {
   # Create instance: ps7_0_axi_periph, and set properties
   set ps7_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps7_0_axi_periph ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {5} \
+   CONFIG.NUM_MI {10} \
  ] $ps7_0_axi_periph
 
   # Create instance: rst_ps7_0_100M, and set properties
@@ -1154,17 +1194,27 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net ps7_0_axi_periph_M02_AXI [get_bd_intf_pins axi_dma_0/S_AXI_LITE] [get_bd_intf_pins ps7_0_axi_periph/M02_AXI]
   connect_bd_intf_net -intf_net ps7_0_axi_periph_M03_AXI [get_bd_intf_pins fx_gain_0/s_axi_CTRL] [get_bd_intf_pins ps7_0_axi_periph/M03_AXI]
   connect_bd_intf_net -intf_net ps7_0_axi_periph_M04_AXI [get_bd_intf_pins axi_gpio_reverb/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M04_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M05_AXI [get_bd_intf_pins axi_gpio_gate/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M05_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M06_AXI [get_bd_intf_pins axi_gpio_overdrive/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M06_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M07_AXI [get_bd_intf_pins axi_gpio_distortion/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M07_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M08_AXI [get_bd_intf_pins axi_gpio_eq/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M08_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M09_AXI [get_bd_intf_pins axi_gpio_delay/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M09_AXI]
 
   # Create port connections
+  connect_bd_net -net axi_gpio_gate_gpio_io_o [get_bd_pins axi_gpio_gate/gpio_io_o] [get_bd_pins clash_lowpass_fir_0/gate_control]
+  connect_bd_net -net axi_gpio_overdrive_gpio_io_o [get_bd_pins axi_gpio_overdrive/gpio_io_o] [get_bd_pins clash_lowpass_fir_0/overdrive_control]
+  connect_bd_net -net axi_gpio_distortion_gpio_io_o [get_bd_pins axi_gpio_distortion/gpio_io_o] [get_bd_pins clash_lowpass_fir_0/distortion_control]
+  connect_bd_net -net axi_gpio_eq_gpio_io_o [get_bd_pins axi_gpio_eq/gpio_io_o] [get_bd_pins clash_lowpass_fir_0/eq_control]
+  connect_bd_net -net axi_gpio_delay_gpio_io_o [get_bd_pins axi_gpio_delay/gpio_io_o] [get_bd_pins clash_lowpass_fir_0/delay_control]
   connect_bd_net -net axi_gpio_reverb_gpio_io_o [get_bd_pins axi_gpio_reverb/gpio_io_o] [get_bd_pins clash_lowpass_fir_0/reverb_control]
   connect_bd_net -net bclk_1 [get_bd_ports bclk] [get_bd_pins i2s_to_stream_0/bclk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_ports mclk] [get_bd_pins clk_wiz_0/clk_out1]
   connect_bd_net -net i2s_to_stream_0_so [get_bd_ports sdata_o] [get_bd_pins i2s_to_stream_0/so]
   connect_bd_net -net lrclk_1 [get_bd_ports lrclk] [get_bd_pins i2s_to_stream_0/lrclk]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins i2s_to_stream_0/i2s_rst] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_gpio_reverb/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_subset_converter_0/aclk] [get_bd_pins axis_subset_converter_1/aclk] [get_bd_pins axis_switch_sink/aclk] [get_bd_pins axis_switch_sink/s_axi_ctrl_aclk] [get_bd_pins axis_switch_source/aclk] [get_bd_pins axis_switch_source/s_axi_ctrl_aclk] [get_bd_pins clash_lowpass_fir_0/clk] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins fx_gain_0/ap_clk] [get_bd_pins i2s_to_stream_0/clk] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_GP0_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/M03_ACLK] [get_bd_pins ps7_0_axi_periph/M04_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_gpio_delay/s_axi_aclk] [get_bd_pins axi_gpio_distortion/s_axi_aclk] [get_bd_pins axi_gpio_eq/s_axi_aclk] [get_bd_pins axi_gpio_gate/s_axi_aclk] [get_bd_pins axi_gpio_overdrive/s_axi_aclk] [get_bd_pins axi_gpio_reverb/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_subset_converter_0/aclk] [get_bd_pins axis_subset_converter_1/aclk] [get_bd_pins axis_switch_sink/aclk] [get_bd_pins axis_switch_sink/s_axi_ctrl_aclk] [get_bd_pins axis_switch_source/aclk] [get_bd_pins axis_switch_source/s_axi_ctrl_aclk] [get_bd_pins clash_lowpass_fir_0/clk] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins fx_gain_0/ap_clk] [get_bd_pins i2s_to_stream_0/clk] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_GP0_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/M03_ACLK] [get_bd_pins ps7_0_axi_periph/M04_ACLK] [get_bd_pins ps7_0_axi_periph/M05_ACLK] [get_bd_pins ps7_0_axi_periph/M06_ACLK] [get_bd_pins ps7_0_axi_periph/M07_ACLK] [get_bd_pins ps7_0_axi_periph/M08_ACLK] [get_bd_pins ps7_0_axi_periph/M09_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins rst_ps7_0_100M/ext_reset_in]
-  connect_bd_net -net rst_ps7_0_100M_peripheral_aresetn [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins axi_gpio_reverb/s_axi_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_subset_converter_0/aresetn] [get_bd_pins axis_subset_converter_1/aresetn] [get_bd_pins axis_switch_sink/aresetn] [get_bd_pins axis_switch_sink/s_axi_ctrl_aresetn] [get_bd_pins axis_switch_source/aresetn] [get_bd_pins axis_switch_source/s_axi_ctrl_aresetn] [get_bd_pins clash_lowpass_fir_0/aresetn] [get_bd_pins clk_wiz_0/resetn] [get_bd_pins fx_gain_0/ap_rst_n] [get_bd_pins i2s_to_stream_0/resetn] [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/M03_ARESETN] [get_bd_pins ps7_0_axi_periph/M04_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_100M_peripheral_aresetn [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins axi_gpio_delay/s_axi_aresetn] [get_bd_pins axi_gpio_distortion/s_axi_aresetn] [get_bd_pins axi_gpio_eq/s_axi_aresetn] [get_bd_pins axi_gpio_gate/s_axi_aresetn] [get_bd_pins axi_gpio_overdrive/s_axi_aresetn] [get_bd_pins axi_gpio_reverb/s_axi_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_subset_converter_0/aresetn] [get_bd_pins axis_subset_converter_1/aresetn] [get_bd_pins axis_switch_sink/aresetn] [get_bd_pins axis_switch_sink/s_axi_ctrl_aresetn] [get_bd_pins axis_switch_source/aresetn] [get_bd_pins axis_switch_source/s_axi_ctrl_aresetn] [get_bd_pins clash_lowpass_fir_0/aresetn] [get_bd_pins clk_wiz_0/resetn] [get_bd_pins fx_gain_0/ap_rst_n] [get_bd_pins i2s_to_stream_0/resetn] [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/M03_ARESETN] [get_bd_pins ps7_0_axi_periph/M04_ARESETN] [get_bd_pins ps7_0_axi_periph/M05_ARESETN] [get_bd_pins ps7_0_axi_periph/M06_ARESETN] [get_bd_pins ps7_0_axi_periph/M07_ARESETN] [get_bd_pins ps7_0_axi_periph/M08_ARESETN] [get_bd_pins ps7_0_axi_periph/M09_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
   connect_bd_net -net sdata_i_1 [get_bd_ports sdata_i] [get_bd_pins i2s_to_stream_0/si]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports codec_address] [get_bd_pins xlconstant_0/dout]
 
@@ -1178,6 +1228,11 @@ proc create_root_design { parentCell } {
   create_bd_addr_seg -range 0x00010000 -offset 0x43C10000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axis_switch_sink/S_AXI_CTRL/Reg] SEG_axis_switch_sink_Reg
   create_bd_addr_seg -range 0x00010000 -offset 0x43C20000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs fx_gain_0/s_axi_CTRL/Reg] SEG_fx_gain_0_Reg
   create_bd_addr_seg -range 0x00010000 -offset 0x43C30000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_gpio_reverb/S_AXI/Reg] SEG_axi_gpio_reverb_Reg
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C40000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_gpio_gate/S_AXI/Reg] SEG_axi_gpio_gate_Reg
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C50000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_gpio_overdrive/S_AXI/Reg] SEG_axi_gpio_overdrive_Reg
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C60000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_gpio_distortion/S_AXI/Reg] SEG_axi_gpio_distortion_Reg
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C70000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_gpio_eq/S_AXI/Reg] SEG_axi_gpio_eq_Reg
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C80000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_gpio_delay/S_AXI/Reg] SEG_axi_gpio_delay_Reg
 
   # Exclude Address Segments
   create_bd_addr_seg -range 0x00400000 -offset 0xE0000000 [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs processing_system7_0/S_AXI_GP0/GP0_IOP] SEG_processing_system7_0_GP0_IOP
