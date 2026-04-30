@@ -5,6 +5,8 @@ set ip_version   1
 set prj_name     "tmp_vivado"
 
 set src_dir [lindex $argv 0]
+set board_repo_paths [list /home/doi20/board_files /home/doi20/vivado-board-repo]
+set_param board.repoPaths $board_repo_paths
 
 # Create dummy project
 create_project -f ${prj_name} ./${prj_name} -part xc7z020clg400-1

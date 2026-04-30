@@ -42,3 +42,43 @@ class AudioLabOverlay(Overlay):
         
         self.x_source.stop_cfg()
         self.x_sink.stop_cfg()
+
+    @staticmethod
+    def _clamp_percent(value):
+        value = int(round(value))
+        if value < 0:
+            return 0
+        if value > 100:
+            return 100
+        return value
+
+    @classmethod
+    def reverb_control_word(cls, enabled=True, reverb=35, tone=70, mix=25):
+        reverb = cls._clamp_percent(reverb)
+        tone = cls._clamp_percent(tone)
+        mix = cls._clamp_percent(mix)
+
+        enable_hw = 1 if enabled else 0
+        reverb_hw = int(round(reverb * 220 / 100))
+        tone_hw = int(round(tone * 255 / 100))
+        mix_hw = int(round(mix * 192 / 100))
+
+        return (
+            (mix_hw << 24) |
+            (tone_hw << 16) |
+            (reverb_hw << 8) |
+            enable_hw
+        )
+
+    def set_reverb(self, enabled=True, reverb=35, tone=70, mix=25, sink=XbarSink.headphone):
+        word = self.reverb_control_word(enabled, reverb, tone, mix)
+
+        if hasattr(self, 'axi_gpio_reverb'):
+            self.axi_gpio_reverb.write(0x04, 0x00000000)
+            self.axi_gpio_reverb.write(0x00, word)
+        elif enabled:
+            raise RuntimeError('axi_gpio_reverb is not available in this overlay')
+
+        effect = XbarEffect.reverb if enabled else XbarEffect.passthrough
+        self.route(XbarSource.line_in, effect, sink)
+        return word
