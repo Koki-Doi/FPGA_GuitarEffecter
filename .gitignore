@@ -11,3 +11,4 @@ vivado.log
 .ipynb_checkpoints
 
 *.egg-info
+tests/test_rat_style_distortion

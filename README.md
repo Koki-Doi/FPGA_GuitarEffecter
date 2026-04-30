@@ -36,6 +36,26 @@ Noise Gate -> Overdrive -> Distortion -> EQ -> Reverb
 すべて OFF の場合は、通常の `line_in -> passthrough -> headphone` に戻ります。いずれかのエフェクトを ON にすると、`line_in -> guitar_chain -> headphone` に切り替わります。
 Noise Gate はエンベロープ検出とフェード開閉を使い、しきい値付近で波形を直接切らないようにしています。
 
+## C++ DSP プロトタイプ
+
+`src/effects/RatStyleDistortion.{h,cpp}` に、後からリアルタイム処理へ組み込むための RAT-style Distortion を独立クラスとして追加しています。現在の FPGA/Notebook チェーンには未接続で、既存の挙動は変えません。
+
+信号処理は `Input HPF -> Pre Gain -> OpAmp bandwidth LPF -> hard clipping -> post LPF -> RAT-style FILTER LPF -> Level -> safety limiter` の軽量構成です。RAT の完全な回路シミュレーションではなく、PYNQ/Zynq-7000 で扱いやすいリアルタイム DSP 実装を優先しています。
+
+| パラメータ | 範囲 | 内容 |
+| --- | --- | --- |
+| `drive` | `0.0` - `1.0` | 内部ゲインとクリップしきい値を変え、低めは荒めのオーバードライブ、高めはファズ寄りにします |
+| `filter` | `0.0` - `1.0` | 値を上げるほど LPF cutoff を下げ、RAT の FILTER 風に暗くします |
+| `level` | `0.0` - `1.5` | 出力レベル |
+| `mix` | `0.0` - `1.0` | Dry/Wet |
+| `enabled` | `true` / `false` | バイパス制御。初期値は `false` |
+
+C++ 単体テストは次で実行できます。
+
+```sh
+make -C tests run
+```
+
 ## ノートブック
 
 | Notebook | 内容 |
