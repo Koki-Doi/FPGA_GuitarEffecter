@@ -9,6 +9,7 @@ class XbarSource(Enum):
     dma     = 1
 class XbarEffect(Enum):
     passthrough = 0
+    reverb = 1
     low_pass_filter = 1
 class XbarSink(Enum):
     headphone = 0
