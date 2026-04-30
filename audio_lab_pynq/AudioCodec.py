@@ -57,9 +57,15 @@ class ADAU1761():
         ## Enable playback
         self.R22_PLAYBACK_MIXER_LEFT_CONTROL_0 = 0x21
         self.R24_PLAYBACK_MIXER_RIGHT_CONTROL_0 = 0x41
-        ## Set headphone volume
+        ## Route playback mixers to LOUT/ROUT. On PYNQ-Z2 the audible jack uses
+        ## this output path.
+        self.R26_PLAYBACK_LR_MIXER_LEFT_LINE_OUTPUT_CONTROL = 0x03
+        self.R27_PLAYBACK_LR_MIXER_RIGHT_LINE_OUTPUT_CONTROL = 0x09
+        ## Set output volume
         self.R29_PLAYBACK_HEADPHONE_LEFT_VOLUME_CONTROL = 0xE7
         self.R30_PLAYBACK_HEADPHONE_RIGHT_VOLUME_CONTROL = 0xE7
+        self.R31_PLAYBACK_LINE_OUTPUT_LEFT_VOLUME_CONTROL = 0xE7
+        self.R32_PLAYBACK_LINE_OUTPUT_RIGHT_VOLUME_CONTROL = 0xE7
 
         # Enable ADC
         self.R19_ADC_CONTROL = 0x03
