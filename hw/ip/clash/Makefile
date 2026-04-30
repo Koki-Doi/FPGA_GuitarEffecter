@@ -1,6 +1,9 @@
 ip := ./vhdl/component.xml
 
-LIBS := LowPassFir ADAU1761
+CLASH ?= clash
+CLASH_FLAGS ?= -isrc --vhdl
+
+LIBS := LowPassFir
 
 SRCS := $(foreach LIB, $(LIBS), ./src/$(LIB).hs)
 VHDLS := $(foreach LIB, $(LIBS), ./vhdl/$(LIB))
@@ -12,8 +15,12 @@ vhdl/%/component.xml : vhdl/%
 	vivado -mode batch -notrace -nojournal -nolog -source create_ip.tcl -tclargs "$<"
 
 vhdl/%: src/%.hs
-	  nix-shell --run "clash -isrc --vhdl $<";
-		find $@ -name *.vhdl -type f -print0 | xargs -0 sed -i 's/in [^[:space:]]*\.\(clk\|rst\).*;/in std_logic;/'
+	tmp_dir=$$(mktemp -d); \
+	$(CLASH) $(CLASH_FLAGS) -outputdir "$$tmp_dir" "$<"; \
+	mkdir -p "$@/$*.topEntity"; \
+	cp "$$tmp_dir/$*.topEntity/"* "$@/$*.topEntity/"; \
+	rm -rf "$$tmp_dir"
+	find $@ -name *.vhdl -type f -print0 | xargs -0 sed -i 's/in [^[:space:]]*\.\(clk\|rst\).*;/in std_logic;/'
 
 clean:
 	rm -rf vhdl *.jou *.log NA src/*.hi src/*.o

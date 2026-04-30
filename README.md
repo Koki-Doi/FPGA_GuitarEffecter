@@ -20,7 +20,7 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 `GuitarEffectsChain.ipynb` では、以下の順番でエフェクトを処理します。
 
 ```text
-Noise Gate -> Overdrive -> Distortion -> EQ -> Delay -> Reverb
+Noise Gate -> Overdrive -> Distortion -> EQ -> Reverb
 ```
 
 各エフェクトは個別に ON/OFF できます。
@@ -31,7 +31,6 @@ Noise Gate -> Overdrive -> Distortion -> EQ -> Delay -> Reverb
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
 | Distortion | `TONE`, `LEVEL`, `DISTORTION` |
 | EQ | `LOW`, `MID`, `HIGH` |
-| Delay | `LEVEL`, `DELAY`, `REPEAT` |
 | Reverb | `Decay`, `tone`, `mix` |
 
 すべて OFF の場合は、通常の `line_in -> passthrough -> headphone` に戻ります。いずれかのエフェクトを ON にすると、`line_in -> guitar_chain -> headphone` に切り替わります。
@@ -40,7 +39,8 @@ Noise Gate -> Overdrive -> Distortion -> EQ -> Delay -> Reverb
 
 | Notebook | 内容 |
 | --- | --- |
-| `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / EQ / Delay / Reverb を操作するメインノートブック |
+| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック |
+| `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / EQ / Reverb を操作するメインノートブック |
 | `LineInPassthroughOneCell.ipynb` | 1セルで Line-in をそのまま出力する確認用 |
 | `LineInReverbOneCell.ipynb` | 1セルで軽いリバーブを有効化する確認用 |
 | `PassthroughDebug.ipynb` | 入力、出力、コーデック、AXI Stream Switch の診断用 |
@@ -82,10 +82,6 @@ ol.set_guitar_effects(
     eq_low=100,
     eq_mid=100,
     eq_high=100,
-    delay_on=True,
-    delay_level=20,
-    delay=30,
-    delay_repeat=25,
     reverb_on=True,
     reverb_decay=30,
     reverb_tone=65,
@@ -101,7 +97,6 @@ ol.set_guitar_effects(
     overdrive_on=False,
     distortion_on=False,
     eq_on=False,
-    delay_on=False,
     reverb_on=False,
 )
 ```
@@ -130,14 +125,14 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 
 エフェクト制御用 AXI GPIO は以下の通りです。
 
-| IP | アドレス |
-| --- | --- |
-| `axi_gpio_reverb` | `0x43C30000` |
-| `axi_gpio_gate` | `0x43C40000` |
-| `axi_gpio_overdrive` | `0x43C50000` |
-| `axi_gpio_distortion` | `0x43C60000` |
-| `axi_gpio_eq` | `0x43C70000` |
-| `axi_gpio_delay` | `0x43C80000` |
+| IP | アドレス | 用途 |
+| --- | --- | --- |
+| `axi_gpio_reverb` | `0x43C30000` | Reverb |
+| `axi_gpio_gate` | `0x43C40000` | ON/OFF フラグと Noise Gate |
+| `axi_gpio_overdrive` | `0x43C50000` | Overdrive |
+| `axi_gpio_distortion` | `0x43C60000` | Distortion |
+| `axi_gpio_eq` | `0x43C70000` | EQ |
+| `axi_gpio_delay` | `0x43C80000` | 互換用。現在のチェーンでは未使用 |
 
 ## ビルド
 
@@ -171,6 +166,7 @@ scp hw/Pynq-Z2/bitstreams/audio_lab.bit xilinx@<PYNQ_IP>:/home/xilinx/
 scp hw/Pynq-Z2/bitstreams/audio_lab.hwh xilinx@<PYNQ_IP>:/home/xilinx/
 scp audio_lab_pynq/AudioLabOverlay.py xilinx@<PYNQ_IP>:/home/xilinx/
 scp audio_lab_pynq/AudioCodec.py xilinx@<PYNQ_IP>:/home/xilinx/
+scp audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb xilinx@<PYNQ_IP>:/home/xilinx/
 scp audio_lab_pynq/notebooks/GuitarEffectsChain.ipynb xilinx@<PYNQ_IP>:/home/xilinx/
 ```
 
@@ -186,6 +182,7 @@ sudo cp /home/xilinx/AudioCodec.py /usr/local/lib/python3.6/dist-packages/audio_
 mkdir -p /home/xilinx/jupyter_notebooks/audio_lab/bitstreams
 cp /home/xilinx/audio_lab.bit /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit
 cp /home/xilinx/audio_lab.hwh /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.hwh
+cp /home/xilinx/GuitarEffectSwitcher.ipynb /home/xilinx/jupyter_notebooks/audio_lab/GuitarEffectSwitcher.ipynb
 cp /home/xilinx/GuitarEffectsChain.ipynb /home/xilinx/jupyter_notebooks/audio_lab/GuitarEffectsChain.ipynb
 ```
 
@@ -215,7 +212,6 @@ words = ol.set_guitar_effects(
     overdrive_on=True,
     distortion_on=True,
     eq_on=True,
-    delay_on=True,
     reverb_on=True,
 )
 print({k: hex(v) for k, v in words.items()})
@@ -244,7 +240,7 @@ axis_switch_sink   M01 = 0x80000000
 ## 既知の注意点
 
 - Vivado 実装時に timing violation が残ります。現在の主な違反は既存の `i2s_to_stream` / `bclk` 周辺のクロック制約に集中しており、今回追加したエフェクト制御GPIOやルート制御は PYNQ 上でロードとレジスタ書き込みを確認済みです。
-- Delay/Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大なディレイではなく、軽い空間系/短めのディレイ用途を想定しています。
+- Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
 - 音量を上げすぎると大音量になります。Notebook の初期値から少しずつ調整してください。
 
@@ -255,6 +251,7 @@ axis_switch_sink   M01 = 0x80000000
 - https://github.com/marcoalkema/cpp-guitar_effects
 - https://github.com/maximoskp/cppAudioFX
 - https://github.com/rerdavies/ToobAmp
+- https://github.com/sudip-mondal-2002/Amplitron
 
 ## ライセンス
 

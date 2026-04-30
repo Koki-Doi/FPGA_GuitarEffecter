@@ -42,18 +42,18 @@
         },
         {
             "name": "clash_lowpass_fir_types.vhdl",
-            "sha256": "e9b39321547b11556eff1df43ca290d053dde1282b6bebd576af33ec5b0bc3e3"
+            "sha256": "2f4f749e14ab209a12d7771d97f1937b37215da66487c907c9e237179c3600f0"
         },
         {
             "name": "clash_lowpass_fir.vhdl",
-            "sha256": "7ace14d667abbf4f22e88050f9d4d409945fbd88c7dd2f697437d6f334970cc4"
+            "sha256": "143c5545a1688f0e4fcea04d4459f34410851972ed6874bbc73688031a398b69"
         }
     ],
     "flags": [
         20,
         20
     ],
-    "hash": "2e04a96e65ef08c040fe9f1137a387a4caaecfd1533a5eb606ee4cda4b105b93",
+    "hash": "c9676d38f5f1a89c2e52f02af17344c5bfb1979b36ee30c1d29cf07766302abf",
     "top_component": {
         "name": "clash_lowpass_fir",
         "ports_flat": [
@@ -72,6 +72,48 @@
                 "name": "aresetn",
                 "type_name": "aresetn.clash_lowpass_fir_types.rst_AudioDomain",
                 "width": 1
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "gate_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "overdrive_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "distortion_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "eq_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "delay_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "reverb_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
             },
             {
                 "direction": "in",

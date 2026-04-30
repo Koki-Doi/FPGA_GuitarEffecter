@@ -116,21 +116,17 @@ class AudioLabOverlay(Overlay):
         eq_low=100,
         eq_mid=100,
         eq_high=100,
-        delay_on=False,
-        delay_level=20,
-        delay=30,
-        delay_repeat=25,
         reverb_on=False,
         reverb_decay=30,
         reverb_tone=65,
         reverb_mix=20,
+        **unused,
     ):
         flags = 0
         flags |= 0x01 if noise_gate_on else 0
         flags |= 0x02 if overdrive_on else 0
         flags |= 0x04 if distortion_on else 0
         flags |= 0x08 if eq_on else 0
-        flags |= 0x10 if delay_on else 0
         flags |= 0x20 if reverb_on else 0
 
         gate_word = (
@@ -152,11 +148,6 @@ class AudioLabOverlay(Overlay):
             cls._level_to_q7(eq_mid),
             cls._level_to_q7(eq_high),
         )
-        delay_word = cls._pack3(
-            cls._percent_to_u8(delay_level, 192),
-            cls._percent_to_u8(delay, 255),
-            cls._percent_to_u8(delay_repeat, 220),
-        )
         reverb_word = cls._pack3(
             cls._percent_to_u8(reverb_decay, 220),
             cls._percent_to_u8(reverb_tone, 255),
@@ -168,7 +159,7 @@ class AudioLabOverlay(Overlay):
             'overdrive': overdrive_word,
             'distortion': distortion_word,
             'eq': eq_word,
-            'delay': delay_word,
+            'delay': 0,
             'reverb': reverb_word,
         }
 
@@ -178,7 +169,6 @@ class AudioLabOverlay(Overlay):
             'axi_gpio_overdrive',
             'axi_gpio_distortion',
             'axi_gpio_eq',
-            'axi_gpio_delay',
             'axi_gpio_reverb',
         ]
         missing = [name for name in required if not hasattr(self, name)]
@@ -190,10 +180,11 @@ class AudioLabOverlay(Overlay):
         self._write_gpio(self.axi_gpio_overdrive, words['overdrive'])
         self._write_gpio(self.axi_gpio_distortion, words['distortion'])
         self._write_gpio(self.axi_gpio_eq, words['eq'])
-        self._write_gpio(self.axi_gpio_delay, words['delay'])
+        if hasattr(self, 'axi_gpio_delay'):
+            self._write_gpio(self.axi_gpio_delay, 0)
         self._write_gpio(self.axi_gpio_reverb, words['reverb'])
 
-        if words['gate'] & 0x3F:
+        if words['gate'] & 0x2F:
             self.route(XbarSource.line_in, XbarEffect.guitar_chain, sink)
         else:
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)
@@ -206,7 +197,6 @@ class AudioLabOverlay(Overlay):
                 overdrive_on=False,
                 distortion_on=False,
                 eq_on=False,
-                delay_on=False,
                 reverb_on=enabled,
                 reverb_decay=reverb,
                 reverb_tone=tone,
