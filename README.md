@@ -34,6 +34,7 @@ Noise Gate -> Overdrive -> Distortion -> EQ -> Reverb
 | Reverb | `Decay`, `tone`, `mix` |
 
 すべて OFF の場合は、通常の `line_in -> passthrough -> headphone` に戻ります。いずれかのエフェクトを ON にすると、`line_in -> guitar_chain -> headphone` に切り替わります。
+Noise Gate はエンベロープ検出とフェード開閉を使い、しきい値付近で波形を直接切らないようにしています。
 
 ## ノートブック
 

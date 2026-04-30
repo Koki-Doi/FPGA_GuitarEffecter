@@ -102,7 +102,7 @@ class AudioLabOverlay(Overlay):
     @classmethod
     def guitar_effect_control_words(
         cls,
-        noise_gate_on=True,
+        noise_gate_on=False,
         noise_gate_threshold=8,
         overdrive_on=False,
         overdrive_tone=65,

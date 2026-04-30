@@ -5,23 +5,11 @@ use IEEE.NUMERIC_STD.ALL;
 package clash_lowpass_fir_types is
 
 
-  subtype index_1024 is unsigned(9 downto 0);
+
+  subtype rst_AudioDomain is std_logic;
   type array_of_signed_24 is array (integer range <>) of signed(23 downto 0);
 
-
-  type Tuple4 is record
-    Tuple4_sel0_std_logic_vector : std_logic_vector(47 downto 0);
-    Tuple4_sel1_boolean_0 : boolean;
-    Tuple4_sel2_boolean_1 : boolean;
-    Tuple4_sel3_boolean_2 : boolean;
-  end record;
-  type AxisOut is record
-    AxisOut_sel0_oData : std_logic_vector(47 downto 0);
-    AxisOut_sel1_oValid : boolean;
-    AxisOut_sel2_oLast : boolean;
-  end record;
-  subtype rst_AudioDomain is std_logic;
-  subtype clk_AudioDomain is std_logic;
+  subtype index_1024 is unsigned(9 downto 0);
   type Tuple2 is record
     Tuple2_sel0_index_1024 : index_1024;
     Tuple2_sel1_signed : signed(23 downto 0);
@@ -63,77 +51,45 @@ package clash_lowpass_fir_types is
     Frame_sel28_fAcc3R : signed(47 downto 0);
   end record;
   subtype Maybe is std_logic_vector(843 downto 0);
-  function toSLV (s : in signed) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return signed;
-  function toSLV (slv : in std_logic_vector) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return std_logic_vector;
-  function toSLV (u : in unsigned) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return unsigned;
-  function toSLV (value :  array_of_signed_24) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return array_of_signed_24;
+  subtype clk_AudioDomain is std_logic;
+  type AxisOut is record
+    AxisOut_sel0_oData : std_logic_vector(47 downto 0);
+    AxisOut_sel1_oValid : boolean;
+    AxisOut_sel2_oLast : boolean;
+  end record;
+  type Tuple4 is record
+    Tuple4_sel0_std_logic_vector : std_logic_vector(47 downto 0);
+    Tuple4_sel1_boolean_0 : boolean;
+    Tuple4_sel2_boolean_1 : boolean;
+    Tuple4_sel3_boolean_2 : boolean;
+  end record;
   function toSLV (b : in boolean) return std_logic_vector;
   function fromSLV (sl : in std_logic_vector) return boolean;
   function tagToEnum (s : in signed) return boolean;
   function dataToTag (b : in boolean) return signed;
-  function toSLV (p : Tuple4) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return Tuple4;
-  function toSLV (p : AxisOut) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return AxisOut;
+  function toSLV (s : in signed) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return signed;
+  function toSLV (slv : in std_logic_vector) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return std_logic_vector;
   function toSLV (sl : in std_logic) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return std_logic;
+  function toSLV (value :  array_of_signed_24) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return array_of_signed_24;
+  function toSLV (u : in unsigned) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return unsigned;
   function toSLV (p : Tuple2) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return Tuple2;
   function toSLV (p : Tuple2_0) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return Tuple2_0;
   function toSLV (p : Frame) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return Frame;
+  function toSLV (p : AxisOut) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return AxisOut;
+  function toSLV (p : Tuple4) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return Tuple4;
 end;
 
 package body clash_lowpass_fir_types is
-  function toSLV (s : in signed) return std_logic_vector is
-  begin
-    return std_logic_vector(s);
-  end;
-  function fromSLV (slv : in std_logic_vector) return signed is
-    alias islv : std_logic_vector(0 to slv'length - 1) is slv;
-  begin
-    return signed(islv);
-  end;
-  function toSLV (slv : in std_logic_vector) return std_logic_vector is
-  begin
-    return slv;
-  end;
-  function fromSLV (slv : in std_logic_vector) return std_logic_vector is
-  begin
-    return slv;
-  end;
-  function toSLV (u : in unsigned) return std_logic_vector is
-  begin
-    return std_logic_vector(u);
-  end;
-  function fromSLV (slv : in std_logic_vector) return unsigned is
-    alias islv : std_logic_vector(0 to slv'length - 1) is slv;
-  begin
-    return unsigned(islv);
-  end;
-  function toSLV (value :  array_of_signed_24) return std_logic_vector is
-    alias ivalue    : array_of_signed_24(1 to value'length) is value;
-    variable result : std_logic_vector(1 to value'length * 24);
-  begin
-    for i in ivalue'range loop
-      result(((i - 1) * 24) + 1 to i*24) := toSLV(ivalue(i));
-    end loop;
-    return result;
-  end;
-  function fromSLV (slv : in std_logic_vector) return array_of_signed_24 is
-    alias islv      : std_logic_vector(0 to slv'length - 1) is slv;
-    variable result : array_of_signed_24(0 to slv'length / 24 - 1);
-  begin
-    for i in result'range loop
-      result(i) := fromSLV(islv(i * 24 to (i+1) * 24 - 1));
-    end loop;
-    return result;
-  end;
   function toSLV (b : in boolean) return std_logic_vector is
   begin
     if b then
@@ -166,23 +122,22 @@ package body clash_lowpass_fir_types is
       return to_signed(0,64);
     end if;
   end;
-  function toSLV (p : Tuple4) return std_logic_vector is
+  function toSLV (s : in signed) return std_logic_vector is
   begin
-    return (toSLV(p.Tuple4_sel0_std_logic_vector) & toSLV(p.Tuple4_sel1_boolean_0) & toSLV(p.Tuple4_sel2_boolean_1) & toSLV(p.Tuple4_sel3_boolean_2));
+    return std_logic_vector(s);
   end;
-  function fromSLV (slv : in std_logic_vector) return Tuple4 is
-  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  function fromSLV (slv : in std_logic_vector) return signed is
+    alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
-    return (fromSLV(islv(0 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 49)),fromSLV(islv(50 to 50)));
+    return signed(islv);
   end;
-  function toSLV (p : AxisOut) return std_logic_vector is
+  function toSLV (slv : in std_logic_vector) return std_logic_vector is
   begin
-    return (toSLV(p.AxisOut_sel0_oData) & toSLV(p.AxisOut_sel1_oValid) & toSLV(p.AxisOut_sel2_oLast));
+    return slv;
   end;
-  function fromSLV (slv : in std_logic_vector) return AxisOut is
-  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  function fromSLV (slv : in std_logic_vector) return std_logic_vector is
   begin
-    return (fromSLV(islv(0 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 49)));
+    return slv;
   end;
   function toSLV (sl : in std_logic) return std_logic_vector is
   begin
@@ -192,6 +147,33 @@ package body clash_lowpass_fir_types is
     alias islv : std_logic_vector (0 to slv'length - 1) is slv;
   begin
     return islv(0);
+  end;
+  function toSLV (value :  array_of_signed_24) return std_logic_vector is
+    alias ivalue    : array_of_signed_24(1 to value'length) is value;
+    variable result : std_logic_vector(1 to value'length * 24);
+  begin
+    for i in ivalue'range loop
+      result(((i - 1) * 24) + 1 to i*24) := toSLV(ivalue(i));
+    end loop;
+    return result;
+  end;
+  function fromSLV (slv : in std_logic_vector) return array_of_signed_24 is
+    alias islv      : std_logic_vector(0 to slv'length - 1) is slv;
+    variable result : array_of_signed_24(0 to slv'length / 24 - 1);
+  begin
+    for i in result'range loop
+      result(i) := fromSLV(islv(i * 24 to (i+1) * 24 - 1));
+    end loop;
+    return result;
+  end;
+  function toSLV (u : in unsigned) return std_logic_vector is
+  begin
+    return std_logic_vector(u);
+  end;
+  function fromSLV (slv : in std_logic_vector) return unsigned is
+    alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  begin
+    return unsigned(islv);
   end;
   function toSLV (p : Tuple2) return std_logic_vector is
   begin
@@ -219,6 +201,24 @@ package body clash_lowpass_fir_types is
   alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
     return (fromSLV(islv(0 to 23)),fromSLV(islv(24 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 80)),fromSLV(islv(81 to 112)),fromSLV(islv(113 to 144)),fromSLV(islv(145 to 176)),fromSLV(islv(177 to 208)),fromSLV(islv(209 to 218)),fromSLV(islv(219 to 242)),fromSLV(islv(243 to 266)),fromSLV(islv(267 to 290)),fromSLV(islv(291 to 314)),fromSLV(islv(315 to 338)),fromSLV(islv(339 to 362)),fromSLV(islv(363 to 386)),fromSLV(islv(387 to 410)),fromSLV(islv(411 to 434)),fromSLV(islv(435 to 458)),fromSLV(islv(459 to 482)),fromSLV(islv(483 to 506)),fromSLV(islv(507 to 530)),fromSLV(islv(531 to 554)),fromSLV(islv(555 to 602)),fromSLV(islv(603 to 650)),fromSLV(islv(651 to 698)),fromSLV(islv(699 to 746)),fromSLV(islv(747 to 794)),fromSLV(islv(795 to 842)));
+  end;
+  function toSLV (p : AxisOut) return std_logic_vector is
+  begin
+    return (toSLV(p.AxisOut_sel0_oData) & toSLV(p.AxisOut_sel1_oValid) & toSLV(p.AxisOut_sel2_oLast));
+  end;
+  function fromSLV (slv : in std_logic_vector) return AxisOut is
+  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  begin
+    return (fromSLV(islv(0 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 49)));
+  end;
+  function toSLV (p : Tuple4) return std_logic_vector is
+  begin
+    return (toSLV(p.Tuple4_sel0_std_logic_vector) & toSLV(p.Tuple4_sel1_boolean_0) & toSLV(p.Tuple4_sel2_boolean_1) & toSLV(p.Tuple4_sel3_boolean_2));
+  end;
+  function fromSLV (slv : in std_logic_vector) return Tuple4 is
+  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  begin
+    return (fromSLV(islv(0 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 49)),fromSLV(islv(50 to 50)));
   end;
 end;
 

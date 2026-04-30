@@ -12,6 +12,7 @@ createDomain vXilinxSystem{vName = "AudioDomain", vResetKind = Asynchronous, vRe
 type Sample = Signed 24
 type Wide = Signed 48
 type Ctrl = BitVector 32
+type GateGain = Unsigned 12
 type ReverbAddr = Index 1024
 type ReverbMem = Vec 1024 Sample
 
@@ -119,6 +120,9 @@ satShift7 = satWide . (`shiftR` 7)
 satShift8 :: Wide -> Sample
 satShift8 = satWide . (`shiftR` 8)
 
+satShift12 :: Wide -> Sample
+satShift12 = satWide . (`shiftR` 12)
+
 softClip :: Sample -> Sample
 softClip x
   | x > knee = resize (resize knee + (((resize x :: Signed 25) - resize knee) `shiftR` 2) :: Signed 25)
@@ -147,6 +151,31 @@ isActive (Just _) = True
 frameOr :: (Frame -> Sample) -> Sample -> Maybe Frame -> Sample
 frameOr _ old Nothing = old
 frameOr f _ (Just x) = f x
+
+gateUnity :: GateGain
+gateUnity = 4_095
+
+gateAttackStep :: GateGain
+gateAttackStep = 512
+
+gateReleaseStep :: GateGain
+gateReleaseStep = 4
+
+maxAbsFrame :: Frame -> Sample
+maxAbsFrame f = if left > right then left else right
+ where
+  left = abs24 (fL f)
+  right = abs24 (fR f)
+
+gateLevelFrame :: Frame -> Frame
+gateLevelFrame f = f{fWetL = maxAbsFrame f}
+
+gateThreshold :: Ctrl -> Sample
+gateThreshold control = resize (asSigned9 (ctrlB control)) `shiftL` 13
+
+gateOpenThreshold :: Sample -> Sample
+gateOpenThreshold threshold =
+  satWide (resize threshold + (resize threshold `shiftR` 1) + 65_536)
 
 makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
 makeInput gateControl odControl distControl eqControl reverbControl samples validIn lastIn =
@@ -187,12 +216,43 @@ makeInput gateControl odControl distControl eqControl reverbControl samples vali
               }
     else Nothing
 
-gateFrame :: Frame -> Frame
-gateFrame f =
-  f{fL = if mute then 0 else fL f, fR = if mute then 0 else fR f}
+gateEnvNext :: Sample -> Maybe Frame -> Sample
+gateEnvNext env Nothing = env
+gateEnvNext env (Just f)
+ | not (flag0 (fGate f)) = 0
+  | level > env = level
+  | env > decay = env - decay
+  | otherwise = 0
  where
-  threshold = resize (asSigned9 (ctrlB (fGate f))) `shiftL` 15 :: Sample
-  mute = flag0 (fGate f) && abs24 (fL f) < threshold && abs24 (fR f) < threshold
+  level = fWetL f
+  decay = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
+
+gateOpenNext :: Bool -> Sample -> Maybe Frame -> Bool
+gateOpenNext open _ Nothing = open
+gateOpenNext open env (Just f)
+  | not (flag0 (fGate f)) = True
+  | closeThreshold == 0 = True
+  | env > openThreshold = True
+  | env < closeThreshold = False
+  | otherwise = open
+ where
+  closeThreshold = gateThreshold (fGate f)
+  openThreshold = gateOpenThreshold closeThreshold
+
+gateGainNext :: GateGain -> Bool -> Maybe Frame -> GateGain
+gateGainNext gain _ Nothing = gain
+gateGainNext gain open (Just f)
+  | not (flag0 (fGate f)) = gateUnity
+  | open = if gain > gateUnity - gateAttackStep then gateUnity else gain + gateAttackStep
+  | gain < gateReleaseStep = 0
+  | otherwise = gain - gateReleaseStep
+
+gateFrame :: GateGain -> Frame -> Frame
+gateFrame gain f
+  | not (flag0 (fGate f)) = f
+  | otherwise = f{fL = applyGateGain (fL f), fR = applyGateGain (fR f)}
+ where
+  applyGateGain x = satShift12 (mulU12 x gain)
 
 overdriveDriveMultiplyFrame :: Frame -> Frame
 overdriveDriveMultiplyFrame f =
@@ -523,7 +583,11 @@ fxPipeline gateControl odControl distControl eqControl reverbControl samples val
         <*> acceptedIn
         <*> lastIn
 
-  gatePipe = register Nothing (mapPipe gateFrame <$> inPipe)
+  gateLevelPipe = register Nothing (mapPipe gateLevelFrame <$> inPipe)
+  gateEnv = register 0 (gateEnvNext <$> gateEnv <*> gateLevelPipe)
+  gateOpen = register True (gateOpenNext <$> gateOpen <*> gateEnv <*> gateLevelPipe)
+  gateGain = register gateUnity (gateGainNext <$> gateGain <*> gateOpen <*> gateLevelPipe)
+  gatePipe = register Nothing (mapPipe <$> (gateFrame <$> gateGain) <*> gateLevelPipe)
   odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> gatePipe)
   odDriveBoostPipe = register Nothing (mapPipe overdriveDriveBoostFrame <$> odDriveMulPipe)
   odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odDriveBoostPipe)
