@@ -20,7 +20,7 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 `GuitarEffectsChain.ipynb` では、以下の順番でエフェクトを処理します。
 
 ```text
-Noise Gate -> Overdrive -> Distortion -> EQ -> Reverb
+Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> EQ -> Reverb
 ```
 
 各エフェクトは個別に ON/OFF できます。
@@ -30,6 +30,7 @@ Noise Gate -> Overdrive -> Distortion -> EQ -> Reverb
 | Noise Gate | `THRESHOLD` |
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
 | Distortion | `TONE`, `LEVEL`, `DISTORTION` |
+| RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
 | EQ | `LOW`, `MID`, `HIGH` |
 | Reverb | `Decay`, `tone`, `mix` |
 
@@ -38,7 +39,7 @@ Noise Gate はエンベロープ検出とフェード開閉を使い、しきい
 
 ## C++ DSP プロトタイプ
 
-`src/effects/RatStyleDistortion.{h,cpp}` に、後からリアルタイム処理へ組み込むための RAT-style Distortion を独立クラスとして追加しています。現在の FPGA/Notebook チェーンには未接続で、既存の挙動は変えません。
+`src/effects/RatStyleDistortion.{h,cpp}` に、後からリアルタイム処理へ組み込むための RAT-style Distortion を独立クラスとして追加しています。Notebook/FPGA 側では同じ考え方の軽量固定小数点版を `axi_gpio_delay` から制御する `RAT Distortion` として追加しています。
 
 信号処理は `Input HPF -> Pre Gain -> OpAmp bandwidth LPF -> hard clipping -> post LPF -> RAT-style FILTER LPF -> Level -> safety limiter` の軽量構成です。RAT の完全な回路シミュレーションではなく、PYNQ/Zynq-7000 で扱いやすいリアルタイム DSP 実装を優先しています。
 
@@ -50,10 +51,10 @@ Noise Gate はエンベロープ検出とフェード開閉を使い、しきい
 | `mix` | `0.0` - `1.0` | Dry/Wet |
 | `enabled` | `true` / `false` | バイパス制御。初期値は `false` |
 
-C++ 単体テストは次で実行できます。
+ローカルの単体テストは次で実行できます。
 
 ```sh
-make -C tests run
+make tests
 ```
 
 ## ノートブック
@@ -99,6 +100,11 @@ ol.set_guitar_effects(
     distortion_tone=65,
     distortion_level=100,
     distortion=20,
+    rat_on=True,
+    rat_filter=35,
+    rat_level=95,
+    rat_drive=65,
+    rat_mix=100,
     eq_on=True,
     eq_low=100,
     eq_mid=100,
@@ -117,6 +123,7 @@ ol.set_guitar_effects(
     noise_gate_on=False,
     overdrive_on=False,
     distortion_on=False,
+    rat_on=False,
     eq_on=False,
     reverb_on=False,
 )
@@ -153,7 +160,7 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 | `axi_gpio_overdrive` | `0x43C50000` | Overdrive |
 | `axi_gpio_distortion` | `0x43C60000` | Distortion |
 | `axi_gpio_eq` | `0x43C70000` | EQ |
-| `axi_gpio_delay` | `0x43C80000` | 互換用。現在のチェーンでは未使用 |
+| `axi_gpio_delay` | `0x43C80000` | RAT Distortion。既存ポート名の互換性のため `delay` 名を維持 |
 
 ## ビルド
 

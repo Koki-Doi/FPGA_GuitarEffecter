@@ -24,6 +24,7 @@ data Frame = Frame
   , fOd :: Ctrl
   , fDist :: Ctrl
   , fEq :: Ctrl
+  , fRat :: Ctrl
   , fReverb :: Ctrl
   , fAddr :: ReverbAddr
   , fDryL :: Sample
@@ -77,11 +78,15 @@ ctrlB c = unpack (slice d15 d8 c)
 ctrlC :: Ctrl -> Unsigned 8
 ctrlC c = unpack (slice d23 d16 c)
 
-flag0, flag1, flag2, flag3, flag5 :: Ctrl -> Bool
+ctrlD :: Ctrl -> Unsigned 8
+ctrlD c = unpack (slice d31 d24 c)
+
+flag0, flag1, flag2, flag3, flag4, flag5 :: Ctrl -> Bool
 flag0 c = slice d0 d0 c == (1 :: BitVector 1)
 flag1 c = slice d1 d1 c == (1 :: BitVector 1)
 flag2 c = slice d2 d2 c == (1 :: BitVector 1)
 flag3 c = slice d3 d3 c == (1 :: BitVector 1)
+flag4 c = slice d4 d4 c == (1 :: BitVector 1)
 flag5 c = slice d5 d5 c == (1 :: BitVector 1)
 
 asSigned9 :: Unsigned 8 -> Signed 9
@@ -137,6 +142,9 @@ hardClip x threshold
   | x < negate threshold = negate threshold
   | otherwise = x
 
+onePoleU8 :: Unsigned 8 -> Sample -> Sample -> Sample
+onePoleU8 alpha prev x = satShift8 (mulU8 x alpha + mulU8 prev (255 - alpha))
+
 advanceAddr :: ReverbAddr -> ReverbAddr
 advanceAddr addr = if addr == maxBound then 0 else addr + 1
 
@@ -177,8 +185,8 @@ gateOpenThreshold :: Sample -> Sample
 gateOpenThreshold threshold =
   satWide (resize threshold + (resize threshold `shiftR` 1) + 65_536)
 
-makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
-makeInput gateControl odControl distControl eqControl reverbControl samples validIn lastIn =
+makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
+makeInput gateControl odControl distControl eqControl ratControl reverbControl samples validIn lastIn =
   if validIn
     then
       let (left, right) = unpackChan samples
@@ -191,6 +199,7 @@ makeInput gateControl odControl distControl eqControl reverbControl samples vali
               , fOd = odControl
               , fDist = distControl
               , fEq = eqControl
+              , fRat = ratControl
               , fReverb = reverbControl
               , fAddr = 0
               , fDryL = left
@@ -367,6 +376,84 @@ distortionLevelFrame f =
   left = satShift7 (mulU8 (fWetL f) level)
   right = satShift7 (mulU8 (fWetR f) level)
 
+ratHighpassFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
+ratHighpassFrame prevInL prevInR prevOutL prevOutR f =
+  f
+    { fDryL = fL f
+    , fDryR = fR f
+    , fWetL = if on then highpass (fL f) prevInL prevOutL else fL f
+    , fWetR = if on then highpass (fR f) prevInR prevOutR else fR f
+    }
+ where
+  on = flag4 (fGate f)
+  highpass x prevIn prevOut =
+    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 254 `shiftR` 8))
+
+ratDriveMultiplyFrame :: Frame -> Frame
+ratDriveMultiplyFrame f =
+  f{fAccL = if on then mulU12 (fWetL f) driveGain else 0, fAccR = if on then mulU12 (fWetR f) driveGain else 0}
+ where
+  on = flag4 (fGate f)
+  driveGain = resize (512 + (resize (ctrlC (fRat f)) * 14 :: Unsigned 12)) :: Unsigned 12
+
+ratDriveBoostFrame :: Frame -> Frame
+ratDriveBoostFrame f =
+  f{fWetL = if on then satShift8 (fAccL f) else fL f, fWetR = if on then satShift8 (fAccR f) else fR f}
+ where
+  on = flag4 (fGate f)
+
+ratOpAmpLowpassFrame :: Sample -> Sample -> Frame -> Frame
+ratOpAmpLowpassFrame prevL prevR f =
+  f{fWetL = if on then lowL else fL f, fWetR = if on then lowR else fR f}
+ where
+  on = flag4 (fGate f)
+  alpha = 192 - resize (ctrlC (fRat f) `shiftR` 1) :: Unsigned 8
+  lowL = onePoleU8 alpha prevL (fWetL f)
+  lowR = onePoleU8 alpha prevR (fWetR f)
+
+ratClipFrame :: Frame -> Frame
+ratClipFrame f =
+  f{fWetL = if on then hardClip (fWetL f) threshold else fL f, fWetR = if on then hardClip (fWetR f) threshold else fR f}
+ where
+  on = flag4 (fGate f)
+  amount = ctrlC (fRat f)
+  rawThreshold = 6_291_456 - (resize (asSigned9 amount) * 9_000) :: Signed 25
+  clampedThreshold = if rawThreshold < 3_750_000 then 3_750_000 else rawThreshold
+  threshold = resize clampedThreshold :: Sample
+
+ratPostLowpassFrame :: Sample -> Sample -> Frame -> Frame
+ratPostLowpassFrame prevL prevR f =
+  f{fWetL = if on then onePoleU8 192 prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 192 prevR (fWetR f) else fR f}
+ where
+  on = flag4 (fGate f)
+
+ratToneFrame :: Sample -> Sample -> Frame -> Frame
+ratToneFrame prevL prevR f =
+  f{fWetL = if on then onePoleU8 alpha prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 alpha prevR (fWetR f) else fR f}
+ where
+  on = flag4 (fGate f)
+  dark = resize ((resize (ctrlA (fRat f)) * 3 :: Unsigned 10) `shiftR` 2) :: Unsigned 8
+  alpha = 224 - dark
+
+ratLevelFrame :: Frame -> Frame
+ratLevelFrame f =
+  f{fWetL = if on then left else fL f, fWetR = if on then right else fR f}
+ where
+  on = flag4 (fGate f)
+  level = ctrlB (fRat f)
+  left = satShift7 (mulU8 (fWetL f) level)
+  right = satShift7 (mulU8 (fWetR f) level)
+
+ratMixFrame :: Frame -> Frame
+ratMixFrame f =
+  f{fL = if on then softClip mixedL else fL f, fR = if on then softClip mixedR else fR f}
+ where
+  on = flag4 (fGate f)
+  mix = ctrlD (fRat f)
+  invMix = 255 - mix
+  mixedL = satShift8 (mulU8 (fDryL f) invMix + mulU8 (fWetL f) mix)
+  mixedR = satShift8 (mulU8 (fDryR f) invMix + mulU8 (fWetR f) mix)
+
 eqFilterFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
 eqFilterFrame prevLowL prevLowR prevHighLpL prevHighLpR f =
   f
@@ -539,13 +626,14 @@ topEntity
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-topEntity clk rst gateControl odControl distControl eqControl _delayControl reverbControl samples validIn lastIn readyOut =
+topEntity clk rst gateControl odControl distControl eqControl ratControl reverbControl samples validIn lastIn readyOut =
   withClockResetEnable clk rst enableGen $
-    fxPipeline gateControl odControl distControl eqControl reverbControl samples validIn lastIn readyOut
+    fxPipeline gateControl odControl distControl eqControl ratControl reverbControl samples validIn lastIn readyOut
 
 fxPipeline
   :: HiddenClockResetEnable AudioDomain
   => Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
@@ -559,7 +647,7 @@ fxPipeline
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-fxPipeline gateControl odControl distControl eqControl reverbControl samples validIn lastIn readyOut =
+fxPipeline gateControl odControl distControl eqControl ratControl reverbControl samples validIn lastIn readyOut =
   pipeline
  where
   pipeline =
@@ -578,6 +666,7 @@ fxPipeline gateControl odControl distControl eqControl reverbControl samples val
         <*> odControl
         <*> distControl
         <*> eqControl
+        <*> ratControl
         <*> reverbControl
         <*> samples
         <*> acceptedIn
@@ -608,13 +697,38 @@ fxPipeline gateControl odControl distControl eqControl reverbControl samples val
   distToneBlendPipe = register Nothing (mapPipe distortionToneBlendFrame <$> distToneMulPipe)
   distTonePipe = register Nothing (mapPipe distortionLevelFrame <$> distToneBlendPipe)
 
+  ratHpInPrevL = register 0 (frameOr fDryL <$> ratHpInPrevL <*> ratHighpassPipe)
+  ratHpInPrevR = register 0 (frameOr fDryR <$> ratHpInPrevR <*> ratHighpassPipe)
+  ratHpOutPrevL = register 0 (frameOr fWetL <$> ratHpOutPrevL <*> ratHighpassPipe)
+  ratHpOutPrevR = register 0 (frameOr fWetR <$> ratHpOutPrevR <*> ratHighpassPipe)
+  ratHighpassPipe =
+    register Nothing $
+      mapPipe <$> (ratHighpassFrame <$> ratHpInPrevL <*> ratHpInPrevR <*> ratHpOutPrevL <*> ratHpOutPrevR) <*> distTonePipe
+  ratDriveMulPipe = register Nothing (mapPipe ratDriveMultiplyFrame <$> ratHighpassPipe)
+  ratDriveBoostPipe = register Nothing (mapPipe ratDriveBoostFrame <$> ratDriveMulPipe)
+
+  ratOpAmpPrevL = register 0 (frameOr fWetL <$> ratOpAmpPrevL <*> ratOpAmpPipe)
+  ratOpAmpPrevR = register 0 (frameOr fWetR <$> ratOpAmpPrevR <*> ratOpAmpPipe)
+  ratOpAmpPipe = register Nothing (mapPipe <$> (ratOpAmpLowpassFrame <$> ratOpAmpPrevL <*> ratOpAmpPrevR) <*> ratDriveBoostPipe)
+  ratClipPipe = register Nothing (mapPipe ratClipFrame <$> ratOpAmpPipe)
+
+  ratPostPrevL = register 0 (frameOr fWetL <$> ratPostPrevL <*> ratPostPipe)
+  ratPostPrevR = register 0 (frameOr fWetR <$> ratPostPrevR <*> ratPostPipe)
+  ratPostPipe = register Nothing (mapPipe <$> (ratPostLowpassFrame <$> ratPostPrevL <*> ratPostPrevR) <*> ratClipPipe)
+
+  ratTonePrevL = register 0 (frameOr fWetL <$> ratTonePrevL <*> ratTonePipe)
+  ratTonePrevR = register 0 (frameOr fWetR <$> ratTonePrevR <*> ratTonePipe)
+  ratTonePipe = register Nothing (mapPipe <$> (ratToneFrame <$> ratTonePrevL <*> ratTonePrevR) <*> ratPostPipe)
+  ratLevelPipe = register Nothing (mapPipe ratLevelFrame <$> ratTonePipe)
+  ratMixPipe = register Nothing (mapPipe ratMixFrame <$> ratLevelPipe)
+
   eqLowPrevL = register 0 (frameOr fEqLowL <$> eqLowPrevL <*> eqFilterPipe)
   eqLowPrevR = register 0 (frameOr fEqLowR <$> eqLowPrevR <*> eqFilterPipe)
   eqHighPrevL = register 0 (frameOr fEqHighLpL <$> eqHighPrevL <*> eqFilterPipe)
   eqHighPrevR = register 0 (frameOr fEqHighLpR <$> eqHighPrevR <*> eqFilterPipe)
   eqFilterPipe =
     register Nothing $
-      mapPipe <$> (eqFilterFrame <$> eqLowPrevL <*> eqLowPrevR <*> eqHighPrevL <*> eqHighPrevR) <*> distTonePipe
+      mapPipe <$> (eqFilterFrame <$> eqLowPrevL <*> eqLowPrevR <*> eqHighPrevL <*> eqHighPrevR) <*> ratMixPipe
   eqBandPipe = register Nothing (mapPipe eqBandFrame <$> eqFilterPipe)
   eqProductsPipe = register Nothing (mapPipe eqProductsFrame <$> eqBandPipe)
   eqMixPipe = register Nothing (mapPipe eqMixFrame <$> eqProductsPipe)

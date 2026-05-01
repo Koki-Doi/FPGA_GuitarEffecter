@@ -1,5 +1,6 @@
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -pedantic -I..
+PYTHON ?= python3
 
 TARGET := test_rat_style_distortion
 SOURCES := test_rat_style_distortion.cpp ../src/effects/RatStyleDistortion.cpp
@@ -12,7 +13,12 @@ $(TARGET): $(SOURCES) ../src/effects/RatStyleDistortion.h
 run: $(TARGET)
 	./$(TARGET)
 
+python:
+	$(PYTHON) test_overlay_controls.py
+
+check: run python
+
 clean:
 	rm -f $(TARGET)
 
-.PHONY: all run clean
+.PHONY: all run python check clean

@@ -77,6 +77,10 @@ class AudioLabOverlay(Overlay):
         return (int(c) << 16) | (int(b) << 8) | int(a)
 
     @staticmethod
+    def _pack4(a, b, c, d):
+        return (int(d) << 24) | (int(c) << 16) | (int(b) << 8) | int(a)
+
+    @staticmethod
     def _write_gpio(gpio, word):
         gpio.write(0x04, 0x00000000)
         gpio.write(0x00, int(word) & 0xFFFFFFFF)
@@ -112,6 +116,11 @@ class AudioLabOverlay(Overlay):
         distortion_tone=65,
         distortion_level=100,
         distortion=25,
+        rat_on=False,
+        rat_filter=35,
+        rat_level=100,
+        rat_drive=55,
+        rat_mix=100,
         eq_on=False,
         eq_low=100,
         eq_mid=100,
@@ -127,6 +136,7 @@ class AudioLabOverlay(Overlay):
         flags |= 0x02 if overdrive_on else 0
         flags |= 0x04 if distortion_on else 0
         flags |= 0x08 if eq_on else 0
+        flags |= 0x10 if rat_on else 0
         flags |= 0x20 if reverb_on else 0
 
         gate_word = (
@@ -148,6 +158,12 @@ class AudioLabOverlay(Overlay):
             cls._level_to_q7(eq_mid),
             cls._level_to_q7(eq_high),
         )
+        rat_word = cls._pack4(
+            cls._percent_to_u8(rat_filter, 255),
+            cls._level_to_q7(cls._clamp_range(rat_level, 0, 150)),
+            cls._percent_to_u8(rat_drive, 255),
+            cls._percent_to_u8(rat_mix, 255),
+        )
         reverb_word = cls._pack3(
             cls._percent_to_u8(reverb_decay, 220),
             cls._percent_to_u8(reverb_tone, 255),
@@ -159,7 +175,8 @@ class AudioLabOverlay(Overlay):
             'overdrive': overdrive_word,
             'distortion': distortion_word,
             'eq': eq_word,
-            'delay': 0,
+            'rat': rat_word,
+            'delay': rat_word,
             'reverb': reverb_word,
         }
 
@@ -181,10 +198,12 @@ class AudioLabOverlay(Overlay):
         self._write_gpio(self.axi_gpio_distortion, words['distortion'])
         self._write_gpio(self.axi_gpio_eq, words['eq'])
         if hasattr(self, 'axi_gpio_delay'):
-            self._write_gpio(self.axi_gpio_delay, 0)
+            self._write_gpio(self.axi_gpio_delay, words['rat'])
+        elif words['gate'] & 0x10:
+            raise RuntimeError('axi_gpio_delay is required for RAT-style distortion control')
         self._write_gpio(self.axi_gpio_reverb, words['reverb'])
 
-        if words['gate'] & 0x2F:
+        if words['gate'] & 0x3F:
             self.route(XbarSource.line_in, XbarEffect.guitar_chain, sink)
         else:
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)

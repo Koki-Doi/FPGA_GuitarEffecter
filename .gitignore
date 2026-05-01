@@ -11,4 +11,6 @@ vivado.log
 .ipynb_checkpoints
 
 *.egg-info
+__pycache__/
+*.pyc
 tests/test_rat_style_distortion
