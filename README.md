@@ -32,7 +32,7 @@ Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> Amp Simulator -> Cab 
 | Distortion | `TONE`, `LEVEL`, `DISTORTION` |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
 | Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `CHARACTER` |
-| Cab IR | `MIX`, `LEVEL` |
+| Cab IR | `MIX`, `LEVEL`, `MODEL`, `AIR` |
 | EQ | `LOW`, `MID`, `HIGH` |
 | Reverb | `Decay`, `tone`, `mix` |
 
@@ -46,10 +46,10 @@ Noise Gate はエンベロープ検出とフェード開閉を使い、しきい
 | クラス | 内容 |
 | --- | --- |
 | `RatStyleDistortion` | RAT-style Distortion の浮動小数点プロトタイプ |
-| `SimpleAmpSimulator` | Pre Gain、非対称 waveshaper、簡易 tone stack、Presence、Resonance、Master を持つ軽量アンプシミュレーター |
-| `CabIRSimulator` | 最大512 samplesの短いIRをリングバッファで直接畳み込みするキャビネットIRシミュレーター |
+| `SimpleAmpSimulator` | Pre Gain、2段の非対称/ソフトサチュレーション、簡易 tone stack、Presence、Resonance、Master を持つ軽量アンプシミュレーター |
+| `CabIRSimulator` | 最大512 samplesの短いIRをリングバッファで直接畳み込みし、固定キャビネットプリセットとAirを持つキャビネットIRシミュレーター |
 
-Notebook/FPGA 側では、これらの考え方をもとにした軽量固定小数点版を Clash で実装しています。RAT は既存互換名の `axi_gpio_delay` から制御し、Amp/Cab は `axi_gpio_amp`、`axi_gpio_amp_tone`、`axi_gpio_cab` から制御します。
+Notebook/FPGA 側では、これらの考え方をもとにした軽量固定小数点版を Clash で実装しています。RAT は既存互換名の `axi_gpio_delay` から制御し、Amp/Cab は `axi_gpio_amp`、`axi_gpio_amp_tone`、`axi_gpio_cab` から制御します。Cab は `OpenBack 1x12`、`British 2x12`、`ClosedBack 4x12` 相当の軽量プリセットと、明るさを変える `AIR` をNotebookから選べます。
 
 信号処理は `Input HPF -> Pre Gain -> OpAmp bandwidth LPF -> hard clipping -> post LPF -> RAT-style FILTER LPF -> Level -> safety limiter` の軽量構成です。RAT の完全な回路シミュレーションではなく、PYNQ/Zynq-7000 で扱いやすいリアルタイム DSP 実装を優先しています。
 
@@ -61,9 +61,9 @@ Notebook/FPGA 側では、これらの考え方をもとにした軽量固定小
 | `mix` | `0.0` - `1.0` | Dry/Wet |
 | `enabled` | `true` / `false` | バイパス制御。初期値は `false` |
 
-`SimpleAmpSimulator` は `Input HPF -> Preamp Gain -> Asymmetric Waveshaper -> Preamp LPF -> 3-band EQ -> Power Amp Saturation -> Resonance -> Presence -> Master -> safety limiter` の構成です。
+`SimpleAmpSimulator` は `Input HPF -> Preamp Gain -> Asymmetric Waveshaper -> Preamp LPF -> second preamp saturation -> 3-band EQ -> Power Amp Saturation -> Resonance -> Presence -> Master -> safety limiter` の構成です。
 
-`CabIRSimulator` は `Input -> IR Convolution -> Level -> Mix -> safety limiter` の構成です。IR は `setIR(const float* data, int length)` で設定し、先頭のほぼ無音部分をトリムします。IR未設定時、またはOFF時は安全にdryを返します。
+`CabIRSimulator` は `Input -> IR Convolution -> Level -> Air shaping -> Mix -> safety limiter` の構成です。IR は `setIR(const float* data, int length)` で設定でき、`setPreset()` で短い固定IRプリセットも選べます。先頭のほぼ無音部分はトリムし、IR未設定時またはOFF時は安全にdryを返します。
 
 ### C++ エフェクトをそのまま移植できるか
 
@@ -205,7 +205,7 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 | `axi_gpio_delay` | `0x43C80000` | RAT Distortion。既存ポート名の互換性のため `delay` 名を維持 |
 | `axi_gpio_amp` | `0x43C90000` | Amp Simulator の gain/master/presence/resonance |
 | `axi_gpio_amp_tone` | `0x43CA0000` | Amp Simulator の bass/middle/treble/character |
-| `axi_gpio_cab` | `0x43CB0000` | Cab IR の mix/level |
+| `axi_gpio_cab` | `0x43CB0000` | Cab IR の mix/level/model/air |
 
 ## ビルド
 
@@ -315,9 +315,9 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に timing violation が残ります。現在のbitstreamは生成できていますが、直近の routed timing summary では `WNS=-12.231ns`、`TNS=-6173.318ns` です。Amp/Cab を含むエフェクト段を増やしたため、次の改善では Clash 側のパイプライン分割と演算段の整理が必要です。
+- Vivado 実装時に timing violation が残ります。現在のbitstreamは生成できていますが、直近の routed timing summary では `WNS=-7.722ns`、`TNS=-4613.495ns` です。CabのPL実装を4タップ固定プリセットへ軽量化し、重い後段tone処理を外したため以前より改善していますが、次の改善では Clash 側の乗算/加算段をさらにパイプライン分割する必要があります。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
-- PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR も現時点では短い固定タップ近似で、WAV IRローダーや長いIR畳み込みは未実装です。
+- PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
 - 音量を上げすぎると大音量になります。Notebook の初期値から少しずつ調整してください。
 

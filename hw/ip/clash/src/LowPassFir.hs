@@ -118,6 +118,9 @@ mulU9 x gain = resize x * resize (asSigned10 gain)
 mulU12 :: Sample -> Unsigned 12 -> Wide
 mulU12 x gain = resize x * resize (asSigned13 gain)
 
+mulS10 :: Sample -> Signed 10 -> Wide
+mulS10 x gain = resize x * resize gain
+
 satWide :: Wide -> Sample
 satWide x
   | x > 8_388_607 = maxBound
@@ -524,6 +527,21 @@ ampPreLowpassFrame prevL prevR f =
   -- Higher character keeps more edge; lower character smooths more.
   alpha = 160 + (ctrlD (fAmpTone f) `shiftR` 2)
 
+ampSecondStageMultiplyFrame :: Frame -> Frame
+ampSecondStageMultiplyFrame f =
+  f{fAccL = if on then mulU9 (fWetL f) gain else 0, fAccR = if on then mulU9 (fWetR f) gain else 0}
+ where
+  on = flag6 (fGate f)
+  gain = resize (118 + (ctrlA (fAmp f) `shiftR` 2) + (ctrlD (fAmpTone f) `shiftR` 3)) :: Unsigned 9
+
+ampSecondStageFrame :: Frame -> Frame
+ampSecondStageFrame f =
+  f{fWetL = if on then ampAsymClip character (satShift7 (fAccL f)) else fL f, fWetR = if on then ampAsymClip character (satShift7 (fAccR f)) else fR f}
+ where
+  on = flag6 (fGate f)
+  -- Softer than the first clip stage; keeps low-gain response touch-sensitive.
+  character = ctrlD (fAmpTone f) `shiftR` 1
+
 ampToneFilterFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
 ampToneFilterFrame prevLowL prevLowR prevHighLpL prevHighLpR f =
   f
@@ -601,12 +619,33 @@ ampResPresenceMixFrame f =
   f{fWetL = if on then softClip wetL else fL f, fWetR = if on then softClip wetR else fR f}
  where
   on = flag6 (fGate f)
+  wetL = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
+  wetR = satWide (fAccR f + satShift10Wide (fAcc2R f) + satShift9Wide (fAcc3R f))
+
+ampResPresenceProductsFrame :: Frame -> Frame
+ampResPresenceProductsFrame f =
+  f
+    { fEqHighL = highL
+    , fEqHighR = highR
+    , fAccL = if on then resize (fWetL f) else 0
+    , fAccR = if on then resize (fWetR f) else 0
+    , fAcc2L = if on then mulU8 (fEqLowL f) resonance else 0
+    , fAcc2R = if on then mulU8 (fEqLowR f) resonance else 0
+    , fAcc3L = if on then mulU8 highL presence else 0
+    , fAcc3R = if on then mulU8 highR presence else 0
+    }
+ where
+  on = flag6 (fGate f)
   resonance = ctrlD (fAmp f)
   presence = ctrlC (fAmp f)
   highL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
   highR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
-  wetL = satWide (resize (fWetL f) + resize (satShift10 (mulU8 (fEqLowL f) resonance)) + resize (satShift9 (mulU8 highL presence)))
-  wetR = satWide (resize (fWetR f) + resize (satShift10 (mulU8 (fEqLowR f) resonance)) + resize (satShift9 (mulU8 highR presence)))
+
+satShift9Wide :: Wide -> Wide
+satShift9Wide = resize . satShift9
+
+satShift10Wide :: Wide -> Wide
+satShift10Wide = resize . satShift10
 
 ampMasterFrame :: Frame -> Frame
 ampMasterFrame f =
@@ -617,14 +656,101 @@ ampMasterFrame f =
   left = softClip (satShift7 (mulU8 (fWetL f) level))
   right = softClip (satShift7 (mulU8 (fWetR f) level))
 
-cabIrFrame :: Sample -> Sample -> Sample -> Sample -> Sample -> Sample -> Frame -> Frame
-cabIrFrame d1L d2L d3L d1R d2R d3R f =
+cabCoeff :: Unsigned 8 -> Unsigned 8 -> Unsigned 2 -> Signed 10
+cabCoeff model air index =
+  case modelSel of
+    0 -> openBack index
+    1 -> british index
+    _ -> closedBack index
+ where
+  modelSel = model `shiftR` 6
+  airSel :: Unsigned 2
+  airSel = if air < 86 then 0 else if air < 171 then 1 else 2
+  openBack i =
+    case airSel of
+      0 -> case i of
+        0 -> 104
+        1 -> 78
+        2 -> 42
+        _ -> 22
+      1 -> case i of
+        0 -> 112
+        1 -> 72
+        2 -> 34
+        _ -> 14
+      _ -> case i of
+        0 -> 124
+        1 -> 62
+        2 -> 24
+        _ -> 8
+  british i =
+    case airSel of
+      0 -> case i of
+        0 -> 88
+        1 -> 94
+        2 -> 58
+        _ -> 30
+      1 -> case i of
+        0 -> 100
+        1 -> 86
+        2 -> 52
+        _ -> 24
+      _ -> case i of
+        0 -> 112
+        1 -> 76
+        2 -> 40
+        _ -> 16
+  closedBack i =
+    case airSel of
+      0 -> case i of
+        0 -> 78
+        1 -> 104
+        2 -> 74
+        _ -> 46
+      1 -> case i of
+        0 -> 88
+        1 -> 96
+        2 -> 66
+        _ -> 38
+      _ -> case i of
+        0 -> 100
+        1 -> 86
+        2 -> 54
+        _ -> 26
+
+cabProductsFrame ::
+  Sample -> Sample -> Sample ->
+  Sample -> Sample -> Sample ->
+  Frame -> Frame
+cabProductsFrame d1L d2L d3L d1R d2R d3R f =
+  f
+    { fAccL = if on then earlyL else 0
+    , fAccR = if on then earlyR else 0
+    , fAcc2L = if on then bodyL else 0
+    , fAcc2R = if on then bodyR else 0
+    , fAcc3L = 0
+    , fAcc3R = 0
+    }
+ where
+  on = flag7 (fGate f)
+  model = ctrlC (fCab f)
+  air = ctrlD (fCab f)
+  c0 = cabCoeff model air 0
+  c1 = cabCoeff model air 1
+  c2 = cabCoeff model air 2
+  c3 = cabCoeff model air 3
+  earlyL = mulS10 (fL f) c0 + mulS10 d1L c1
+  earlyR = mulS10 (fR f) c0 + mulS10 d1R c1
+  bodyL = mulS10 d2L c2 + mulS10 d3L c3
+  bodyR = mulS10 d2R c2 + mulS10 d3R c3
+
+cabIrFrame :: Frame -> Frame
+cabIrFrame f =
   f{fWetL = if on then wetL else fL f, fWetR = if on then wetR else fR f}
  where
   on = flag7 (fGate f)
-  -- Fixed short guitar-cabinet IR approximation: direct sound plus three decaying taps.
-  wetL = satShift8 (mulU8 (fL f) 112 + mulU8 d1L 80 + mulU8 d2L 48 + mulU8 d3L 24)
-  wetR = satShift8 (mulU8 (fR f) 112 + mulU8 d1R 80 + mulU8 d2R 48 + mulU8 d3R 24)
+  wetL = satShift8 (fAccL f + fAcc2L f + fAcc3L f)
+  wetR = satShift8 (fAccR f + fAcc2R f + fAcc3R f)
 
 cabLevelMixFrame :: Frame -> Frame
 cabLevelMixFrame f =
@@ -933,6 +1059,8 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampPreLpPrevL = register 0 (frameOr fWetL <$> ampPreLpPrevL <*> ampPreLowpassPipe)
   ampPreLpPrevR = register 0 (frameOr fWetR <$> ampPreLpPrevR <*> ampPreLowpassPipe)
   ampPreLowpassPipe = register Nothing (mapPipe <$> (ampPreLowpassFrame <$> ampPreLpPrevL <*> ampPreLpPrevR) <*> ampShapePipe)
+  ampStage2MulPipe = register Nothing (mapPipe ampSecondStageMultiplyFrame <$> ampPreLowpassPipe)
+  ampStage2Pipe = register Nothing (mapPipe ampSecondStageFrame <$> ampStage2MulPipe)
 
   ampToneLowPrevL = register 0 (frameOr fEqLowL <$> ampToneLowPrevL <*> ampToneFilterPipe)
   ampToneLowPrevR = register 0 (frameOr fEqLowR <$> ampToneLowPrevR <*> ampToneFilterPipe)
@@ -940,7 +1068,7 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampToneHighPrevR = register 0 (frameOr fEqHighLpR <$> ampToneHighPrevR <*> ampToneFilterPipe)
   ampToneFilterPipe =
     register Nothing $
-      mapPipe <$> (ampToneFilterFrame <$> ampToneLowPrevL <*> ampToneLowPrevR <*> ampToneHighPrevL <*> ampToneHighPrevR) <*> ampPreLowpassPipe
+      mapPipe <$> (ampToneFilterFrame <$> ampToneLowPrevL <*> ampToneLowPrevR <*> ampToneHighPrevL <*> ampToneHighPrevR) <*> ampStage2Pipe
   ampToneBandPipe = register Nothing (mapPipe ampToneBandFrame <$> ampToneFilterPipe)
   ampToneProductsPipe = register Nothing (mapPipe ampToneProductsFrame <$> ampToneBandPipe)
   ampToneMixPipe = register Nothing (mapPipe ampToneMixFrame <$> ampToneProductsPipe)
@@ -953,7 +1081,8 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampResPresenceFilterPipe =
     register Nothing $
       mapPipe <$> (ampResPresenceFilterFrame <$> ampResPrevL <*> ampResPrevR <*> ampPresencePrevL <*> ampPresencePrevR) <*> ampPowerPipe
-  ampResPresencePipe = register Nothing (mapPipe ampResPresenceMixFrame <$> ampResPresenceFilterPipe)
+  ampResPresenceProductsPipe = register Nothing (mapPipe ampResPresenceProductsFrame <$> ampResPresenceFilterPipe)
+  ampResPresencePipe = register Nothing (mapPipe ampResPresenceMixFrame <$> ampResPresenceProductsPipe)
   ampMasterPipe = register Nothing (mapPipe ampMasterFrame <$> ampResPresencePipe)
 
   cabD1L = register 0 (delayNext <$> cabD1L <*> (frameOr fL 0 <$> ampMasterPipe) <*> ampMasterPipe)
@@ -962,9 +1091,10 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   cabD2R = register 0 (delayNext <$> cabD2R <*> cabD1R <*> ampMasterPipe)
   cabD3L = register 0 (delayNext <$> cabD3L <*> cabD2L <*> ampMasterPipe)
   cabD3R = register 0 (delayNext <$> cabD3R <*> cabD2R <*> ampMasterPipe)
-  cabIrPipe =
+  cabProductsPipe =
     register Nothing $
-      mapPipe <$> (cabIrFrame <$> cabD1L <*> cabD2L <*> cabD3L <*> cabD1R <*> cabD2R <*> cabD3R) <*> ampMasterPipe
+      mapPipe <$> (cabProductsFrame <$> cabD1L <*> cabD2L <*> cabD3L <*> cabD1R <*> cabD2R <*> cabD3R) <*> ampMasterPipe
+  cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabProductsPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
 
   eqLowPrevL = register 0 (frameOr fEqLowL <$> eqLowPrevL <*> eqFilterPipe)

@@ -6,6 +6,21 @@ namespace {
 constexpr float kDenormalLimit = 1.0e-20f;
 constexpr float kInternalLimit = 16.0f;
 constexpr float kSilenceThreshold = 1.0e-5f;
+
+constexpr float kOpenBack1x12[] = {
+    0.72f, 0.42f, 0.20f, 0.08f, -0.05f, 0.04f, -0.025f, 0.012f,
+    0.006f, -0.004f, 0.003f, -0.002f,
+};
+
+constexpr float kBritish2x12[] = {
+    0.64f, 0.52f, 0.32f, 0.16f, 0.06f, -0.10f, 0.055f, -0.03f,
+    0.016f, -0.010f, 0.006f, -0.003f,
+};
+
+constexpr float kClosedBack4x12[] = {
+    0.54f, 0.58f, 0.40f, 0.25f, 0.11f, -0.14f, 0.075f, -0.05f,
+    0.028f, -0.016f, 0.009f, -0.004f,
+};
 } // namespace
 
 CabIRSimulator::CabIRSimulator()
@@ -23,6 +38,7 @@ void CabIRSimulator::prepare(float sampleRate)
 
     smoothedMix_.prepare(sampleRate_, 0.010f);
     smoothedLevel_.prepare(sampleRate_, 0.010f);
+    smoothedAir_.prepare(sampleRate_, 0.010f);
     updateTargets(true);
     reset();
 }
@@ -35,6 +51,7 @@ void CabIRSimulator::reset()
 
     smoothedMix_.setImmediate(smoothedMix_.target);
     smoothedLevel_.setImmediate(smoothedLevel_.target);
+    smoothedAir_.setImmediate(smoothedAir_.target);
 }
 
 bool CabIRSimulator::setIR(const float* data, int length)
@@ -80,6 +97,20 @@ bool CabIRSimulator::setIR(const float* data, int length)
     return true;
 }
 
+bool CabIRSimulator::setPreset(Preset preset)
+{
+    switch (preset) {
+    case Preset::OpenBack1x12:
+        return setIR(kOpenBack1x12, static_cast<int>(sizeof(kOpenBack1x12) / sizeof(kOpenBack1x12[0])));
+    case Preset::British2x12:
+        return setIR(kBritish2x12, static_cast<int>(sizeof(kBritish2x12) / sizeof(kBritish2x12[0])));
+    case Preset::ClosedBack4x12:
+        return setIR(kClosedBack4x12, static_cast<int>(sizeof(kClosedBack4x12) / sizeof(kClosedBack4x12[0])));
+    }
+
+    return false;
+}
+
 void CabIRSimulator::clearIR()
 {
     ir_.fill(0.0f);
@@ -100,6 +131,12 @@ void CabIRSimulator::setLevel(float value)
     updateTargets(false);
 }
 
+void CabIRSimulator::setAir(float value)
+{
+    air_ = clamp(value, 0.0f, 1.0f);
+    updateTargets(false);
+}
+
 void CabIRSimulator::setEnabled(bool enabled)
 {
     enabled_ = enabled;
@@ -117,7 +154,7 @@ float CabIRSimulator::processSample(float input, std::size_t channel)
         return clamp(dry, -1.0f, 1.0f);
     }
 
-    return processChannel(dry, channel, smoothedMix_.next(), smoothedLevel_.next());
+    return processChannel(dry, channel, smoothedMix_.next(), smoothedLevel_.next(), smoothedAir_.next());
 }
 
 void CabIRSimulator::processStereo(float& left, float& right)
@@ -132,8 +169,9 @@ void CabIRSimulator::processStereo(float& left, float& right)
 
     const float mix = smoothedMix_.next();
     const float level = smoothedLevel_.next();
-    left = processChannel(dryLeft, 0, mix, level);
-    right = processChannel(dryRight, 1, mix, level);
+    const float air = smoothedAir_.next();
+    left = processChannel(dryLeft, 0, mix, level, air);
+    right = processChannel(dryRight, 1, mix, level, air);
 }
 
 void CabIRSimulator::processBlock(const float* input, float* output, std::size_t sampleCount)
@@ -199,6 +237,7 @@ float CabIRSimulator::SmoothValue::next()
 void CabIRSimulator::ChannelState::reset()
 {
     delay.fill(0.0f);
+    toneLowpass = 0.0f;
     writeIndex = 0;
 }
 
@@ -243,7 +282,7 @@ float CabIRSimulator::safetyLimit(float value)
     return sign * limited;
 }
 
-float CabIRSimulator::processChannel(float input, std::size_t channel, float mix, float level)
+float CabIRSimulator::processChannel(float input, std::size_t channel, float mix, float level, float air)
 {
     ChannelState& state = channels_[channel % kChannelCount];
     state.delay[static_cast<std::size_t>(state.writeIndex)] = input;
@@ -264,6 +303,12 @@ float CabIRSimulator::processChannel(float input, std::size_t channel, float mix
     }
 
     wet = safetyLimit(wet * level);
+    if (air < 0.999f) {
+        const float coefficient = 0.08f + 0.22f * air;
+        state.toneLowpass = removeDenormal(state.toneLowpass + coefficient * (wet - state.toneLowpass));
+        const float high = wet - state.toneLowpass;
+        wet = safetyLimit(state.toneLowpass + high * (0.28f + 0.72f * air));
+    }
     const float mixed = input + (wet - input) * mix;
     return removeDenormal(safetyLimit(mixed));
 }
@@ -273,8 +318,10 @@ void CabIRSimulator::updateTargets(bool immediate)
     if (immediate) {
         smoothedMix_.setImmediate(mix_);
         smoothedLevel_.setImmediate(level_);
+        smoothedAir_.setImmediate(air_);
     } else {
         smoothedMix_.setTarget(mix_);
         smoothedLevel_.setTarget(level_);
+        smoothedAir_.setTarget(air_);
     }
 }

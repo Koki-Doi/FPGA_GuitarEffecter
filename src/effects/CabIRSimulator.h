@@ -8,16 +8,24 @@ class CabIRSimulator {
 public:
     static constexpr int MaxIRLength = 512;
 
+    enum class Preset {
+        OpenBack1x12 = 0,
+        British2x12 = 1,
+        ClosedBack4x12 = 2,
+    };
+
     CabIRSimulator();
 
     void prepare(float sampleRate);
     void reset();
 
     bool setIR(const float* data, int length);
+    bool setPreset(Preset preset);
     void clearIR();
 
     void setMix(float value);
     void setLevel(float value);
+    void setAir(float value);
     void setEnabled(bool enabled);
 
     float processSample(float input);
@@ -46,6 +54,7 @@ private:
 
     struct ChannelState {
         std::array<float, MaxIRLength> delay {};
+        float toneLowpass = 0.0f;
         int writeIndex = 0;
 
         void reset();
@@ -56,7 +65,7 @@ private:
     static float removeDenormal(float value);
     static float safetyLimit(float value);
 
-    float processChannel(float input, std::size_t channel, float mix, float level);
+    float processChannel(float input, std::size_t channel, float mix, float level, float air);
     void updateTargets(bool immediate);
 
     float sampleRate_ = 48000.0f;
@@ -65,9 +74,11 @@ private:
     int irLength_ = 0;
     float mix_ = 1.0f;
     float level_ = 1.0f;
+    float air_ = 1.0f;
 
     SmoothValue smoothedMix_;
     SmoothValue smoothedLevel_;
+    SmoothValue smoothedAir_;
     std::array<float, MaxIRLength> ir_ {};
     std::array<ChannelState, kChannelCount> channels_;
 };

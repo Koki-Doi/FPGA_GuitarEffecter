@@ -80,6 +80,7 @@ private:
     static float removeDenormal(float value);
     static float cubicSoftClip(float value, float threshold);
     static float asymmetricWaveshape(float value, float character);
+    static float secondPreampStage(float value, float inputGain, float character);
     static float powerAmpSaturate(float value, float character);
     static float softLimit(float value);
 

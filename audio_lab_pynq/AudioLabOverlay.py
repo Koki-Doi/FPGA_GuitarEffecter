@@ -133,6 +133,8 @@ class AudioLabOverlay(Overlay):
         cab_on=False,
         cab_mix=100,
         cab_level=100,
+        cab_model=1,
+        cab_air=50,
         eq_on=False,
         eq_low=100,
         eq_mid=100,
@@ -193,8 +195,8 @@ class AudioLabOverlay(Overlay):
         cab_word = cls._pack4(
             cls._percent_to_u8(cab_mix, 255),
             cls._level_to_q7(cls._clamp_range(cab_level, 0, 150)),
-            0,
-            0,
+            cls._clamp_range(cab_model, 0, 2) * 85,
+            cls._percent_to_u8(cab_air, 255),
         )
         reverb_word = cls._pack3(
             cls._percent_to_u8(reverb_decay, 220),

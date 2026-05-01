@@ -334,6 +334,13 @@ float SimpleAmpSimulator::asymmetricWaveshape(float value, float character)
     return -clipped * (0.90f + 0.06f * grit);
 }
 
+float SimpleAmpSimulator::secondPreampStage(float value, float inputGain, float character)
+{
+    const float gain = 1.05f + 1.35f * clamp(inputGain, 0.0f, 1.0f) + 0.35f * clamp(character, 0.0f, 1.0f);
+    const float biased = value * gain + 0.045f * character * value * value;
+    return cubicSoftClip(biased, 1.08f) * 0.86f;
+}
+
 float SimpleAmpSimulator::powerAmpSaturate(float value, float character)
 {
     const float drive = 1.0f + 0.35f * clamp(character, 0.0f, 1.0f);
@@ -381,6 +388,7 @@ float SimpleAmpSimulator::processChannel(float input,
     wet = sanitize(wet * gain);
     wet = asymmetricWaveshape(wet, character);
     wet = state.preampLowpass.process(wet);
+    wet = secondPreampStage(wet, inputGain, character);
     wet = toneStack(state, wet, bass, middle, treble);
     wet = powerAmpSaturate(wet, character);
 
@@ -403,11 +411,11 @@ float SimpleAmpSimulator::toneStack(ChannelState& state, float input, float bass
     const float mid = highLowpass - low;
     const float high = input - highLowpass;
 
-    const float bassGain = 1.0f + (bass - 0.5f) * 1.25f;
-    const float midGain = 1.0f + (middle - 0.5f) * 1.10f;
-    const float trebleGain = 1.0f + (treble - 0.5f) * 1.30f;
+    const float bassGain = 0.95f + (bass - 0.5f) * 1.35f;
+    const float midGain = 0.90f + (middle - 0.5f) * 1.25f;
+    const float trebleGain = 1.0f + (treble - 0.5f) * 1.35f;
 
-    return sanitize((low * bassGain + mid * midGain + high * trebleGain) * 0.82f);
+    return sanitize((low * bassGain + mid * midGain + high * trebleGain) * 0.86f);
 }
 
 void SimpleAmpSimulator::updateTargets(bool immediate)

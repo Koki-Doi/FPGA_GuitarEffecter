@@ -130,6 +130,8 @@ def test_amp_cab_control_words():
         cab_on=True,
         cab_mix=25,
         cab_level=150,
+        cab_model=2,
+        cab_air=80,
     )
 
     assert words["gate"] & 0x40
@@ -144,6 +146,8 @@ def test_amp_cab_control_words():
     assert (words["amp_tone"] >> 24) & 0xFF == 153
     assert words["cab"] & 0xFF == 64
     assert (words["cab"] >> 8) & 0xFF == 192
+    assert (words["cab"] >> 16) & 0xFF == 170
+    assert (words["cab"] >> 24) & 0xFF == 204
 
 
 def test_set_guitar_effects_writes_amp_cab_gpio():

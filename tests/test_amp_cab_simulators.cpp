@@ -209,6 +209,32 @@ void runCabLongIrAndMixTest()
     assert(std::fabs(wet - 0.25f) < 1.0e-6f);
 }
 
+void runCabPresetAndAirTest()
+{
+    for (CabIRSimulator::Preset preset : {
+             CabIRSimulator::Preset::OpenBack1x12,
+             CabIRSimulator::Preset::British2x12,
+             CabIRSimulator::Preset::ClosedBack4x12,
+         }) {
+        CabIRSimulator cab;
+        cab.prepare(kSampleRate);
+        assert(cab.setPreset(preset));
+        cab.setEnabled(true);
+        cab.setMix(1.0f);
+        cab.setLevel(0.9f);
+        cab.setAir(0.45f);
+        cab.reset();
+
+        float peak = 0.0f;
+        for (std::size_t i = 0; i < kSampleCount; ++i) {
+            const float output = cab.processSample(sineSample(i, 1000.0f));
+            assertFinite(output);
+            peak = std::fmax(peak, std::fabs(output));
+        }
+        assert(peak <= 1.001f);
+    }
+}
+
 void runIntegratedAmpCabTest()
 {
     const float ir[] = { 0.8f, 0.4f, 0.2f, 0.1f };
@@ -359,6 +385,7 @@ int main()
     runCabImpulseTest();
     runCabConvolutionTest();
     runCabLongIrAndMixTest();
+    runCabPresetAndAirTest();
     runIntegratedAmpCabTest();
     runAllocationTest();
     printDemoPeaks();

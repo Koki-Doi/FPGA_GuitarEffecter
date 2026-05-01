@@ -6,8 +6,8 @@ package clash_lowpass_fir_types is
 
 
   subtype index_1024 is unsigned(9 downto 0);
-  type array_of_signed_24 is array (integer range <>) of signed(23 downto 0);
 
+  type array_of_signed_24 is array (integer range <>) of signed(23 downto 0);
 
   type Tuple4 is record
     Tuple4_sel0_std_logic_vector : std_logic_vector(47 downto 0);
