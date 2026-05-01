@@ -20,7 +20,7 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 `GuitarEffectsChain.ipynb` では、以下の順番でエフェクトを処理します。
 
 ```text
-Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> EQ -> Reverb
+Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> Amp Simulator -> Cab IR -> EQ -> Reverb
 ```
 
 各エフェクトは個別に ON/OFF できます。
@@ -31,6 +31,8 @@ Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> EQ -> Reverb
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
 | Distortion | `TONE`, `LEVEL`, `DISTORTION` |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
+| Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `CHARACTER` |
+| Cab IR | `MIX`, `LEVEL` |
 | EQ | `LOW`, `MID`, `HIGH` |
 | Reverb | `Decay`, `tone`, `mix` |
 
@@ -39,7 +41,15 @@ Noise Gate はエンベロープ検出とフェード開閉を使い、しきい
 
 ## C++ DSP プロトタイプ
 
-`src/effects/RatStyleDistortion.{h,cpp}` に、後からリアルタイム処理へ組み込むための RAT-style Distortion を独立クラスとして追加しています。Notebook/FPGA 側では同じ考え方の軽量固定小数点版を `axi_gpio_delay` から制御する `RAT Distortion` として追加しています。
+`src/effects` には、後からリアルタイム処理へ組み込むための C++ DSP プロトタイプを独立クラスとして追加しています。
+
+| クラス | 内容 |
+| --- | --- |
+| `RatStyleDistortion` | RAT-style Distortion の浮動小数点プロトタイプ |
+| `SimpleAmpSimulator` | Pre Gain、非対称 waveshaper、簡易 tone stack、Presence、Resonance、Master を持つ軽量アンプシミュレーター |
+| `CabIRSimulator` | 最大512 samplesの短いIRをリングバッファで直接畳み込みするキャビネットIRシミュレーター |
+
+Notebook/FPGA 側では、これらの考え方をもとにした軽量固定小数点版を Clash で実装しています。RAT は既存互換名の `axi_gpio_delay` から制御し、Amp/Cab は `axi_gpio_amp`、`axi_gpio_amp_tone`、`axi_gpio_cab` から制御します。
 
 信号処理は `Input HPF -> Pre Gain -> OpAmp bandwidth LPF -> hard clipping -> post LPF -> RAT-style FILTER LPF -> Level -> safety limiter` の軽量構成です。RAT の完全な回路シミュレーションではなく、PYNQ/Zynq-7000 で扱いやすいリアルタイム DSP 実装を優先しています。
 
@@ -51,6 +61,24 @@ Noise Gate はエンベロープ検出とフェード開閉を使い、しきい
 | `mix` | `0.0` - `1.0` | Dry/Wet |
 | `enabled` | `true` / `false` | バイパス制御。初期値は `false` |
 
+`SimpleAmpSimulator` は `Input HPF -> Preamp Gain -> Asymmetric Waveshaper -> Preamp LPF -> 3-band EQ -> Power Amp Saturation -> Resonance -> Presence -> Master -> safety limiter` の構成です。
+
+`CabIRSimulator` は `Input -> IR Convolution -> Level -> Mix -> safety limiter` の構成です。IR は `setIR(const float* data, int length)` で設定し、先頭のほぼ無音部分をトリムします。IR未設定時、またはOFF時は安全にdryを返します。
+
+### C++ エフェクトをそのまま移植できるか
+
+C++で書いたエフェクトを、現在のFPGA音声チェーンへそのままコピーして動かすことはできません。このリポジトリのリアルタイム音声処理は `hw/ip/clash/src/LowPassFir.hs` の Clash/Haskell 記述からVHDLを生成し、PL側でサンプル単位に処理しています。一方、`src/effects/*.cpp` はCPU側で動く浮動小数点の参照実装です。
+
+そのため移植は「C++コードを直接ビルドする」形ではなく、次のような作業になります。
+
+1. C++版のDSP構成、パラメータ範囲、安全処理を確認する
+2. PLで扱える固定小数点、ビット幅、パイプライン段数に置き換える
+3. `AudioLabOverlay.py` と block design にAXI GPIO制御を追加する
+4. ClashでVHDLを再生成し、Vivadoでbit/hwhを作り直す
+5. notebookから制御できるようにUIとAPIを更新する
+
+今回の Amp/Cab もこの方針で、C++版は読みやすいDSP参照実装、FPGA版はPYNQ-Z2で扱いやすい軽量固定小数点近似として実装しています。C++をそのままARM側で実行する構成も理論上は可能ですが、現在のline-inリアルタイム経路はPL側にあるため、既存構造を保つならClashへの再実装が必要です。
+
 ローカルの単体テストは次で実行できます。
 
 ```sh
@@ -61,8 +89,8 @@ make tests
 
 | Notebook | 内容 |
 | --- | --- |
-| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック |
-| `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / EQ / Reverb を操作するメインノートブック |
+| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック |
+| `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb を操作するメインノートブック |
 | `LineInPassthroughOneCell.ipynb` | 1セルで Line-in をそのまま出力する確認用 |
 | `LineInReverbOneCell.ipynb` | 1セルで軽いリバーブを有効化する確認用 |
 | `PassthroughDebug.ipynb` | 入力、出力、コーデック、AXI Stream Switch の診断用 |
@@ -105,6 +133,18 @@ ol.set_guitar_effects(
     rat_level=95,
     rat_drive=65,
     rat_mix=100,
+    amp_on=True,
+    amp_input_gain=35,
+    amp_bass=50,
+    amp_middle=50,
+    amp_treble=50,
+    amp_presence=45,
+    amp_resonance=35,
+    amp_master=80,
+    amp_character=35,
+    cab_on=True,
+    cab_mix=100,
+    cab_level=100,
     eq_on=True,
     eq_low=100,
     eq_mid=100,
@@ -124,6 +164,8 @@ ol.set_guitar_effects(
     overdrive_on=False,
     distortion_on=False,
     rat_on=False,
+    amp_on=False,
+    cab_on=False,
     eq_on=False,
     reverb_on=False,
 )
@@ -161,6 +203,9 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 | `axi_gpio_distortion` | `0x43C60000` | Distortion |
 | `axi_gpio_eq` | `0x43C70000` | EQ |
 | `axi_gpio_delay` | `0x43C80000` | RAT Distortion。既存ポート名の互換性のため `delay` 名を維持 |
+| `axi_gpio_amp` | `0x43C90000` | Amp Simulator の gain/master/presence/resonance |
+| `axi_gpio_amp_tone` | `0x43CA0000` | Amp Simulator の bass/middle/treble/character |
+| `axi_gpio_cab` | `0x43CB0000` | Cab IR の mix/level |
 
 ## ビルド
 
@@ -239,6 +284,9 @@ words = ol.set_guitar_effects(
     noise_gate_on=True,
     overdrive_on=True,
     distortion_on=True,
+    rat_on=True,
+    amp_on=True,
+    cab_on=True,
     eq_on=True,
     reverb_on=True,
 )
@@ -267,8 +315,9 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に timing violation が残ります。現在の主な違反は既存の `i2s_to_stream` / `bclk` 周辺のクロック制約に集中しており、今回追加したエフェクト制御GPIOやルート制御は PYNQ 上でロードとレジスタ書き込みを確認済みです。
+- Vivado 実装時に timing violation が残ります。現在のbitstreamは生成できていますが、直近の routed timing summary では `WNS=-12.231ns`、`TNS=-6173.318ns` です。Amp/Cab を含むエフェクト段を増やしたため、次の改善では Clash 側のパイプライン分割と演算段の整理が必要です。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
+- PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR も現時点では短い固定タップ近似で、WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
 - 音量を上げすぎると大音量になります。Notebook の初期値から少しずつ調整してください。
 
