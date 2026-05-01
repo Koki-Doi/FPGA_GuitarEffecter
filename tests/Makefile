@@ -2,16 +2,22 @@ CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -pedantic -I..
 PYTHON ?= python3
 
-TARGET := test_rat_style_distortion
-SOURCES := test_rat_style_distortion.cpp ../src/effects/RatStyleDistortion.cpp
+TARGETS := test_rat_style_distortion test_amp_cab_simulators
 
-all: $(TARGET)
+RAT_SOURCES := test_rat_style_distortion.cpp ../src/effects/RatStyleDistortion.cpp
+AMP_CAB_SOURCES := test_amp_cab_simulators.cpp ../src/effects/SimpleAmpSimulator.cpp ../src/effects/CabIRSimulator.cpp
 
-$(TARGET): $(SOURCES) ../src/effects/RatStyleDistortion.h
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(TARGET)
+all: $(TARGETS)
 
-run: $(TARGET)
-	./$(TARGET)
+test_rat_style_distortion: $(RAT_SOURCES) ../src/effects/RatStyleDistortion.h
+	$(CXX) $(CXXFLAGS) $(RAT_SOURCES) -o $@
+
+test_amp_cab_simulators: $(AMP_CAB_SOURCES) ../src/effects/SimpleAmpSimulator.h ../src/effects/CabIRSimulator.h
+	$(CXX) $(CXXFLAGS) $(AMP_CAB_SOURCES) -o $@
+
+run: $(TARGETS)
+	./test_rat_style_distortion
+	./test_amp_cab_simulators
 
 python:
 	$(PYTHON) test_overlay_controls.py
@@ -19,6 +25,6 @@ python:
 check: run python
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGETS)
 
 .PHONY: all run python check clean

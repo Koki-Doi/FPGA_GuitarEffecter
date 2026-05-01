@@ -121,6 +121,18 @@ class AudioLabOverlay(Overlay):
         rat_level=100,
         rat_drive=55,
         rat_mix=100,
+        amp_on=False,
+        amp_input_gain=35,
+        amp_bass=50,
+        amp_middle=50,
+        amp_treble=50,
+        amp_presence=45,
+        amp_resonance=35,
+        amp_master=80,
+        amp_character=35,
+        cab_on=False,
+        cab_mix=100,
+        cab_level=100,
         eq_on=False,
         eq_low=100,
         eq_mid=100,
@@ -138,6 +150,8 @@ class AudioLabOverlay(Overlay):
         flags |= 0x08 if eq_on else 0
         flags |= 0x10 if rat_on else 0
         flags |= 0x20 if reverb_on else 0
+        flags |= 0x40 if amp_on else 0
+        flags |= 0x80 if cab_on else 0
 
         gate_word = (
             flags |
@@ -164,6 +178,24 @@ class AudioLabOverlay(Overlay):
             cls._percent_to_u8(rat_drive, 255),
             cls._percent_to_u8(rat_mix, 255),
         )
+        amp_word = cls._pack4(
+            cls._percent_to_u8(amp_input_gain, 255),
+            cls._level_to_q7(cls._clamp_range(amp_master, 0, 150)),
+            cls._percent_to_u8(amp_presence, 255),
+            cls._percent_to_u8(amp_resonance, 255),
+        )
+        amp_tone_word = cls._pack4(
+            cls._percent_to_u8(amp_bass, 255),
+            cls._percent_to_u8(amp_middle, 255),
+            cls._percent_to_u8(amp_treble, 255),
+            cls._percent_to_u8(amp_character, 255),
+        )
+        cab_word = cls._pack4(
+            cls._percent_to_u8(cab_mix, 255),
+            cls._level_to_q7(cls._clamp_range(cab_level, 0, 150)),
+            0,
+            0,
+        )
         reverb_word = cls._pack3(
             cls._percent_to_u8(reverb_decay, 220),
             cls._percent_to_u8(reverb_tone, 255),
@@ -177,6 +209,9 @@ class AudioLabOverlay(Overlay):
             'eq': eq_word,
             'rat': rat_word,
             'delay': rat_word,
+            'amp': amp_word,
+            'amp_tone': amp_tone_word,
+            'cab': cab_word,
             'reverb': reverb_word,
         }
 
@@ -201,9 +236,21 @@ class AudioLabOverlay(Overlay):
             self._write_gpio(self.axi_gpio_delay, words['rat'])
         elif words['gate'] & 0x10:
             raise RuntimeError('axi_gpio_delay is required for RAT-style distortion control')
+        if hasattr(self, 'axi_gpio_amp'):
+            self._write_gpio(self.axi_gpio_amp, words['amp'])
+        elif words['gate'] & 0x40:
+            raise RuntimeError('axi_gpio_amp is required for amp simulator control')
+        if hasattr(self, 'axi_gpio_amp_tone'):
+            self._write_gpio(self.axi_gpio_amp_tone, words['amp_tone'])
+        elif words['gate'] & 0x40:
+            raise RuntimeError('axi_gpio_amp_tone is required for amp simulator tone control')
+        if hasattr(self, 'axi_gpio_cab'):
+            self._write_gpio(self.axi_gpio_cab, words['cab'])
+        elif words['gate'] & 0x80:
+            raise RuntimeError('axi_gpio_cab is required for cab IR simulator control')
         self._write_gpio(self.axi_gpio_reverb, words['reverb'])
 
-        if words['gate'] & 0x3F:
+        if words['gate'] & 0xFF:
             self.route(XbarSource.line_in, XbarEffect.guitar_chain, sink)
         else:
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)
@@ -215,6 +262,8 @@ class AudioLabOverlay(Overlay):
                 noise_gate_on=False,
                 overdrive_on=False,
                 distortion_on=False,
+                amp_on=False,
+                cab_on=False,
                 eq_on=False,
                 reverb_on=enabled,
                 reverb_decay=reverb,

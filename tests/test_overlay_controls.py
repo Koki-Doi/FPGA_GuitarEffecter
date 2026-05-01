@@ -67,6 +67,9 @@ def make_overlay(include_rat_gpio=True):
     overlay.axi_gpio_reverb = FakeGpio()
     if include_rat_gpio:
         overlay.axi_gpio_delay = FakeGpio()
+    overlay.axi_gpio_amp = FakeGpio()
+    overlay.axi_gpio_amp_tone = FakeGpio()
+    overlay.axi_gpio_cab = FakeGpio()
 
     routes = []
 
@@ -113,8 +116,50 @@ def test_rat_requires_delay_gpio_when_enabled():
         raise AssertionError("rat_on=True should require axi_gpio_delay")
 
 
+def test_amp_cab_control_words():
+    words = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True,
+        amp_input_gain=100,
+        amp_bass=0,
+        amp_middle=50,
+        amp_treble=100,
+        amp_presence=25,
+        amp_resonance=75,
+        amp_master=150,
+        amp_character=60,
+        cab_on=True,
+        cab_mix=25,
+        cab_level=150,
+    )
+
+    assert words["gate"] & 0x40
+    assert words["gate"] & 0x80
+    assert words["amp"] & 0xFF == 255
+    assert (words["amp"] >> 8) & 0xFF == 192
+    assert (words["amp"] >> 16) & 0xFF == 64
+    assert (words["amp"] >> 24) & 0xFF == 191
+    assert words["amp_tone"] & 0xFF == 0
+    assert (words["amp_tone"] >> 8) & 0xFF == 128
+    assert (words["amp_tone"] >> 16) & 0xFF == 255
+    assert (words["amp_tone"] >> 24) & 0xFF == 153
+    assert words["cab"] & 0xFF == 64
+    assert (words["cab"] >> 8) & 0xFF == 192
+
+
+def test_set_guitar_effects_writes_amp_cab_gpio():
+    overlay = make_overlay()
+    words = overlay.set_guitar_effects(amp_on=True, cab_on=True, amp_input_gain=60, cab_mix=80)
+
+    assert overlay.axi_gpio_amp.writes[-1] == (0x00, words["amp"])
+    assert overlay.axi_gpio_amp_tone.writes[-1] == (0x00, words["amp_tone"])
+    assert overlay.axi_gpio_cab.writes[-1] == (0x00, words["cab"])
+    assert overlay.routes[-1] == (XbarEffect.guitar_chain, XbarSink.headphone)
+
+
 if __name__ == "__main__":
     test_rat_control_word()
     test_set_guitar_effects_writes_rat_gpio()
     test_rat_requires_delay_gpio_when_enabled()
-    print("AudioLabOverlay RAT control tests passed")
+    test_amp_cab_control_words()
+    test_set_guitar_effects_writes_amp_cab_gpio()
+    print("AudioLabOverlay guitar effect control tests passed")

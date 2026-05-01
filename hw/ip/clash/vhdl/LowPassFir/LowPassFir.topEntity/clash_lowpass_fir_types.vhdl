@@ -40,30 +40,33 @@ package clash_lowpass_fir_types is
     Frame_sel5_fDist : std_logic_vector(31 downto 0);
     Frame_sel6_fEq : std_logic_vector(31 downto 0);
     Frame_sel7_fRat : std_logic_vector(31 downto 0);
-    Frame_sel8_fReverb : std_logic_vector(31 downto 0);
-    Frame_sel9_fAddr : index_1024;
-    Frame_sel10_fDryL : signed(23 downto 0);
-    Frame_sel11_fDryR : signed(23 downto 0);
-    Frame_sel12_fWetL : signed(23 downto 0);
-    Frame_sel13_fWetR : signed(23 downto 0);
-    Frame_sel14_fFbL : signed(23 downto 0);
-    Frame_sel15_fFbR : signed(23 downto 0);
-    Frame_sel16_fEqLowL : signed(23 downto 0);
-    Frame_sel17_fEqLowR : signed(23 downto 0);
-    Frame_sel18_fEqMidL : signed(23 downto 0);
-    Frame_sel19_fEqMidR : signed(23 downto 0);
-    Frame_sel20_fEqHighL : signed(23 downto 0);
-    Frame_sel21_fEqHighR : signed(23 downto 0);
-    Frame_sel22_fEqHighLpL : signed(23 downto 0);
-    Frame_sel23_fEqHighLpR : signed(23 downto 0);
-    Frame_sel24_fAccL : signed(47 downto 0);
-    Frame_sel25_fAccR : signed(47 downto 0);
-    Frame_sel26_fAcc2L : signed(47 downto 0);
-    Frame_sel27_fAcc2R : signed(47 downto 0);
-    Frame_sel28_fAcc3L : signed(47 downto 0);
-    Frame_sel29_fAcc3R : signed(47 downto 0);
+    Frame_sel8_fAmp : std_logic_vector(31 downto 0);
+    Frame_sel9_fAmpTone : std_logic_vector(31 downto 0);
+    Frame_sel10_fCab : std_logic_vector(31 downto 0);
+    Frame_sel11_fReverb : std_logic_vector(31 downto 0);
+    Frame_sel12_fAddr : index_1024;
+    Frame_sel13_fDryL : signed(23 downto 0);
+    Frame_sel14_fDryR : signed(23 downto 0);
+    Frame_sel15_fWetL : signed(23 downto 0);
+    Frame_sel16_fWetR : signed(23 downto 0);
+    Frame_sel17_fFbL : signed(23 downto 0);
+    Frame_sel18_fFbR : signed(23 downto 0);
+    Frame_sel19_fEqLowL : signed(23 downto 0);
+    Frame_sel20_fEqLowR : signed(23 downto 0);
+    Frame_sel21_fEqMidL : signed(23 downto 0);
+    Frame_sel22_fEqMidR : signed(23 downto 0);
+    Frame_sel23_fEqHighL : signed(23 downto 0);
+    Frame_sel24_fEqHighR : signed(23 downto 0);
+    Frame_sel25_fEqHighLpL : signed(23 downto 0);
+    Frame_sel26_fEqHighLpR : signed(23 downto 0);
+    Frame_sel27_fAccL : signed(47 downto 0);
+    Frame_sel28_fAccR : signed(47 downto 0);
+    Frame_sel29_fAcc2L : signed(47 downto 0);
+    Frame_sel30_fAcc2R : signed(47 downto 0);
+    Frame_sel31_fAcc3L : signed(47 downto 0);
+    Frame_sel32_fAcc3R : signed(47 downto 0);
   end record;
-  subtype Maybe is std_logic_vector(875 downto 0);
+  subtype Maybe is std_logic_vector(971 downto 0);
   function toSLV (s : in signed) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return signed;
   function toSLV (slv : in std_logic_vector) return std_logic_vector;
@@ -214,12 +217,12 @@ package body clash_lowpass_fir_types is
   end;
   function toSLV (p : Frame) return std_logic_vector is
   begin
-    return (toSLV(p.Frame_sel0_fL) & toSLV(p.Frame_sel1_fR) & toSLV(p.Frame_sel2_fLast) & toSLV(p.Frame_sel3_fGate) & toSLV(p.Frame_sel4_fOd) & toSLV(p.Frame_sel5_fDist) & toSLV(p.Frame_sel6_fEq) & toSLV(p.Frame_sel7_fRat) & toSLV(p.Frame_sel8_fReverb) & toSLV(p.Frame_sel9_fAddr) & toSLV(p.Frame_sel10_fDryL) & toSLV(p.Frame_sel11_fDryR) & toSLV(p.Frame_sel12_fWetL) & toSLV(p.Frame_sel13_fWetR) & toSLV(p.Frame_sel14_fFbL) & toSLV(p.Frame_sel15_fFbR) & toSLV(p.Frame_sel16_fEqLowL) & toSLV(p.Frame_sel17_fEqLowR) & toSLV(p.Frame_sel18_fEqMidL) & toSLV(p.Frame_sel19_fEqMidR) & toSLV(p.Frame_sel20_fEqHighL) & toSLV(p.Frame_sel21_fEqHighR) & toSLV(p.Frame_sel22_fEqHighLpL) & toSLV(p.Frame_sel23_fEqHighLpR) & toSLV(p.Frame_sel24_fAccL) & toSLV(p.Frame_sel25_fAccR) & toSLV(p.Frame_sel26_fAcc2L) & toSLV(p.Frame_sel27_fAcc2R) & toSLV(p.Frame_sel28_fAcc3L) & toSLV(p.Frame_sel29_fAcc3R));
+    return (toSLV(p.Frame_sel0_fL) & toSLV(p.Frame_sel1_fR) & toSLV(p.Frame_sel2_fLast) & toSLV(p.Frame_sel3_fGate) & toSLV(p.Frame_sel4_fOd) & toSLV(p.Frame_sel5_fDist) & toSLV(p.Frame_sel6_fEq) & toSLV(p.Frame_sel7_fRat) & toSLV(p.Frame_sel8_fAmp) & toSLV(p.Frame_sel9_fAmpTone) & toSLV(p.Frame_sel10_fCab) & toSLV(p.Frame_sel11_fReverb) & toSLV(p.Frame_sel12_fAddr) & toSLV(p.Frame_sel13_fDryL) & toSLV(p.Frame_sel14_fDryR) & toSLV(p.Frame_sel15_fWetL) & toSLV(p.Frame_sel16_fWetR) & toSLV(p.Frame_sel17_fFbL) & toSLV(p.Frame_sel18_fFbR) & toSLV(p.Frame_sel19_fEqLowL) & toSLV(p.Frame_sel20_fEqLowR) & toSLV(p.Frame_sel21_fEqMidL) & toSLV(p.Frame_sel22_fEqMidR) & toSLV(p.Frame_sel23_fEqHighL) & toSLV(p.Frame_sel24_fEqHighR) & toSLV(p.Frame_sel25_fEqHighLpL) & toSLV(p.Frame_sel26_fEqHighLpR) & toSLV(p.Frame_sel27_fAccL) & toSLV(p.Frame_sel28_fAccR) & toSLV(p.Frame_sel29_fAcc2L) & toSLV(p.Frame_sel30_fAcc2R) & toSLV(p.Frame_sel31_fAcc3L) & toSLV(p.Frame_sel32_fAcc3R));
   end;
   function fromSLV (slv : in std_logic_vector) return Frame is
   alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
-    return (fromSLV(islv(0 to 23)),fromSLV(islv(24 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 80)),fromSLV(islv(81 to 112)),fromSLV(islv(113 to 144)),fromSLV(islv(145 to 176)),fromSLV(islv(177 to 208)),fromSLV(islv(209 to 240)),fromSLV(islv(241 to 250)),fromSLV(islv(251 to 274)),fromSLV(islv(275 to 298)),fromSLV(islv(299 to 322)),fromSLV(islv(323 to 346)),fromSLV(islv(347 to 370)),fromSLV(islv(371 to 394)),fromSLV(islv(395 to 418)),fromSLV(islv(419 to 442)),fromSLV(islv(443 to 466)),fromSLV(islv(467 to 490)),fromSLV(islv(491 to 514)),fromSLV(islv(515 to 538)),fromSLV(islv(539 to 562)),fromSLV(islv(563 to 586)),fromSLV(islv(587 to 634)),fromSLV(islv(635 to 682)),fromSLV(islv(683 to 730)),fromSLV(islv(731 to 778)),fromSLV(islv(779 to 826)),fromSLV(islv(827 to 874)));
+    return (fromSLV(islv(0 to 23)),fromSLV(islv(24 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 80)),fromSLV(islv(81 to 112)),fromSLV(islv(113 to 144)),fromSLV(islv(145 to 176)),fromSLV(islv(177 to 208)),fromSLV(islv(209 to 240)),fromSLV(islv(241 to 272)),fromSLV(islv(273 to 304)),fromSLV(islv(305 to 336)),fromSLV(islv(337 to 346)),fromSLV(islv(347 to 370)),fromSLV(islv(371 to 394)),fromSLV(islv(395 to 418)),fromSLV(islv(419 to 442)),fromSLV(islv(443 to 466)),fromSLV(islv(467 to 490)),fromSLV(islv(491 to 514)),fromSLV(islv(515 to 538)),fromSLV(islv(539 to 562)),fromSLV(islv(563 to 586)),fromSLV(islv(587 to 610)),fromSLV(islv(611 to 634)),fromSLV(islv(635 to 658)),fromSLV(islv(659 to 682)),fromSLV(islv(683 to 730)),fromSLV(islv(731 to 778)),fromSLV(islv(779 to 826)),fromSLV(islv(827 to 874)),fromSLV(islv(875 to 922)),fromSLV(islv(923 to 970)));
   end;
 end;
 

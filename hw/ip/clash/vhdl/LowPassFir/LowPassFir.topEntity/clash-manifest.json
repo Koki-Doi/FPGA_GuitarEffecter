@@ -42,18 +42,18 @@
         },
         {
             "name": "clash_lowpass_fir_types.vhdl",
-            "sha256": "7980c4873c82b2aff4a5d3267fc34d06b699f1ca07208dd4ff404d6407cd7835"
+            "sha256": "8dd33304a5626de185b36457151b90540dcb34421e1350bc271151357034e2e4"
         },
         {
             "name": "clash_lowpass_fir.vhdl",
-            "sha256": "fefc37c6ed511fc3aac2583c97267a14371ad4a6e434ff5d94ea1f931d4e3a6d"
+            "sha256": "21f94d55d5962aa4b38b8acf8611f0a1365147911f69ca7f9b1e133e81ca7d00"
         }
     ],
     "flags": [
         20,
         20
     ],
-    "hash": "dd830a9b610da73943817bcb0f1e33964f5ed4aa11caa0d6532182dda2ab9374",
+    "hash": "637209f02b44863693118f73d8e1cb6ce57a1373d67029a9b4d336d62ad1b786",
     "top_component": {
         "name": "clash_lowpass_fir",
         "ports_flat": [
@@ -105,6 +105,27 @@
                 "direction": "in",
                 "is_clock": false,
                 "name": "delay_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "amp_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "amp_tone_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "cab_control",
                 "type_name": "std_logic_vector(31 downto 0)",
                 "width": 32
             },
