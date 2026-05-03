@@ -1,9 +1,43 @@
+import collections
 import ctypes
 import pylibi2c
 import time
 
 class ADAU1761():
-    
+
+    R19_HPF_BIT = 5
+
+    DIAGNOSTIC_REGISTERS = (
+        'R0_CLOCK_CONTROL',
+        'R1_PLL_CONTROL',
+        'R4_RECORD_MIXER_LEFT_CONTROL_0',
+        'R5_RECORD_MIXER_LEFT_CONTROL_1',
+        'R6_RECORD_MIXER_RIGHT_CONTROL_0',
+        'R7_RECORD_MIXER_RIGHT_CONTROL_1',
+        'R15_SERIAL_PORT_CONTROL_0',
+        'R17_CONVERTER_CONTROL_0',
+        'R18_CONVERTER_CONTROL_1',
+        'R19_ADC_CONTROL',
+        'R20_LEFT_INPUT_DIGITAL_VOLUME',
+        'R21_RIGHT_INPUT_DIGITAL_VOLUME',
+        'R22_PLAYBACK_MIXER_LEFT_CONTROL_0',
+        'R24_PLAYBACK_MIXER_RIGHT_CONTROL_0',
+        'R26_PLAYBACK_LR_MIXER_LEFT_LINE_OUTPUT_CONTROL',
+        'R27_PLAYBACK_LR_MIXER_RIGHT_LINE_OUTPUT_CONTROL',
+        'R29_PLAYBACK_HEADPHONE_LEFT_VOLUME_CONTROL',
+        'R30_PLAYBACK_HEADPHONE_RIGHT_VOLUME_CONTROL',
+        'R31_PLAYBACK_LINE_OUTPUT_LEFT_VOLUME_CONTROL',
+        'R32_PLAYBACK_LINE_OUTPUT_RIGHT_VOLUME_CONTROL',
+        'R35_PLAYBACK_POWER_MANAGEMENT',
+        'R36_DAC_CONTROL_0',
+        'R58_SERIAL_INPUT_ROUTE_CONTROL',
+        'R59_SERIAL_OUTPUT_ROUTE_CONTROL',
+        'R61_DSP_ENABLE',
+        'R62_DSP_RUN',
+        'R65_CLOCK_ENABLE_0',
+        'R66_CLOCK_ENABLE_1',
+    )
+
     def __init__(self, i2c_chan = 1, i2c_base_addr = 0x3B):
         self.i2c_chan = i2c_chan
         self.i2c_base_addr = i2c_base_addr
@@ -85,6 +119,111 @@ class ADAU1761():
         # Enable DSP and DSP Run
         self.R61_DSP_ENABLE = 0x01
         self.R62_DSP_RUN = 0x01
+
+    # ---- Phase 1 diagnostic helpers --------------------------------------
+
+    def dump_registers(self, names=None):
+        """Read selected registers and return an OrderedDict of name->bytes.
+
+        Use this before and after a configuration change to compute a diff
+        with diff_register_snapshots().
+        """
+        if names is None:
+            names = self.DIAGNOSTIC_REGISTERS
+        snapshot = collections.OrderedDict()
+        for name in names:
+            value = getattr(self, name)
+            snapshot[name] = bytes(value) if not isinstance(value, bytes) else value
+        return snapshot
+
+    @staticmethod
+    def format_register_snapshot(snapshot):
+        lines = []
+        for name, value in snapshot.items():
+            hex_str = ' '.join('{:02X}'.format(b) for b in value)
+            if len(value) == 1:
+                lines.append('{:<55} 0x{}  (0b{:08b})'.format(name, hex_str, value[0]))
+            else:
+                lines.append('{:<55} {}'.format(name, hex_str))
+        return '\n'.join(lines)
+
+    def print_registers(self, names=None):
+        snapshot = self.dump_registers(names)
+        print(self.format_register_snapshot(snapshot))
+        return snapshot
+
+    @staticmethod
+    def diff_register_snapshots(before, after):
+        keys = list(before.keys())
+        for k in after.keys():
+            if k not in keys:
+                keys.append(k)
+        diffs = collections.OrderedDict()
+        for name in keys:
+            b = before.get(name)
+            a = after.get(name)
+            if b != a:
+                diffs[name] = (b, a)
+        return diffs
+
+    @staticmethod
+    def format_register_diff(diffs):
+        if not diffs:
+            return '(no changes)'
+        lines = []
+        for name, (before, after) in diffs.items():
+            b_hex = ' '.join('{:02X}'.format(x) for x in (before or b''))
+            a_hex = ' '.join('{:02X}'.format(x) for x in (after or b''))
+            lines.append('{:<55} {} -> {}'.format(name, b_hex, a_hex))
+        return '\n'.join(lines)
+
+    # ---- ADC digital high-pass filter (R19[5]) ---------------------------
+    # NOTE: This is the ADAU1761 ADC digital high-pass filter, used to
+    # remove DC offset and very-low-frequency drift. At Fs = 48 kHz the
+    # corner is roughly 2 Hz. It is *not* a 20-40 Hz HPF and must not be
+    # treated as a substitute for a guitar-band low-cut.
+
+    def get_adc_hpf_state(self):
+        return bool(self.R19_ADC_CONTROL[0] & (1 << self.R19_HPF_BIT))
+
+    def enable_adc_hpf(self):
+        current = self.R19_ADC_CONTROL[0]
+        new_value = (current | (1 << self.R19_HPF_BIT)) & 0xFF
+        self.R19_ADC_CONTROL = new_value
+        return new_value
+
+    def disable_adc_hpf(self):
+        current = self.R19_ADC_CONTROL[0]
+        new_value = current & ~(1 << self.R19_HPF_BIT) & 0xFF
+        self.R19_ADC_CONTROL = new_value
+        return new_value
+
+    # ---- Input digital volume (R20 / R21) --------------------------------
+    # On ADAU1761 these registers attenuate the ADC digital signal.
+    # 0x00 is the codec default (no attenuation). Larger raw values apply
+    # progressively more attenuation. This helper only writes raw byte
+    # values; it never bypasses or boosts above the 0x00 default.
+
+    @staticmethod
+    def _clamp_byte(value, lo=0, hi=255):
+        v = int(value)
+        if v < lo:
+            return lo
+        if v > hi:
+            return hi
+        return v
+
+    def get_input_digital_volume(self):
+        left = self.R20_LEFT_INPUT_DIGITAL_VOLUME[0]
+        right = self.R21_RIGHT_INPUT_DIGITAL_VOLUME[0]
+        return (left, right)
+
+    def set_input_digital_volume(self, left=None, right=None):
+        if left is not None:
+            self.R20_LEFT_INPUT_DIGITAL_VOLUME = self._clamp_byte(left)
+        if right is not None:
+            self.R21_RIGHT_INPUT_DIGITAL_VOLUME = self._clamp_byte(right)
+        return self.get_input_digital_volume()
 
 
 def _create_i2c_property(name, offset, length):

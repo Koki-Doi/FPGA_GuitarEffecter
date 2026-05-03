@@ -258,6 +258,42 @@ class AudioLabOverlay(Overlay):
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)
         return words
 
+    # ---- Phase 1 diagnostics --------------------------------------------
+
+    def dump_codec_registers(self, names=None):
+        return self.codec.print_registers(names)
+
+    def codec_register_diff(self, before, names=None):
+        if names is None:
+            names = list(before.keys())
+        after = self.codec.dump_registers(names)
+        diffs = self.codec.diff_register_snapshots(before, after)
+        print(self.codec.format_register_diff(diffs))
+        return diffs
+
+    def capture_input(self, num_frames=48000, **kwargs):
+        from . import diagnostics
+        return diagnostics.capture_input(self, num_frames=num_frames, **kwargs)
+
+    def diagnostic_capture(self, label, num_frames=48000, save_dir=None):
+        from . import diagnostics
+        samples = diagnostics.capture_input(self, num_frames=num_frames)
+        stats = diagnostics.compute_input_stats(samples)
+        print('=== {} ==='.format(label))
+        print(diagnostics.format_input_stats(stats))
+        if save_dir is not None:
+            os.makedirs(save_dir, exist_ok=True)
+            diagnostics.save_input_capture(samples, os.path.join(save_dir, label))
+        return samples, stats
+
+    def output_zero_test(self, **kwargs):
+        from . import diagnostics
+        return diagnostics.output_zero_test(self, **kwargs)
+
+    def output_sine_test(self, **kwargs):
+        from . import diagnostics
+        return diagnostics.output_sine_test(self, **kwargs)
+
     def set_reverb(self, enabled=True, reverb=35, tone=70, mix=25, sink=XbarSink.headphone):
         if hasattr(self, 'axi_gpio_gate'):
             return self.set_guitar_effects(
