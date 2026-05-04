@@ -47,8 +47,11 @@ The discipline is: **multiply** in `Wide`, **shift+sat** back into
 makeInput
   -> gateLevel -> gate                                  (noise gate envelope + apply)
   -> overdrive (drive mul -> boost -> clip -> tone -> level)
-  -> distortion (drive mul -> boost -> clip -> tone -> level)   [legacy]
+  -> legacy distortion (drive mul -> boost -> clip -> tone -> level)
   -> RAT (HPF -> drive -> opamp LPF -> hard clip -> post LPF -> tone -> level -> mix)
+  -> clean_boost          (3 stages: mul -> shift -> level + softClip safety)
+  -> tube_screamer        (5 stages: HPF -> mul -> asym soft clip -> post LPF -> level)
+  -> metal_distortion     (5 stages: tight HPF -> mul -> hard clip -> post LPF -> level)
   -> amp simulator (HPF -> drive -> waveshape -> pre-LPF -> 2nd stage -> tone stack -> power -> resonance/presence -> master)
   -> cab IR (3-tap convolution + level/mix)
   -> EQ (3-band)
@@ -56,9 +59,10 @@ makeInput
   -> output AXIS register
 ```
 
-## Existing distortion section
+## Legacy distortion section
 
-Six register stages, all gated by `flag2(fGate)`:
+Six register stages, gated by
+`distortionLegacyOn = flag2(fGate) AND NOT anyDistPedalOn`:
 
 1. `distortionDriveMultiplyFrame` — pre-gain `mulU12`, `gain = 256 + drive*8`.
 2. `distortionDriveBoostFrame` — `satShift8` back to `Sample`.
@@ -67,8 +71,34 @@ Six register stages, all gated by `flag2(fGate)`:
 5. `distortionToneBlendFrame` — sum + `satShift8`.
 6. `distortionLevelFrame` — `mulU8` by level, `satShift7`.
 
-This stage is **the legacy distortion** and the user-side default for the
-existing API. It must not be removed during the refactor.
+The `NOT anyDistPedalOn` part is what lets the user-facing
+`exclusive=True` semantics actually exclude the legacy stage when
+a pedal-mask bit is set. The legacy stage is otherwise unchanged
+and the original `distortion=` / `distortion_tone` / `distortion_level`
+API still drives it as before.
+
+## Pedal-mask distortion section
+
+Independent register-staged blocks. Each is enabled only when both
+`flag2(fGate)` AND its bit in `distortion_control.ctrlD` are set.
+When off, every stage is bit-exact bypass.
+
+| Pedal | Frame functions (in order) |
+| --- | --- |
+| `clean_boost` (bit 0) | `cleanBoostMulFrame` -> `cleanBoostShiftFrame` -> `cleanBoostLevelFrame` |
+| `tube_screamer` (bit 1) | `tubeScreamerHpfFrame` -> `tubeScreamerMulFrame` -> `tubeScreamerClipFrame` -> `tubeScreamerPostLpfFrame` -> `tubeScreamerLevelFrame` |
+| `rat` (bit 2) | (no new stage — handled by the existing RAT block; Python flips `gate_control` bit 4 to engage it) |
+| `ds1` (bit 3) | reserved; no Clash stage yet, audio passes through |
+| `big_muff` (bit 4) | reserved; same |
+| `fuzz_face` (bit 5) | reserved; same |
+| `metal` (bit 6) | `metalHpfFrame` -> `metalMulFrame` -> `metalClipFrame` -> `metalPostLpfFrame` -> `metalLevelFrame` |
+
+Per-channel filter state for the HPFs and post-LPFs lives in
+pipeline-level registers wired up in `fxPipeline` (e.g.
+`tsHpfLpPrevL`, `metalPostLpPrevR`). Frame fields `fEqLowL/R` and
+`fEqHighLpL/R` are used as transient carriers between adjacent
+stages and are reset by the EQ block downstream, so reusing them
+inside the pedal stages is safe.
 
 ## Existing RAT section (for reference)
 

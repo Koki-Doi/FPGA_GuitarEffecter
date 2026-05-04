@@ -74,10 +74,12 @@ not get removed even when superseded — they get updated.
 
 - **Decision.** Selectable distortion models are implemented as
   independent pedal stages (each with its own enable bit), not as a
-  numeric `model_select` driving a giant case statement.
-- **Why.** The `model_select` build pushed Vivado WNS from −7.722 ns
-  to −15.067 ns. The combinational depth of the per-stage 8-way case
-  is the cause; the design will not deploy safely in that shape.
+  numeric `model_select` driving a giant case statement. This
+  decision shipped in commit `baa97ff`.
+- **Why.** The `model_select` build pushed Vivado WNS from -7.722 ns
+  to -15.067 ns. The combinational depth of the per-stage 8-way case
+  was the cause; the design did not deploy safely in that shape. The
+  pedal-mask replacement restored WNS to -7.801 ns and was deployed.
 - **How to apply.** Read `DISTORTION_REFACTOR_PLAN.md`. Do not add
   new `case modelSelect of …` blocks to `LowPassFir.hs`. Pedal
   enables live in `distortion_control.ctrlD`; the section master
@@ -95,3 +97,54 @@ not get removed even when superseded — they get updated.
 - **How to apply.** No `git submodule add`, no `git clone` into the
   tree. If a reference is needed for a session, clone it into
   `/tmp` or another scratch path the repo never sees.
+
+## D8 — `rat` pedal maps onto the existing RAT stage
+
+- **Decision.** The `rat` entry in the new pedal-mask API does not
+  add a new Clash stage. Instead, when bit 2 of
+  `distortion_control.ctrlD` is set, the Python facade
+  (`_apply_distortion_state_to_words`) also forces `gate_control`
+  bit 4 high, engaging the existing RAT block (`ratHighpassFrame`
+  through `ratMixFrame`).
+- **Why.** The existing RAT implementation is a complete, tested,
+  parameter-rich voicing. Re-implementing it inside the new
+  pedal-mask pipeline would have duplicated logic, eaten timing,
+  and produced a slightly different sound for no gain.
+- **How to apply.** Do not add a `ratStyle*Frame` chain. If the
+  user wants a different RAT-style flavour, expose it as a new
+  pedal bit (e.g. an unused reserved slot) rather than rewriting
+  the existing one.
+
+## D9 — `ds1` / `big_muff` / `fuzz_face` are reserved, not removed
+
+- **Decision.** Bits 3, 4, 5 of `distortion_control.ctrlD` are
+  reserved for `ds1`, `big_muff`, and `fuzz_face`. The Python API
+  accepts these names today; the FPGA has no Clash stage for them
+  yet, so audio passes through bit-exact when only those bits are
+  set. The notebooks call this out in their reserved-pedal warnings.
+- **Why.** Locking the bit positions now keeps the GPIO layout and
+  the Python API stable across the staged rollout. Future Clash
+  work for any of these voicings is a pure code addition; no GPIO
+  shuffle, no Python API churn, no notebook rewrites.
+- **How to apply.** When implementing one of the reserved pedals,
+  add a small register-staged Clash block that consumes the
+  matching bit, slot it into `fxPipeline` between `tube_screamer`
+  and `metal`, and update the "implemented" list in
+  `DISTORTION_REFACTOR_PLAN.md` plus the warnings in the
+  notebooks. Keep the Python API surface unchanged.
+
+## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
+
+- **Decision.** A new two-cell notebook,
+  `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`, is the
+  primary single-screen UI for the live chain. It exists alongside
+  the existing `GuitarEffectSwitcher.ipynb` and
+  `DistortionModelsDebug.ipynb`; none of them is being deprecated.
+- **Why.** The existing switcher and debug notebooks have specific
+  jobs (per-effect tweak / per-pedal walkthrough). The one-cell
+  notebook is what a player should open: Apply / Safe Bypass /
+  Refresh + four presets, with the distortion pedalboard as a
+  first-class UI section.
+- **How to apply.** Notebook-only edits land here; no
+  bitstream rebuild needed. Reserved pedals stay selectable so the
+  UI does not change shape when those Clash stages land later.

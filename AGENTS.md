@@ -37,9 +37,15 @@ Then read the topic doc that matches the work:
   existing AXI GPIOs; new effect stages reuse existing GPIO topology.
 - The ADAU1761 ADC HPF is **default-on** (`R19_ADC_CONTROL == 0x23`). Do not
   remove or skip the HPF enable in `config_codec()`.
+- The selectable distortion section is **pedal-mask-based** (commit
+  `baa97ff`). Do not roll it back to a `model_select` / 8-way mux design;
+  that is the pattern that wrecked timing earlier and is already recorded
+  as a dead end (`DECISIONS.md` D6).
 - Any change to `hw/ip/clash/src/LowPassFir.hs` requires a Vivado bit/hwh
   rebuild and a fresh **timing summary**. A bitstream whose WNS is
-  significantly worse than the previous baseline must not be deployed.
+  significantly worse than the deployed -7.801 ns must not be deployed.
+- Notebook-only edits do **not** rebuild the bitstream. Update the
+  notebook, run `bash scripts/deploy_to_pynq.sh`, done.
 - `git push`, `git pull`, `git fetch`, and any other remote operation are
   forbidden. Local commits only.
 - Do not clone reference repositories into the working tree. Treat them as

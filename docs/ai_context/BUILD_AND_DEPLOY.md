@@ -4,8 +4,9 @@
 
 | What changed | Build steps | Deploy |
 | --- | --- | --- |
-| Only `audio_lab_pynq/` Python or notebooks | none | `bash scripts/deploy_to_pynq.sh` |
-| `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing, then deploy |
+| Only Python in `audio_lab_pynq/` | none | `bash scripts/deploy_to_pynq.sh` |
+| Only `audio_lab_pynq/notebooks/*.ipynb` (e.g. `GuitarPedalboardOneCell.ipynb`, `DistortionModelsDebug.ipynb`, `GuitarEffectSwitcher.ipynb`) | **none — no Clash, no Vivado, no bit/hwh** | `bash scripts/deploy_to_pynq.sh` |
+| `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed -7.801 ns; deploy only if not significantly worse |
 | `hw/Pynq-Z2/block_design.tcl`, `audio_lab.xdc`, IP topology | full Vivado rebuild — **only with explicit user approval** | review timing, then deploy |
 
 ## Clash → VHDL

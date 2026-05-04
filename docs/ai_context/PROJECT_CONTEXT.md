@@ -47,6 +47,14 @@ control effect parameters via AXI GPIO.
 - The DSP pipeline runs on the FCLK0 100 MHz domain (`AudioDomain` in
   Clash). Sample rate is 48 kHz, so the PL has ~2080 clock cycles per
   audio frame for a single channel pair.
+- The distortion section is built on a **pedal-mask design** (commit
+  `baa97ff`). `gate_control` bit 2 is the section master; each bit of
+  `distortion_control.ctrlD` enables one pedal. `clean_boost`,
+  `tube_screamer`, `metal` are implemented in Clash; `rat` maps onto
+  the existing RAT stage; `ds1`, `big_muff`, `fuzz_face` are reserved
+  bits with no FPGA stage yet. The bitstream on the board reflects
+  this design (WNS = -7.801 ns, baseline-equivalent). See
+  `DISTORTION_REFACTOR_PLAN.md`.
 - AXI GPIOs in the design are output-only; the Python side keeps a cache
   of the last word written to each GPIO so that read-modify-write on
   byte-fields is possible.
@@ -56,6 +64,12 @@ control effect parameters via AXI GPIO.
   - Repo / package source: `/home/xilinx/Audio-Lab-PYNQ/`
   - Notebooks (Jupyter root): `/home/xilinx/jupyter_notebooks/audio_lab/`
   - Jupyter URL: `http://192.168.1.8:9090/tree`
+- Notebooks shipped with the pedal-mask build:
+  `InputDebug.ipynb`, `GuitarEffectsChain.ipynb`,
+  `GuitarEffectSwitcher.ipynb` (now with a Distortion Pedalboard
+  section), `DistortionModelsDebug.ipynb` (rewritten for the
+  pedal-mask API), and `GuitarPedalboardOneCell.ipynb` (new — a
+  one-cell ipywidgets UI for the whole chain).
 
 ## Key principles for new work
 

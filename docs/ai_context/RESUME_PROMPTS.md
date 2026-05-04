@@ -2,8 +2,8 @@
 
 Short prompts the user can paste back to either Claude Code or Codex
 after a rate-limit, context reset, or session restart. Each one is
-self-contained and points the agent at the right docs instead of asking
-it to re-discover the project from scratch.
+self-contained and points the agent at the right docs instead of
+asking it to re-discover the project from scratch.
 
 ## General resume
 
@@ -17,54 +17,65 @@ it to re-discover the project from scratch.
 > ADC HPF デフォルトON 設定を壊さないでください。
 > `hw/Pynq-Z2/block_design.tcl` は変更しないでください。
 
-## Distortion refactor resume
+## Distortion pedal-mask is shipped — do not roll it back
 
-> 前回、`model_select` で歪みモデルを切り替える設計を実装しましたが、
-> Vivado timing が大きく悪化しました(WNS = -15.067 ns)。
-> ビットストリームは生成済みですが、deploy せずに停止しています。
->
-> 次は `model_select` 方式を廃止して、独立ペダルステージ方式に移行
-> してください。仕様は `docs/ai_context/DISTORTION_REFACTOR_PLAN.md`
-> を参照してください。`gate_control` bit2 が distortion section
-> master、`distortion_control.ctrlD` のbit0..6 が各ペダル enable
-> mask です。
->
-> 既存の `overdrive` / 既存 `distortion` / 既存 `RAT` 段は壊さない
-> でください。`block_design.tcl` を変更せず、ADC HPF デフォルトON を
-> 維持してください。`git push` / `git pull` / `git fetch` は禁止
-> です。GPL系参考コードを直接コピーしないでください。
+> 歪みセクションは pedal-mask 方式 (commit `baa97ff` ほか) で実装済み・
+> deploy済み・実機確認済みです。WNS は -7.801 ns まで戻っています。
+> 8-way `model_select` 方式へ戻さないでください。新しいペダル / フィルタ
+> を追加するときも、巨大 `case` ではなく独立 register-staged ブロックを
+> 維持してください。詳細は `docs/ai_context/DISTORTION_REFACTOR_PLAN.md`
+> と `DECISIONS.md` の D6 / D8 / D9 を確認してください。
 
-## PYNQ deploy resume
+## Implementing a reserved pedal (`ds1` / `big_muff` / `fuzz_face`)
 
-> PYNQ-Z2 実機への deploy 手順は
-> `docs/ai_context/BUILD_AND_DEPLOY.md` と
-> `docs/ai_context/PYNQ_RUNTIME.md` を読んでください。
->
-> 配置は `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh` を
+> `ds1` / `big_muff` / `fuzz_face` は GPIO mask と Python API では予約
+> 済みですが、Clash 側ステージはまだありません。実装する場合は
+> `clean_boost` / `tube_screamer` / `metal` と同じ形 (HPF -> mul ->
+> clip -> post LPF -> level の register-staged 連鎖) で書き、
+> `fxPipeline` の `tube_screamer` と `metal` の間に挟んでください。
+> Python API、GPIO レイアウト、notebook の予約警告は触らないように
+> してください。bit/hwh 再生成のあと、Vivado timing を必ず確認し、
+> 現行 deploy の WNS = -7.801 ns より大幅に悪化させないでください。
+> 詳しくは `DISTORTION_REFACTOR_PLAN.md` の Phase C 節を読んでください。
+
+## Tightening WNS
+
+> 現状 deploy 済の WNS = -7.801 ns はベースライン同等で、運用上は
+> 動いていますが厳密にはまだ負です。これを 0 へ寄せたい場合は、
+> `LowPassFir.hs` の中で残った深い組合せブロックを register で分け、
+> 必要なら cab タップや reverb BRAM のアドレス経路を pipeline 化
+> してください。1 段に大きな `case` や 4 段以上の演算を詰めない
+> 方針は維持してください (`TIMING_AND_FPGA_NOTES.md` 参照)。
+
+## Notebook UI / preset polish (no bitstream rebuild)
+
+> Notebook だけの編集は bit/hwh 再生成不要です。対象 Notebook:
+> `GuitarPedalboardOneCell.ipynb` (1セル UI)、
+> `GuitarEffectSwitcher.ipynb` (既存 UI + Distortion Pedalboard 追加部)、
+> `DistortionModelsDebug.ipynb` (pedal API walkthrough)。
+> Python API の変更は不要です。`LowPassFir.hs` / `AudioLabOverlay.py` /
+> bit/hwh は触らずに、Notebook と必要なら `docs/ai_context/` を更新し、
+> `bash scripts/deploy_to_pynq.sh` で配置してください。
+
+## PYNQ deploy
+
+> deploy は `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
-> `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を
-> 経由してください。
->
-> Vivado 実装で WNS が以前のベースラインより大幅に悪い bitstream は
-> deploy しないでください。
+> `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
+> してください。Vivado 実装で WNS が現行 deploy(-7.801 ns)より明らかに
+> 悪い bitstream は deploy しないでください。
 
-## Codec / input debug resume
+## Codec / input debug
 
-> 入力ノイズや DC offset を疑う場合は、まず
-> `docs/ai_context/AUDIO_SIGNAL_PATH.md` の triage チェックリストを
-> 上から順に確認してください。
->
-> 既に ADC HPF はデフォルトON です(`R19_ADC_CONTROL == 0x23`)。
-> `InputDebug.ipynb` を再生する場合、HPF を toggle した直後の
-> peak_abs は IIR 整定中の過渡なので、`settling_ms=400` と
-> `discard_initial_frames=2400` を使ってください。
+> 入力ノイズや DC offset を疑う場合は、`AUDIO_SIGNAL_PATH.md` の
+> triage を上から確認してください。ADC HPF は既定 ON
+> (`R19_ADC_CONTROL == 0x23`) です。`InputDebug.ipynb` で HPF を
+> toggle した直後の peak_abs は IIR 整定中の過渡なので、
+> `settling_ms=400` と `discard_initial_frames=2400` を使ってください。
 
-## Documentation update resume
+## Documentation update
 
-> `docs/ai_context/` に AI 共有ドキュメントが置いてあります。
-> 仕様や運用が変わったら、ソースコードと一緒に該当ドキュメントも
-> 更新してください。
->
-> ドキュメントだけの修正コミットの場合、touch するファイルは
-> `AGENTS.md` / `CLAUDE.md` / `docs/` 配下のみにしてください。
+> `docs/ai_context/` は実装と一緒に更新してください。仕様や運用が
+> 変わったら、関連 Markdown を更新するコミットを別に切ってください。
+> 触ってよいファイルは `AGENTS.md` / `CLAUDE.md` / `docs/` 配下のみ。
 > 実装ファイルや bitstream を巻き込まないでください。

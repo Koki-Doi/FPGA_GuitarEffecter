@@ -1,97 +1,137 @@
 # Current state
 
-Last updated: 2026-05-04.
+Last updated: 2026-05-04 (post-deploy of the pedal-mask refactor).
 
 ## Headline
 
-The selectable-distortion refactor is **mid-flight and pending a redesign**.
-The first attempt (`model_select` driving a single 8-way mux per stage)
-made Vivado timing significantly worse and was halted before deploy. The
-agreed next step is the pedal-mask design described in
-`DISTORTION_REFACTOR_PLAN.md`.
+The selectable-distortion refactor is **shipped**. The pedal-mask
+design is implemented in Clash, exposed through the Python API,
+covered by tests, walked-through by two notebooks, built into a
+fresh `audio_lab.bit` / `audio_lab.hwh`, deployed to the lab board,
+and verified live.
 
-## What is in the working tree
+The earlier 8-way `model_select` attempt is **gone**. Do not bring
+that pattern back; see `DECISIONS.md` D6 for the reason.
 
-`git status --short` at the time this doc was written:
+## Working tree
 
 ```
- M audio_lab_pynq/AudioCodec.py
- M audio_lab_pynq/AudioLabOverlay.py
- M audio_lab_pynq/diagnostics.py
- M audio_lab_pynq/notebooks/InputDebug.ipynb
- M hw/Pynq-Z2/bitstreams/audio_lab.bit
- M hw/Pynq-Z2/bitstreams/audio_lab.hwh
- M hw/ip/clash/src/LowPassFir.hs
- M hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json
- M hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl
- M hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir_types.vhdl
- M hw/ip/clash/vhdl/LowPassFir/component.xml
- M tests/test_overlay_controls.py
+$ git status --short
 ?? .claude/
-?? audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb
 ```
 
-These changes are **not** to be discarded. They contain:
+The working tree is clean. The last three commits on `master` carry
+the change:
 
-- The ADC HPF default-on work for `AudioCodec.py` /
-  `AudioLabOverlay.py` / `diagnostics.py` / `InputDebug.ipynb`. That
-  work is correct and effective on the live board; it just has not
-  been split into its own commit yet.
-- The first (rejected) distortion-model implementation in
-  `LowPassFir.hs` and the matching Python facade in
-  `AudioLabOverlay.py`, plus the giant 8-way case structure that
-  needs to be replaced with the pedal-stage design.
-- The regenerated VHDL and the Vivado-built `.bit` / `.hwh`. The
-  bitstream is **timing-failed** (WNS = -15.067 ns) and must not be
-  deployed.
-- A draft `DistortionModelsDebug.ipynb` written for the old API; it
-  will be replaced when the pedal-mask API lands.
+```
+2198873  Add one-cell guitar pedalboard notebook
+e1bb313  Add distortion pedalboard controls to GuitarEffectSwitcher notebook
+baa97ff  Refactor distortion models into pedal-style pipeline
+```
 
-## What was previously decided
+`baa97ff` is the implementation commit (Clash + Python + tests +
+regenerated VHDL/IP/bit/hwh, plus the ADC HPF default-on rollup that
+had been sitting in the working tree from the previous arc). `e1bb313`
+and `2198873` are notebook-only follow-ups.
 
-- ADC HPF default-on (`R19_ADC_CONTROL = 0x23`) is permanent.
-  Settling delay added in `config_codec()` and 400 ms / 2400-frame
-  skip used in `InputDebug.ipynb` after toggles.
-- The deploy path is `scripts/deploy_to_pynq.sh` to
-  `xilinx@192.168.1.8` with key auth + passwordless `sudo`.
-- `block_design.tcl` is not changing for this refactor. New pedal
-  bits live in spare bytes of existing AXI GPIOs.
+## What ships in the current bitstream
+
+Pedal stages live between the existing RAT block and the amp /
+cab / EQ / reverb tail of the pipeline. Master enable stays on
+`gate_control` bit 2 (the existing `distortion_on`).
+
+| Pedal | bit (`distortion_control.ctrlD`) | Status |
+| --- | --- | --- |
+| `clean_boost` | 0 | Clash stage implemented (3 register stages). |
+| `tube_screamer` | 1 | Clash stage implemented (5 register stages). |
+| `rat` | 2 | Mapped onto the existing RAT stage; Python forces `gate_control` bit 4 high when this bit is set. |
+| `ds1` | 3 | **Reserved.** Mask bit accepted by the API; FPGA has no stage yet, so audio passes through unchanged. |
+| `big_muff` | 4 | **Reserved**, same caveat. |
+| `fuzz_face` | 5 | **Reserved**, same caveat. |
+| `metal` | 6 | Clash stage implemented (5 register stages). |
+| reserved | 7 | Unused. |
+
+Legacy distortion (the original `distortion_*` API and Clash stages)
+still works: it gates on `distortion_legacyOn = flag2(fGate) AND
+NOT anyDistPedalOn`. As soon as any pedal-mask bit is set, the
+legacy stage steps aside.
+
+## Live verification
+
+Run on the board after deploy:
+
+```
+ADC HPF        : True
+R19_ADC_CONTROL: 0x23
+clean_boost    mask=0x01  drive=40 level=35
+tube_screamer  mask=0x02  drive=40 level=35
+rat            mask=0x04  drive=40 level=35
+ds1            mask=0x08  drive=40 level=35
+big_muff       mask=0x10  drive=40 level=35
+fuzz_face      mask=0x20  drive=40 level=35
+metal          mask=0x40  drive=40 level=35
+cleared        mask=0x00
+```
+
+ADC HPF default-on (`R19_ADC_CONTROL = 0x23`) survives. Every pedal
+mask bit lands at the documented position. `clear_distortion_pedals`
+returns the section to zero.
+
+## Vivado timing summary (deployed bit)
+
+| Build | WNS | TNS | Verdict |
+| --- | --- | --- | --- |
+| Pre-refactor baseline | -7.722 ns | -4613.495 ns | Shipped, audio works in practice. |
+| Rejected `model_select` | -15.067 ns | -7308.247 ns | Not deployed. |
+| **pedal-mask (current)** | **-7.801 ns** | -7381.742 ns | Deployed. Roughly baseline-equivalent setup slack. |
+
+Hold timing is fine (`WHS = +0.050 ns`, `THS = 0.000 ns`). Setup is
+still slightly negative; not a regression versus baseline, but the
+build is not formally clean. Treat any further timing slip with
+suspicion.
+
+## Notebooks
+
+| Notebook | Status |
+| --- | --- |
+| `audio_lab_pynq/notebooks/InputDebug.ipynb` | Existing input-noise triage notebook, ADC HPF default-on aware. |
+| `audio_lab_pynq/notebooks/GuitarEffectsChain.ipynb` | Existing chain UI. Untouched in this refactor. |
+| `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` | **Updated.** Original ipywidgets switcher cells preserved; a "Distortion Pedalboard" section appended (state check, exclusive single-pedal cell, four presets, live cell, advanced stack cell, safe-OFF cell). |
+| `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` | **Replaced** with a pedalboard walkthrough: lists pedals + bit positions + which are implemented vs reserved, cycles each pedal exclusively, has a live cell, an advanced stack cell, and a reset cell. |
+| `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` | **New.** Two-cell single-screen ipywidgets UI for the whole chain (Noise Gate -> Overdrive -> Distortion Pedalboard -> Amp -> Cab -> EQ -> Reverb). Apply / Safe Bypass / Refresh / four preset buttons; stack mode auto-trims `level` to 25; reserved pedals selectable with a warning banner. |
+
+All five notebooks are deployed under
+`/home/xilinx/jupyter_notebooks/audio_lab/` on the board.
 
 ## What to do next
 
-In this order:
+Open work, in roughly priority order:
 
-1. Run `git status --short` and `git diff --stat` to confirm the
-   working-tree state matches what is described above.
-2. Read `DISTORTION_REFACTOR_PLAN.md`.
-3. In `LowPassFir.hs`, retire (or split) the `model_select`-style
-   functions:
-   `distModel`, `modelInputHpfAlpha`, `modelPostFilterAlpha`,
-   `modelPreGain`, `distModelInputFilterFrame`, `distModelBiasFrame`,
-   `distModelPreGainMulFrame`, `distModelPreGainBoostFrame`,
-   `distModelClipFrame`, `distModelInterGainFrame`,
-   `distModelInterClipFrame`, `distModelPostFilterFrame`,
-   `distModelLevelFrame`. Restore the legacy distortion stages in
-   the pipeline. Add new per-pedal stages instead.
-4. In `AudioLabOverlay.py`, replace the model-index API with the
-   pedal-mask API described in `DISTORTION_REFACTOR_PLAN.md`. Do
-   **not** rip out the cached-word machinery — it is what makes the
-   AXI-GPIO-output-only model survive.
-5. Update `tests/test_overlay_controls.py` so that assertions live on
-   the pedal-mask layout, not the old `distortion_model` field.
-6. Run `python3 -m compileall audio_lab_pynq scripts` and the
-   overlay-control tests.
-7. Regenerate VHDL → repackage Clash IP → run Vivado.
-8. Compare WNS against the baseline in `TIMING_AND_FPGA_NOTES.md`.
-   Deploy only if it is no worse than the baseline.
-9. Smoke-test on the board, then commit.
+1. **Implement the reserved pedals** — `ds1`, `big_muff`,
+   `fuzz_face`. Each as its own small Clash stage following the same
+   shape (HPF -> mul -> clip -> post LPF -> level), inserted between
+   tube_screamer and metal in the pipeline. Re-check timing after
+   each addition.
+2. **Drive WNS toward 0.** The current build is at -7.801 ns; the
+   audio path tolerates this in practice but it is technically out
+   of spec. Worth a pass that splits any remaining deeper
+   combinational stage and / or pipelines the cab or reverb tap
+   address paths.
+3. **UI / preset polish** in the notebooks. Possible adds:
+   per-pedal default presets, an A/B compare cell, a quick-record
+   cell that pairs the pedalboard with the existing diagnostic
+   capture helpers.
+4. **Diagnostic capture for distortion stages.** Re-use
+   `diagnostics.capture_input` to log a clip waveform per pedal so
+   we can compare voicings without ear fatigue.
 
 ## Things to be careful about
 
-- Do **not** silently revert older work. Both `AudioCodec.py` and
-  `diagnostics.py` carry the ADC HPF feature; that must survive.
-- Do **not** delete the cached distortion state in the Python init —
-  the next API still needs it.
-- Do **not** deploy the currently-built `audio_lab.bit`. It is
-  timing-failed.
+- Do **not** silently revert the ADC HPF default-on. `R19_ADC_CONTROL`
+  must read back as `0x23` after `config_codec()`.
+- Do **not** reintroduce a single function with a `case` over all
+  seven pedals. That is exactly what regressed timing the first time;
+  see `TIMING_AND_FPGA_NOTES.md`.
+- Do **not** deploy a bitstream whose WNS is significantly worse than
+  -7.801 ns without flagging the regression to the user first.
 - Do **not** push, pull, or fetch.

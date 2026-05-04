@@ -1,163 +1,158 @@
 # Distortion refactor plan
 
-This is the active design document for the selectable-distortion work.
-The previous attempt was reverted in plan because it broke FPGA timing;
-this file records the replacement design.
+The selectable-distortion work has shipped. This document keeps the
+design notes plus the staged plan for the remaining pedals; it is no
+longer a "what should we do" file.
 
-## Background
+## What was shipped
 
-The user wants seven distortion "voicings" available alongside the
-existing legacy distortion stage:
+Implementation commit: `baa97ff Refactor distortion models into
+pedal-style pipeline`. Notebook follow-ups: `e1bb313` (switcher
+add-on) and `2198873` (one-cell pedalboard). All three live on
+`master`. The build was deployed to the lab board and verified
+live; see `CURRENT_STATE.md`.
 
-- `clean_boost`
-- `tube_screamer`
-- `rat_style`
-- `ds1_style`
-- `big_muff`
-- `fuzz_face`
-- `metal`
-
-The original plan was to add one Clash pipeline that read a numeric
-`model_select` and switched its internal arithmetic per model. That
-implementation regressed WNS from −7.722 ns to −15.067 ns and was
-halted before deploy. See `TIMING_AND_FPGA_NOTES.md` for the timing
-data.
-
-## New plan: independent pedal stages
-
-Treat each voicing as its own small pipeline section, structurally
-identical to the existing `overdrive`, `distortion`, and `RAT` blocks.
-Each stage:
-
-- Has its own enable bit. When the bit is clear, output equals input
-  bit-exactly.
-- Is a small, independent register chain. **No** big `case` switches
-  that fan eight different multiplies / clips into one mux.
-- Reuses the existing `Frame` accumulator fields and the per-channel
-  filter-state register pattern (see how the RAT section does it).
-
-Target chain layout in `LowPassFir.hs`:
-
-```
-gate
-  -> overdrive
-  -> distortion (legacy; unchanged)
-  -> rat (legacy; unchanged)
-  -> clean_boost          [enable bit]
-  -> tube_screamer        [enable bit]
-  -> rat_style            [enable bit; may map onto the existing RAT stage]
-  -> ds1_style            [enable bit]
-  -> big_muff             [enable bit]
-  -> fuzz_face            [enable bit]
-  -> metal                [enable bit]
-  -> amp -> cab -> eq -> reverb
-```
-
-Stages that do not yet exist in Clash are still wired through the API as
-no-ops so that the GPIO bit allocation is stable. See "Phasing" below.
-
-## Control plane
-
-| Control | Bit / byte | Owner |
+| Pedal | bit | Clash stage |
 | --- | --- | --- |
-| Distortion section master enable | `gate_control` ctrlA bit 2 | existing flag, kept as-is |
-| Pedal mask bit 0 | `distortion_control` ctrlD bit 0 | clean_boost |
-| Pedal mask bit 1 | `distortion_control` ctrlD bit 1 | tube_screamer |
-| Pedal mask bit 2 | `distortion_control` ctrlD bit 2 | rat_style |
-| Pedal mask bit 3 | `distortion_control` ctrlD bit 3 | ds1_style |
-| Pedal mask bit 4 | `distortion_control` ctrlD bit 4 | big_muff |
-| Pedal mask bit 5 | `distortion_control` ctrlD bit 5 | fuzz_face |
-| Pedal mask bit 6 | `distortion_control` ctrlD bit 6 | metal |
-| Pedal mask bit 7 | reserved | — |
-| drive | `distortion_control` ctrlC | shared by every pedal |
-| tone | `distortion_control` ctrlA | shared by every pedal |
-| level | `distortion_control` ctrlB | shared by every pedal |
-| bias | `gate_control` ctrlC | shared by every pedal that uses bias |
-| tight | `overdrive_control` ctrlD | shared by every pedal that uses tight |
-| mix | `gate_control` ctrlD | shared by every pedal that uses wet/dry |
+| `clean_boost` | 0 | implemented (3 register stages: mul -> shift -> level + safety softClip) |
+| `tube_screamer` | 1 | implemented (5 register stages: input HPF -> mul -> asym soft clip -> post LPF -> level) |
+| `rat` | 2 | mapped onto the existing RAT stage; Python sets `gate_control` bit 4 when this bit is set |
+| `ds1` | 3 | reserved — mask accepted, no Clash stage yet |
+| `big_muff` | 4 | reserved — mask accepted, no Clash stage yet |
+| `fuzz_face` | 5 | reserved — mask accepted, no Clash stage yet |
+| `metal` | 6 | implemented (5 register stages: tight HPF -> mul -> hard clip -> post LPF -> level) |
+| reserved | 7 | unused |
 
-Every byte is currently spare. **No `block_design.tcl` change.**
+### Why the `model_select` design was rejected
 
-A pedal stage processes audio when:
+The first attempt routed a single 4-bit `model_select` into every
+distortion stage. Each stage had a `case modelSelect of …` over all
+voicings, building eight parallel multipliers / clippers / filters
+behind one big mux. Vivado WNS regressed from -7.722 ns to
+-15.067 ns. The pedal-mask design replaces that with seven
+independently enabled small stages, restoring WNS to -7.801 ns. Do
+not bring `model_select` back — see `DECISIONS.md` D6 and
+`TIMING_AND_FPGA_NOTES.md`.
+
+## Control plane (final)
+
+Master enable: `gate_control` bit 2 (the existing `distortion_on`
+flag, shared with the legacy distortion stage).
+
+| Field | Carries |
+| --- | --- |
+| `distortion_control.ctrlA` | tone (shared) |
+| `distortion_control.ctrlB` | level (shared) |
+| `distortion_control.ctrlC` | drive (shared) |
+| `distortion_control.ctrlD[6:0]` | pedal enable mask |
+| `distortion_control.ctrlD[7]` | reserved |
+| `gate_control.ctrlC` | bias (used by future bias-aware pedals) |
+| `gate_control.ctrlD` | mix (used by future wet/dry pedals) |
+| `overdrive_control.ctrlD` | tight |
+
+Every byte was already spare in the existing bitstream; no
+`block_design.tcl` change was needed.
+
+A pedal stage processes audio when both:
 
 ```
 flag2(fGate)                                  -- section master
-  AND distortion_pedal_enable[bit_for_stage]  -- pedal-specific bit
+flag of distortion_control.ctrlD[bit_for_stage]
 ```
 
-When either is false, the stage is a bit-pass-through.
+are true. When either is false the stage is bit-exact bypass. The
+legacy distortion stage has an extra negation:
 
-## Python API
+```
+distortionLegacyOn = flag2(fGate) AND NOT anyDistPedalOn
+```
+
+so it stays out of the way as soon as any pedal-mask bit is set.
+
+## Python API (final)
+
+Stable. Implemented in `audio_lab_pynq/AudioLabOverlay.py`.
 
 ```python
 ovl.set_distortion_pedal(name, enabled=True, exclusive=True)
-ovl.set_distortion_pedals(clean_boost=False, tube_screamer=True, ...)
+ovl.set_distortion_pedals(**kwargs)
 ovl.clear_distortion_pedals()
 ovl.get_distortion_pedals()           # -> dict[str, bool]
-ovl.set_distortion_drive(0..100)
-ovl.set_distortion_tone(0..100)
-ovl.set_distortion_level(0..100)
-ovl.set_distortion_bias(0..100)
-ovl.set_distortion_tight(0..100)
-ovl.set_distortion_mix(0..100)
+ovl.set_distortion_drive(value)
+ovl.set_distortion_tone(value)
+ovl.set_distortion_level(value)
+ovl.set_distortion_bias(value)
+ovl.set_distortion_tight(value)
+ovl.set_distortion_mix(value)
 ovl.set_distortion_settings(drive=, tone=, level=, bias=, tight=, mix=,
-                            pedal=, pedals=, exclusive=)
+                            pedal=, pedals=, exclusive=True)
 ovl.get_distortion_settings()
 ```
 
-- `name` accepts any of the strings listed above.
-- `exclusive=True` (default): the call clears every other distortion
-  pedal bit before setting the requested one. This keeps casual users
-  from stacking three high-gain stages by accident.
-- `exclusive=False` allows stacking. Notebooks should mark this path
-  as advanced.
-- `set_guitar_effects(distortion_on=...)` continues to flip the section
-  master in `gate_control` ctrlA bit 2. The pedal mask is preserved
-  across that call by reading from the cached `_dist_state`.
+`exclusive=True` (the default) clears every other distortion-pedal
+bit before setting the requested one. `exclusive=False` allows
+stacking (advanced; the one-cell notebook auto-trims `level` to 25
+in that mode).
+
+`set_guitar_effects(distortion_on=...)` still flips the master in
+`gate_control` bit 2; the pedal mask survives across that call
+because it is read from `_dist_state`.
 
 ## Safe defaults at construction time
 
+`AudioLabOverlay.DISTORTION_DEFAULTS`:
+
 | Field | Default |
 | --- | --- |
-| section master | OFF |
-| pedal mask | `0` (all pedals off) |
-| drive | 20 |
-| tone | 50 |
-| level | **35** (intentionally quiet) |
-| bias | 50 |
-| tight | 50 |
-| mix | 100 |
+| `pedal_mask` | 0 |
+| `drive` | 20 |
+| `tone` | 50 |
+| `level` | 35 |
+| `bias` | 50 |
+| `tight` | 50 |
+| `mix` | 100 |
 
-These come from `AudioLabOverlay.DISTORTION_DEFAULTS`. The
-`__init__` sequence writes them so that loading the overlay never
-produces a loud transient.
+The section master starts off (gate.bit2 = 0), so loading the
+overlay never produces a loud transient.
 
-## Phasing
+## Notebooks
 
-Implement and ship in this order, each phase independently deployable:
+| Notebook | Role |
+| --- | --- |
+| `DistortionModelsDebug.ipynb` | Walkthrough of the pedal-mask API: pedal list, bit positions, exclusive cycle, advanced stack, reset. |
+| `GuitarEffectSwitcher.ipynb` | Original ipywidgets switcher with a Distortion Pedalboard section appended (state check, presets, live cell, stack cell, safe-OFF). |
+| `GuitarPedalboardOneCell.ipynb` | Two-cell, single-screen UI for the whole chain. Apply / Safe Bypass / Refresh + four preset buttons. Reserved pedals are selectable with a warning. |
 
-1. **Phase A** — pedal-mask plumbing on the Python side, with a stub
-   Clash where every pedal stage is bit-pass-through. Verifies the
-   GPIO layout, the cache discipline, the API surface, and the
-   notebook flow without touching synthesis hard.
-2. **Phase B** — implement `clean_boost`, `tube_screamer`, `rat_style`,
-   `metal` in Clash. Each as its own small register chain.
-   `rat_style` may simply forward into the existing RAT stage and the
-   new pedal mask bit 2 may be expressed as `flag4(fGate)`.
-3. **Phase C** — `ds1_style`, `big_muff`, `fuzz_face`. Only if Phase B
-   left enough timing margin.
+## Phasing — what is left
 
-Each phase ends with a Vivado timing review. A phase that regresses
-WNS by more than a small amount goes back to design before it is
-deployed.
+The big refactor is done; remaining work is incremental.
+
+- **Phase C — Reserved pedals.**
+  Implement `ds1`, `big_muff`, `fuzz_face` as their own small Clash
+  stages. Insert them in the pipeline between tube_screamer and
+  metal, mirroring the existing pedal stage shape (HPF -> mul ->
+  clip -> post LPF -> level). Each addition needs a Vivado
+  rebuild and a fresh timing review; do not let WNS slip much past
+  the current -7.801 ns without flagging.
+- **Phase D — Timing tightening.**
+  WNS is currently -7.801 ns, baseline-equivalent but still
+  negative. A pass that splits any remaining deep combinational
+  block and pipelines the address paths into the cab tap / reverb
+  BRAM should bring WNS toward 0.
+- **Phase E — UI / preset polish.**
+  Per-pedal default presets in `DistortionModelsDebug.ipynb`,
+  per-pedal capture-and-compare in the one-cell notebook, A/B
+  toggles, etc. No bitstream rebuild needed for any of this.
 
 ## Anti-goals
 
-- One Clash function with a `case` over all seven voicings. That is
-  what we just removed.
-- Hidden global state outside `Frame` and the per-stage `register …`
-  values. Everything that crosses pipeline stages must be visible in
-  the wiring of `fxPipeline`.
-- Reference-source copying. Use the algorithm shape only; write the
-  Clash from scratch. **GPL-licensed projects (guitarix, BYOD, …) are
-  off-limits even as a quoting source.**
+- **No** "one Clash function with a case over all seven pedals."
+  That is the failed pattern. Each pedal is its own register-staged
+  block.
+- **No** hidden global state outside `Frame` and the per-stage
+  `register …` values. Everything that crosses pipeline stages must
+  be visible in the wiring of `fxPipeline`.
+- **No** copying from GPL-licensed reference projects (guitarix,
+  BYOD, …). Algorithm shape is a fair reference; source is not.
+- **No** deploying a bitstream with WNS markedly worse than the
+  current -7.801 ns without flagging the regression first.

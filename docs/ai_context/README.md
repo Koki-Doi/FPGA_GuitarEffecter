@@ -4,14 +4,20 @@ This directory is the shared briefing for Claude Code and Codex working on
 this repository. The goal is that an agent can pick up a task without
 re-scanning the whole tree on every session.
 
+The current load-bearing fact: the **pedal-mask distortion refactor
+shipped** (commit `baa97ff`, deployed and live-verified). Notebook UIs
+were updated alongside it. See `CURRENT_STATE.md` for the post-deploy
+snapshot and `DISTORTION_REFACTOR_PLAN.md` for the staged plan for
+the still-reserved pedals.
+
 ## Reading order
 
 Always start here:
 
 1. [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) — what the system is and where
    each piece lives.
-2. [`CURRENT_STATE.md`](CURRENT_STATE.md) — what is in flight, what is paused,
-   what must not be silently overwritten.
+2. [`CURRENT_STATE.md`](CURRENT_STATE.md) — what shipped, what is reserved,
+   and what to be careful about.
 3. [`DECISIONS.md`](DECISIONS.md) — the design decisions that earlier work
    has already made, and **why**.
 

@@ -38,33 +38,35 @@ read-back from hardware.
 | --- | --- |
 | 0 | noise gate enable |
 | 1 | overdrive enable |
-| 2 | **distortion section master enable** (legacy distortion + new pedal stages) |
+| 2 | **distortion section master enable** (legacy distortion + pedal stages) |
 | 3 | EQ enable |
-| 4 | RAT enable |
+| 4 | RAT enable (also driven high by the Python helper when the `rat` pedal-mask bit is set) |
 | 5 | reverb enable |
 | 6 | amp simulator enable |
 | 7 | cab IR enable |
 
-## Distortion refactor: pedal-mask plan
+## Distortion pedal-mask (deployed)
 
-The previous design tried to switch eight distortion models with a single
-`model_select` field that fanned out into a giant case/mux at every Clash
-stage. That destroyed timing (see `TIMING_AND_FPGA_NOTES.md`) and is being
-replaced.
+`gate_control` bit 2 is the section master. `distortion_control.ctrlD`
+carries a 7-bit pedal-enable mask; bit 7 is reserved.
 
-The replacement keeps `gate_control` bit 2 as the **section master** but
-turns `distortion_control.ctrlD` into a per-pedal enable mask:
+| `distortion_control.ctrlD` bit | Pedal | FPGA stage |
+| --- | --- | --- |
+| 0 | `clean_boost` | implemented |
+| 1 | `tube_screamer` | implemented |
+| 2 | `rat` | mapped onto the existing RAT stage; Python forces `gate_control` bit 4 high when this bit is set |
+| 3 | `ds1` | reserved (mask bit accepted; no Clash stage yet, audio bit-exact) |
+| 4 | `big_muff` | reserved (same) |
+| 5 | `fuzz_face` | reserved (same) |
+| 6 | `metal` | implemented |
+| 7 | reserved | unused |
 
-| `distortion_control.ctrlD` bit | Pedal |
-| --- | --- |
-| 0 | `clean_boost` |
-| 1 | `tube_screamer` |
-| 2 | `rat_style` (may be remapped onto the existing RAT stage) |
-| 3 | `ds1_style` |
-| 4 | `big_muff` |
-| 5 | `fuzz_face` |
-| 6 | `metal` |
-| 7 | reserved |
+The legacy distortion stage (the original `distortion=` /
+`distortion_tone` / `distortion_level` API) is auto-bypassed when any
+pedal-mask bit is set, so `exclusive=True` at the Python level
+really does isolate the chosen voicing. See
+`DISTORTION_REFACTOR_PLAN.md` for design notes and
+`DSP_EFFECT_CHAIN.md` for the per-stage register layout.
 
 Common parameters stay outside the per-pedal mask:
 
@@ -77,8 +79,10 @@ Common parameters stay outside the per-pedal mask:
 | `gate_control.ctrlD` | mix |
 | `overdrive_control.ctrlD` | tight |
 
-Every byte the new scheme touches is currently spare in the existing
-bitstream layout, so **no `block_design.tcl` change is needed**.
+Every byte the pedal-mask scheme touches was already spare in the
+existing bitstream layout, so **no `block_design.tcl` change was
+needed** — and none should be needed when adding the reserved
+pedals either.
 
 ## Cache discipline (Python side)
 

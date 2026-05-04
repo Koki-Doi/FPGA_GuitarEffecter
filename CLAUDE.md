@@ -45,9 +45,14 @@ When a previous turn stopped mid-implementation:
   approves a block-design change.
 - The ADAU1761 ADC HPF is **default-on** (`R19_ADC_CONTROL == 0x23`). Do not
   weaken or skip the HPF enable in `config_codec()`.
+- The selectable distortion section is **pedal-mask-based** (commit
+  `baa97ff`, deployed). Do not roll it back to a `model_select` / 8-way
+  mux design; see `docs/ai_context/DECISIONS.md` D6.
 - Any edit to `hw/ip/clash/src/LowPassFir.hs` requires a Vivado bit/hwh
   rebuild and a timing-summary check. A bitstream with significantly worse
-  WNS than the previous baseline must not be deployed.
+  WNS than the deployed -7.801 ns must not be deployed.
+- Notebook-only edits do **not** rebuild the bitstream. Update the
+  notebook, run `bash scripts/deploy_to_pynq.sh`, done.
 - `git push`, `git pull`, `git fetch`, and other remote operations are
   forbidden. Local commits only.
 - Do not clone reference repositories into the tree. Do not paste GPL code
