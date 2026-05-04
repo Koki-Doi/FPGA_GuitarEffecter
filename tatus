@@ -1,0 +1,15 @@
+3b15340 2026-05-03 20:55:55 +0900 Add InputDebug notebook for Phase 1 input-noise triage
+8a1d16b 2026-05-03 20:18:19 +0900 Add Phase 1 input-noise diagnostics and PYNQ-Z2 deploy script
+cdf4d8c 2026-05-01 21:05:17 +0900 Improve amp and cab simulator controls
+5c91bcf 2026-05-01 20:11:57 +0900 Update README for amp and cab effects
+31cb95e 2026-05-01 15:02:50 +0900 Update latest changes
+8c82dfc 2026-05-01 14:44:50 +0900 Add amp and cabinet simulators
+5677e20 2026-05-01 13:49:58 +0900 Update PYNQ bitstream for RAT effect
+5041aaa 2026-05-01 13:00:37 +0900 Expose RAT distortion in notebook chain
+db3cdab 2026-05-01 08:52:55 +0900 Add RAT-style distortion DSP
+c996817 2026-05-01 08:37:08 +0900 Smooth noise gate envelope
+a471699 2026-05-01 07:52:59 +0900 Add hardware guitar effects switcher
+b88f323 2026-04-30 16:34:34 +0900 Rewrite README in Japanese
+cc4b1ca 2026-04-30 16:07:26 +0900 Add configurable guitar effects chain
+0608e70 2026-04-30 11:21:32 +0900 Add adjustable reverb controls
+506838c 2026-04-30 10:48:26 +0900 Add light reverb effect
