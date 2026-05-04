@@ -45,7 +45,7 @@ The discipline is: **multiply** in `Wide`, **shift+sat** back into
 
 ```
 makeInput
-  -> gateLevel -> gate                                  (noise gate envelope + apply)
+  -> nsLevel -> nsApply                                 (noise suppressor envelope + apply, replaces the legacy hard gate)
   -> overdrive (drive mul -> boost -> clip -> tone -> level)
   -> legacy distortion (drive mul -> boost -> clip -> tone -> level)
   -> RAT (HPF -> drive -> opamp LPF -> hard clip -> post LPF -> tone -> level -> mix)
@@ -58,6 +58,45 @@ makeInput
   -> reverb (BRAM tap + tone + feedback + mix)
   -> output AXIS register
 ```
+
+## Noise Suppressor section
+
+Replaces the legacy hard noise gate. Driven by the dedicated
+`axi_gpio_noise_suppressor` GPIO carried in `fNs` (THRESHOLD / DECAY /
+DAMP / mode bytes); enable still rides on `flag0(fGate)` (the existing
+`noise_gate_on` bit) so `set_guitar_effects(noise_gate_on=...)` keeps
+working. Bit-exact bypass when the flag is clear. RNNoise / FFT /
+spectral methods were intentionally **not** adopted -- too heavy for
+this PL budget.
+
+Same shape as the legacy gate: one envelope-input register stage, two
+feedback registers (envelope + smoothed gain), one apply register
+stage. Wiring lives in `fxPipeline` as `nsLevelPipe -> nsEnv -> nsGain
+-> nsPipe -> odDriveMulPipe`.
+
+| Stage | What it does |
+| --- | --- |
+| `nsLevelPipe` (reuses `gateLevelFrame`) | `fWetL = max(\|L\|, \|R\|)` -- one register stage feeding the envelope follower. |
+| `nsEnv` (`nsEnvNext` register feedback) | Peak follower. Attack-instantaneous; release ~ `env >> 8 + 1` per sample. Reset to 0 when the noise-suppressor enable is clear. |
+| `nsGain` (`nsGainNext` register feedback) | Smoothed gain. Open is fast (`nsAttackStep = 512`, ~8 samples to unity). Close ramps toward `nsTargetGain` at `nsCloseStep` per sample, where `nsCloseStep = max(1, (255 - decay_byte) >> 2)`. Target is `gateUnity` when `env >= threshold`, otherwise `nsClosedGain damp = ((255 - damp_byte)^2) >> 5`. |
+| `nsPipe` (`nsApplyFrame`) | Multiply each channel by the smoothed gain (`mulU12 x gain`) and saturate (`satShift12`). Bit-exact bypass when `flag0(fGate)` is clear. |
+
+### Parameter mappings
+
+| Knob | Python | byte (ctrl byte of fNs) | DSP effect |
+| --- | --- | --- | --- |
+| THRESHOLD | 0..100 | `ctrlA = round(threshold * 255 / 1000)` (so 100 -> 26) | scaled to `Sample` via `nsThresholdSample = asSigned9 ctrlA << 13`, identical scaling to the legacy gate threshold. |
+| DECAY | 0..100 | `ctrlB = round(decay * 255 / 100)` | full-close range from ~1.4 ms (decay=0) to ~85 ms (decay=100). Linear ramp; integer step per sample. |
+| DAMP | 0..100 | `ctrlC = round(damp * 255 / 100)` | closed gain ranges from ~50 % (damp=0) to 0 % (damp=100). Quadratic curve via `((255 - byte)^2) >> 5`. |
+| mode | 0..255 raw | `ctrlD` | reserved; 0 today. Future use: NS-2 vs NS-1X mode, attack / hold knobs. |
+
+The legacy noise-gate frame helpers (`gateLevelFrame`, `gateEnvNext`,
+`gateOpenNext`, `gateGainNext`, `gateFrame`) are **kept as Haskell
+source** so older bitstreams keep building, but no register in the
+active pipeline references them; the synthesiser drops them.
+`gate_control.ctrlB` is therefore unused in the new bitstream -- we
+still mirror the threshold byte to it from Python for backward
+compatibility with overlays that lack the new GPIO.
 
 ## Legacy distortion section
 

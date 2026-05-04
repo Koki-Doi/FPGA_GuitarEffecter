@@ -29,6 +29,7 @@ data Frame = Frame
   , fAmpTone :: Ctrl
   , fCab :: Ctrl
   , fReverb :: Ctrl
+  , fNs :: Ctrl
   , fAddr :: ReverbAddr
   , fDryL :: Sample
   , fDryR :: Sample
@@ -290,8 +291,8 @@ gateOpenThreshold :: Sample -> Sample
 gateOpenThreshold threshold =
   satWide (resize threshold + (resize threshold `shiftR` 1) + 65_536)
 
-makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
-makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl samples validIn lastIn =
+makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
+makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl noiseSuppressorControl samples validIn lastIn =
   if validIn
     then
       let (left, right) = unpackChan samples
@@ -309,6 +310,7 @@ makeInput gateControl odControl distControl eqControl ratControl ampControl ampT
               , fAmpTone = ampToneControl
               , fCab = cabControl
               , fReverb = reverbControl
+              , fNs = noiseSuppressorControl
               , fAddr = 0
               , fDryL = left
               , fDryR = right
@@ -370,6 +372,116 @@ gateFrame gain f
   | otherwise = f{fL = applyGateGain (fL f), fR = applyGateGain (fR f)}
  where
   applyGateGain x = satShift12 (mulU12 x gain)
+
+-- ---- Noise Suppressor (THRESHOLD / DECAY / DAMP) ---------------------
+--
+-- Replaces the legacy hard noise gate in the active pipeline. Driven by
+-- the dedicated noise_suppressor_control GPIO carried in fNs:
+--
+--   fNs ctrlA = nsThreshold   (envelope-compare level, byte 0..255)
+--   fNs ctrlB = nsDecay       (close-ramp slowness,   byte 0..255)
+--   fNs ctrlC = nsDamp        (closed-gain depth,     byte 0..255)
+--   fNs ctrlD = nsMode        (reserved, 0 today)
+--
+-- The block is enabled by the same noise_gate_on flag (flag0 of fGate)
+-- so existing set_guitar_effects(noise_gate_on=...) still toggles it.
+-- When the flag is clear, every stage is bit-exact bypass.
+
+nsThresholdByte :: Ctrl -> Unsigned 8
+nsThresholdByte = ctrlA
+
+nsDecayByte :: Ctrl -> Unsigned 8
+nsDecayByte = ctrlB
+
+nsDampByte :: Ctrl -> Unsigned 8
+nsDampByte = ctrlC
+
+nsModeByte :: Ctrl -> Unsigned 8
+nsModeByte = ctrlD
+
+-- Same scaling as the legacy gateThreshold helper, so that writing the
+-- same threshold byte to the legacy GPIO and to the new GPIO yields the
+-- same envelope compare level.
+nsThresholdSample :: Ctrl -> Sample
+nsThresholdSample c = resize (asSigned9 (nsThresholdByte c)) `shiftL` 13
+
+-- closed_gain = ((255 - damp_byte)^2) >> 5 -- pre-computed mapping that
+-- gives:
+--   damp byte = 0   -> ~ 2032 / 4095  (about 50 % of unity)
+--   damp byte = 127 -> ~  512 / 4095  (about 12.5 %)
+--   damp byte = 255 -> 0              (full mute)
+-- One Unsigned 8 x Unsigned 8 multiply, one shift -- cheap.
+nsClosedGain :: Unsigned 8 -> GateGain
+nsClosedGain damp =
+  let inv8 = (255 :: Unsigned 8) - damp
+      sq16 = (resize inv8 :: Unsigned 16) * (resize inv8 :: Unsigned 16)
+  in resize (sq16 `shiftR` 5) :: GateGain
+
+-- close_step = max(1, (255 - decay_byte) >> 2)
+--   decay byte = 0   -> step 63  (full close in ~65 samples, ~1.4 ms)
+--   decay byte = 127 -> step 32  (full close in ~128 samples, ~2.7 ms)
+--   decay byte = 255 -> step 1   (full close in ~4096 samples, ~85 ms)
+-- Linear ramp: simple, predictable, fits one register stage.
+nsCloseStep :: Unsigned 8 -> GateGain
+nsCloseStep d =
+  let raw = ((255 :: Unsigned 8) - d) `shiftR` 2
+  in if raw == 0 then 1 else resize raw :: GateGain
+
+nsAttackStep :: GateGain
+nsAttackStep = 512
+
+-- Stage 1 envelope: peak follower, attack-instantaneous,
+-- release ~ env >> 8 + 1 per sample (matches legacy gate envelope so
+-- the new section feels familiar). Bypassed (env -> 0) when the
+-- noise_gate_on flag is clear so a re-enable starts from a clean state.
+nsEnvNext :: Sample -> Maybe Frame -> Sample
+nsEnvNext env Nothing = env
+nsEnvNext env (Just f)
+  | not (flag0 (fGate f)) = 0
+  | level > env           = level
+  | env > releaseStep     = env - releaseStep
+  | otherwise             = 0
+ where
+  level       = maxAbsFrame f
+  releaseStep = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
+
+-- Stage 2 target gain: open above threshold, damp-derived closed gain
+-- below. Lives entirely inside the gain-smoother register; not its own
+-- pipeline stage.
+nsTargetGain :: Frame -> Sample -> GateGain
+nsTargetGain f env
+  | not (flag0 (fGate f)) = gateUnity
+  | env >= threshold      = gateUnity
+  | otherwise             = closed
+ where
+  threshold = nsThresholdSample (fNs f)
+  closed    = nsClosedGain (nsDampByte (fNs f))
+
+-- Stage 3 gain smoother: ramps the gain register toward the target.
+-- Open is fast (nsAttackStep = 512, ~8 samples to unity) so we do not
+-- chop transients; close is decay-controlled.
+nsGainNext :: GateGain -> Sample -> Maybe Frame -> GateGain
+nsGainNext gain _ Nothing = gain
+nsGainNext gain env (Just f)
+  | not (flag0 (fGate f)) = gateUnity
+  | gain < target =
+      if target - gain < nsAttackStep then target else gain + nsAttackStep
+  | gain > target =
+      let step = nsCloseStep (nsDecayByte (fNs f))
+      in if gain - target < step then target else gain - step
+  | otherwise = gain
+ where
+  target = nsTargetGain f env
+
+-- Stage 4 apply: one register stage of multiply + saturating shift.
+-- Same arithmetic as the legacy gateFrame so timing is comparable.
+-- Bit-exact bypass when the noise_gate_on flag is clear.
+nsApplyFrame :: GateGain -> Frame -> Frame
+nsApplyFrame gain f
+  | not (flag0 (fGate f)) = f
+  | otherwise = f{fL = applyNs (fL f), fR = applyNs (fR f)}
+ where
+  applyNs x = satShift12 (mulU12 x gain)
 
 overdriveDriveMultiplyFrame :: Frame -> Frame
 overdriveDriveMultiplyFrame f =
@@ -1179,6 +1291,7 @@ nextAxisOut old pipe readyOut =
                  , PortName "amp_tone_control"
                  , PortName "cab_control"
                  , PortName "reverb_control"
+                 , PortName "noise_suppressor_control"
                  , PortName "axis_in_tdata"
                  , PortName "axis_in_tvalid"
                  , PortName "axis_in_tlast"
@@ -1202,6 +1315,7 @@ topEntity
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain (BitVector 48)
   -> Signal AudioDomain Bool
   -> Signal AudioDomain Bool
@@ -1211,9 +1325,9 @@ topEntity
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-topEntity clk rst gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl samples validIn lastIn readyOut =
+topEntity clk rst gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl samples validIn lastIn readyOut =
   withClockResetEnable clk rst enableGen $
-    fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl samples validIn lastIn readyOut
+    fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl samples validIn lastIn readyOut
 
 fxPipeline
   :: HiddenClockResetEnable AudioDomain
@@ -1226,6 +1340,7 @@ fxPipeline
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain (BitVector 48)
   -> Signal AudioDomain Bool
   -> Signal AudioDomain Bool
@@ -1235,7 +1350,7 @@ fxPipeline
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl samples validIn lastIn readyOut =
+fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl samples validIn lastIn readyOut =
   pipeline
  where
   pipeline =
@@ -1259,16 +1374,24 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
         <*> ampToneControl
         <*> cabControl
         <*> reverbControl
+        <*> nsControl
         <*> samples
         <*> acceptedIn
         <*> lastIn
 
-  gateLevelPipe = register Nothing (mapPipe gateLevelFrame <$> inPipe)
-  gateEnv = register 0 (gateEnvNext <$> gateEnv <*> gateLevelPipe)
-  gateOpen = register True (gateOpenNext <$> gateOpen <*> gateEnv <*> gateLevelPipe)
-  gateGain = register gateUnity (gateGainNext <$> gateGain <*> gateOpen <*> gateLevelPipe)
-  gatePipe = register Nothing (mapPipe <$> (gateFrame <$> gateGain) <*> gateLevelPipe)
-  odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> gatePipe)
+  -- Noise Suppressor pipeline. Replaces the legacy hard gate. Same
+  -- shape: one envelope-input register stage, two feedback registers
+  -- (envelope + smoothed gain), one apply register stage. Driven by
+  -- noise_suppressor_control (THRESHOLD / DECAY / DAMP / mode); enable
+  -- still rides on flag0 (noise_gate_on) of fGate so the existing
+  -- set_guitar_effects() API toggles it. Bit-exact bypass when the
+  -- flag is clear. The legacy gate frame helpers above are retained
+  -- but unused by the active pipeline; the synthesiser drops them.
+  nsLevelPipe = register Nothing (mapPipe gateLevelFrame <$> inPipe)
+  nsEnv = register 0 (nsEnvNext <$> nsEnv <*> nsLevelPipe)
+  nsGain = register gateUnity (nsGainNext <$> nsGain <*> nsEnv <*> nsLevelPipe)
+  nsPipe = register Nothing (mapPipe <$> (nsApplyFrame <$> nsGain) <*> nsLevelPipe)
+  odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> nsPipe)
   odDriveBoostPipe = register Nothing (mapPipe overdriveDriveBoostFrame <$> odDriveMulPipe)
   odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odDriveBoostPipe)
 

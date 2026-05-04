@@ -52,9 +52,16 @@ control effect parameters via AXI GPIO.
   `distortion_control.ctrlD` enables one pedal. `clean_boost`,
   `tube_screamer`, `metal` are implemented in Clash; `rat` maps onto
   the existing RAT stage; `ds1`, `big_muff`, `fuzz_face` are reserved
-  bits with no FPGA stage yet. The bitstream on the board reflects
-  this design (WNS = -7.801 ns, baseline-equivalent). See
-  `DISTORTION_REFACTOR_PLAN.md`.
+  bits with no FPGA stage yet. See `DISTORTION_REFACTOR_PLAN.md`.
+- The noise stage is a **BOSS NS-2 / NS-1X-style noise suppressor** on
+  a dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` (branch
+  `feature/noise-suppressor-gpio-ui`). THRESHOLD / DECAY / DAMP / mode
+  bytes drive an envelope follower + smoothed-gain block in Clash;
+  the legacy hard noise gate is replaced. Enable still rides on
+  `gate_control` bit 0 (`noise_gate_on`). RNNoise / FFT / spectral
+  methods are intentionally **not** used. See
+  `DSP_EFFECT_CHAIN.md` Noise Suppressor section and `DECISIONS.md`
+  D11.
 - AXI GPIOs in the design are output-only; the Python side keeps a cache
   of the last word written to each GPIO so that read-modify-write on
   byte-fields is possible.
@@ -74,8 +81,11 @@ control effect parameters via AXI GPIO.
 ## Key principles for new work
 
 - Reuse the existing AXI GPIO topology by claiming spare bytes / bits.
-  Adding a new `axi_gpio_*` IP requires a `block_design.tcl` change and is
-  off the table by default.
+  Adding a new `axi_gpio_*` IP requires a `block_design.tcl` change and
+  is off the table by default. The noise-suppressor work
+  (`axi_gpio_noise_suppressor`) is the one shipped exception, approved
+  case-by-case; see `DECISIONS.md` D11 and `BUILD_AND_DEPLOY.md` for
+  the recipe.
 - Never break the bit-bypass property: every effect stage must produce
   output equal to its input when its enable bit is clear, sample-exact.
 - The current Vivado build already runs with negative slack

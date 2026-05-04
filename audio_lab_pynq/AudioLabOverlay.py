@@ -57,6 +57,23 @@ class AudioLabOverlay(Overlay):
         'mix': 100,
     }
 
+    # Noise Suppressor (BOSS NS-2 / NS-1X style operation, all-FPGA).
+    # Driven by the dedicated axi_gpio_noise_suppressor at 0x43CC0000:
+    #   ctrlA = threshold byte  (envelope-compare level)
+    #   ctrlB = decay byte      (close-ramp slowness)
+    #   ctrlC = damp byte       (max attenuation depth)
+    #   ctrlD = mode byte       (reserved, 0 today)
+    # On/off rides on gate_control flag bit 0 (noise_gate_on) so the
+    # existing set_guitar_effects(noise_gate_on=...) toggle still works.
+    NOISE_SUPPRESSOR_DEFAULTS = {
+        'enabled': False,
+        'threshold': 35,
+        'decay': 40,
+        'damp': 70,
+        'mode': 0,
+    }
+    NOISE_SUPPRESSOR_GPIO_NAME = 'axi_gpio_noise_suppressor'
+
     def __init__(self, bitfile_name=None, **kwargs):
         # Generate default bitfile name
         if bitfile_name is None:
@@ -79,6 +96,14 @@ class AudioLabOverlay(Overlay):
         self._cached_distortion_word = 0
         if hasattr(self, 'axi_gpio_distortion'):
             self._apply_distortion_state_to_words()
+        # Noise Suppressor cache. The new GPIO is output-only so we
+        # keep the last word + the per-parameter ints. Safe defaults:
+        # enabled=False so loading the overlay never produces an
+        # unexpected gating transient.
+        self._noise_suppressor_state = dict(self.NOISE_SUPPRESSOR_DEFAULTS)
+        self._cached_noise_suppressor_word = 0
+        if hasattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME):
+            self._apply_noise_suppressor_state_to_word()
         
     def route(self, source, effect, sink):    
         self.x_source.start_cfg()
@@ -367,6 +392,123 @@ class AudioLabOverlay(Overlay):
             'mix': s['mix'],
         }
 
+    # ---- Noise Suppressor public API ------------------------------------
+
+    @classmethod
+    def _noise_threshold_to_u8(cls, value):
+        """Map the new threshold scale (0..100) to an 8-bit byte.
+
+        New 100 == legacy 10 (i.e. one tenth of the old span). Formula:
+        ``round(threshold * 255 / 1000)``. Values outside 0..100 are
+        clamped first. Callers that already speak the legacy 0..100 ->
+        0..255 mapping should keep using ``_percent_to_u8``.
+        """
+        value = cls._clamp_percent(value)
+        return cls._clamp_range(value * 255 / 1000, 0, 255)
+
+    @classmethod
+    def _noise_suppressor_word(cls, threshold, decay, damp, mode=0):
+        """Pack the four control bytes into the 32-bit GPIO word.
+        ctrlA=threshold, ctrlB=decay, ctrlC=damp, ctrlD=mode.
+        """
+        return cls._pack4(
+            cls._noise_threshold_to_u8(threshold),
+            cls._percent_to_u8(decay, 255),
+            cls._percent_to_u8(damp, 255),
+            int(mode) & 0xFF,
+        )
+
+    def _apply_noise_suppressor_state_to_word(self, mirror_to_gate=True):
+        """Recompute the noise-suppressor 32-bit word from cached state
+        and write it to the dedicated GPIO. When ``mirror_to_gate`` is
+        True (the default) the threshold byte is also written into the
+        legacy ``gate_control.ctrlB`` slot so older bitstreams that
+        only had the legacy hard noise gate still see a usable
+        threshold.
+        """
+        s = self._noise_suppressor_state
+        word = self._noise_suppressor_word(
+            threshold=s['threshold'],
+            decay=s['decay'],
+            damp=s['damp'],
+            mode=s['mode'],
+        )
+        self._cached_noise_suppressor_word = word
+        gpio = getattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME, None)
+        if gpio is not None:
+            self._write_gpio(gpio, word)
+
+        if mirror_to_gate and hasattr(self, 'axi_gpio_gate'):
+            threshold_byte = self._noise_threshold_to_u8(s['threshold'])
+            gate_word = self._cached_gate_word & ~0x0000FF00
+            gate_word |= (threshold_byte & 0xFF) << 8
+            if s['enabled']:
+                gate_word |= 0x01
+            else:
+                gate_word &= ~0x01
+            self._cached_gate_word = gate_word
+            self._write_gpio(self.axi_gpio_gate, gate_word)
+
+    def set_noise_suppressor_threshold(self, value):
+        return self.set_noise_suppressor_settings(threshold=value)
+
+    def set_noise_suppressor_decay(self, value):
+        return self.set_noise_suppressor_settings(decay=value)
+
+    def set_noise_suppressor_damp(self, value):
+        return self.set_noise_suppressor_settings(damp=value)
+
+    def set_noise_suppressor_settings(self, threshold=None, decay=None,
+                                       damp=None, enabled=None, mode=None):
+        """Update any subset of the noise-suppressor parameters.
+
+        Numeric parameters (``threshold`` / ``decay`` / ``damp``) take
+        the new 0..100 scale; bytes are derived as documented in
+        ``_noise_threshold_to_u8`` / ``_percent_to_u8``. ``enabled``
+        flips the same flag bit that ``set_guitar_effects(noise_gate_on=)``
+        owns, so the two stay in sync. The full 32-bit word is rewritten
+        to the dedicated GPIO; the legacy ``gate_control.ctrlB`` slot is
+        also refreshed for backward compatibility with older bitstreams.
+        """
+        s = self._noise_suppressor_state
+        if threshold is not None:
+            s['threshold'] = self._clamp_percent(threshold)
+        if decay is not None:
+            s['decay'] = self._clamp_percent(decay)
+        if damp is not None:
+            s['damp'] = self._clamp_percent(damp)
+        if mode is not None:
+            s['mode'] = self._clamp_range(mode, 0, 255)
+        if enabled is not None:
+            s['enabled'] = bool(enabled)
+        self._apply_noise_suppressor_state_to_word()
+        return self.get_noise_suppressor_settings()
+
+    def get_noise_suppressor_settings(self):
+        """Return the cached noise-suppressor state plus the byte view
+        of every parameter and a pointer to the GPIO that backs it.
+        """
+        s = self._noise_suppressor_state
+        threshold_byte = self._noise_threshold_to_u8(s['threshold'])
+        decay_byte = self._percent_to_u8(s['decay'], 255)
+        damp_byte = self._percent_to_u8(s['damp'], 255)
+        mode_byte = int(s['mode']) & 0xFF
+        return {
+            'enabled': bool(s['enabled']),
+            'threshold': s['threshold'],
+            'threshold_byte': threshold_byte,
+            'decay': s['decay'],
+            'decay_byte': decay_byte,
+            'damp': s['damp'],
+            'damp_byte': damp_byte,
+            'mode': mode_byte,
+            'control_word': self._cached_noise_suppressor_word,
+            'reflected_to_fpga': True,
+            'gpio_name': self.NOISE_SUPPRESSOR_GPIO_NAME,
+            'has_gpio': hasattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME),
+            'implementation_status': 'threshold_decay_damp_fpga',
+        }
+
     @classmethod
     def reverb_control_word(cls, enabled=True, reverb=35, tone=70, mix=25):
         reverb = cls._clamp_percent(reverb)
@@ -448,7 +590,7 @@ class AudioLabOverlay(Overlay):
 
         gate_word = (
             flags
-            | (cls._percent_to_u8(noise_gate_threshold, 255) << 8)
+            | (cls._noise_threshold_to_u8(noise_gate_threshold) << 8)
             | (bias_byte << 16)
             | (mix_byte << 24)
         )
@@ -555,6 +697,20 @@ class AudioLabOverlay(Overlay):
             if s['pedal_mask'] & (1 << self._DIST_PEDAL_BIT['rat']):
                 kwargs['rat_on'] = True
 
+        # Mirror noise_gate_on / noise_gate_threshold into the dedicated
+        # noise-suppressor GPIO so the new bitstream and the legacy
+        # bitstream behave consistently. Caller-supplied values win;
+        # otherwise we fall back to the cached suppressor state.
+        if hasattr(self, '_noise_suppressor_state'):
+            ns = self._noise_suppressor_state
+            if 'noise_gate_on' in kwargs:
+                ns['enabled'] = bool(kwargs['noise_gate_on'])
+            if 'noise_gate_threshold' in kwargs:
+                ns['threshold'] = self._clamp_percent(
+                    kwargs['noise_gate_threshold'])
+            else:
+                kwargs['noise_gate_threshold'] = ns['threshold']
+
         words = self.guitar_effect_control_words(**kwargs)
         self._write_gpio(self.axi_gpio_gate, words['gate'])
         self._write_gpio(self.axi_gpio_overdrive, words['overdrive'])
@@ -584,6 +740,15 @@ class AudioLabOverlay(Overlay):
         self._cached_gate_word = words['gate']
         self._cached_overdrive_word = words['overdrive']
         self._cached_distortion_word = words['distortion']
+
+        # Refresh the dedicated noise-suppressor GPIO so its threshold
+        # byte matches the byte we just wrote into the gate word. This
+        # is a no-op on overlays that lack the new GPIO; on the new
+        # bitstream it keeps the FPGA-side compare level in sync with
+        # the user's noise_gate_threshold. We pass mirror_to_gate=False
+        # because we just wrote the gate word above.
+        if hasattr(self, '_noise_suppressor_state'):
+            self._apply_noise_suppressor_state_to_word(mirror_to_gate=False)
 
         if words['gate'] & 0xFF:
             self.route(XbarSource.line_in, XbarEffect.guitar_chain, sink)
