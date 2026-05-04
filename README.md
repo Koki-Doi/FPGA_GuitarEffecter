@@ -17,19 +17,19 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 
 ## エフェクトチェーン
 
-`GuitarEffectsChain.ipynb` では、以下の順番でエフェクトを処理します。
+`GuitarEffectsChain.ipynb` および `GuitarPedalboardOneCell.ipynb` では、以下の順番でエフェクトを処理します。
 
 ```text
-Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> Amp Simulator -> Cab IR -> EQ -> Reverb
+Noise Suppressor -> Overdrive -> Distortion Pedalboard -> RAT Distortion -> Amp Simulator -> Cab IR -> EQ -> Reverb
 ```
 
 各エフェクトは個別に ON/OFF できます。
 
 | エフェクト | パラメータ |
 | --- | --- |
-| Noise Gate | `THRESHOLD` |
+| Noise Suppressor | `THRESHOLD`, `DECAY`, `DAMP` |
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
-| Distortion | `TONE`, `LEVEL`, `DISTORTION` |
+| Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1`* / `big_muff`* / `fuzz_face`* / `metal`、* は予約) |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
 | Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `CHARACTER` |
 | Cab IR | `MIX`, `LEVEL`, `MODEL`, `AIR` |
@@ -37,7 +37,18 @@ Noise Gate -> Overdrive -> Distortion -> RAT Distortion -> Amp Simulator -> Cab 
 | Reverb | `Decay`, `tone`, `mix` |
 
 すべて OFF の場合は、通常の `line_in -> passthrough -> headphone` に戻ります。いずれかのエフェクトを ON にすると、`line_in -> guitar_chain -> headphone` に切り替わります。
-Noise Gate はエンベロープ検出とフェード開閉を使い、しきい値付近で波形を直接切らないようにしています。
+
+### Noise Suppressor (BOSS NS-2 / NS-1X 風)
+
+旧 Noise Gate 段は **専用 AXI GPIO** (`axi_gpio_noise_suppressor` @ `0x43CC0000`) で制御する Noise Suppressor に置き換わっています。FPGA 側ではエンベロープ追従 + 平滑化されたゲインステージで構成されており、`gate_control` bit 0 (legacy `noise_gate_on`) が引き続き ON/OFF を制御します。
+
+| 知能 | 範囲 | 内容 |
+| --- | --- | --- |
+| `THRESHOLD` | 0..100 | 検出エンベロープと比較する基準レベル。byte = `round(threshold * 255 / 1000)` (新スケール 100 ≡ 旧 10) |
+| `DECAY` | 0..100 | 閉じる速さ。0 = タイト (~1.4 ms full close)、100 = サステイン保持 (~85 ms full close) |
+| `DAMP` | 0..100 | 最大ノイズ抑制量。0 ≒ 50% closed gain (自然)、100 ≒ 0% (完全ミュート) |
+
+`GuitarPedalboardOneCell.ipynb` には NS-2 Style / NS-1X Natural / High Gain Tight / Sustain Friendly の 4 プリセットを用意しています。RNNoise / FFT / spectral 系処理は採用していません (PYNQ-Z2 PL リソース都合)。BOSS NS-2 / NS-1X は操作思想のみ参考にしており、回路やコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D11、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Noise Suppressor 節を参照してください。
 
 ## C++ DSP プロトタイプ
 
@@ -89,8 +100,11 @@ make tests
 
 | Notebook | 内容 |
 | --- | --- |
-| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック |
+| `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Noise Suppressor (THRESHOLD / DECAY / DAMP + 4プリセット) / Overdrive / Distortion Pedalboard (pedal-mask + 4プリセット) / Amp / Cab IR / EQ / Reverb を Apply / Safe Bypass / Refresh ボタンで一括操作 |
+| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクション付き) |
+| `DistortionModelsDebug.ipynb` | Distortion pedal-mask API のウォークスルー (pedal一覧 + bit position + 実装/予約状況の表示と排他切替) |
 | `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb を操作するメインノートブック |
+| `InputDebug.ipynb` | Line-in のキャプチャ・統計・ADC HPF 切替によるノイズ三角測 |
 | `LineInPassthroughOneCell.ipynb` | 1セルで Line-in をそのまま出力する確認用 |
 | `LineInReverbOneCell.ipynb` | 1セルで軽いリバーブを有効化する確認用 |
 | `PassthroughDebug.ipynb` | 入力、出力、コーデック、AXI Stream Switch の診断用 |
@@ -99,32 +113,43 @@ make tests
 PYNQ 上では通常、次のURLから開きます。
 
 ```text
-http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/GuitarEffectsChain.ipynb
+http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
 ```
 
 この環境では以下に配置済みです。
 
 ```text
-http://192.168.1.8:9090/notebooks/audio_lab/GuitarEffectsChain.ipynb
+http://192.168.1.8:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
 ```
 
 ## Python API
 
-基本的な使い方です。
+基本的な使い方です。`noise_gate_threshold` は新スケール 0..100 (100 ≡ 旧 10)。
 
 ```python
 import audio_lab_pynq as aud
 
 ol = aud.AudioLabOverlay()
 
+# Noise Suppressor の細かい操作は専用APIを使います。
+ol.set_noise_suppressor_settings(
+    enabled=True,
+    threshold=35,   # 0..100 (byte = round(threshold * 255 / 1000))
+    decay=45,       # 0..100 (close ramp の遅さ)
+    damp=80,        # 0..100 (最大ノイズ抑制量)
+)
+
+# 互換 API。set_guitar_effects(noise_gate_threshold=...) は新スケールで動作し、
+# 専用 GPIO とレガシー gate_control.ctrlB の両方に同じ byte を書きます。
 ol.set_guitar_effects(
     noise_gate_on=True,
-    noise_gate_threshold=8,
+    noise_gate_threshold=80,
     overdrive_on=True,
     overdrive_tone=65,
     overdrive_level=100,
     overdrive_drive=30,
     distortion_on=True,
+    distortion_pedal_mask=(1 << 1),  # tube_screamer (use set_distortion_pedal()/set_distortion_pedals() in real code)
     distortion_tone=65,
     distortion_level=100,
     distortion=20,
@@ -154,11 +179,17 @@ ol.set_guitar_effects(
     reverb_tone=65,
     reverb_mix=20,
 )
+
+# Distortion pedal-mask の操作は専用 API が読みやすい。
+ol.set_distortion_pedal('tube_screamer', exclusive=True)
+ol.set_distortion_settings(drive=45, tone=55, level=35, tight=60)
 ```
 
 全エフェクトを OFF にしてパススルーへ戻す例です。
 
 ```python
+ol.set_noise_suppressor_settings(enabled=False)
+ol.clear_distortion_pedals()
 ol.set_guitar_effects(
     noise_gate_on=False,
     overdrive_on=False,
@@ -198,14 +229,15 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 | IP | アドレス | 用途 |
 | --- | --- | --- |
 | `axi_gpio_reverb` | `0x43C30000` | Reverb |
-| `axi_gpio_gate` | `0x43C40000` | ON/OFF フラグと Noise Gate |
-| `axi_gpio_overdrive` | `0x43C50000` | Overdrive |
-| `axi_gpio_distortion` | `0x43C60000` | Distortion |
+| `axi_gpio_gate` | `0x43C40000` | ON/OFF フラグ (legacy `noise_gate_threshold` byte ミラー含む) |
+| `axi_gpio_overdrive` | `0x43C50000` | Overdrive (+ distortion section の `tight`) |
+| `axi_gpio_distortion` | `0x43C60000` | Distortion (tone/level/drive + pedal mask) |
 | `axi_gpio_eq` | `0x43C70000` | EQ |
 | `axi_gpio_delay` | `0x43C80000` | RAT Distortion。既存ポート名の互換性のため `delay` 名を維持 |
 | `axi_gpio_amp` | `0x43C90000` | Amp Simulator の gain/master/presence/resonance |
 | `axi_gpio_amp_tone` | `0x43CA0000` | Amp Simulator の bass/middle/treble/character |
 | `axi_gpio_cab` | `0x43CB0000` | Cab IR の mix/level/model/air |
+| `axi_gpio_noise_suppressor` | `0x43CC0000` | Noise Suppressor の THRESHOLD / DECAY / DAMP / mode |
 
 ## ビルド
 
@@ -315,7 +347,7 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に timing violation が残ります。現在のbitstreamは生成できていますが、直近の routed timing summary では `WNS=-7.722ns`、`TNS=-4613.495ns` です。CabのPL実装を4タップ固定プリセットへ軽量化し、重い後段tone処理を外したため以前より改善していますが、次の改善では Clash 側の乗算/加算段をさらにパイプライン分割する必要があります。
+- Vivado 実装時に setup timing violation が残ります。直近の deploy 済 bitstream (Noise Suppressor 追加版) では `WNS = -7.111 ns`、`TNS = -7683.480 ns`、ホールドは clean (`WHS = +0.053 ns`、`THS = 0.000 ns`)。実機では問題なく動作しますが、ベースラインの目安として記録しています。次の改善では Clash 側の乗算/加算段をさらにパイプライン分割する必要があります。最新値は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
@@ -323,12 +355,14 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 参考にした実装
 
-エフェクト設計の参考として、以下のプロジェクトを参照しました。
+エフェクト設計の参考として、以下のプロジェクトを参照しました。アルゴリズム構造のみ参考にしており、ソースコードのコピーは行っていません (本リポジトリは WTFPL、上流の中には GPL があるため)。
 
 - https://github.com/marcoalkema/cpp-guitar_effects
 - https://github.com/maximoskp/cppAudioFX
 - https://github.com/rerdavies/ToobAmp
 - https://github.com/sudip-mondal-2002/Amplitron
+
+Noise Suppressor の操作思想は BOSS NS-2 / NS-1X を参考にしています。回路やコードはコピーしていません。RNNoise / `noise-suppression-for-voice` / `libspecbleach` などの spectral 系手法は PYNQ-Z2 の PL リソースに対して重すぎるため採用していません。
 
 ## ライセンス
 

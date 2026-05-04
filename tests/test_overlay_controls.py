@@ -169,6 +169,15 @@ def make_overlay_with_distortion_state():
     return overlay
 
 
+def make_overlay_with_noise_suppressor_state(include_ns_gpio=True):
+    overlay = make_overlay_with_distortion_state()
+    overlay._noise_suppressor_state = dict(AudioLabOverlay.NOISE_SUPPRESSOR_DEFAULTS)
+    overlay._cached_noise_suppressor_word = 0
+    if include_ns_gpio:
+        setattr(overlay, AudioLabOverlay.NOISE_SUPPRESSOR_GPIO_NAME, FakeGpio())
+    return overlay
+
+
 def test_distortion_bit_layout_in_control_words():
     """pedal mask / bias / mix / tight land in the documented bytes and
     do not corrupt any other field of gate / overdrive / distortion."""
@@ -380,6 +389,126 @@ def test_get_distortion_settings_initial_defaults_are_safe():
     assert settings['drive'] == 20
     assert settings['level'] == 35
     assert settings['mix'] == 100
+
+
+# ---- Noise Suppressor tests ----------------------------------------------
+
+
+def test_noise_threshold_to_u8_scale_anchors():
+    """New scale: byte = round(threshold * 255 / 1000). New 100 == legacy 10."""
+    assert AudioLabOverlay._noise_threshold_to_u8(0) == 0
+    assert AudioLabOverlay._noise_threshold_to_u8(10) == 3
+    assert AudioLabOverlay._noise_threshold_to_u8(50) == 13
+    assert AudioLabOverlay._noise_threshold_to_u8(100) == 26
+
+
+def test_noise_threshold_to_u8_clamps():
+    assert AudioLabOverlay._noise_threshold_to_u8(-50) == 0
+    assert AudioLabOverlay._noise_threshold_to_u8(250) == 26
+
+
+def test_noise_suppressor_word_packing():
+    """ctrlA=threshold, ctrlB=decay, ctrlC=damp, ctrlD=mode (low-byte first)."""
+    word = AudioLabOverlay._noise_suppressor_word(
+        threshold=100, decay=45, damp=80, mode=0,
+    )
+    assert word & 0xFF == 26                                                # threshold
+    assert (word >> 8) & 0xFF == AudioLabOverlay._percent_to_u8(45, 255)    # decay
+    assert (word >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(80, 255)   # damp
+    assert (word >> 24) & 0xFF == 0                                         # mode
+
+
+def test_set_noise_suppressor_settings_writes_word_to_dedicated_gpio():
+    overlay = make_overlay_with_noise_suppressor_state()
+    settings = overlay.set_noise_suppressor_settings(
+        enabled=True, threshold=35, decay=45, damp=80,
+    )
+    ns_gpio = getattr(overlay, AudioLabOverlay.NOISE_SUPPRESSOR_GPIO_NAME)
+    assert ns_gpio.writes, "expected a write to the noise suppressor GPIO"
+    last_offset, last_word = ns_gpio.writes[-1]
+    assert last_offset == 0x00
+    expected_threshold = AudioLabOverlay._noise_threshold_to_u8(35)
+    expected_decay = AudioLabOverlay._percent_to_u8(45, 255)
+    expected_damp = AudioLabOverlay._percent_to_u8(80, 255)
+    assert last_word & 0xFF == expected_threshold
+    assert (last_word >> 8) & 0xFF == expected_decay
+    assert (last_word >> 16) & 0xFF == expected_damp
+    assert (last_word >> 24) & 0xFF == 0
+    assert settings['threshold_byte'] == expected_threshold
+    assert settings['decay_byte'] == expected_decay
+    assert settings['damp_byte'] == expected_damp
+
+
+def test_get_noise_suppressor_settings_reports_metadata():
+    overlay = make_overlay_with_noise_suppressor_state()
+    overlay.set_noise_suppressor_settings(
+        enabled=True, threshold=35, decay=45, damp=80,
+    )
+    settings = overlay.get_noise_suppressor_settings()
+    assert settings['enabled'] is True
+    assert settings['threshold'] == 35
+    assert settings['decay'] == 45
+    assert settings['damp'] == 80
+    assert settings['mode'] == 0
+    assert settings['reflected_to_fpga'] is True
+    assert settings['gpio_name'] == 'axi_gpio_noise_suppressor'
+    assert settings['has_gpio'] is True
+    assert settings['implementation_status'] == 'threshold_decay_damp_fpga'
+
+
+def test_set_noise_suppressor_settings_clamps_inputs():
+    overlay = make_overlay_with_noise_suppressor_state()
+    settings = overlay.set_noise_suppressor_settings(
+        threshold=-10, decay=200, damp=120,
+    )
+    assert settings['threshold'] == 0
+    assert settings['decay'] == 100
+    assert settings['damp'] == 100
+
+
+def test_set_noise_suppressor_settings_mirrors_threshold_to_gate_ctrlB():
+    """The legacy gate_control.ctrlB threshold byte must track the new
+    GPIO byte so older bitstreams without the dedicated GPIO still see a
+    sensible value."""
+    overlay = make_overlay_with_noise_suppressor_state()
+    overlay.set_noise_suppressor_settings(enabled=True, threshold=100)
+    last_gate = overlay.axi_gpio_gate.writes[-1][1]
+    expected = AudioLabOverlay._noise_threshold_to_u8(100)
+    assert (last_gate >> 8) & 0xFF == expected
+    assert last_gate & 0x01 == 0x01  # noise_gate_on flag follows enabled
+
+
+def test_set_guitar_effects_mirrors_noise_threshold_to_ns_gpio():
+    """Calling set_guitar_effects(noise_gate_threshold=...) must also
+    write the dedicated noise-suppressor GPIO so the new bitstream sees
+    the same compare level the legacy gate byte encodes."""
+    overlay = make_overlay_with_noise_suppressor_state()
+    overlay.set_guitar_effects(noise_gate_on=True, noise_gate_threshold=50)
+    ns_gpio = getattr(overlay, AudioLabOverlay.NOISE_SUPPRESSOR_GPIO_NAME)
+    assert ns_gpio.writes, "set_guitar_effects must touch the NS GPIO"
+    last_word = ns_gpio.writes[-1][1]
+    expected = AudioLabOverlay._noise_threshold_to_u8(50)
+    assert last_word & 0xFF == expected
+    state = overlay._noise_suppressor_state
+    assert state['enabled'] is True
+    assert state['threshold'] == 50
+
+
+def test_guitar_effect_control_words_uses_new_threshold_scale():
+    words = AudioLabOverlay.guitar_effect_control_words(
+        noise_gate_on=True, noise_gate_threshold=100,
+    )
+    assert (words['gate'] >> 8) & 0xFF == 26
+    assert words['gate'] & 0x01 == 0x01
+
+
+def test_noise_suppressor_defaults_are_safe():
+    overlay = make_overlay_with_noise_suppressor_state()
+    settings = overlay.get_noise_suppressor_settings()
+    assert settings['enabled'] is False
+    assert settings['threshold'] == 35
+    assert settings['decay'] == 40
+    assert settings['damp'] == 70
 
 
 if __name__ == "__main__":

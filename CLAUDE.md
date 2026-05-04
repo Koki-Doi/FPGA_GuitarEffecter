@@ -42,7 +42,10 @@ When a previous turn stopped mid-implementation:
 ## Hard constraints
 
 - `hw/Pynq-Z2/block_design.tcl` is **off-limits** unless the user explicitly
-  approves a block-design change.
+  approves a block-design change. The one shipped exception is
+  `axi_gpio_noise_suppressor` at `0x43CC0000`, added for the THRESHOLD /
+  DECAY / DAMP noise-suppressor work (`DECISIONS.md` D11); do not remove it
+  or shuffle its address.
 - The ADAU1761 ADC HPF is **default-on** (`R19_ADC_CONTROL == 0x23`). Do not
   weaken or skip the HPF enable in `config_codec()`.
 - The selectable distortion section is **pedal-mask-based** (commit
@@ -50,7 +53,8 @@ When a previous turn stopped mid-implementation:
   mux design; see `docs/ai_context/DECISIONS.md` D6.
 - Any edit to `hw/ip/clash/src/LowPassFir.hs` requires a Vivado bit/hwh
   rebuild and a timing-summary check. A bitstream with significantly worse
-  WNS than the deployed -7.801 ns must not be deployed.
+  WNS than the previous deployed build must not be deployed (latest
+  baseline is recorded in `docs/ai_context/TIMING_AND_FPGA_NOTES.md`).
 - Notebook-only edits do **not** rebuild the bitstream. Update the
   notebook, run `bash scripts/deploy_to_pynq.sh`, done.
 - `git push`, `git pull`, `git fetch`, and other remote operations are

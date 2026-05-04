@@ -1,38 +1,62 @@
 # Current state
 
-Last updated: 2026-05-04 (post-deploy of the pedal-mask refactor).
+Last updated: 2026-05-05 (post-deploy of the noise-suppressor refactor).
 
 ## Headline
 
-The selectable-distortion refactor is **shipped**. The pedal-mask
-design is implemented in Clash, exposed through the Python API,
-covered by tests, walked-through by two notebooks, built into a
-fresh `audio_lab.bit` / `audio_lab.hwh`, deployed to the lab board,
-and verified live.
+The noise-suppressor refactor is **shipped**. A dedicated
+`axi_gpio_noise_suppressor` IP at `0x43CC0000` carries THRESHOLD /
+DECAY / DAMP / mode for a BOSS NS-2 / NS-1X-style noise suppressor;
+the Clash side replaces the legacy hard noise gate stages with the
+new envelope + smoothed-gain block; the Python API ships
+`set_noise_suppressor_settings` / `get_noise_suppressor_settings` and
+mirrors the threshold byte into the legacy `gate_control.ctrlB` slot
+for backward compatibility. The pedal-mask distortion section from
+the prior arc is unchanged and still active.
 
-The earlier 8-way `model_select` attempt is **gone**. Do not bring
-that pattern back; see `DECISIONS.md` D6 for the reason.
+The earlier 8-way `model_select` distortion attempt is still gone
+(`DECISIONS.md` D6); the legacy hard noise gate is now also retired
+from the active pipeline (`DECISIONS.md` D11).
 
 ## Working tree
 
-```
-$ git status --short
-?? .claude/
-```
+`feature/noise-suppressor-gpio-ui` carries the noise-suppressor work,
+tagged at the parent commit as `before-noise-suppressor-gpio-ui`. The
+branch is local-only; nothing has been pushed.
 
-The working tree is clean. The last three commits on `master` carry
-the change:
+The previous pedal-mask arc lives on `master`:
 
 ```
+3f2137d  Update AI context docs after pedal-mask distortion deployment
 2198873  Add one-cell guitar pedalboard notebook
 e1bb313  Add distortion pedalboard controls to GuitarEffectSwitcher notebook
 baa97ff  Refactor distortion models into pedal-style pipeline
 ```
 
-`baa97ff` is the implementation commit (Clash + Python + tests +
-regenerated VHDL/IP/bit/hwh, plus the ADC HPF default-on rollup that
-had been sitting in the working tree from the previous arc). `e1bb313`
-and `2198873` are notebook-only follow-ups.
+The noise-suppressor branch touches:
+
+- `hw/Pynq-Z2/block_design.tcl` -- new `axi_gpio_noise_suppressor` IP
+  at `0x43CC0000`, `NUM_MI` bumped to 14.
+- `hw/ip/clash/src/LowPassFir.hs` -- new `noise_suppressor_control`
+  port, `fNs` field on `Frame`, `nsEnvNext` / `nsGainNext` /
+  `nsApplyFrame` / helpers, pipeline wiring updated.
+- `hw/ip/clash/vhdl/LowPassFir/*` -- regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` -- rebuilt with the new
+  GPIO and DSP block.
+- `audio_lab_pynq/AudioLabOverlay.py` -- `NOISE_SUPPRESSOR_*`
+  constants, `_noise_threshold_to_u8`, `set_/get_noise_suppressor_*`,
+  `_apply_noise_suppressor_state_to_word`, `set_guitar_effects`
+  mirrors threshold + on-flag into the new GPIO.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` -- Noise
+  Gate accordion replaced with Noise Suppressor section (THRESHOLD /
+  DECAY / DAMP sliders + four NS presets); `apply_settings` /
+  `safe_bypass` / `refresh_status` updated.
+- `tests/test_overlay_controls.py` -- threshold scale anchors
+  (0/10/50/100 -> 0/3/13/26), clamps, NS settings round trip, GPIO
+  word packing, mirror-to-gate test, `set_guitar_effects` NS GPIO
+  mirror.
+- `docs/ai_context/*.md` -- this file plus GPIO map, DSP chain,
+  decisions, build/deploy, project context, timing, resume prompts.
 
 ## What ships in the current bitstream
 
@@ -133,5 +157,13 @@ Open work, in roughly priority order:
   seven pedals. That is exactly what regressed timing the first time;
   see `TIMING_AND_FPGA_NOTES.md`.
 - Do **not** deploy a bitstream whose WNS is significantly worse than
-  -7.801 ns without flagging the regression to the user first.
+  the noise-suppressor build's WNS without flagging the regression
+  first.
+- Do **not** revive the legacy `gateGainNext` / `gateFrame` registers
+  in the active pipeline. The active gain stage is the noise
+  suppressor (`nsApplyFrame`); the legacy helpers are kept as Haskell
+  source for backward compatibility but are not wired up.
+- Do **not** drop the legacy `gate_control.ctrlB` write from
+  `set_guitar_effects` -- older bitstreams without
+  `axi_gpio_noise_suppressor` still rely on it.
 - Do **not** push, pull, or fetch.

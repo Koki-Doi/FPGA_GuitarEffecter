@@ -4,11 +4,21 @@ This directory is the shared briefing for Claude Code and Codex working on
 this repository. The goal is that an agent can pick up a task without
 re-scanning the whole tree on every session.
 
-The current load-bearing fact: the **pedal-mask distortion refactor
-shipped** (commit `baa97ff`, deployed and live-verified). Notebook UIs
-were updated alongside it. See `CURRENT_STATE.md` for the post-deploy
-snapshot and `DISTORTION_REFACTOR_PLAN.md` for the staged plan for
-the still-reserved pedals.
+The current load-bearing facts:
+
+- The **pedal-mask distortion refactor shipped** (commit `baa97ff`,
+  deployed and live-verified). Notebook UIs were updated alongside
+  it. See `DISTORTION_REFACTOR_PLAN.md` for the staged plan for the
+  still-reserved pedals (`ds1`, `big_muff`, `fuzz_face`).
+- The **noise-suppressor refactor shipped** on top (`feature/noise-suppressor-gpio-ui`,
+  merged into `main`). A dedicated `axi_gpio_noise_suppressor` IP at
+  `0x43CC0000` carries THRESHOLD / DECAY / DAMP / mode for a BOSS
+  NS-2 / NS-1X-style suppressor; the legacy hard noise gate is
+  retired from the active pipeline. WNS improved from -7.801 ns to
+  -7.111 ns. See `DECISIONS.md` D11, `DSP_EFFECT_CHAIN.md` Noise
+  Suppressor 節, and `GPIO_CONTROL_MAP.md` Noise Suppressor 節.
+
+See `CURRENT_STATE.md` for the post-deploy snapshot.
 
 ## Reading order
 

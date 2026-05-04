@@ -47,6 +47,25 @@ asking it to re-discover the project from scratch.
 > してください。1 段に大きな `case` や 4 段以上の演算を詰めない
 > 方針は維持してください (`TIMING_AND_FPGA_NOTES.md` 参照)。
 
+## Noise Suppressor work — branch in progress / shipped
+
+> Noise Suppressor は専用 GPIO `axi_gpio_noise_suppressor` (`0x43CC0000`)
+> 経由で THRESHOLD / DECAY / DAMP / mode を持ち、Clash 側で envelope +
+> smoothed-gain 段に置き換え済み (`fxPipeline` の `nsLevelPipe ->
+> nsEnv -> nsGain -> nsPipe`)。enable は引き続き `gate_control` bit 0
+> (legacy `noise_gate_on`)。Python API は
+> `set_noise_suppressor_settings(threshold=, decay=, damp=, enabled=,
+> mode=)` / `get_noise_suppressor_settings()`、threshold byte は
+> `round(threshold * 255 / 1000)` (新スケール: 100 ≡ 旧 10)。
+> `set_guitar_effects(noise_gate_threshold=...)` も新スケール。互換
+> として legacy `gate_control.ctrlB` にも同じ byte を書く (新ビットで
+> は dead)。RNNoise / FFT / spectral 系は採用していない。BOSS NS-2 /
+> NS-1X は思想のみ参考、コードコピーなし。詳しくは
+> `docs/ai_context/DECISIONS.md` D11 / `DSP_EFFECT_CHAIN.md` Noise
+> Suppressor 節 / `GPIO_CONTROL_MAP.md` Noise Suppressor 節を参照。
+> 既存 distortion pedal-mask 実装と
+> `GuitarPedalboardOneCell.ipynb` の他セクションは触らないでください。
+
 ## Notebook UI / preset polish (no bitstream rebuild)
 
 > Notebook だけの編集は bit/hwh 再生成不要です。対象 Notebook:

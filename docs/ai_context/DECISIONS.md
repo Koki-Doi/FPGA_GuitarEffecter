@@ -133,6 +133,48 @@ not get removed even when superseded — they get updated.
   `DISTORTION_REFACTOR_PLAN.md` plus the warnings in the
   notebooks. Keep the Python API surface unchanged.
 
+## D11 — Noise suppressor lives on its own AXI GPIO; legacy gate is replaced
+
+- **Decision.** A dedicated `axi_gpio_noise_suppressor` IP at
+  `0x43CC0000` carries THRESHOLD / DECAY / DAMP / mode for a BOSS
+  NS-2 / NS-1X-style noise suppressor. The Clash side replaces the
+  legacy hard noise gate stages (`gateLevelPipe -> gateEnv -> gateOpen
+  -> gateGain -> gatePipe`) with new envelope + smoothed-gain stages
+  (`nsLevelPipe -> nsEnv -> nsGain -> nsPipe`). Enable still rides on
+  `gate_control` bit 0 (the legacy `noise_gate_on` flag).
+- **Why.** The legacy noise gate exposed a single hard threshold whose
+  Python 0..100 range collapsed onto 0..10 in practice and chopped
+  signal at the close transition. NS-2 / NS-1X-style THRESHOLD /
+  DECAY / DAMP gives users a smoothed close ramp and a controllable
+  closed-gain floor while staying cheap on the FPGA (one envelope
+  register feedback + one smoothed-gain register feedback + one
+  saturating multiply, same shape as the legacy gate).
+- **Trade-offs not taken.**
+  - **No** RNNoise / FFT / spectral subtraction. Way too heavy for the
+    PYNQ-Z2 PL budget; the suppressor is purely a smoothed time-domain
+    gate.
+  - **No** copying of source code from BOSS units, JS-Rocks NS-style
+    blocks, or `noise-suppression-for-voice` / `libspecbleach` /
+    similar GPL projects. Algorithmic shape (envelope follower,
+    threshold compare, smoothed gain, damp closed-gain floor) is the
+    only thing taken from the references.
+- **Threshold scale change.** Python `noise_gate_threshold` is now on a
+  one-tenth scale: byte = `round(threshold * 255 / 1000)`, so the new
+  100 maps to the legacy 10 byte. `set_guitar_effects(noise_gate_threshold=...)`
+  uses the same scaling and mirrors the byte to both the legacy
+  `gate_control.ctrlB` slot (dead in the new bitstream, kept for
+  backward compatibility) and the new `noise_suppressor_control.ctrlA`.
+- **How to apply.**
+  - When changing the noise stage, edit the `ns*` block in
+    `LowPassFir.hs`. Do **not** revive the legacy `gateGainNext` /
+    `gateFrame` registers in the active pipeline.
+  - `block_design.tcl` carries the new GPIO; any further GPIO change
+    must keep `axi_gpio_noise_suppressor` and its address `0x43CC0000`
+    intact so overlays match.
+  - Reserved knobs (mode byte, attack, hold, NS-2 vs NS-1X switch)
+    should land on `noise_suppressor_control.ctrlD` rather than
+    grabbing more bytes from existing GPIOs.
+
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
 - **Decision.** A new two-cell notebook,

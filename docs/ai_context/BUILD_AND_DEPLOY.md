@@ -6,8 +6,25 @@
 | --- | --- | --- |
 | Only Python in `audio_lab_pynq/` | none | `bash scripts/deploy_to_pynq.sh` |
 | Only `audio_lab_pynq/notebooks/*.ipynb` (e.g. `GuitarPedalboardOneCell.ipynb`, `DistortionModelsDebug.ipynb`, `GuitarEffectSwitcher.ipynb`) | **none — no Clash, no Vivado, no bit/hwh** | `bash scripts/deploy_to_pynq.sh` |
-| `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed -7.801 ns; deploy only if not significantly worse |
+| `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed baseline; deploy only if not significantly worse |
 | `hw/Pynq-Z2/block_design.tcl`, `audio_lab.xdc`, IP topology | full Vivado rebuild — **only with explicit user approval** | review timing, then deploy |
+
+When a `block_design.tcl` change adds a new `axi_gpio_*` IP (as the
+noise-suppressor work did with `axi_gpio_noise_suppressor` at
+`0x43CC0000`):
+
+- `NUM_MI` on `ps7_0_axi_periph` must increment to match the new
+  master count.
+- Add the M*nn*_AXI interconnect, the `gpio_io_o` net into the new
+  Clash port, the M*nn*_ACLK / M*nn*_ARESETN entries on the
+  FCLK_CLK0 / peripheral_aresetn nets, and the new address segment.
+- Re-run Clash → VHDL → IP repackage so `component.xml` exposes the
+  new port (e.g. `noise_suppressor_control`); without that the block
+  design connection will fail to bind.
+- After `make`, confirm `.hwh` carries the new IP, e.g.
+  `grep -c noise_suppressor hw/Pynq-Z2/bitstreams/audio_lab.hwh`.
+- Loading the overlay on the board should expose the new attribute,
+  e.g. `hasattr(ovl, "axi_gpio_noise_suppressor") == True`.
 
 ## Clash → VHDL
 
