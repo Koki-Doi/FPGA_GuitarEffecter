@@ -333,3 +333,8 @@ axis_switch_sink   M01 = 0x80000000
 ## ライセンス
 
 元リポジトリのライセンスは WTFPL です。詳細は `LICENSE` を確認してください。
+
+## AI development context
+
+Claude Code / Codex 向けの作業コンテキストは
+[`docs/ai_context/README.md`](docs/ai_context/README.md) にまとめています。
