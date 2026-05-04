@@ -159,6 +159,94 @@ hardClip x threshold
 onePoleU8 :: Unsigned 8 -> Sample -> Sample -> Sample
 onePoleU8 alpha prev x = satShift8 (mulU8 x alpha + mulU8 prev (255 - alpha))
 
+-- | Symmetric soft clip with a tunable knee. Below knee it is identity;
+-- above the knee the sample is compressed by 1/4 slope.
+softClipK :: Sample -> Sample -> Sample
+softClipK knee x
+  | x > knee = resize (resize knee + (((resize x :: Signed 25) - resize knee) `shiftR` 2) :: Signed 25)
+  | x < negKnee = resize (resize negKnee + (((resize x :: Signed 25) - resize negKnee) `shiftR` 2) :: Signed 25)
+  | otherwise = x
+ where
+  negKnee = negate knee
+
+-- | Asymmetric soft clip. The negative half uses a steeper compression
+-- (1/8 slope) than the positive half (1/4 slope). Generates even-harmonic
+-- content for tube-style overdrive.
+asymSoftClip :: Sample -> Sample -> Sample -> Sample
+asymSoftClip kneeP kneeN x
+  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 2) :: Signed 25)
+  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 3) :: Signed 25)
+  | otherwise = x
+ where
+  negKneeN = negate kneeN
+
+-- | Hard clip with independent positive/negative thresholds. Used by
+-- bias-shifted fuzz models where the waveform centre is offset.
+asymHardClip :: Sample -> Sample -> Sample -> Sample
+asymHardClip kneeP kneeN x
+  | x > kneeP = kneeP
+  | x < negKneeN = negKneeN
+  | otherwise = x
+ where
+  negKneeN = negate kneeN
+
+-- ---- Distortion-section field accessors ------------------------------
+
+-- | Bias parameter lives in gate_control bits[23:16] (ctrlC). Centred
+-- at 128: 0..127 shift negative, 129..255 shift positive. Reserved for
+-- bias-using pedals; not consumed by the active stages of this build.
+distBias :: Ctrl -> Unsigned 8
+distBias = ctrlC
+
+-- | Wet/dry mix lives in gate_control bits[31:24] (ctrlD). 255 = fully
+-- wet, 0 = fully dry. Reserved for pedals that expose a wet/dry blend;
+-- not consumed by the active stages of this build.
+distMix :: Ctrl -> Unsigned 8
+distMix = ctrlD
+
+-- | Tight (low-cut amount) lives in overdrive_control bits[31:24]
+-- (ctrlD). Higher values raise the input HPF corner, tightening the
+-- low end ahead of clip-style pedals.
+distTight :: Ctrl -> Unsigned 8
+distTight = ctrlD
+
+-- | Distortion-section pedal enable mask lives in
+-- distortion_control bits[31:24] (ctrlD).
+--
+--   bit 0 : clean_boost
+--   bit 1 : tube_screamer
+--   bit 2 : rat_style    (mapped onto the existing RAT stage; this bit
+--                         is recorded for completeness but the audio
+--                         path is gated by gate_control bit 4 instead).
+--   bit 3 : ds1_style    (reserved; no Clash stage consumes it yet)
+--   bit 4 : big_muff     (reserved; no Clash stage consumes it yet)
+--   bit 5 : fuzz_face    (reserved; no Clash stage consumes it yet)
+--   bit 6 : metal
+--   bit 7 : reserved
+distPedalMask :: Ctrl -> Unsigned 8
+distPedalMask = ctrlD
+
+-- | Distortion section master is the existing flag2 of gate_control,
+-- shared with the legacy distortion stage so that the pre-existing
+-- API (distortion_on=True) keeps working.
+distMasterOn :: Frame -> Bool
+distMasterOn f = flag2 (fGate f)
+
+-- | Cheap "any pedal-mask bit set" — exactly one OR-reduction tree.
+-- Used to gate the legacy distortion off when any new pedal is in
+-- use, so that exclusive=True at the Python level stays exclusive.
+anyDistPedalOn :: Frame -> Bool
+anyDistPedalOn f = distPedalMask (fDist f) /= 0
+
+cleanBoostOn :: Frame -> Bool
+cleanBoostOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 0
+
+tubeScreamerOn :: Frame -> Bool
+tubeScreamerOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 1
+
+metalDistortionOn :: Frame -> Bool
+metalDistortionOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 6
+
 advanceAddr :: ReverbAddr -> ReverbAddr
 advanceAddr addr = if addr == maxBound then 0 else addr + 1
 
@@ -335,6 +423,16 @@ overdriveLevelFrame f =
   left = satShift7 (mulU8 (fWetL f) level)
   right = satShift7 (mulU8 (fWetR f) level)
 
+-- ---- Legacy distortion stage -----------------------------------------
+-- Restored to its pre-refactor shape so the existing
+-- set_guitar_effects(distortion_on=True, distortion=, distortion_tone=,
+-- distortion_level=) API keeps working untouched. The legacy stage is
+-- automatically bypassed when any new pedal-mask bit is set, so that
+-- exclusive=True at the Python level really is exclusive.
+
+distortionLegacyOn :: Frame -> Bool
+distortionLegacyOn f = flag2 (fGate f) && not (anyDistPedalOn f)
+
 distortionDriveMultiplyFrame :: Frame -> Frame
 distortionDriveMultiplyFrame f =
   f
@@ -343,7 +441,7 @@ distortionDriveMultiplyFrame f =
     , fAcc2L = resize threshold
     }
  where
-  on = flag2 (fGate f)
+  on = distortionLegacyOn f
   amount = ctrlC (fDist f)
   driveGain = resize (256 + (resize amount * 8 :: Unsigned 11)) :: Unsigned 12
   rawThreshold = 8_388_607 - (resize (asSigned9 amount) * 24_000) :: Signed 25
@@ -352,15 +450,17 @@ distortionDriveMultiplyFrame f =
 
 distortionDriveBoostFrame :: Frame -> Frame
 distortionDriveBoostFrame f =
-  f{fWetL = if on then satShift8 (fAccL f) else fL f, fWetR = if on then satShift8 (fAccR f) else fR f}
+  f { fWetL = if on then satShift8 (fAccL f) else fL f
+    , fWetR = if on then satShift8 (fAccR f) else fR f }
  where
-  on = flag2 (fGate f)
+  on = distortionLegacyOn f
 
 distortionDriveClipFrame :: Frame -> Frame
 distortionDriveClipFrame f =
-  f{fL = if on then hardClip (fWetL f) threshold else fL f, fR = if on then hardClip (fWetR f) threshold else fR f}
+  f { fL = if on then hardClip (fWetL f) threshold else fL f
+    , fR = if on then hardClip (fWetR f) threshold else fR f }
  where
-  on = flag2 (fGate f)
+  on = distortionLegacyOn f
   threshold = resize (fAcc2L f) :: Sample
 
 distortionToneMultiplyFrame :: Sample -> Sample -> Frame -> Frame
@@ -372,29 +472,197 @@ distortionToneMultiplyFrame prevL prevR f =
     , fAcc2R = if on then mulU8 prevR toneInv else 0
     }
  where
-  on = flag2 (fGate f)
+  on = distortionLegacyOn f
   tone = ctrlA (fDist f)
   toneInv = 255 - tone
 
 distortionToneBlendFrame :: Frame -> Frame
 distortionToneBlendFrame f =
-  f
-    { fWetL = if on then toneL else fL f
-    , fWetR = if on then toneR else fR f
-    }
+  f { fWetL = if on then toneL else fL f
+    , fWetR = if on then toneR else fR f }
  where
-  on = flag2 (fGate f)
+  on = distortionLegacyOn f
   toneL = satShift8 (fAccL f + fAcc2L f)
   toneR = satShift8 (fAccR f + fAcc2R f)
 
 distortionLevelFrame :: Frame -> Frame
 distortionLevelFrame f =
-  f{fL = if on then left else fL f, fR = if on then right else fR f}
+  f { fL = if on then left else fL f
+    , fR = if on then right else fR f }
  where
-  on = flag2 (fGate f)
+  on = distortionLegacyOn f
   level = ctrlB (fDist f)
   left = satShift7 (mulU8 (fWetL f) level)
   right = satShift7 (mulU8 (fWetR f) level)
+
+-- ---- Pedal-style distortion stages -----------------------------------
+-- Each pedal is a small, independently enabled pipeline section. The
+-- Frame moves through the same physical stages whether the pedal is on
+-- or off; when off, every frame transform leaves fL/fR untouched, so
+-- the chain is bit-exact bypass.
+--
+-- Implemented in this build: clean_boost, tube_screamer,
+-- metal_distortion. rat_style is intentionally a no-op here because
+-- the existing RAT stage upstream covers it. ds1_style, big_muff and
+-- fuzz_face are reserved in the GPIO mask but currently leave audio
+-- untouched.
+
+-- ---- clean_boost (3 stages: mul, shift, level+safety) ---------------
+
+cleanBoostMulFrame :: Frame -> Frame
+cleanBoostMulFrame f =
+  f { fAccL = if on then mulU12 (fL f) gain else 0
+    , fAccR = if on then mulU12 (fR f) gain else 0 }
+ where
+  on = cleanBoostOn f
+  drive = ctrlC (fDist f)
+  -- Q8 gain: 1.0x (drive=0) up to ~5x (drive=255).
+  gain = resize (256 + (resize drive * 4 :: Unsigned 11)) :: Unsigned 12
+
+cleanBoostShiftFrame :: Frame -> Frame
+cleanBoostShiftFrame f =
+  f { fL = if on then satShift8 (fAccL f) else fL f
+    , fR = if on then satShift8 (fAccR f) else fR f }
+ where
+  on = cleanBoostOn f
+
+cleanBoostLevelFrame :: Frame -> Frame
+cleanBoostLevelFrame f =
+  f { fL = if on then softClip leftAfter else fL f
+    , fR = if on then softClip rightAfter else fR f }
+ where
+  on = cleanBoostOn f
+  level = ctrlB (fDist f)
+  leftAfter = satShift7 (mulU8 (fL f) level)
+  rightAfter = satShift7 (mulU8 (fR f) level)
+
+-- ---- tube_screamer (5 stages: HPF, mul, clip, post-LPF, level) -------
+
+tubeScreamerHpfFrame :: Sample -> Sample -> Frame -> Frame
+tubeScreamerHpfFrame prevLpL prevLpR f =
+  f { fL = if on then hpL else fL f
+    , fR = if on then hpR else fR f
+    , fEqLowL = lpL
+    , fEqLowR = lpR }
+ where
+  on = tubeScreamerOn f
+  -- 1..9 — small alpha gives a low-frequency LPF; HP = x - LP cuts only
+  -- the very-low end ahead of the clip.
+  alpha = 2 + (distTight (fOd f) `shiftR` 5)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+  hpL = satWide (resize (fL f) - resize lpL :: Wide)
+  hpR = satWide (resize (fR f) - resize lpR :: Wide)
+
+tubeScreamerMulFrame :: Frame -> Frame
+tubeScreamerMulFrame f =
+  f { fAccL = if on then mulU12 (fL f) gain else 0
+    , fAccR = if on then mulU12 (fR f) gain else 0 }
+ where
+  on = tubeScreamerOn f
+  drive = ctrlC (fDist f)
+  -- Q8 gain: 1x..~9x.
+  gain = resize (256 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
+
+tubeScreamerClipFrame :: Frame -> Frame
+tubeScreamerClipFrame f =
+  f { fL = if on then asymSoftClip kneeP kneeN boostedL else fL f
+    , fR = if on then asymSoftClip kneeP kneeN boostedR else fR f }
+ where
+  on = tubeScreamerOn f
+  boostedL = satShift8 (fAccL f)
+  boostedR = satShift8 (fAccR f)
+  kneeP = 3_500_000 :: Sample
+  kneeN = 2_800_000 :: Sample
+
+tubeScreamerPostLpfFrame :: Sample -> Sample -> Frame -> Frame
+tubeScreamerPostLpfFrame prevLpL prevLpR f =
+  f { fL = if on then lpL else fL f
+    , fR = if on then lpR else fR f
+    , fEqHighLpL = lpL
+    , fEqHighLpR = lpR }
+ where
+  on = tubeScreamerOn f
+  tone = ctrlA (fDist f)
+  -- Higher tone -> higher alpha (closer to pass-through, brighter).
+  alpha = 96 + (tone `shiftR` 1)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+
+tubeScreamerLevelFrame :: Frame -> Frame
+tubeScreamerLevelFrame f =
+  f { fL = if on then softClip leftAfter else fL f
+    , fR = if on then softClip rightAfter else fR f }
+ where
+  on = tubeScreamerOn f
+  level = ctrlB (fDist f)
+  leftAfter = satShift7 (mulU8 (fL f) level)
+  rightAfter = satShift7 (mulU8 (fR f) level)
+
+-- ---- metal_distortion (5 stages: tight HPF, mul, hard clip,
+--                        post-LPF, level) -----------------------------
+
+metalHpfFrame :: Sample -> Sample -> Frame -> Frame
+metalHpfFrame prevLpL prevLpR f =
+  f { fL = if on then hpL else fL f
+    , fR = if on then hpR else fR f
+    , fEqLowL = lpL
+    , fEqLowR = lpR }
+ where
+  on = metalDistortionOn f
+  -- Steeper than TS: alpha 4..19. Tight controls how aggressive the
+  -- low-cut is for palm muting.
+  alpha = 4 + (distTight (fOd f) `shiftR` 4)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+  hpL = satWide (resize (fL f) - resize lpL :: Wide)
+  hpR = satWide (resize (fR f) - resize lpR :: Wide)
+
+metalMulFrame :: Frame -> Frame
+metalMulFrame f =
+  f { fAccL = if on then mulU12 (fL f) gain else 0
+    , fAccR = if on then mulU12 (fR f) gain else 0 }
+ where
+  on = metalDistortionOn f
+  drive = ctrlC (fDist f)
+  -- High Q8 gain: 3x..~22x.
+  gain = resize (768 + (resize drive * 14 :: Unsigned 12)) :: Unsigned 12
+
+metalClipFrame :: Frame -> Frame
+metalClipFrame f =
+  f { fL = if on then hardClip boostedL threshold else fL f
+    , fR = if on then hardClip boostedR threshold else fR f }
+ where
+  on = metalDistortionOn f
+  drive = ctrlC (fDist f)
+  driveS = resize (asSigned9 drive) :: Signed 25
+  rawT = 3_500_000 - driveS * 5_000 :: Signed 25
+  threshold = resize (if rawT < 1_200_000 then 1_200_000 else rawT) :: Sample
+  boostedL = satShift8 (fAccL f)
+  boostedR = satShift8 (fAccR f)
+
+metalPostLpfFrame :: Sample -> Sample -> Frame -> Frame
+metalPostLpfFrame prevLpL prevLpR f =
+  f { fL = if on then lpL else fL f
+    , fR = if on then lpR else fR f
+    , fEqHighLpL = lpL
+    , fEqHighLpR = lpR }
+ where
+  on = metalDistortionOn f
+  tone = ctrlA (fDist f)
+  alpha = 64 + (tone `shiftR` 1)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+
+metalLevelFrame :: Frame -> Frame
+metalLevelFrame f =
+  f { fL = if on then softClip leftAfter else fL f
+    , fR = if on then softClip rightAfter else fR f }
+ where
+  on = metalDistortionOn f
+  level = ctrlB (fDist f)
+  leftAfter = satShift7 (mulU8 (fL f) level)
+  rightAfter = satShift7 (mulU8 (fR f) level)
 
 ratHighpassFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
 ratHighpassFrame prevInL prevInR prevOutL prevOutR f =
@@ -1010,6 +1278,10 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   odToneBlendPipe = register Nothing (mapPipe overdriveToneBlendFrame <$> odToneMulPipe)
   odTonePipe = register Nothing (mapPipe overdriveLevelFrame <$> odToneBlendPipe)
 
+  -- Legacy distortion pipeline. Restored to its pre-refactor shape.
+  -- Each stage is gated by `distortionLegacyOn`, which folds in the
+  -- "any new pedal mask bit set?" check so that exclusive=True at the
+  -- Python level really is exclusive.
   distDriveMulPipe = register Nothing (mapPipe distortionDriveMultiplyFrame <$> odTonePipe)
   distDriveBoostPipe = register Nothing (mapPipe distortionDriveBoostFrame <$> distDriveMulPipe)
   distDrivePipe = register Nothing (mapPipe distortionDriveClipFrame <$> distDriveBoostPipe)
@@ -1045,13 +1317,55 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ratLevelPipe = register Nothing (mapPipe ratLevelFrame <$> ratTonePipe)
   ratMixPipe = register Nothing (mapPipe ratMixFrame <$> ratLevelPipe)
 
+  -- ---- New per-pedal distortion pipeline. Each section below is a
+  -- small, independent register chain with a single enable bit. When
+  -- the pedal is off, every stage is bit-exact bypass.
+
+  -- clean_boost (3 stages)
+  cleanBoostMulPipe = register Nothing (mapPipe cleanBoostMulFrame <$> ratMixPipe)
+  cleanBoostShiftPipe = register Nothing (mapPipe cleanBoostShiftFrame <$> cleanBoostMulPipe)
+  cleanBoostLevelPipe = register Nothing (mapPipe cleanBoostLevelFrame <$> cleanBoostShiftPipe)
+
+  -- tube_screamer (5 stages with HPF + post-LPF state)
+  tsHpfLpPrevL = register 0 (frameOr fEqLowL <$> tsHpfLpPrevL <*> tsHpfPipe)
+  tsHpfLpPrevR = register 0 (frameOr fEqLowR <$> tsHpfLpPrevR <*> tsHpfPipe)
+  tsHpfPipe =
+    register Nothing $
+      mapPipe <$> (tubeScreamerHpfFrame <$> tsHpfLpPrevL <*> tsHpfLpPrevR) <*> cleanBoostLevelPipe
+  tsMulPipe = register Nothing (mapPipe tubeScreamerMulFrame <$> tsHpfPipe)
+  tsClipPipe = register Nothing (mapPipe tubeScreamerClipFrame <$> tsMulPipe)
+  tsPostLpPrevL = register 0 (frameOr fEqHighLpL <$> tsPostLpPrevL <*> tsPostLpfPipe)
+  tsPostLpPrevR = register 0 (frameOr fEqHighLpR <$> tsPostLpPrevR <*> tsPostLpfPipe)
+  tsPostLpfPipe =
+    register Nothing $
+      mapPipe <$> (tubeScreamerPostLpfFrame <$> tsPostLpPrevL <*> tsPostLpPrevR) <*> tsClipPipe
+  tsLevelPipe = register Nothing (mapPipe tubeScreamerLevelFrame <$> tsPostLpfPipe)
+
+  -- metal_distortion (5 stages with HPF + post-LPF state)
+  metalHpfLpPrevL = register 0 (frameOr fEqLowL <$> metalHpfLpPrevL <*> metalHpfPipe)
+  metalHpfLpPrevR = register 0 (frameOr fEqLowR <$> metalHpfLpPrevR <*> metalHpfPipe)
+  metalHpfPipe =
+    register Nothing $
+      mapPipe <$> (metalHpfFrame <$> metalHpfLpPrevL <*> metalHpfLpPrevR) <*> tsLevelPipe
+  metalMulPipe = register Nothing (mapPipe metalMulFrame <$> metalHpfPipe)
+  metalClipPipe = register Nothing (mapPipe metalClipFrame <$> metalMulPipe)
+  metalPostLpPrevL = register 0 (frameOr fEqHighLpL <$> metalPostLpPrevL <*> metalPostLpfPipe)
+  metalPostLpPrevR = register 0 (frameOr fEqHighLpR <$> metalPostLpPrevR <*> metalPostLpfPipe)
+  metalPostLpfPipe =
+    register Nothing $
+      mapPipe <$> (metalPostLpfFrame <$> metalPostLpPrevL <*> metalPostLpPrevR) <*> metalClipPipe
+  metalLevelPipe = register Nothing (mapPipe metalLevelFrame <$> metalPostLpfPipe)
+
+  -- Output of the new pedal section feeds the rest of the chain.
+  distortionPedalsPipe = metalLevelPipe
+
   ampHpInPrevL = register 0 (frameOr fDryL <$> ampHpInPrevL <*> ampHighpassPipe)
   ampHpInPrevR = register 0 (frameOr fDryR <$> ampHpInPrevR <*> ampHighpassPipe)
   ampHpOutPrevL = register 0 (frameOr fWetL <$> ampHpOutPrevL <*> ampHighpassPipe)
   ampHpOutPrevR = register 0 (frameOr fWetR <$> ampHpOutPrevR <*> ampHighpassPipe)
   ampHighpassPipe =
     register Nothing $
-      mapPipe <$> (ampHighpassFrame <$> ampHpInPrevL <*> ampHpInPrevR <*> ampHpOutPrevL <*> ampHpOutPrevR) <*> ratMixPipe
+      mapPipe <$> (ampHighpassFrame <$> ampHpInPrevL <*> ampHpInPrevR <*> ampHpOutPrevL <*> ampHpOutPrevR) <*> distortionPedalsPipe
   ampDriveMulPipe = register Nothing (mapPipe ampDriveMultiplyFrame <$> ampHighpassPipe)
   ampDriveBoostPipe = register Nothing (mapPipe ampDriveBoostFrame <$> ampDriveMulPipe)
   ampShapePipe = register Nothing (mapPipe ampWaveshapeFrame <$> ampDriveBoostPipe)

@@ -29,6 +29,7 @@ audio out.
 Decision table -- see DECISION_TABLE.
 """
 import os
+import time
 
 import numpy as np
 
@@ -49,12 +50,20 @@ def _allocate(shape, dtype):
 
 
 def capture_input(overlay, num_frames=DEFAULT_SAMPLE_RATE_HZ,
-                  source=None, restore_route=True):
+                  source=None, restore_route=True, settling_ms=0,
+                  discard_initial_frames=0):
     """Capture stereo line-in samples via the existing S2MM DMA path.
 
     Returns numpy.ndarray of shape (num_frames, 2), dtype int32.
     Column 0 = left, column 1 = right. Each value is a 24-bit signed
     sample, sign-extended to int32.
+
+    settling_ms: sleep this long after switching the route and before the
+        DMA transfer starts. Use a few hundred ms after toggling the ADC
+        HPF (R19[5]) so the IIR has time to settle from the DC step.
+    discard_initial_frames: drop this many frames from the start of the
+        buffer after capture, to avoid the HPF transient. The returned
+        array has shape (num_frames - discard_initial_frames, 2).
     """
     _require_overlay_dma(overlay)
     from .AudioLabOverlay import XbarSource, XbarEffect, XbarSink
@@ -63,6 +72,8 @@ def capture_input(overlay, num_frames=DEFAULT_SAMPLE_RATE_HZ,
         source = XbarSource.line_in
 
     overlay.route(source, XbarEffect.passthrough, XbarSink.dma)
+    if settling_ms > 0:
+        time.sleep(settling_ms / 1000.0)
 
     buf = _allocate(shape=(num_frames, 2), dtype=np.int32)
     try:
@@ -73,6 +84,8 @@ def capture_input(overlay, num_frames=DEFAULT_SAMPLE_RATE_HZ,
         buf.freebuffer()
         if restore_route:
             overlay.route(source, XbarEffect.passthrough, XbarSink.headphone)
+    if discard_initial_frames > 0:
+        samples = samples[discard_initial_frames:]
     return samples
 
 

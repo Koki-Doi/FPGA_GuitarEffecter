@@ -101,8 +101,21 @@ class ADAU1761():
         self.R31_PLAYBACK_LINE_OUTPUT_LEFT_VOLUME_CONTROL = 0xE7
         self.R32_PLAYBACK_LINE_OUTPUT_RIGHT_VOLUME_CONTROL = 0xE7
 
-        # Enable ADC
+        # Enable ADC (left+right). R19[1:0] = 11.
         self.R19_ADC_CONTROL = 0x03
+        # Enable the ADC digital high-pass filter (R19[5]) on top of the
+        # ADC enable bits, via read-modify-write so the enable bits are
+        # preserved. After this, R19_ADC_CONTROL == 0x23.
+        #
+        # Notes on R19[5]:
+        #   - R19[5] is the ADAU1761 ADC digital HPF.
+        #   - It is a DC blocker around 2 Hz at Fs = 48 kHz.
+        #   - It is *not* a 20-40 Hz guitar low-cut filter.
+        self.enable_adc_hpf()
+        # The HPF is a 1st-order IIR; its time constant at Fs=48kHz is
+        # roughly 80 ms, so allow ~300 ms (~3-4 tau) for the output to
+        # settle to its DC-removed steady state before any capture.
+        time.sleep(0.3)
         # Enable DAC
         self.R36_DAC_CONTROL_0 = 0x03
         # Enable headphone jack
