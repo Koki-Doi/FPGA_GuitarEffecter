@@ -175,6 +175,55 @@ not get removed even when superseded — they get updated.
     should land on `noise_suppressor_control.ctrlD` rather than
     grabbing more bytes from existing GPIOs.
 
+## D12 — GPIO design is fixed; effect refactors do not move bytes
+
+- **Decision.** Once a GPIO has been deployed (name, address, and the
+  meaning of `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD`), refactors must
+  not move it. Adding a new effect should land on a `reserved` byte
+  / bit already documented in `GPIO_CONTROL_MAP.md`. Adding a new
+  `axi_gpio_*` IP is a last resort and requires explicit user
+  approval (D2 still applies).
+- **Why.** Multiple deployed bitstreams already carry this address
+  map. Renaming or shuffling bytes risks silently breaking older
+  bitstreams in the field (cf. `axi_gpio_delay`, which is named for
+  a delay but drives the RAT — and cannot be renamed without a
+  block-design change). Locking the layout also keeps Python /
+  Clash / notebook / tests in lock-step.
+- **How to apply.**
+  - When you reach `GPIO_CONTROL_MAP.md`, treat the table as a
+    contract; never edit a row's address or its `ctrlA`-`ctrlD`
+    semantics in the same change as a refactor.
+  - If a refactor "wants" to rename a GPIO, propose a follow-up
+    change instead and flag it for user approval.
+  - The shipped exception is `axi_gpio_noise_suppressor` at
+    `0x43CC0000` (D11). Any future exception goes through the same
+    gate.
+
+## D13 — C++ DSP prototypes were removed from the active tree
+
+- **Decision.** The earlier `src/effects/*.cpp` files
+  (`RatStyleDistortion`, `SimpleAmpSimulator`, `CabIRSimulator`)
+  were removed, along with their CPU-side tests
+  (`tests/test_rat_style_distortion.cpp`,
+  `tests/test_amp_cab_simulators.cpp`). The single source of truth
+  for DSP behaviour on the live build is
+  `hw/ip/clash/src/LowPassFir.hs`.
+- **Why.** The C++ files were only reference implementations and
+  never ran on the PYNQ-Z2 audio path. Their continued presence in
+  the tree invited the "implement in C++ then port" pattern, which
+  is not how this project ships effects — every effect is built
+  directly in Clash for fixed-point + pipelined synthesis. Keeping
+  the prototypes also confused agents and humans into believing
+  `make tests` validated the FPGA path, which it never did.
+- **How to apply.**
+  - New effects start at the Python / UI / Clash layer; do not
+    introduce a new C++ prototype.
+  - Algorithm shape from GPL projects (guitarix, BYOD, etc.) is
+    fair to reference (D7); their source is not.
+  - `make tests` now runs Python tests only. `make cpp_tests` /
+    `make test_cpp` are deprecated targets that print a notice
+    instead of running anything.
+
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
 - **Decision.** A new two-cell notebook,

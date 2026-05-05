@@ -21,6 +21,7 @@ Then read the topic doc that matches the work:
 
 | Work | Read |
 | --- | --- |
+| Adding a new effect | `docs/ai_context/EFFECT_ADDING_GUIDE.md` (+ `EFFECT_STAGE_TEMPLATE.md`) |
 | Clash / DSP edits | `docs/ai_context/DSP_EFFECT_CHAIN.md` |
 | GPIO bit allocation | `docs/ai_context/GPIO_CONTROL_MAP.md` |
 | Audio routing / passthrough debug | `docs/ai_context/AUDIO_SIGNAL_PATH.md` |
@@ -38,6 +39,15 @@ Then read the topic doc that matches the work:
   shipped exception is `axi_gpio_noise_suppressor` at `0x43CC0000`, added for
   the THRESHOLD / DECAY / DAMP noise-suppressor work (`DECISIONS.md` D11);
   do not remove it or shuffle its address.
+- **GPIO design is fixed** (`DECISIONS.md` D12). Names, addresses, and the
+  `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` semantics in
+  `docs/ai_context/GPIO_CONTROL_MAP.md` are a contract. Do not rename
+  `axi_gpio_delay`, do not move bytes, do not repurpose `legacy mirror` or
+  `reserved` slots for unrelated effects. New effects land on documented
+  reserved bits / bytes first.
+- C++ DSP prototypes were removed (`DECISIONS.md` D13). The single source of
+  truth for DSP behaviour is `hw/ip/clash/src/LowPassFir.hs`. Do not write a
+  new C++ prototype as a stepping stone to a new effect.
 - The ADAU1761 ADC HPF is **default-on** (`R19_ADC_CONTROL == 0x23`). Do not
   remove or skip the HPF enable in `config_codec()`.
 - The selectable distortion section is **pedal-mask-based** (commit

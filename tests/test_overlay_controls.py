@@ -511,6 +511,203 @@ def test_noise_suppressor_defaults_are_safe():
     assert settings['damp'] == 70
 
 
+# ---- control_maps module ------------------------------------------------
+
+
+def test_control_maps_module_matches_overlay():
+    """control_maps.* must produce the same byte values that the legacy
+    AudioLabOverlay classmethods produce. Locking this prevents future
+    refactors from drifting the encoding."""
+    from audio_lab_pynq import control_maps as cm
+
+    for v in (-50, 0, 1, 49, 50, 99, 100, 150):
+        assert cm.clamp_percent(v) == AudioLabOverlay._clamp_percent(v), v
+        assert cm.percent_to_u8(v, 255) == AudioLabOverlay._percent_to_u8(v, 255), v
+        assert cm.percent_to_u8(v, 192) == AudioLabOverlay._percent_to_u8(v, 192), v
+        assert cm.noise_threshold_to_u8(v) == AudioLabOverlay._noise_threshold_to_u8(v), v
+    for v in (0, 50, 100, 150, 200, 250):
+        assert cm.level_to_q7(v) == AudioLabOverlay._level_to_q7(v), v
+
+
+def test_control_maps_pack_unpack_roundtrip():
+    from audio_lab_pynq import control_maps as cm
+
+    for sample in [(0, 0, 0, 0), (1, 2, 3, 4), (255, 0, 128, 64), (0xAB, 0xCD, 0xEF, 0x12)]:
+        word = cm.pack_u8x4(*sample)
+        assert cm.unpack_u8x4(word) == sample
+    word = cm.pack_u8x4(0x10, 0x20, 0x30, 0x40)
+    assert cm.get_byte(word, 0) == 0x10
+    assert cm.get_byte(word, 1) == 0x20
+    assert cm.get_byte(word, 2) == 0x30
+    assert cm.get_byte(word, 3) == 0x40
+    assert cm.set_byte(word, 1, 0xFF) == 0x4030FF10
+    assert cm.bool_to_bit(True) == 1 and cm.bool_to_bit(False) == 0
+    assert cm.bool_to_bit(0) == 0 and cm.bool_to_bit(7) == 1
+
+
+def test_control_maps_pack_matches_legacy_pack():
+    """pack_u8x4 must agree with the legacy AudioLabOverlay._pack4 for
+    byte-shaped inputs."""
+    from audio_lab_pynq import control_maps as cm
+
+    for sample in [(0, 0, 0, 0), (1, 2, 3, 4), (255, 0, 128, 64)]:
+        assert cm.pack_u8x4(*sample) == AudioLabOverlay._pack4(*sample), sample
+
+
+def test_effect_defaults_module_exposes_canonical_dicts():
+    from audio_lab_pynq import effect_defaults as ed
+
+    assert ed.DISTORTION_DEFAULTS == AudioLabOverlay.DISTORTION_DEFAULTS
+    assert ed.NOISE_SUPPRESSOR_DEFAULTS == AudioLabOverlay.NOISE_SUPPRESSOR_DEFAULTS
+    assert ed.DISTORTION_PEDALS == AudioLabOverlay.DISTORTION_PEDALS
+    # SAFE_BYPASS_DEFAULTS must keep every effect off.
+    sb = ed.SAFE_BYPASS_DEFAULTS
+    for flag in ('noise_gate_on', 'overdrive_on', 'distortion_on', 'rat_on',
+                 'amp_on', 'cab_on', 'eq_on', 'reverb_on'):
+        assert sb[flag] is False, flag
+    assert sb['distortion_pedal_mask'] == 0
+
+
+def test_effect_presets_module_matches_notebook_values():
+    from audio_lab_pynq import effect_presets as ep
+
+    # The four notebook NS presets must match these exact specs.
+    assert ep.NOISE_SUPPRESSOR_PRESETS["NS-2 Style"] == dict(threshold=35, decay=45, damp=80)
+    assert ep.NOISE_SUPPRESSOR_PRESETS["NS-1X Natural"] == dict(threshold=30, decay=55, damp=60)
+    assert ep.NOISE_SUPPRESSOR_PRESETS["High Gain Tight"] == dict(threshold=55, decay=20, damp=90)
+    assert ep.NOISE_SUPPRESSOR_PRESETS["Sustain Friendly"] == dict(threshold=25, decay=75, damp=45)
+    # Distortion presets: voicing name -> pedal name.
+    assert ep.DISTORTION_PRESETS["Clean Boost"]["pedal"] == "clean_boost"
+    assert ep.DISTORTION_PRESETS["Tube Screamer Crunch"]["pedal"] == "tube_screamer"
+    assert ep.DISTORTION_PRESETS["RAT Distortion"]["pedal"] == "rat"
+    assert ep.DISTORTION_PRESETS["Metal Tight"]["pedal"] == "metal"
+
+
+# ---- guitar_effect_control_words snapshot -------------------------------
+#
+# These are byte-for-byte snapshots of the current encoding. They lock
+# the live encoding so future refactors cannot silently change the
+# bits that reach the FPGA. If a snapshot fails because you intended
+# to change the encoding, update the snapshot in the same commit and
+# describe the audio impact in the commit message.
+
+
+SCENARIO_KWARGS = {
+    "defaults": {},
+    "ns2_style": dict(noise_gate_on=True, noise_gate_threshold=35),
+    "high_gain_tight": dict(noise_gate_on=True, noise_gate_threshold=55),
+    "clean_boost": dict(distortion_on=True, distortion_pedal_mask=(1 << 0),
+                        distortion=35, distortion_tone=50, distortion_level=45,
+                        distortion_bias=50, distortion_tight=50, distortion_mix=100),
+    "tube_screamer_crunch": dict(distortion_on=True, distortion_pedal_mask=(1 << 1),
+                                 distortion=45, distortion_tone=55, distortion_level=35,
+                                 distortion_bias=50, distortion_tight=60, distortion_mix=100),
+    "rat_distortion": dict(distortion_on=True, distortion_pedal_mask=(1 << 2), rat_on=True,
+                           distortion=55, distortion_tone=45, distortion_level=35,
+                           distortion_bias=50, distortion_tight=50, distortion_mix=100),
+    "metal_tight": dict(distortion_on=True, distortion_pedal_mask=(1 << 6),
+                        distortion=55, distortion_tone=55, distortion_level=30,
+                        distortion_bias=50, distortion_tight=75, distortion_mix=100),
+    "distortion_all_off": dict(distortion_on=False, distortion_pedal_mask=0),
+    "reverb_basic": dict(reverb_on=True, reverb_decay=30, reverb_tone=65, reverb_mix=20),
+    "amp_cab_basic": dict(amp_on=True, cab_on=True),
+}
+
+
+SCENARIO_SNAPSHOTS = {
+    "defaults": {
+        "gate": 0xff800200, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "ns2_style": {
+        "gate": 0xff800901, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "high_gain_tight": {
+        "gate": 0xff800e01, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "clean_boost": {
+        "gate": 0xff800204, "overdrive": 0x804c80a6, "distortion": 0x01593a80,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "tube_screamer_crunch": {
+        "gate": 0xff800204, "overdrive": 0x994c80a6, "distortion": 0x02732d8c,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "rat_distortion": {
+        "gate": 0xff800214, "overdrive": 0x804c80a6, "distortion": 0x048c2d73,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "metal_tight": {
+        "gate": 0xff800204, "overdrive": 0xbf4c80a6, "distortion": 0x408c268c,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "distortion_all_off": {
+        "gate": 0xff800200, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "reverb_basic": {
+        "gate": 0xff800220, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+    "amp_cab_basic": {
+        "gate": 0xff8002c0, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
+        "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
+    },
+}
+
+
+def test_guitar_effect_control_words_snapshots():
+    for name, kwargs in SCENARIO_KWARGS.items():
+        words = AudioLabOverlay.guitar_effect_control_words(**kwargs)
+        expected = SCENARIO_SNAPSHOTS[name]
+        for key, value in expected.items():
+            assert words[key] == value, (
+                "snapshot drift in scenario {!r}, field {!r}: "
+                "got {:#010x}, expected {:#010x}".format(name, key, words[key], value))
+
+
+def test_safe_bypass_snapshot_disables_every_flag():
+    """Every effect-master flag in gate.ctrlA must be 0 after Safe Bypass,
+    and the routing helper must fall back to passthrough."""
+    from audio_lab_pynq.effect_defaults import SAFE_BYPASS_DEFAULTS
+
+    words = AudioLabOverlay.guitar_effect_control_words(**SAFE_BYPASS_DEFAULTS)
+    assert words["gate"] & 0xFF == 0, hex(words["gate"])
+    assert (words["distortion"] >> 24) & 0x7F == 0
+    assert words["reverb"] & 0x01 == 0  # reverb enable byte
+
+
+def test_noise_suppressor_preset_bytes_snapshot():
+    """The four notebook NS presets must keep producing exactly these
+    32-bit words on the dedicated GPIO."""
+    from audio_lab_pynq import control_maps as cm
+    from audio_lab_pynq import effect_presets as ep
+
+    expected = {
+        "NS-2 Style":       0x00cc7309,
+        "NS-1X Natural":    0x00998c08,
+        "High Gain Tight":  0x00e6330e,
+        "Sustain Friendly": 0x0073bf06,
+    }
+    for name, spec in ep.NOISE_SUPPRESSOR_PRESETS.items():
+        word = cm.noise_suppressor_word(mode=0, **spec)
+        assert word == expected[name], (
+            "NS preset {!r}: got {:#010x} expected {:#010x}".format(
+                name, word, expected[name]))
+
+
 if __name__ == "__main__":
     test_rat_control_word()
     test_set_guitar_effects_writes_rat_gpio()
@@ -531,4 +728,22 @@ if __name__ == "__main__":
     test_set_distortion_settings_preserves_overdrive_params()
     test_set_guitar_effects_uses_cached_distortion_state_when_unset()
     test_get_distortion_settings_initial_defaults_are_safe()
+    test_noise_threshold_to_u8_scale_anchors()
+    test_noise_threshold_to_u8_clamps()
+    test_noise_suppressor_word_packing()
+    test_set_noise_suppressor_settings_writes_word_to_dedicated_gpio()
+    test_get_noise_suppressor_settings_reports_metadata()
+    test_set_noise_suppressor_settings_clamps_inputs()
+    test_set_noise_suppressor_settings_mirrors_threshold_to_gate_ctrlB()
+    test_set_guitar_effects_mirrors_noise_threshold_to_ns_gpio()
+    test_guitar_effect_control_words_uses_new_threshold_scale()
+    test_noise_suppressor_defaults_are_safe()
+    test_control_maps_module_matches_overlay()
+    test_control_maps_pack_unpack_roundtrip()
+    test_control_maps_pack_matches_legacy_pack()
+    test_effect_defaults_module_exposes_canonical_dicts()
+    test_effect_presets_module_matches_notebook_values()
+    test_guitar_effect_control_words_snapshots()
+    test_safe_bypass_snapshot_disables_every_flag()
+    test_noise_suppressor_preset_bytes_snapshot()
     print("AudioLabOverlay guitar effect control tests passed")
