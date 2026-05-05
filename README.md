@@ -20,7 +20,7 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 `GuitarEffectsChain.ipynb` および `GuitarPedalboardOneCell.ipynb` では、以下の順番でエフェクトを処理します。
 
 ```text
-Noise Suppressor -> Overdrive -> Distortion Pedalboard -> RAT Distortion -> Amp Simulator -> Cab IR -> EQ -> Reverb
+Noise Suppressor -> Compressor -> Overdrive -> Distortion Pedalboard -> RAT Distortion -> Amp Simulator -> Cab IR -> EQ -> Reverb
 ```
 
 各エフェクトは個別に ON/OFF できます。
@@ -28,6 +28,7 @@ Noise Suppressor -> Overdrive -> Distortion Pedalboard -> RAT Distortion -> Amp 
 | エフェクト | パラメータ |
 | --- | --- |
 | Noise Suppressor | `THRESHOLD`, `DECAY`, `DAMP` |
+| Compressor | `THRESHOLD`, `RATIO`, `RESPONSE`, `MAKEUP` |
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
 | Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1`* / `big_muff`* / `fuzz_face`* / `metal`、* は予約) |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
@@ -49,6 +50,19 @@ Noise Suppressor -> Overdrive -> Distortion Pedalboard -> RAT Distortion -> Amp 
 | `DAMP` | 0..100 | 最大ノイズ抑制量。0 ≒ 50% closed gain (自然)、100 ≒ 0% (完全ミュート) |
 
 `GuitarPedalboardOneCell.ipynb` には NS-2 Style / NS-1X Natural / High Gain Tight / Sustain Friendly の 4 プリセットを用意しています。RNNoise / FFT / spectral 系処理は採用していません (PYNQ-Z2 PL リソース都合)。BOSS NS-2 / NS-1X は操作思想のみ参考にしており、回路やコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D11、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Noise Suppressor 節を参照してください。
+
+### Compressor (stereo-linked feed-forward peak)
+
+Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で制御するステレオリンクの feed-forward peak compressor です。Noise Suppressor の後段、Overdrive の前段に配置され、ピッキングの粒を揃えてサステインを伸ばします。enable は専用 GPIO の `ctrlD` bit 7。
+
+| 知能 | 範囲 | 内容 |
+| --- | --- | --- |
+| `THRESHOLD` | 0..100 | 圧縮を開始するエンベロープ・レベル (低いほど弱い入力から圧縮) |
+| `RATIO` | 0..100 | 圧縮の強さ。0 ≒ ほぼ 1:1、100 ≒ 強いリミッター寄り |
+| `RESPONSE` | 0..100 | attack/release をまとめた応答速度。0 = タイト、100 = 自然/サステイン重視 |
+| `MAKEUP` | 0..100 | 圧縮後の補正ゲイン。50 ≒ unity、控えめに 0.75x..1.25x の Q8 マッピング (`MAKEUP` byte = u7 0..127、ctrlD bits[6:0]) |
+
+`GuitarPedalboardOneCell.ipynb` には Comp Off / Light Sustain / Funk Tight / Lead Sustain / Limiter-ish の 5 プリセットを用意しています。本格的な attack/release 独立、knee、sidechain は今回入れていません。参考にした OSS (`harveyf2801/AudioFX-Compressor`、`bdejong/musicdsp`、`DanielRudrich/SimpleCompressor`、`chipaudette/OpenAudio_ArduinoLibrary`、`p-hlp/SMPLComp`、`Ashymad/bancom`) はパラメータ命名と設計思想のみ参照しており、ソースコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D14、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Compressor 節を参照してください。
 
 ## DSP 実装の正規パス
 
@@ -213,6 +227,7 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 | `axi_gpio_amp_tone` | `0x43CA0000` | Amp Simulator の bass/middle/treble/character |
 | `axi_gpio_cab` | `0x43CB0000` | Cab IR の mix/level/model/air |
 | `axi_gpio_noise_suppressor` | `0x43CC0000` | Noise Suppressor の THRESHOLD / DECAY / DAMP / mode |
+| `axi_gpio_compressor` | `0x43CD0000` | Compressor の THRESHOLD / RATIO / RESPONSE / enable+MAKEUP |
 
 ## ビルド
 

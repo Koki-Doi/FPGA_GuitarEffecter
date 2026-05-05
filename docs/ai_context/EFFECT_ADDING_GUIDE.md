@@ -50,8 +50,20 @@ Before writing any code, answer these in order. The first "yes" wins.
      - Rebuild Vivado bit/hwh, review timing, deploy.
      - Add the GPIO row to `GPIO_CONTROL_MAP.md`, add an ADR entry to
        `DECISIONS.md`, add a Python writer + tests + notebook UI.
-   - The shipped exception is `axi_gpio_noise_suppressor` at
-     `0x43CC0000` (DECISIONS.md D11). Treat any new IP the same way.
+   - Shipped exceptions are `axi_gpio_noise_suppressor` at
+     `0x43CC0000` (DECISIONS.md D11) and `axi_gpio_compressor` at
+     `0x43CD0000` (DECISIONS.md D14). Treat any new IP the same way.
+
+The compressor add is a worked example of case 4. The Compressor
+section needed five knobs (threshold / ratio / response / makeup /
+enable); none of the existing `reserved` bytes / bits were a fit
+(distortion pedal slots are reserved for future pedals, NS ctrlD is
+reserved for NS modes, EQ ctrlD is reserved for a future EQ knob,
+`gate_control.ctrlA` is full). It landed on a new
+`axi_gpio_compressor` GPIO at `0x43CD0000` with explicit user sign-off
+and a full Vivado / Clash / bit / hwh rebuild. The Compressor enable
+flag lives inside the new GPIO (`ctrlD` bit 7), so the master flag
+byte was not touched.
 
 ## 2. Priority order when in doubt
 

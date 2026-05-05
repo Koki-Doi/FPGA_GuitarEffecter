@@ -224,6 +224,61 @@ not get removed even when superseded — they get updated.
     `make test_cpp` are deprecated targets that print a notice
     instead of running anything.
 
+## D14 — Compressor lives on its own AXI GPIO
+
+- **Decision.** A dedicated `axi_gpio_compressor` IP at `0x43CD0000`
+  carries THRESHOLD / RATIO / RESPONSE / enable+MAKEUP for a stereo-
+  linked feed-forward peak compressor. The Clash side adds a new
+  `compressor_control` port and a `compLevelPipe -> compEnv ->
+  compGain -> compApplyPipe -> compMakeupPipe` block between the
+  noise suppressor and the overdrive. Enable lives **inside this
+  GPIO** (`ctrlD` bit 7), not on `gate_control.ctrlA`.
+- **Why.**
+  - The compressor needed five distinct knobs (threshold / ratio /
+    response / makeup / enable). Stuffing them onto an existing
+    `reserved` byte / bit was not possible:
+    `axi_gpio_distortion.ctrlD[3..5,7]` is held for the reserved
+    distortion pedals (`DECISIONS.md` D9),
+    `axi_gpio_noise_suppressor.ctrlD` is held for NS-2 vs NS-1X
+    mode / attack / hold (D11), `axi_gpio_eq.ctrlD` is held for a
+    future EQ-section knob. Repurposing any of those would violate
+    `DECISIONS.md` D12.
+  - `gate_control.ctrlA` is the master flag byte and every bit is
+    already owned by an existing effect's enable. Adding a new
+    flag bit there would touch the meaning of an `active` byte,
+    which D12 forbids.
+  - The compressor benefits from being able to flip its own enable
+    without read-modify-write on a shared flag byte; keeping the
+    enable inside its own GPIO makes the section fully self-
+    contained.
+- **Trade-offs not taken.**
+  - **No** copying of source code from the references studied for
+    parameter naming and design philosophy: harveyf2801/AudioFX-
+    Compressor, bdejong/musicdsp simple compressor, DanielRudrich/
+    SimpleCompressor, chipaudette/OpenAudio_ArduinoLibrary,
+    p-hlp/SMPLComp (GPL-3.0), Ashymad/bancom (GPL-3.0). Algorithmic
+    structure (feed-forward peak detect, stereo link, gain
+    reduction computer, envelope follower, makeup) is the only
+    thing taken (`DECISIONS.md` D7).
+  - **No** lookahead, knee, multiband, sidechain input, or
+    dB/log-domain math. The first compressor build is intentionally
+    a 1-GPIO, light-weight ggitar-friendly section.
+  - **No** C++ DSP prototype as a stepping stone (`DECISIONS.md`
+    D13). Implementation went Python API + UI reservation -> Clash
+    stage -> new GPIO directly.
+- **How to apply.**
+  - When changing the compressor stage, edit the `comp*` block in
+    `LowPassFir.hs`. Do not move or rename the block;
+    `axi_gpio_compressor` and the `compressor_control` port are
+    pinned by `block_design.tcl` and the deployed `.hwh`.
+  - Reserved knobs (sidechain HPF, knee, mix, lookahead, attack and
+    release as separate parameters) should land on a new GPIO via
+    a new ADR rather than steal bytes from existing GPIOs.
+  - The Python `set_compressor_settings(...)` API and the byte
+    encoding in `control_maps.compressor_word` /
+    `control_maps.makeup_to_u7` are the source of truth; keep
+    notebook and tests in lock-step.
+
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
 - **Decision.** A new two-cell notebook,

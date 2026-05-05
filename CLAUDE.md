@@ -43,10 +43,12 @@ When a previous turn stopped mid-implementation:
 ## Hard constraints
 
 - `hw/Pynq-Z2/block_design.tcl` is **off-limits** unless the user explicitly
-  approves a block-design change. The one shipped exception is
+  approves a block-design change. Shipped exceptions are
   `axi_gpio_noise_suppressor` at `0x43CC0000`, added for the THRESHOLD /
-  DECAY / DAMP noise-suppressor work (`DECISIONS.md` D11); do not remove it
-  or shuffle its address.
+  DECAY / DAMP noise-suppressor work (`DECISIONS.md` D11), and
+  `axi_gpio_compressor` at `0x43CD0000`, added for the THRESHOLD /
+  RATIO / RESPONSE / MAKEUP compressor work (`DECISIONS.md` D14). Do
+  not remove them or shuffle their addresses.
 - **GPIO design is fixed** (`DECISIONS.md` D12). Names, addresses, and the
   `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` semantics in
   `docs/ai_context/GPIO_CONTROL_MAP.md` are a contract — never rename

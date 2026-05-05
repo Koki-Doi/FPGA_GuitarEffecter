@@ -148,7 +148,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>bf22e4c1</spirit:value>
+            <spirit:value>76904af6</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -164,7 +164,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>3070d33c</spirit:value>
+            <spirit:value>7acf4e4c</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -381,6 +381,23 @@
         </spirit:wire>
       </spirit:port>
       <spirit:port>
+        <spirit:name>compressor_control</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">31</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
         <spirit:name>axis_in_tdata</spirit:name>
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
@@ -576,7 +593,7 @@
       <xilinx:displayName>clash_lowpass_fir_v1_0</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2026-05-04T20:22:50Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-05-05T06:41:14Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -584,8 +601,8 @@
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2019.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="d9b955d0"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="dd980b0b"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="943e112c"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="81e343da"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="22b3c271"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="15d78eb7"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>

@@ -161,6 +161,60 @@ def noise_suppressor_word(threshold, decay, damp, mode=0):
     )
 
 
+def makeup_to_u7(value):
+    """Map a 0..100 makeup percentage to a 7-bit Q7 byte in ``[0, 127]``.
+
+    Anchors:
+
+    +---------+-----+
+    | percent | u7  |
+    +=========+=====+
+    | 0       | 0   |
+    +---------+-----+
+    | 50      | 64  |
+    +---------+-----+
+    | 100     | 127 |
+    +---------+-----+
+
+    The result lives in the low 7 bits of
+    ``compressor_control.ctrlD``; the top bit of that byte carries the
+    compressor enable flag.
+    """
+    return clamp_int(percent_to_u8(value, 127), 0, 127)
+
+
+def compressor_enable_makeup_byte(enabled, makeup):
+    """Pack the compressor enable bit and makeup percent into one byte.
+
+    Bit 7 carries the enable flag; bits[6:0] carry
+    :func:`makeup_to_u7` of ``makeup``. The Clash side reads this as
+    ``compEnable`` / ``compMakeupU7``.
+    """
+    byte = makeup_to_u7(makeup)
+    if enabled:
+        byte |= 0x80
+    return byte & 0xFF
+
+
+def compressor_word(threshold, ratio, response, makeup, enabled=False):
+    """Build the 32-bit word for ``axi_gpio_compressor``.
+
+    Bytes:
+
+    - ``ctrlA`` = THRESHOLD via :func:`percent_to_u8`
+    - ``ctrlB`` = RATIO via :func:`percent_to_u8`
+    - ``ctrlC`` = RESPONSE via :func:`percent_to_u8`
+    - ``ctrlD`` bit 7 = ``enabled``;
+      ``ctrlD`` bits[6:0] = :func:`makeup_to_u7` of ``makeup``
+    """
+    return pack_u8x4(
+        percent_to_u8(threshold, 255),
+        percent_to_u8(ratio, 255),
+        percent_to_u8(response, 255),
+        compressor_enable_makeup_byte(enabled, makeup),
+    )
+
+
 __all__ = [
     "clamp_int",
     "clamp_percent",
@@ -175,4 +229,7 @@ __all__ = [
     "set_byte",
     "get_byte",
     "noise_suppressor_word",
+    "makeup_to_u7",
+    "compressor_enable_makeup_byte",
+    "compressor_word",
 ]
