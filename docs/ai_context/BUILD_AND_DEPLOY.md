@@ -1,11 +1,17 @@
 # Build and deploy
 
+For the playbook on adding a new effect (which path applies, in what
+order, and what each layer needs), see
+[`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md).
+
 ## Decision tree
 
 | What changed | Build steps | Deploy |
 | --- | --- | --- |
 | Only Python in `audio_lab_pynq/` | none | `bash scripts/deploy_to_pynq.sh` |
 | Only `audio_lab_pynq/notebooks/*.ipynb` (e.g. `GuitarPedalboardOneCell.ipynb`, `DistortionModelsDebug.ipynb`, `GuitarEffectSwitcher.ipynb`) | **none — no Clash, no Vivado, no bit/hwh** | `bash scripts/deploy_to_pynq.sh` |
+| GPIO-neutral refactor (Python + docs + tests; no Clash, no `block_design.tcl`, no GPIO byte semantics change) | none — **no bit/hwh rebuild** | `bash scripts/deploy_to_pynq.sh` |
+| C++ DSP prototype removal (`src/effects/*.cpp`) | none — never on the live PL path | none on the FPGA side; `bash scripts/deploy_to_pynq.sh` only if Python or notebooks shipped alongside |
 | `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed baseline; deploy only if not significantly worse |
 | `hw/Pynq-Z2/block_design.tcl`, `audio_lab.xdc`, IP topology | full Vivado rebuild — **only with explicit user approval** | review timing, then deploy |
 

@@ -16,6 +16,26 @@ asking it to re-discover the project from scratch.
 > `git push` / `git pull` / `git fetch` は禁止です。
 > ADC HPF デフォルトON 設定を壊さないでください。
 > `hw/Pynq-Z2/block_design.tcl` は変更しないでください。
+> GPIO 設計は固定 (`DECISIONS.md` D12)、既存 GPIO 名 / address /
+> ctrlA-D 割り当てを再配置しないでください。
+> C++ DSP プロトタイプは削除済み (`DECISIONS.md` D13)。
+> 新エフェクト追加では C++ → 移植の手順に戻らず、Python API / UI
+> 予約 → Clash ステージ追加で進めてください。
+
+## Adding a new effect
+
+> 新しいエフェクトを追加するときは、まず
+> `docs/ai_context/EFFECT_ADDING_GUIDE.md` の判断フローを読んでくださ
+> い。GPIO 設計は固定なので、まず `GPIO_CONTROL_MAP.md` の `reserved`
+> 領域 (例: `axi_gpio_distortion.ctrlD[3..5,7]`、
+> `axi_gpio_noise_suppressor.ctrlD`、`axi_gpio_eq.ctrlD`) で済ませら
+> れるかを確認してください。新規 `axi_gpio_*` 追加は最後の手段で、
+> ユーザの明示承認が必要です (`DECISIONS.md` D2 / D11 / D12)。
+> Python 側のヘルパは `audio_lab_pynq/control_maps.py` に集約されてい
+> ます (pack_u8x4 / set_byte / percent_to_u8 など)。defaults と presets
+> は `audio_lab_pynq/effect_defaults.py` /
+> `audio_lab_pynq/effect_presets.py`。新エフェクトの仕様は
+> `EFFECT_STAGE_TEMPLATE.md` を埋めて記録してください。
 
 ## Distortion pedal-mask is shipped — do not roll it back
 

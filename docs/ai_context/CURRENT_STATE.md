@@ -1,6 +1,64 @@
 # Current state
 
-Last updated: 2026-05-05 (post-deploy of the noise-suppressor refactor).
+Last updated: 2026-05-05 (effect-chain refactor for easier extension; no
+hardware changes).
+
+## Effect-chain refactor (this branch, `feature/effect-chain-refactor`)
+
+The Python control layer was split into smaller modules, the GPIO
+inventory was promoted to a fixed ledger, the C++ DSP prototypes were
+removed, and a new effect-adding guide / template were added. **No GPIO
+re-allocation, no Clash change, no Vivado / bit / hwh rebuild.** The
+deployed bitstream is unchanged.
+
+What landed:
+
+- `audio_lab_pynq/control_maps.py` — pack / unpack / clamp helpers (single
+  source of truth for byte encoding).
+- `audio_lab_pynq/effect_defaults.py` — per-effect default dicts; the
+  legacy class attributes (`AudioLabOverlay.DISTORTION_DEFAULTS`,
+  `NOISE_SUPPRESSOR_DEFAULTS`, `DISTORTION_PEDALS`,
+  `DISTORTION_PEDALS_IMPLEMENTED`) are re-exported from here.
+- `audio_lab_pynq/effect_presets.py` — Notebook + API presets;
+  `DISTORTION_PRESETS`, `NOISE_SUPPRESSOR_PRESETS`. The notebook
+  imports these with an inline fallback.
+- `AudioLabOverlay.py` — the legacy classmethods (`_clamp_percent`,
+  `_percent_to_u8`, `_level_to_q7`, `_pack3`, `_pack4`,
+  `_noise_threshold_to_u8`, `_noise_suppressor_word`) are now thin
+  delegates to `control_maps`. **Every public API is unchanged.**
+- `tests/test_overlay_controls.py` — added module-level tests for
+  `control_maps` / `effect_defaults` / `effect_presets`, plus
+  byte-for-byte snapshot tests covering every preset and the Safe
+  Bypass shape so future refactors cannot silently change the bits.
+- `docs/ai_context/GPIO_CONTROL_MAP.md` — promoted to a fixed
+  inventory with `active / reserved / legacy mirror / unused /
+  deprecated` status per byte and an explicit "do not repurpose"
+  rule set.
+- `docs/ai_context/EFFECT_ADDING_GUIDE.md` (new) — decision flow,
+  Clash rules, Python rules, notebook rules, deploy checklist.
+- `docs/ai_context/EFFECT_STAGE_TEMPLATE.md` (new) — fillable spec
+  sheet for new effects.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` — pulled
+  presets from `effect_presets.py` (with inline fallback for older
+  deployed packages); introduced `make_slider` / `make_section`
+  helpers; split `apply_settings` into
+  `apply_distortion_settings` / `apply_noise_suppressor_settings` /
+  `apply_chain_settings`. Two-cell layout, Apply-button discipline,
+  and visual structure are unchanged.
+- `src/effects/` — **removed.** The C++ DSP prototypes were never on
+  the live PL path; keeping them around invited the "implement in
+  C++ then port" pattern that this project does not follow. See
+  `DECISIONS.md` D12. `make tests` now runs Python tests only.
+
+What did **not** change:
+
+- GPIO names, addresses, and ctrlA / ctrlB / ctrlC / ctrlD assignments.
+- `block_design.tcl`, `LowPassFir.hs` (DSP source), VHDL, IP packaging.
+- `audio_lab.bit` / `audio_lab.hwh`. Timing baseline (WNS = -7.111 ns,
+  WHS = +0.053 ns, THS = 0.000 ns) is unaffected — no rebuild was
+  performed.
+- Any audible behaviour. Snapshot tests guarantee the bits sent to
+  the FPGA match the previous deployed bitstream byte-for-byte.
 
 ## Headline
 

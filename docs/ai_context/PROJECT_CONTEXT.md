@@ -36,8 +36,10 @@ control effect parameters via AXI GPIO.
 | `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. |
 | `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install package, install notebooks. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |
-| `src/effects/*.cpp` | CPU-side **reference** implementations only. Not in the live PL path. |
-| `tests/` | Local CPU-side tests for Python control words and C++ refs. |
+| `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. |
+| `audio_lab_pynq/effect_defaults.py` | Per-effect default parameter dicts (re-exported as `AudioLabOverlay.DISTORTION_DEFAULTS` etc.). |
+| `audio_lab_pynq/effect_presets.py` | Notebook + API presets (Noise Suppressor / Distortion / Safe Bypass). |
+| `tests/` | Local Python tests for the control layer. The earlier C++ DSP prototypes were removed; the source of truth for DSP is `hw/ip/clash/src/LowPassFir.hs`. |
 
 ## Operational facts
 
@@ -80,14 +82,25 @@ control effect parameters via AXI GPIO.
 
 ## Key principles for new work
 
+- **GPIO design is fixed.** The address map and the per-byte / per-bit
+  meaning in `GPIO_CONTROL_MAP.md` is treated as a contract. New
+  effects land on documented `reserved` slots; renaming or moving
+  bytes is forbidden. See `DECISIONS.md` D12.
 - Reuse the existing AXI GPIO topology by claiming spare bytes / bits.
   Adding a new `axi_gpio_*` IP requires a `block_design.tcl` change and
   is off the table by default. The noise-suppressor work
   (`axi_gpio_noise_suppressor`) is the one shipped exception, approved
   case-by-case; see `DECISIONS.md` D11 and `BUILD_AND_DEPLOY.md` for
   the recipe.
+- The single source of truth for DSP behaviour is
+  `hw/ip/clash/src/LowPassFir.hs`. The earlier C++ prototypes under
+  `src/effects/` were removed (`DECISIONS.md` D13); new effect work
+  goes Python API + UI reservation -> Clash stage -> (rare) new GPIO.
 - Never break the bit-bypass property: every effect stage must produce
   output equal to its input when its enable bit is clear, sample-exact.
 - The current Vivado build already runs with negative slack
   (see `TIMING_AND_FPGA_NOTES.md`); new logic must be carefully
   pipelined so it does not make timing dramatically worse.
+- Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
+  touching `LowPassFir.hs`, `block_design.tcl`, or any
+  `axi_gpio_*` topology.

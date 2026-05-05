@@ -3,6 +3,13 @@ from enum import Enum
 import os
 from .AxisSwitch import AxisSwitch
 from .AudioCodec import ADAU1761
+from . import control_maps as _cm
+from .effect_defaults import (
+    DISTORTION_DEFAULTS as _DISTORTION_DEFAULTS,
+    DISTORTION_PEDALS as _DISTORTION_PEDALS,
+    DISTORTION_PEDALS_IMPLEMENTED as _DISTORTION_PEDALS_IMPLEMENTED,
+    NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
+)
 
 class XbarSource(Enum):
     line_in = 0
@@ -31,31 +38,15 @@ class AudioLabOverlay(Overlay):
     #   bit 4 : big_muff        (reserved; no Clash stage yet)
     #   bit 5 : fuzz_face       (reserved; no Clash stage yet)
     #   bit 6 : metal           (Clash stage implemented)
-    DISTORTION_PEDALS = (
-        'clean_boost',
-        'tube_screamer',
-        'rat',
-        'ds1',
-        'big_muff',
-        'fuzz_face',
-        'metal',
-    )
-    _DIST_PEDAL_BIT = {name: i for i, name in enumerate(DISTORTION_PEDALS)}
-
-    # Pedals that have a working Clash stage in the current bitstream.
-    # The others are accepted at the API level (and their bit is set in
-    # the mask) but currently produce bit-exact bypass.
-    DISTORTION_PEDALS_IMPLEMENTED = ('clean_boost', 'tube_screamer', 'rat', 'metal')
-
-    DISTORTION_DEFAULTS = {
-        'pedal_mask': 0,
-        'drive': 20,
-        'tone': 50,
-        'level': 35,
-        'bias': 50,
-        'tight': 50,
-        'mix': 100,
-    }
+    # Pedal name -> mask bit, defaults, and "implemented" subset all live
+    # in audio_lab_pynq.effect_defaults so the notebook UI and the tests
+    # share one source of truth. Re-exported as class attributes so
+    # legacy callers (AudioLabOverlay.DISTORTION_DEFAULTS,
+    # AudioLabOverlay.DISTORTION_PEDALS, ...) still work.
+    DISTORTION_PEDALS = _DISTORTION_PEDALS
+    _DIST_PEDAL_BIT = {name: i for i, name in enumerate(_DISTORTION_PEDALS)}
+    DISTORTION_PEDALS_IMPLEMENTED = _DISTORTION_PEDALS_IMPLEMENTED
+    DISTORTION_DEFAULTS = _DISTORTION_DEFAULTS
 
     # Noise Suppressor (BOSS NS-2 / NS-1X style operation, all-FPGA).
     # Driven by the dedicated axi_gpio_noise_suppressor at 0x43CC0000:
@@ -65,13 +56,7 @@ class AudioLabOverlay(Overlay):
     #   ctrlD = mode byte       (reserved, 0 today)
     # On/off rides on gate_control flag bit 0 (noise_gate_on) so the
     # existing set_guitar_effects(noise_gate_on=...) toggle still works.
-    NOISE_SUPPRESSOR_DEFAULTS = {
-        'enabled': False,
-        'threshold': 35,
-        'decay': 40,
-        'damp': 70,
-        'mode': 0,
-    }
+    NOISE_SUPPRESSOR_DEFAULTS = _NOISE_SUPPRESSOR_DEFAULTS
     NOISE_SUPPRESSOR_GPIO_NAME = 'axi_gpio_noise_suppressor'
 
     def __init__(self, bitfile_name=None, **kwargs):
@@ -118,41 +103,35 @@ class AudioLabOverlay(Overlay):
         self.x_source.stop_cfg()
         self.x_sink.stop_cfg()
 
+    # Numeric helpers. The canonical implementations live in
+    # audio_lab_pynq.control_maps; these classmethods are thin
+    # delegates so external callers and tests using
+    # AudioLabOverlay._clamp_percent / _percent_to_u8 / _pack4 keep
+    # working byte-for-byte.
+
     @staticmethod
     def _clamp_percent(value):
-        value = int(round(value))
-        if value < 0:
-            return 0
-        if value > 100:
-            return 100
-        return value
+        return _cm.clamp_percent(value)
 
     @staticmethod
     def _clamp_range(value, minimum, maximum):
-        value = int(round(value))
-        if value < minimum:
-            return minimum
-        if value > maximum:
-            return maximum
-        return value
+        return _cm.clamp_int(value, minimum, maximum)
 
-    @classmethod
-    def _percent_to_u8(cls, value, maximum=255):
-        value = cls._clamp_percent(value)
-        return cls._clamp_range(value * maximum / 100, 0, 255)
+    @staticmethod
+    def _percent_to_u8(value, maximum=255):
+        return _cm.percent_to_u8(value, maximum)
 
-    @classmethod
-    def _level_to_q7(cls, value):
-        value = cls._clamp_range(value, 0, 200)
-        return cls._clamp_range(value * 128 / 100, 0, 255)
+    @staticmethod
+    def _level_to_q7(value):
+        return _cm.level_to_q7(value)
 
     @staticmethod
     def _pack3(a, b, c):
-        return (int(c) << 16) | (int(b) << 8) | int(a)
+        return _cm.pack_u8x3(a, b, c)
 
     @staticmethod
     def _pack4(a, b, c, d):
-        return (int(d) << 24) | (int(c) << 16) | (int(b) << 8) | int(a)
+        return _cm.pack_u8x4(a, b, c, d)
 
     @staticmethod
     def _write_gpio(gpio, word):
@@ -394,29 +373,16 @@ class AudioLabOverlay(Overlay):
 
     # ---- Noise Suppressor public API ------------------------------------
 
-    @classmethod
-    def _noise_threshold_to_u8(cls, value):
-        """Map the new threshold scale (0..100) to an 8-bit byte.
+    # Both helpers delegate to control_maps so the encoding stays
+    # identical to the module-level functions used by the notebook
+    # and the tests. New 100 == legacy 10 (one tenth of the old span).
+    @staticmethod
+    def _noise_threshold_to_u8(value):
+        return _cm.noise_threshold_to_u8(value)
 
-        New 100 == legacy 10 (i.e. one tenth of the old span). Formula:
-        ``round(threshold * 255 / 1000)``. Values outside 0..100 are
-        clamped first. Callers that already speak the legacy 0..100 ->
-        0..255 mapping should keep using ``_percent_to_u8``.
-        """
-        value = cls._clamp_percent(value)
-        return cls._clamp_range(value * 255 / 1000, 0, 255)
-
-    @classmethod
-    def _noise_suppressor_word(cls, threshold, decay, damp, mode=0):
-        """Pack the four control bytes into the 32-bit GPIO word.
-        ctrlA=threshold, ctrlB=decay, ctrlC=damp, ctrlD=mode.
-        """
-        return cls._pack4(
-            cls._noise_threshold_to_u8(threshold),
-            cls._percent_to_u8(decay, 255),
-            cls._percent_to_u8(damp, 255),
-            int(mode) & 0xFF,
-        )
+    @staticmethod
+    def _noise_suppressor_word(threshold, decay, damp, mode=0):
+        return _cm.noise_suppressor_word(threshold, decay, damp, mode)
 
     def _apply_noise_suppressor_state_to_word(self, mirror_to_gate=True):
         """Recompute the noise-suppressor 32-bit word from cached state

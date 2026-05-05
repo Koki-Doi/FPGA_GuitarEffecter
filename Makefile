@@ -5,7 +5,7 @@ wheel:
 
 Pynq-Z2: ip
 	make -C hw/Pynq-Z2
-	
+
 clean_Pynq-Z2:
 	make -C hw/Pynq-Z2 clean
 
@@ -15,17 +15,20 @@ ip:
 clean_ip:
 	make -C hw/ip clean
 
-cpp_tests:
-	make -C tests run
-
 python_tests:
 	make -C tests python
 
-tests: cpp_tests python_tests
-
-test: tests
+# C++ DSP prototypes were removed; the source of truth for the live
+# DSP path is hw/ip/clash/src/LowPassFir.hs. cpp_tests / test_cpp
+# stay as deprecated targets so older invocations do not error out.
+cpp_tests:
+	@echo "C++ DSP prototypes were removed; FPGA DSP source of truth is hw/ip/clash/src/LowPassFir.hs"
 
 test_cpp: cpp_tests
+
+tests: python_tests
+
+test: tests
 
 clean: clean_Pynq-Z2 clean_ip
 

@@ -2,8 +2,13 @@
 
 The entire PL DSP pipeline lives in a single Clash module:
 `hw/ip/clash/src/LowPassFir.hs` (the file name is historical — it has long
-since stopped being just an FIR). The C++ files under `src/effects/` are
-**reference implementations only**; they do not run on the board.
+since stopped being just an FIR). This module is the **only** source of
+truth for DSP behaviour on the live PYNQ-Z2 build.
+
+The earlier C++ DSP prototypes that lived under `src/effects/` were
+removed (`DECISIONS.md` D12). They were not on the live PL path and
+their continued presence risked steering future work into "implement
+in C++ then port" loops, which this project does not do.
 
 ## Core types
 

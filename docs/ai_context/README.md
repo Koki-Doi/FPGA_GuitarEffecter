@@ -36,7 +36,9 @@ Then read whatever is topical for the task at hand:
 | File | Use when |
 | --- | --- |
 | [`AUDIO_SIGNAL_PATH.md`](AUDIO_SIGNAL_PATH.md) | Tracing where samples go, debugging passthrough or routing. |
-| [`GPIO_CONTROL_MAP.md`](GPIO_CONTROL_MAP.md) | Adding or moving control bits, naming new effect parameters. |
+| [`GPIO_CONTROL_MAP.md`](GPIO_CONTROL_MAP.md) | Reading the fixed GPIO inventory. The address / ctrlA-D layout is locked; do not move bytes. |
+| [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) | The playbook for adding a new effect (decision flow, GPIO rules, Clash rules, Python rules, deploy checklist). |
+| [`EFFECT_STAGE_TEMPLATE.md`](EFFECT_STAGE_TEMPLATE.md) | Fillable spec sheet for a new effect; submit alongside the implementation PR. |
 | [`DSP_EFFECT_CHAIN.md`](DSP_EFFECT_CHAIN.md) | Editing `LowPassFir.hs`, adding a new Clash stage. |
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
