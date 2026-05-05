@@ -89,7 +89,7 @@ make tests
 
 | Notebook | 内容 |
 | --- | --- |
-| `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Noise Suppressor (THRESHOLD / DECAY / DAMP + 4プリセット) / Overdrive / Distortion Pedalboard (pedal-mask + 4プリセット) / Amp / Cab IR / EQ / Reverb を Apply / Safe Bypass / Refresh ボタンで一括操作 |
+| `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Chain Preset dropdown (Safe Bypass / Basic Clean / Clean Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain) で実用音色をワンクリック適用、加えて Compressor / Noise Suppressor / Overdrive / Distortion Pedalboard / Amp / Cab IR / EQ / Reverb の個別操作 (Apply / Safe Bypass / Refresh / Show Current State) |
 | `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクション付き) |
 | `DistortionModelsDebug.ipynb` | Distortion pedal-mask API のウォークスルー (pedal一覧 + bit position + 実装/予約状況の表示と排他切替) |
 | `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb を操作するメインノートブック |
@@ -195,6 +195,31 @@ ol.set_guitar_effects(
 
 ```python
 ol.set_reverb(enabled=True, reverb=35, tone=70, mix=25)
+```
+
+## Chain Presets
+
+`GuitarPedalboardOneCell.ipynb` の Chain Preset dropdown から、エフェクトチェーン全体を 1 クリックで実用音色に切り替えられます。Compressor の makeup は 45..60、Distortion の level は <=35 に抑えてあるので、プリセット切替で意図せず爆音になることはありません。
+
+| Preset | 用途 |
+| --- | --- |
+| Safe Bypass | 全エフェクトOFF。完全パススルー。 |
+| Basic Clean | Compressor 軽め + 薄い Reverb。クリーンの基本形。 |
+| Clean Sustain | Light Sustain Compressor + 薄い Reverb。クリーンのサステイン強調。 |
+| Light Crunch | 軽 Compressor + Overdrive 弱め + Amp/Cab。クランチ。 |
+| Tube Screamer Lead | Lead Sustain Compressor + Tube Screamer + Amp/Cab。リード。 |
+| RAT Rhythm | 中 Compressor + RAT + Amp/Cab。リズム。 |
+| Metal Tight | High-Gain Tight NS + Funk Tight Compressor + Metal + Tight Amp/Cab。ハイゲイン刻み。 |
+| Ambient Clean | Light Sustain Compressor + 深い Reverb + EQ で低域整理。 |
+| Solo Boost | Lead Sustain Compressor + Tube Screamer + Amp/Cab。ソロ用。 |
+| Noise Controlled High Gain | 強 NS + 軽 Compressor + Metal。ノイズ管理しつつ高歪み。 |
+
+Python からも同じ API で適用できます。
+
+```python
+ovl.apply_chain_preset("Tube Screamer Lead")
+print(ovl.get_chain_preset_names())
+print(ovl.get_current_pedalboard_state())
 ```
 
 ## ハードウェア構成

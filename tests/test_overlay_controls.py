@@ -869,6 +869,188 @@ def test_effect_defaults_module_exposes_compressor_dict():
     assert ed.COMPRESSOR_DEFAULTS['makeup'] == 50
 
 
+# ---- Chain presets ------------------------------------------------------
+
+
+def make_overlay_with_chain_state(include_compressor_gpio=True,
+                                  include_ns_gpio=True):
+    overlay = make_overlay_with_compressor_state(
+        include_compressor_gpio=include_compressor_gpio)
+    if not include_ns_gpio and hasattr(
+            overlay, AudioLabOverlay.NOISE_SUPPRESSOR_GPIO_NAME):
+        delattr(overlay, AudioLabOverlay.NOISE_SUPPRESSOR_GPIO_NAME)
+    return overlay
+
+
+REQUIRED_CHAIN_PRESET_NAMES = (
+    "Safe Bypass",
+    "Basic Clean",
+    "Clean Sustain",
+    "Light Crunch",
+    "Tube Screamer Lead",
+    "RAT Rhythm",
+    "Metal Tight",
+    "Ambient Clean",
+    "Solo Boost",
+    "Noise Controlled High Gain",
+)
+
+
+def test_chain_presets_module_exists_and_has_required_names():
+    from audio_lab_pynq import effect_presets as ep
+
+    assert isinstance(ep.CHAIN_PRESETS, dict)
+    for name in REQUIRED_CHAIN_PRESET_NAMES:
+        assert name in ep.CHAIN_PRESETS, "missing chain preset: " + name
+
+
+def test_chain_presets_have_all_required_sections():
+    from audio_lab_pynq import effect_presets as ep
+
+    for name, spec in ep.CHAIN_PRESETS.items():
+        for section in ep.CHAIN_PRESET_SECTIONS:
+            assert section in spec, (
+                "preset {!r} missing section {!r}".format(name, section))
+
+
+def test_safe_bypass_preset_has_every_section_off():
+    from audio_lab_pynq import effect_presets as ep
+
+    safe = ep.CHAIN_PRESETS["Safe Bypass"]
+    for section in ep.CHAIN_PRESET_SECTIONS:
+        assert safe[section].get("enabled") is False, (
+            "Safe Bypass: section {!r} has enabled != False".format(section))
+    # Reverb mix must be zero in the panic preset.
+    assert safe["reverb"]["mix"] == 0
+
+
+def test_chain_presets_compressor_makeup_within_safe_band():
+    """Every preset's compressor makeup must stay in the 45..60 band so
+    a preset cannot blow the rest of the chain into clipping."""
+    from audio_lab_pynq import effect_presets as ep
+
+    for name, spec in ep.CHAIN_PRESETS.items():
+        makeup = spec["compressor"]["makeup"]
+        assert 45 <= makeup <= 60, (
+            "preset {!r} compressor makeup={} outside the 45..60 band"
+            .format(name, makeup))
+
+
+def test_chain_presets_distortion_level_capped():
+    """Every preset's distortion level must stay <= 35 so a preset
+    cannot drive the post-distortion stages into hard clip."""
+    from audio_lab_pynq import effect_presets as ep
+
+    for name, spec in ep.CHAIN_PRESETS.items():
+        level = spec["distortion"]["level"]
+        assert level <= 35, (
+            "preset {!r} distortion level={} exceeds the 35 cap"
+            .format(name, level))
+
+
+def test_get_chain_preset_names_matches_module():
+    from audio_lab_pynq import effect_presets as ep
+
+    names = AudioLabOverlay.get_chain_preset_names()
+    assert names == list(ep.CHAIN_PRESETS.keys())
+
+
+def test_get_chain_preset_returns_deep_copy():
+    spec_a = AudioLabOverlay.get_chain_preset("Safe Bypass")
+    spec_b = AudioLabOverlay.get_chain_preset("Safe Bypass")
+    spec_a["compressor"]["makeup"] = 999
+    assert spec_b["compressor"]["makeup"] != 999
+
+
+def test_get_chain_preset_unknown_raises():
+    try:
+        AudioLabOverlay.get_chain_preset("does_not_exist")
+    except KeyError as exc:
+        assert "does_not_exist" in str(exc)
+    else:
+        raise AssertionError("unknown preset should raise KeyError")
+
+
+def test_apply_chain_preset_basic_clean_round_trip():
+    overlay = make_overlay_with_chain_state()
+    state = overlay.apply_chain_preset("Basic Clean")
+    assert "compressor" in state
+    assert state["compressor"]["enabled"] is True
+    assert state["compressor"]["makeup"] == 50
+    # Reverb must be on with mix 15 per the preset.
+    assert overlay.routes[-1] == (XbarEffect.guitar_chain, XbarSink.headphone)
+
+
+def test_apply_chain_preset_metal_tight_writes_pedal_mask():
+    overlay = make_overlay_with_chain_state()
+    overlay.apply_chain_preset("Metal Tight")
+    dist = overlay.get_distortion_settings()
+    bit = AudioLabOverlay._DIST_PEDAL_BIT["metal"]
+    assert dist["pedal_mask"] & (1 << bit), \
+        "Metal Tight preset must set the metal pedal bit"
+    assert dist["tight"] == 80
+    ns = overlay.get_noise_suppressor_settings()
+    assert ns["enabled"] is True
+    assert ns["threshold"] == 55
+
+
+def test_apply_chain_preset_tube_screamer_lead_writes_compressor_word():
+    overlay = make_overlay_with_chain_state()
+    overlay.apply_chain_preset("Tube Screamer Lead")
+    comp_gpio = getattr(overlay, AudioLabOverlay.COMPRESSOR_GPIO_NAME)
+    last_word = comp_gpio.writes[-1][1]
+    # Compressor enable bit set, makeup 60 -> u7 76.
+    assert (last_word >> 24) & 0x80 == 0x80
+    expected_makeup = AudioLabOverlay._makeup_to_u7(60)
+    assert (last_word >> 24) & 0x7F == expected_makeup
+
+
+def test_apply_chain_preset_safe_bypass_routes_passthrough():
+    overlay = make_overlay_with_chain_state()
+    # First apply something noisy so we have a non-passthrough route
+    # to compare against, then Safe Bypass.
+    overlay.apply_chain_preset("Metal Tight")
+    overlay.apply_chain_preset("Safe Bypass")
+    assert overlay.routes[-1] == (XbarEffect.passthrough, XbarSink.headphone), \
+        "Safe Bypass should route to passthrough"
+    # No distortion pedals selected.
+    assert overlay.get_distortion_settings()["pedal_mask"] == 0
+
+
+def test_get_current_pedalboard_state_returns_dict():
+    overlay = make_overlay_with_chain_state()
+    overlay.apply_chain_preset("Basic Clean")
+    state = overlay.get_current_pedalboard_state()
+    assert isinstance(state, dict)
+    assert "compressor" in state
+    assert "noise_suppressor" in state
+    assert "distortion" in state
+    # The cached_words bucket must include the GPIOs we just wrote.
+    assert "cached_words" in state
+    assert state["cached_words"]["compressor_word"] != 0
+
+
+def test_apply_chain_preset_survives_missing_compressor_gpio():
+    """An older overlay without axi_gpio_compressor must still apply
+    the rest of the chain preset."""
+    overlay = make_overlay_with_chain_state(include_compressor_gpio=False)
+    # No compressor GPIO -> apply still has to write the rest.
+    state = overlay.apply_chain_preset("Basic Clean")
+    # set_guitar_effects must still have routed.
+    assert overlay.routes[-1][1] == XbarSink.headphone
+    assert "compressor" not in state or state["compressor"]["has_gpio"] is False
+
+
+def test_apply_chain_preset_unknown_name_raises():
+    overlay = make_overlay_with_chain_state()
+    try:
+        overlay.apply_chain_preset("does_not_exist")
+    except KeyError as exc:
+        assert "does_not_exist" in str(exc)
+    else:
+        raise AssertionError("unknown preset should raise KeyError")
+
+
 if __name__ == "__main__":
     test_rat_control_word()
     test_set_guitar_effects_writes_rat_gpio()
@@ -918,4 +1100,19 @@ if __name__ == "__main__":
     test_compressor_defaults_are_safe()
     test_compressor_preset_bytes_snapshot()
     test_effect_defaults_module_exposes_compressor_dict()
+    test_chain_presets_module_exists_and_has_required_names()
+    test_chain_presets_have_all_required_sections()
+    test_safe_bypass_preset_has_every_section_off()
+    test_chain_presets_compressor_makeup_within_safe_band()
+    test_chain_presets_distortion_level_capped()
+    test_get_chain_preset_names_matches_module()
+    test_get_chain_preset_returns_deep_copy()
+    test_get_chain_preset_unknown_raises()
+    test_apply_chain_preset_basic_clean_round_trip()
+    test_apply_chain_preset_metal_tight_writes_pedal_mask()
+    test_apply_chain_preset_tube_screamer_lead_writes_compressor_word()
+    test_apply_chain_preset_safe_bypass_routes_passthrough()
+    test_get_current_pedalboard_state_returns_dict()
+    test_apply_chain_preset_survives_missing_compressor_gpio()
+    test_apply_chain_preset_unknown_name_raises()
     print("AudioLabOverlay guitar effect control tests passed")

@@ -200,6 +200,30 @@ After any Clash / Vivado run, compare the WNS / WHS / THS to the
 **Do not deploy** a bitstream whose WNS is significantly worse than
 the previous deployed value.
 
+## 7b. Chain presets vs. new effects
+
+Practical pedalboard voicings (Safe Bypass / Basic Clean / Tube
+Screamer Lead / Metal Tight / ...) are **not** new effects. They are
+named entries in `audio_lab_pynq.effect_presets.CHAIN_PRESETS` that
+orchestrate the existing setters. Adding one is a Python-only change
+(case 1 in section 1): no Vivado, no Clash, no bit/hwh.
+
+Constraints to keep:
+
+- Compressor `makeup` ∈ [45, 60] across every preset. Distortion
+  `level` ≤ 35. `Safe Bypass` has every section `enabled=False` and
+  `reverb.mix=0`. The tests in `tests/test_overlay_controls.py`
+  enforce these so a future preset cannot silently regress them.
+- One section dict per `CHAIN_PRESET_SECTIONS` entry. Match the
+  argument names of the corresponding `set_*_settings` calls so
+  `apply_chain_preset` can pass them straight through.
+- If a preset wants behaviour the FPGA does not currently expose
+  (e.g. lookahead compressor, multiband EQ), do **not** quietly add
+  a new GPIO from the preset layer. File a separate ADR (D11 / D14
+  style) and follow section 1 case 4.
+
+See [`DECISIONS.md`](DECISIONS.md) D15.
+
 ## 8. C++ DSP prototypes are not the path
 
 The earlier reference C++ implementations under `src/effects/` were

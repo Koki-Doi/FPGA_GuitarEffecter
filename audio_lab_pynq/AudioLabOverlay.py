@@ -593,6 +593,180 @@ class AudioLabOverlay(Overlay):
             'implementation_status': 'threshold_ratio_response_makeup_fpga',
         }
 
+    # ---- Chain presets (combined-section voicings) ---------------------
+    #
+    # Drives the live pedalboard from named voicings defined in
+    # ``effect_presets.CHAIN_PRESETS``. These are notebook-grade
+    # presets that combine every section of the chain (Compressor +
+    # Noise Suppressor + Overdrive + Distortion Pedalboard + Amp +
+    # Cab IR + EQ + Reverb) into one named state. No new GPIO; the
+    # implementation just orchestrates the existing
+    # ``set_*_settings`` / ``set_guitar_effects`` APIs.
+
+    @staticmethod
+    def _chain_presets():
+        from . import effect_presets as _ep
+        return _ep.CHAIN_PRESETS, _ep.CHAIN_PRESET_SECTIONS
+
+    @classmethod
+    def get_chain_preset_names(cls):
+        """Return the ordered list of chain preset names."""
+        presets, _sections = cls._chain_presets()
+        return list(presets.keys())
+
+    @classmethod
+    def get_chain_preset(cls, name):
+        """Return a deep-copied chain preset spec (dict-of-dicts).
+
+        Raises ``KeyError`` with a list of valid names if ``name`` is
+        not a defined chain preset.
+        """
+        import copy
+        presets, _sections = cls._chain_presets()
+        if name not in presets:
+            raise KeyError(
+                "unknown chain preset: {!r}; valid names are {}".format(
+                    name, ", ".join(presets.keys())))
+        return copy.deepcopy(presets[name])
+
+    def apply_chain_preset(self, name):
+        """Apply a named chain preset by orchestrating the existing
+        ``set_*_settings`` / ``set_guitar_effects`` APIs.
+
+        Robust to overlays that lack one of the section GPIOs (e.g.
+        an older bitstream without ``axi_gpio_compressor``): the
+        Compressor / Noise Suppressor calls are guarded by
+        ``hasattr`` so missing GPIOs do not break preset application.
+        Returns the dict produced by ``get_current_pedalboard_state``
+        after the writes, so callers can verify what landed.
+        """
+        spec = self.get_chain_preset(name)
+        comp = spec.get("compressor", {})
+        ns = spec.get("noise_suppressor", {})
+        od = spec.get("overdrive", {})
+        dist = spec.get("distortion", {})
+        amp = spec.get("amp", {})
+        cab = spec.get("cab", {})
+        eq = spec.get("eq", {})
+        rev = spec.get("reverb", {})
+
+        # Compressor lives on its own GPIO; skip if not present so an
+        # older bitstream without axi_gpio_compressor still applies the
+        # rest of the preset.
+        if hasattr(self, self.COMPRESSOR_GPIO_NAME) and comp:
+            self.set_compressor_settings(**comp)
+
+        # Noise Suppressor: same shape. The threshold byte is also
+        # mirrored into legacy gate_control.ctrlB; safe on every
+        # overlay version we ship.
+        if hasattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME) and ns:
+            self.set_noise_suppressor_settings(
+                enabled=ns.get("enabled"),
+                threshold=ns.get("threshold"),
+                decay=ns.get("decay"),
+                damp=ns.get("damp"),
+            )
+
+        # Distortion section runs through set_distortion_pedal +
+        # set_distortion_settings to keep pedal-mask semantics. When
+        # the section is off / no pedal, clear the mask so the legacy
+        # stage can take over the gate flag.
+        if dist:
+            pedal = dist.get("pedal")
+            section_on = bool(dist.get("enabled")) and bool(pedal)
+            if section_on:
+                self.set_distortion_pedal(pedal, enabled=True, exclusive=True)
+            else:
+                self.clear_distortion_pedals()
+            self.set_distortion_settings(
+                drive=dist.get("drive"),
+                tone=dist.get("tone"),
+                level=dist.get("level"),
+                bias=dist.get("bias"),
+                tight=dist.get("tight"),
+                mix=dist.get("mix"),
+            )
+
+        # The remaining sections ride on set_guitar_effects. We pass
+        # noise_gate_on / noise_gate_threshold so the gate flag bit
+        # tracks the suppressor's enabled state and the legacy
+        # gate_control.ctrlB stays in sync.
+        kwargs = dict(
+            noise_gate_on=bool(ns.get("enabled", False)),
+            noise_gate_threshold=ns.get("threshold", 35),
+            overdrive_on=bool(od.get("enabled", False)),
+            overdrive_drive=od.get("drive", 0),
+            overdrive_tone=od.get("tone", 50),
+            overdrive_level=od.get("level", 100),
+            distortion_on=bool(dist.get("enabled", False)),
+            amp_on=bool(amp.get("enabled", False)),
+            amp_input_gain=amp.get("input_gain", 35),
+            amp_bass=amp.get("bass", 50),
+            amp_middle=amp.get("middle", 50),
+            amp_treble=amp.get("treble", 50),
+            amp_presence=amp.get("presence", 45),
+            amp_resonance=amp.get("resonance", 35),
+            amp_master=amp.get("master", 80),
+            amp_character=amp.get("character", 35),
+            cab_on=bool(cab.get("enabled", False)),
+            cab_mix=cab.get("mix", 100),
+            cab_level=cab.get("level", 100),
+            cab_model=cab.get("model", 1),
+            cab_air=cab.get("air", 50),
+            eq_on=bool(eq.get("enabled", False)),
+            eq_low=eq.get("low", 100),
+            eq_mid=eq.get("mid", 100),
+            eq_high=eq.get("high", 100),
+            reverb_on=bool(rev.get("enabled", False)),
+            reverb_decay=rev.get("decay", 0),
+            reverb_tone=rev.get("tone", 65),
+            reverb_mix=rev.get("mix", 0),
+        )
+        self.set_guitar_effects(**kwargs)
+        return self.get_current_pedalboard_state()
+
+    def get_current_pedalboard_state(self):
+        """Return a dict-of-dicts snapshot of every cached effect
+        section. Output-only GPIOs cannot be read back, so each
+        sub-dict reflects the last call to a setter (or the safe
+        defaults loaded in ``__init__``). Sections whose GPIO is not
+        present on the current overlay are omitted from the result.
+        """
+        state = {}
+        if hasattr(self, "_compressor_state"):
+            try:
+                state["compressor"] = self.get_compressor_settings()
+            except Exception:
+                pass
+        if hasattr(self, "_noise_suppressor_state"):
+            try:
+                state["noise_suppressor"] = self.get_noise_suppressor_settings()
+            except Exception:
+                pass
+        if hasattr(self, "_dist_state"):
+            try:
+                state["distortion"] = self.get_distortion_settings()
+            except Exception:
+                pass
+        # Cached words for the en-masse-written sections (overdrive,
+        # amp, cab, eq, reverb, gate flags). These are not full
+        # round-trip dicts -- the overlay does not cache every per-knob
+        # value for those sections -- but they let a notebook show what
+        # was last written.
+        cached = {}
+        for attr, key in (
+            ("_cached_gate_word", "gate"),
+            ("_cached_overdrive_word", "overdrive"),
+            ("_cached_distortion_word", "distortion_word"),
+            ("_cached_noise_suppressor_word", "noise_suppressor_word"),
+            ("_cached_compressor_word", "compressor_word"),
+        ):
+            if hasattr(self, attr):
+                cached[key] = getattr(self, attr)
+        if cached:
+            state["cached_words"] = cached
+        return state
+
     @classmethod
     def reverb_control_word(cls, enabled=True, reverb=35, tone=70, mix=25):
         reverb = cls._clamp_percent(reverb)
