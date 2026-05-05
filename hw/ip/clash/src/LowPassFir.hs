@@ -30,6 +30,7 @@ data Frame = Frame
   , fCab :: Ctrl
   , fReverb :: Ctrl
   , fNs :: Ctrl
+  , fComp :: Ctrl
   , fAddr :: ReverbAddr
   , fDryL :: Sample
   , fDryR :: Sample
@@ -291,8 +292,8 @@ gateOpenThreshold :: Sample -> Sample
 gateOpenThreshold threshold =
   satWide (resize threshold + (resize threshold `shiftR` 1) + 65_536)
 
-makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
-makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl noiseSuppressorControl samples validIn lastIn =
+makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
+makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl noiseSuppressorControl compressorControl samples validIn lastIn =
   if validIn
     then
       let (left, right) = unpackChan samples
@@ -311,6 +312,7 @@ makeInput gateControl odControl distControl eqControl ratControl ampControl ampT
               , fCab = cabControl
               , fReverb = reverbControl
               , fNs = noiseSuppressorControl
+              , fComp = compressorControl
               , fAddr = 0
               , fDryL = left
               , fDryR = right
@@ -482,6 +484,154 @@ nsApplyFrame gain f
   | otherwise = f{fL = applyNs (fL f), fR = applyNs (fR f)}
  where
   applyNs x = satShift12 (mulU12 x gain)
+
+-- ---- Compressor (THRESHOLD / RATIO / RESPONSE / MAKEUP) --------------
+--
+-- Stereo-linked feed-forward peak compressor on its own GPIO. Sits
+-- between the noise suppressor and the overdrive: tightens picking and
+-- evens out level before the gain stages. Driven by the dedicated
+-- compressor_control GPIO carried in fComp:
+--
+--   fComp ctrlA = compThreshold       (envelope-compare level, byte 0..255)
+--   fComp ctrlB = compRatio           (compression strength,   byte 0..255)
+--   fComp ctrlC = compResponse        (smoothing time,         byte 0..255)
+--   fComp ctrlD bit7      = compEnable
+--   fComp ctrlD bits[6:0] = compMakeup (Q7-style 0..127, ~0.75x..1.25x)
+--
+-- Bit-exact bypass when compEnable is clear. Same shape as the noise
+-- suppressor so timing is comparable: one envelope-input register stage
+-- (reusing gateLevelFrame), two feedback registers (envelope + smoothed
+-- gain), one apply stage, one makeup stage.
+
+compThresholdByte :: Ctrl -> Unsigned 8
+compThresholdByte = ctrlA
+
+compRatioByte :: Ctrl -> Unsigned 8
+compRatioByte = ctrlB
+
+compResponseByte :: Ctrl -> Unsigned 8
+compResponseByte = ctrlC
+
+compEnableMakeupByte :: Ctrl -> Unsigned 8
+compEnableMakeupByte = ctrlD
+
+compEnabled :: Ctrl -> Bool
+compEnabled c = testBit (compEnableMakeupByte c) 7
+
+compMakeupU7 :: Ctrl -> Unsigned 8
+compMakeupU7 c = compEnableMakeupByte c .&. 0x7F
+
+compOn :: Frame -> Bool
+compOn f = compEnabled (fComp f)
+
+-- Same scaling as gateThreshold / nsThreshold so the byte range maps
+-- to the same envelope-compare level the noise suppressor already uses.
+compThresholdSample :: Ctrl -> Sample
+compThresholdSample c = resize (asSigned9 (compThresholdByte c)) `shiftL` 13
+
+-- Constant Sample equivalents of gateUnity, used to clamp the reduction
+-- term before converting to GateGain. Kept as named constants to make
+-- the synthesiser-visible width explicit.
+unitySample :: Sample
+unitySample = 4_095
+
+unityU24 :: Unsigned 24
+unityU24 = 4_095
+
+-- Convert a Sample known to be in [0, gateUnity] to GateGain (Unsigned 12).
+-- Caller must clamp the input first; this is just a bit-slice.
+sampleToGateGain :: Sample -> GateGain
+sampleToGateGain s = unpack (slice d11 d0 (pack s))
+
+-- Stage 1 envelope: peak follower. Attack is instantaneous; release
+-- speed is controlled by compResponse. response=0 is the fastest /
+-- tightest, response=255 is the slowest / most sustaining. Bypassed
+-- (env -> 0) when the compressor is off so a re-enable starts clean.
+compEnvNext :: Sample -> Maybe Frame -> Sample
+compEnvNext env Nothing = env
+compEnvNext env (Just f)
+  | not (compOn f)        = 0
+  | level > env           = level
+  | env > releaseStep     = env - releaseStep
+  | otherwise             = 0
+ where
+  level = maxAbsFrame f
+  responseByte = compResponseByte (fComp f)
+  envStep = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
+  responseStep =
+    let raw = ((255 :: Unsigned 8) - responseByte) `shiftR` 4
+    in if raw == 0 then 1 else resize (asSigned9 raw) :: Sample
+  releaseStep = responseStep + envStep
+
+-- Stage 2 target gain (lives inside the gain-smoother, not its own
+-- pipeline stage). unity when env <= threshold; otherwise reduced
+-- linearly with the excess and the ratio. ratio=0 -> almost no
+-- compression; ratio=255 -> strong reduction.
+compTargetGain :: Frame -> Sample -> GateGain
+compTargetGain f env
+  | not (compOn f)         = gateUnity
+  | env <= threshold       = gateUnity
+  | reduction >= gateUnity = 0
+  | otherwise              = gateUnity - reduction
+ where
+  threshold     = compThresholdSample (fComp f)
+  excess        = env - threshold
+  excessShifted = excess `shiftR` 11
+  excessClamped
+    | excessShifted < 0           = 0 :: Sample
+    | excessShifted > unitySample = unitySample
+    | otherwise                   = excessShifted
+  excessU12 :: GateGain
+  excessU12 = sampleToGateGain excessClamped
+  ratioByte = compRatioByte (fComp f)
+  prod24 :: Unsigned 24
+  prod24 = (resize excessU12 :: Unsigned 24)
+         * (resize ratioByte :: Unsigned 24)
+  reduction24 = prod24 `shiftR` 8 :: Unsigned 24
+  reduction
+    | reduction24 >= unityU24 = gateUnity
+    | otherwise               = resize reduction24
+
+-- Stage 3 gain smoother: a single integer step per sample toward the
+-- target. Both attack and release use the same step, controlled by
+-- compResponse (faster at low values, slower at high values).
+compGainNext :: GateGain -> Sample -> Maybe Frame -> GateGain
+compGainNext gain _ Nothing = gain
+compGainNext gain env (Just f)
+  | not (compOn f) = gateUnity
+  | gain < target =
+      if target - gain < step then target else gain + step
+  | gain > target =
+      if gain - target < step then target else gain - step
+  | otherwise     = gain
+ where
+  target = compTargetGain f env
+  responseByte = compResponseByte (fComp f)
+  raw = ((255 :: Unsigned 8) - responseByte) `shiftR` 3
+  step = if raw == 0 then 1 else resize raw :: GateGain
+
+-- Stage 4 apply: one register stage of multiply + saturating shift.
+-- Same arithmetic shape as nsApplyFrame so timing remains comparable.
+-- Bit-exact bypass when the compressor is off.
+compApplyFrame :: GateGain -> Frame -> Frame
+compApplyFrame gain f
+  | not (compOn f) = f
+  | otherwise      = f{fL = applyComp (fL f), fR = applyComp (fR f)}
+ where
+  applyComp x = satShift12 (mulU12 x gain)
+
+-- Stage 5 makeup gain: post-compression Q8 gain that maps makeup u7
+-- 0/64/127 -> 192/256/319 (Q8). 0->0.75x, 50->1.0x, 100->~1.25x. Kept
+-- conservative so a Compressor preset cannot blow the rest of the
+-- chain into clipping. Bit-exact bypass when the compressor is off.
+compMakeupFrame :: Frame -> Frame
+compMakeupFrame f
+  | not (compOn f) = f
+  | otherwise      = f{fL = applyMakeup (fL f), fR = applyMakeup (fR f)}
+ where
+  factor :: Unsigned 9
+  factor = 192 + resize (compMakeupU7 (fComp f))
+  applyMakeup x = satShift8 (mulU9 x factor)
 
 overdriveDriveMultiplyFrame :: Frame -> Frame
 overdriveDriveMultiplyFrame f =
@@ -1292,6 +1442,7 @@ nextAxisOut old pipe readyOut =
                  , PortName "cab_control"
                  , PortName "reverb_control"
                  , PortName "noise_suppressor_control"
+                 , PortName "compressor_control"
                  , PortName "axis_in_tdata"
                  , PortName "axis_in_tvalid"
                  , PortName "axis_in_tlast"
@@ -1316,6 +1467,7 @@ topEntity
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain (BitVector 48)
   -> Signal AudioDomain Bool
   -> Signal AudioDomain Bool
@@ -1325,9 +1477,9 @@ topEntity
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-topEntity clk rst gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl samples validIn lastIn readyOut =
+topEntity clk rst gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl samples validIn lastIn readyOut =
   withClockResetEnable clk rst enableGen $
-    fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl samples validIn lastIn readyOut
+    fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl samples validIn lastIn readyOut
 
 fxPipeline
   :: HiddenClockResetEnable AudioDomain
@@ -1341,6 +1493,7 @@ fxPipeline
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain (BitVector 48)
   -> Signal AudioDomain Bool
   -> Signal AudioDomain Bool
@@ -1350,7 +1503,7 @@ fxPipeline
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl samples validIn lastIn readyOut =
+fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl samples validIn lastIn readyOut =
   pipeline
  where
   pipeline =
@@ -1375,6 +1528,7 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
         <*> cabControl
         <*> reverbControl
         <*> nsControl
+        <*> compControl
         <*> samples
         <*> acceptedIn
         <*> lastIn
@@ -1391,7 +1545,20 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   nsEnv = register 0 (nsEnvNext <$> nsEnv <*> nsLevelPipe)
   nsGain = register gateUnity (nsGainNext <$> nsGain <*> nsEnv <*> nsLevelPipe)
   nsPipe = register Nothing (mapPipe <$> (nsApplyFrame <$> nsGain) <*> nsLevelPipe)
-  odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> nsPipe)
+
+  -- Compressor pipeline. Sits between the noise suppressor and the
+  -- overdrive: tightens picking before the gain stages. Same shape as
+  -- the noise suppressor (one envelope-input register stage, two
+  -- feedback registers, one apply stage) plus a separate makeup
+  -- multiply stage so each register stage holds a single multiply.
+  -- Bit-exact bypass when the enable bit (fComp ctrlD bit 7) is clear.
+  compLevelPipe = register Nothing (mapPipe gateLevelFrame <$> nsPipe)
+  compEnv = register 0 (compEnvNext <$> compEnv <*> compLevelPipe)
+  compGain = register gateUnity (compGainNext <$> compGain <*> compEnv <*> compLevelPipe)
+  compApplyPipe = register Nothing (mapPipe <$> (compApplyFrame <$> compGain) <*> compLevelPipe)
+  compMakeupPipe = register Nothing (mapPipe compMakeupFrame <$> compApplyPipe)
+
+  odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> compMakeupPipe)
   odDriveBoostPipe = register Nothing (mapPipe overdriveDriveBoostFrame <$> odDriveMulPipe)
   odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odDriveBoostPipe)
 

@@ -17,7 +17,8 @@ order, and what each layer needs), see
 
 When a `block_design.tcl` change adds a new `axi_gpio_*` IP (as the
 noise-suppressor work did with `axi_gpio_noise_suppressor` at
-`0x43CC0000`):
+`0x43CC0000`, and the compressor work did with `axi_gpio_compressor`
+at `0x43CD0000`):
 
 - `NUM_MI` on `ps7_0_axi_periph` must increment to match the new
   master count.
@@ -28,9 +29,17 @@ noise-suppressor work did with `axi_gpio_noise_suppressor` at
   new port (e.g. `noise_suppressor_control`); without that the block
   design connection will fail to bind.
 - After `make`, confirm `.hwh` carries the new IP, e.g.
-  `grep -c noise_suppressor hw/Pynq-Z2/bitstreams/audio_lab.hwh`.
+  `grep -c noise_suppressor hw/Pynq-Z2/bitstreams/audio_lab.hwh`
+  or `grep -c axi_gpio_compressor hw/Pynq-Z2/bitstreams/audio_lab.hwh`.
 - Loading the overlay on the board should expose the new attribute,
-  e.g. `hasattr(ovl, "axi_gpio_noise_suppressor") == True`.
+  e.g. `hasattr(ovl, "axi_gpio_noise_suppressor") == True` or
+  `hasattr(ovl, "axi_gpio_compressor") == True`.
+
+The compressor add (`axi_gpio_compressor` @ `0x43CD0000`) is a worked
+example: `NUM_MI` was bumped from 14 to 15, `M14_AXI` was added on
+`ps7_0_axi_periph` and routed to `axi_gpio_compressor/S_AXI`, the
+`compressor_control` port was added to the Clash top entity, and the
+new attribute is checked in the smoke test below.
 
 ## Clash → VHDL
 

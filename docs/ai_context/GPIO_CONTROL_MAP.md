@@ -47,6 +47,7 @@ read-back from hardware.
 | `axi_gpio_amp_tone` | `0x43CA0000` | amp simulator tone stack | bass | middle | treble | character | active / active / active / active | `character` is a single-byte voicing knob inside the amp section. |
 | `axi_gpio_cab` | `0x43CB0000` | cab IR | mix | level | model (0/85/170 = 3 presets) | air | active / active / active / active | `ctrlC` is quantised: 0, 85, 170 select the three preset IRs. Do not treat it as a free byte. |
 | `axi_gpio_noise_suppressor` | `0x43CC0000` | noise suppressor | NS threshold | NS decay | NS damp | mode (reserved) | active / active / active / reserved | `ctrlD` is reserved for future NS-2 vs NS-1X mode, attack / hold knobs. The byte is sent (Python clamps to `[0,255]`) but the live Clash side does nothing with it yet. |
+| `axi_gpio_compressor` | `0x43CD0000` | compressor | comp threshold | comp ratio | comp response | enable (bit 7) + makeup u7 (bits[6:0]) | active / active / active / active | Stereo-linked feed-forward peak compressor. Bit 7 of `ctrlD` is the section enable; bits[6:0] are the Q7 makeup byte (`makeup_to_u7`). The compressor is **not** gated by `gate_control.ctrlA` -- enable lives entirely inside this GPIO. Sits between the noise suppressor and the overdrive in the Clash pipeline. |
 
 ### Free / reserved bytes summary (for new-effect planning)
 
@@ -58,6 +59,7 @@ read-back from hardware.
 | `axi_gpio_distortion.ctrlD[4]` (big_muff) | reserved | Same. |
 | `axi_gpio_distortion.ctrlD[5]` (fuzz_face) | reserved | Same. |
 | `axi_gpio_noise_suppressor.ctrlD` | reserved | Future NS mode / attack / hold byte. Bytes 0..255 already pass through Python. |
+| `axi_gpio_compressor.ctrlD[6:0]` | active | Compressor `MAKEUP` (u7). Bit 7 of `ctrlD` is the compressor enable flag. Do not repurpose. |
 | `axi_gpio_gate.ctrlB` | legacy mirror (dead in live bitstream) | Do **not** reuse for a new feature; older bitstreams still depend on it. |
 
 ## Noise Suppressor (deployed)
@@ -100,6 +102,37 @@ suppressor driven by `axi_gpio_noise_suppressor`. We keep writing the
 same threshold byte into the legacy slot for backward compatibility
 with older bitstreams that lack the new GPIO; on the new bitstream
 the byte is dead. **Do not repurpose this byte.**
+
+## Compressor (deployed)
+
+The dedicated `axi_gpio_compressor` IP at `0x43CD0000` carries the
+THRESHOLD / RATIO / RESPONSE / MAKEUP knobs of a stereo-linked
+feed-forward peak compressor. Sits between the noise suppressor and
+the overdrive in the Clash pipeline. The enable flag lives **inside
+this GPIO** (`ctrlD` bit 7), not on `gate_control.ctrlA` -- the latter
+flag byte is already full and the compressor section was added on a
+new GPIO rather than steal a flag bit (`DECISIONS.md` D14).
+
+| Field | Carries |
+| --- | --- |
+| `compressor_control.ctrlA` | THRESHOLD byte (0..255). `byte = round(threshold * 255 / 100)` for `threshold` 0..100. Same scaling as `nsThreshold` so the byte range maps to a familiar envelope-compare level. |
+| `compressor_control.ctrlB` | RATIO byte (0..255). `byte = round(ratio * 255 / 100)`. Larger byte -> stronger gain reduction. |
+| `compressor_control.ctrlC` | RESPONSE byte (0..255). Both attack and release smoothing share this knob. 0 = tight / fast; 255 = slow / sustaining. |
+| `compressor_control.ctrlD` | bit 7 = compressor enable; bits[6:0] = MAKEUP (u7 0..127, `byte = round(makeup * 127 / 100)` clamped). Q8-ish makeup factor 192..319 (~0.75x..1.25x). |
+
+### Why a new GPIO
+
+`gate_control.ctrlA` (the master flag byte) is already full (every bit
+is owned by an existing effect's enable; see the table below). The
+existing `reserved` bytes are claimed by other planned features:
+`axi_gpio_distortion.ctrlD[3..5,7]` (extra distortion pedals),
+`axi_gpio_noise_suppressor.ctrlD` (NS mode / attack / hold),
+`axi_gpio_eq.ctrlD` (planned EQ-section knob). Stealing one of those
+would violate the "do not repurpose a `reserved` byte for a different
+feature" rule (this file, GPIO allocation rules section). So the
+compressor landed on its own AXI GPIO at `0x43CD0000`, with a fresh
+`compressor_control` port on the Clash top entity. See
+`DECISIONS.md` D14.
 
 ## `gate_control` flag byte (`ctrlA`)
 

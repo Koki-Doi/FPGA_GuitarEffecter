@@ -19,6 +19,7 @@
 | Distortion `model_select` attempt (May 4) | -15.067 ns | -7308.247 ns | 8-way model mux; **rejected**, never deployed. |
 | Pedal-mask refactor (May 4) | -7.801 ns | -7381.742 ns | Seven independent pedal stages. Deployed; live-verified. Setup slack roughly baseline-equivalent. |
 | **Noise-suppressor refactor (May 5, deployed)** | **-7.111 ns** | -7683.480 ns | Adds `axi_gpio_noise_suppressor` (`0x43CC0000`) and the `nsLevelPipe -> nsEnv -> nsGain -> nsPipe` block in place of the legacy hard gate. WNS improves by 0.690 ns vs the pedal-mask baseline; the new block has one fewer feedback register (no `gateOpen` boolean stage) so it is slightly cheaper than what it replaced. Hold remains clean (`WHS = +0.053 ns`, `THS = 0.000 ns`). |
+| **Compressor add (May 5, deployed)** | **-7.516 ns** | -8815.426 ns | Adds `axi_gpio_compressor` (`0x43CD0000`) and the `compLevelPipe -> compEnv -> compGain -> compApplyPipe -> compMakeupPipe` block between the noise suppressor and the overdrive. Same shape as the noise suppressor (one envelope-input register stage, two feedback registers, one apply stage) plus a separate makeup multiply stage so each register holds a single multiply. WNS regresses by 0.405 ns vs the noise-suppressor build (`-7.111 ns -> -7.516 ns`), still inside the historical -7..-9 ns deploy band. Hold remains clean (`WHS = +0.052 ns`, `THS = 0.000 ns`). |
 
 WHS = +0.050 ns / THS = 0.000 ns on the deployed build, so hold is
 clean. WNS is still slightly negative; treat any further timing

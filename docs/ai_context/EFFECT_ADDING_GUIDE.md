@@ -50,8 +50,20 @@ Before writing any code, answer these in order. The first "yes" wins.
      - Rebuild Vivado bit/hwh, review timing, deploy.
      - Add the GPIO row to `GPIO_CONTROL_MAP.md`, add an ADR entry to
        `DECISIONS.md`, add a Python writer + tests + notebook UI.
-   - The shipped exception is `axi_gpio_noise_suppressor` at
-     `0x43CC0000` (DECISIONS.md D11). Treat any new IP the same way.
+   - Shipped exceptions are `axi_gpio_noise_suppressor` at
+     `0x43CC0000` (DECISIONS.md D11) and `axi_gpio_compressor` at
+     `0x43CD0000` (DECISIONS.md D14). Treat any new IP the same way.
+
+The compressor add is a worked example of case 4. The Compressor
+section needed five knobs (threshold / ratio / response / makeup /
+enable); none of the existing `reserved` bytes / bits were a fit
+(distortion pedal slots are reserved for future pedals, NS ctrlD is
+reserved for NS modes, EQ ctrlD is reserved for a future EQ knob,
+`gate_control.ctrlA` is full). It landed on a new
+`axi_gpio_compressor` GPIO at `0x43CD0000` with explicit user sign-off
+and a full Vivado / Clash / bit / hwh rebuild. The Compressor enable
+flag lives inside the new GPIO (`ctrlD` bit 7), so the master flag
+byte was not touched.
 
 ## 2. Priority order when in doubt
 
@@ -187,6 +199,30 @@ After any Clash / Vivado run, compare the WNS / WHS / THS to the
 [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) baseline.
 **Do not deploy** a bitstream whose WNS is significantly worse than
 the previous deployed value.
+
+## 7b. Chain presets vs. new effects
+
+Practical pedalboard voicings (Safe Bypass / Basic Clean / Tube
+Screamer Lead / Metal Tight / ...) are **not** new effects. They are
+named entries in `audio_lab_pynq.effect_presets.CHAIN_PRESETS` that
+orchestrate the existing setters. Adding one is a Python-only change
+(case 1 in section 1): no Vivado, no Clash, no bit/hwh.
+
+Constraints to keep:
+
+- Compressor `makeup` ∈ [45, 60] across every preset. Distortion
+  `level` ≤ 35. `Safe Bypass` has every section `enabled=False` and
+  `reverb.mix=0`. The tests in `tests/test_overlay_controls.py`
+  enforce these so a future preset cannot silently regress them.
+- One section dict per `CHAIN_PRESET_SECTIONS` entry. Match the
+  argument names of the corresponding `set_*_settings` calls so
+  `apply_chain_preset` can pass them straight through.
+- If a preset wants behaviour the FPGA does not currently expose
+  (e.g. lookahead compressor, multiband EQ), do **not** quietly add
+  a new GPIO from the preset layer. File a separate ADR (D11 / D14
+  style) and follow section 1 case 4.
+
+See [`DECISIONS.md`](DECISIONS.md) D15.
 
 ## 8. C++ DSP prototypes are not the path
 

@@ -86,6 +86,51 @@ asking it to re-discover the project from scratch.
 > 既存 distortion pedal-mask 実装と
 > `GuitarPedalboardOneCell.ipynb` の他セクションは触らないでください。
 
+## Compressor work — branch in progress / shipped
+
+> Compressor は専用 GPIO `axi_gpio_compressor` (`0x43CD0000`) 経由で
+> THRESHOLD / RATIO / RESPONSE / enable+MAKEUP を持ち、Clash 側で
+> stereo-linked feed-forward peak compressor 段
+> (`fxPipeline` の `compLevelPipe -> compEnv -> compGain ->
+> compApplyPipe -> compMakeupPipe`) を Noise Suppressor の直後・
+> Overdrive の直前に追加済みです。enable は専用 GPIO の `ctrlD` bit 7
+> に置き、`gate_control.ctrlA` のフラグ byte は触っていません
+> (`DECISIONS.md` D14)。Python API は
+> `set_compressor_settings(threshold=, ratio=, response=, makeup=,
+> enabled=)` / `get_compressor_settings()`、makeup byte は
+> `round(makeup * 127 / 100)` で `[0, 127]` の Q7。Notebook
+> (`GuitarPedalboardOneCell.ipynb`) には Comp Off / Light Sustain /
+> Funk Tight / Lead Sustain / Limiter-ish の 5 プリセットを追加済み
+> です。参考にした OSS (`harveyf2801/AudioFX-Compressor`、
+> `bdejong/musicdsp`、`DanielRudrich/SimpleCompressor`、
+> `chipaudette/OpenAudio_ArduinoLibrary`、`p-hlp/SMPLComp` (GPL)、
+> `Ashymad/bancom` (GPL)) はパラメータ命名と設計思想のみ参照しており、
+> ソースコードのコピーは行っていません。詳しくは `DECISIONS.md` D14、
+> `DSP_EFFECT_CHAIN.md` Compressor 節、`GPIO_CONTROL_MAP.md` Compressor
+> 節を参照。Noise Suppressor、Distortion Pedalboard、`set_guitar_effects`
+> の互換 API は壊さないでください。
+
+## Chain presets work — Python / notebook only, no bitstream rebuild
+
+> Chain presets (Safe Bypass / Basic Clean / Clean Sustain / Light
+> Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient
+> Clean / Solo Boost / Noise Controlled High Gain) は
+> `audio_lab_pynq/effect_presets.py` の `CHAIN_PRESETS` に定義され、
+> `AudioLabOverlay.apply_chain_preset(name)` /
+> `get_chain_preset_names()` / `get_chain_preset(name)` /
+> `get_current_pedalboard_state()` から駆動します。新規 GPIO や
+> Clash 段は追加しておらず、既存セクションの set_*_settings /
+> set_guitar_effects を組み合わせて適用するだけです。bit/hwh は
+> 触らない / Vivado / Clash は実行しない (`DECISIONS.md` D15)。
+> プリセット追加時の安全契約: Compressor `makeup` は 45..60、
+> Distortion `level` <= 35、Safe Bypass は全 section enabled=False
+> + reverb.mix=0。これらは `tests/test_overlay_controls.py` で
+> 強制されているので、勝手に緩めないでください。Notebook 側
+> (`GuitarPedalboardOneCell.ipynb`) は Chain Preset dropdown + Apply
+> Chain Preset / Show Current State ボタンを持っており、原則 2 セル
+> 構成。既存 Compressor / Noise Suppressor / Distortion UI は
+> 触らないこと。
+
 ## Notebook UI / preset polish (no bitstream rebuild)
 
 > Notebook だけの編集は bit/hwh 再生成不要です。対象 Notebook:
