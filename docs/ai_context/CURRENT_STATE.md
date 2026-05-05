@@ -1,7 +1,64 @@
 # Current state
 
-Last updated: 2026-05-05 (effect-chain refactor for easier extension; no
-hardware changes).
+Last updated: 2026-05-05 (compressor effect added; new
+`axi_gpio_compressor` IP @ `0x43CD0000`, new Clash compressor stage,
+new Python `set_compressor_settings` API, new notebook section, full
+Vivado bit/hwh rebuild).
+
+## Compressor add (this branch, `feature/compressor-effect`)
+
+A new stereo-linked feed-forward peak compressor section was added on
+its own AXI GPIO. Sits between the noise suppressor and the overdrive
+in the Clash pipeline. Enable flag lives inside the new GPIO; the
+master flag byte (`gate_control.ctrlA`) was not touched.
+
+What landed:
+
+- `hw/Pynq-Z2/block_design.tcl` -- new `axi_gpio_compressor` IP at
+  `0x43CD0000`, `NUM_MI` bumped from 14 to 15, M14_AXI / M14_ACLK /
+  M14_ARESETN wired, address segment added.
+- `hw/ip/clash/src/LowPassFir.hs` -- new `compressor_control` port,
+  `fComp` field on `Frame`, `compEnvNext` / `compTargetGain` /
+  `compGainNext` / `compApplyFrame` / `compMakeupFrame` helpers, and
+  the `compLevelPipe -> compEnv -> compGain -> compApplyPipe ->
+  compMakeupPipe` block in `fxPipeline` between the noise suppressor
+  and the overdrive.
+- `audio_lab_pynq/control_maps.py` -- `makeup_to_u7`,
+  `compressor_enable_makeup_byte`, `compressor_word` helpers.
+- `audio_lab_pynq/effect_defaults.py` -- `COMPRESSOR_DEFAULTS`
+  (`enabled=False, threshold=45, ratio=35, response=45, makeup=50`).
+- `audio_lab_pynq/effect_presets.py` -- `COMPRESSOR_PRESETS`
+  (Comp Off / Light Sustain / Funk Tight / Lead Sustain / Limiter-ish).
+- `audio_lab_pynq/AudioLabOverlay.py` -- `axi_gpio_compressor`
+  attribute, `_compressor_state` cache, `_apply_compressor_state_to_word`,
+  `set_compressor_settings(threshold=, ratio=, response=, makeup=,
+  enabled=)`, `get_compressor_settings()`, per-knob shortcuts.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` -- new
+  Compressor accordion section (THRESHOLD / RATIO / RESPONSE /
+  MAKEUP sliders + 5 presets); `apply_settings` / `safe_bypass` /
+  `refresh_status` updated; chain header includes Compressor.
+- `tests/test_overlay_controls.py` -- compressor encoding /
+  round-trip / clamp / preset snapshot tests; defaults sanity test.
+- `docs/ai_context/*.md` and `README.md` -- this file plus
+  GPIO_CONTROL_MAP / DSP_EFFECT_CHAIN / DECISIONS (new D14) /
+  BUILD_AND_DEPLOY / EFFECT_ADDING_GUIDE / RESUME_PROMPTS / TIMING.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` -- rebuilt with the
+  new GPIO and DSP block. Final routed timing: WNS=-7.516 ns,
+  TNS=-8815.426 ns, WHS=+0.052 ns, THS=0.000 ns. Regresses 0.405 ns
+  vs the noise-suppressor build's `-7.111 ns`; still inside the
+  historical deploy band.
+
+What did **not** change:
+
+- Existing GPIO names, addresses, or ctrlA / B / C / D meanings.
+- Noise Suppressor stage, distortion pedal-mask, RAT, amp / cab / EQ /
+  reverb stages.
+- The pedal-mask shape from `baa97ff`.
+- Existing public Python API surface (every `set_*_settings` /
+  `set_guitar_effects` keyword still works the same).
+
+---
+
 
 ## Effect-chain refactor (this branch, `feature/effect-chain-refactor`)
 

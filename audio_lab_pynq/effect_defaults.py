@@ -54,6 +54,18 @@ NOISE_SUPPRESSOR_DEFAULTS = {
     "mode": 0,
 }
 
+# Compressor. Stereo-linked feed-forward peak compressor on its own
+# axi_gpio_compressor at 0x43CD0000. Sits between the noise suppressor
+# and the overdrive. enabled=False so loading the overlay never produces
+# an unexpected gain change.
+COMPRESSOR_DEFAULTS = {
+    "enabled": False,
+    "threshold": 45,
+    "ratio": 35,
+    "response": 45,
+    "makeup": 50,
+}
+
 # Overdrive section.
 OVERDRIVE_DEFAULTS = {
     "enabled": False,
@@ -154,6 +166,11 @@ SAFE_BYPASS_DEFAULTS = {
     "reverb_decay": 0,
     "reverb_tone": 65,
     "reverb_mix": 0,
+    "compressor_enabled": False,
+    "compressor_threshold": 45,
+    "compressor_ratio": 35,
+    "compressor_response": 45,
+    "compressor_makeup": 50,
 }
 
 
@@ -162,6 +179,7 @@ __all__ = [
     "DISTORTION_PEDALS",
     "DISTORTION_PEDALS_IMPLEMENTED",
     "NOISE_SUPPRESSOR_DEFAULTS",
+    "COMPRESSOR_DEFAULTS",
     "OVERDRIVE_DEFAULTS",
     "RAT_DEFAULTS",
     "AMP_DEFAULTS",

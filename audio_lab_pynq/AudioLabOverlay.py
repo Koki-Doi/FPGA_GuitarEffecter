@@ -9,6 +9,7 @@ from .effect_defaults import (
     DISTORTION_PEDALS as _DISTORTION_PEDALS,
     DISTORTION_PEDALS_IMPLEMENTED as _DISTORTION_PEDALS_IMPLEMENTED,
     NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
+    COMPRESSOR_DEFAULTS as _COMPRESSOR_DEFAULTS,
 )
 
 class XbarSource(Enum):
@@ -59,6 +60,16 @@ class AudioLabOverlay(Overlay):
     NOISE_SUPPRESSOR_DEFAULTS = _NOISE_SUPPRESSOR_DEFAULTS
     NOISE_SUPPRESSOR_GPIO_NAME = 'axi_gpio_noise_suppressor'
 
+    # Compressor (stereo-linked feed-forward peak compressor, all-FPGA).
+    # Driven by the dedicated axi_gpio_compressor at 0x43CD0000:
+    #   ctrlA = threshold byte         (envelope-compare level)
+    #   ctrlB = ratio byte             (compression strength)
+    #   ctrlC = response byte          (smoothing time)
+    #   ctrlD bit 7 = enable; ctrlD bits[6:0] = makeup (Q7 0..127)
+    # Sits between the noise suppressor and the overdrive in the chain.
+    COMPRESSOR_DEFAULTS = _COMPRESSOR_DEFAULTS
+    COMPRESSOR_GPIO_NAME = 'axi_gpio_compressor'
+
     def __init__(self, bitfile_name=None, **kwargs):
         # Generate default bitfile name
         if bitfile_name is None:
@@ -89,6 +100,13 @@ class AudioLabOverlay(Overlay):
         self._cached_noise_suppressor_word = 0
         if hasattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME):
             self._apply_noise_suppressor_state_to_word()
+        # Compressor cache. Output-only GPIO; hold the last word and the
+        # per-parameter ints. Defaults keep the compressor off so loading
+        # the overlay never produces an unexpected gain change.
+        self._compressor_state = dict(self.COMPRESSOR_DEFAULTS)
+        self._cached_compressor_word = 0
+        if hasattr(self, self.COMPRESSOR_GPIO_NAME):
+            self._apply_compressor_state_to_word()
         
     def route(self, source, effect, sink):    
         self.x_source.start_cfg()
@@ -473,6 +491,106 @@ class AudioLabOverlay(Overlay):
             'gpio_name': self.NOISE_SUPPRESSOR_GPIO_NAME,
             'has_gpio': hasattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME),
             'implementation_status': 'threshold_decay_damp_fpga',
+        }
+
+    # ---- Compressor public API ------------------------------------------
+    #
+    # Drives the dedicated ``axi_gpio_compressor`` (0x43CD0000). Bytes:
+    # ctrlA = threshold, ctrlB = ratio, ctrlC = response, ctrlD bit 7 =
+    # enable, ctrlD bits[6:0] = makeup (Q7 0..127). Reference repos
+    # were studied for parameter naming and design philosophy only --
+    # no source code copied (DECISIONS.md D7).
+
+    @staticmethod
+    def _makeup_to_u7(value):
+        return _cm.makeup_to_u7(value)
+
+    @staticmethod
+    def _compressor_word(threshold, ratio, response, makeup, enabled=False):
+        return _cm.compressor_word(threshold, ratio, response, makeup, enabled)
+
+    def _apply_compressor_state_to_word(self):
+        """Recompute the compressor 32-bit word from cached state and
+        write it to the dedicated GPIO. No mirror to legacy GPIOs --
+        the compressor is a brand-new section with no historical slot.
+        """
+        s = self._compressor_state
+        word = self._compressor_word(
+            threshold=s['threshold'],
+            ratio=s['ratio'],
+            response=s['response'],
+            makeup=s['makeup'],
+            enabled=s['enabled'],
+        )
+        self._cached_compressor_word = word
+        gpio = getattr(self, self.COMPRESSOR_GPIO_NAME, None)
+        if gpio is not None:
+            self._write_gpio(gpio, word)
+
+    def set_compressor_threshold(self, value):
+        return self.set_compressor_settings(threshold=value)
+
+    def set_compressor_ratio(self, value):
+        return self.set_compressor_settings(ratio=value)
+
+    def set_compressor_response(self, value):
+        return self.set_compressor_settings(response=value)
+
+    def set_compressor_makeup(self, value):
+        return self.set_compressor_settings(makeup=value)
+
+    def set_compressor_settings(self, threshold=None, ratio=None,
+                                response=None, makeup=None, enabled=None):
+        """Update any subset of the compressor parameters.
+
+        ``threshold`` / ``ratio`` / ``response`` / ``makeup`` are all on
+        the 0..100 scale. ``enabled`` is a bool that flips the
+        ``ctrlD`` bit 7 enable flag inside the compressor GPIO -- the
+        compressor section does not share a flag bit with
+        ``gate_control``. Unspecified parameters keep their cached
+        values. The full 32-bit word is rewritten.
+        """
+        s = self._compressor_state
+        if threshold is not None:
+            s['threshold'] = self._clamp_percent(threshold)
+        if ratio is not None:
+            s['ratio'] = self._clamp_percent(ratio)
+        if response is not None:
+            s['response'] = self._clamp_percent(response)
+        if makeup is not None:
+            s['makeup'] = self._clamp_percent(makeup)
+        if enabled is not None:
+            s['enabled'] = bool(enabled)
+        self._apply_compressor_state_to_word()
+        return self.get_compressor_settings()
+
+    def get_compressor_settings(self):
+        """Return the cached compressor state plus the byte view of every
+        parameter and a pointer to the GPIO that backs it.
+        """
+        s = self._compressor_state
+        threshold_byte = _cm.percent_to_u8(s['threshold'], 255)
+        ratio_byte = _cm.percent_to_u8(s['ratio'], 255)
+        response_byte = _cm.percent_to_u8(s['response'], 255)
+        makeup_u7 = self._makeup_to_u7(s['makeup'])
+        enable_makeup_byte = _cm.compressor_enable_makeup_byte(
+            s['enabled'], s['makeup'])
+        return {
+            'enabled': bool(s['enabled']),
+            'threshold': s['threshold'],
+            'threshold_byte': threshold_byte,
+            'ratio': s['ratio'],
+            'ratio_byte': ratio_byte,
+            'response': s['response'],
+            'response_byte': response_byte,
+            'makeup': s['makeup'],
+            'makeup_u7': makeup_u7,
+            'enable_makeup_byte': enable_makeup_byte,
+            'word': self._cached_compressor_word,
+            'reflected_to_fpga': True,
+            'gpio_name': self.COMPRESSOR_GPIO_NAME,
+            'has_gpio': hasattr(self, self.COMPRESSOR_GPIO_NAME),
+            'implementation_status': 'threshold_ratio_response_makeup_fpga',
         }
 
     @classmethod

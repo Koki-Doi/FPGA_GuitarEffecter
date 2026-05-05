@@ -51,6 +51,7 @@ The discipline is: **multiply** in `Wide`, **shift+sat** back into
 ```
 makeInput
   -> nsLevel -> nsApply                                 (noise suppressor envelope + apply, replaces the legacy hard gate)
+  -> compLevel -> compApply -> compMakeup               (stereo-linked feed-forward peak compressor; bit-exact bypass when off)
   -> overdrive (drive mul -> boost -> clip -> tone -> level)
   -> legacy distortion (drive mul -> boost -> clip -> tone -> level)
   -> RAT (HPF -> drive -> opamp LPF -> hard clip -> post LPF -> tone -> level -> mix)
@@ -102,6 +103,54 @@ active pipeline references them; the synthesiser drops them.
 `gate_control.ctrlB` is therefore unused in the new bitstream -- we
 still mirror the threshold byte to it from Python for backward
 compatibility with overlays that lack the new GPIO.
+
+## Compressor section
+
+Stereo-linked feed-forward peak compressor on its own
+`axi_gpio_compressor` GPIO carried in `fComp` (THRESHOLD / RATIO /
+RESPONSE bytes plus a packed enable+MAKEUP byte). Sits between the
+noise suppressor and the overdrive: tightens picking and evens out
+level before the gain stages. Enable lives on `fComp ctrlD` bit 7
+(not on `gate_control.ctrlA` -- the flag byte was already full).
+Bit-exact bypass when the enable bit is clear. RNNoise / FFT /
+spectral / lookahead methods were intentionally **not** adopted --
+too heavy for this PL budget.
+
+Same shape as the noise suppressor (one envelope-input register
+stage reusing `gateLevelFrame`, two feedback registers for
+envelope + smoothed gain, one apply register stage, plus a separate
+makeup multiply stage so each register holds a single multiply).
+Wiring lives in `fxPipeline` as
+`compLevelPipe -> compEnv -> compGain -> compApplyPipe -> compMakeupPipe`.
+
+| Stage | What it does |
+| --- | --- |
+| `compLevelPipe` (reuses `gateLevelFrame`) | `fWetL = max(\|L\|, \|R\|)` -- one register stage feeding the envelope follower (stereo-linked sidechain). |
+| `compEnv` (`compEnvNext` register feedback) | Peak follower. Attack-instantaneous; release ~ `env >> 8 + 1` per sample plus a response-controlled extra step (`max(1, (255 - response_byte) >> 4)`). Reset to 0 when the compressor enable is clear. |
+| `compGain` (`compGainNext` register feedback) | Smoothed gain. Both attack and release use the same response-controlled step (`max(1, (255 - response_byte) >> 3)`). Target is `gateUnity` when `env <= threshold`, otherwise `gateUnity - reduction`, where `reduction = clamp(0, gateUnity, ((env - threshold) >> 11) * ratio_byte >> 8)`. |
+| `compApplyPipe` (`compApplyFrame`) | Multiply each channel by the smoothed gain (`mulU12 x gain`) and saturate (`satShift12`). Bit-exact bypass when the compressor is off. |
+| `compMakeupPipe` (`compMakeupFrame`) | Q8 makeup multiply (`factor = 192 + makeup_u7` in `[192, 319]`, applied via `mulU9 + satShift8`). Bit-exact bypass when the compressor is off. |
+
+### Parameter mappings
+
+| Knob | Python | byte (ctrl byte of fComp) | DSP effect |
+| --- | --- | --- | --- |
+| THRESHOLD | 0..100 | `ctrlA = round(threshold * 255 / 100)` | scaled to `Sample` via `compThresholdSample = asSigned9 ctrlA << 13`, identical scaling to `nsThresholdSample` so the byte range feels familiar. |
+| RATIO | 0..100 | `ctrlB = round(ratio * 255 / 100)` | linear gain-reduction factor: 0 = ~no compression, 255 = strong limiting. Reduction scales with both excess (`env - threshold`) and ratio_byte. |
+| RESPONSE | 0..100 | `ctrlC = round(response * 255 / 100)` | shared attack/release smoothing time. 0 -> fastest; 255 -> slowest (~128 samples to converge). |
+| MAKEUP | 0..100 | `ctrlD bits[6:0] = round(makeup * 127 / 100)` (clamped to 0..127) | Q8 makeup factor `192 + makeup_u7` (range 192..319, ~0.75x..1.25x). Conservative on purpose -- a Compressor preset cannot blow the rest of the chain into clipping. |
+| enable | bool | `ctrlD bit 7` | section enable. Bit-exact bypass when clear. |
+
+### Why a new GPIO
+
+The compressor wanted five distinct knobs (threshold / ratio /
+response / makeup / enable). `gate_control.ctrlA` (the master flag
+byte) was already full, every existing `reserved` byte is held for
+a different planned feature, and the compressor benefits from being
+able to flip its own enable without read-modify-write on a shared
+flag byte. So a new `axi_gpio_compressor` IP was added at
+`0x43CD0000` and a new `compressor_control` port was added to the
+Clash top entity. See `DECISIONS.md` D14.
 
 ## Legacy distortion section
 
