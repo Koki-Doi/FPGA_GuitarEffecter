@@ -1,9 +1,55 @@
 # Current state
 
-Last updated: 2026-05-05 (compressor effect added; new
-`axi_gpio_compressor` IP @ `0x43CD0000`, new Clash compressor stage,
-new Python `set_compressor_settings` API, new notebook section, full
-Vivado bit/hwh rebuild).
+Last updated: 2026-05-06 (practical pedalboard chain presets added;
+Python / notebook / tests / docs only -- **no hardware change, no
+bit/hwh rebuild, no Vivado / Clash run**).
+
+## Chain presets (this branch, `feature/pedalboard-quality-presets`)
+
+Ten named pedalboard voicings (Safe Bypass / Basic Clean / Clean
+Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal
+Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain)
+combine every section of the chain (Compressor + Noise Suppressor
++ Overdrive + Distortion Pedalboard + Amp + Cab IR + EQ + Reverb)
+into one named state. Compressor `makeup` is held at 45..60 and
+Distortion `level` is capped at 35 across every preset, so a click
+on the wrong preset cannot blow the chain into clipping.
+
+What landed:
+
+- `audio_lab_pynq/effect_presets.py` -- `CHAIN_PRESETS` dict-of-dicts
+  plus `CHAIN_PRESET_SECTIONS` canonical section list.
+- `audio_lab_pynq/AudioLabOverlay.py` -- `apply_chain_preset`,
+  `get_chain_preset_names`, `get_chain_preset`,
+  `get_current_pedalboard_state`. Robust to missing GPIOs (older
+  bitstream without `axi_gpio_compressor` still applies the rest).
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` -- new
+  Chain Preset dropdown + Apply Chain Preset / Show Current State
+  buttons; existing accordion / Apply / Safe Bypass / Refresh kept
+  intact. Two-cell layout preserved. Inline `CHAIN_PRESETS_INLINE`
+  fallback for older deployed packages.
+- `tests/test_overlay_controls.py` -- chain preset shape /
+  Safe-Bypass-off-everywhere / makeup-band / distortion-level-cap /
+  apply round-trip / unknown-name / missing-GPIO survival tests.
+- `README.md`, `docs/ai_context/*.md` -- this file plus DSP_EFFECT_CHAIN
+  / DECISIONS (new D15) / EFFECT_ADDING_GUIDE / RESUME_PROMPTS.
+
+What did **not** change:
+
+- Hardware (`block_design.tcl`, `LowPassFir.hs`, IP packaging,
+  bitstream / hwh). The deployed Compressor build (`d216a9c`) is
+  unchanged.
+- Existing GPIO names, addresses, or ctrlA / B / C / D meanings.
+- Compressor / Noise Suppressor / Distortion / amp / cab / eq /
+  reverb DSP behaviour.
+- Existing public Python API surface
+  (every `set_*_settings` / `set_guitar_effects` keyword still
+  works the same).
+
+Vivado / Clash were **not** run. No timing review needed.
+
+---
+
 
 ## Compressor add (this branch, `feature/compressor-effect`)
 

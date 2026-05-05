@@ -221,6 +221,23 @@ When adding a stage:
   `Wide` value must end in `satWide`, `satShiftN`, or one of the
   `*Clip` functions before re-entering the `Sample` lane.
 
+## Chain preset orchestration (Python only)
+
+`audio_lab_pynq.effect_presets.CHAIN_PRESETS` defines named voicings
+that combine every section into one state. They are applied through
+`AudioLabOverlay.apply_chain_preset(name)` which orchestrates the
+existing per-section setters (`set_compressor_settings`,
+`set_noise_suppressor_settings`, `set_distortion_pedal` /
+`set_distortion_settings`, `set_guitar_effects`). No new GPIO, no
+new Clash stage -- the DSP pipeline is unchanged. See
+[`DECISIONS.md`](DECISIONS.md) D15.
+
+Per-preset safety contract (enforced by `tests/test_overlay_controls.py`):
+
+- Compressor `makeup` stays in 45..60.
+- Distortion `level` is capped at 35.
+- `Safe Bypass` has every section `enabled=False` and `reverb.mix=0`.
+
 ## What to avoid
 
 - A single function that contains a `case modelSelect of …` with eight

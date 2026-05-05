@@ -279,6 +279,39 @@ not get removed even when superseded — they get updated.
     `control_maps.makeup_to_u7` are the source of truth; keep
     notebook and tests in lock-step.
 
+## D15 — Chain presets are Python/UI only, never new GPIO
+
+- **Decision.** Practical pedalboard voicings ship as named entries in
+  `effect_presets.CHAIN_PRESETS` and are applied via the Python
+  facade (`AudioLabOverlay.apply_chain_preset`). They orchestrate the
+  existing per-section setters and `set_guitar_effects`; they do
+  **not** introduce new AXI GPIOs, new Clash stages, or new bitstream
+  artefacts.
+- **Why.** The chain-preset work is a usability layer on top of an
+  already-deployed bitstream. Adding a new GPIO would force a full
+  Vivado / Clash rebuild, a timing review, and a new bit/hwh deploy
+  for what is essentially a curated lookup table. Keeping presets in
+  Python also makes them easy to edit, snapshot-test, and iterate on
+  without touching hardware.
+- **Safety guarantees in the preset table.**
+  - Compressor `makeup` is held to the 45..60 band (~unity to ~1.25x)
+    in every preset, so flipping presets cannot produce a sudden
+    volume jump that blows the rest of the chain.
+  - Distortion `level` is capped at 35 in every preset.
+  - The `Safe Bypass` preset has every section's `enabled=False` and
+    `reverb.mix=0`. Tests enforce both.
+- **How to apply.**
+  - When adding a new preset, append it to `CHAIN_PRESETS` with one
+    entry per section (`compressor` / `noise_suppressor` /
+    `overdrive` / `distortion` / `amp` / `cab` / `eq` / `reverb`).
+    The notebook picks it up automatically through
+    `get_chain_preset_names()`.
+  - Keep makeup in 45..60 and distortion `level` <= 35 unless you
+    have a specific reason and update the safety tests in lock-step.
+  - Do not introduce a new GPIO or a new Clash stage from this layer
+    -- if a preset wants behaviour the FPGA does not currently
+    expose, file it as a separate ADR (D11 / D14 style) instead.
+
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
 - **Decision.** A new two-cell notebook,

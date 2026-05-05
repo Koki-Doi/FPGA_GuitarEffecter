@@ -110,6 +110,27 @@ asking it to re-discover the project from scratch.
 > 節を参照。Noise Suppressor、Distortion Pedalboard、`set_guitar_effects`
 > の互換 API は壊さないでください。
 
+## Chain presets work — Python / notebook only, no bitstream rebuild
+
+> Chain presets (Safe Bypass / Basic Clean / Clean Sustain / Light
+> Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient
+> Clean / Solo Boost / Noise Controlled High Gain) は
+> `audio_lab_pynq/effect_presets.py` の `CHAIN_PRESETS` に定義され、
+> `AudioLabOverlay.apply_chain_preset(name)` /
+> `get_chain_preset_names()` / `get_chain_preset(name)` /
+> `get_current_pedalboard_state()` から駆動します。新規 GPIO や
+> Clash 段は追加しておらず、既存セクションの set_*_settings /
+> set_guitar_effects を組み合わせて適用するだけです。bit/hwh は
+> 触らない / Vivado / Clash は実行しない (`DECISIONS.md` D15)。
+> プリセット追加時の安全契約: Compressor `makeup` は 45..60、
+> Distortion `level` <= 35、Safe Bypass は全 section enabled=False
+> + reverb.mix=0。これらは `tests/test_overlay_controls.py` で
+> 強制されているので、勝手に緩めないでください。Notebook 側
+> (`GuitarPedalboardOneCell.ipynb`) は Chain Preset dropdown + Apply
+> Chain Preset / Show Current State ボタンを持っており、原則 2 セル
+> 構成。既存 Compressor / Noise Suppressor / Distortion UI は
+> 触らないこと。
+
 ## Notebook UI / preset polish (no bitstream rebuild)
 
 > Notebook だけの編集は bit/hwh 再生成不要です。対象 Notebook:
