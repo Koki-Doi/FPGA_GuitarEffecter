@@ -229,6 +229,72 @@ def test_distortion_pedal_bit_positions_match_doc():
         assert AudioLabOverlay._DIST_PEDAL_BIT[name] == bit, name
 
 
+def test_distortion_pedals_implemented_includes_reserved_set():
+    """ds1 / big_muff / fuzz_face must now report as implemented in
+    the active bitstream alongside the original four pedals."""
+    from audio_lab_pynq.effect_defaults import DISTORTION_PEDALS_IMPLEMENTED
+    expected = (
+        'clean_boost', 'tube_screamer', 'rat',
+        'ds1', 'big_muff', 'fuzz_face',
+        'metal',
+    )
+    assert tuple(DISTORTION_PEDALS_IMPLEMENTED) == expected
+    # Class attribute must mirror the module-level constant.
+    assert AudioLabOverlay.DISTORTION_PEDALS_IMPLEMENTED == expected
+    # Bit 7 stays reserved -- nothing implemented for it.
+    assert 'reserved' not in DISTORTION_PEDALS_IMPLEMENTED
+
+
+def test_set_distortion_pedal_ds1_exclusive_isolates_bit3():
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_distortion_pedal('clean_boost', enabled=True, exclusive=True)
+    overlay.set_distortion_pedal('ds1', enabled=True, exclusive=True)
+    pedals = overlay.get_distortion_pedals()
+    assert pedals['ds1'] is True
+    assert pedals['clean_boost'] is False
+    assert pedals['big_muff'] is False
+    assert pedals['fuzz_face'] is False
+    last_dist = overlay.axi_gpio_distortion.writes[-1][1]
+    assert (last_dist >> 24) & 0x7F == (1 << 3)
+
+
+def test_set_distortion_pedal_big_muff_exclusive_isolates_bit4():
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_distortion_pedal('metal', enabled=True, exclusive=True)
+    overlay.set_distortion_pedal('big_muff', enabled=True, exclusive=True)
+    pedals = overlay.get_distortion_pedals()
+    assert pedals['big_muff'] is True
+    assert pedals['metal'] is False
+    assert pedals['ds1'] is False
+    last_dist = overlay.axi_gpio_distortion.writes[-1][1]
+    assert (last_dist >> 24) & 0x7F == (1 << 4)
+
+
+def test_set_distortion_pedal_fuzz_face_exclusive_isolates_bit5():
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_distortion_pedal('tube_screamer', enabled=True, exclusive=True)
+    overlay.set_distortion_pedal('fuzz_face', enabled=True, exclusive=True)
+    pedals = overlay.get_distortion_pedals()
+    assert pedals['fuzz_face'] is True
+    assert pedals['tube_screamer'] is False
+    assert pedals['big_muff'] is False
+    last_dist = overlay.axi_gpio_distortion.writes[-1][1]
+    assert (last_dist >> 24) & 0x7F == (1 << 5)
+
+
+def test_distortion_pedal_mask_bit_7_unused():
+    """Bit 7 of the pedal mask stays reserved for a future 8th slot.
+    No name maps to bit 7, and no API call should set it via the
+    documented pedal list."""
+    for name, bit in AudioLabOverlay._DIST_PEDAL_BIT.items():
+        assert bit != 7, "no documented pedal should land on bit 7"
+    overlay = make_overlay_with_distortion_state()
+    for name in AudioLabOverlay.DISTORTION_PEDALS:
+        overlay.set_distortion_pedal(name, enabled=True, exclusive=True)
+        last_dist = overlay.axi_gpio_distortion.writes[-1][1]
+        assert (last_dist >> 24) & 0x80 == 0, name
+
+
 def test_distortion_pedal_invalid_name_raises():
     raised = False
     try:
@@ -581,6 +647,49 @@ def test_effect_presets_module_matches_notebook_values():
     assert ep.DISTORTION_PRESETS["Tube Screamer Crunch"]["pedal"] == "tube_screamer"
     assert ep.DISTORTION_PRESETS["RAT Distortion"]["pedal"] == "rat"
     assert ep.DISTORTION_PRESETS["Metal Tight"]["pedal"] == "metal"
+    # Newly-implemented pedal voicings.
+    assert ep.DISTORTION_PRESETS["DS-1 Crunch"]["pedal"] == "ds1"
+    assert ep.DISTORTION_PRESETS["DS-1 Lead"]["pedal"] == "ds1"
+    assert ep.DISTORTION_PRESETS["Big Muff Sustain"]["pedal"] == "big_muff"
+    assert ep.DISTORTION_PRESETS["Big Muff Wall"]["pedal"] == "big_muff"
+    assert ep.DISTORTION_PRESETS["Fuzz Face"]["pedal"] == "fuzz_face"
+    assert ep.DISTORTION_PRESETS["Fuzz Face Vintage"]["pedal"] == "fuzz_face"
+
+
+def test_new_distortion_presets_level_capped():
+    """Newly-added distortion presets (DS-1 / Big Muff / Fuzz Face)
+    must cap level at 35 so the post-distortion stages cannot be
+    slammed. Pre-existing presets (Clean Boost = 45) are intentionally
+    grandfathered."""
+    from audio_lab_pynq import effect_presets as ep
+    new_preset_names = (
+        "DS-1 Crunch", "DS-1 Lead",
+        "Big Muff Sustain", "Big Muff Wall",
+        "Fuzz Face", "Fuzz Face Vintage",
+    )
+    for name in new_preset_names:
+        spec = ep.DISTORTION_PRESETS[name]
+        level = spec.get("level")
+        assert level is not None and level <= 35, (
+            "distortion preset {!r} has level={} (must be <= 35)"
+            .format(name, level))
+
+
+def test_new_chain_presets_for_implemented_pedals():
+    """Three new chain presets land for the freshly-implemented pedals."""
+    from audio_lab_pynq import effect_presets as ep
+    for name, expected_pedal in (
+        ("DS-1 Crunch", "ds1"),
+        ("Big Muff Sustain", "big_muff"),
+        ("Vintage Fuzz", "fuzz_face"),
+    ):
+        assert name in ep.CHAIN_PRESETS, "missing chain preset: " + name
+        spec = ep.CHAIN_PRESETS[name]
+        assert spec["distortion"]["pedal"] == expected_pedal
+        assert spec["distortion"]["enabled"] is True
+        # The shared safety contract must hold.
+        assert spec["distortion"]["level"] <= 35
+        assert 45 <= spec["compressor"]["makeup"] <= 60
 
 
 # ---- guitar_effect_control_words snapshot -------------------------------
@@ -1059,6 +1168,11 @@ if __name__ == "__main__":
     test_set_guitar_effects_writes_amp_cab_gpio()
     test_distortion_bit_layout_in_control_words()
     test_distortion_pedal_bit_positions_match_doc()
+    test_distortion_pedals_implemented_includes_reserved_set()
+    test_set_distortion_pedal_ds1_exclusive_isolates_bit3()
+    test_set_distortion_pedal_big_muff_exclusive_isolates_bit4()
+    test_set_distortion_pedal_fuzz_face_exclusive_isolates_bit5()
+    test_distortion_pedal_mask_bit_7_unused()
     test_distortion_pedal_invalid_name_raises()
     test_distortion_pedal_out_of_range_raises()
     test_set_distortion_pedal_exclusive_clears_others()
@@ -1086,6 +1200,8 @@ if __name__ == "__main__":
     test_control_maps_pack_matches_legacy_pack()
     test_effect_defaults_module_exposes_canonical_dicts()
     test_effect_presets_module_matches_notebook_values()
+    test_new_distortion_presets_level_capped()
+    test_new_chain_presets_for_implemented_pedals()
     test_guitar_effect_control_words_snapshots()
     test_safe_bypass_snapshot_disables_every_flag()
     test_noise_suppressor_preset_bytes_snapshot()

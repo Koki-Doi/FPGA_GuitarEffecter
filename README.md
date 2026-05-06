@@ -13,6 +13,12 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 - Line-in -> headphone のパススルー
 - 単体リバーブの操作
 - 複数エフェクトを固定順で通すギターエフェクトチェーン
+- pedal-mask 方式の Distortion Pedalboard (`clean_boost` /
+  `tube_screamer` / `rat` / `ds1` / `big_muff` / `fuzz_face` /
+  `metal` の **全 7 ペダル実装済**、bit 7 のみ将来 reserved)
+- BOSS NS-2 / NS-1X 風 Noise Suppressor、stereo-linked feed-forward
+  Compressor、実機ペダル風 voicing pass を反映した既存ステージ
+- 13 種類の Chain Preset (Safe Bypass を含む) で 1 クリックでチェーン全体を切替
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
 ## エフェクトチェーン
@@ -30,7 +36,7 @@ Noise Suppressor -> Compressor -> Overdrive -> Distortion Pedalboard -> RAT Dist
 | Noise Suppressor | `THRESHOLD`, `DECAY`, `DAMP` |
 | Compressor | `THRESHOLD`, `RATIO`, `RESPONSE`, `MAKEUP` |
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
-| Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1`* / `big_muff`* / `fuzz_face`* / `metal`、* は予約) |
+| Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1` / `big_muff` / `fuzz_face` / `metal`、全 7 ペダル実装済) |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
 | Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `CHARACTER` |
 | Cab IR | `MIX`, `LEVEL`, `MODEL`, `AIR` |
@@ -64,6 +70,34 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 `GuitarPedalboardOneCell.ipynb` には Comp Off / Light Sustain / Funk Tight / Lead Sustain / Limiter-ish の 5 プリセットを用意しています。本格的な attack/release 独立、knee、sidechain は今回入れていません。参考にした OSS (`harveyf2801/AudioFX-Compressor`、`bdejong/musicdsp`、`DanielRudrich/SimpleCompressor`、`chipaudette/OpenAudio_ArduinoLibrary`、`p-hlp/SMPLComp`、`Ashymad/bancom`) はパラメータ命名と設計思想のみ参照しており、ソースコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D14、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Compressor 節を参照してください。
 
+### Distortion Pedalboard (pedal-mask 方式、全 7 ペダル deployed)
+
+`distortion_control.ctrlD[6:0]` の 7 bit pedal-enable mask で、ペダルを排他切替/スタックできます。section master は `gate_control.ctrlA` bit 2 (`distortion_on`)。各ペダルは独立 register-staged Clash ブロックで実装され、OFF 時 bit-exact bypass。bit 7 は将来 8 番目のペダル用に reserved。
+
+| ペダル | bit | Clash ステージ概要 | 想定 voicing |
+| --- | --- | --- | --- |
+| `clean_boost` | 0 | 3 段: mul -> shift -> level + safety softClip | 透明系のクリーンブースト |
+| `tube_screamer` | 1 | 5 段: HPF -> mul -> asym soft clip -> post LPF -> level | TS808 / TS9 風中域寄りオーバードライブ |
+| `rat` | 2 | 既存 RAT ステージへ写像 (Python 側で `gate_control.ctrlA` bit 4 を立てる) | ProCo RAT 風ハードクリップ |
+| `ds1` | 3 | 5 段: HPF -> mul -> asym soft clip (低 knee) -> post LPF -> level + safety | BOSS DS-1 風、明るくジャリっとしたエッジ |
+| `big_muff` | 4 | 5 段: pre-gain -> 2 段カスケード soft clip -> tone LPF -> level + safety | Big Muff Pi 風、厚いサステイン感 |
+| `fuzz_face` | 5 | 4 段: pre-gain -> 強い asym soft clip -> tone LPF -> level + safety | Fuzz Face 風、荒く非対称な breakup |
+| `metal` | 6 | 5 段: tight HPF -> mul -> hard clip -> post LPF -> level | MT-2 風モダンハイゲイン |
+| reserved | 7 | --- | 将来の 8 番目のペダル用 |
+
+共有パラメータ:
+
+| 知能 | 範囲 | 内容 |
+| --- | --- | --- |
+| `DRIVE` | 0..100 | 前段ゲイン量 |
+| `TONE` | 0..100 | 出力 LPF (alpha マッピング) |
+| `LEVEL` | 0..100 | 出力レベル (Q7) |
+| `BIAS` | 0..100 | bias 用バイト (現状 ds1/big_muff/fuzz_face では未消費、将来予約) |
+| `TIGHT` | 0..100 | 入力 HPF alpha (TS / metal / ds1 が消費) |
+| `MIX` | 0..100 | wet/dry mix (現状予約) |
+
+`set_distortion_pedal(name, exclusive=True)` / `set_distortion_pedals(**kwargs)` / `set_distortion_settings(...)` から操作します。商用ペダルの回路図 / コード / 係数表のコピーは行っていません。アルゴリズム形 (HPF -> drive -> clip -> post LPF -> level、softClip 系 helper の選択、安全 knee) のみが参照点です (`DECISIONS.md` D6 / D9)。
+
 ### 実機ペダル風 voicing pass (deployed)
 
 各エフェクトを既存 GPIO のまま「実機っぽい音」に寄せる調整パスを実施しています。新規 GPIO / `topEntity` ポート / Clash ステージは追加せず、`LowPassFir.hs` の中の既存ステージの定数とクリップ関数だけを差し替えています。狙いと変更点の一覧は [`docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md`](docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md) を参照してください。代表的な変更:
@@ -80,6 +114,10 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 - EQ: 出力 mix に `softClip` を追加 (3-band 全 boost で audible distortion を起こさないように)
 
 商用ペダル / アンプ / GPL DSP のソースコード移植は行っていません (`DECISIONS.md` D7 / D11 / D14)。
+
+### 予約ペダルの実装 (deployed)
+
+`distortion_control.ctrlD` で予約していた `ds1` (bit 3) / `big_muff` (bit 4) / `fuzz_face` (bit 5) を、既存ペダルと同じ pedal-mask 方式の独立ステージとして実装しました。詳細は上記の Distortion Pedalboard セクションを参照してください。新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更はありません。`GuitarPedalboardOneCell.ipynb` の Distortion Pedalboard dropdown と Chain Preset (DS-1 Crunch / Big Muff Sustain / Vintage Fuzz が新規追加) から切り替えられます。8-way `model_select` mux 設計には戻していません (`DECISIONS.md` D6 / D9)。
 
 ## DSP 実装の正規パス
 
@@ -106,9 +144,9 @@ make tests
 
 | Notebook | 内容 |
 | --- | --- |
-| `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Chain Preset dropdown (Safe Bypass / Basic Clean / Clean Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain) で実用音色をワンクリック適用、加えて Compressor / Noise Suppressor / Overdrive / Distortion Pedalboard / Amp / Cab IR / EQ / Reverb の個別操作 (Apply / Safe Bypass / Refresh / Show Current State) |
-| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクション付き) |
-| `DistortionModelsDebug.ipynb` | Distortion pedal-mask API のウォークスルー (pedal一覧 + bit position + 実装/予約状況の表示と排他切替) |
+| `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Chain Preset dropdown (Safe Bypass / Basic Clean / Clean Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain / DS-1 Crunch / Big Muff Sustain / Vintage Fuzz) で実用音色をワンクリック適用、Distortion Pedalboard dropdown は全 7 ペダル選択可、加えて Compressor / Noise Suppressor / Overdrive / Amp / Cab IR / EQ / Reverb の個別操作 (Apply / Safe Bypass / Refresh / Show Current State) |
+| `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクションに DS-1 / Big Muff Sustain / Fuzz Face プリセット cell 追加) |
+| `DistortionModelsDebug.ipynb` | Distortion pedal-mask API のウォークスルー (pedal一覧 + bit position + 全 7 ペダル実装済の表示と排他切替) |
 | `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb を操作するメインノートブック |
 | `InputDebug.ipynb` | Line-in のキャプチャ・統計・ADC HPF 切替によるノイズ三角測 |
 | `LineInPassthroughOneCell.ipynb` | 1セルで Line-in をそのまま出力する確認用 |
@@ -230,6 +268,9 @@ ol.set_reverb(enabled=True, reverb=35, tone=70, mix=25)
 | Ambient Clean | Light Sustain Compressor + 深い Reverb + EQ で低域整理。 |
 | Solo Boost | Lead Sustain Compressor + Tube Screamer + Amp/Cab。ソロ用。 |
 | Noise Controlled High Gain | 強 NS + 軽 Compressor + Metal。ノイズ管理しつつ高歪み。 |
+| DS-1 Crunch | 中 Compressor + 軽 NS + DS-1 + Amp/Cab。明るめのクランチ。 |
+| Big Muff Sustain | 中 Compressor + 中 NS + Big Muff + Amp/Cab。サステイン重視のファズ。 |
+| Vintage Fuzz | 中 Compressor + 軽 NS + Fuzz Face + Amp/Cab + 1x12 open back。荒めのヴィンテージファズ。 |
 
 Python からも同じ API で適用できます。
 
@@ -379,7 +420,7 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に setup timing violation が残ります。直近の deploy 済 bitstream (Noise Suppressor 追加版) では `WNS = -7.111 ns`、`TNS = -7683.480 ns`、ホールドは clean (`WHS = +0.053 ns`、`THS = 0.000 ns`)。実機では問題なく動作しますが、ベースラインの目安として記録しています。次の改善では Clash 側の乗算/加算段をさらにパイプライン分割する必要があります。最新値は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (reserved-pedal implementation 版) は `WNS = -7.535 ns` / `TNS = -11297.604 ns` / `WHS = +0.051 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
@@ -395,6 +436,8 @@ axis_switch_sink   M01 = 0x80000000
 - https://github.com/sudip-mondal-2002/Amplitron
 
 Noise Suppressor の操作思想は BOSS NS-2 / NS-1X を参考にしています。回路やコードはコピーしていません。RNNoise / `noise-suppression-for-voice` / `libspecbleach` などの spectral 系手法は PYNQ-Z2 の PL リソースに対して重すぎるため採用していません。
+
+Distortion Pedalboard の voicing 名は商用ペダルから借りていますが (DS-1 = BOSS DS-1、Big Muff = Electro-Harmonix Big Muff Pi、Fuzz Face = Dallas Arbiter / Dunlop Fuzz Face、Tube Screamer = Ibanez TS808 / TS9、RAT = ProCo RAT、Metal = BOSS MT-2 風)、いずれも操作感とアルゴリズム形 (HPF -> drive -> clip -> post LPF -> level、softClip 系 helper の選択、安全 knee) のみが参照点です。回路図 / コード / 係数表のコピーは行っていません (`DECISIONS.md` D7 / D9)。
 
 ## ライセンス
 

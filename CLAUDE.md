@@ -62,8 +62,12 @@ When a previous turn stopped mid-implementation:
 - The ADAU1761 ADC HPF is **default-on** (`R19_ADC_CONTROL == 0x23`). Do not
   weaken or skip the HPF enable in `config_codec()`.
 - The selectable distortion section is **pedal-mask-based** (commit
-  `baa97ff`, deployed). Do not roll it back to a `model_select` / 8-way
-  mux design; see `docs/ai_context/DECISIONS.md` D6.
+  `baa97ff`, deployed; plus the reserved-pedal implementation in
+  `c8f8d8c` that filled bits 3 / 4 / 5 with `ds1` / `big_muff` /
+  `fuzz_face` Clash stages, also deployed). Do not roll it back to a
+  `model_select` / 8-way mux design; see `docs/ai_context/DECISIONS.md`
+  D6 and D9. Bit 7 of the pedal mask stays reserved for an 8th pedal
+  slot.
 - Any edit to `hw/ip/clash/src/LowPassFir.hs` requires a Vivado bit/hwh
   rebuild and a timing-summary check. A bitstream with significantly worse
   WNS than the previous deployed build must not be deployed (latest

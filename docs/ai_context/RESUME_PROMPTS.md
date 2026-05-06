@@ -40,32 +40,43 @@ asking it to re-discover the project from scratch.
 ## Distortion pedal-mask is shipped — do not roll it back
 
 > 歪みセクションは pedal-mask 方式 (commit `baa97ff` ほか) で実装済み・
-> deploy済み・実機確認済みです。WNS は -7.801 ns まで戻っています。
+> deploy済み・実機確認済みです。全 7 ペダル (`clean_boost` /
+> `tube_screamer` / `rat` / `ds1` / `big_muff` / `fuzz_face` /
+> `metal`) に Clash ステージが揃っており、bit 7 のみ reserved です。
 > 8-way `model_select` 方式へ戻さないでください。新しいペダル / フィルタ
 > を追加するときも、巨大 `case` ではなく独立 register-staged ブロックを
 > 維持してください。詳細は `docs/ai_context/DISTORTION_REFACTOR_PLAN.md`
 > と `DECISIONS.md` の D6 / D8 / D9 を確認してください。
 
-## Implementing a reserved pedal (`ds1` / `big_muff` / `fuzz_face`)
+## Reserved-pedal implementation — shipped
 
-> `ds1` / `big_muff` / `fuzz_face` は GPIO mask と Python API では予約
-> 済みですが、Clash 側ステージはまだありません。実装する場合は
-> `clean_boost` / `tube_screamer` / `metal` と同じ形 (HPF -> mul ->
-> clip -> post LPF -> level の register-staged 連鎖) で書き、
-> `fxPipeline` の `tube_screamer` と `metal` の間に挟んでください。
-> Python API、GPIO レイアウト、notebook の予約警告は触らないように
-> してください。bit/hwh 再生成のあと、Vivado timing を必ず確認し、
-> 現行 deploy の WNS = -7.801 ns より大幅に悪化させないでください。
-> 詳しくは `DISTORTION_REFACTOR_PLAN.md` の Phase C 節を読んでください。
+> `ds1` (bit 3), `big_muff` (bit 4), `fuzz_face` (bit 5) は
+> 専用 Clash ステージとして実装済み・deploy 済み。
+> `LowPassFir.hs` の `ds1HpfFrame -> ds1MulFrame -> ds1ClipFrame ->
+> ds1ToneFrame -> ds1LevelFrame`、`bigMuffPreFrame ->
+> bigMuffClip1Frame -> bigMuffClip2Frame -> bigMuffToneFrame ->
+> bigMuffLevelFrame`、`fuzzFacePreFrame -> fuzzFaceClipFrame ->
+> fuzzFaceToneFrame -> fuzzFaceLevelFrame` が `fxPipeline` で
+> `metalLevelPipe` の後ろに連結され、`distortionPedalsPipe =
+> fuzzFaceLevelPipe`。各ペダルは独立 enable で OFF 時 bit-exact bypass。
+> 新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更なし。
+> 実装当時の WNS / deploy 結果は `TIMING_AND_FPGA_NOTES.md` を参照。
+> 8-way `model_select` mux 構造へは絶対に戻さないこと
+> (`DECISIONS.md` D6 / D9)。voicing 微調整は `LowPassFir.hs` の
+> 該当ブロックの定数 / clip helper だけを編集する形で行うこと
+> (`REAL_PEDAL_VOICING_TARGETS.md` の運用と同じ)。
+> 商用ペダル / GPL DSP のソースコードコピーは禁止。8th pedal slot
+> (bit 7) は引き続き reserved。
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -7.801 ns はベースライン同等で、運用上は
-> 動いていますが厳密にはまだ負です。これを 0 へ寄せたい場合は、
-> `LowPassFir.hs` の中で残った深い組合せブロックを register で分け、
-> 必要なら cab タップや reverb BRAM のアドレス経路を pipeline 化
-> してください。1 段に大きな `case` や 4 段以上の演算を詰めない
-> 方針は維持してください (`TIMING_AND_FPGA_NOTES.md` 参照)。
+> 現状 deploy 済の WNS = -7.535 ns (reserved-pedal implementation
+> ビルド) はベースライン同等で、運用上は動いていますが厳密には
+> まだ負です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
+> 残った深い組合せブロックを register で分け、必要なら cab タップ
+> や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
+> 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
+> (`TIMING_AND_FPGA_NOTES.md` 参照)。
 
 ## Noise Suppressor work — branch in progress / shipped
 

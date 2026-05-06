@@ -1,27 +1,35 @@
 # Distortion refactor plan
 
 The selectable-distortion work has shipped. This document keeps the
-design notes plus the staged plan for the remaining pedals; it is no
-longer a "what should we do" file.
+design notes; the original staged plan for the reserved pedals has
+also landed (Phase C, see below). It is no longer a "what should we
+do" file.
 
 ## What was shipped
 
-Implementation commit: `baa97ff Refactor distortion models into
-pedal-style pipeline`. Notebook follow-ups: `e1bb313` (switcher
-add-on) and `2198873` (one-cell pedalboard). All three live on
-`master`. The build was deployed to the lab board and verified
-live; see `CURRENT_STATE.md`.
+- Original pedal-mask refactor: `baa97ff Refactor distortion models
+  into pedal-style pipeline`. Notebook follow-ups: `e1bb313`
+  (switcher add-on) and `2198873` (one-cell pedalboard).
+- Reserved-pedal implementation: branch
+  `feature/add-reserved-distortion-pedals` (commit
+  `c8f8d8c Implement reserved distortion pedal models`). Adds the
+  `ds1` / `big_muff` / `fuzz_face` Clash stages that bits 3 / 4 / 5
+  of the pedal mask were originally reserved for. Bit 7 stays
+  reserved for a future 8th pedal.
+
+All builds were deployed to the lab board and verified live; see
+`CURRENT_STATE.md`.
 
 | Pedal | bit | Clash stage |
 | --- | --- | --- |
 | `clean_boost` | 0 | implemented (3 register stages: mul -> shift -> level + safety softClip) |
 | `tube_screamer` | 1 | implemented (5 register stages: input HPF -> mul -> asym soft clip -> post LPF -> level) |
 | `rat` | 2 | mapped onto the existing RAT stage; Python sets `gate_control` bit 4 when this bit is set |
-| `ds1` | 3 | reserved — mask accepted, no Clash stage yet |
-| `big_muff` | 4 | reserved — mask accepted, no Clash stage yet |
-| `fuzz_face` | 5 | reserved — mask accepted, no Clash stage yet |
+| `ds1` | 3 | implemented (5 register stages: HPF -> mul -> asym soft clip with low knees -> post LPF -> level + safety softClipK). BOSS DS-1 style. |
+| `big_muff` | 4 | implemented (5 register stages: pre-gain -> softClipK medium knee -> softClipK tighter knee with ~0.75x gain -> tone LPF -> level + safety softClipK). Big Muff Pi style. |
+| `fuzz_face` | 5 | implemented (4 register stages: pre-gain -> strong asym soft clip -> tone LPF -> level + safety softClipK). Fuzz Face style. |
 | `metal` | 6 | implemented (5 register stages: tight HPF -> mul -> hard clip -> post LPF -> level) |
-| reserved | 7 | unused |
+| reserved | 7 | unused — held for a future 8th pedal slot |
 
 ### Why the `model_select` design was rejected
 
@@ -30,9 +38,11 @@ distortion stage. Each stage had a `case modelSelect of …` over all
 voicings, building eight parallel multipliers / clippers / filters
 behind one big mux. Vivado WNS regressed from -7.722 ns to
 -15.067 ns. The pedal-mask design replaces that with seven
-independently enabled small stages, restoring WNS to -7.801 ns. Do
-not bring `model_select` back — see `DECISIONS.md` D6 and
-`TIMING_AND_FPGA_NOTES.md`.
+independently enabled small stages, originally restoring WNS to
+-7.801 ns. After every pedal slot was filled by the reserved-pedal
+implementation, the deployed WNS sits at -7.535 ns (still inside
+the -7..-9 ns deploy band). Do not bring `model_select` back — see
+`DECISIONS.md` D6 / D9 and `TIMING_AND_FPGA_NOTES.md`.
 
 ## Control plane (final)
 
@@ -119,30 +129,37 @@ overlay never produces a loud transient.
 
 | Notebook | Role |
 | --- | --- |
-| `DistortionModelsDebug.ipynb` | Walkthrough of the pedal-mask API: pedal list, bit positions, exclusive cycle, advanced stack, reset. |
-| `GuitarEffectSwitcher.ipynb` | Original ipywidgets switcher with a Distortion Pedalboard section appended (state check, presets, live cell, stack cell, safe-OFF). |
-| `GuitarPedalboardOneCell.ipynb` | Two-cell, single-screen UI for the whole chain. Apply / Safe Bypass / Refresh + four preset buttons. Reserved pedals are selectable with a warning. |
+| `DistortionModelsDebug.ipynb` | Walkthrough of the pedal-mask API: pedal list, bit positions, exclusive cycle, advanced stack, reset. Pedal table marks bits 3-5 as implemented after the reserved-pedal branch landed. |
+| `GuitarEffectSwitcher.ipynb` | Original ipywidgets switcher with a Distortion Pedalboard section appended (state check, presets, live cell, stack cell, safe-OFF). DS-1 / Big Muff Sustain / Fuzz Face preset cells added after the reserved-pedal branch. |
+| `GuitarPedalboardOneCell.ipynb` | Two-cell, single-screen UI for the whole chain. Apply / Safe Bypass / Refresh + ten distortion preset buttons. All seven pedals now selectable as plain dropdown entries (legacy `*_reserved` aliases retained for back-compat); reserved-pedal warning banner removed. |
 
 ## Phasing — what is left
 
-The big refactor is done; remaining work is incremental.
+The big refactor and the reserved-pedal implementation are both
+done; remaining work is incremental.
 
-- **Phase C — Reserved pedals.**
-  Implement `ds1`, `big_muff`, `fuzz_face` as their own small Clash
-  stages. Insert them in the pipeline between tube_screamer and
-  metal, mirroring the existing pedal stage shape (HPF -> mul ->
-  clip -> post LPF -> level). Each addition needs a Vivado
-  rebuild and a fresh timing review; do not let WNS slip much past
-  the current -7.801 ns without flagging.
+- **Phase C — Reserved pedals (shipped).**
+  `ds1`, `big_muff`, `fuzz_face` landed as their own register-staged
+  Clash blocks after `metalLevelPipe`, mirroring the existing pedal
+  stage shape (HPF / pre-gain -> mul -> clip -> tone LPF -> level
+  + safety). Vivado WNS sits at -7.535 ns after the rebuild
+  (regressed 1.130 ns vs the prior voicing-pass build's
+  -6.405 ns; still inside the -7..-9 ns deploy band). Hold remained
+  clean (`WHS = +0.051 ns`, `THS = 0.000 ns`).
 - **Phase D — Timing tightening.**
-  WNS is currently -7.801 ns, baseline-equivalent but still
-  negative. A pass that splits any remaining deep combinational
-  block and pipelines the address paths into the cab tap / reverb
-  BRAM should bring WNS toward 0.
+  WNS is at -7.535 ns, baseline-equivalent but still negative. A
+  pass that splits any remaining deep combinational block and
+  pipelines the address paths into the cab tap / reverb BRAM
+  should bring WNS toward 0.
 - **Phase E — UI / preset polish.**
   Per-pedal default presets in `DistortionModelsDebug.ipynb`,
   per-pedal capture-and-compare in the one-cell notebook, A/B
   toggles, etc. No bitstream rebuild needed for any of this.
+- **Phase F — 8th pedal slot.**
+  Bit 7 of `distortion_control.ctrlD` is the only remaining reserved
+  pedal slot. If a future voicing wants in, it lands there as a new
+  register-staged block following the same shape as the existing
+  pedals. Do not stuff non-pedal features into bit 7.
 
 ## Anti-goals
 
@@ -155,4 +172,6 @@ The big refactor is done; remaining work is incremental.
 - **No** copying from GPL-licensed reference projects (guitarix,
   BYOD, …). Algorithm shape is a fair reference; source is not.
 - **No** deploying a bitstream with WNS markedly worse than the
-  current -7.801 ns without flagging the regression first.
+  current -7.535 ns without flagging the regression first.
+- **No** repurposing bit 7 for a non-pedal feature; it stays held
+  for an 8th pedal slot.
