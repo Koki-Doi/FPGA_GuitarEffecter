@@ -10,6 +10,14 @@ removed (`DECISIONS.md` D12). They were not on the live PL path and
 their continued presence risked steering future work into "implement
 in C++ then port" loops, which this project does not do.
 
+The live build also carries a "real-pedal voicing pass" of the
+existing stages (`DECISIONS.md` D16); see
+[`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) for
+the per-stage target style, current implementation, gap, plan, risk,
+and listening points. The pass changes constants and clip-helper
+choice inside the existing register stages; it does not change the
+pipeline shape, the GPIO inventory, or the `topEntity` ports.
+
 ## Core types
 
 ```haskell
