@@ -64,6 +64,23 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 `GuitarPedalboardOneCell.ipynb` には Comp Off / Light Sustain / Funk Tight / Lead Sustain / Limiter-ish の 5 プリセットを用意しています。本格的な attack/release 独立、knee、sidechain は今回入れていません。参考にした OSS (`harveyf2801/AudioFX-Compressor`、`bdejong/musicdsp`、`DanielRudrich/SimpleCompressor`、`chipaudette/OpenAudio_ArduinoLibrary`、`p-hlp/SMPLComp`、`Ashymad/bancom`) はパラメータ命名と設計思想のみ参照しており、ソースコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D14、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Compressor 節を参照してください。
 
+### 実機ペダル風 voicing pass (deployed)
+
+各エフェクトを既存 GPIO のまま「実機っぽい音」に寄せる調整パスを実施しています。新規 GPIO / `topEntity` ポート / Clash ステージは追加せず、`LowPassFir.hs` の中の既存ステージの定数とクリップ関数だけを差し替えています。狙いと変更点の一覧は [`docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md`](docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md) を参照してください。代表的な変更:
+
+- Overdrive: 対称 `softClip` → `asymSoftClip` (tube 風 even-harmonic 寄り)
+- clean_boost: drive ceiling を ~5x → ~4x、安全 clip knee を 4.2M → 3.2M
+- tube_screamer: 入力 HPF を強化、drive max を ~9x → ~7x、asym knee を低めに、post LPF を全体に暗く
+- rat: hard clip floor を低くして高 DRIVE で荒く、post LPF / tone を全体に暗く
+- metal: TIGHT による低域 cut を強化、drive max を ~22x → ~19x、post LPF を全体に暗く
+- Compressor: 軽い soft-knee オフセット (`threshold - threshold/4`) と reduction slope を半分 (`>> 12`)
+- Noise Suppressor: 閾値付近のヒステリシス (`closeT = threshold - threshold/4`) でチャタリング抑制
+- Cab IR: 4-tap IR の係数 c0 を下げ c1/c2 を上げて高域を抑制 (line direct fizz が減る)
+- Reverb: tone byte をスケール (`tone - tone/8`) して TONE=100 でも高域 damping を残す
+- EQ: 出力 mix に `softClip` を追加 (3-band 全 boost で audible distortion を起こさないように)
+
+商用ペダル / アンプ / GPL DSP のソースコード移植は行っていません (`DECISIONS.md` D7 / D11 / D14)。
+
 ## DSP 実装の正規パス
 
 このリポジトリのリアルタイム DSP 実装は **Clash/Haskell 記述

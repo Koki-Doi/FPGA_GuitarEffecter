@@ -131,6 +131,37 @@ asking it to re-discover the project from scratch.
 > 構成。既存 Compressor / Noise Suppressor / Distortion UI は
 > 触らないこと。
 
+## Real-pedal voicing pass — deployed
+
+> 既存エフェクトを実機ペダル/アンプ/キャビネットの voicing に寄せる
+> 調整パスを実施済みです。新規 GPIO / 新規 `topEntity` ポート /
+> 新規 Clash ステージは追加していません (`DECISIONS.md` D16)。
+> `LowPassFir.hs` の中の既存ステージの定数とクリップ関数だけを差し
+> 替えています。狙いと変更箇所の一覧は
+> `docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md` を参照してください。
+> 主な変更:
+> - Overdrive: `softClip` -> `asymSoftClip` (kneeP=3.3M / kneeN=2.9M)
+> - clean_boost: drive ceiling ~5x -> ~4x、安全 clip knee 4.2M -> 3.2M
+> - tube_screamer: 入力 HPF alpha 範囲を 3..18 に拡大、drive ~9x -> ~7x、
+>   asym knee を `2_900_000 / 2_500_000` に下げ、post LPF を `64..191`
+> - rat: hard clip floor を `2_500_000` に、`ratPostLowpassFrame`
+>   alpha 192 -> 176、tone alpha base 224 -> 200
+> - metal: HPF alpha 範囲を 6..37 に拡大、drive ~22x -> ~19x、
+>   clip floor 1.2M -> 1.5M、post LPF を `48..175`
+> - Compressor: soft-knee オフセット (`threshold - threshold/4`)、
+>   reduction slope を `excess >> 12` に
+> - Noise Suppressor: 閾値ヒステリシス (`closeT = threshold -
+>   threshold/4` + 現 gain register の中点比較) でチャタリング抑制
+> - Cab IR: 4-tap 係数の c0 を低めに、c1/c2 を高めに rebalance
+> - Reverb: tone byte をスケール (`tone - tone>>3`、最大 224)
+> - EQ: 出力 mix に `softClip` を追加 (3-band 全 boost で過大歪みを起こさない)
+>
+> ビルド結果: WNS = -6.405 ns (前回 Compressor build の -7.516 ns
+> より +1.111 ns 改善)、TNS = -8806.714 ns、WHS = +0.052 ns、
+> THS = 0.000 ns。`R19_ADC_CONTROL = 0x23` 維持、ADC HPF default-on
+> 維持、10 chain preset すべて smoke-test pass。商用ペダル/アンプの
+> 回路コピーや GPL DSP コードの移植は行っていません。
+
 ## Notebook UI / preset polish (no bitstream rebuild)
 
 > Notebook だけの編集は bit/hwh 再生成不要です。対象 Notebook:

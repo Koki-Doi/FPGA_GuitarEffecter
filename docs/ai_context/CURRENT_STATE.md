@@ -1,10 +1,82 @@
 # Current state
 
-Last updated: 2026-05-06 (practical pedalboard chain presets added;
-Python / notebook / tests / docs only -- **no hardware change, no
-bit/hwh rebuild, no Vivado / Clash run**).
+Last updated: 2026-05-06 (real-pedal voicing pass on existing
+effects; Clash + Vivado bit/hwh rebuilt and deployed).
 
-## Chain presets (this branch, `feature/pedalboard-quality-presets`)
+## Real-pedal voicing pass (this branch, `feature/real-pedal-voicing-pass`)
+
+Existing effect stages were re-tuned to be closer to recognised
+real-pedal voicings, using only the existing GPIOs and `topEntity`
+ports. No new effect stage, no new register, no `block_design.tcl`
+change. The deployed bit/hwh was rebuilt from the new
+`LowPassFir.hs` and pushed to the board.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs` -- voicing changes inside the
+  existing register stages:
+  - **Overdrive**: symmetric `softClip` -> `asymSoftClip` (tube-style
+    even-harmonic content).
+  - **clean_boost**: drive ceiling lowered from ~5x to ~4x;
+    `cleanBoostLevelFrame` safety knee dropped from ~4.2M to ~3.2M.
+  - **tube_screamer**: pre-HPF alpha range bumped (3..18), drive
+    ceiling lowered (~7x vs. ~9x), asym clip knees dropped to
+    `2_900_000 / 2_500_000`, post-LPF range shifted to
+    `64..191` (darker top end at every TONE setting).
+  - **RAT**: hard-clip floor lowered to `2_500_000` (more aggressive
+    at high DRIVE), `ratPostLowpassFrame` alpha 192 -> 176, tone alpha
+    base 224 -> 200.
+  - **metal**: HPF alpha range bumped (6..37), drive ceiling lowered
+    (~19x vs. ~22x), clip floor raised to `1_500_000`, post-LPF range
+    shifted to `48..175` (darker top).
+  - **Compressor**: soft-knee offset (`softThreshold = threshold -
+    (threshold >> 4)`), gentler reduction slope (`excess >> 12` vs.
+    `>> 11`).
+  - **Noise Suppressor**: threshold hysteresis -- `closeT = threshold
+    - (threshold >> 2)`, mid-gain check on the gain register decides
+    the in-band region (no chatter).
+  - **Cab IR**: 4-tap coefficient table re-balanced -- c0 reduced,
+    c1/c2 increased -- so the very-high frequencies (close to
+    Nyquist) are damped more.
+  - **Reverb**: tone byte scaled (`tone - tone >> 3`) so TONE=100
+    still keeps ~12.5 % damping in the recirculation path.
+  - **EQ**: post-EQ mix wrapped in `softClip` so a max-boost on all
+    three bands saturates softly instead of slamming the saturator.
+- `docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md` (new) -- per-effect
+  reference style, current implementation, gap, plan, risk, and
+  listening points.
+- `docs/ai_context/DECISIONS.md` D16 -- recorded the constraints of
+  the voicing pass.
+- `docs/ai_context/DSP_EFFECT_CHAIN.md`,
+  `docs/ai_context/TIMING_AND_FPGA_NOTES.md`,
+  `docs/ai_context/RESUME_PROMPTS.md`, `README.md` -- updated.
+- `hw/ip/clash/vhdl/LowPassFir/*` -- regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` -- rebuilt. Final
+  routed timing: WNS = -6.405 ns, TNS = -8806.714 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. **Improves on the deployed
+  Compressor build's WNS (-7.516 ns) by 1.111 ns**; hold remains
+  clean.
+- PYNQ-Z2 deploy: completed; smoke test (`apply_chain_preset` over
+  all 10 presets) passes, `R19_ADC_CONTROL = 0x23`, ADC HPF default-on
+  preserved.
+
+What did **not** change:
+
+- `block_design.tcl` (GPIO inventory, addresses, AXI interconnect).
+- `topEntity` port list of `LowPassFir.hs`.
+- `gate_control.ctrlA` flag byte semantics.
+- `axi_gpio_compressor` / `axi_gpio_noise_suppressor` enable
+  semantics.
+- Reserved bytes / bits (`axi_gpio_eq.ctrlD`,
+  `axi_gpio_noise_suppressor.ctrlD`,
+  `axi_gpio_distortion.ctrlD[3..5,7]`).
+- Existing public Python API surface; chain preset names, byte caps,
+  and Safe Bypass shape (no `effect_presets.py` change).
+- C++ DSP prototypes (still removed, `DECISIONS.md` D13).
+
+---
+
+## Chain presets (prior branch, `feature/pedalboard-quality-presets`)
 
 Ten named pedalboard voicings (Safe Bypass / Basic Clean / Clean
 Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal

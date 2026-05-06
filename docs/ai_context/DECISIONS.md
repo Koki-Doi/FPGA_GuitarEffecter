@@ -312,6 +312,58 @@ not get removed even when superseded — they get updated.
     -- if a preset wants behaviour the FPGA does not currently
     expose, file it as a separate ADR (D11 / D14 style) instead.
 
+## D16 — Real-pedal voicing pass tunes existing stages, never adds new ones
+
+- **Decision.** Effect voicings can be moved closer to recognised
+  real-pedal voicings (TS / RAT / MT-2 / Dyna Comp / NS-2 / cab IR /
+  pedal reverb) by editing the constants and clip-helper choice
+  inside the existing register stages of `LowPassFir.hs`. A voicing
+  pass must **not** add a new GPIO, a new `topEntity` port, a new
+  Clash register stage, or a new effect block. Reserved bytes / bits
+  documented in `GPIO_CONTROL_MAP.md` stay reserved.
+- **Why.**
+  - Adding a GPIO or a new stage forces a `block_design.tcl` change
+    (forbidden by D2 without explicit user approval) and re-opens
+    timing risk that the pedal-mask refactor (D6 / `model_select`
+    post-mortem) already paid down.
+  - Existing chain presets and the public Python API are
+    byte-for-byte compatible across the voicing pass: the bytes the
+    notebook writes to each GPIO are unchanged, only the meaning
+    given to those bytes by the live Clash bitstream shifts. Users
+    keep the same control range and the same slider numbers.
+  - The reference style for each effect is documented in
+    `REAL_PEDAL_VOICING_TARGETS.md` so future passes have a clear
+    "did the change land in the intended direction?" check.
+- **Trade-offs not taken.**
+  - **No** copying of source code from Tube Screamer / RAT / MT-2 /
+    Dyna Comp / NS-2 / NS-1X schematics-exact coefficient tables, or
+    GPL DSP projects. Algorithmic shape (HPF -> drive -> clip ->
+    post LPF -> level, soft / hard / asym clip choice, hysteresis
+    around a threshold, IR coefficient damping) is the only thing
+    taken (`DECISIONS.md` D7).
+  - **No** new C++ DSP prototype as a stepping stone (`DECISIONS.md`
+    D13). Voicing changes go directly into Clash.
+  - **No** new lookahead, no new multi-band processing, no new
+    spectral methods. The PL budget is what it is.
+- **How to apply.**
+  - Read `REAL_PEDAL_VOICING_TARGETS.md` before changing the voicing
+    of an effect; record the new target / current / gap / plan rows
+    in the same file.
+  - Constant changes inside an existing stage are fine. Replacing
+    `softClip` with `softClipK` / `asymSoftClip` / `hardClip` is
+    fine. Changing a `mulU8` to a different gain expression is fine.
+  - Adding a new register-staged block, a new `Frame` field, or a
+    new `topEntity` port is **not** a voicing change; that is a new
+    effect (case 4 in `EFFECT_ADDING_GUIDE.md`).
+  - After any voicing pass that touches `LowPassFir.hs`: run
+    `clash --vhdl`, repackage the IP via Vivado `create_ip.tcl`,
+    rebuild bit/hwh, check timing, deploy, smoke-test all chain
+    presets on the board.
+  - The first voicing pass landed on the `feature/real-pedal-voicing-
+    pass` branch and rebuilt the deployed bitstream from
+    WNS = -7.516 ns to WNS = -6.405 ns (improved by 1.111 ns); hold
+    stayed clean.
+
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
 - **Decision.** A new two-cell notebook,
