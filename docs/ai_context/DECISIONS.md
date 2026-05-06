@@ -422,3 +422,51 @@ not get removed even when superseded — they get updated.
 - **How to apply.** Notebook-only edits land here; no
   bitstream rebuild needed. Reserved pedals stay selectable so the
   UI does not change shape when those Clash stages land later.
+
+## D17 — Amp/Cab real-voicing pass tunes the existing post-pedal stages
+
+- **Decision.** The Amp Simulator and Cab IR can be moved closer to a
+  generic guitar amp / cabinet response by editing constants and clip
+  helper choices inside the existing `LowPassFir.hs` stages. This pass
+  does not add a new GPIO, a new `topEntity` port, a new register stage,
+  or a `block_design.tcl` change.
+- **Why.**
+  - The existing `axi_gpio_amp`, `axi_gpio_amp_tone`, and
+    `axi_gpio_cab` controls already expose the required musical axes:
+    input gain / master / presence / resonance / BMT / character and
+    cab mix / level / model / air. Reusing them preserves the Python API
+    and Notebook UI.
+  - The main audible problem after the seven distortion pedals landed
+    was post-pedal line-direct character: high fizz, low-end bloom, and
+    weak model separation. These can be improved with coefficient and
+    safety-knee changes rather than a heavy IR loader or new topology.
+  - A long cabinet IR or extra filtering stage would spend timing and
+    resources on a design that already runs with negative setup slack.
+- **What changed.**
+  - Amp input HPF tightened (`253/256` feedback), input gain ceiling
+    reduced (~31x -> ~21x), clip knees lowered, pre-LPF darkened,
+    presence/resonance internally capped, and power/master safety
+    clipping moved to lower `softClipK` knees.
+  - Cab remains the existing 4-tap FIR. The coefficient table now has
+    clearer model intent: model 0 = 1x12 open back, model 1 = 2x12
+    combo, model 2 = 4x12 closed back. `air` restores only capped
+    direct-tap content.
+  - Chain presets were retuned only numerically: clean/crunch presets
+    use model 0 or 1, and Metal / Big Muff / Fuzz lean on model 2.
+- **Trade-offs not taken.**
+  - **No** commercial amp circuit constants, commercial cabinet IRs, or
+    schematic-derived coefficient tables were copied.
+  - **No** GPL DSP code was moved into this WTFPL project.
+  - **No** long FIR / convolution IR loader, dB/log math, new amp model
+    selector, or new AXI GPIO was added.
+- **How to apply.**
+  - Future Amp/Cab voicing changes should stay in
+    `amp*Frame`, `ampAsymClip`, `cabCoeff`, `cabProductsFrame`,
+    `cabIrFrame`, and `cabLevelMixFrame` unless the user explicitly
+    approves a new topology.
+  - Preserve `axi_gpio_cab.ctrlA/B/C/D = mix/level/model/air` and
+    `axi_gpio_amp` / `axi_gpio_amp_tone` byte meanings from
+    `GPIO_CONTROL_MAP.md`.
+  - After any `LowPassFir.hs` Amp/Cab change: regenerate VHDL, repackage
+    IP, rebuild bit/hwh, check timing, deploy only if WNS remains in the
+    accepted band and WHS/THS stay clean, then smoke-test chain presets.

@@ -70,7 +70,7 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -7.535 ns (reserved-pedal implementation
+> 現状 deploy 済の WNS = -7.917 ns (Amp/Cab real-voicing pass
 > ビルド) はベースライン同等で、運用上は動いていますが厳密には
 > まだ負です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
 > 残った深い組合せブロックを register で分け、必要なら cab タップ
@@ -172,6 +172,28 @@ asking it to re-discover the project from scratch.
 > THS = 0.000 ns。`R19_ADC_CONTROL = 0x23` 維持、ADC HPF default-on
 > 維持、10 chain preset すべて smoke-test pass。商用ペダル/アンプの
 > 回路コピーや GPL DSP コードの移植は行っていません。
+
+## Amp/Cab real-voicing pass — deployed
+
+> Amp Simulator / Cab IR の実機寄せ voicing pass は
+> `feature/amp-cab-real-voicing` で実装済み・deploy 済みです。
+> 新規 GPIO / 新規 `topEntity` ポート / 新規 Clash register stage /
+> `block_design.tcl` 変更はありません。GPIO 名 / address / ctrlA-D
+> 割り当ても変更なし。`LowPassFir.hs` では `ampHighpassFrame`、
+> `ampDriveMultiplyFrame`、`ampAsymClip`、`ampPreLowpassFrame`、
+> `ampSecondStageMultiplyFrame`、`ampPowerFrame`、
+> `ampResPresenceProductsFrame` / `ampResPresenceMixFrame`、
+> `ampMasterFrame`、`cabCoeff` を既存 stage 内で retune しています。
+> Cab model 0 = 1x12 open back、model 1 = 2x12 combo、model 2 =
+> 4x12 closed back。`air` は capped high return で、raw line には戻り
+> ません。Chain Presets は Basic Clean / Clean Sustain / Light Crunch
+> を model 0 寄り、Metal / Big Muff / Fuzz を model 2 寄りに調整済み。
+> build 結果: WNS=-7.917 ns、TNS=-13100.457 ns、WHS=+0.051 ns、
+> THS=0.000 ns。PYNQ deploy と preset smoke test pass、ADC HPF=True /
+> `R19_ADC_CONTROL=0x23`。商用アンプ回路 / commercial cab IR /
+> GPL DSP コードはコピーしていません。次に Amp/Cab を触る場合も
+> `GPIO_CONTROL_MAP.md` と `DECISIONS.md` D17 を読んでから、既存
+> stage 内の定数変更に留めてください。
 
 ## Notebook UI / preset polish (no bitstream rebuild)
 

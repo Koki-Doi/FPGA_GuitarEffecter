@@ -115,6 +115,17 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 商用ペダル / アンプ / GPL DSP のソースコード移植は行っていません (`DECISIONS.md` D7 / D11 / D14)。
 
+### Amp/Cab real voicing pass (deployed)
+
+歪みペダル後段の Amp Simulator / Cab IR を、generic guitar amp / cabinet inspired の軽量 DSP として実機寄りに再調整しました。新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更はありません。商用アンプ回路、キャビネット IR、GPL DSP コードのコピーもありません。
+
+- Amp: 入力 HPF を少し強め、input gain 上限を下げてペダル後段で再度 square 化しにくくしています。preamp / power / master の safety clip knee を下げ、presence / resonance は knob 最大でも暴れすぎないよう内部で上限を抑えています。
+- Cab model 0: 1x12 open back style。軽め、低域控えめ、中域と AIR が残る clean / crunch 向け。
+- Cab model 1: 2x12 combo style。バランス型。Tube Screamer Lead / RAT Rhythm 向けに高域を削りつつ抜けを残します。
+- Cab model 2: 4x12 closed back style。遅延 tap 側を厚くし、Metal / Big Muff / Fuzz Face の line-direct fizz を最も強く抑えます。
+- `air` は高域の戻し量として扱いますが、direct tap の戻りは capped なので `air=100` でも raw line には戻りません。
+- Chain Presets は Basic Clean / Clean Sustain / Light Crunch に model 0 を薄く使い、Metal / Big Muff / Fuzz 系は model 2 寄りに調整しています。
+
 ### 予約ペダルの実装 (deployed)
 
 `distortion_control.ctrlD` で予約していた `ds1` (bit 3) / `big_muff` (bit 4) / `fuzz_face` (bit 5) を、既存ペダルと同じ pedal-mask 方式の独立ステージとして実装しました。詳細は上記の Distortion Pedalboard セクションを参照してください。新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更はありません。`GuitarPedalboardOneCell.ipynb` の Distortion Pedalboard dropdown と Chain Preset (DS-1 Crunch / Big Muff Sustain / Vintage Fuzz が新規追加) から切り替えられます。8-way `model_select` mux 設計には戻していません (`DECISIONS.md` D6 / D9)。
@@ -259,18 +270,18 @@ ol.set_reverb(enabled=True, reverb=35, tone=70, mix=25)
 | Preset | 用途 |
 | --- | --- |
 | Safe Bypass | 全エフェクトOFF。完全パススルー。 |
-| Basic Clean | Compressor 軽め + 薄い Reverb。クリーンの基本形。 |
-| Clean Sustain | Light Sustain Compressor + 薄い Reverb。クリーンのサステイン強調。 |
-| Light Crunch | 軽 Compressor + Overdrive 弱め + Amp/Cab。クランチ。 |
+| Basic Clean | Compressor 軽め + mild Amp + 1x12 Cab + 薄い Reverb。クリーンの基本形。 |
+| Clean Sustain | Light Sustain Compressor + mild Amp + 1x12 Cab + 薄い Reverb。クリーンのサステイン強調。 |
+| Light Crunch | 軽 Compressor + Overdrive 弱め + Amp + 1x12 Cab。クランチ。 |
 | Tube Screamer Lead | Lead Sustain Compressor + Tube Screamer + Amp/Cab。リード。 |
 | RAT Rhythm | 中 Compressor + RAT + Amp/Cab。リズム。 |
-| Metal Tight | High-Gain Tight NS + Funk Tight Compressor + Metal + Tight Amp/Cab。ハイゲイン刻み。 |
-| Ambient Clean | Light Sustain Compressor + 深い Reverb + EQ で低域整理。 |
+| Metal Tight | High-Gain Tight NS + Funk Tight Compressor + Metal + 4x12 Cab。ハイゲイン刻み。 |
+| Ambient Clean | Light Sustain Compressor + 1x12 Cab + 深い Reverb + EQ で低域整理。 |
 | Solo Boost | Lead Sustain Compressor + Tube Screamer + Amp/Cab。ソロ用。 |
 | Noise Controlled High Gain | 強 NS + 軽 Compressor + Metal。ノイズ管理しつつ高歪み。 |
 | DS-1 Crunch | 中 Compressor + 軽 NS + DS-1 + Amp/Cab。明るめのクランチ。 |
-| Big Muff Sustain | 中 Compressor + 中 NS + Big Muff + Amp/Cab。サステイン重視のファズ。 |
-| Vintage Fuzz | 中 Compressor + 軽 NS + Fuzz Face + Amp/Cab + 1x12 open back。荒めのヴィンテージファズ。 |
+| Big Muff Sustain | 中 Compressor + 中 NS + Big Muff + 4x12 Cab。サステイン重視のファズ。 |
+| Vintage Fuzz | 中 Compressor + 軽 NS + Fuzz Face + 4x12寄りCab。荒めのヴィンテージファズ。 |
 
 Python からも同じ API で適用できます。
 
