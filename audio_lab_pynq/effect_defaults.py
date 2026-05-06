@@ -38,9 +38,17 @@ DISTORTION_PEDALS = (
 )
 
 # Pedals that have a working Clash stage in the deployed bitstream.
-# Bits accepted by the API but bit-exact bypass on the FPGA:
-# ``ds1`` / ``big_muff`` / ``fuzz_face``.
-DISTORTION_PEDALS_IMPLEMENTED = ("clean_boost", "tube_screamer", "rat", "metal")
+# All seven pedal slots (bits 0..6) of the pedal mask now have a live
+# Clash stage; bit 7 stays reserved for an 8th future pedal.
+DISTORTION_PEDALS_IMPLEMENTED = (
+    "clean_boost",
+    "tube_screamer",
+    "rat",
+    "ds1",
+    "big_muff",
+    "fuzz_face",
+    "metal",
+)
 
 # Noise Suppressor (BOSS NS-2 / NS-1X style operation).
 # Driven by the dedicated axi_gpio_noise_suppressor at 0x43CC0000.

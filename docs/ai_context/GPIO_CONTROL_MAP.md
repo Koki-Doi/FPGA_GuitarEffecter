@@ -40,7 +40,7 @@ read-back from hardware.
 | `axi_gpio_reverb` | `0x43C30000` | reverb | reverb enable (low byte) | decay | tone | mix | active / active / active / active | Enable bit lives in this GPIO, not in `gate_control.ctrlA` bit 5; the gate flag is mirrored separately. |
 | `axi_gpio_gate` | `0x43C40000` | gate + master flags | effect ON/OFF flags (8 bits) | noise gate threshold (legacy mirror) | distortion bias | distortion mix | active / legacy mirror / active / active | `ctrlB` is the legacy hard-gate threshold byte; the live noise stage reads from `axi_gpio_noise_suppressor.ctrlA`. We keep mirroring threshold + the noise_gate_on flag here so old bitstreams keep working. Do not repurpose `ctrlB` even though the live bitstream ignores it. |
 | `axi_gpio_overdrive` | `0x43C50000` | overdrive (+ distortion `tight`) | overdrive tone | overdrive level | overdrive drive | distortion `tight` | active / active / active / active | `ctrlD` is shared with the distortion section: the distortion writers (`set_distortion_settings`, `_apply_distortion_state_to_words`) own that one byte. Overdrive-only writers must not touch `ctrlD`. |
-| `axi_gpio_distortion` | `0x43C60000` | distortion | distortion tone | distortion level | distortion drive | pedal mask (`[6:0]`); bit 7 reserved | active / active / active / active (mask: bits 0/1/2/6 active, bits 3/4/5 reserved, bit 7 reserved) | `clean_boost` (bit 0), `tube_screamer` (bit 1), `metal` (bit 6) are implemented Clash stages. `rat` (bit 2) maps onto the existing RAT stage and forces `gate_control.ctrlA` bit 4 high in Python. `ds1` (bit 3) / `big_muff` (bit 4) / `fuzz_face` (bit 5) are reserved bits; the Python API accepts them but audio is bit-exact bypass. Bit 7 is reserved for a future 8th pedal slot. |
+| `axi_gpio_distortion` | `0x43C60000` | distortion | distortion tone | distortion level | distortion drive | pedal mask (`[6:0]`); bit 7 reserved | active / active / active / active (mask: bits 0..6 active, bit 7 reserved) | `clean_boost` (bit 0), `tube_screamer` (bit 1), `ds1` (bit 3), `big_muff` (bit 4), `fuzz_face` (bit 5), `metal` (bit 6) are implemented Clash stages. `rat` (bit 2) maps onto the existing RAT stage and forces `gate_control.ctrlA` bit 4 high in Python. Bit 7 is reserved for a future 8th pedal slot. |
 | `axi_gpio_eq` | `0x43C70000` | EQ | low | mid | high | unused (must write 0) | active / active / active / unused | `ctrlD` has no Clash consumer. Reserved for a future EQ Q / character byte; do not assume it is free for unrelated effects. |
 | `axi_gpio_delay` | `0x43C80000` | RAT distortion (historical name) | RAT filter | RAT level | RAT drive | RAT mix | active / active / active / active | **Name and use diverge.** The IP was originally created for a delay; the live Clash stage drives the RAT. Do not rename this GPIO — the Python attribute, the block design, and the `.hwh` all reference `axi_gpio_delay` and renaming requires a `block_design.tcl` change (forbidden by default). |
 | `axi_gpio_amp` | `0x43C90000` | amp simulator core | input gain | master | presence | resonance | active / active / active / active | Companion to `axi_gpio_amp_tone`; both must be present together for the amp section to be useful. |
@@ -55,9 +55,9 @@ read-back from hardware.
 | --- | --- | --- |
 | `axi_gpio_eq.ctrlD` | unused (no Clash consumer) | Could be allocated to a new EQ-section feature (e.g. Q / mid-frequency / character). Must not be repurposed for a non-EQ effect — a future EQ revision is the planned use. |
 | `axi_gpio_distortion.ctrlD[7]` | reserved | Reserved for a future 8th pedal slot. Keep zero. |
-| `axi_gpio_distortion.ctrlD[3]` (ds1) | reserved | Mask bit accepted by the Python API today; landing it requires only a Clash stage (no new GPIO). |
-| `axi_gpio_distortion.ctrlD[4]` (big_muff) | reserved | Same. |
-| `axi_gpio_distortion.ctrlD[5]` (fuzz_face) | reserved | Same. |
+| `axi_gpio_distortion.ctrlD[3]` (ds1) | active | Implemented Clash stage (BOSS DS-1 style). |
+| `axi_gpio_distortion.ctrlD[4]` (big_muff) | active | Implemented Clash stage (Big Muff Pi style). |
+| `axi_gpio_distortion.ctrlD[5]` (fuzz_face) | active | Implemented Clash stage (Fuzz Face style). |
 | `axi_gpio_noise_suppressor.ctrlD` | reserved | Future NS mode / attack / hold byte. Bytes 0..255 already pass through Python. |
 | `axi_gpio_compressor.ctrlD[6:0]` | active | Compressor `MAKEUP` (u7). Bit 7 of `ctrlD` is the compressor enable flag. Do not repurpose. |
 | `axi_gpio_gate.ctrlB` | legacy mirror (dead in live bitstream) | Do **not** reuse for a new feature; older bitstreams still depend on it. |
@@ -157,9 +157,9 @@ carries a 7-bit pedal-enable mask; bit 7 is reserved.
 | 0 | `clean_boost` | implemented | active |
 | 1 | `tube_screamer` | implemented | active |
 | 2 | `rat` | mapped onto the existing RAT stage; Python forces `gate_control` bit 4 high when this bit is set | active |
-| 3 | `ds1` | no Clash stage; audio is bit-exact bypass when this bit alone is set | reserved |
-| 4 | `big_muff` | same | reserved |
-| 5 | `fuzz_face` | same | reserved |
+| 3 | `ds1` | implemented (BOSS DS-1 style; HPF -> mul -> asym soft clip -> post LPF -> level+safety) | active |
+| 4 | `big_muff` | implemented (Big Muff Pi style; pre-gain -> two cascaded soft clip stages -> tone LPF -> level+safety) | active |
+| 5 | `fuzz_face` | implemented (Fuzz Face style; pre-gain -> strong asym soft clip -> tone LPF -> level+safety) | active |
 | 6 | `metal` | implemented | active |
 | 7 | (8th pedal slot) | none | reserved |
 

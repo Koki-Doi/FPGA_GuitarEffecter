@@ -1,9 +1,101 @@
 # Current state
 
-Last updated: 2026-05-06 (real-pedal voicing pass on existing
-effects; Clash + Vivado bit/hwh rebuilt and deployed).
+Last updated: 2026-05-06 (reserved-pedal implementation: ds1 /
+big_muff / fuzz_face landed as independent Clash stages; Clash +
+Vivado bit/hwh rebuilt and deployed).
 
-## Real-pedal voicing pass (this branch, `feature/real-pedal-voicing-pass`)
+## Reserved-pedal implementation (this branch, `feature/add-reserved-distortion-pedals`)
+
+The three previously-reserved distortion pedals (`ds1` bit 3,
+`big_muff` bit 4, `fuzz_face` bit 5) now have working Clash stages
+in the deployed bitstream, slotting into the existing pedal-mask
+pipeline alongside `clean_boost` / `tube_screamer` / `metal`. No
+new GPIO, no new `topEntity` port, no `block_design.tcl` change.
+Bit 7 of the pedal mask remains the only reserved slot, held for a
+future 8th pedal.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs` -- three new pedal sections:
+  - `ds1`: 5-stage chain (HPF -> mul -> asym soft clip with low
+    knees -> post LPF -> level+safety). Voicing aim: BOSS DS-1
+    style edgy crunch, brighter than tube_screamer.
+  - `big_muff`: 5-stage chain (pre-gain ~1.5x..~13x -> softClipK
+    medium knee -> softClipK tighter knee with ~0.75x gain ->
+    tone LPF -> level+safety). Voicing aim: Big Muff Pi style
+    thick fuzz with cascaded soft clip and a darker top end.
+  - `fuzz_face`: 4-stage chain (pre-gain ~2x..~10x -> strong
+    asymSoftClip with low/asymmetric knees -> tone LPF -> level+
+    safety). Voicing aim: Fuzz Face style raw asymmetric breakup,
+    "round vs. bright" tone axis.
+  - `ds1On` / `bigMuffOn` / `fuzzFaceOn` predicates wired into
+    `fxPipeline` between `metalLevelPipe` and `distortionPedalsPipe`.
+  - `distortionPedalsPipe = fuzzFaceLevelPipe` (the new last stage
+    of the per-pedal section).
+- `audio_lab_pynq/effect_defaults.py` --
+  `DISTORTION_PEDALS_IMPLEMENTED` now lists all seven pedal names.
+- `audio_lab_pynq/effect_presets.py` -- six new
+  `DISTORTION_PRESETS` entries (DS-1 Crunch / DS-1 Lead / Big Muff
+  Sustain / Big Muff Wall / Fuzz Face / Fuzz Face Vintage), three
+  new `CHAIN_PRESETS` entries (DS-1 Crunch / Big Muff Sustain /
+  Vintage Fuzz). Every new preset keeps distortion `level <= 35`
+  and compressor `makeup` in the 45..60 band so the safety
+  contract (`DECISIONS.md` D15) holds.
+- `audio_lab_pynq/AudioLabOverlay.py` -- bit-position docstring
+  promoted from "reserved" to "implemented" for bits 3-5; no API
+  surface change.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` --
+  Distortion Pedalboard dropdown / SelectMultiple now expose plain
+  `ds1` / `big_muff` / `fuzz_face` entries; the legacy
+  `*_reserved` labels stay in `PEDAL_LABEL_TO_API` as backward-
+  compatible aliases (also resolve to the implemented pedals).
+  Reserved-pedal warning banner removed (RESERVED_PEDALS = empty
+  set). Preset row split across two HBoxes since the new pedals
+  doubled the button count. Fallback inline `PRESETS` /
+  `CHAIN_PRESETS_INLINE` updated.
+- `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` --
+  pedal list table updated to mark bits 3-5 as implemented and
+  describe the voicing target. Live cell comment lists the new
+  pedal names. Stack-mode comment updated for the new chain order.
+- `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` --
+  pedalboard section text updated to mark all seven slots as
+  implemented; three new preset cells (DS-1 Crunch / Big Muff
+  Sustain / Fuzz Face) added after the Metal Tight cell.
+- `tests/test_overlay_controls.py` -- new tests:
+  `DISTORTION_PEDALS_IMPLEMENTED` shape, exclusive sets for ds1 /
+  big_muff / fuzz_face, mask bit 7 stays unused, new presets
+  satisfy the level cap, three new chain presets exist with the
+  expected pedal name and the makeup/level contract.
+- `hw/ip/clash/vhdl/LowPassFir/*` -- regenerated VHDL +
+  repackaged IP (no `topEntity` port change; new pedal stages
+  appear inside the existing module).
+
+Hardware:
+
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` -- rebuilt. Final
+  routed timing recorded in `TIMING_AND_FPGA_NOTES.md`.
+- PYNQ-Z2 deploy + smoke test recorded once the build completes.
+
+What did **not** change:
+
+- `block_design.tcl` (GPIO inventory, addresses, AXI interconnect).
+  No new GPIO; no new master count.
+- `topEntity` port list of `LowPassFir.hs`.
+- `gate_control.ctrlA` flag byte semantics; the section still rides
+  on bit 2 (legacy `distortion_on`).
+- Existing `clean_boost` / `tube_screamer` / `rat` / `metal`
+  voicing -- the new pedals slot in *after* the existing chain so
+  none of the prior-build register stages were edited.
+- Reserved bytes / bits other than the now-implemented bits 3-5
+  (`axi_gpio_eq.ctrlD`, `axi_gpio_noise_suppressor.ctrlD`,
+  `axi_gpio_distortion.ctrlD[7]` all stay reserved).
+- Existing public Python API surface; chain preset names, byte
+  caps, and Safe Bypass shape (existing tests pass byte-for-byte).
+- C++ DSP prototypes (still removed, `DECISIONS.md` D13).
+
+---
+
+## Real-pedal voicing pass (prior branch, `feature/real-pedal-voicing-pass`)
 
 Existing effect stages were re-tuned to be closer to recognised
 real-pedal voicings, using only the existing GPIOs and `topEntity`
@@ -302,11 +394,11 @@ cab / EQ / reverb tail of the pipeline. Master enable stays on
 | `clean_boost` | 0 | Clash stage implemented (3 register stages). |
 | `tube_screamer` | 1 | Clash stage implemented (5 register stages). |
 | `rat` | 2 | Mapped onto the existing RAT stage; Python forces `gate_control` bit 4 high when this bit is set. |
-| `ds1` | 3 | **Reserved.** Mask bit accepted by the API; FPGA has no stage yet, so audio passes through unchanged. |
-| `big_muff` | 4 | **Reserved**, same caveat. |
-| `fuzz_face` | 5 | **Reserved**, same caveat. |
+| `ds1` | 3 | Clash stage implemented (5 register stages; HPF -> mul -> asym soft clip -> post LPF -> level+safety). BOSS DS-1 style voicing. |
+| `big_muff` | 4 | Clash stage implemented (5 register stages; pre-gain -> two cascaded soft clip stages -> tone LPF -> level+safety). Big Muff Pi style voicing. |
+| `fuzz_face` | 5 | Clash stage implemented (4 register stages; pre-gain -> strong asym soft clip -> tone LPF -> level+safety). Fuzz Face style voicing. |
 | `metal` | 6 | Clash stage implemented (5 register stages). |
-| reserved | 7 | Unused. |
+| reserved | 7 | Unused; held for a future 8th pedal slot. |
 
 Legacy distortion (the original `distortion_*` API and Clash stages)
 still works: it gates on `distortion_legacyOn = flag2(fGate) AND
@@ -353,9 +445,9 @@ suspicion.
 | --- | --- |
 | `audio_lab_pynq/notebooks/InputDebug.ipynb` | Existing input-noise triage notebook, ADC HPF default-on aware. |
 | `audio_lab_pynq/notebooks/GuitarEffectsChain.ipynb` | Existing chain UI. Untouched in this refactor. |
-| `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` | **Updated.** Original ipywidgets switcher cells preserved; a "Distortion Pedalboard" section appended (state check, exclusive single-pedal cell, four presets, live cell, advanced stack cell, safe-OFF cell). |
-| `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` | **Replaced** with a pedalboard walkthrough: lists pedals + bit positions + which are implemented vs reserved, cycles each pedal exclusively, has a live cell, an advanced stack cell, and a reset cell. |
-| `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` | **New.** Two-cell single-screen ipywidgets UI for the whole chain (Noise Gate -> Overdrive -> Distortion Pedalboard -> Amp -> Cab -> EQ -> Reverb). Apply / Safe Bypass / Refresh / four preset buttons; stack mode auto-trims `level` to 25; reserved pedals selectable with a warning banner. |
+| `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` | **Updated** for the reserved-pedal implementation: pedalboard section text marks all seven slots implemented; new DS-1 Crunch / Big Muff Sustain / Fuzz Face preset cells added after the Metal Tight cell. |
+| `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` | **Updated** for the reserved-pedal implementation: pedal table now marks bits 3-5 as implemented; live cell comment lists the new pedals; stack-mode comment mentions the updated chain order. |
+| `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` | **Updated** for the reserved-pedal implementation: dropdown / SelectMultiple expose plain `ds1` / `big_muff` / `fuzz_face` entries (legacy `*_reserved` aliases kept for backward compat); reserved-pedal warning banner removed; preset row split into two HBoxes; fallback inline `PRESETS` / `CHAIN_PRESETS_INLINE` updated. |
 
 All five notebooks are deployed under
 `/home/xilinx/jupyter_notebooks/audio_lab/` on the board.
@@ -364,14 +456,15 @@ All five notebooks are deployed under
 
 Open work, in roughly priority order:
 
-1. **Implement the reserved pedals** — `ds1`, `big_muff`,
-   `fuzz_face`. Each as its own small Clash stage following the same
-   shape (HPF -> mul -> clip -> post LPF -> level), inserted between
-   tube_screamer and metal in the pipeline. Re-check timing after
-   each addition.
-2. **Drive WNS toward 0.** The current build is at -7.801 ns; the
-   audio path tolerates this in practice but it is technically out
-   of spec. Worth a pass that splits any remaining deeper
+1. **8th pedal slot.** Bit 7 of `distortion_control.ctrlD` is the
+   only remaining reserved pedal slot. If a future voicing wants
+   in, it lands there as a new register-staged Clash block
+   following the same shape as the new `ds1` / `big_muff` /
+   `fuzz_face` stages.
+2. **Drive WNS toward 0.** The deployed build is at the value
+   recorded in `TIMING_AND_FPGA_NOTES.md`; the audio path
+   tolerates the current band in practice but the build is not
+   formally clean. Worth a pass that splits any remaining deeper
    combinational stage and / or pipelines the cab or reverb tap
    address paths.
 3. **UI / preset polish** in the notebooks. Possible adds:

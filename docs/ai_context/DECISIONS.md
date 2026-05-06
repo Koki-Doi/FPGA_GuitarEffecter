@@ -115,23 +115,66 @@ not get removed even when superseded — they get updated.
   pedal bit (e.g. an unused reserved slot) rather than rewriting
   the existing one.
 
-## D9 — `ds1` / `big_muff` / `fuzz_face` are reserved, not removed
+## D9 — `ds1` / `big_muff` / `fuzz_face` reservation lifted; bits 3-5 are now implemented
 
-- **Decision.** Bits 3, 4, 5 of `distortion_control.ctrlD` are
-  reserved for `ds1`, `big_muff`, and `fuzz_face`. The Python API
-  accepts these names today; the FPGA has no Clash stage for them
-  yet, so audio passes through bit-exact when only those bits are
-  set. The notebooks call this out in their reserved-pedal warnings.
-- **Why.** Locking the bit positions now keeps the GPIO layout and
-  the Python API stable across the staged rollout. Future Clash
-  work for any of these voicings is a pure code addition; no GPIO
-  shuffle, no Python API churn, no notebook rewrites.
-- **How to apply.** When implementing one of the reserved pedals,
-  add a small register-staged Clash block that consumes the
-  matching bit, slot it into `fxPipeline` between `tube_screamer`
-  and `metal`, and update the "implemented" list in
-  `DISTORTION_REFACTOR_PLAN.md` plus the warnings in the
-  notebooks. Keep the Python API surface unchanged.
+- **Decision (original).** Bits 3, 4, 5 of `distortion_control.ctrlD`
+  were reserved for `ds1`, `big_muff`, and `fuzz_face` while the
+  Python API and notebook UI already accepted the names; the FPGA
+  passed audio through bit-exact when only those bits were set.
+- **Decision (current, `feature/add-reserved-distortion-pedals`).**
+  All three reserved pedals now have working Clash stages in the
+  deployed bitstream:
+  - `ds1` (bit 3): 5 register stages — HPF -> mul -> asym soft clip
+    with low knees -> post LPF -> level+safety. Voicing aim is
+    BOSS DS-1 style edgy crunch.
+  - `big_muff` (bit 4): 5 register stages — pre-gain -> softClipK
+    medium knee -> softClipK tighter knee with ~0.75x gain ->
+    tone LPF -> level+safety. Voicing aim is Big Muff Pi style
+    cascaded soft clip with a darker top end.
+  - `fuzz_face` (bit 5): 4 register stages — pre-gain -> strong
+    asymSoftClip -> tone LPF -> level+safety. Voicing aim is
+    Fuzz Face style raw asymmetric breakup; the TONE knob doubles
+    as a "round vs. bright" axis since real Fuzz Faces typically
+    lack a tone control.
+  Each block is gated by its own enable predicate (`ds1On` /
+  `bigMuffOn` / `fuzzFaceOn`); when the bit is clear every stage is
+  bit-exact bypass. The new sections slot into `fxPipeline` after
+  `metalLevelPipe`, with `distortionPedalsPipe = fuzzFaceLevelPipe`.
+- **Why the original reservation was kept.** Locking the bit
+  positions early kept the GPIO layout and Python API stable across
+  the staged rollout, so the implementation work was a pure code
+  addition: no GPIO shuffle, no Python API churn, no notebook
+  rewrite of the per-pedal pipeline.
+- **Trade-offs not taken.**
+  - **No** copying of source code from BOSS DS-1 schematics-exact
+    coefficient tables, the public Big Muff Pi schematic, or
+    Dallas Arbiter / Dunlop Fuzz Face circuit transcriptions, nor
+    from any GPL DSP project (guitarix, BYOD, JS-Rocks,
+    PunkMuff, dm-Rat, ToobAmp, etc.). Algorithmic shape (HPF ->
+    drive -> clip -> post LPF -> level, soft / hard / asym clip
+    helper choice, cascaded soft clip for Muff-style fuzz, low-knee
+    asym clip for fuzz-face-style breakup) is the only thing taken
+    (`DECISIONS.md` D7).
+  - **No** new GPIO. Bit 7 of the pedal mask remains the only
+    reserved slot, held for a future 8th pedal.
+  - **No** revival of the 8-way `model_select` mux structure; each
+    pedal stays in its own register-staged block (`DECISIONS.md`
+    D6 / `TIMING_AND_FPGA_NOTES.md`).
+  - **No** new C++ DSP prototype as a stepping stone (`DECISIONS.md`
+    D13). Implementation went Python API + UI relabel -> Clash
+    stages directly.
+- **How to apply.**
+  - When changing a `ds1` / `big_muff` / `fuzz_face` voicing, edit
+    the matching `ds1*Frame` / `bigMuff*Frame` / `fuzzFace*Frame`
+    block in `LowPassFir.hs`. Do not introduce a wider case over
+    pedal selectors; each block is independently enabled.
+  - The Python API surface (`set_distortion_pedal`,
+    `set_distortion_pedals`, `set_distortion_settings(pedal=...)`)
+    is unchanged; the only public change is that
+    `DISTORTION_PEDALS_IMPLEMENTED` now lists every pedal name.
+  - Notebook reserved-pedal warning banners are dropped. Keep the
+    legacy `*_reserved` PEDAL_LABEL_TO_API aliases pointing at the
+    implemented pedals so older live notebook sessions still work.
 
 ## D11 — Noise suppressor lives on its own AXI GPIO; legacy gate is replaced
 

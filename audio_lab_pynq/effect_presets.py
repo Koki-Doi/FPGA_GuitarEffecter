@@ -55,6 +55,73 @@ DISTORTION_PRESETS = {
         tight=75,
         mix=100,
     ),
+    # DS-1 style: bright, edgy crunch. DRIVE 45 / TONE 60 keeps the
+    # voicing usable for rhythm; the Lead variant pushes DRIVE harder.
+    "DS-1 Crunch": dict(
+        distortion_on=True,
+        pedal="ds1",
+        drive=45,
+        tone=60,
+        level=30,
+        bias=50,
+        tight=50,
+        mix=100,
+    ),
+    "DS-1 Lead": dict(
+        distortion_on=True,
+        pedal="ds1",
+        drive=60,
+        tone=65,
+        level=28,
+        bias=50,
+        tight=55,
+        mix=100,
+    ),
+    # Big Muff style: thick fuzz with cascaded soft clip. Sustain
+    # variant sits in the mix; Wall variant pushes DRIVE for a
+    # wall-of-sound feel.
+    "Big Muff Sustain": dict(
+        distortion_on=True,
+        pedal="big_muff",
+        drive=60,
+        tone=45,
+        level=28,
+        bias=50,
+        tight=35,
+        mix=100,
+    ),
+    "Big Muff Wall": dict(
+        distortion_on=True,
+        pedal="big_muff",
+        drive=75,
+        tone=55,
+        level=25,
+        bias=50,
+        tight=30,
+        mix=100,
+    ),
+    # Fuzz Face style: raw asymmetric breakup. Vintage variant runs
+    # darker / lower BIAS for a rounder germanium-flavoured feel.
+    "Fuzz Face": dict(
+        distortion_on=True,
+        pedal="fuzz_face",
+        drive=55,
+        tone=55,
+        level=28,
+        bias=45,
+        tight=25,
+        mix=100,
+    ),
+    "Fuzz Face Vintage": dict(
+        distortion_on=True,
+        pedal="fuzz_face",
+        drive=70,
+        tone=45,
+        level=25,
+        bias=40,
+        tight=20,
+        mix=100,
+    ),
 }
 
 # Noise Suppressor presets. THRESHOLD is the new 0..100 scale
@@ -263,6 +330,45 @@ CHAIN_PRESETS = {
         cab=dict(enabled=True, mix=100, level=100, model=2, air=45),
         eq=dict(enabled=False, low=100, mid=100, high=100),
         reverb=dict(enabled=True, decay=20, tone=65, mix=10),
+    ),
+    # New chain voicings for the freshly-implemented reserved pedals.
+    # Same safety contract (compressor makeup 45..60, distortion level
+    # <= 35) as the existing presets.
+    "DS-1 Crunch": dict(
+        compressor=dict(enabled=True, threshold=50, ratio=30, response=40, makeup=50),
+        noise_suppressor=dict(enabled=True, threshold=35, decay=40, damp=70),
+        overdrive=dict(enabled=False, drive=0, tone=50, level=100),
+        distortion=dict(enabled=True, pedal="ds1",
+                        drive=45, tone=60, level=30, bias=50, tight=50, mix=100),
+        amp=dict(enabled=True, input_gain=40, bass=55, middle=55, treble=60,
+                 presence=50, resonance=40, master=70, character=40),
+        cab=dict(enabled=True, mix=100, level=100, model=1, air=50),
+        eq=dict(enabled=False, low=100, mid=100, high=100),
+        reverb=dict(enabled=True, decay=25, tone=65, mix=12),
+    ),
+    "Big Muff Sustain": dict(
+        compressor=dict(enabled=True, threshold=45, ratio=35, response=60, makeup=55),
+        noise_suppressor=dict(enabled=True, threshold=40, decay=50, damp=70),
+        overdrive=dict(enabled=False, drive=0, tone=50, level=100),
+        distortion=dict(enabled=True, pedal="big_muff",
+                        drive=60, tone=45, level=28, bias=50, tight=35, mix=100),
+        amp=dict(enabled=True, input_gain=40, bass=60, middle=45, treble=55,
+                 presence=50, resonance=45, master=70, character=40),
+        cab=dict(enabled=True, mix=100, level=100, model=1, air=50),
+        eq=dict(enabled=False, low=100, mid=100, high=100),
+        reverb=dict(enabled=True, decay=40, tone=65, mix=18),
+    ),
+    "Vintage Fuzz": dict(
+        compressor=dict(enabled=True, threshold=50, ratio=30, response=50, makeup=50),
+        noise_suppressor=dict(enabled=True, threshold=35, decay=45, damp=70),
+        overdrive=dict(enabled=False, drive=0, tone=50, level=100),
+        distortion=dict(enabled=True, pedal="fuzz_face",
+                        drive=55, tone=55, level=28, bias=45, tight=25, mix=100),
+        amp=dict(enabled=True, input_gain=35, bass=60, middle=50, treble=55,
+                 presence=45, resonance=40, master=70, character=35),
+        cab=dict(enabled=True, mix=100, level=100, model=0, air=55),
+        eq=dict(enabled=False, low=100, mid=100, high=100),
+        reverb=dict(enabled=True, decay=30, tone=65, mix=15),
     ),
 }
 

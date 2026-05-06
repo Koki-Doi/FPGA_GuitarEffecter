@@ -156,9 +156,12 @@ existing pipeline.
   contents of existing stages move).
 - `block_design.tcl` is untouched.
 - C++ DSP prototypes are not revived (`DECISIONS.md` D13).
-- `axi_gpio_eq.ctrlD` / `axi_gpio_noise_suppressor.ctrlD` /
-  `axi_gpio_distortion.ctrlD[3..5,7]` reserved bytes / bits remain
-  reserved; this pass does not consume them.
+- `axi_gpio_eq.ctrlD` / `axi_gpio_noise_suppressor.ctrlD` reserved
+  bytes / bits remain reserved; this pass does not consume them.
+  Note: `axi_gpio_distortion.ctrlD[3..5]` (`ds1` / `big_muff` /
+  `fuzz_face`) were promoted from reserved to implemented in the
+  follow-up reserved-pedal implementation branch; bit 7 stays
+  reserved.
 - Notebook UI shape is unchanged. Existing chain presets keep working
   byte-for-byte (any change to preset constants is a small numeric
   re-tune, not a structural change).

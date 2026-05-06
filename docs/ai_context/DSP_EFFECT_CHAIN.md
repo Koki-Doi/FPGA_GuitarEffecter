@@ -189,10 +189,15 @@ When off, every stage is bit-exact bypass.
 | `clean_boost` (bit 0) | `cleanBoostMulFrame` -> `cleanBoostShiftFrame` -> `cleanBoostLevelFrame` |
 | `tube_screamer` (bit 1) | `tubeScreamerHpfFrame` -> `tubeScreamerMulFrame` -> `tubeScreamerClipFrame` -> `tubeScreamerPostLpfFrame` -> `tubeScreamerLevelFrame` |
 | `rat` (bit 2) | (no new stage — handled by the existing RAT block; Python flips `gate_control` bit 4 to engage it) |
-| `ds1` (bit 3) | reserved; no Clash stage yet, audio passes through |
-| `big_muff` (bit 4) | reserved; same |
-| `fuzz_face` (bit 5) | reserved; same |
 | `metal` (bit 6) | `metalHpfFrame` -> `metalMulFrame` -> `metalClipFrame` -> `metalPostLpfFrame` -> `metalLevelFrame` |
+| `ds1` (bit 3) | `ds1HpfFrame` -> `ds1MulFrame` -> `ds1ClipFrame` -> `ds1ToneFrame` -> `ds1LevelFrame` (BOSS DS-1 style: HPF, drive, asym soft clip with low knees, post LPF, level+safety) |
+| `big_muff` (bit 4) | `bigMuffPreFrame` -> `bigMuffClip1Frame` -> `bigMuffClip2Frame` -> `bigMuffToneFrame` -> `bigMuffLevelFrame` (Big Muff Pi style: pre-gain, two cascaded soft clips, tone LPF, level+safety) |
+| `fuzz_face` (bit 5) | `fuzzFacePreFrame` -> `fuzzFaceClipFrame` -> `fuzzFaceToneFrame` -> `fuzzFaceLevelFrame` (Fuzz Face style: pre-gain, strong asym soft clip, tone LPF, level+safety) |
+
+The pipeline order in `fxPipeline` is:
+`cleanBoost* -> tubeScreamer* -> metal* -> ds1* -> bigMuff* -> fuzzFace*`,
+with `distortionPedalsPipe = fuzzFaceLevelPipe`. Each pedal section
+is independently enabled, so off-pedals never touch the sample.
 
 Per-channel filter state for the HPFs and post-LPFs lives in
 pipeline-level registers wired up in `fxPipeline` (e.g.

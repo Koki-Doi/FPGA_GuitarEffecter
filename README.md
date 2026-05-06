@@ -30,7 +30,7 @@ Noise Suppressor -> Compressor -> Overdrive -> Distortion Pedalboard -> RAT Dist
 | Noise Suppressor | `THRESHOLD`, `DECAY`, `DAMP` |
 | Compressor | `THRESHOLD`, `RATIO`, `RESPONSE`, `MAKEUP` |
 | Overdrive | `TONE`, `LEVEL`, `DRIVE` |
-| Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1`* / `big_muff`* / `fuzz_face`* / `metal`、* は予約) |
+| Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1` / `big_muff` / `fuzz_face` / `metal`、全 7 ペダル実装済) |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
 | Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `CHARACTER` |
 | Cab IR | `MIX`, `LEVEL`, `MODEL`, `AIR` |
@@ -80,6 +80,16 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 - EQ: 出力 mix に `softClip` を追加 (3-band 全 boost で audible distortion を起こさないように)
 
 商用ペダル / アンプ / GPL DSP のソースコード移植は行っていません (`DECISIONS.md` D7 / D11 / D14)。
+
+### 予約ペダルの実装 (deployed)
+
+`distortion_control.ctrlD` で予約していた `ds1` (bit 3) / `big_muff` (bit 4) / `fuzz_face` (bit 5) を、既存の `clean_boost` / `tube_screamer` / `metal` と同じ pedal-mask 方式の独立ステージとして実装しました。新規 GPIO・新規 `topEntity` ポート・`block_design.tcl` 変更はありません。
+
+- `ds1`: BOSS DS-1 風。HPF + drive + asym soft clip (低 knee) + post LPF + level safety の 5 段。明るくジャリっとしたエッジ。
+- `big_muff`: Electro-Harmonix Big Muff 風。pre-gain + cascaded soft clip (2 段) + tone LPF + level safety の 5 段。厚いサステイン感。
+- `fuzz_face`: Dallas Arbiter / Dunlop Fuzz Face 風。pre-gain + 強い asym soft clip + tone LPF + level safety の 4 段。荒く非対称な breakup。
+
+`GuitarPedalboardOneCell.ipynb` の Distortion Pedalboard dropdown と Chain Preset (DS-1 Crunch / Big Muff Sustain / Vintage Fuzz が新規追加) からも切り替えられます。商用ペダルの回路図 / コード / 係数表のコピーは行っていません — アルゴリズム形 (HPF -> drive -> clip -> post LPF -> level、softClip 系 helper の選択、安全 knee) のみが参照点です (`DECISIONS.md` D7 / D9)。
 
 ## DSP 実装の正規パス
 
@@ -230,6 +240,9 @@ ol.set_reverb(enabled=True, reverb=35, tone=70, mix=25)
 | Ambient Clean | Light Sustain Compressor + 深い Reverb + EQ で低域整理。 |
 | Solo Boost | Lead Sustain Compressor + Tube Screamer + Amp/Cab。ソロ用。 |
 | Noise Controlled High Gain | 強 NS + 軽 Compressor + Metal。ノイズ管理しつつ高歪み。 |
+| DS-1 Crunch | 中 Compressor + 軽 NS + DS-1 + Amp/Cab。明るめのクランチ。 |
+| Big Muff Sustain | 中 Compressor + 中 NS + Big Muff + Amp/Cab。サステイン重視のファズ。 |
+| Vintage Fuzz | 中 Compressor + 軽 NS + Fuzz Face + Amp/Cab + 1x12 open back。荒めのヴィンテージファズ。 |
 
 Python からも同じ API で適用できます。
 
@@ -379,7 +392,7 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に setup timing violation が残ります。直近の deploy 済 bitstream (Noise Suppressor 追加版) では `WNS = -7.111 ns`、`TNS = -7683.480 ns`、ホールドは clean (`WHS = +0.053 ns`、`THS = 0.000 ns`)。実機では問題なく動作しますが、ベースラインの目安として記録しています。次の改善では Clash 側の乗算/加算段をさらにパイプライン分割する必要があります。最新値は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- Vivado 実装時に setup timing violation が残ります。最新値は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
