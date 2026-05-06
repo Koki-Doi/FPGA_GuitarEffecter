@@ -141,11 +141,11 @@ existing pipeline.
 | --- | --- |
 | Target style | Generic guitar-amp preamp: input HPF removes sub-low rumble before the gain stage, two soft-clipping stages with character control, BMT tone stack, slow lowpass for resonance, presence highshelf. |
 | Reference behaviour | Should not be a hi-fi clean amp — should always have *some* colour, even at low gain. Should not blow up at MASTER=100. |
-| Current implementation | `ampHighpassFrame -> Drive -> ampWaveshapeFrame (asym soft clip, character-controlled) -> preLpf -> Stage2 -> ampTone (BMT) -> Power -> Resonance/Presence -> Master`. |
-| Gap | Already pretty close to the target. The two clip stages and the resonance/presence section already give the amp some "always-on" colour. |
-| DSP change | None in this pass — Drive series will tighten up before this stage and the existing Master-stage `softClip` already handles MASTER=100 safely. |
-| Risk | None. |
-| Listening points | Amp ON should still add colour. MASTER=100 should not blow the chain. CHARACTER sweep should still be audible. |
+| Current implementation | `ampHighpassFrame -> Drive -> ampWaveshapeFrame (asym soft clip, character-controlled) -> preLpf -> Stage2 -> ampTone (BMT) -> Power -> Resonance/Presence -> Master`. Amp/Cab real-voicing pass tightened the HPF (`253/256`), reduced input gain ceiling (~31x -> ~21x), lowered asym clip knees, darkened pre-LPF alpha to `144..207`, made stage 2 more `character`-driven, capped presence/resonance internally, and lowered power/master `softClipK` safety knees. |
+| Gap | The prior amp could re-square hot Metal / RAT / Muff / Fuzz outputs and presence/resonance could add too much edge or low push at high settings. |
+| DSP change | Implemented in-place: constants / helper choices only, no new register stage. `presence = ctrlC - ctrlC/4`, `resonance = ctrlD - ctrlD/8`, power safety `softClipK 3_700_000`, master safety `softClipK 3_600_000`. |
+| Risk | Slightly darker high-gain response and less extreme INPUT_GAIN range. Timing risk is small because the pipeline shape is unchanged, but lower `softClipK` helpers still add comparison paths already present in the previous amp stages. |
+| Listening points | Amp ON should add colour without turning clean presets into hi-fi direct. MASTER=100 should not blow the chain. CHARACTER sweep should remain audible. Metal / Big Muff / Fuzz should be less ice-picky through Amp ON. |
 
 ## Cab IR — speaker cabinet simulator (inspired)
 
@@ -153,11 +153,11 @@ existing pipeline.
 | --- | --- |
 | Target style | A guitar speaker cabinet rolls off both ends — sub-low (~80 Hz) and high (~5 kHz) — and gives the line-direct sound a "speaker box" character. AIR controls the high-shelf "in-the-room" feel. |
 | Reference behaviour | With Cab ON the line-direct fizz of the distortion stages should be tamed. Different model selections (open back / British / closed back) should feel audibly different. AIR up should add presence without ice-pick highs. |
-| Current implementation | 4-tap convolution with per-model coefficient sets; `model = ctrlC (fCab f)` selects open-back / British / closed-back; `air = ctrlD (fCab f)` selects which of three coefficient sets to use within the model. |
-| Gap | The direct-tap (c0) coefficient is high enough that a lot of the un-convolved high frequencies leak through. The AIR-up variants emphasise even more direct-tap content, so the brightest setting can sound piercing under high-gain distortion. |
-| DSP change | Re-balance the coefficient table so c0 is reduced by 6..12 across every model/air combination, with the matching reduction added back into c1 / c2 (which are delayed by one or two samples and naturally have less high-frequency content). The total magnitude (sum of the four taps) stays in the same range so output level does not change perceptibly. |
-| Risk | Fixed coefficient changes; no combinational change. Level stays in the same band. Only the high-frequency profile shifts. |
-| Listening points | Cab ON under Metal Tight should not be ear-piercing. AIR=100 should add presence but not ice-pick. The three cab models should still sound distinct. |
+| Current implementation | 4-tap convolution with per-model coefficient sets; `model = ctrlC (fCab f)` selects model 0/1/2 and `air = ctrlD (fCab f)` selects one of three capped AIR variants within that model. |
+| Gap | The first voicing pass reduced direct-tap fizz, but model 0/1/2 were still closer than intended and the high-gain presets could remain line-direct under Muff/Fuzz if they used lighter cabs. |
+| DSP change | Implemented in-place by replacing the `cabCoeff` table. Model 0 = 1x12 open back style (lower body sum, more open mid/air); model 1 = 2x12 combo style (balanced roll-off); model 2 = 4x12 closed back style (more delayed-body taps, strongest fizz damping). AIR increases direct tap only within a capped table. |
+| Risk | Fixed coefficient changes; no new combinational topology. Model 2 carries a stronger body sum than model 0/1, but `cabLevelMixFrame` still uses level scaling and `softClip`. |
+| Listening points | Cab model 0 should stay clear on Basic Clean / Light Crunch. Model 1 should keep TS/RAT present but less fizzy. Model 2 should make Metal / Big Muff / Fuzz Face less painful. AIR=100 should add presence but not ice-pick. |
 
 ## EQ — pedalboard post-EQ
 
@@ -207,8 +207,8 @@ existing pipeline.
 - All ten chain presets apply cleanly and the smoke-test on the board
   reports the expected bytes.
 - `tests/test_overlay_controls.py` passes.
-- Vivado WNS regresses by no more than ~1.5 ns vs the deployed
-  Compressor build (`-7.516 ns`); WHS / THS stay non-negative.
+- Vivado WNS stays in the accepted deploy band (latest Amp/Cab pass:
+  `-7.917 ns` vs previous `-7.535 ns`); WHS / THS stay non-negative.
 - ADC HPF default-on (`R19_ADC_CONTROL == 0x23`) is preserved.
 - No reference-pedal source code, schematic-exact coefficient table,
   or GPL DSP code is added to the tree.

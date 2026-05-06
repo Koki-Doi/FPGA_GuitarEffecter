@@ -67,7 +67,7 @@ makeInput
   -> tube_screamer        (5 stages: HPF -> mul -> asym soft clip -> post LPF -> level)
   -> metal_distortion     (5 stages: tight HPF -> mul -> hard clip -> post LPF -> level)
   -> amp simulator (HPF -> drive -> waveshape -> pre-LPF -> 2nd stage -> tone stack -> power -> resonance/presence -> master)
-  -> cab IR (3-tap convolution + level/mix)
+  -> cab IR (4-tap cabinet FIR + level/mix)
   -> EQ (3-band)
   -> reverb (BRAM tap + tone + feedback + mix)
   -> output AXIS register
@@ -213,6 +213,49 @@ Eight register stages with intermediate state held outside the frame:
 ratClip -> ratPostLowpass -> ratTone -> ratLevel -> ratMix`. This is the
 template for any new "pedal" we add: a small chain of single-purpose
 register stages that each do one thing.
+
+## Amp Simulator section
+
+Driven by the existing `axi_gpio_amp` and `axi_gpio_amp_tone` GPIOs:
+`input_gain` / `master` / `presence` / `resonance` plus B/M/T /
+`character`. Enable remains `gate_control.ctrlA` bit 6. The Amp/Cab
+real-voicing pass changed constants inside the existing stages only;
+no register stage, GPIO, or `topEntity` port was added.
+
+| Stage | What it does |
+| --- | --- |
+| `ampHighpassFrame` | First-order HPF using the existing input/output state registers. Feedback coefficient is now `253/256`, a little tighter than the prior `254/256` path. |
+| `ampDriveMultiplyFrame` / `ampDriveBoostFrame` | Q7-style preamp gain. The ceiling is ~21x rather than ~31x so hot distortion pedals do not get squared again by the amp. |
+| `ampWaveshapeFrame` | Character-controlled asymmetric soft clip with lower hand-rolled knees. Higher `character` lowers the knees and increases asymmetry. |
+| `ampPreLowpassFrame` | One-pole post-clip smoothing. Alpha range is darker (`144..207`) while high character still keeps edge. |
+| `ampSecondStageMultiplyFrame` / `ampSecondStageFrame` | Second gain/clip stage. Gain now depends more on `character` and less on raw input gain. |
+| `ampToneFilterFrame` -> `ampToneMixFrame` | Existing three-band B/M/T tone-stack approximation. |
+| `ampPowerFrame` | `softClipK 3_700_000` power-stage safety instead of the wider default `softClip`. |
+| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance and presence are internally capped (`resonance - resonance/8`, `presence - presence/4`) and mixed through `softClipK 3_700_000`. |
+| `ampMasterFrame` | Master multiply followed by `softClipK 3_600_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
+
+## Cab IR section
+
+Driven by the existing `axi_gpio_cab` GPIO. `ctrlA = mix`,
+`ctrlB = level`, `ctrlC = model`, `ctrlD = air`; those byte meanings
+are unchanged. Enable remains `gate_control.ctrlA` bit 7. The live
+stage is still the existing 4-tap FIR split over `cabProductsFrame`,
+`cabIrFrame`, and `cabLevelMixFrame`; no long IR loader and no extra
+AXI GPIO were added.
+
+The Amp/Cab real-voicing pass rebuilt the 4-tap coefficient table:
+
+| Model | Target | DSP shape |
+| --- | --- | --- |
+| 0 | 1x12 open back style | Lower total body, lighter low end, more open mid/air for clean and crunch. |
+| 1 | 2x12 combo style | Balanced response for Tube Screamer Lead / RAT Rhythm; highs are rolled off but presence remains. |
+| 2 | 4x12 closed back style | More delayed-body tap weight and the strongest high-fizz damping for Metal / Big Muff / Fuzz Face. |
+
+`air` still selects three variants per model, but the brightest row
+only restores a capped amount of direct tap. `air=100` therefore adds
+presence without reverting to raw line-direct tone. `mix=0` remains
+dry/raw and `mix=100` remains fully cabinet-shaped; `level` still runs
+through the existing post-Cab soft clip.
 
 ## Adding a new effect
 

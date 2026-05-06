@@ -1,8 +1,71 @@
 # Current state
 
-Last updated: 2026-05-06 (reserved-pedal implementation: ds1 /
-big_muff / fuzz_face landed as independent Clash stages; Clash +
-Vivado bit/hwh rebuilt and deployed).
+Last updated: 2026-05-07 (Amp/Cab real-voicing pass landed;
+Clash + Vivado bit/hwh rebuilt and deployed).
+
+## Amp/Cab real-voicing pass (this branch, `feature/amp-cab-real-voicing`)
+
+The existing Amp Simulator and Cab IR stages were re-voiced toward a
+generic guitar amp / cabinet response. This is **not** a new effect:
+no new GPIO, no new `topEntity` port, no `block_design.tcl` change,
+and no AXI address change. The work only changes constants / clip
+helpers inside existing `LowPassFir.hs` stages plus a small chain
+preset retune.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`:
+  - `ampHighpassFrame`: feedback coefficient `254 -> 253`, tightening
+    sub-low rumble before the gain stages.
+  - `ampDriveMultiplyFrame`: input gain ceiling reduced from ~31x to
+    ~21x so high-gain pedals do not get squared again by the amp.
+  - `ampAsymClip`, `ampPreLowpassFrame`, `ampSecondStageMultiplyFrame`:
+    lower clip knees, darker pre-LPF range, and a slightly more
+    character-driven second stage for clean / crunch / high-gain
+    response separation.
+  - `ampPowerFrame`, `ampResPresenceMixFrame`, `ampMasterFrame`: safety
+    `softClipK` knees lowered so MASTER / presence / resonance cannot
+    blow the post-amp chain into hard clipping.
+  - `ampResPresenceProductsFrame`: presence capped to 75 % of the byte
+    and resonance to 87.5 %, keeping high-end bite and low-end push
+    without ice-pick highs or low-frequency bloom.
+  - `cabCoeff`: the existing 4-tap cabinet table was rebuilt into
+    three clearer models:
+    - model 0: 1x12 open back style, lighter body, more open mid/air.
+    - model 1: 2x12 combo style, balanced roll-off with presence left.
+    - model 2: 4x12 closed back style, more delayed-body taps and the
+      strongest fizz damping for Metal / Big Muff / Fuzz Face.
+    `air` now restores only a capped direct-tap amount; `air=100` does
+    not return to raw line-direct sound.
+- `audio_lab_pynq/effect_presets.py`:
+  - Basic Clean / Clean Sustain now use mild Amp + model 0 Cab.
+  - Light Crunch uses model 0 Cab.
+  - Metal / Noise Controlled High Gain use lower presence and model 2
+    Cab with lower air.
+  - Big Muff Sustain and Vintage Fuzz now lean on model 2 Cab; Vintage
+    Fuzz keeps `mix=90` so it stays rawer than Metal.
+- `hw/ip/clash/vhdl/LowPassFir/*` was regenerated and the Vivado IP
+  repackaged.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` was rebuilt and deployed.
+  Final routed timing: WNS = -7.917 ns, TNS = -13100.457 ns,
+  WHS = +0.051 ns, THS = 0.000 ns. This regresses WNS by 0.382 ns vs
+  the reserved-pedal build's -7.535 ns, still inside the -7..-9 ns
+  deploy band; hold remains clean.
+- PYNQ-Z2 deploy completed. Smoke test passed over Safe Bypass, Basic
+  Clean, Light Crunch, Tube Screamer Lead, RAT Rhythm, DS-1 Crunch,
+  Big Muff Sustain, Vintage Fuzz, Metal Tight, and Ambient Clean.
+  `ADC HPF: True`; `R19_ADC_CONTROL = 0x23`.
+
+What did **not** change:
+
+- `hw/Pynq-Z2/block_design.tcl`.
+- `topEntity` port list.
+- GPIO names, addresses, or `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD`
+  meanings for `axi_gpio_amp`, `axi_gpio_amp_tone`, or `axi_gpio_cab`.
+- Python API method names or Notebook UI structure.
+- C++ DSP prototypes (`src/effects` remains removed).
+- Commercial amp / cabinet IR / schematic coefficient copies or GPL
+  code. The voicing is generic and hand-rolled.
 
 ## Reserved-pedal implementation (this branch, `feature/add-reserved-distortion-pedals`)
 

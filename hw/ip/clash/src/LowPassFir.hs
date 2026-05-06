@@ -1301,15 +1301,16 @@ ampHighpassFrame prevInL prevInR prevOutL prevOutR f =
  where
   on = flag6 (fGate f)
   highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 254 `shiftR` 8))
+    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 253 `shiftR` 8))
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (fWetL f) gain else 0, fAccR = if on then mulU12 (fWetR f) gain else 0}
  where
   on = flag6 (fGate f)
-  -- 1.0x to about 31x using Q7-style post shift.
-  gain = resize (128 + (resize (ctrlA (fAmp f)) * 15 :: Unsigned 12)) :: Unsigned 12
+  -- 1.0x to about 21x using Q7-style post shift. The real-voicing pass
+  -- keeps the amp from re-squaring already-hot pedal outputs.
+  gain = resize (128 + (resize (ctrlA (fAmp f)) * 10 :: Unsigned 12)) :: Unsigned 12
 
 ampDriveBoostFrame :: Frame -> Frame
 ampDriveBoostFrame f =
@@ -1325,8 +1326,8 @@ ampAsymClip character x
  where
   ch = resize (asSigned9 character) :: Signed 25
   -- Lower knees at high character give a rougher, less symmetric preamp.
-  positiveKnee = resize (5_200_000 - ch * 8_500) :: Sample
-  negativeKnee = resize (4_700_000 - ch * 7_000) :: Sample
+  positiveKnee = resize (4_900_000 - ch * 7_000) :: Sample
+  negativeKnee = resize (4_350_000 - ch * 6_200) :: Sample
 
 ampWaveshapeFrame :: Frame -> Frame
 ampWaveshapeFrame f =
@@ -1341,14 +1342,14 @@ ampPreLowpassFrame prevL prevR f =
  where
   on = flag6 (fGate f)
   -- Higher character keeps more edge; lower character smooths more.
-  alpha = 160 + (ctrlD (fAmpTone f) `shiftR` 2)
+  alpha = 144 + (ctrlD (fAmpTone f) `shiftR` 2)
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
 ampSecondStageMultiplyFrame f =
   f{fAccL = if on then mulU9 (fWetL f) gain else 0, fAccR = if on then mulU9 (fWetR f) gain else 0}
  where
   on = flag6 (fGate f)
-  gain = resize (118 + (ctrlA (fAmp f) `shiftR` 2) + (ctrlD (fAmpTone f) `shiftR` 3)) :: Unsigned 9
+  gain = resize (112 + (ctrlA (fAmp f) `shiftR` 3) + (ctrlD (fAmpTone f) `shiftR` 2)) :: Unsigned 9
 
 ampSecondStageFrame :: Frame -> Frame
 ampSecondStageFrame f =
@@ -1409,7 +1410,7 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  f{fWetL = if on then softClip (fWetL f) else fL f, fWetR = if on then softClip (fWetR f) else fR f}
+  f{fWetL = if on then softClipK 3_700_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_700_000 (fWetR f) else fR f}
  where
   on = flag6 (fGate f)
 
@@ -1432,7 +1433,7 @@ ampResPresenceFilterFrame prevResL prevResR prevPresenceL prevPresenceR f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  f{fWetL = if on then softClip wetL else fL f, fWetR = if on then softClip wetR else fR f}
+  f{fWetL = if on then softClipK 3_700_000 wetL else fL f, fWetR = if on then softClipK 3_700_000 wetR else fR f}
  where
   on = flag6 (fGate f)
   wetL = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
@@ -1452,8 +1453,8 @@ ampResPresenceProductsFrame f =
     }
  where
   on = flag6 (fGate f)
-  resonance = ctrlD (fAmp f)
-  presence = ctrlC (fAmp f)
+  resonance = ctrlD (fAmp f) - (ctrlD (fAmp f) `shiftR` 3)
+  presence = ctrlC (fAmp f) - (ctrlC (fAmp f) `shiftR` 2)
   highL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
   highR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
 
@@ -1469,17 +1470,15 @@ ampMasterFrame f =
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  left = softClip (satShift7 (mulU8 (fWetL f) level))
-  right = softClip (satShift7 (mulU8 (fWetR f) level))
+  left = softClipK 3_600_000 (satShift7 (mulU8 (fWetL f) level))
+  right = softClipK 3_600_000 (satShift7 (mulU8 (fWetR f) level))
 
 cabCoeff :: Unsigned 8 -> Unsigned 8 -> Unsigned 2 -> Signed 10
--- Real-pedal voicing pass: re-balance the 4-tap IR coefficients to
--- damp the very-high frequencies (closer to Nyquist). The direct tap
--- c0 is reduced and the offsets are shifted into c1 / c2 (more "in
--- the box" character, less line-direct fizz). Total magnitude per row
--- stays in the same band so the cab section keeps the same loudness
--- envelope and the AIR knob still spans three audibly distinct
--- variants per model.
+-- Amp/Cab real-voicing pass: keep the existing 4-tap cabinet stage but
+-- make the three models more distinct. Model 0 is lighter and more
+-- open, model 1 is the balanced combo, and model 2 carries more delayed
+-- body taps so high-gain fizz is damped hardest. AIR only restores a
+-- capped amount of direct-tap content; it never becomes a raw line feed.
 cabCoeff model air index =
   case modelSel of
     0 -> openBack index
@@ -1492,54 +1491,54 @@ cabCoeff model air index =
   openBack i =
     case airSel of
       0 -> case i of
-        0 -> 94
+        0 -> 78
         1 -> 84
-        2 -> 48
-        _ -> 22
+        2 -> 54
+        _ -> 10
       1 -> case i of
-        0 -> 100
+        0 -> 86
         1 -> 80
-        2 -> 42
-        _ -> 14
-      _ -> case i of
-        0 -> 110
-        1 -> 72
-        2 -> 34
+        2 -> 50
         _ -> 8
+      _ -> case i of
+        0 -> 94
+        1 -> 74
+        2 -> 44
+        _ -> 6
   british i =
     case airSel of
       0 -> case i of
-        0 -> 78
-        1 -> 100
-        2 -> 64
-        _ -> 30
-      1 -> case i of
-        0 -> 88
-        1 -> 94
-        2 -> 60
-        _ -> 24
-      _ -> case i of
-        0 -> 98
+        0 -> 70
         1 -> 86
-        2 -> 50
+        2 -> 72
+        _ -> 28
+      1 -> case i of
+        0 -> 78
+        1 -> 84
+        2 -> 66
+        _ -> 20
+      _ -> case i of
+        0 -> 84
+        1 -> 80
+        2 -> 60
         _ -> 16
   closedBack i =
     case airSel of
       0 -> case i of
-        0 -> 70
-        1 -> 110
-        2 -> 80
-        _ -> 46
+        0 -> 58
+        1 -> 78
+        2 -> 88
+        _ -> 64
       1 -> case i of
-        0 -> 78
-        1 -> 104
-        2 -> 74
-        _ -> 38
+        0 -> 64
+        1 -> 80
+        2 -> 84
+        _ -> 52
       _ -> case i of
-        0 -> 88
-        1 -> 96
-        2 -> 64
-        _ -> 26
+        0 -> 68
+        1 -> 84
+        2 -> 78
+        _ -> 40
 
 cabProductsFrame ::
   Sample -> Sample -> Sample ->
