@@ -50,11 +50,14 @@ control effect parameters via AXI GPIO.
   Clash). Sample rate is 48 kHz, so the PL has ~2080 clock cycles per
   audio frame for a single channel pair.
 - The distortion section is built on a **pedal-mask design** (commit
-  `baa97ff`). `gate_control` bit 2 is the section master; each bit of
+  `baa97ff`, with the reserved-pedal implementation landed on
+  `feature/add-reserved-distortion-pedals`, commit `c8f8d8c`).
+  `gate_control` bit 2 is the section master; each bit of
   `distortion_control.ctrlD` enables one pedal. `clean_boost`,
-  `tube_screamer`, `metal` are implemented in Clash; `rat` maps onto
-  the existing RAT stage; `ds1`, `big_muff`, `fuzz_face` are reserved
-  bits with no FPGA stage yet. See `DISTORTION_REFACTOR_PLAN.md`.
+  `tube_screamer`, `ds1`, `big_muff`, `fuzz_face`, and `metal` are
+  implemented in Clash; `rat` maps onto the existing RAT stage. Bit 7
+  remains the only reserved pedal slot. See
+  `DISTORTION_REFACTOR_PLAN.md` and `DECISIONS.md` D6 / D9.
 - The noise stage is a **BOSS NS-2 / NS-1X-style noise suppressor** on
   a dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` (branch
   `feature/noise-suppressor-gpio-ui`). THRESHOLD / DECAY / DAMP / mode

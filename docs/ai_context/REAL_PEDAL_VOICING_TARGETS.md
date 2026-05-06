@@ -99,6 +99,42 @@ existing pipeline.
 | Risk | Metal Tight preset becomes slightly tighter and a touch less ice-picky; level cap is unchanged. |
 | Listening points | Metal Tight should feel more "chuggy" with the TIGHT slider. TONE=100 should not be ear-piercing. Sustained palm mutes should stay tight. |
 
+## Distortion: ds1 — BOSS DS-1 style (inspired)
+
+| Field | Notes |
+| --- | --- |
+| Target style | BOSS DS-1 style edgy crunch. Brighter than tube_screamer and a touch harder; useful for rhythm work where presence matters. |
+| Reference behaviour | DRIVE turns up the saturation but the wave never fully squares; TONE keeps top-end presence at every setting; LEVEL is the safe-side knob. |
+| Current implementation | `ds1HpfFrame -> ds1MulFrame -> ds1ClipFrame -> ds1ToneFrame -> ds1LevelFrame`. Input HPF alpha `4 + (distTight >> 4)` (range 4..23); drive Q8 `256 + drive*8` (1×..~9×); `asymSoftClip 2_400_000 2_000_000` (lower knees than TS); post-LPF alpha `96 + (tone >> 1)` (range 96..223, brighter than TS); `softClipK 3_000_000` safety on the level stage. |
+| Gap (vs reference) | A real DS-1 uses diode-pair hard clipping; the soft-clip approximation makes the engagement softer than the original. |
+| DSP change | New stages — already shipped. No further change planned for this voicing pass. |
+| Risk | Five-stage block adds register depth; timing reviewed in `TIMING_AND_FPGA_NOTES.md`. |
+| Listening points | DS-1 Crunch should feel brighter and a little harder than Tube Screamer Crunch at the same DRIVE / LEVEL. DS-1 Lead should still preserve note articulation at high DRIVE. |
+
+## Distortion: big_muff — Electro-Harmonix Big Muff Pi style (inspired)
+
+| Field | Notes |
+| --- | --- |
+| Target style | Big Muff Pi style thick fuzz. Sustaining wall-of-sound saturation, mid-scoopy tone, dark top end. Useful for sustaining lead lines and shoegaze textures. |
+| Reference behaviour | Lots of pre-gain ahead of two cascaded soft-clip stages; tone control acts as a tilt between mid-scoop and bright. Not as tight as metal — wave should smear. |
+| Current implementation | `bigMuffPreFrame -> bigMuffClip1Frame -> bigMuffClip2Frame -> bigMuffToneFrame -> bigMuffLevelFrame`. Pre-gain Q8 `384 + drive*12` (~1.5×..~13×); `softClipK 2_700_000` (medium knee); ~0.75× gain step + `softClipK 2_000_000` (tighter knee); tone LPF alpha `56 + (tone >> 1)` (range 56..183, darker); `softClipK 2_900_000` safety on the level stage. |
+| Gap (vs reference) | The classic mid-scoop is approximated by the dark tone LPF; a real Muff has a more pronounced mid notch. We deliberately avoid copying the published tone-stack coefficients. |
+| DSP change | New stages — already shipped. No further change planned for this voicing pass. |
+| Risk | Two cascaded soft clips on a hot pre-gain can add ~6 dB of total saturation; `softClipK` safety on the level stage prevents it from slamming the chain. |
+| Listening points | Big Muff Sustain should sing on long notes; Big Muff Wall should keep its low end without becoming muddy. The dark tone curve should keep fizz off the top. |
+
+## Distortion: fuzz_face — Dallas Arbiter / Dunlop Fuzz Face style (inspired)
+
+| Field | Notes |
+| --- | --- |
+| Target style | Fuzz Face style raw asymmetric breakup. Touch-sensitive at low DRIVE, broken up at high DRIVE, asymmetric on the negative half (germanium / silicon hybrid feel). |
+| Reference behaviour | Even at DRIVE=0 there is some breakup (real Fuzz Faces are sensitive to input level); TONE acts as a "round vs. bright" axis since most real units have no tone control; LEVEL safe-side. |
+| Current implementation | `fuzzFacePreFrame -> fuzzFaceClipFrame -> fuzzFaceToneFrame -> fuzzFaceLevelFrame`. Pre-gain Q8 `512 + drive*9` (~2×..~10×, hot floor); `asymSoftClip 1_900_000 1_400_000` (low / asymmetric knees, negative half compresses harder); tone LPF alpha `72 + (tone >> 1)` (range 72..199); `softClipK 2_800_000` safety. |
+| Gap (vs reference) | We do not model guitar-volume cleanup behaviour explicitly (real Fuzz Faces clean up when the guitar volume rolls off due to impedance interaction); deliberately scoped out for now. |
+| DSP change | New stages — already shipped. No further change planned for this voicing pass. |
+| Risk | The asymmetric clip is the harshest of the new pedals; the level stage's `softClipK` is the last line of defence before the post-pedal pipeline. |
+| Listening points | Fuzz Face / Fuzz Face Vintage should both feel touch-sensitive; TONE=0 should sound rounded, TONE=100 should brighten without going thin. Picking dynamics should still come through. |
+
 ## Amp simulator — generic guitar amp preamp (inspired)
 
 | Field | Notes |

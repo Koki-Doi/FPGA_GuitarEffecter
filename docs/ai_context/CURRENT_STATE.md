@@ -329,25 +329,26 @@ What did **not** change:
 
 ## Headline
 
-The noise-suppressor refactor is **shipped**. A dedicated
-`axi_gpio_noise_suppressor` IP at `0x43CC0000` carries THRESHOLD /
-DECAY / DAMP / mode for a BOSS NS-2 / NS-1X-style noise suppressor;
-the Clash side replaces the legacy hard noise gate stages with the
-new envelope + smoothed-gain block; the Python API ships
-`set_noise_suppressor_settings` / `get_noise_suppressor_settings` and
-mirrors the threshold byte into the legacy `gate_control.ctrlB` slot
-for backward compatibility. The pedal-mask distortion section from
-the prior arc is unchanged and still active.
+The reserved-pedal implementation is **shipped**. `ds1` (bit 3),
+`big_muff` (bit 4), and `fuzz_face` (bit 5) of the pedal-mask scheme
+now have working independent register-staged Clash blocks; the Python
+API and notebook UIs treat them as first-class implemented pedals.
+Bit 7 stays reserved for a future 8th pedal slot. No new GPIO, no
+`topEntity` port, no `block_design.tcl` change.
 
-The earlier 8-way `model_select` distortion attempt is still gone
-(`DECISIONS.md` D6); the legacy hard noise gate is now also retired
-from the active pipeline (`DECISIONS.md` D11).
+Earlier shipped milestones (still active in the deployed bitstream):
+the pedal-mask distortion refactor (`DECISIONS.md` D6), the noise-
+suppressor refactor (`DECISIONS.md` D11), the compressor section
+(`DECISIONS.md` D14), the chain-preset layer (`DECISIONS.md` D15),
+and the real-pedal voicing pass (`DECISIONS.md` D16). The 8-way
+`model_select` distortion attempt remains rejected (`DECISIONS.md` D6).
 
 ## Working tree
 
-`feature/noise-suppressor-gpio-ui` carries the noise-suppressor work,
-tagged at the parent commit as `before-noise-suppressor-gpio-ui`. The
-branch is local-only; nothing has been pushed.
+`feature/add-reserved-distortion-pedals` carries the reserved-pedal
+implementation, tagged at the parent commit as
+`before-add-reserved-distortion-pedals`. The branch is local-only;
+nothing has been pushed.
 
 The previous pedal-mask arc lives on `master`:
 
@@ -432,12 +433,18 @@ returns the section to zero.
 | --- | --- | --- | --- |
 | Pre-refactor baseline | -7.722 ns | -4613.495 ns | Shipped, audio works in practice. |
 | Rejected `model_select` | -15.067 ns | -7308.247 ns | Not deployed. |
-| **pedal-mask (current)** | **-7.801 ns** | -7381.742 ns | Deployed. Roughly baseline-equivalent setup slack. |
+| pedal-mask (initial) | -7.801 ns | -7381.742 ns | Deployed. |
+| Noise suppressor add | -7.111 ns | -7683.480 ns | Deployed. |
+| Compressor add | -7.516 ns | -8815.426 ns | Deployed. |
+| Real-pedal voicing pass | -6.405 ns | -8806.714 ns | Deployed. |
+| **Reserved-pedal implementation (current)** | **-7.535 ns** | -11297.604 ns | Deployed. WNS regresses 1.130 ns vs voicing-pass build, still inside the historical -7..-9 ns band. |
 
-Hold timing is fine (`WHS = +0.050 ns`, `THS = 0.000 ns`). Setup is
-still slightly negative; not a regression versus baseline, but the
-build is not formally clean. Treat any further timing slip with
-suspicion.
+Hold timing is fine (`WHS = +0.051 ns`, `THS = 0.000 ns`). Setup is
+still slightly negative; not a regression versus the historical
+deploy band, but the build is not formally clean. Treat any further
+timing slip with suspicion. The full chronology (with per-build
+notes) is in
+[`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md).
 
 ## Notebooks
 
@@ -483,7 +490,8 @@ Open work, in roughly priority order:
   seven pedals. That is exactly what regressed timing the first time;
   see `TIMING_AND_FPGA_NOTES.md`.
 - Do **not** deploy a bitstream whose WNS is significantly worse than
-  the noise-suppressor build's WNS without flagging the regression
+  the current reserved-pedal-implementation build's WNS (-7.535 ns)
+  without flagging the regression
   first.
 - Do **not** revive the legacy `gateGainNext` / `gateFrame` registers
   in the active pipeline. The active gain stage is the noise

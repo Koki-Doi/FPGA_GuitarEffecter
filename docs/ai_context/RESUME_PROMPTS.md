@@ -70,12 +70,13 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -7.801 ns はベースライン同等で、運用上は
-> 動いていますが厳密にはまだ負です。これを 0 へ寄せたい場合は、
-> `LowPassFir.hs` の中で残った深い組合せブロックを register で分け、
-> 必要なら cab タップや reverb BRAM のアドレス経路を pipeline 化
-> してください。1 段に大きな `case` や 4 段以上の演算を詰めない
-> 方針は維持してください (`TIMING_AND_FPGA_NOTES.md` 参照)。
+> 現状 deploy 済の WNS = -7.535 ns (reserved-pedal implementation
+> ビルド) はベースライン同等で、運用上は動いていますが厳密には
+> まだ負です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
+> 残った深い組合せブロックを register で分け、必要なら cab タップ
+> や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
+> 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
+> (`TIMING_AND_FPGA_NOTES.md` 参照)。
 
 ## Noise Suppressor work — branch in progress / shipped
 

@@ -59,9 +59,10 @@ approval.
 ## Clash stage position
 
 - Where in `fxPipeline` the new stage lands. The existing order is:
-  `nsLevelPipe -> nsApply -> overdrive -> legacy distortion -> RAT ->
-  clean_boost -> tube_screamer -> metal -> amp -> cab IR -> EQ ->
-  reverb -> output`.
+  `nsLevelPipe -> nsApply -> compressor -> overdrive -> legacy
+  distortion -> RAT -> clean_boost -> tube_screamer -> metal ->
+  ds1 -> big_muff -> fuzz_face -> amp -> cab IR -> EQ -> reverb ->
+  output`.
 - Number of register stages.
 - Whether it reuses any `Frame` accumulator field.
 

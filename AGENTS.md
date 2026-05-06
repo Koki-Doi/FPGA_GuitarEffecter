@@ -35,10 +35,12 @@ Then read the topic doc that matches the work:
 
 - `hw/Pynq-Z2/block_design.tcl` is **off-limits** unless the user explicitly
   approves a block-design change. New control bits go into spare bytes of the
-  existing AXI GPIOs; new effect stages reuse existing GPIO topology. The one
-  shipped exception is `axi_gpio_noise_suppressor` at `0x43CC0000`, added for
-  the THRESHOLD / DECAY / DAMP noise-suppressor work (`DECISIONS.md` D11);
-  do not remove it or shuffle its address.
+  existing AXI GPIOs; new effect stages reuse existing GPIO topology. The
+  shipped exceptions are `axi_gpio_noise_suppressor` at `0x43CC0000`
+  (THRESHOLD / DECAY / DAMP noise-suppressor work, `DECISIONS.md` D11) and
+  `axi_gpio_compressor` at `0x43CD0000` (THRESHOLD / RATIO / RESPONSE /
+  enable+MAKEUP compressor work, `DECISIONS.md` D14); do not remove them or
+  shuffle their addresses.
 - **GPIO design is fixed** (`DECISIONS.md` D12). Names, addresses, and the
   `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` semantics in
   `docs/ai_context/GPIO_CONTROL_MAP.md` are a contract. Do not rename
@@ -51,9 +53,11 @@ Then read the topic doc that matches the work:
 - The ADAU1761 ADC HPF is **default-on** (`R19_ADC_CONTROL == 0x23`). Do not
   remove or skip the HPF enable in `config_codec()`.
 - The selectable distortion section is **pedal-mask-based** (commit
-  `baa97ff`). Do not roll it back to a `model_select` / 8-way mux design;
-  that is the pattern that wrecked timing earlier and is already recorded
-  as a dead end (`DECISIONS.md` D6).
+  `baa97ff`, plus the reserved-pedal implementation in `c8f8d8c` that filled
+  bits 3 / 4 / 5 with `ds1` / `big_muff` / `fuzz_face` Clash stages). Do not
+  roll it back to a `model_select` / 8-way mux design; that is the pattern
+  that wrecked timing earlier and is already recorded as a dead end
+  (`DECISIONS.md` D6 / D9). Bit 7 stays reserved for an 8th pedal slot.
 - Any change to `hw/ip/clash/src/LowPassFir.hs` requires a Vivado bit/hwh
   rebuild and a fresh **timing summary**. A bitstream whose WNS is
   significantly worse than the previous deployed build must not be deployed
