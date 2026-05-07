@@ -106,6 +106,20 @@ def test_set_guitar_effects_writes_rat_gpio():
     assert overlay.routes[-1] == (XbarEffect.guitar_chain, XbarSink.headphone)
 
 
+def test_overdrive_on_sets_gate_flag_and_control_bytes():
+    words = AudioLabOverlay.guitar_effect_control_words(
+        overdrive_on=True,
+        overdrive_drive=60,
+        overdrive_tone=55,
+        overdrive_level=80,
+    )
+
+    assert words["gate"] & 0x02, hex(words["gate"])
+    assert words["overdrive"] & 0xFF == AudioLabOverlay._percent_to_u8(55, 255)
+    assert (words["overdrive"] >> 8) & 0xFF == AudioLabOverlay._level_to_q7(80)
+    assert (words["overdrive"] >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(60, 255)
+
+
 def test_rat_requires_delay_gpio_when_enabled():
     overlay = make_overlay(include_rat_gpio=False)
     try:
@@ -692,6 +706,23 @@ def test_new_chain_presets_for_implemented_pedals():
         assert 45 <= spec["compressor"]["makeup"] <= 60
 
 
+def test_high_gain_chain_presets_use_closed_back_cab():
+    """DS-1 / Muff / Fuzz / Metal presets should lean on cab model 2."""
+    from audio_lab_pynq import effect_presets as ep
+
+    for name in (
+        "DS-1 Crunch",
+        "Big Muff Sustain",
+        "Vintage Fuzz",
+        "Metal Tight",
+        "Noise Controlled High Gain",
+    ):
+        cab = ep.CHAIN_PRESETS[name]["cab"]
+        assert cab["enabled"] is True
+        assert cab["model"] == 2, "preset {!r} must use model 2 cab".format(name)
+        assert cab["air"] <= 40, "preset {!r} cab air should stay capped".format(name)
+
+
 # ---- guitar_effect_control_words snapshot -------------------------------
 #
 # These are byte-for-byte snapshots of the current encoding. They lock
@@ -1163,6 +1194,7 @@ def test_apply_chain_preset_unknown_name_raises():
 if __name__ == "__main__":
     test_rat_control_word()
     test_set_guitar_effects_writes_rat_gpio()
+    test_overdrive_on_sets_gate_flag_and_control_bytes()
     test_rat_requires_delay_gpio_when_enabled()
     test_amp_cab_control_words()
     test_set_guitar_effects_writes_amp_cab_gpio()
@@ -1202,6 +1234,7 @@ if __name__ == "__main__":
     test_effect_presets_module_matches_notebook_values()
     test_new_distortion_presets_level_capped()
     test_new_chain_presets_for_implemented_pedals()
+    test_high_gain_chain_presets_use_closed_back_cab()
     test_guitar_effect_control_words_snapshots()
     test_safe_bypass_snapshot_disables_every_flag()
     test_noise_suppressor_preset_bytes_snapshot()

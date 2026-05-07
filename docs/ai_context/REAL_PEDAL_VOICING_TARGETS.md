@@ -33,10 +33,10 @@ existing pipeline.
 | --- | --- |
 | Target style | Stereo-linked feed-forward peak compressor with a soft-ish engagement, evens picking and adds sustain without crushing transients. |
 | Reference behaviour | At low ratio it should sound like "leveller", barely audible. At high ratio it tightens picking but should not turn the signal into a square wave. Engagement near threshold should be gradual, not a brick wall. |
-| Current implementation | `compLevelPipe -> compEnv -> compGain -> compApplyPipe -> compMakeupPipe`. Hard knee, `excessShifted = excess >> 11`, reduction `(excessU12 * ratio_byte) >> 8`. At ratio=255 the gain reduction reaches full-scale at less than 0.5 % above threshold. |
-| Gap | Hard knee + steep reduction makes the compressor sound abrupt at moderate ratios. |
-| DSP change | (a) Soft-knee offset: `softThreshold = threshold - (threshold >> 4)` (~6 % below the user threshold), so engagement starts ~3–4 dB earlier; the user-set threshold then becomes the centre of the knee rather than a brick wall. (b) Gentler per-dB reduction: `excessShifted = excess >> 12` (was `>> 11`), so doubling `(env-threshold)` doubles the reduction (linear), but the absolute slope is half what it was. |
-| Risk | Slightly different "feel" of the THRESHOLD knob — equivalent threshold sits a few percent below the dial. RATIO=100 still hits hard, but with a gentler ramp. No combinational depth change. |
+| Current implementation | `compLevelPipe -> compEnv -> compGain -> compApplyPipe -> compMakeupPipe`. Effective threshold is now `7/8` of the byte-scaled threshold, soft knee begins at `threshold - threshold/8`, reduction uses `(excess >> 12) + (excess >> 14)`, and response steps add a small faster component. |
+| Gap | Recording analysis showed the previous soft-knee pass was too subtle on the captured material: crest factor stayed close to Bypass. |
+| DSP change | (a) Lower effective threshold by 12.5 %. (b) Widen the soft-knee start to `threshold - threshold/8`. (c) Increase reduction slope about 1.25x vs the previous `excess >> 12` pass. (d) Make envelope release and gain smoothing slightly more responsive. Makeup range stays unchanged. |
+| Risk | The THRESHOLD knob engages earlier, so very low-threshold settings can sound more obviously compressed. Existing makeup remains capped, and no new register stage is added. |
 | Listening points | Light Sustain and Funk Tight should keep the picking attack; Lead Sustain should sound smoother in engagement; Limiter-ish should still tame loud peaks but not turn quiet bits into mush. |
 
 ## Overdrive — generic tube-style overdrive (inspired)
@@ -45,10 +45,10 @@ existing pipeline.
 | --- | --- |
 | Target style | A general-purpose tube-style overdrive: gentle, even-harmonic-rich saturation, useful for "always-on" crunch ahead of higher-gain pedals. |
 | Reference behaviour | Soft clip with a slight asymmetry, so even harmonics show up at moderate drive. Should not get fizzy at high drive. |
-| Current implementation | `overdriveDriveMultiplyFrame -> Boost -> Clip -> ToneMultiply -> ToneBlend -> Level`. Clip uses the symmetric `softClip` helper (knee at `4_194_304`, slope `1/4`). |
-| Gap | Symmetric clip → no even-harmonic content; sounds slightly sterile at moderate drive. |
-| DSP change | Replace the symmetric `softClip` in `overdriveDriveClipFrame` with `asymSoftClip 3_300_000 2_900_000` — slightly lower knees and asymmetric (positive half is softer than negative). |
-| Risk | Same combinational shape (`asymSoftClip` has the same comparison + shift structure as `softClip`). |
+| Current implementation | `overdriveDriveMultiplyFrame -> Boost -> Clip -> ToneMultiply -> ToneBlend -> Level`. Drive gain is now `256 + drive*5` (~1x..6x), clip uses `asymSoftClip 2_700_000 2_300_000`, and the level stage adds `softClipK 3_200_000` safety. |
+| Gap | Recording analysis showed the previous Overdrive was numerically close to Bypass; the clip knee was not reached often enough at normal input level. |
+| DSP change | Raise the drive curve moderately, lower the asymmetric knees, and keep level jumps controlled with an existing-stage safety clip. |
+| Risk | DRIVE 70..100 will crunch more clearly than before. The output safety knee prevents a large RMS jump, and the stage remains much lighter than DS-1 / RAT / Metal. |
 | Listening points | Light Crunch should sound a touch warmer; clean settings should not be audibly affected because the clip threshold is well above expected level. |
 
 ## Distortion: clean_boost — EP / clean-boost style (inspired)
@@ -141,10 +141,10 @@ existing pipeline.
 | --- | --- |
 | Target style | Generic guitar-amp preamp: input HPF removes sub-low rumble before the gain stage, two soft-clipping stages with character control, BMT tone stack, slow lowpass for resonance, presence highshelf. |
 | Reference behaviour | Should not be a hi-fi clean amp — should always have *some* colour, even at low gain. Should not blow up at MASTER=100. |
-| Current implementation | `ampHighpassFrame -> Drive -> ampWaveshapeFrame (asym soft clip, character-controlled) -> preLpf -> Stage2 -> ampTone (BMT) -> Power -> Resonance/Presence -> Master`. Amp/Cab real-voicing pass tightened the HPF (`253/256`), reduced input gain ceiling (~31x -> ~21x), lowered asym clip knees, darkened pre-LPF alpha to `144..207`, made stage 2 more `character`-driven, capped presence/resonance internally, and lowered power/master `softClipK` safety knees. |
-| Gap | The prior amp could re-square hot Metal / RAT / Muff / Fuzz outputs and presence/resonance could add too much edge or low push at high settings. |
-| DSP change | Implemented in-place: constants / helper choices only, no new register stage. `presence = ctrlC - ctrlC/4`, `resonance = ctrlD - ctrlD/8`, power safety `softClipK 3_700_000`, master safety `softClipK 3_600_000`. |
-| Risk | Slightly darker high-gain response and less extreme INPUT_GAIN range. Timing risk is small because the pipeline shape is unchanged, but lower `softClipK` helpers still add comparison paths already present in the previous amp stages. |
+| Current implementation | `ampHighpassFrame -> Drive -> ampWaveshapeFrame (asym soft clip, character-controlled) -> preLpf -> Stage2 -> ampTone (BMT) -> Power -> Resonance/Presence -> Master`. The analysis pass trims input gain to ~19x, darkens pre-LPF alpha to `128..191`, caps treble with `ampTrebleGain`, caps presence to ~5/8 and resonance to ~3/4, and lowers power/resonance/master safety knees. |
+| Gap | Recording analysis showed AmpSim alone still carried too much >5 kHz fizz / air and could sound line-direct when presence and treble were high. |
+| DSP change | Implemented in-place: constants / helper choices only, no new register stage. Gain `128 + input_gain*9`, pre-LPF `128 + character/4`, power / resonance safety `softClipK 3_500_000`, master safety `softClipK 3_300_000`, presence `ctrlC * 5/8`. |
+| Risk | The amp is darker at high treble/presence and less explosive at MASTER=100. Clean / crunch settings keep their controls but may need slightly more treble if used without Cab. |
 | Listening points | Amp ON should add colour without turning clean presets into hi-fi direct. MASTER=100 should not blow the chain. CHARACTER sweep should remain audible. Metal / Big Muff / Fuzz should be less ice-picky through Amp ON. |
 
 ## Cab IR — speaker cabinet simulator (inspired)
@@ -154,9 +154,9 @@ existing pipeline.
 | Target style | A guitar speaker cabinet rolls off both ends — sub-low (~80 Hz) and high (~5 kHz) — and gives the line-direct sound a "speaker box" character. AIR controls the high-shelf "in-the-room" feel. |
 | Reference behaviour | With Cab ON the line-direct fizz of the distortion stages should be tamed. Different model selections (open back / British / closed back) should feel audibly different. AIR up should add presence without ice-pick highs. |
 | Current implementation | 4-tap convolution with per-model coefficient sets; `model = ctrlC (fCab f)` selects model 0/1/2 and `air = ctrlD (fCab f)` selects one of three capped AIR variants within that model. |
-| Gap | The first voicing pass reduced direct-tap fizz, but model 0/1/2 were still closer than intended and the high-gain presets could remain line-direct under Muff/Fuzz if they used lighter cabs. |
-| DSP change | Implemented in-place by replacing the `cabCoeff` table. Model 0 = 1x12 open back style (lower body sum, more open mid/air); model 1 = 2x12 combo style (balanced roll-off); model 2 = 4x12 closed back style (more delayed-body taps, strongest fizz damping). AIR increases direct tap only within a capped table. |
-| Risk | Fixed coefficient changes; no new combinational topology. Model 2 carries a stronger body sum than model 0/1, but `cabLevelMixFrame` still uses level scaling and `softClip`. |
+| Gap | Recording analysis showed Cabinet was directionally correct but still too weak above 5 kHz for DS-1 / RAT / Big Muff / Fuzz / Metal, and model 0/1/2 were not distinct enough. |
+| DSP change | Implemented in-place by replacing the `cabCoeff` table again. Model 0 = 1x12 open back style with some air, model 1 = 2x12 combo style, model 2 = 4x12 closed back style with the lowest direct tap and strongest delayed-body taps. AIR increases direct tap only within a capped table. `cabLevelMixFrame` keeps the existing timing-friendly `softClip`; the high-rolloff change is in the tap table, not a new lower-knee post-Cab clip. |
+| Risk | Model 2 is darker and thicker; Clean / Ambient should prefer model 0/1 when openness matters. Fixed coefficient changes add no new combinational topology. |
 | Listening points | Cab model 0 should stay clear on Basic Clean / Light Crunch. Model 1 should keep TS/RAT present but less fizzy. Model 2 should make Metal / Big Muff / Fuzz Face less painful. AIR=100 should add presence but not ice-pick. |
 
 ## EQ — pedalboard post-EQ
@@ -207,8 +207,9 @@ existing pipeline.
 - All ten chain presets apply cleanly and the smoke-test on the board
   reports the expected bytes.
 - `tests/test_overlay_controls.py` passes.
-- Vivado WNS stays in the accepted deploy band (latest Amp/Cab pass:
-  `-7.917 ns` vs previous `-7.535 ns`); WHS / THS stay non-negative.
+- Vivado WNS stays in the accepted deploy band (latest audio-analysis
+  voicing pass: `-8.731 ns` vs previous `-7.917 ns`); WHS / THS stay
+  non-negative.
 - ADC HPF default-on (`R19_ADC_CONTROL == 0x23`) is preserved.
 - No reference-pedal source code, schematic-exact coefficient table,
   or GPL DSP code is added to the tree.

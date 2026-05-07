@@ -1,7 +1,84 @@
 # Current state
 
-Last updated: 2026-05-07 (Amp/Cab real-voicing pass landed;
+Last updated: 2026-05-07 (audio-analysis voicing fixes landed;
 Clash + Vivado bit/hwh rebuilt and deployed).
+
+## Audio-analysis voicing fixes (this branch, `feature/audio-analysis-voicing-fixes`)
+
+Recording analysis of Bypass / NoiseSuppressor / Compressor /
+Overdrive / DS-1 / AmpSim / Cabinet / Reverb showed four actionable
+voicing gaps: AmpSim had too much >5 kHz fizz, Cabinet roll-off was
+directionally right but still weak after high-gain pedals, Overdrive
+was nearly indistinguishable from Bypass, and Compressor crest factor
+barely moved. The findings are recorded in
+`docs/ai_context/AUDIO_RECORDING_ANALYSIS.md`.
+
+This pass is **not** a new effect. It retunes only existing
+`LowPassFir.hs` stages and keeps the fixed GPIO contract intact:
+no new AXI GPIO, no new `topEntity` port, no `block_design.tcl`
+change, no AXI address change, and no Python API / Notebook UI
+surface change.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`:
+  - Compressor: `compThresholdSample`, `compEnvNext`,
+    `compTargetGain`, and `compGainNext` now start compression a bit
+    earlier and react a little faster while preserving the makeup
+    safety contract.
+  - Overdrive: `overdriveDriveMultiplyFrame` has a stronger midrange
+    drive curve, `overdriveDriveClipFrame` uses lower asymmetric knees,
+    and `overdriveLevelFrame` adds a lower output safety `softClipK`.
+  - Amp: `ampDriveMultiplyFrame`, `ampPreLowpassFrame`,
+    `ampToneProductsFrame` / `ampTrebleGain`, `ampPowerFrame`,
+    `ampResPresenceProductsFrame` / `ampResPresenceMixFrame`, and
+    `ampMasterFrame` were retuned to reduce painful high-end fizz and
+    keep MASTER / presence / treble from slamming later stages.
+  - Cab: `cabCoeff` was rebuilt again so model 0 / 1 / 2 are more
+    clearly separated. Model 2 is now the darkest 4x12-style setting
+    for DS-1 / RAT / Big Muff / Fuzz / Metal. `cabLevelMixFrame`
+    keeps the existing timing-friendly `softClip`; a lower
+    `softClipK 3_400_000` trial was rejected after timing slipped too
+    far.
+- `audio_lab_pynq/effect_presets.py`:
+  - DS-1 Crunch now leans on Cab model 2 with capped `air`.
+  - Safe Bypass remains all-off, Compressor makeup stays in 45..60,
+    and Distortion levels stay <= 35.
+- `tests/test_overlay_controls.py`:
+  - Added Overdrive enable-word sanity coverage and high-gain Cab
+    model-2 safety coverage for the chain presets.
+- `scripts/analyze_effect_recordings.py`:
+  - Added a lightweight WAV analysis script that regenerates the nine
+    comparison views used for this pass.
+- `hw/ip/clash/vhdl/LowPassFir/*` was regenerated and the Vivado IP
+  repackaged.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` was rebuilt and deployed.
+  Final routed timing: WNS = -8.731 ns, TNS = -13665.555 ns,
+  WHS = +0.051 ns, THS = 0.000 ns. This regresses WNS by 0.814 ns vs
+  the previous deployed Amp/Cab build's -7.917 ns, still inside the
+  accepted -6..-9 ns deploy band; hold remains clean.
+- PYNQ-Z2 deploy completed with
+  `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh`.
+  Smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`,
+  `R19_ADC_CONTROL = 0x23`, found both Compressor and Noise Suppressor
+  GPIOs, applied Overdrive and Compressor sanity settings, and applied
+  all chain presets.
+- The requested practical check sequence was applied on the board
+  (Safe Bypass, Basic Clean, Light Crunch, Overdrive standalone,
+  Compressor standalone, Tube Screamer Lead, DS-1 Crunch, RAT Rhythm,
+  Big Muff Sustain, Vintage Fuzz, Metal Tight, Ambient Clean). The
+  terminal session can verify preset application, not subjective
+  loudspeaker / headphone listening.
+
+What did **not** change:
+
+- `hw/Pynq-Z2/block_design.tcl`.
+- `topEntity` port list.
+- GPIO names, addresses, or `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD`
+  meanings.
+- Python API method names or Notebook UI structure.
+- C++ DSP prototypes (`src/effects` remains removed).
+- Commercial amp / cabinet IR / pedal circuit constants or GPL code.
 
 ## Amp/Cab real-voicing pass (this branch, `feature/amp-cab-real-voicing`)
 
@@ -500,7 +577,9 @@ returns the section to zero.
 | Noise suppressor add | -7.111 ns | -7683.480 ns | Deployed. |
 | Compressor add | -7.516 ns | -8815.426 ns | Deployed. |
 | Real-pedal voicing pass | -6.405 ns | -8806.714 ns | Deployed. |
-| **Reserved-pedal implementation (current)** | **-7.535 ns** | -11297.604 ns | Deployed. WNS regresses 1.130 ns vs voicing-pass build, still inside the historical -7..-9 ns band. |
+| Reserved-pedal implementation | -7.535 ns | -11297.604 ns | Deployed. WNS regresses 1.130 ns vs voicing-pass build, still inside the historical -7..-9 ns band. |
+| Amp/Cab real-voicing pass | -7.917 ns | -13100.457 ns | Deployed. WNS regresses 0.382 ns vs reserved-pedal build; hold clean. |
+| **Audio-analysis voicing fixes (current)** | **-8.731 ns** | -13665.555 ns | Deployed. WNS regresses 0.814 ns vs Amp/Cab build; hold clean and still inside the accepted deploy band. |
 
 Hold timing is fine (`WHS = +0.051 ns`, `THS = 0.000 ns`). Setup is
 still slightly negative; not a regression versus the historical
@@ -553,9 +632,9 @@ Open work, in roughly priority order:
   seven pedals. That is exactly what regressed timing the first time;
   see `TIMING_AND_FPGA_NOTES.md`.
 - Do **not** deploy a bitstream whose WNS is significantly worse than
-  the current reserved-pedal-implementation build's WNS (-7.535 ns)
-  without flagging the regression
-  first.
+  the current audio-analysis voicing build's WNS (-8.731 ns) without
+  flagging the regression first. A -15 ns-class result remains a hard
+  reject.
 - Do **not** revive the legacy `gateGainNext` / `gateFrame` registers
   in the active pipeline. The active gain stage is the noise
   suppressor (`nsApplyFrame`); the legacy helpers are kept as Haskell

@@ -107,7 +107,7 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 - tube_screamer: 入力 HPF を強化、drive max を ~9x → ~7x、asym knee を低めに、post LPF を全体に暗く
 - rat: hard clip floor を低くして高 DRIVE で荒く、post LPF / tone を全体に暗く
 - metal: TIGHT による低域 cut を強化、drive max を ~22x → ~19x、post LPF を全体に暗く
-- Compressor: 軽い soft-knee オフセット (`threshold - threshold/4`) と reduction slope を半分 (`>> 12`)
+- Compressor: 軽い soft-knee オフセットと reduction slope 調整で、アタックを潰しすぎずに粒を揃える
 - Noise Suppressor: 閾値付近のヒステリシス (`closeT = threshold - threshold/4`) でチャタリング抑制
 - Cab IR: 4-tap IR の係数 c0 を下げ c1/c2 を上げて高域を抑制 (line direct fizz が減る)
 - Reverb: tone byte をスケール (`tone - tone/8`) して TONE=100 でも高域 damping を残す
@@ -125,6 +125,30 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 - Cab model 2: 4x12 closed back style。遅延 tap 側を厚くし、Metal / Big Muff / Fuzz Face の line-direct fizz を最も強く抑えます。
 - `air` は高域の戻し量として扱いますが、direct tap の戻りは capped なので `air=100` でも raw line には戻りません。
 - Chain Presets は Basic Clean / Clean Sustain / Light Crunch に model 0 を薄く使い、Metal / Big Muff / Fuzz 系は model 2 寄りに調整しています。
+
+### Recording-analysis voicing fixes (deployed)
+
+録音解析で見えた AmpSim / Cabinet / Overdrive / Compressor の差分に
+基づき、既存 `LowPassFir.hs` stage だけを再調整しました。新規 GPIO /
+`topEntity` port / `block_design.tcl` 変更はありません。解析メモは
+[`docs/ai_context/AUDIO_RECORDING_ANALYSIS.md`](docs/ai_context/AUDIO_RECORDING_ANALYSIS.md)
+にあります。
+
+- AmpSim: input gain ceiling をさらに下げ、pre-LPF / treble /
+  presence / master safety を高域が痛くなりにくい方向へ調整。
+- Cabinet: 4-tap `cabCoeff` を再調整し、model 0/1/2 の差を明確化。
+  model 2 は DS-1 / Metal / Big Muff / Fuzz 後段向けに 5 kHz 以上の
+  fizz を最も強く抑えます。
+- Overdrive: drive mapping と asymmetric clip knee を見直し、Drive
+  30..50 でもBypassとの差が出る軽いクランチへ寄せました。
+- Compressor: effective threshold / soft knee / reduction slope /
+  response を、既存プリセットで軽く効きが見える方向へ調整。makeup
+  45..60 の安全契約は維持しています。
+- Preset: DS-1 Crunch は Cab model 2 / capped air に寄せています。
+- Build/deploy: bit/hwh を再生成して PYNQ-Z2 へ deploy 済みです。
+  timing は `WNS = -8.731 ns` / `TNS = -13665.555 ns` /
+  `WHS = +0.051 ns` / `THS = 0.000 ns`。ADC HPF default-on
+  (`R19_ADC_CONTROL = 0x23`) も smoke test で確認済みです。
 
 ### 予約ペダルの実装 (deployed)
 
@@ -431,7 +455,7 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (reserved-pedal implementation 版) は `WNS = -7.535 ns` / `TNS = -11297.604 ns` / `WHS = +0.051 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (audio-analysis voicing fixes 版) は `WNS = -8.731 ns` / `TNS = -13665.555 ns` / `WHS = +0.051 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。

@@ -423,50 +423,68 @@ not get removed even when superseded — they get updated.
   bitstream rebuild needed. Reserved pedals stay selectable so the
   UI does not change shape when those Clash stages land later.
 
-## D17 — Amp/Cab real-voicing pass tunes the existing post-pedal stages
+## D17 — Audio-analysis-driven voicing fixes tune existing stages only
 
-- **Decision.** The Amp Simulator and Cab IR can be moved closer to a
-  generic guitar amp / cabinet response by editing constants and clip
-  helper choices inside the existing `LowPassFir.hs` stages. This pass
-  does not add a new GPIO, a new `topEntity` port, a new register stage,
-  or a `block_design.tcl` change.
+- **Decision.** Recording-analysis-driven voicing fixes are implemented by
+  retuning constants, coefficient tables, and clip-helper knees inside
+  existing `LowPassFir.hs` stages. They must not add a new GPIO, a new
+  `topEntity` port, a new `block_design.tcl` change, or a new selector
+  topology.
 - **Why.**
-  - The existing `axi_gpio_amp`, `axi_gpio_amp_tone`, and
-    `axi_gpio_cab` controls already expose the required musical axes:
-    input gain / master / presence / resonance / BMT / character and
-    cab mix / level / model / air. Reusing them preserves the Python API
+  - The recording analysis in `AUDIO_RECORDING_ANALYSIS.md` showed four
+    actionable gaps: AmpSim had too much >5 kHz fizz, Cabinet roll-off
+    was correct but still too weak for high-gain pedals, Overdrive was
+    nearly indistinguishable from Bypass, and Compressor crest factor was
+    almost unchanged.
+  - The existing controls already expose the needed musical axes:
+    Overdrive drive/tone/level, Compressor threshold/ratio/response/makeup,
+    Amp input gain / master / presence / resonance / BMT / character, and
+    Cab mix / level / model / air. Reusing them preserves the Python API
     and Notebook UI.
-  - The main audible problem after the seven distortion pedals landed
-    was post-pedal line-direct character: high fizz, low-end bloom, and
-    weak model separation. These can be improved with coefficient and
-    safety-knee changes rather than a heavy IR loader or new topology.
-  - A long cabinet IR or extra filtering stage would spend timing and
-    resources on a design that already runs with negative setup slack.
-- **What changed.**
-  - Amp input HPF tightened (`253/256` feedback), input gain ceiling
-    reduced (~31x -> ~21x), clip knees lowered, pre-LPF darkened,
-    presence/resonance internally capped, and power/master safety
-    clipping moved to lower `softClipK` knees.
-  - Cab remains the existing 4-tap FIR. The coefficient table now has
-    clearer model intent: model 0 = 1x12 open back, model 1 = 2x12
-    combo, model 2 = 4x12 closed back. `air` restores only capped
-    direct-tap content.
-  - Chain presets were retuned only numerically: clean/crunch presets
-    use model 0 or 1, and Metal / Big Muff / Fuzz lean on model 2.
+  - The design already runs with negative setup slack. A long cabinet IR,
+    a new amp model selector, extra dB/log-domain processing, or a new
+    GPIO would reopen timing and integration risk for a voicing problem.
+- **What changed in the analysis pass.**
+  - Amp: input gain ceiling trimmed again, post-clip pre-LPF darkened,
+    treble and presence contribution capped harder, resonance/presence /
+    power/master safety `softClipK` knees moved earlier.
+  - Cab: the existing 4-tap coefficient table was rebuilt again with
+    stronger model separation. Model 0 remains a lighter 1x12 open-back
+    style, model 1 a balanced 2x12 combo style, and model 2 the darkest
+    4x12 closed-back style for DS-1 / Metal / Big Muff / Fuzz.
+  - Overdrive: drive mapping increased moderately, asymmetric clip knees
+    lowered, and level output wrapped in a lower `softClipK` safety.
+  - Compressor: effective threshold lowered, soft knee widened, reduction
+    slope increased modestly, and response smoothing made more reactive.
+  - Chain preset retune was numeric only: DS-1 Crunch now leans on Cab
+    model 2 with capped air. Safe Bypass and safety caps are unchanged.
+  - The deployed build kept `cabLevelMixFrame` on the existing
+    timing-friendly `softClip`; a lower `softClipK 3_400_000` trial
+    reached WNS = -9.891 ns and was not deployed.
+  - Final deployed timing was WNS = -8.731 ns, TNS = -13665.555 ns,
+    WHS = +0.051 ns, THS = 0.000 ns.
 - **Trade-offs not taken.**
-  - **No** commercial amp circuit constants, commercial cabinet IRs, or
-    schematic-derived coefficient tables were copied.
+  - **No** commercial amp circuit constants, commercial cabinet IRs,
+    pedal circuit coefficient tables, or schematic-derived coefficients
+    were copied.
   - **No** GPL DSP code was moved into this WTFPL project.
-  - **No** long FIR / convolution IR loader, dB/log math, new amp model
-    selector, or new AXI GPIO was added.
+  - **No** long FIR / convolution IR loader, dB/log math, lookahead,
+    multiband compressor, amp model selector, new AXI GPIO, or revived
+    C++ DSP prototype was added.
 - **How to apply.**
-  - Future Amp/Cab voicing changes should stay in
-    `amp*Frame`, `ampAsymClip`, `cabCoeff`, `cabProductsFrame`,
-    `cabIrFrame`, and `cabLevelMixFrame` unless the user explicitly
-    approves a new topology.
-  - Preserve `axi_gpio_cab.ctrlA/B/C/D = mix/level/model/air` and
-    `axi_gpio_amp` / `axi_gpio_amp_tone` byte meanings from
-    `GPIO_CONTROL_MAP.md`.
-  - After any `LowPassFir.hs` Amp/Cab change: regenerate VHDL, repackage
+  - Future voicing work should follow the loop: record -> analyze ->
+    make the smallest existing-stage DSP change -> rebuild -> redeploy
+    -> re-record / listen.
+  - Keep Amp/Cab changes in `amp*Frame`, `ampAsymClip`, `cabCoeff`,
+    `cabProductsFrame`, `cabIrFrame`, and `cabLevelMixFrame` unless the
+    user explicitly approves a new topology.
+  - Keep Overdrive changes in `overdriveDriveMultiplyFrame`,
+    `overdriveDriveBoostFrame`, `overdriveDriveClipFrame`,
+    `overdriveToneFrame` / tone blend, and `overdriveLevelFrame`.
+  - Keep Compressor changes in `compThresholdSample`, `compTargetGain`,
+    `compGainNext`, `compMakeupFrame`, and the existing compressor block.
+  - Preserve every GPIO name, address, and `ctrlA` / `ctrlB` / `ctrlC` /
+    `ctrlD` meaning from `GPIO_CONTROL_MAP.md`.
+  - After any `LowPassFir.hs` voicing change: regenerate VHDL, repackage
     IP, rebuild bit/hwh, check timing, deploy only if WNS remains in the
     accepted band and WHS/THS stay clean, then smoke-test chain presets.

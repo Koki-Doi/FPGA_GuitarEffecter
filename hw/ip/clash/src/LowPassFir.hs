@@ -550,10 +550,14 @@ compMakeupU7 c = compEnableMakeupByte c .&. 0x7F
 compOn :: Frame -> Bool
 compOn f = compEnabled (fComp f)
 
--- Same scaling as gateThreshold / nsThreshold so the byte range maps
--- to the same envelope-compare level the noise suppressor already uses.
+-- Same scaling family as gateThreshold / nsThreshold, but the recording-
+-- analysis pass lowers the effective compare point slightly so the
+-- existing light presets actually enter gain reduction on guitar-level
+-- material instead of tracking almost like bypass.
 compThresholdSample :: Ctrl -> Sample
-compThresholdSample c = resize (asSigned9 (compThresholdByte c)) `shiftL` 13
+compThresholdSample c = base - (base `shiftR` 3)
+ where
+  base = resize (asSigned9 (compThresholdByte c)) `shiftL` 13
 
 -- Constant Sample equivalents of gateUnity, used to clamp the reduction
 -- term before converting to GateGain. Kept as named constants to make
@@ -585,7 +589,8 @@ compEnvNext env (Just f)
   responseByte = compResponseByte (fComp f)
   envStep = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
   responseStep =
-    let raw = ((255 :: Unsigned 8) - responseByte) `shiftR` 4
+    let distance = (255 :: Unsigned 8) - responseByte
+        raw = (distance `shiftR` 4) + (distance `shiftR` 6)
     in if raw == 0 then 1 else resize (asSigned9 raw) :: Sample
   releaseStep = responseStep + envStep
 
@@ -594,16 +599,18 @@ compEnvNext env (Just f)
 -- linearly with the excess and the ratio. ratio=0 -> almost no
 -- compression; ratio=255 -> strong reduction.
 --
--- Real-pedal voicing pass: introduces a small soft-knee offset and a
+-- Real-pedal voicing pass: introduced a small soft-knee offset and a
 -- gentler per-dB reduction slope so the engagement is more gradual.
+-- Recording analysis then showed the live presets barely changed crest
+-- factor, so this widens the knee and adds a modest amount of reduction
+-- slope back without returning to the abrupt hard-knee feel.
 --
---   * softThreshold = threshold - (threshold >> 4) -- ~6% below the
---     user threshold, so engagement starts a few percent earlier
+--   * softThreshold = threshold - (threshold >> 3) -- ~12% below the
+--     user threshold, so engagement starts earlier
 --     instead of as a brick wall at exactly threshold.
---   * excessShifted = excess >> 12 (was >> 11) -- halves the
---     reduction slope per unit of excess. Combined with the ratio
---     byte the user-facing "ratio" still goes up to limiter feel,
---     but the ramp into compression is smoother.
+--   * excessShifted = (excess >> 12) + (excess >> 14), about 1.25x the
+--     previous reduction slope. Combined with the ratio byte this is
+--     audible at ratio=25..45 while still avoiding over-compression.
 compTargetGain :: Frame -> Sample -> GateGain
 compTargetGain f env
   | not (compOn f)         = gateUnity
@@ -612,9 +619,9 @@ compTargetGain f env
   | otherwise              = gateUnity - reduction
  where
   threshold      = compThresholdSample (fComp f)
-  softThreshold  = threshold - (threshold `shiftR` 4)
+  softThreshold  = threshold - (threshold `shiftR` 3)
   excess         = env - softThreshold
-  excessShifted  = excess `shiftR` 12
+  excessShifted  = (excess `shiftR` 12) + (excess `shiftR` 14)
   excessClamped
     | excessShifted < 0           = 0 :: Sample
     | excessShifted > unitySample = unitySample
@@ -645,7 +652,8 @@ compGainNext gain env (Just f)
  where
   target = compTargetGain f env
   responseByte = compResponseByte (fComp f)
-  raw = ((255 :: Unsigned 8) - responseByte) `shiftR` 3
+  responseDistance = (255 :: Unsigned 8) - responseByte
+  raw = (responseDistance `shiftR` 3) + (responseDistance `shiftR` 5)
   step = if raw == 0 then 1 else resize raw :: GateGain
 
 -- Stage 4 apply: one register stage of multiply + saturating shift.
@@ -676,7 +684,11 @@ overdriveDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (fL f) driveGain else 0, fAccR = if on then mulU12 (fR f) driveGain else 0}
  where
   on = flag1 (fGate f)
-  driveGain = resize (256 + (resize (ctrlC (fOd f)) * 4 :: Unsigned 10)) :: Unsigned 12
+  -- Recording analysis showed the standalone Overdrive was too close to
+  -- bypass at normal guitar levels. Raise the Q8 drive ceiling from ~5x
+  -- to ~6x so DRIVE 30..50 reaches the clip knee, while the level stage
+  -- below keeps output jumps controlled.
+  driveGain = resize (256 + (resize (ctrlC (fOd f)) * 5 :: Unsigned 11)) :: Unsigned 12
 
 overdriveDriveBoostFrame :: Frame -> Frame
 overdriveDriveBoostFrame f =
@@ -694,8 +706,8 @@ overdriveDriveClipFrame f =
   f{fL = if on then asymSoftClip kneeP kneeN (fWetL f) else fL f, fR = if on then asymSoftClip kneeP kneeN (fWetR f) else fR f}
  where
   on = flag1 (fGate f)
-  kneeP = 3_300_000 :: Sample
-  kneeN = 2_900_000 :: Sample
+  kneeP = 2_700_000 :: Sample
+  kneeN = 2_300_000 :: Sample
 
 overdriveToneMultiplyFrame :: Sample -> Sample -> Frame -> Frame
 overdriveToneMultiplyFrame prevL prevR f =
@@ -727,8 +739,9 @@ overdriveLevelFrame f =
  where
   on = flag1 (fGate f)
   level = ctrlB (fOd f)
-  left = satShift7 (mulU8 (fWetL f) level)
-  right = satShift7 (mulU8 (fWetR f) level)
+  left = softClipK safetyKnee (satShift7 (mulU8 (fWetL f) level))
+  right = softClipK safetyKnee (satShift7 (mulU8 (fWetR f) level))
+  safetyKnee = 3_200_000 :: Sample
 
 -- ---- Legacy distortion stage -----------------------------------------
 -- Restored to its pre-refactor shape so the existing
@@ -1308,9 +1321,10 @@ ampDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (fWetL f) gain else 0, fAccR = if on then mulU12 (fWetR f) gain else 0}
  where
   on = flag6 (fGate f)
-  -- 1.0x to about 21x using Q7-style post shift. The real-voicing pass
-  -- keeps the amp from re-squaring already-hot pedal outputs.
-  gain = resize (128 + (resize (ctrlA (fAmp f)) * 10 :: Unsigned 12)) :: Unsigned 12
+  -- 1.0x to about 19x using Q7-style post shift. The recording-analysis
+  -- pass trims the ceiling again so Amp-only and post-pedal use do not
+  -- create line-direct fizz before the cabinet stage.
+  gain = resize (128 + (resize (ctrlA (fAmp f)) * 9 :: Unsigned 12)) :: Unsigned 12
 
 ampDriveBoostFrame :: Frame -> Frame
 ampDriveBoostFrame f =
@@ -1341,8 +1355,9 @@ ampPreLowpassFrame prevL prevR f =
   f{fWetL = if on then onePoleU8 alpha prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 alpha prevR (fWetR f) else fR f}
  where
   on = flag6 (fGate f)
-  -- Higher character keeps more edge; lower character smooths more.
-  alpha = 144 + (ctrlD (fAmpTone f) `shiftR` 2)
+  -- Higher character keeps edge, but the maximum alpha is capped lower
+  -- than the previous voicing so high-gain settings shed more >5 kHz fizz.
+  alpha = 128 + (ctrlD (fAmpTone f) `shiftR` 2)
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
 ampSecondStageMultiplyFrame f =
@@ -1387,6 +1402,9 @@ ampToneBandFrame f =
 ampToneGain :: Unsigned 8 -> Unsigned 8
 ampToneGain x = 64 + (x `shiftR` 1)
 
+ampTrebleGain :: Unsigned 8 -> Unsigned 8
+ampTrebleGain x = 64 + ((x - (x `shiftR` 3)) `shiftR` 1)
+
 ampToneProductsFrame :: Frame -> Frame
 ampToneProductsFrame f =
   f
@@ -1394,8 +1412,8 @@ ampToneProductsFrame f =
     , fAccR = if on then mulU8 (fEqLowR f) (ampToneGain (ctrlA (fAmpTone f))) else 0
     , fAcc2L = if on then mulU8 (fEqMidL f) (ampToneGain (ctrlB (fAmpTone f))) else 0
     , fAcc2R = if on then mulU8 (fEqMidR f) (ampToneGain (ctrlB (fAmpTone f))) else 0
-    , fAcc3L = if on then mulU8 (fEqHighL f) (ampToneGain (ctrlC (fAmpTone f))) else 0
-    , fAcc3R = if on then mulU8 (fEqHighR f) (ampToneGain (ctrlC (fAmpTone f))) else 0
+    , fAcc3L = if on then mulU8 (fEqHighL f) (ampTrebleGain (ctrlC (fAmpTone f))) else 0
+    , fAcc3R = if on then mulU8 (fEqHighR f) (ampTrebleGain (ctrlC (fAmpTone f))) else 0
     }
  where
   on = flag6 (fGate f)
@@ -1410,7 +1428,7 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  f{fWetL = if on then softClipK 3_700_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_700_000 (fWetR f) else fR f}
+  f{fWetL = if on then softClipK 3_500_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_500_000 (fWetR f) else fR f}
  where
   on = flag6 (fGate f)
 
@@ -1433,7 +1451,7 @@ ampResPresenceFilterFrame prevResL prevResR prevPresenceL prevPresenceR f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  f{fWetL = if on then softClipK 3_700_000 wetL else fL f, fWetR = if on then softClipK 3_700_000 wetR else fR f}
+  f{fWetL = if on then softClipK 3_500_000 wetL else fL f, fWetR = if on then softClipK 3_500_000 wetR else fR f}
  where
   on = flag6 (fGate f)
   wetL = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
@@ -1453,8 +1471,8 @@ ampResPresenceProductsFrame f =
     }
  where
   on = flag6 (fGate f)
-  resonance = ctrlD (fAmp f) - (ctrlD (fAmp f) `shiftR` 3)
-  presence = ctrlC (fAmp f) - (ctrlC (fAmp f) `shiftR` 2)
+  resonance = ctrlD (fAmp f) - (ctrlD (fAmp f) `shiftR` 2)
+  presence = ctrlC (fAmp f) - (ctrlC (fAmp f) `shiftR` 2) - (ctrlC (fAmp f) `shiftR` 3)
   highL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
   highR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
 
@@ -1470,15 +1488,15 @@ ampMasterFrame f =
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  left = softClipK 3_600_000 (satShift7 (mulU8 (fWetL f) level))
-  right = softClipK 3_600_000 (satShift7 (mulU8 (fWetR f) level))
+  left = softClipK 3_300_000 (satShift7 (mulU8 (fWetL f) level))
+  right = softClipK 3_300_000 (satShift7 (mulU8 (fWetR f) level))
 
 cabCoeff :: Unsigned 8 -> Unsigned 8 -> Unsigned 2 -> Signed 10
--- Amp/Cab real-voicing pass: keep the existing 4-tap cabinet stage but
--- make the three models more distinct. Model 0 is lighter and more
--- open, model 1 is the balanced combo, and model 2 carries more delayed
--- body taps so high-gain fizz is damped hardest. AIR only restores a
--- capped amount of direct-tap content; it never becomes a raw line feed.
+-- Audio-analysis voicing pass: keep the existing 4-tap cabinet stage
+-- but make model separation and >5 kHz roll-off stronger. Model 0 is
+-- lighter/open-back, model 1 is the balanced combo, and model 2 pushes
+-- weight into delayed taps so high-gain fizz is damped hardest. AIR
+-- restores only capped direct-tap content; it never becomes raw line.
 cabCoeff model air index =
   case modelSel of
     0 -> openBack index
@@ -1491,54 +1509,54 @@ cabCoeff model air index =
   openBack i =
     case airSel of
       0 -> case i of
-        0 -> 78
-        1 -> 84
-        2 -> 54
-        _ -> 10
+        0 -> 70
+        1 -> 86
+        2 -> 58
+        _ -> 14
       1 -> case i of
-        0 -> 86
-        1 -> 80
-        2 -> 50
-        _ -> 8
+        0 -> 78
+        1 -> 82
+        2 -> 54
+        _ -> 12
       _ -> case i of
-        0 -> 94
-        1 -> 74
-        2 -> 44
-        _ -> 6
+        0 -> 86
+        1 -> 78
+        2 -> 48
+        _ -> 8
   british i =
     case airSel of
       0 -> case i of
-        0 -> 70
+        0 -> 62
         1 -> 86
-        2 -> 72
-        _ -> 28
+        2 -> 78
+        _ -> 34
       1 -> case i of
-        0 -> 78
+        0 -> 68
         1 -> 84
-        2 -> 66
-        _ -> 20
+        2 -> 74
+        _ -> 30
       _ -> case i of
-        0 -> 84
-        1 -> 80
-        2 -> 60
-        _ -> 16
+        0 -> 74
+        1 -> 82
+        2 -> 68
+        _ -> 24
   closedBack i =
     case airSel of
       0 -> case i of
-        0 -> 58
+        0 -> 44
         1 -> 78
-        2 -> 88
-        _ -> 64
+        2 -> 96
+        _ -> 82
       1 -> case i of
-        0 -> 64
-        1 -> 80
-        2 -> 84
-        _ -> 52
+        0 -> 50
+        1 -> 82
+        2 -> 94
+        _ -> 70
       _ -> case i of
-        0 -> 68
-        1 -> 84
-        2 -> 78
-        _ -> 40
+        0 -> 56
+        1 -> 86
+        2 -> 90
+        _ -> 60
 
 cabProductsFrame ::
   Sample -> Sample -> Sample ->

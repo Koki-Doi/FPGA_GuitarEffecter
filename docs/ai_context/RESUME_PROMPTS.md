@@ -70,13 +70,34 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -7.917 ns (Amp/Cab real-voicing pass
+> 現状 deploy 済の WNS = -8.731 ns (audio-analysis voicing fixes
 > ビルド) はベースライン同等で、運用上は動いていますが厳密には
 > まだ負です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
 > 残った深い組合せブロックを register で分け、必要なら cab タップ
 > や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
 > 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
 > (`TIMING_AND_FPGA_NOTES.md` 参照)。
+
+## Audio-analysis voicing fixes — deployed
+
+> 録音解析に基づく voicing fixes は
+> `feature/audio-analysis-voicing-fixes` で実装済み・deploy 済みです。
+> 新エフェクト追加ではなく、`LowPassFir.hs` の既存 stage だけを調整
+> しています。主な変更は Compressor (`compThresholdSample`,
+> `compEnvNext`, `compTargetGain`, `compGainNext`)、Overdrive
+> (`overdriveDriveMultiplyFrame`, `overdriveDriveClipFrame`,
+> `overdriveLevelFrame`)、Amp (`ampDriveMultiplyFrame`,
+> `ampPreLowpassFrame`, `ampToneProductsFrame` / `ampTrebleGain`,
+> `ampPowerFrame`, `ampResPresenceProductsFrame` /
+> `ampResPresenceMixFrame`, `ampMasterFrame`)、Cab (`cabCoeff`)。
+> `cabLevelMixFrame` は timing のため既存 `softClip` のままです。
+> DS-1 Crunch preset は Cab model 2 / capped air に寄せました。
+> 新規 GPIO / `topEntity` port / `block_design.tcl` 変更なし、Python API
+> / Notebook UI 変更なし。bit/hwh rebuild と PYNQ deploy 済み。
+> timing は WNS=-8.731 ns、TNS=-13665.555 ns、WHS=+0.051 ns、
+> THS=0.000 ns。ADC HPF=True / `R19_ADC_CONTROL=0x23`、preset smoke
+> test pass。商用 IR / 回路 / GPL DSP コードはコピーしていません。
+> 根拠は `AUDIO_RECORDING_ANALYSIS.md`、決定は `DECISIONS.md` D17。
 
 ## Noise Suppressor work — branch in progress / shipped
 
@@ -210,7 +231,7 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。Vivado 実装で WNS が現行 deploy(-7.801 ns)より明らかに
+> してください。Vivado 実装で WNS が現行 deploy(-8.731 ns)より明らかに
 > 悪い bitstream は deploy しないでください。
 
 ## Codec / input debug
