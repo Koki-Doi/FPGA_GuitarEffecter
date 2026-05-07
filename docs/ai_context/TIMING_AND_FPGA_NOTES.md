@@ -25,8 +25,9 @@
 | **Amp Simulator named models (May 7, deployed)** | **-8.122 ns** | -13519.447 ns | Adds the `ampModelSel :: Unsigned 8 -> Unsigned 2` quantiser and a per-band darken (`0/2/8/16`) on `ampPreLowpassFrame`'s alpha. No new register stage, no new GPIO, no `topEntity` port change, no `Frame` field change. WNS improves 0.609 ns vs the audio-analysis build (`-8.731 ns -> -8.122 ns`); the cheaper alpha computation happens to route slightly better than the previous unbiased path. Hold stays clean (`WHS = +0.051 ns`, `THS = 0.000 ns`). |
 | **Amp/Cab real-voicing pass (May 7, deployed)** | **-7.917 ns** | -13100.457 ns | Retunes only existing Amp/Cab stages: amp HPF/gain/clip/presence/resonance/master constants and the 4-tap `cabCoeff` model table. No new GPIO, no new `topEntity` port, no `block_design.tcl` change, no new register stage. WNS regresses by 0.382 ns vs the reserved-pedal build (`-7.535 ns -> -7.917 ns`), still inside the historical -7..-9 ns deploy band and far from the rejected -15 ns mux failure. Hold remains clean (`WHS = +0.051 ns`, `THS = 0.000 ns`). |
 | **Audio-analysis voicing fixes (May 7, deployed)** | **-8.731 ns** | -13665.555 ns | Retunes only existing Compressor / Overdrive / Amp / Cab stages from the recording analysis in `AUDIO_RECORDING_ANALYSIS.md`: compressor threshold/knee/response constants, Overdrive drive/clip/safety constants, Amp treble/presence/LPF/safety constants, and the 4-tap `cabCoeff` table. No new GPIO, no new `topEntity` port, no `block_design.tcl` change, no new register stage. A trial Cab post-mix `softClipK 3_400_000` build reached WNS = -9.891 ns and was **not** deployed; the final deployed build keeps `cabLevelMixFrame` on the existing `softClip`. WNS regresses by 0.814 ns vs the Amp/Cab build (`-7.917 ns -> -8.731 ns`), still inside the accepted deploy band. Hold remains clean (`WHS = +0.051 ns`, `THS = 0.000 ns`). |
+| **Amp Simulator fizz-control pass (May 8, deployed)** | **-8.022 ns** | -13937.512 ns | Retunes only existing Amp Simulator stages to reduce high-frequency fizz: `ampPreLowpassFrame` model darken becomes `0/4/12/24`, `ampTrebleGain` becomes character-aware with a small model trim, `ampResPresenceProductsFrame` adds model-dependent presence trim, and `ampPowerFrame` / `ampResPresenceMixFrame` safety knees move from `3_500_000` to `3_400_000`. No new GPIO, no new `topEntity` port, no `block_design.tcl` change, no new register stage, no Delay implementation. WNS improves by 0.709 ns vs the audio-analysis build (`-8.731 ns -> -8.022 ns`); hold remains clean (`WHS = +0.052 ns`, `THS = 0.000 ns`). Utilization after place: Slice LUTs 21809 (40.99%), Slice Registers 18675 (17.55%), Block RAM Tile 7 (5.00%), DSPs 158 (71.82%). |
 
-WHS = +0.051 ns / THS = 0.000 ns on the deployed build, so hold is
+WHS = +0.052 ns / THS = 0.000 ns on the deployed build, so hold is
 clean. WNS is still slightly negative; treat any further timing
 slip as a regression.
 
@@ -66,8 +67,8 @@ clock window, pushing WNS from −7.7 ns to −15.1 ns.
 A bitstream may be deployed only if the Vivado run prints
 `write_bitstream completed successfully` **and** the final WNS is no
 worse than the previous deployed build by an audibly meaningful
-margin (latest deployed build: -8.731 ns from the audio-analysis
-voicing fixes pass). If timing
+margin (latest deployed build: -8.022 ns from the Amp Simulator
+fizz-control pass). If timing
 slips significantly, the change must be revisited (more pipeline
 stages, simpler mux structure, or fewer features) before any deploy.
 

@@ -1,8 +1,75 @@
 # Current state
 
-Last updated: 2026-05-07 (amp simulator named-model voicings layered
-on top of the audio-analysis voicing fixes; Clash + Vivado bit/hwh
-rebuilt and deployed).
+Last updated: 2026-05-08 (Amp Simulator high-frequency fizz-control
+pass; Clash + Vivado bit/hwh rebuilt and deployed).
+
+## Amp Simulator fizz-control pass (this branch, `feature/amp-sim-fizz-control`)
+
+This pass targets **only** high-frequency fizz generated inside the
+Amp Simulator. It does not address input -> bypass tone differences,
+noise floor, codec/I2S/hardware routing, or capture-analysis tooling.
+It also does not touch Cab Sim topology, Compressor, Noise Suppressor,
+Reverb, Delay, Python API, Notebook UI, GPIO names/addresses, or
+`block_design.tcl`.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`:
+  - `ampPreLowpassFrame`: existing one-pole post-clip smoothing keeps
+    `baseAlpha = 128 + (charByte >> 2)` but increases the per-model
+    darken from `0 / 2 / 8 / 16` to `0 / 4 / 12 / 24`. `jc_clean`
+    stays bright; `high_gain_stack` is damped most strongly.
+  - `ampTrebleGain`: now takes the existing `amp_character` byte and
+    applies a small model-dependent cap. The base treble return is
+    reduced from roughly `64 + 7/16*T` to `64 + 13/32*T`, then trimmed
+    by `0 / 2 / 5 / 9` for the four amp bands so TREBLE=100 cannot
+    restore as much 8..16 kHz fizz.
+  - `ampResPresenceProductsFrame`: presence remains tied to the
+    existing `amp_presence` byte but gets extra model-dependent trim
+    of `0`, `presence>>5`, `presence>>4`, or `presence>>3`. This keeps
+    clean presence open while capping the high-gain presence return.
+  - `ampPowerFrame` and `ampResPresenceMixFrame`: safety `softClipK`
+    knee tightened from `3_500_000` to `3_400_000` to keep internal
+    gain spikes from leaking as broad high-frequency fizz.
+- `hw/ip/clash/vhdl/LowPassFir/*`: regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}`: rebuilt and deployed.
+
+Build/deploy status:
+
+- Local tests passed:
+  `python3 -m compileall audio_lab_pynq scripts`,
+  `python3 tests/test_overlay_controls.py`, and Notebook JSON checks
+  for `GuitarPedalboardOneCell.ipynb`, `GuitarEffectSwitcher.ipynb`,
+  and `DistortionModelsDebug.ipynb`.
+- Clash type check and VHDL generation passed. Vivado bitstream build
+  completed with `write_bitstream completed successfully`.
+- Final routed timing: WNS = -8.022 ns, TNS = -13937.512 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. This improves WNS by 0.709 ns vs
+  the previous deployed audio-analysis baseline (-8.731 ns). Hold
+  remains clean.
+- Utilization after place: Slice LUTs = 21809 (40.99%), Slice
+  Registers = 18675 (17.55%), Block RAM Tile = 7 (5.00%), DSPs = 158
+  (71.82%). No BRAM increase was introduced by this pass.
+- PYNQ-Z2 deploy completed with
+  `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh`.
+- PYNQ smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`
+  and `R19 = 0x23`, confirmed `has delay_line gpio: False` and
+  `has legacy axi_gpio_delay: True`, exercised all four amp models,
+  and applied Safe Bypass, Basic Clean, Tube Screamer Lead, RAT
+  Rhythm, DS-1 Crunch, Big Muff Sustain, Vintage Fuzz, Metal Tight,
+  and Ambient Clean.
+
+What did **not** change:
+
+- `hw/Pynq-Z2/block_design.tcl`, `topEntity` ports, `Frame` shape,
+  GPIO address map, Python API, Notebook UI, or chain preset structure.
+- Delay implementation from `feature/bram-delay-500ms` was not mixed
+  in; `axi_gpio_delay_line` is absent and legacy `axi_gpio_delay`
+  remains present.
+- Compressor / Noise Suppressor / Overdrive / Distortion Pedalboard /
+  Cab IR / EQ / Reverb voicings were not retuned in this pass.
+- No C++ DSP prototype, commercial amp circuit/IR/coefficients, GPL
+  code, analysis tool, or test-signal generator was added.
 
 ## Amp Simulator named models (this branch, `feature/audio-analysis-voicing-fixes`)
 

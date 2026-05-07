@@ -1376,7 +1376,9 @@ ampPreLowpassFrame prevL prevR f =
   -- Higher character keeps edge, but the maximum alpha is capped lower
   -- than the previous voicing so high-gain settings shed more >5 kHz fizz.
   baseAlpha = 128 + (charByte `shiftR` 2)
-  -- Per-amp-model extra darken on top of the audio-analysis pass.
+  -- Fizz-control pass: extend the per-model darken gently so clipped
+  -- high-gain voicings shed more 8..16 kHz content before the second
+  -- stage, while clean bands keep enough direct edge.
   -- Model 0 (JC Clean) keeps the brightest edge; model 3
   -- (High Gain Stack) rolls off the most so high-gain pedals into the
   -- amp do not produce the second brightening that the audio-analysis
@@ -1384,9 +1386,9 @@ ampPreLowpassFrame prevL prevR f =
   -- band (>=112) so the LPF never inverts.
   modelDarken = case ampModelSel charByte of
     0 ->  0 :: Unsigned 8
-    1 ->  2
-    2 ->  8
-    _ -> 16
+    1 ->  4
+    2 -> 12
+    _ -> 24
   alpha = baseAlpha - modelDarken
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
@@ -1432,8 +1434,17 @@ ampToneBandFrame f =
 ampToneGain :: Unsigned 8 -> Unsigned 8
 ampToneGain x = 64 + (x `shiftR` 1)
 
-ampTrebleGain :: Unsigned 8 -> Unsigned 8
-ampTrebleGain x = 64 + ((x - (x `shiftR` 3)) `shiftR` 1)
+ampTrebleGain :: Unsigned 8 -> Unsigned 8 -> Unsigned 8
+ampTrebleGain character x = base - modelTrim
+ where
+  -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
+  -- much raw 8..16 kHz fizz when TREBLE is near 100.
+  base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
+  modelTrim = case ampModelSel character of
+    0 -> 0 :: Unsigned 8
+    1 -> 2
+    2 -> 5
+    _ -> 9
 
 ampToneProductsFrame :: Frame -> Frame
 ampToneProductsFrame f =
@@ -1442,11 +1453,12 @@ ampToneProductsFrame f =
     , fAccR = if on then mulU8 (fEqLowR f) (ampToneGain (ctrlA (fAmpTone f))) else 0
     , fAcc2L = if on then mulU8 (fEqMidL f) (ampToneGain (ctrlB (fAmpTone f))) else 0
     , fAcc2R = if on then mulU8 (fEqMidR f) (ampToneGain (ctrlB (fAmpTone f))) else 0
-    , fAcc3L = if on then mulU8 (fEqHighL f) (ampTrebleGain (ctrlC (fAmpTone f))) else 0
-    , fAcc3R = if on then mulU8 (fEqHighR f) (ampTrebleGain (ctrlC (fAmpTone f))) else 0
+    , fAcc3L = if on then mulU8 (fEqHighL f) (ampTrebleGain character (ctrlC (fAmpTone f))) else 0
+    , fAcc3R = if on then mulU8 (fEqHighR f) (ampTrebleGain character (ctrlC (fAmpTone f))) else 0
     }
  where
   on = flag6 (fGate f)
+  character = ctrlD (fAmpTone f)
 
 ampToneMixFrame :: Frame -> Frame
 ampToneMixFrame f =
@@ -1458,7 +1470,7 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  f{fWetL = if on then softClipK 3_500_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_500_000 (fWetR f) else fR f}
+  f{fWetL = if on then softClipK 3_400_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_400_000 (fWetR f) else fR f}
  where
   on = flag6 (fGate f)
 
@@ -1481,7 +1493,7 @@ ampResPresenceFilterFrame prevResL prevResR prevPresenceL prevPresenceR f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  f{fWetL = if on then softClipK 3_500_000 wetL else fL f, fWetR = if on then softClipK 3_500_000 wetR else fR f}
+  f{fWetL = if on then softClipK 3_400_000 wetL else fL f, fWetR = if on then softClipK 3_400_000 wetR else fR f}
  where
   on = flag6 (fGate f)
   wetL = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
@@ -1502,7 +1514,15 @@ ampResPresenceProductsFrame f =
  where
   on = flag6 (fGate f)
   resonance = ctrlD (fAmp f) - (ctrlD (fAmp f) `shiftR` 2)
-  presence = ctrlC (fAmp f) - (ctrlC (fAmp f) `shiftR` 2) - (ctrlC (fAmp f) `shiftR` 3)
+  presence = basePresence - presenceTrim
+  presenceByte = ctrlC (fAmp f)
+  character = ctrlD (fAmpTone f)
+  basePresence = presenceByte - (presenceByte `shiftR` 2) - (presenceByte `shiftR` 3)
+  presenceTrim = case ampModelSel character of
+    0 -> 0 :: Unsigned 8
+    1 -> presenceByte `shiftR` 5
+    2 -> presenceByte `shiftR` 4
+    _ -> presenceByte `shiftR` 3
   highL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
   highR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
 

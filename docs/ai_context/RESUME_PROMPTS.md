@@ -84,9 +84,11 @@ asking it to re-discover the project from scratch.
 > `british_crunch` / `high_gain_stack`) を追加しました。新エフェクト
 > ではなく、既存 `amp_character` byte に意味付けする convenience レイヤ
 > です。`LowPassFir.hs` には `ampModelSel :: Unsigned 8 -> Unsigned 2`
-> ヘルパを追加し、`ampPreLowpassFrame` の baseAlpha (`128 + ch/2`) から
-> band 別に `0/2/8/16` を引いて高域を darken します (high-gain stack ほど
-> 強く)。他の amp ステージは既存連続カーブのまま。商用アンプ回路 /
+> ヘルパを追加し、`ampPreLowpassFrame` の baseAlpha (`128 + ch>>2`) から
+> band 別に高域を darken します。初回 named-model build は
+> `0/2/8/16` でしたが、後続の fizz-control pass で `0/4/12/24` に
+> 更新済みです (high-gain stack ほど強く)。他の amp ステージは既存連続
+> カーブのまま。商用アンプ回路 /
 > IR / 係数のコピーなし、GPL DSP コードのコピーなし。
 > Python: `audio_lab_pynq.effect_defaults.AMP_MODELS = {jc_clean: 10,
 > clean_combo: 35, british_crunch: 60, high_gain_stack: 85}`。
@@ -99,6 +101,31 @@ asking it to re-discover the project from scratch.
 > 8-way `model_select` / 巨大 case 構造には戻していません
 > (`DECISIONS.md` D6 / D18)。bit/hwh rebuild と PYNQ deploy 済み。
 > timing 結果は `TIMING_AND_FPGA_NOTES.md` を参照。
+
+## Amp Simulator fizz-control pass — deployed
+
+> Amp Simulator の高域 fizz 対策は `feature/amp-sim-fizz-control` で
+> 実装済み・deploy 済みです。対象は DSP 内部の Amp Sim 高域だけで、
+> 入力→バイパス差、codec/I2S/hardware 経路、ノイズ床、解析ツール、
+> test signal 生成、Cab Sim 大規模再設計は対象外です。
+> `LowPassFir.hs` では既存 Amp stage のみを retune:
+> `ampPreLowpassFrame` の per-model darken を `0/2/8/16` から
+> `0/4/12/24` へ、`ampTrebleGain character treble` で高域戻しを
+> model 別 trim (`0/2/5/9`) 付きに、`ampResPresenceProductsFrame` で
+> presence trim (`0`, `p>>5`, `p>>4`, `p>>3`) を追加、`ampPowerFrame` /
+> `ampResPresenceMixFrame` の `softClipK` knee を `3_500_000` から
+> `3_400_000` へ変更。新規 GPIO / `topEntity` port /
+> `block_design.tcl` 変更なし、Delay line 実装なし、
+> `axi_gpio_delay_line` なし、legacy `axi_gpio_delay` は維持。
+> Compressor / Noise Suppressor / Reverb / Delay / Distortion /
+> Overdrive / Cab IR は触っていません。
+> timing は WNS=-8.022 ns、TNS=-13937.512 ns、WHS=+0.052 ns、
+> THS=0.000 ns。前回 audio-analysis baseline WNS=-8.731 ns から
+> +0.709 ns 改善。PYNQ smoke test で ADC HPF=True / R19=0x23 /
+> delay_line gpio False / legacy axi_gpio_delay True / 4 amp model /
+> 指定 chain preset を確認済み。商用 amp 回路/IR/係数や GPL code は
+> コピーしていません。詳細は `DECISIONS.md` D20 と
+> `TIMING_AND_FPGA_NOTES.md` を参照。
 
 ## Audio-analysis voicing fixes — deployed
 

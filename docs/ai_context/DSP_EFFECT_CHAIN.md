@@ -237,21 +237,22 @@ register stages that each do one thing.
 
 Driven by the existing `axi_gpio_amp` and `axi_gpio_amp_tone` GPIOs:
 `input_gain` / `master` / `presence` / `resonance` plus B/M/T /
-`character`. Enable remains `gate_control.ctrlA` bit 6. The Amp/Cab and
-audio-analysis voicing passes changed constants inside the existing
-stages only; no register stage, GPIO, or `topEntity` port was added.
+`character`. Enable remains `gate_control.ctrlA` bit 6. The Amp/Cab,
+audio-analysis, named-model, and fizz-control passes changed constants
+inside the existing stages only; no register stage, GPIO, or
+`topEntity` port was added.
 
 | Stage | What it does |
 | --- | --- |
 | `ampHighpassFrame` | First-order HPF using the existing input/output state registers. Feedback coefficient is now `253/256`, a little tighter than the prior `254/256` path. |
 | `ampDriveMultiplyFrame` / `ampDriveBoostFrame` | Q7-style preamp gain. The ceiling is now ~19x rather than the prior ~21x so Amp-only and post-pedal use do not create as much line-direct fizz. |
 | `ampWaveshapeFrame` | Character-controlled asymmetric soft clip with lower hand-rolled knees. Higher `character` lowers the knees and increases asymmetry. |
-| `ampPreLowpassFrame` | One-pole post-clip smoothing. `baseAlpha = 128 + (character >> 2)` (range `128..191`) is biased down by `ampModelSel character` (`0/2/8/16` for the four amp model bands), so high-gain bands roll off slightly more than clean bands. The audio-analysis darken cap is preserved. |
-| `ampModelSel` (helper) | `Unsigned 8 -> Unsigned 2` quantiser that maps the `amp_character` byte into four bands matching the Python `AMP_MODELS` table (`jc_clean` 0..62, `clean_combo` 63..125, `british_crunch` 126..189, `high_gain_stack` 190..255). Consumed by `ampPreLowpassFrame` only (D18); other amp stages stay continuously controlled by the same byte. |
+| `ampPreLowpassFrame` | One-pole post-clip smoothing. `baseAlpha = 128 + (character >> 2)` (range `128..191`) is biased down by `ampModelSel character` (`0/4/12/24` for the four amp model bands), so high-gain bands shed more 8..16 kHz fizz while clean bands keep edge. The audio-analysis darken cap is preserved. |
+| `ampModelSel` (helper) | `Unsigned 8 -> Unsigned 2` quantiser that maps the `amp_character` byte into four bands matching the Python `AMP_MODELS` table (`jc_clean` 0..62, `clean_combo` 63..125, `british_crunch` 126..189, `high_gain_stack` 190..255). Consumed only by cheap per-band caps in Amp stages; it is not a wide model mux. |
 | `ampSecondStageMultiplyFrame` / `ampSecondStageFrame` | Second gain/clip stage. Gain now depends more on `character` and less on raw input gain. |
-| `ampToneFilterFrame` -> `ampToneMixFrame` | Existing three-band B/M/T tone-stack approximation. Treble uses `ampTrebleGain`, an internally capped version of `ampToneGain`, so treble at 100 no longer restores as much >5 kHz energy. |
-| `ampPowerFrame` | `softClipK 3_500_000` power-stage safety instead of the wider default `softClip`. |
-| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance and presence are internally capped harder (`resonance * 3/4`, `presence * 5/8`) and mixed through `softClipK 3_500_000`. |
+| `ampToneFilterFrame` -> `ampToneMixFrame` | Existing three-band B/M/T tone-stack approximation. Treble uses `ampTrebleGain character treble`, an internally capped and model-trimmed high-band gain, so treble at 100 keeps 2..4 kHz bite without restoring as much 8..16 kHz fizz. |
+| `ampPowerFrame` | `softClipK 3_400_000` power-stage safety instead of the wider default `softClip`. |
+| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance remains internally capped (`resonance * 3/4`). Presence starts from `presence * 5/8` and subtracts a model-dependent trim (`0`, `presence>>5`, `presence>>4`, or `presence>>3`) before the mix, then runs through `softClipK 3_400_000`. |
 | `ampMasterFrame` | Master multiply followed by `softClipK 3_300_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
 
 ## Cab IR section
