@@ -160,3 +160,20 @@ python3 scripts/analyze_effect_recordings.py recordings_dir analysis_out
 The script uses simple optional decimation via `--analysis-sr` to keep long
 files manageable. Plot labels are English to avoid depending on Japanese font
 availability in headless matplotlib environments.
+
+## 2026-05-07 follow-up: Amp Simulator named models
+
+Re-listening to the same recordings showed that high-gain pedals into the
+amp produced a second top-end brightening at the `amp_character` settings
+that worked well for clean material. Splitting the character byte into four
+bands (one per named amp model) lets the post-clip pre-LPF darken slightly
+more for the higher-gain bands without making the `amp_character` knob
+discontinuous.
+
+Action: introduce an `ampModelSel :: Unsigned 8 -> Unsigned 2` quantiser in
+`LowPassFir.hs` and bias `ampPreLowpassFrame`'s alpha by `0 / 2 / 8 / 16`
+across the four bands. Add an `AMP_MODELS` table and `set_amp_model` /
+`get_amp_model_names` / `amp_model_to_character` convenience helpers in
+Python. No new GPIO, no `topEntity` port change, no `block_design.tcl`
+change. The existing audio-analysis darken cap on the post-clip pre-LPF is
+preserved; the model-specific darken sits on top. See `DECISIONS.md` D18.

@@ -1,9 +1,58 @@
 # Current state
 
-Last updated: 2026-05-07 (audio-analysis voicing fixes landed;
-Clash + Vivado bit/hwh rebuilt and deployed).
+Last updated: 2026-05-07 (amp simulator named-model voicings layered
+on top of the audio-analysis voicing fixes; Clash + Vivado bit/hwh
+rebuilt and deployed).
 
-## Audio-analysis voicing fixes (this branch, `feature/audio-analysis-voicing-fixes`)
+## Amp Simulator named models (this branch, `feature/audio-analysis-voicing-fixes`)
+
+Four named amp voicings (`jc_clean` / `clean_combo` / `british_crunch`
+/ `high_gain_stack`) were layered onto the existing
+`amp_character` knob. The Python side adds an
+`AMP_MODELS` table plus `get_amp_model_names`,
+`amp_model_to_character`, and `set_amp_model` convenience helpers; the
+numeric `amp_character` argument still works directly. The Clash side
+quantises the same character byte into a two-bit `ampModelSel` index
+and applies a small extra darken to the post-clip pre-LPF for the
+higher-gain bands so high-gain pedals into the amp do not produce a
+second brightening on top of the audio-analysis pass. **No new GPIO,
+no new `topEntity` port, no `block_design.tcl` change**, no `Frame`
+field added; only one cheap helper and one alpha bias.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`: new `ampModelSel :: Unsigned 8 ->
+  Unsigned 2` helper, and `ampPreLowpassFrame` subtracts a
+  per-model darken (0 / 2 / 8 / 16) from the existing
+  `baseAlpha = 128 + (charByte >> 2)`. Bands match the documented
+  Python ranges (character 0..24 / 25..49 / 50..74 / 75..100).
+- `audio_lab_pynq/effect_defaults.py`: `AMP_MODELS = {jc_clean: 10,
+  clean_combo: 35, british_crunch: 60, high_gain_stack: 85}`.
+- `audio_lab_pynq/AudioLabOverlay.py`: `AMP_MODELS` class attr,
+  `get_amp_model_names()`, `amp_model_to_character(name)`,
+  `set_amp_model(name, **overrides)` convenience method.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`: Amp
+  Model dropdown above the Character slider; selection writes the
+  matching centre value into the slider so the chain-preset/safe-
+  bypass logic stays untouched. Inline fallback `AMP_MODELS` mirrors
+  the package values byte-for-byte.
+- `tests/test_overlay_controls.py`: anchor / table-shape / mapping
+  / per-model byte-distinctness / overrides tests.
+- `hw/ip/clash/vhdl/LowPassFir/*`: regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}`: rebuilt; final routed
+  timing recorded in `TIMING_AND_FPGA_NOTES.md`.
+
+What did **not** change:
+
+- `block_design.tcl`, `topEntity` port list, `Frame` shape.
+- Existing `amp_character` API surface; the convenience helpers
+  share the same byte and write through `set_guitar_effects`.
+- The audio-analysis voicing fixes (the cap on the post-clip pre-LPF
+  is preserved; the model-specific darken sits on top).
+- Cab IR / Compressor / Overdrive / Distortion Pedalboard / EQ /
+  Reverb voicings (untouched in this pass).
+
+## Audio-analysis voicing fixes (prior arc on this branch)
 
 Recording analysis of Bypass / NoiseSuppressor / Compressor /
 Overdrive / DS-1 / AmpSim / Cabinet / Reverb showed four actionable

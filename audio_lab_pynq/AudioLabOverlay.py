@@ -10,6 +10,7 @@ from .effect_defaults import (
     DISTORTION_PEDALS_IMPLEMENTED as _DISTORTION_PEDALS_IMPLEMENTED,
     NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
     COMPRESSOR_DEFAULTS as _COMPRESSOR_DEFAULTS,
+    AMP_MODELS as _AMP_MODELS,
 )
 
 class XbarSource(Enum):
@@ -69,6 +70,16 @@ class AudioLabOverlay(Overlay):
     # Sits between the noise suppressor and the overdrive in the chain.
     COMPRESSOR_DEFAULTS = _COMPRESSOR_DEFAULTS
     COMPRESSOR_GPIO_NAME = 'axi_gpio_compressor'
+
+    # Amp Simulator named "models" — convenience labels that map onto
+    # the existing ``amp_character`` percent value. The Clash side
+    # quantises the same byte into a 2-bit ``ampModelSel`` index that
+    # darkens the post-clip pre-LPF a touch more for the higher-gain
+    # models so high-gain pedals into the amp do not produce the
+    # second brightening that the audio-analysis pass flagged.
+    # ``AMP_MODELS`` is a friendly mapping; the numeric
+    # ``amp_character`` knob still works directly.
+    AMP_MODELS = _AMP_MODELS
 
     def __init__(self, bitfile_name=None, **kwargs):
         # Generate default bitfile name
@@ -592,6 +603,56 @@ class AudioLabOverlay(Overlay):
             'has_gpio': hasattr(self, self.COMPRESSOR_GPIO_NAME),
             'implementation_status': 'threshold_ratio_response_makeup_fpga',
         }
+
+    # ---- Amp Simulator named models ------------------------------------
+    #
+    # The Amp Simulator section has one shared `amp_character` knob in
+    # the existing pedalboard API. ``AMP_MODELS`` defines four named
+    # voicings (jc_clean / clean_combo / british_crunch /
+    # high_gain_stack) that each correspond to one centre value of
+    # `amp_character`. The Clash side quantises the same byte into a
+    # two-bit ``ampModelSel`` index that nudges the post-clip pre-LPF
+    # alpha so the labelled voicings sound distinguishably different
+    # without adding a new GPIO or `topEntity` port. The numeric
+    # `amp_character` knob still works for users who prefer continuous
+    # control; named models are a convenience layer on top.
+
+    @classmethod
+    def get_amp_model_names(cls):
+        """Return the ordered list of amp-model names."""
+        return list(cls.AMP_MODELS.keys())
+
+    @classmethod
+    def amp_model_to_character(cls, name):
+        """Map an amp-model name to its centre `amp_character` value.
+
+        Raises ``ValueError`` if ``name`` is not a documented model.
+        """
+        try:
+            return cls.AMP_MODELS[name]
+        except KeyError:
+            raise ValueError(
+                "unknown amp model: {!r}; valid names are {}".format(
+                    name, ", ".join(cls.AMP_MODELS.keys())))
+
+    def set_amp_model(self, name, sink=XbarSink.headphone, **overrides):
+        """Apply an amp model by name.
+
+        Internally this just calls
+        ``set_guitar_effects(amp_character=AMP_MODELS[name], ...)`` so
+        the whole flag-byte / route-to-chain logic stays untouched.
+        ``overrides`` lets callers supply any other ``set_guitar_effects``
+        kwargs alongside the model (e.g. ``amp_master=80`` or
+        ``amp_on=True``); explicit ``amp_character=...`` overrides the
+        model lookup. Returns the dict produced by
+        ``set_guitar_effects`` so callers can inspect the bytes that
+        were written.
+        """
+        character = self.amp_model_to_character(name)
+        if "amp_character" not in overrides:
+            overrides["amp_character"] = character
+        overrides.setdefault("amp_on", True)
+        return self.set_guitar_effects(sink=sink, **overrides)
 
     # ---- Chain presets (combined-section voicings) ---------------------
     #

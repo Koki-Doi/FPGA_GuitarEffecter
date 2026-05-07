@@ -488,3 +488,56 @@ not get removed even when superseded — they get updated.
   - After any `LowPassFir.hs` voicing change: regenerate VHDL, repackage
     IP, rebuild bit/hwh, check timing, deploy only if WNS remains in the
     accepted band and WHS/THS stay clean, then smoke-test chain presets.
+
+
+## D18 — Amp Simulator named models reuse `amp_character`, never new GPIO
+
+- **Decision.** The Amp Simulator section ships four named voicings —
+  `jc_clean` / `clean_combo` / `british_crunch` / `high_gain_stack` —
+  as a convenience layer on top of the existing `amp_character`
+  knob. The Python side adds an `AMP_MODELS` table, `set_amp_model`,
+  `get_amp_model_names`, and `amp_model_to_character` helpers; the
+  Clash side quantises the same byte into a two-bit `ampModelSel`
+  index that adds a tiny per-band darken to the post-clip pre-LPF.
+  The numeric `amp_character` knob still works directly.
+- **Why.**
+  - Listening to the audio-analysis recordings showed that high-gain
+    pedals into the amp produced a second top-end brightening at the
+    same `amp_character` value that worked well for clean settings.
+    Splitting the character byte into 4 bands gives each named voicing
+    a slightly different LPF target without making `amp_character`
+    discontinuous and without breaking the chain-preset / safe-bypass
+    logic that already drives the byte directly.
+  - Adding a separate GPIO or `topEntity` port for an amp model
+    selector would have been a `block_design.tcl` change (forbidden
+    by D2 without explicit user approval) and would also have eaten
+    timing on a build that is already running with negative setup
+    slack. Reusing the existing byte avoids both.
+  - The `model_select` post-mortem (D6) still applies. The new
+    `ampModelSel` is consumed in **one** stage only and only
+    biases a single alpha constant, not a wide mux over independent
+    multipliers / clippers / filters.
+- **Trade-offs not taken.**
+  - **No** copying of commercial amp circuit constants, schematic-
+    derived coefficients, or GPL DSP code (`DECISIONS.md` D7 / D11 /
+    D14 / D17). The model names are inspirations only.
+  - **No** new GPIO and **no** new `topEntity` port; the Frame shape
+    is unchanged.
+  - **No** model-specific switching of the asym clip knees, second-
+    stage gain, presence cap, or resonance amount. Those stay
+    continuously controlled by the existing `amp_character` /
+    `amp_presence` / `amp_resonance` bytes; only the post-clip
+    pre-LPF alpha is biased per band.
+- **How to apply.**
+  - Voicing tweaks to a specific amp model edit the matching band
+    inside `ampPreLowpassFrame` (or extend `ampModelSel` to cover a
+    second amp stage). Do not introduce a wide case over per-stage
+    coefficient tables.
+  - The Python `AMP_MODELS` mapping is the source of truth for the
+    centre-of-band character values. Keep it in lock-step with the
+    `ampModelSel` thresholds in `LowPassFir.hs` and the inline
+    fallback inside `GuitarPedalboardOneCell.ipynb`.
+  - The `amp_character` numeric API stays public; `set_amp_model` is
+    a thin wrapper around `set_guitar_effects(amp_character=...)`.
+    Tests in `tests/test_overlay_controls.py` lock the mapping
+    anchors and the per-model byte distinctness.

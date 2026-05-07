@@ -21,10 +21,16 @@ The current load-bearing facts:
   (`feature/audio-analysis-voicing-fixes`). Recording analysis drove
   existing-stage retunes in Compressor / Overdrive / Amp / Cab only:
   no new GPIO, no `topEntity` port, no `block_design.tcl` change, no
-  Python API / Notebook UI break. Final deployed timing is
-  WNS = -8.731 ns, TNS = -13665.555 ns, WHS = +0.051 ns,
-  THS = 0.000 ns. See `AUDIO_RECORDING_ANALYSIS.md`, `DECISIONS.md`
-  D17, and `TIMING_AND_FPGA_NOTES.md`.
+  Python API / Notebook UI break. See `AUDIO_RECORDING_ANALYSIS.md`,
+  `DECISIONS.md` D17, and `TIMING_AND_FPGA_NOTES.md`.
+- The **Amp Simulator named models shipped** on the same branch.
+  Four named voicings (`jc_clean` / `clean_combo` / `british_crunch` /
+  `high_gain_stack`) are layered on the existing `amp_character`
+  byte; the Clash side adds an `ampModelSel` quantiser that biases
+  the post-clip pre-LPF alpha per band. No new GPIO, no `topEntity`
+  port, no `block_design.tcl` change, no `Frame` field added. The
+  numeric `amp_character` knob still works directly. See
+  `DECISIONS.md` D18 and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
 - The **noise-suppressor refactor shipped** earlier (branch
   `feature/noise-suppressor-gpio-ui`, merged into `main`). A
   dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` carries

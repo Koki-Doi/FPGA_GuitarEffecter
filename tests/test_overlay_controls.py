@@ -1009,6 +1009,78 @@ def test_effect_defaults_module_exposes_compressor_dict():
     assert ed.COMPRESSOR_DEFAULTS['makeup'] == 50
 
 
+# ---- Amp models ---------------------------------------------------------
+
+
+def test_amp_models_table_anchors():
+    """The four documented amp models must land at the centre of the
+    Clash ampModelSel bands (0..24, 25..49, 50..74, 75..100)."""
+    from audio_lab_pynq.effect_defaults import AMP_MODELS
+    assert AMP_MODELS == {
+        "jc_clean":        10,
+        "clean_combo":     35,
+        "british_crunch":  60,
+        "high_gain_stack": 85,
+    }
+    # Module re-export must mirror the class attribute for back-compat.
+    assert AudioLabOverlay.AMP_MODELS == AMP_MODELS
+
+
+def test_get_amp_model_names_lists_documented_models():
+    names = AudioLabOverlay.get_amp_model_names()
+    assert names == ["jc_clean", "clean_combo", "british_crunch",
+                     "high_gain_stack"]
+
+
+def test_amp_model_to_character_known_names():
+    assert AudioLabOverlay.amp_model_to_character("jc_clean") == 10
+    assert AudioLabOverlay.amp_model_to_character("clean_combo") == 35
+    assert AudioLabOverlay.amp_model_to_character("british_crunch") == 60
+    assert AudioLabOverlay.amp_model_to_character("high_gain_stack") == 85
+
+
+def test_amp_model_to_character_unknown_raises():
+    raised = False
+    try:
+        AudioLabOverlay.amp_model_to_character("not_an_amp")
+    except ValueError as exc:
+        assert "unknown amp model" in str(exc)
+        raised = True
+    assert raised
+
+
+def test_set_amp_model_writes_correct_character_byte():
+    """set_amp_model must write the documented character byte to
+    axi_gpio_amp_tone.ctrlD without disturbing the other amp_tone
+    bytes."""
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_amp_model("british_crunch")
+    last_word = overlay.axi_gpio_amp_tone.writes[-1][1]
+    expected = AudioLabOverlay._percent_to_u8(60, 255)  # 60 -> 153
+    assert (last_word >> 24) & 0xFF == expected, hex(last_word)
+
+
+def test_set_amp_model_distinct_bytes_per_model():
+    """Each model writes a different byte to amp_tone.ctrlD."""
+    seen = set()
+    for name in AudioLabOverlay.get_amp_model_names():
+        overlay = make_overlay_with_distortion_state()
+        overlay.set_amp_model(name)
+        last_word = overlay.axi_gpio_amp_tone.writes[-1][1]
+        seen.add((last_word >> 24) & 0xFF)
+    assert len(seen) == 4, "each amp model must produce a unique byte"
+
+
+def test_set_amp_model_overrides_let_caller_pin_other_amp_params():
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_amp_model("clean_combo", amp_master=70, amp_input_gain=40)
+    last_word = overlay.axi_gpio_amp.writes[-1][1]
+    expected_master = AudioLabOverlay._level_to_q7(70)
+    expected_gain = AudioLabOverlay._percent_to_u8(40, 255)
+    assert last_word & 0xFF == expected_gain
+    assert (last_word >> 8) & 0xFF == expected_master
+
+
 # ---- Chain presets ------------------------------------------------------
 
 
@@ -1264,4 +1336,11 @@ if __name__ == "__main__":
     test_get_current_pedalboard_state_returns_dict()
     test_apply_chain_preset_survives_missing_compressor_gpio()
     test_apply_chain_preset_unknown_name_raises()
+    test_amp_models_table_anchors()
+    test_get_amp_model_names_lists_documented_models()
+    test_amp_model_to_character_known_names()
+    test_amp_model_to_character_unknown_raises()
+    test_set_amp_model_writes_correct_character_byte()
+    test_set_amp_model_distinct_bytes_per_model()
+    test_set_amp_model_overrides_let_caller_pin_other_amp_params()
     print("AudioLabOverlay guitar effect control tests passed")

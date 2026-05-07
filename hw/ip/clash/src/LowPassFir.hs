@@ -1350,14 +1350,44 @@ ampWaveshapeFrame f =
   on = flag6 (fGate f)
   character = ctrlD (fAmpTone f)
 
+-- | Quantise the amp character byte (0..255) into a 2-bit "amp model"
+-- index that distinguishes four named voicings. Bands match the
+-- Python AMP_MODELS table so the labelled character values
+--   jc_clean = 10  -> byte  26 -> model 0
+--   clean_combo = 35 -> byte  89 -> model 1
+--   british_crunch = 60 -> byte 153 -> model 2
+--   high_gain_stack = 85 -> byte 216 -> model 3
+-- land in the centre of each band. Cheap: two compares, one mux per
+-- step; the result is only consumed by the pre-LPF darken below, so
+-- combinational depth elsewhere is unaffected.
+ampModelSel :: Unsigned 8 -> Unsigned 2
+ampModelSel x
+  | x < 63    = 0
+  | x < 126   = 1
+  | x < 190   = 2
+  | otherwise = 3
+
 ampPreLowpassFrame :: Sample -> Sample -> Frame -> Frame
 ampPreLowpassFrame prevL prevR f =
   f{fWetL = if on then onePoleU8 alpha prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 alpha prevR (fWetR f) else fR f}
  where
   on = flag6 (fGate f)
+  charByte = ctrlD (fAmpTone f)
   -- Higher character keeps edge, but the maximum alpha is capped lower
   -- than the previous voicing so high-gain settings shed more >5 kHz fizz.
-  alpha = 128 + (ctrlD (fAmpTone f) `shiftR` 2)
+  baseAlpha = 128 + (charByte `shiftR` 2)
+  -- Per-amp-model extra darken on top of the audio-analysis pass.
+  -- Model 0 (JC Clean) keeps the brightest edge; model 3
+  -- (High Gain Stack) rolls off the most so high-gain pedals into the
+  -- amp do not produce the second brightening that the audio-analysis
+  -- recordings flagged. All four steps stay inside the safe alpha
+  -- band (>=112) so the LPF never inverts.
+  modelDarken = case ampModelSel charByte of
+    0 ->  0 :: Unsigned 8
+    1 ->  2
+    2 ->  8
+    _ -> 16
+  alpha = baseAlpha - modelDarken
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
 ampSecondStageMultiplyFrame f =

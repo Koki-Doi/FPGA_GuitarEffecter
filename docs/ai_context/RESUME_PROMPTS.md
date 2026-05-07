@@ -78,6 +78,28 @@ asking it to re-discover the project from scratch.
 > 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
 > (`TIMING_AND_FPGA_NOTES.md` 参照)。
 
+## Amp Simulator named models — deployed
+
+> Amp Simulator に 4 つの named voicing (`jc_clean` / `clean_combo` /
+> `british_crunch` / `high_gain_stack`) を追加しました。新エフェクト
+> ではなく、既存 `amp_character` byte に意味付けする convenience レイヤ
+> です。`LowPassFir.hs` には `ampModelSel :: Unsigned 8 -> Unsigned 2`
+> ヘルパを追加し、`ampPreLowpassFrame` の baseAlpha (`128 + ch/2`) から
+> band 別に `0/2/8/16` を引いて高域を darken します (high-gain stack ほど
+> 強く)。他の amp ステージは既存連続カーブのまま。商用アンプ回路 /
+> IR / 係数のコピーなし、GPL DSP コードのコピーなし。
+> Python: `audio_lab_pynq.effect_defaults.AMP_MODELS = {jc_clean: 10,
+> clean_combo: 35, british_crunch: 60, high_gain_stack: 85}`。
+> `AudioLabOverlay.set_amp_model(name, **overrides)` は
+> `set_guitar_effects(amp_character=AMP_MODELS[name], ...)` への薄い
+> ラッパーで、`amp_character` 数値指定はそのまま動作。
+> `GuitarPedalboardOneCell.ipynb` の Amp Simulator アコーディオンに
+> Amp Model dropdown を追加 (Character スライダーは残す)。
+> 新規 GPIO / `topEntity` port / `block_design.tcl` 変更なし。
+> 8-way `model_select` / 巨大 case 構造には戻していません
+> (`DECISIONS.md` D6 / D18)。bit/hwh rebuild と PYNQ deploy 済み。
+> timing 結果は `TIMING_AND_FPGA_NOTES.md` を参照。
+
 ## Audio-analysis voicing fixes — deployed
 
 > 録音解析に基づく voicing fixes は

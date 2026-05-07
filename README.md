@@ -126,6 +126,34 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 - `air` は高域の戻し量として扱いますが、direct tap の戻りは capped なので `air=100` でも raw line には戻りません。
 - Chain Presets は Basic Clean / Clean Sustain / Light Crunch に model 0 を薄く使い、Metal / Big Muff / Fuzz 系は model 2 寄りに調整しています。
 
+### Amp Simulator named models (deployed)
+
+Amp Simulator の `amp_character` を 4 つの named voicing にラベル付けしました。新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更はありません。商用アンプ回路 / IR / 係数のコピーもありません — いずれも style/inspired のみです (`DECISIONS.md` D7 / D18)。
+
+| Model | `amp_character` | character band | 想定 voicing |
+| --- | --- | --- | --- |
+| `jc_clean` | 10 | 0..24 | Roland JC 系のクリーン inspired。明るく硬質、低歪み、空間系と相性が良い。 |
+| `clean_combo` | 35 | 25..49 | Fender 系クリーンコンボ inspired。低〜中ゲイン、JC より少し丸い。 |
+| `british_crunch` | 60 | 50..74 | Marshall / Vox 系クランチ inspired。中域寄りで TS / RAT / DS-1 と相性が良い。 |
+| `high_gain_stack` | 85 | 75..100 | 4x12 stack / modern high-gain inspired。Metal / Big Muff / Fuzz 後段向け、5 kHz 以上の fizz を最も強く抑える。 |
+
+DSP 側では `LowPassFir.hs` の `ampPreLowpassFrame` が `ampModelSel` ヘルパで character byte を 4 band に量子化し、post-clip pre-LPF の alpha を band ごとに `0 / 2 / 8 / 16` 段階で darken します。それ以外の amp ステージ (asym clip knee、second-stage gain、presence / resonance cap、power / master safety) は既存の連続 character カーブに従い、audio-analysis pass の高域抑制をそのまま維持しています。
+
+Python 側は convenience API を追加 (`amp_character` の数値指定はそのまま動作):
+
+```python
+from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay
+ovl = AudioLabOverlay()
+
+ovl.set_amp_model("british_crunch")          # amp_character=60 を書く
+ovl.set_amp_model("high_gain_stack",
+                  amp_master=70, amp_input_gain=40)  # 他の amp_* と組み合わせ可
+print(AudioLabOverlay.get_amp_model_names())
+print(AudioLabOverlay.amp_model_to_character("jc_clean"))  # -> 10
+```
+
+`GuitarPedalboardOneCell.ipynb` の Amp Simulator アコーディオンに「Amp Model」ドロップダウンを追加しました。選択するとその model の中央 character 値を Character スライダーに書き込むので、Chain Preset / Safe Bypass のロジックは何も変えていません。
+
 ### Recording-analysis voicing fixes (deployed)
 
 録音解析で見えた AmpSim / Cabinet / Overdrive / Compressor の差分に
