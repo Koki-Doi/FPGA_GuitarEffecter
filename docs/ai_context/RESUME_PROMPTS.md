@@ -40,32 +40,43 @@ asking it to re-discover the project from scratch.
 ## Distortion pedal-mask is shipped — do not roll it back
 
 > 歪みセクションは pedal-mask 方式 (commit `baa97ff` ほか) で実装済み・
-> deploy済み・実機確認済みです。WNS は -7.801 ns まで戻っています。
+> deploy済み・実機確認済みです。全 7 ペダル (`clean_boost` /
+> `tube_screamer` / `rat` / `ds1` / `big_muff` / `fuzz_face` /
+> `metal`) に Clash ステージが揃っており、bit 7 のみ reserved です。
 > 8-way `model_select` 方式へ戻さないでください。新しいペダル / フィルタ
 > を追加するときも、巨大 `case` ではなく独立 register-staged ブロックを
 > 維持してください。詳細は `docs/ai_context/DISTORTION_REFACTOR_PLAN.md`
 > と `DECISIONS.md` の D6 / D8 / D9 を確認してください。
 
-## Implementing a reserved pedal (`ds1` / `big_muff` / `fuzz_face`)
+## Reserved-pedal implementation — shipped
 
-> `ds1` / `big_muff` / `fuzz_face` は GPIO mask と Python API では予約
-> 済みですが、Clash 側ステージはまだありません。実装する場合は
-> `clean_boost` / `tube_screamer` / `metal` と同じ形 (HPF -> mul ->
-> clip -> post LPF -> level の register-staged 連鎖) で書き、
-> `fxPipeline` の `tube_screamer` と `metal` の間に挟んでください。
-> Python API、GPIO レイアウト、notebook の予約警告は触らないように
-> してください。bit/hwh 再生成のあと、Vivado timing を必ず確認し、
-> 現行 deploy の WNS = -7.801 ns より大幅に悪化させないでください。
-> 詳しくは `DISTORTION_REFACTOR_PLAN.md` の Phase C 節を読んでください。
+> `ds1` (bit 3), `big_muff` (bit 4), `fuzz_face` (bit 5) は
+> 専用 Clash ステージとして実装済み・deploy 済み。
+> `LowPassFir.hs` の `ds1HpfFrame -> ds1MulFrame -> ds1ClipFrame ->
+> ds1ToneFrame -> ds1LevelFrame`、`bigMuffPreFrame ->
+> bigMuffClip1Frame -> bigMuffClip2Frame -> bigMuffToneFrame ->
+> bigMuffLevelFrame`、`fuzzFacePreFrame -> fuzzFaceClipFrame ->
+> fuzzFaceToneFrame -> fuzzFaceLevelFrame` が `fxPipeline` で
+> `metalLevelPipe` の後ろに連結され、`distortionPedalsPipe =
+> fuzzFaceLevelPipe`。各ペダルは独立 enable で OFF 時 bit-exact bypass。
+> 新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更なし。
+> 実装当時の WNS / deploy 結果は `TIMING_AND_FPGA_NOTES.md` を参照。
+> 8-way `model_select` mux 構造へは絶対に戻さないこと
+> (`DECISIONS.md` D6 / D9)。voicing 微調整は `LowPassFir.hs` の
+> 該当ブロックの定数 / clip helper だけを編集する形で行うこと
+> (`REAL_PEDAL_VOICING_TARGETS.md` の運用と同じ)。
+> 商用ペダル / GPL DSP のソースコードコピーは禁止。8th pedal slot
+> (bit 7) は引き続き reserved。
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -7.801 ns はベースライン同等で、運用上は
-> 動いていますが厳密にはまだ負です。これを 0 へ寄せたい場合は、
-> `LowPassFir.hs` の中で残った深い組合せブロックを register で分け、
-> 必要なら cab タップや reverb BRAM のアドレス経路を pipeline 化
-> してください。1 段に大きな `case` や 4 段以上の演算を詰めない
-> 方針は維持してください (`TIMING_AND_FPGA_NOTES.md` 参照)。
+> 現状 deploy 済の WNS = -7.917 ns (Amp/Cab real-voicing pass
+> ビルド) はベースライン同等で、運用上は動いていますが厳密には
+> まだ負です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
+> 残った深い組合せブロックを register で分け、必要なら cab タップ
+> や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
+> 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
+> (`TIMING_AND_FPGA_NOTES.md` 参照)。
 
 ## Noise Suppressor work — branch in progress / shipped
 
@@ -130,6 +141,59 @@ asking it to re-discover the project from scratch.
 > Chain Preset / Show Current State ボタンを持っており、原則 2 セル
 > 構成。既存 Compressor / Noise Suppressor / Distortion UI は
 > 触らないこと。
+
+## Real-pedal voicing pass — deployed
+
+> 既存エフェクトを実機ペダル/アンプ/キャビネットの voicing に寄せる
+> 調整パスを実施済みです。新規 GPIO / 新規 `topEntity` ポート /
+> 新規 Clash ステージは追加していません (`DECISIONS.md` D16)。
+> `LowPassFir.hs` の中の既存ステージの定数とクリップ関数だけを差し
+> 替えています。狙いと変更箇所の一覧は
+> `docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md` を参照してください。
+> 主な変更:
+> - Overdrive: `softClip` -> `asymSoftClip` (kneeP=3.3M / kneeN=2.9M)
+> - clean_boost: drive ceiling ~5x -> ~4x、安全 clip knee 4.2M -> 3.2M
+> - tube_screamer: 入力 HPF alpha 範囲を 3..18 に拡大、drive ~9x -> ~7x、
+>   asym knee を `2_900_000 / 2_500_000` に下げ、post LPF を `64..191`
+> - rat: hard clip floor を `2_500_000` に、`ratPostLowpassFrame`
+>   alpha 192 -> 176、tone alpha base 224 -> 200
+> - metal: HPF alpha 範囲を 6..37 に拡大、drive ~22x -> ~19x、
+>   clip floor 1.2M -> 1.5M、post LPF を `48..175`
+> - Compressor: soft-knee オフセット (`threshold - threshold/4`)、
+>   reduction slope を `excess >> 12` に
+> - Noise Suppressor: 閾値ヒステリシス (`closeT = threshold -
+>   threshold/4` + 現 gain register の中点比較) でチャタリング抑制
+> - Cab IR: 4-tap 係数の c0 を低めに、c1/c2 を高めに rebalance
+> - Reverb: tone byte をスケール (`tone - tone>>3`、最大 224)
+> - EQ: 出力 mix に `softClip` を追加 (3-band 全 boost で過大歪みを起こさない)
+>
+> ビルド結果: WNS = -6.405 ns (前回 Compressor build の -7.516 ns
+> より +1.111 ns 改善)、TNS = -8806.714 ns、WHS = +0.052 ns、
+> THS = 0.000 ns。`R19_ADC_CONTROL = 0x23` 維持、ADC HPF default-on
+> 維持、10 chain preset すべて smoke-test pass。商用ペダル/アンプの
+> 回路コピーや GPL DSP コードの移植は行っていません。
+
+## Amp/Cab real-voicing pass — deployed
+
+> Amp Simulator / Cab IR の実機寄せ voicing pass は
+> `feature/amp-cab-real-voicing` で実装済み・deploy 済みです。
+> 新規 GPIO / 新規 `topEntity` ポート / 新規 Clash register stage /
+> `block_design.tcl` 変更はありません。GPIO 名 / address / ctrlA-D
+> 割り当ても変更なし。`LowPassFir.hs` では `ampHighpassFrame`、
+> `ampDriveMultiplyFrame`、`ampAsymClip`、`ampPreLowpassFrame`、
+> `ampSecondStageMultiplyFrame`、`ampPowerFrame`、
+> `ampResPresenceProductsFrame` / `ampResPresenceMixFrame`、
+> `ampMasterFrame`、`cabCoeff` を既存 stage 内で retune しています。
+> Cab model 0 = 1x12 open back、model 1 = 2x12 combo、model 2 =
+> 4x12 closed back。`air` は capped high return で、raw line には戻り
+> ません。Chain Presets は Basic Clean / Clean Sustain / Light Crunch
+> を model 0 寄り、Metal / Big Muff / Fuzz を model 2 寄りに調整済み。
+> build 結果: WNS=-7.917 ns、TNS=-13100.457 ns、WHS=+0.051 ns、
+> THS=0.000 ns。PYNQ deploy と preset smoke test pass、ADC HPF=True /
+> `R19_ADC_CONTROL=0x23`。商用アンプ回路 / commercial cab IR /
+> GPL DSP コードはコピーしていません。次に Amp/Cab を触る場合も
+> `GPIO_CONTROL_MAP.md` と `DECISIONS.md` D17 を読んでから、既存
+> stage 内の定数変更に留めてください。
 
 ## Notebook UI / preset polish (no bitstream rebuild)
 

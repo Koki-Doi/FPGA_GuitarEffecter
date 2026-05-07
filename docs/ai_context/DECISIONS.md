@@ -115,23 +115,66 @@ not get removed even when superseded — they get updated.
   pedal bit (e.g. an unused reserved slot) rather than rewriting
   the existing one.
 
-## D9 — `ds1` / `big_muff` / `fuzz_face` are reserved, not removed
+## D9 — `ds1` / `big_muff` / `fuzz_face` reservation lifted; bits 3-5 are now implemented
 
-- **Decision.** Bits 3, 4, 5 of `distortion_control.ctrlD` are
-  reserved for `ds1`, `big_muff`, and `fuzz_face`. The Python API
-  accepts these names today; the FPGA has no Clash stage for them
-  yet, so audio passes through bit-exact when only those bits are
-  set. The notebooks call this out in their reserved-pedal warnings.
-- **Why.** Locking the bit positions now keeps the GPIO layout and
-  the Python API stable across the staged rollout. Future Clash
-  work for any of these voicings is a pure code addition; no GPIO
-  shuffle, no Python API churn, no notebook rewrites.
-- **How to apply.** When implementing one of the reserved pedals,
-  add a small register-staged Clash block that consumes the
-  matching bit, slot it into `fxPipeline` between `tube_screamer`
-  and `metal`, and update the "implemented" list in
-  `DISTORTION_REFACTOR_PLAN.md` plus the warnings in the
-  notebooks. Keep the Python API surface unchanged.
+- **Decision (original).** Bits 3, 4, 5 of `distortion_control.ctrlD`
+  were reserved for `ds1`, `big_muff`, and `fuzz_face` while the
+  Python API and notebook UI already accepted the names; the FPGA
+  passed audio through bit-exact when only those bits were set.
+- **Decision (current, `feature/add-reserved-distortion-pedals`).**
+  All three reserved pedals now have working Clash stages in the
+  deployed bitstream:
+  - `ds1` (bit 3): 5 register stages — HPF -> mul -> asym soft clip
+    with low knees -> post LPF -> level+safety. Voicing aim is
+    BOSS DS-1 style edgy crunch.
+  - `big_muff` (bit 4): 5 register stages — pre-gain -> softClipK
+    medium knee -> softClipK tighter knee with ~0.75x gain ->
+    tone LPF -> level+safety. Voicing aim is Big Muff Pi style
+    cascaded soft clip with a darker top end.
+  - `fuzz_face` (bit 5): 4 register stages — pre-gain -> strong
+    asymSoftClip -> tone LPF -> level+safety. Voicing aim is
+    Fuzz Face style raw asymmetric breakup; the TONE knob doubles
+    as a "round vs. bright" axis since real Fuzz Faces typically
+    lack a tone control.
+  Each block is gated by its own enable predicate (`ds1On` /
+  `bigMuffOn` / `fuzzFaceOn`); when the bit is clear every stage is
+  bit-exact bypass. The new sections slot into `fxPipeline` after
+  `metalLevelPipe`, with `distortionPedalsPipe = fuzzFaceLevelPipe`.
+- **Why the original reservation was kept.** Locking the bit
+  positions early kept the GPIO layout and Python API stable across
+  the staged rollout, so the implementation work was a pure code
+  addition: no GPIO shuffle, no Python API churn, no notebook
+  rewrite of the per-pedal pipeline.
+- **Trade-offs not taken.**
+  - **No** copying of source code from BOSS DS-1 schematics-exact
+    coefficient tables, the public Big Muff Pi schematic, or
+    Dallas Arbiter / Dunlop Fuzz Face circuit transcriptions, nor
+    from any GPL DSP project (guitarix, BYOD, JS-Rocks,
+    PunkMuff, dm-Rat, ToobAmp, etc.). Algorithmic shape (HPF ->
+    drive -> clip -> post LPF -> level, soft / hard / asym clip
+    helper choice, cascaded soft clip for Muff-style fuzz, low-knee
+    asym clip for fuzz-face-style breakup) is the only thing taken
+    (`DECISIONS.md` D7).
+  - **No** new GPIO. Bit 7 of the pedal mask remains the only
+    reserved slot, held for a future 8th pedal.
+  - **No** revival of the 8-way `model_select` mux structure; each
+    pedal stays in its own register-staged block (`DECISIONS.md`
+    D6 / `TIMING_AND_FPGA_NOTES.md`).
+  - **No** new C++ DSP prototype as a stepping stone (`DECISIONS.md`
+    D13). Implementation went Python API + UI relabel -> Clash
+    stages directly.
+- **How to apply.**
+  - When changing a `ds1` / `big_muff` / `fuzz_face` voicing, edit
+    the matching `ds1*Frame` / `bigMuff*Frame` / `fuzzFace*Frame`
+    block in `LowPassFir.hs`. Do not introduce a wider case over
+    pedal selectors; each block is independently enabled.
+  - The Python API surface (`set_distortion_pedal`,
+    `set_distortion_pedals`, `set_distortion_settings(pedal=...)`)
+    is unchanged; the only public change is that
+    `DISTORTION_PEDALS_IMPLEMENTED` now lists every pedal name.
+  - Notebook reserved-pedal warning banners are dropped. Keep the
+    legacy `*_reserved` PEDAL_LABEL_TO_API aliases pointing at the
+    implemented pedals so older live notebook sessions still work.
 
 ## D11 — Noise suppressor lives on its own AXI GPIO; legacy gate is replaced
 
@@ -312,6 +355,58 @@ not get removed even when superseded — they get updated.
     -- if a preset wants behaviour the FPGA does not currently
     expose, file it as a separate ADR (D11 / D14 style) instead.
 
+## D16 — Real-pedal voicing pass tunes existing stages, never adds new ones
+
+- **Decision.** Effect voicings can be moved closer to recognised
+  real-pedal voicings (TS / RAT / MT-2 / Dyna Comp / NS-2 / cab IR /
+  pedal reverb) by editing the constants and clip-helper choice
+  inside the existing register stages of `LowPassFir.hs`. A voicing
+  pass must **not** add a new GPIO, a new `topEntity` port, a new
+  Clash register stage, or a new effect block. Reserved bytes / bits
+  documented in `GPIO_CONTROL_MAP.md` stay reserved.
+- **Why.**
+  - Adding a GPIO or a new stage forces a `block_design.tcl` change
+    (forbidden by D2 without explicit user approval) and re-opens
+    timing risk that the pedal-mask refactor (D6 / `model_select`
+    post-mortem) already paid down.
+  - Existing chain presets and the public Python API are
+    byte-for-byte compatible across the voicing pass: the bytes the
+    notebook writes to each GPIO are unchanged, only the meaning
+    given to those bytes by the live Clash bitstream shifts. Users
+    keep the same control range and the same slider numbers.
+  - The reference style for each effect is documented in
+    `REAL_PEDAL_VOICING_TARGETS.md` so future passes have a clear
+    "did the change land in the intended direction?" check.
+- **Trade-offs not taken.**
+  - **No** copying of source code from Tube Screamer / RAT / MT-2 /
+    Dyna Comp / NS-2 / NS-1X schematics-exact coefficient tables, or
+    GPL DSP projects. Algorithmic shape (HPF -> drive -> clip ->
+    post LPF -> level, soft / hard / asym clip choice, hysteresis
+    around a threshold, IR coefficient damping) is the only thing
+    taken (`DECISIONS.md` D7).
+  - **No** new C++ DSP prototype as a stepping stone (`DECISIONS.md`
+    D13). Voicing changes go directly into Clash.
+  - **No** new lookahead, no new multi-band processing, no new
+    spectral methods. The PL budget is what it is.
+- **How to apply.**
+  - Read `REAL_PEDAL_VOICING_TARGETS.md` before changing the voicing
+    of an effect; record the new target / current / gap / plan rows
+    in the same file.
+  - Constant changes inside an existing stage are fine. Replacing
+    `softClip` with `softClipK` / `asymSoftClip` / `hardClip` is
+    fine. Changing a `mulU8` to a different gain expression is fine.
+  - Adding a new register-staged block, a new `Frame` field, or a
+    new `topEntity` port is **not** a voicing change; that is a new
+    effect (case 4 in `EFFECT_ADDING_GUIDE.md`).
+  - After any voicing pass that touches `LowPassFir.hs`: run
+    `clash --vhdl`, repackage the IP via Vivado `create_ip.tcl`,
+    rebuild bit/hwh, check timing, deploy, smoke-test all chain
+    presets on the board.
+  - The first voicing pass landed on the `feature/real-pedal-voicing-
+    pass` branch and rebuilt the deployed bitstream from
+    WNS = -7.516 ns to WNS = -6.405 ns (improved by 1.111 ns); hold
+    stayed clean.
+
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
 - **Decision.** A new two-cell notebook,
@@ -327,3 +422,51 @@ not get removed even when superseded — they get updated.
 - **How to apply.** Notebook-only edits land here; no
   bitstream rebuild needed. Reserved pedals stay selectable so the
   UI does not change shape when those Clash stages land later.
+
+## D17 — Amp/Cab real-voicing pass tunes the existing post-pedal stages
+
+- **Decision.** The Amp Simulator and Cab IR can be moved closer to a
+  generic guitar amp / cabinet response by editing constants and clip
+  helper choices inside the existing `LowPassFir.hs` stages. This pass
+  does not add a new GPIO, a new `topEntity` port, a new register stage,
+  or a `block_design.tcl` change.
+- **Why.**
+  - The existing `axi_gpio_amp`, `axi_gpio_amp_tone`, and
+    `axi_gpio_cab` controls already expose the required musical axes:
+    input gain / master / presence / resonance / BMT / character and
+    cab mix / level / model / air. Reusing them preserves the Python API
+    and Notebook UI.
+  - The main audible problem after the seven distortion pedals landed
+    was post-pedal line-direct character: high fizz, low-end bloom, and
+    weak model separation. These can be improved with coefficient and
+    safety-knee changes rather than a heavy IR loader or new topology.
+  - A long cabinet IR or extra filtering stage would spend timing and
+    resources on a design that already runs with negative setup slack.
+- **What changed.**
+  - Amp input HPF tightened (`253/256` feedback), input gain ceiling
+    reduced (~31x -> ~21x), clip knees lowered, pre-LPF darkened,
+    presence/resonance internally capped, and power/master safety
+    clipping moved to lower `softClipK` knees.
+  - Cab remains the existing 4-tap FIR. The coefficient table now has
+    clearer model intent: model 0 = 1x12 open back, model 1 = 2x12
+    combo, model 2 = 4x12 closed back. `air` restores only capped
+    direct-tap content.
+  - Chain presets were retuned only numerically: clean/crunch presets
+    use model 0 or 1, and Metal / Big Muff / Fuzz lean on model 2.
+- **Trade-offs not taken.**
+  - **No** commercial amp circuit constants, commercial cabinet IRs, or
+    schematic-derived coefficient tables were copied.
+  - **No** GPL DSP code was moved into this WTFPL project.
+  - **No** long FIR / convolution IR loader, dB/log math, new amp model
+    selector, or new AXI GPIO was added.
+- **How to apply.**
+  - Future Amp/Cab voicing changes should stay in
+    `amp*Frame`, `ampAsymClip`, `cabCoeff`, `cabProductsFrame`,
+    `cabIrFrame`, and `cabLevelMixFrame` unless the user explicitly
+    approves a new topology.
+  - Preserve `axi_gpio_cab.ctrlA/B/C/D = mix/level/model/air` and
+    `axi_gpio_amp` / `axi_gpio_amp_tone` byte meanings from
+    `GPIO_CONTROL_MAP.md`.
+  - After any `LowPassFir.hs` Amp/Cab change: regenerate VHDL, repackage
+    IP, rebuild bit/hwh, check timing, deploy only if WNS remains in the
+    accepted band and WHS/THS stay clean, then smoke-test chain presets.

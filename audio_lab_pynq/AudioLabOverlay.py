@@ -35,9 +35,9 @@ class AudioLabOverlay(Overlay):
     #                            bit is recorded in the GPIO mask but the
     #                            audio path is gated by the legacy
     #                            rat_on flag in gate_control)
-    #   bit 3 : ds1             (reserved; no Clash stage yet)
-    #   bit 4 : big_muff        (reserved; no Clash stage yet)
-    #   bit 5 : fuzz_face       (reserved; no Clash stage yet)
+    #   bit 3 : ds1             (Clash stage implemented; BOSS DS-1 style)
+    #   bit 4 : big_muff        (Clash stage implemented; Big Muff Pi style)
+    #   bit 5 : fuzz_face       (Clash stage implemented; Fuzz Face style)
     #   bit 6 : metal           (Clash stage implemented)
     # Pedal name -> mask bit, defaults, and "implemented" subset all live
     # in audio_lab_pynq.effect_defaults so the notebook UI and the tests

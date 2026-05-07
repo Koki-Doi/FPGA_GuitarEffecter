@@ -1,10 +1,237 @@
 # Current state
 
-Last updated: 2026-05-06 (practical pedalboard chain presets added;
-Python / notebook / tests / docs only -- **no hardware change, no
-bit/hwh rebuild, no Vivado / Clash run**).
+Last updated: 2026-05-07 (Amp/Cab real-voicing pass landed;
+Clash + Vivado bit/hwh rebuilt and deployed).
 
-## Chain presets (this branch, `feature/pedalboard-quality-presets`)
+## Amp/Cab real-voicing pass (this branch, `feature/amp-cab-real-voicing`)
+
+The existing Amp Simulator and Cab IR stages were re-voiced toward a
+generic guitar amp / cabinet response. This is **not** a new effect:
+no new GPIO, no new `topEntity` port, no `block_design.tcl` change,
+and no AXI address change. The work only changes constants / clip
+helpers inside existing `LowPassFir.hs` stages plus a small chain
+preset retune.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`:
+  - `ampHighpassFrame`: feedback coefficient `254 -> 253`, tightening
+    sub-low rumble before the gain stages.
+  - `ampDriveMultiplyFrame`: input gain ceiling reduced from ~31x to
+    ~21x so high-gain pedals do not get squared again by the amp.
+  - `ampAsymClip`, `ampPreLowpassFrame`, `ampSecondStageMultiplyFrame`:
+    lower clip knees, darker pre-LPF range, and a slightly more
+    character-driven second stage for clean / crunch / high-gain
+    response separation.
+  - `ampPowerFrame`, `ampResPresenceMixFrame`, `ampMasterFrame`: safety
+    `softClipK` knees lowered so MASTER / presence / resonance cannot
+    blow the post-amp chain into hard clipping.
+  - `ampResPresenceProductsFrame`: presence capped to 75 % of the byte
+    and resonance to 87.5 %, keeping high-end bite and low-end push
+    without ice-pick highs or low-frequency bloom.
+  - `cabCoeff`: the existing 4-tap cabinet table was rebuilt into
+    three clearer models:
+    - model 0: 1x12 open back style, lighter body, more open mid/air.
+    - model 1: 2x12 combo style, balanced roll-off with presence left.
+    - model 2: 4x12 closed back style, more delayed-body taps and the
+      strongest fizz damping for Metal / Big Muff / Fuzz Face.
+    `air` now restores only a capped direct-tap amount; `air=100` does
+    not return to raw line-direct sound.
+- `audio_lab_pynq/effect_presets.py`:
+  - Basic Clean / Clean Sustain now use mild Amp + model 0 Cab.
+  - Light Crunch uses model 0 Cab.
+  - Metal / Noise Controlled High Gain use lower presence and model 2
+    Cab with lower air.
+  - Big Muff Sustain and Vintage Fuzz now lean on model 2 Cab; Vintage
+    Fuzz keeps `mix=90` so it stays rawer than Metal.
+- `hw/ip/clash/vhdl/LowPassFir/*` was regenerated and the Vivado IP
+  repackaged.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` was rebuilt and deployed.
+  Final routed timing: WNS = -7.917 ns, TNS = -13100.457 ns,
+  WHS = +0.051 ns, THS = 0.000 ns. This regresses WNS by 0.382 ns vs
+  the reserved-pedal build's -7.535 ns, still inside the -7..-9 ns
+  deploy band; hold remains clean.
+- PYNQ-Z2 deploy completed. Smoke test passed over Safe Bypass, Basic
+  Clean, Light Crunch, Tube Screamer Lead, RAT Rhythm, DS-1 Crunch,
+  Big Muff Sustain, Vintage Fuzz, Metal Tight, and Ambient Clean.
+  `ADC HPF: True`; `R19_ADC_CONTROL = 0x23`.
+
+What did **not** change:
+
+- `hw/Pynq-Z2/block_design.tcl`.
+- `topEntity` port list.
+- GPIO names, addresses, or `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD`
+  meanings for `axi_gpio_amp`, `axi_gpio_amp_tone`, or `axi_gpio_cab`.
+- Python API method names or Notebook UI structure.
+- C++ DSP prototypes (`src/effects` remains removed).
+- Commercial amp / cabinet IR / schematic coefficient copies or GPL
+  code. The voicing is generic and hand-rolled.
+
+## Reserved-pedal implementation (this branch, `feature/add-reserved-distortion-pedals`)
+
+The three previously-reserved distortion pedals (`ds1` bit 3,
+`big_muff` bit 4, `fuzz_face` bit 5) now have working Clash stages
+in the deployed bitstream, slotting into the existing pedal-mask
+pipeline alongside `clean_boost` / `tube_screamer` / `metal`. No
+new GPIO, no new `topEntity` port, no `block_design.tcl` change.
+Bit 7 of the pedal mask remains the only reserved slot, held for a
+future 8th pedal.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs` -- three new pedal sections:
+  - `ds1`: 5-stage chain (HPF -> mul -> asym soft clip with low
+    knees -> post LPF -> level+safety). Voicing aim: BOSS DS-1
+    style edgy crunch, brighter than tube_screamer.
+  - `big_muff`: 5-stage chain (pre-gain ~1.5x..~13x -> softClipK
+    medium knee -> softClipK tighter knee with ~0.75x gain ->
+    tone LPF -> level+safety). Voicing aim: Big Muff Pi style
+    thick fuzz with cascaded soft clip and a darker top end.
+  - `fuzz_face`: 4-stage chain (pre-gain ~2x..~10x -> strong
+    asymSoftClip with low/asymmetric knees -> tone LPF -> level+
+    safety). Voicing aim: Fuzz Face style raw asymmetric breakup,
+    "round vs. bright" tone axis.
+  - `ds1On` / `bigMuffOn` / `fuzzFaceOn` predicates wired into
+    `fxPipeline` between `metalLevelPipe` and `distortionPedalsPipe`.
+  - `distortionPedalsPipe = fuzzFaceLevelPipe` (the new last stage
+    of the per-pedal section).
+- `audio_lab_pynq/effect_defaults.py` --
+  `DISTORTION_PEDALS_IMPLEMENTED` now lists all seven pedal names.
+- `audio_lab_pynq/effect_presets.py` -- six new
+  `DISTORTION_PRESETS` entries (DS-1 Crunch / DS-1 Lead / Big Muff
+  Sustain / Big Muff Wall / Fuzz Face / Fuzz Face Vintage), three
+  new `CHAIN_PRESETS` entries (DS-1 Crunch / Big Muff Sustain /
+  Vintage Fuzz). Every new preset keeps distortion `level <= 35`
+  and compressor `makeup` in the 45..60 band so the safety
+  contract (`DECISIONS.md` D15) holds.
+- `audio_lab_pynq/AudioLabOverlay.py` -- bit-position docstring
+  promoted from "reserved" to "implemented" for bits 3-5; no API
+  surface change.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` --
+  Distortion Pedalboard dropdown / SelectMultiple now expose plain
+  `ds1` / `big_muff` / `fuzz_face` entries; the legacy
+  `*_reserved` labels stay in `PEDAL_LABEL_TO_API` as backward-
+  compatible aliases (also resolve to the implemented pedals).
+  Reserved-pedal warning banner removed (RESERVED_PEDALS = empty
+  set). Preset row split across two HBoxes since the new pedals
+  doubled the button count. Fallback inline `PRESETS` /
+  `CHAIN_PRESETS_INLINE` updated.
+- `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` --
+  pedal list table updated to mark bits 3-5 as implemented and
+  describe the voicing target. Live cell comment lists the new
+  pedal names. Stack-mode comment updated for the new chain order.
+- `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` --
+  pedalboard section text updated to mark all seven slots as
+  implemented; three new preset cells (DS-1 Crunch / Big Muff
+  Sustain / Fuzz Face) added after the Metal Tight cell.
+- `tests/test_overlay_controls.py` -- new tests:
+  `DISTORTION_PEDALS_IMPLEMENTED` shape, exclusive sets for ds1 /
+  big_muff / fuzz_face, mask bit 7 stays unused, new presets
+  satisfy the level cap, three new chain presets exist with the
+  expected pedal name and the makeup/level contract.
+- `hw/ip/clash/vhdl/LowPassFir/*` -- regenerated VHDL +
+  repackaged IP (no `topEntity` port change; new pedal stages
+  appear inside the existing module).
+
+Hardware:
+
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` -- rebuilt. Final
+  routed timing recorded in `TIMING_AND_FPGA_NOTES.md`.
+- PYNQ-Z2 deploy + smoke test recorded once the build completes.
+
+What did **not** change:
+
+- `block_design.tcl` (GPIO inventory, addresses, AXI interconnect).
+  No new GPIO; no new master count.
+- `topEntity` port list of `LowPassFir.hs`.
+- `gate_control.ctrlA` flag byte semantics; the section still rides
+  on bit 2 (legacy `distortion_on`).
+- Existing `clean_boost` / `tube_screamer` / `rat` / `metal`
+  voicing -- the new pedals slot in *after* the existing chain so
+  none of the prior-build register stages were edited.
+- Reserved bytes / bits other than the now-implemented bits 3-5
+  (`axi_gpio_eq.ctrlD`, `axi_gpio_noise_suppressor.ctrlD`,
+  `axi_gpio_distortion.ctrlD[7]` all stay reserved).
+- Existing public Python API surface; chain preset names, byte
+  caps, and Safe Bypass shape (existing tests pass byte-for-byte).
+- C++ DSP prototypes (still removed, `DECISIONS.md` D13).
+
+---
+
+## Real-pedal voicing pass (prior branch, `feature/real-pedal-voicing-pass`)
+
+Existing effect stages were re-tuned to be closer to recognised
+real-pedal voicings, using only the existing GPIOs and `topEntity`
+ports. No new effect stage, no new register, no `block_design.tcl`
+change. The deployed bit/hwh was rebuilt from the new
+`LowPassFir.hs` and pushed to the board.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs` -- voicing changes inside the
+  existing register stages:
+  - **Overdrive**: symmetric `softClip` -> `asymSoftClip` (tube-style
+    even-harmonic content).
+  - **clean_boost**: drive ceiling lowered from ~5x to ~4x;
+    `cleanBoostLevelFrame` safety knee dropped from ~4.2M to ~3.2M.
+  - **tube_screamer**: pre-HPF alpha range bumped (3..18), drive
+    ceiling lowered (~7x vs. ~9x), asym clip knees dropped to
+    `2_900_000 / 2_500_000`, post-LPF range shifted to
+    `64..191` (darker top end at every TONE setting).
+  - **RAT**: hard-clip floor lowered to `2_500_000` (more aggressive
+    at high DRIVE), `ratPostLowpassFrame` alpha 192 -> 176, tone alpha
+    base 224 -> 200.
+  - **metal**: HPF alpha range bumped (6..37), drive ceiling lowered
+    (~19x vs. ~22x), clip floor raised to `1_500_000`, post-LPF range
+    shifted to `48..175` (darker top).
+  - **Compressor**: soft-knee offset (`softThreshold = threshold -
+    (threshold >> 4)`), gentler reduction slope (`excess >> 12` vs.
+    `>> 11`).
+  - **Noise Suppressor**: threshold hysteresis -- `closeT = threshold
+    - (threshold >> 2)`, mid-gain check on the gain register decides
+    the in-band region (no chatter).
+  - **Cab IR**: 4-tap coefficient table re-balanced -- c0 reduced,
+    c1/c2 increased -- so the very-high frequencies (close to
+    Nyquist) are damped more.
+  - **Reverb**: tone byte scaled (`tone - tone >> 3`) so TONE=100
+    still keeps ~12.5 % damping in the recirculation path.
+  - **EQ**: post-EQ mix wrapped in `softClip` so a max-boost on all
+    three bands saturates softly instead of slamming the saturator.
+- `docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md` (new) -- per-effect
+  reference style, current implementation, gap, plan, risk, and
+  listening points.
+- `docs/ai_context/DECISIONS.md` D16 -- recorded the constraints of
+  the voicing pass.
+- `docs/ai_context/DSP_EFFECT_CHAIN.md`,
+  `docs/ai_context/TIMING_AND_FPGA_NOTES.md`,
+  `docs/ai_context/RESUME_PROMPTS.md`, `README.md` -- updated.
+- `hw/ip/clash/vhdl/LowPassFir/*` -- regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` -- rebuilt. Final
+  routed timing: WNS = -6.405 ns, TNS = -8806.714 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. **Improves on the deployed
+  Compressor build's WNS (-7.516 ns) by 1.111 ns**; hold remains
+  clean.
+- PYNQ-Z2 deploy: completed; smoke test (`apply_chain_preset` over
+  all 10 presets) passes, `R19_ADC_CONTROL = 0x23`, ADC HPF default-on
+  preserved.
+
+What did **not** change:
+
+- `block_design.tcl` (GPIO inventory, addresses, AXI interconnect).
+- `topEntity` port list of `LowPassFir.hs`.
+- `gate_control.ctrlA` flag byte semantics.
+- `axi_gpio_compressor` / `axi_gpio_noise_suppressor` enable
+  semantics.
+- Reserved bytes / bits (`axi_gpio_eq.ctrlD`,
+  `axi_gpio_noise_suppressor.ctrlD`,
+  `axi_gpio_distortion.ctrlD[3..5,7]`).
+- Existing public Python API surface; chain preset names, byte caps,
+  and Safe Bypass shape (no `effect_presets.py` change).
+- C++ DSP prototypes (still removed, `DECISIONS.md` D13).
+
+---
+
+## Chain presets (prior branch, `feature/pedalboard-quality-presets`)
 
 Ten named pedalboard voicings (Safe Bypass / Basic Clean / Clean
 Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal
@@ -165,25 +392,26 @@ What did **not** change:
 
 ## Headline
 
-The noise-suppressor refactor is **shipped**. A dedicated
-`axi_gpio_noise_suppressor` IP at `0x43CC0000` carries THRESHOLD /
-DECAY / DAMP / mode for a BOSS NS-2 / NS-1X-style noise suppressor;
-the Clash side replaces the legacy hard noise gate stages with the
-new envelope + smoothed-gain block; the Python API ships
-`set_noise_suppressor_settings` / `get_noise_suppressor_settings` and
-mirrors the threshold byte into the legacy `gate_control.ctrlB` slot
-for backward compatibility. The pedal-mask distortion section from
-the prior arc is unchanged and still active.
+The reserved-pedal implementation is **shipped**. `ds1` (bit 3),
+`big_muff` (bit 4), and `fuzz_face` (bit 5) of the pedal-mask scheme
+now have working independent register-staged Clash blocks; the Python
+API and notebook UIs treat them as first-class implemented pedals.
+Bit 7 stays reserved for a future 8th pedal slot. No new GPIO, no
+`topEntity` port, no `block_design.tcl` change.
 
-The earlier 8-way `model_select` distortion attempt is still gone
-(`DECISIONS.md` D6); the legacy hard noise gate is now also retired
-from the active pipeline (`DECISIONS.md` D11).
+Earlier shipped milestones (still active in the deployed bitstream):
+the pedal-mask distortion refactor (`DECISIONS.md` D6), the noise-
+suppressor refactor (`DECISIONS.md` D11), the compressor section
+(`DECISIONS.md` D14), the chain-preset layer (`DECISIONS.md` D15),
+and the real-pedal voicing pass (`DECISIONS.md` D16). The 8-way
+`model_select` distortion attempt remains rejected (`DECISIONS.md` D6).
 
 ## Working tree
 
-`feature/noise-suppressor-gpio-ui` carries the noise-suppressor work,
-tagged at the parent commit as `before-noise-suppressor-gpio-ui`. The
-branch is local-only; nothing has been pushed.
+`feature/add-reserved-distortion-pedals` carries the reserved-pedal
+implementation, tagged at the parent commit as
+`before-add-reserved-distortion-pedals`. The branch is local-only;
+nothing has been pushed.
 
 The previous pedal-mask arc lives on `master`:
 
@@ -230,11 +458,11 @@ cab / EQ / reverb tail of the pipeline. Master enable stays on
 | `clean_boost` | 0 | Clash stage implemented (3 register stages). |
 | `tube_screamer` | 1 | Clash stage implemented (5 register stages). |
 | `rat` | 2 | Mapped onto the existing RAT stage; Python forces `gate_control` bit 4 high when this bit is set. |
-| `ds1` | 3 | **Reserved.** Mask bit accepted by the API; FPGA has no stage yet, so audio passes through unchanged. |
-| `big_muff` | 4 | **Reserved**, same caveat. |
-| `fuzz_face` | 5 | **Reserved**, same caveat. |
+| `ds1` | 3 | Clash stage implemented (5 register stages; HPF -> mul -> asym soft clip -> post LPF -> level+safety). BOSS DS-1 style voicing. |
+| `big_muff` | 4 | Clash stage implemented (5 register stages; pre-gain -> two cascaded soft clip stages -> tone LPF -> level+safety). Big Muff Pi style voicing. |
+| `fuzz_face` | 5 | Clash stage implemented (4 register stages; pre-gain -> strong asym soft clip -> tone LPF -> level+safety). Fuzz Face style voicing. |
 | `metal` | 6 | Clash stage implemented (5 register stages). |
-| reserved | 7 | Unused. |
+| reserved | 7 | Unused; held for a future 8th pedal slot. |
 
 Legacy distortion (the original `distortion_*` API and Clash stages)
 still works: it gates on `distortion_legacyOn = flag2(fGate) AND
@@ -268,12 +496,18 @@ returns the section to zero.
 | --- | --- | --- | --- |
 | Pre-refactor baseline | -7.722 ns | -4613.495 ns | Shipped, audio works in practice. |
 | Rejected `model_select` | -15.067 ns | -7308.247 ns | Not deployed. |
-| **pedal-mask (current)** | **-7.801 ns** | -7381.742 ns | Deployed. Roughly baseline-equivalent setup slack. |
+| pedal-mask (initial) | -7.801 ns | -7381.742 ns | Deployed. |
+| Noise suppressor add | -7.111 ns | -7683.480 ns | Deployed. |
+| Compressor add | -7.516 ns | -8815.426 ns | Deployed. |
+| Real-pedal voicing pass | -6.405 ns | -8806.714 ns | Deployed. |
+| **Reserved-pedal implementation (current)** | **-7.535 ns** | -11297.604 ns | Deployed. WNS regresses 1.130 ns vs voicing-pass build, still inside the historical -7..-9 ns band. |
 
-Hold timing is fine (`WHS = +0.050 ns`, `THS = 0.000 ns`). Setup is
-still slightly negative; not a regression versus baseline, but the
-build is not formally clean. Treat any further timing slip with
-suspicion.
+Hold timing is fine (`WHS = +0.051 ns`, `THS = 0.000 ns`). Setup is
+still slightly negative; not a regression versus the historical
+deploy band, but the build is not formally clean. Treat any further
+timing slip with suspicion. The full chronology (with per-build
+notes) is in
+[`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md).
 
 ## Notebooks
 
@@ -281,9 +515,9 @@ suspicion.
 | --- | --- |
 | `audio_lab_pynq/notebooks/InputDebug.ipynb` | Existing input-noise triage notebook, ADC HPF default-on aware. |
 | `audio_lab_pynq/notebooks/GuitarEffectsChain.ipynb` | Existing chain UI. Untouched in this refactor. |
-| `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` | **Updated.** Original ipywidgets switcher cells preserved; a "Distortion Pedalboard" section appended (state check, exclusive single-pedal cell, four presets, live cell, advanced stack cell, safe-OFF cell). |
-| `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` | **Replaced** with a pedalboard walkthrough: lists pedals + bit positions + which are implemented vs reserved, cycles each pedal exclusively, has a live cell, an advanced stack cell, and a reset cell. |
-| `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` | **New.** Two-cell single-screen ipywidgets UI for the whole chain (Noise Gate -> Overdrive -> Distortion Pedalboard -> Amp -> Cab -> EQ -> Reverb). Apply / Safe Bypass / Refresh / four preset buttons; stack mode auto-trims `level` to 25; reserved pedals selectable with a warning banner. |
+| `audio_lab_pynq/notebooks/GuitarEffectSwitcher.ipynb` | **Updated** for the reserved-pedal implementation: pedalboard section text marks all seven slots implemented; new DS-1 Crunch / Big Muff Sustain / Fuzz Face preset cells added after the Metal Tight cell. |
+| `audio_lab_pynq/notebooks/DistortionModelsDebug.ipynb` | **Updated** for the reserved-pedal implementation: pedal table now marks bits 3-5 as implemented; live cell comment lists the new pedals; stack-mode comment mentions the updated chain order. |
+| `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb` | **Updated** for the reserved-pedal implementation: dropdown / SelectMultiple expose plain `ds1` / `big_muff` / `fuzz_face` entries (legacy `*_reserved` aliases kept for backward compat); reserved-pedal warning banner removed; preset row split into two HBoxes; fallback inline `PRESETS` / `CHAIN_PRESETS_INLINE` updated. |
 
 All five notebooks are deployed under
 `/home/xilinx/jupyter_notebooks/audio_lab/` on the board.
@@ -292,14 +526,15 @@ All five notebooks are deployed under
 
 Open work, in roughly priority order:
 
-1. **Implement the reserved pedals** — `ds1`, `big_muff`,
-   `fuzz_face`. Each as its own small Clash stage following the same
-   shape (HPF -> mul -> clip -> post LPF -> level), inserted between
-   tube_screamer and metal in the pipeline. Re-check timing after
-   each addition.
-2. **Drive WNS toward 0.** The current build is at -7.801 ns; the
-   audio path tolerates this in practice but it is technically out
-   of spec. Worth a pass that splits any remaining deeper
+1. **8th pedal slot.** Bit 7 of `distortion_control.ctrlD` is the
+   only remaining reserved pedal slot. If a future voicing wants
+   in, it lands there as a new register-staged Clash block
+   following the same shape as the new `ds1` / `big_muff` /
+   `fuzz_face` stages.
+2. **Drive WNS toward 0.** The deployed build is at the value
+   recorded in `TIMING_AND_FPGA_NOTES.md`; the audio path
+   tolerates the current band in practice but the build is not
+   formally clean. Worth a pass that splits any remaining deeper
    combinational stage and / or pipelines the cab or reverb tap
    address paths.
 3. **UI / preset polish** in the notebooks. Possible adds:
@@ -318,7 +553,8 @@ Open work, in roughly priority order:
   seven pedals. That is exactly what regressed timing the first time;
   see `TIMING_AND_FPGA_NOTES.md`.
 - Do **not** deploy a bitstream whose WNS is significantly worse than
-  the noise-suppressor build's WNS without flagging the regression
+  the current reserved-pedal-implementation build's WNS (-7.535 ns)
+  without flagging the regression
   first.
 - Do **not** revive the legacy `gateGainNext` / `gateFrame` registers
   in the active pipeline. The active gain stage is the noise

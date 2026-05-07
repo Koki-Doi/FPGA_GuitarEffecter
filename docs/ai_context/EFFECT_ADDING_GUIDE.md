@@ -25,13 +25,21 @@ Before writing any code, answer these in order. The first "yes" wins.
 
 2. **Does the new effect fit a `reserved` byte / bit already
    documented in `GPIO_CONTROL_MAP.md`?**
-   - Reserved slots today: `axi_gpio_distortion.ctrlD[3]` (`ds1`),
-     `[4]` (`big_muff`), `[5]` (`fuzz_face`), `[7]` (8th pedal slot),
+   - Reserved slots today: `axi_gpio_distortion.ctrlD[7]`
+     (8th pedal slot — bits 3/4/5 were promoted from reserved
+     to implemented in the reserved-pedal branch and now carry
+     the `ds1` / `big_muff` / `fuzz_face` Clash stages),
      `axi_gpio_noise_suppressor.ctrlD` (mode byte),
      `axi_gpio_eq.ctrlD` (planned EQ-section knob).
    - → Add the Clash stage, wire it on the existing GPIO bit /
      byte, add a Python writer, update the notebook. Vivado bit/hwh
      **must** be rebuilt and timing reviewed.
+   - Worked example: the reserved-pedal branch added three
+     independent register-staged blocks (`ds1` 5 stages,
+     `big_muff` 5 stages, `fuzz_face` 4 stages) on
+     `axi_gpio_distortion.ctrlD[3..5]` — no GPIO change, no
+     `topEntity` port change, just three new pedal sections in
+     `fxPipeline` after `metalLevelPipe`.
 
 3. **Does the new effect need a new control byte but can ride on a
    currently-unused or repurpose-able slot?**
@@ -89,8 +97,9 @@ repeating here for the effect-adding context.
 - **Never repurpose a `legacy mirror` byte** (`axi_gpio_gate.ctrlB`).
   It is dead in the live bitstream but writers still feed it; deleting
   the writer will break older bitstreams.
-- **Never repurpose a `reserved` byte for a different feature.** If
-  the planned use is `ds1`, do not stuff a chorus into that bit.
+- **Never repurpose a `reserved` byte for a different feature.**
+  Bit 7 of `axi_gpio_distortion.ctrlD` is held for the 8th pedal
+  slot; do not stuff a chorus or any non-pedal feature into it.
 - **Use `reserved` slots first.** They were carved out so new effects
   can land without GPIO churn.
 - **AXI GPIO is output-only** — Python keeps a cache and does

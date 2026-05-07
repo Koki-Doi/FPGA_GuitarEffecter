@@ -8,15 +8,33 @@ The current load-bearing facts:
 
 - The **pedal-mask distortion refactor shipped** (commit `baa97ff`,
   deployed and live-verified). Notebook UIs were updated alongside
-  it. See `DISTORTION_REFACTOR_PLAN.md` for the staged plan for the
-  still-reserved pedals (`ds1`, `big_muff`, `fuzz_face`).
-- The **noise-suppressor refactor shipped** on top (`feature/noise-suppressor-gpio-ui`,
-  merged into `main`). A dedicated `axi_gpio_noise_suppressor` IP at
-  `0x43CC0000` carries THRESHOLD / DECAY / DAMP / mode for a BOSS
-  NS-2 / NS-1X-style suppressor; the legacy hard noise gate is
-  retired from the active pipeline. WNS improved from -7.801 ns to
-  -7.111 ns. See `DECISIONS.md` D11, `DSP_EFFECT_CHAIN.md` Noise
+  it.
+- The **reserved-pedal implementation shipped** on top
+  (`feature/add-reserved-distortion-pedals`, commit `c8f8d8c`,
+  deployed and live-verified). `ds1` (bit 3), `big_muff` (bit 4),
+  and `fuzz_face` (bit 5) are now backed by independent
+  register-staged Clash blocks. Bit 7 stays reserved for a future
+  8th pedal. No new GPIO, no `topEntity` port, no
+  `block_design.tcl` change. WNS = -7.535 ns (still inside the
+  -7..-9 ns deploy band). See `DECISIONS.md` D9 and
+  `DISTORTION_REFACTOR_PLAN.md`.
+- The **noise-suppressor refactor shipped** earlier (branch
+  `feature/noise-suppressor-gpio-ui`, merged into `main`). A
+  dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` carries
+  THRESHOLD / DECAY / DAMP / mode for a BOSS NS-2 / NS-1X-style
+  suppressor; the legacy hard noise gate is retired from the active
+  pipeline. See `DECISIONS.md` D11, `DSP_EFFECT_CHAIN.md` Noise
   Suppressor 節, and `GPIO_CONTROL_MAP.md` Noise Suppressor 節.
+- The **compressor section shipped** (`feature/compressor-effect`).
+  A dedicated `axi_gpio_compressor` IP at `0x43CD0000` carries
+  THRESHOLD / RATIO / RESPONSE / enable+MAKEUP for a stereo-linked
+  feed-forward peak compressor; sits between the noise suppressor
+  and the overdrive. See `DECISIONS.md` D14.
+- The **chain-preset layer shipped** (`feature/pedalboard-quality-presets`)
+  alongside the **real-pedal voicing pass**
+  (`feature/real-pedal-voicing-pass`). Together they brought the
+  user-facing pedalboard to its current shape. See `DECISIONS.md`
+  D15 / D16.
 
 See `CURRENT_STATE.md` for the post-deploy snapshot.
 
@@ -43,7 +61,8 @@ Then read whatever is topical for the task at hand:
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
-| [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The active distortion-model refactor. |
+| [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |
+| [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) | Reference voicings the existing effect stages aim at. |
 | [`RESUME_PROMPTS.md`](RESUME_PROMPTS.md) | Re-entering after rate-limit or context reset. |
 
 ## What this directory is *not*

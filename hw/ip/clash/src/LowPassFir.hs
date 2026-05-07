@@ -220,9 +220,9 @@ distTight = ctrlD
 --   bit 2 : rat_style    (mapped onto the existing RAT stage; this bit
 --                         is recorded for completeness but the audio
 --                         path is gated by gate_control bit 4 instead).
---   bit 3 : ds1_style    (reserved; no Clash stage consumes it yet)
---   bit 4 : big_muff     (reserved; no Clash stage consumes it yet)
---   bit 5 : fuzz_face    (reserved; no Clash stage consumes it yet)
+--   bit 3 : ds1_style    (BOSS DS-1 style; small dedicated stage)
+--   bit 4 : big_muff     (Big Muff Pi style; small dedicated stage)
+--   bit 5 : fuzz_face    (Fuzz Face style; small dedicated stage)
 --   bit 6 : metal
 --   bit 7 : reserved
 distPedalMask :: Ctrl -> Unsigned 8
@@ -248,6 +248,15 @@ tubeScreamerOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 1
 
 metalDistortionOn :: Frame -> Bool
 metalDistortionOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 6
+
+ds1On :: Frame -> Bool
+ds1On f = distMasterOn f && testBit (distPedalMask (fDist f)) 3
+
+bigMuffOn :: Frame -> Bool
+bigMuffOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 4
+
+fuzzFaceOn :: Frame -> Bool
+fuzzFaceOn f = distMasterOn f && testBit (distPedalMask (fDist f)) 5
 
 advanceAddr :: ReverbAddr -> ReverbAddr
 advanceAddr addr = if addr == maxBound then 0 else addr + 1
@@ -450,14 +459,31 @@ nsEnvNext env (Just f)
 -- Stage 2 target gain: open above threshold, damp-derived closed gain
 -- below. Lives entirely inside the gain-smoother register; not its own
 -- pipeline stage.
-nsTargetGain :: Frame -> Sample -> GateGain
-nsTargetGain f env
+--
+-- Real-pedal voicing pass: hysteresis around the threshold to avoid
+-- chatter when the envelope hovers at the open/close boundary.
+--   * env >= threshold     -> always open (target = unity)
+--   * env <= closeT        -> always close (target = nsClosedGain)
+--                             where closeT = threshold - threshold/4
+--                             (~75% of the open threshold)
+--   * env between the two  -> hold the previous target by inspecting
+--                             the current gain register: if we are
+--                             mostly-open (gain >= midGain) stay
+--                             open, otherwise stay closed.
+-- This mirrors the BOSS NS-2 style hysteresis without spending a new
+-- pipeline register.
+nsTargetGain :: Frame -> Sample -> GateGain -> GateGain
+nsTargetGain f env curGain
   | not (flag0 (fGate f)) = gateUnity
   | env >= threshold      = gateUnity
+  | env <= closeT         = closed
+  | curGain >= midGain    = gateUnity
   | otherwise             = closed
  where
   threshold = nsThresholdSample (fNs f)
+  closeT    = threshold - (threshold `shiftR` 2)
   closed    = nsClosedGain (nsDampByte (fNs f))
+  midGain   = gateUnity `shiftR` 1
 
 -- Stage 3 gain smoother: ramps the gain register toward the target.
 -- Open is fast (nsAttackStep = 512, ~8 samples to unity) so we do not
@@ -473,7 +499,7 @@ nsGainNext gain env (Just f)
       in if gain - target < step then target else gain - step
   | otherwise = gain
  where
-  target = nsTargetGain f env
+  target = nsTargetGain f env gain
 
 -- Stage 4 apply: one register stage of multiply + saturating shift.
 -- Same arithmetic as the legacy gateFrame so timing is comparable.
@@ -564,19 +590,31 @@ compEnvNext env (Just f)
   releaseStep = responseStep + envStep
 
 -- Stage 2 target gain (lives inside the gain-smoother, not its own
--- pipeline stage). unity when env <= threshold; otherwise reduced
+-- pipeline stage). unity when env <= softThreshold; otherwise reduced
 -- linearly with the excess and the ratio. ratio=0 -> almost no
 -- compression; ratio=255 -> strong reduction.
+--
+-- Real-pedal voicing pass: introduces a small soft-knee offset and a
+-- gentler per-dB reduction slope so the engagement is more gradual.
+--
+--   * softThreshold = threshold - (threshold >> 4) -- ~6% below the
+--     user threshold, so engagement starts a few percent earlier
+--     instead of as a brick wall at exactly threshold.
+--   * excessShifted = excess >> 12 (was >> 11) -- halves the
+--     reduction slope per unit of excess. Combined with the ratio
+--     byte the user-facing "ratio" still goes up to limiter feel,
+--     but the ramp into compression is smoother.
 compTargetGain :: Frame -> Sample -> GateGain
 compTargetGain f env
   | not (compOn f)         = gateUnity
-  | env <= threshold       = gateUnity
+  | env <= softThreshold   = gateUnity
   | reduction >= gateUnity = 0
   | otherwise              = gateUnity - reduction
  where
-  threshold     = compThresholdSample (fComp f)
-  excess        = env - threshold
-  excessShifted = excess `shiftR` 11
+  threshold      = compThresholdSample (fComp f)
+  softThreshold  = threshold - (threshold `shiftR` 4)
+  excess         = env - softThreshold
+  excessShifted  = excess `shiftR` 12
   excessClamped
     | excessShifted < 0           = 0 :: Sample
     | excessShifted > unitySample = unitySample
@@ -646,11 +684,18 @@ overdriveDriveBoostFrame f =
  where
   on = flag1 (fGate f)
 
+-- Real-pedal voicing pass: replace the symmetric softClip with an
+-- asymmetric tube-style soft clip (lower knees, asymmetric slope) so
+-- the overdrive picks up some even-harmonic content at moderate drive
+-- without changing the combinational shape of the stage. Bit-exact
+-- bypass when the overdrive flag is clear.
 overdriveDriveClipFrame :: Frame -> Frame
 overdriveDriveClipFrame f =
-  f{fL = if on then softClip (fWetL f) else fL f, fR = if on then softClip (fWetR f) else fR f}
+  f{fL = if on then asymSoftClip kneeP kneeN (fWetL f) else fL f, fR = if on then asymSoftClip kneeP kneeN (fWetR f) else fR f}
  where
   on = flag1 (fGate f)
+  kneeP = 3_300_000 :: Sample
+  kneeN = 2_900_000 :: Sample
 
 overdriveToneMultiplyFrame :: Sample -> Sample -> Frame -> Frame
 overdriveToneMultiplyFrame prevL prevR f =
@@ -763,11 +808,10 @@ distortionLevelFrame f =
 -- or off; when off, every frame transform leaves fL/fR untouched, so
 -- the chain is bit-exact bypass.
 --
--- Implemented in this build: clean_boost, tube_screamer,
--- metal_distortion. rat_style is intentionally a no-op here because
--- the existing RAT stage upstream covers it. ds1_style, big_muff and
--- fuzz_face are reserved in the GPIO mask but currently leave audio
--- untouched.
+-- Implemented in this build: clean_boost, tube_screamer, ds1,
+-- big_muff, fuzz_face, metal_distortion. rat_style is intentionally a
+-- no-op here because the existing RAT stage upstream covers it. Bit 7
+-- of the pedal mask remains reserved for an 8th pedal slot.
 
 -- ---- clean_boost (3 stages: mul, shift, level+safety) ---------------
 
@@ -778,8 +822,10 @@ cleanBoostMulFrame f =
  where
   on = cleanBoostOn f
   drive = ctrlC (fDist f)
-  -- Q8 gain: 1.0x (drive=0) up to ~5x (drive=255).
-  gain = resize (256 + (resize drive * 4 :: Unsigned 11)) :: Unsigned 12
+  -- Real-pedal voicing pass: lower the boost ceiling from ~5x to ~4x
+  -- (1.0x at drive=0, ~4x at drive=255) so the clean booster stays
+  -- mostly clean unless really pushed.
+  gain = resize (256 + (resize drive * 3 :: Unsigned 11)) :: Unsigned 12
 
 cleanBoostShiftFrame :: Frame -> Frame
 cleanBoostShiftFrame f =
@@ -790,13 +836,16 @@ cleanBoostShiftFrame f =
 
 cleanBoostLevelFrame :: Frame -> Frame
 cleanBoostLevelFrame f =
-  f { fL = if on then softClip leftAfter else fL f
-    , fR = if on then softClip rightAfter else fR f }
+  f { fL = if on then softClipK safetyKnee leftAfter else fL f
+    , fR = if on then softClipK safetyKnee rightAfter else fR f }
  where
   on = cleanBoostOn f
   level = ctrlB (fDist f)
   leftAfter = satShift7 (mulU8 (fL f) level)
   rightAfter = satShift7 (mulU8 (fR f) level)
+  -- Real-pedal voicing pass: lower the safety knee from ~4.2M to ~3.2M
+  -- so the clean booster catches peaks before they reach the saturator.
+  safetyKnee = 3_200_000 :: Sample
 
 -- ---- tube_screamer (5 stages: HPF, mul, clip, post-LPF, level) -------
 
@@ -808,9 +857,10 @@ tubeScreamerHpfFrame prevLpL prevLpR f =
     , fEqLowR = lpR }
  where
   on = tubeScreamerOn f
-  -- 1..9 — small alpha gives a low-frequency LPF; HP = x - LP cuts only
-  -- the very-low end ahead of the clip.
-  alpha = 2 + (distTight (fOd f) `shiftR` 5)
+  -- Real-pedal voicing pass: tighten the input low cut. Range bumped
+  -- from 2..9 to 3..18 so the bass that hits the clip stage drops with
+  -- TIGHT, contributing to the TS-style mid bump.
+  alpha = 3 + (distTight (fOd f) `shiftR` 4)
   lpL = onePoleU8 alpha prevLpL (fL f)
   lpR = onePoleU8 alpha prevLpR (fR f)
   hpL = satWide (resize (fL f) - resize lpL :: Wide)
@@ -823,8 +873,10 @@ tubeScreamerMulFrame f =
  where
   on = tubeScreamerOn f
   drive = ctrlC (fDist f)
-  -- Q8 gain: 1x..~9x.
-  gain = resize (256 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
+  -- Real-pedal voicing pass: lower the maximum drive so even at
+  -- DRIVE=100 the TS still sounds like an overdrive (not a fuzz).
+  -- Q8 gain: 1x..~6.97x (was 1x..~9x).
+  gain = resize (256 + (resize drive * 6 :: Unsigned 12)) :: Unsigned 12
 
 tubeScreamerClipFrame :: Frame -> Frame
 tubeScreamerClipFrame f =
@@ -834,8 +886,11 @@ tubeScreamerClipFrame f =
   on = tubeScreamerOn f
   boostedL = satShift8 (fAccL f)
   boostedR = satShift8 (fAccR f)
-  kneeP = 3_500_000 :: Sample
-  kneeN = 2_800_000 :: Sample
+  -- Real-pedal voicing pass: lower the asym clip knees so the soft
+  -- clip engages earlier and a touch more asymmetrically (TS-style
+  -- diode-to-ground feedback character).
+  kneeP = 2_900_000 :: Sample
+  kneeN = 2_500_000 :: Sample
 
 tubeScreamerPostLpfFrame :: Sample -> Sample -> Frame -> Frame
 tubeScreamerPostLpfFrame prevLpL prevLpR f =
@@ -846,8 +901,11 @@ tubeScreamerPostLpfFrame prevLpL prevLpR f =
  where
   on = tubeScreamerOn f
   tone = ctrlA (fDist f)
-  -- Higher tone -> higher alpha (closer to pass-through, brighter).
-  alpha = 96 + (tone `shiftR` 1)
+  -- Real-pedal voicing pass: shift the post-LPF range darker. Range
+  -- 64..191 (was 96..223) emphasises the mid band and rolls off the
+  -- top end at every TONE setting, so even at TONE=100 the TS does
+  -- not sound piercing under high-gain stacking.
+  alpha = 64 + (tone `shiftR` 1)
   lpL = onePoleU8 alpha prevLpL (fL f)
   lpR = onePoleU8 alpha prevLpR (fR f)
 
@@ -872,9 +930,10 @@ metalHpfFrame prevLpL prevLpR f =
     , fEqLowR = lpR }
  where
   on = metalDistortionOn f
-  -- Steeper than TS: alpha 4..19. Tight controls how aggressive the
-  -- low-cut is for palm muting.
-  alpha = 4 + (distTight (fOd f) `shiftR` 4)
+  -- Real-pedal voicing pass: tighter low cut. Range bumped from
+  -- 4..19 to 6..37 so TIGHT actually tightens the low end for
+  -- modern-metal-style palm-mute response.
+  alpha = 6 + (distTight (fOd f) `shiftR` 3)
   lpL = onePoleU8 alpha prevLpL (fL f)
   lpR = onePoleU8 alpha prevLpR (fR f)
   hpL = satWide (resize (fL f) - resize lpL :: Wide)
@@ -887,8 +946,10 @@ metalMulFrame f =
  where
   on = metalDistortionOn f
   drive = ctrlC (fDist f)
-  -- High Q8 gain: 3x..~22x.
-  gain = resize (768 + (resize drive * 14 :: Unsigned 12)) :: Unsigned 12
+  -- Real-pedal voicing pass: lower the maximum drive from ~22x to
+  -- ~18.95x so the wave does not crash so close to a square at full
+  -- DRIVE -- still plenty of saturation, just less ear-fatigue.
+  gain = resize (768 + (resize drive * 12 :: Unsigned 12)) :: Unsigned 12
 
 metalClipFrame :: Frame -> Frame
 metalClipFrame f =
@@ -898,8 +959,11 @@ metalClipFrame f =
   on = metalDistortionOn f
   drive = ctrlC (fDist f)
   driveS = resize (asSigned9 drive) :: Signed 25
+  -- Real-pedal voicing pass: raise the threshold floor from 1.2M to
+  -- 1.5M so the hard clip keeps a touch more headroom at full DRIVE
+  -- (less square-wave, more crunchy saturation).
   rawT = 3_500_000 - driveS * 5_000 :: Signed 25
-  threshold = resize (if rawT < 1_200_000 then 1_200_000 else rawT) :: Sample
+  threshold = resize (if rawT < 1_500_000 then 1_500_000 else rawT) :: Sample
   boostedL = satShift8 (fAccL f)
   boostedR = satShift8 (fAccR f)
 
@@ -912,7 +976,9 @@ metalPostLpfFrame prevLpL prevLpR f =
  where
   on = metalDistortionOn f
   tone = ctrlA (fDist f)
-  alpha = 64 + (tone `shiftR` 1)
+  -- Real-pedal voicing pass: shift the post-LPF range darker. Range
+  -- 48..175 (was 64..192) keeps fizz off the top end at every TONE.
+  alpha = 48 + (tone `shiftR` 1)
   lpL = onePoleU8 alpha prevLpL (fL f)
   lpR = onePoleU8 alpha prevLpR (fR f)
 
@@ -925,6 +991,217 @@ metalLevelFrame f =
   level = ctrlB (fDist f)
   leftAfter = satShift7 (mulU8 (fL f) level)
   rightAfter = satShift7 (mulU8 (fR f) level)
+
+-- ---- ds1 (BOSS DS-1 style; 5 stages: HPF, mul, asym hard/soft hybrid
+--                clip, post LPF, level+safety) ------------------------
+--
+-- Voiced for a brighter, edgier crunch than tube_screamer: the input
+-- HPF tightens with TIGHT, the asym soft clip uses lower knees so the
+-- saturation hits earlier, and the post LPF starts brighter so the top
+-- end stays present even at moderate TONE. Reference: BOSS DS-1 only
+-- by name and parameter idea; no schematics, no reference source code.
+
+ds1HpfFrame :: Sample -> Sample -> Frame -> Frame
+ds1HpfFrame prevLpL prevLpR f =
+  f { fL = if on then hpL else fL f
+    , fR = if on then hpR else fR f
+    , fEqLowL = lpL
+    , fEqLowR = lpR }
+ where
+  on = ds1On f
+  -- Moderate input low cut; TIGHT range 4..23 (between TS and metal).
+  alpha = 4 + (distTight (fOd f) `shiftR` 4)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+  hpL = satWide (resize (fL f) - resize lpL :: Wide)
+  hpR = satWide (resize (fR f) - resize lpR :: Wide)
+
+ds1MulFrame :: Frame -> Frame
+ds1MulFrame f =
+  f { fAccL = if on then mulU12 (fL f) gain else 0
+    , fAccR = if on then mulU12 (fR f) gain else 0 }
+ where
+  on = ds1On f
+  drive = ctrlC (fDist f)
+  -- Q8 gain ~1x..~9x. A bit more push than TS, less than metal.
+  gain = resize (256 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
+
+ds1ClipFrame :: Frame -> Frame
+ds1ClipFrame f =
+  f { fL = if on then asymSoftClip kneeP kneeN boostedL else fL f
+    , fR = if on then asymSoftClip kneeP kneeN boostedR else fR f }
+ where
+  on = ds1On f
+  boostedL = satShift8 (fAccL f)
+  boostedR = satShift8 (fAccR f)
+  -- Lower knees than TS for a harder edge but still soft (DS-1 has
+  -- diode-pair hard clip; we approximate with asym soft to keep
+  -- timing comparable to the existing pedals).
+  kneeP = 2_400_000 :: Sample
+  kneeN = 2_000_000 :: Sample
+
+ds1ToneFrame :: Sample -> Sample -> Frame -> Frame
+ds1ToneFrame prevLpL prevLpR f =
+  f { fL = if on then lpL else fL f
+    , fR = if on then lpR else fR f
+    , fEqHighLpL = lpL
+    , fEqHighLpR = lpR }
+ where
+  on = ds1On f
+  tone = ctrlA (fDist f)
+  -- Brighter than TS; range 96..223 -> top end stays present at every
+  -- TONE setting but never reaches full pass-through.
+  alpha = 96 + (tone `shiftR` 1)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+
+ds1LevelFrame :: Frame -> Frame
+ds1LevelFrame f =
+  f { fL = if on then softClipK safetyKnee leftAfter else fL f
+    , fR = if on then softClipK safetyKnee rightAfter else fR f }
+ where
+  on = ds1On f
+  level = ctrlB (fDist f)
+  leftAfter = satShift7 (mulU8 (fL f) level)
+  rightAfter = satShift7 (mulU8 (fR f) level)
+  -- Output safety: the level stage soft-clips before reaching the
+  -- post-pedal pipeline so a misuse of LEVEL cannot slam the saturator.
+  safetyKnee = 3_000_000 :: Sample
+
+-- ---- big_muff (Big Muff Pi style; 5 stages: pre-gain, clip1, clip2,
+--                tone scoop, level+safety) ----------------------------
+--
+-- Voiced for thick fuzz/distortion: heavier pre gain than DS-1, two
+-- cascaded soft clip stages for sustaining wall-of-sound saturation,
+-- a darker tone LPF to keep fizz off the top end. Reference:
+-- Electro-Harmonix Big Muff Pi only by name and parameter idea; no
+-- schematics, no reference source code.
+
+bigMuffPreFrame :: Frame -> Frame
+bigMuffPreFrame f =
+  f { fAccL = if on then mulU12 (fL f) gain else 0
+    , fAccR = if on then mulU12 (fR f) gain else 0 }
+ where
+  on = bigMuffOn f
+  drive = ctrlC (fDist f)
+  -- Q8 gain ~1.5x..~13x. Big Muff has lots of pre-gain; floor 384 so
+  -- even drive=0 already saturates lightly through the cascaded clips.
+  gain = resize (384 + (resize drive * 12 :: Unsigned 12)) :: Unsigned 12
+
+bigMuffClip1Frame :: Frame -> Frame
+bigMuffClip1Frame f =
+  f { fL = if on then softClipK kneeFirst boostedL else fL f
+    , fR = if on then softClipK kneeFirst boostedR else fR f }
+ where
+  on = bigMuffOn f
+  boostedL = satShift8 (fAccL f)
+  boostedR = satShift8 (fAccR f)
+  -- First clip stage: medium knee, soft slope to keep some sustain.
+  kneeFirst = 2_700_000 :: Sample
+
+bigMuffClip2Frame :: Frame -> Frame
+bigMuffClip2Frame f =
+  f { fL = if on then softClipK kneeSecond afterMoreL else fL f
+    , fR = if on then softClipK kneeSecond afterMoreR else fR f }
+ where
+  on = bigMuffOn f
+  -- Second pass through a lighter (~0.75x via Q8 192) gain ahead of a
+  -- tighter knee. Cascaded soft clips give the Muff its characteristic
+  -- thick saturation without a hard wall.
+  afterMoreL = satShift8 (mulU8 (fL f) 192)
+  afterMoreR = satShift8 (mulU8 (fR f) 192)
+  kneeSecond = 2_000_000 :: Sample
+
+bigMuffToneFrame :: Sample -> Sample -> Frame -> Frame
+bigMuffToneFrame prevLpL prevLpR f =
+  f { fL = if on then lpL else fL f
+    , fR = if on then lpR else fR f
+    , fEqHighLpL = lpL
+    , fEqHighLpR = lpR }
+ where
+  on = bigMuffOn f
+  tone = ctrlA (fDist f)
+  -- Darker tone curve: alpha range 56..183 keeps top-end fizz off the
+  -- output even at TONE=100 (still brighter than TS at high TONE).
+  alpha = 56 + (tone `shiftR` 1)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+
+bigMuffLevelFrame :: Frame -> Frame
+bigMuffLevelFrame f =
+  f { fL = if on then softClipK safetyKnee leftAfter else fL f
+    , fR = if on then softClipK safetyKnee rightAfter else fR f }
+ where
+  on = bigMuffOn f
+  level = ctrlB (fDist f)
+  leftAfter = satShift7 (mulU8 (fL f) level)
+  rightAfter = satShift7 (mulU8 (fR f) level)
+  -- Output safety knee, slightly tighter than DS-1 because Muff drives
+  -- a hotter signal into this stage.
+  safetyKnee = 2_900_000 :: Sample
+
+-- ---- fuzz_face (Fuzz Face style; 4 stages: pre-gain, asym clip,
+--                tone, level+safety) ----------------------------------
+--
+-- Voiced for raw, asymmetric fuzz: the pre stage already has a hot
+-- floor so even DRIVE=0 produces some breakup, the clip stage uses
+-- aggressively low asymmetric knees so the negative half compresses
+-- harder than the positive half, and the tone LPF maps to a
+-- "round vs. bright" axis since real Fuzz Faces typically have no
+-- tone control. Reference: Dallas Arbiter / Dunlop Fuzz Face only by
+-- name and parameter idea; no schematics, no reference source code.
+
+fuzzFacePreFrame :: Frame -> Frame
+fuzzFacePreFrame f =
+  f { fAccL = if on then mulU12 (fL f) gain else 0
+    , fAccR = if on then mulU12 (fR f) gain else 0 }
+ where
+  on = fuzzFaceOn f
+  drive = ctrlC (fDist f)
+  -- Q8 gain ~2x..~10x. Floor 512 so the fuzz is sensitive to input
+  -- level even at drive=0 (Fuzz Faces are notoriously touch-sensitive).
+  gain = resize (512 + (resize drive * 9 :: Unsigned 12)) :: Unsigned 12
+
+fuzzFaceClipFrame :: Frame -> Frame
+fuzzFaceClipFrame f =
+  f { fL = if on then asymSoftClip kneeP kneeN boostedL else fL f
+    , fR = if on then asymSoftClip kneeP kneeN boostedR else fR f }
+ where
+  on = fuzzFaceOn f
+  boostedL = satShift8 (fAccL f)
+  boostedR = satShift8 (fAccR f)
+  -- Strong asymmetry: the negative half compresses harder, giving the
+  -- broken-up germanium-style waveform shape.
+  kneeP = 1_900_000 :: Sample
+  kneeN = 1_400_000 :: Sample
+
+fuzzFaceToneFrame :: Sample -> Sample -> Frame -> Frame
+fuzzFaceToneFrame prevLpL prevLpR f =
+  f { fL = if on then lpL else fL f
+    , fR = if on then lpR else fR f
+    , fEqHighLpL = lpL
+    , fEqHighLpR = lpR }
+ where
+  on = fuzzFaceOn f
+  tone = ctrlA (fDist f)
+  -- "Round vs. bright": alpha range 72..199 -> TONE=0 is round and
+  -- woolly, TONE=100 brightens up but still rolls off the very top.
+  alpha = 72 + (tone `shiftR` 1)
+  lpL = onePoleU8 alpha prevLpL (fL f)
+  lpR = onePoleU8 alpha prevLpR (fR f)
+
+fuzzFaceLevelFrame :: Frame -> Frame
+fuzzFaceLevelFrame f =
+  f { fL = if on then softClipK safetyKnee leftAfter else fL f
+    , fR = if on then softClipK safetyKnee rightAfter else fR f }
+ where
+  on = fuzzFaceOn f
+  level = ctrlB (fDist f)
+  leftAfter = satShift7 (mulU8 (fL f) level)
+  rightAfter = satShift7 (mulU8 (fR f) level)
+  -- Output safety knee tighter than DS-1 / Big Muff because the fuzz
+  -- stage produces hotter peaks.
+  safetyKnee = 2_800_000 :: Sample
 
 ratHighpassFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
 ratHighpassFrame prevInL prevInR prevOutL prevOutR f =
@@ -967,13 +1244,20 @@ ratClipFrame f =
  where
   on = flag4 (fGate f)
   amount = ctrlC (fRat f)
+  -- Real-pedal voicing pass: lower the clamp floor so the hard clip
+  -- engages more aggressively at high DRIVE. Floor was 3.75M; at
+  -- 2.5M the clip stage saturates harder, giving the RAT more "rude"
+  -- character at the top of the DRIVE knob.
   rawThreshold = 6_291_456 - (resize (asSigned9 amount) * 9_000) :: Signed 25
-  clampedThreshold = if rawThreshold < 3_750_000 then 3_750_000 else rawThreshold
+  clampedThreshold = if rawThreshold < 2_500_000 then 2_500_000 else rawThreshold
   threshold = resize clampedThreshold :: Sample
 
 ratPostLowpassFrame :: Sample -> Sample -> Frame -> Frame
+-- Real-pedal voicing pass: alpha lowered from 192 to 176 so a touch
+-- more high-frequency content is rolled off after the hard clip,
+-- matching the darker top end of a real RAT.
 ratPostLowpassFrame prevL prevR f =
-  f{fWetL = if on then onePoleU8 192 prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 192 prevR (fWetR f) else fR f}
+  f{fWetL = if on then onePoleU8 176 prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 176 prevR (fWetR f) else fR f}
  where
   on = flag4 (fGate f)
 
@@ -983,7 +1267,9 @@ ratToneFrame prevL prevR f =
  where
   on = flag4 (fGate f)
   dark = resize ((resize (ctrlA (fRat f)) * 3 :: Unsigned 10) `shiftR` 2) :: Unsigned 8
-  alpha = 224 - dark
+  -- Real-pedal voicing pass: shift the FILTER (TONE) range so even
+  -- fully bright still has some upper roll-off (alpha base 200 vs 224).
+  alpha = 200 - dark
 
 ratLevelFrame :: Frame -> Frame
 ratLevelFrame f =
@@ -1015,15 +1301,16 @@ ampHighpassFrame prevInL prevInR prevOutL prevOutR f =
  where
   on = flag6 (fGate f)
   highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 254 `shiftR` 8))
+    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 253 `shiftR` 8))
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (fWetL f) gain else 0, fAccR = if on then mulU12 (fWetR f) gain else 0}
  where
   on = flag6 (fGate f)
-  -- 1.0x to about 31x using Q7-style post shift.
-  gain = resize (128 + (resize (ctrlA (fAmp f)) * 15 :: Unsigned 12)) :: Unsigned 12
+  -- 1.0x to about 21x using Q7-style post shift. The real-voicing pass
+  -- keeps the amp from re-squaring already-hot pedal outputs.
+  gain = resize (128 + (resize (ctrlA (fAmp f)) * 10 :: Unsigned 12)) :: Unsigned 12
 
 ampDriveBoostFrame :: Frame -> Frame
 ampDriveBoostFrame f =
@@ -1039,8 +1326,8 @@ ampAsymClip character x
  where
   ch = resize (asSigned9 character) :: Signed 25
   -- Lower knees at high character give a rougher, less symmetric preamp.
-  positiveKnee = resize (5_200_000 - ch * 8_500) :: Sample
-  negativeKnee = resize (4_700_000 - ch * 7_000) :: Sample
+  positiveKnee = resize (4_900_000 - ch * 7_000) :: Sample
+  negativeKnee = resize (4_350_000 - ch * 6_200) :: Sample
 
 ampWaveshapeFrame :: Frame -> Frame
 ampWaveshapeFrame f =
@@ -1055,14 +1342,14 @@ ampPreLowpassFrame prevL prevR f =
  where
   on = flag6 (fGate f)
   -- Higher character keeps more edge; lower character smooths more.
-  alpha = 160 + (ctrlD (fAmpTone f) `shiftR` 2)
+  alpha = 144 + (ctrlD (fAmpTone f) `shiftR` 2)
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
 ampSecondStageMultiplyFrame f =
   f{fAccL = if on then mulU9 (fWetL f) gain else 0, fAccR = if on then mulU9 (fWetR f) gain else 0}
  where
   on = flag6 (fGate f)
-  gain = resize (118 + (ctrlA (fAmp f) `shiftR` 2) + (ctrlD (fAmpTone f) `shiftR` 3)) :: Unsigned 9
+  gain = resize (112 + (ctrlA (fAmp f) `shiftR` 3) + (ctrlD (fAmpTone f) `shiftR` 2)) :: Unsigned 9
 
 ampSecondStageFrame :: Frame -> Frame
 ampSecondStageFrame f =
@@ -1123,7 +1410,7 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  f{fWetL = if on then softClip (fWetL f) else fL f, fWetR = if on then softClip (fWetR f) else fR f}
+  f{fWetL = if on then softClipK 3_700_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_700_000 (fWetR f) else fR f}
  where
   on = flag6 (fGate f)
 
@@ -1146,7 +1433,7 @@ ampResPresenceFilterFrame prevResL prevResR prevPresenceL prevPresenceR f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  f{fWetL = if on then softClip wetL else fL f, fWetR = if on then softClip wetR else fR f}
+  f{fWetL = if on then softClipK 3_700_000 wetL else fL f, fWetR = if on then softClipK 3_700_000 wetR else fR f}
  where
   on = flag6 (fGate f)
   wetL = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
@@ -1166,8 +1453,8 @@ ampResPresenceProductsFrame f =
     }
  where
   on = flag6 (fGate f)
-  resonance = ctrlD (fAmp f)
-  presence = ctrlC (fAmp f)
+  resonance = ctrlD (fAmp f) - (ctrlD (fAmp f) `shiftR` 3)
+  presence = ctrlC (fAmp f) - (ctrlC (fAmp f) `shiftR` 2)
   highL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
   highR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
 
@@ -1183,10 +1470,15 @@ ampMasterFrame f =
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  left = softClip (satShift7 (mulU8 (fWetL f) level))
-  right = softClip (satShift7 (mulU8 (fWetR f) level))
+  left = softClipK 3_600_000 (satShift7 (mulU8 (fWetL f) level))
+  right = softClipK 3_600_000 (satShift7 (mulU8 (fWetR f) level))
 
 cabCoeff :: Unsigned 8 -> Unsigned 8 -> Unsigned 2 -> Signed 10
+-- Amp/Cab real-voicing pass: keep the existing 4-tap cabinet stage but
+-- make the three models more distinct. Model 0 is lighter and more
+-- open, model 1 is the balanced combo, and model 2 carries more delayed
+-- body taps so high-gain fizz is damped hardest. AIR only restores a
+-- capped amount of direct-tap content; it never becomes a raw line feed.
 cabCoeff model air index =
   case modelSel of
     0 -> openBack index
@@ -1199,54 +1491,54 @@ cabCoeff model air index =
   openBack i =
     case airSel of
       0 -> case i of
-        0 -> 104
-        1 -> 78
-        2 -> 42
-        _ -> 22
+        0 -> 78
+        1 -> 84
+        2 -> 54
+        _ -> 10
       1 -> case i of
-        0 -> 112
-        1 -> 72
-        2 -> 34
-        _ -> 14
-      _ -> case i of
-        0 -> 124
-        1 -> 62
-        2 -> 24
+        0 -> 86
+        1 -> 80
+        2 -> 50
         _ -> 8
+      _ -> case i of
+        0 -> 94
+        1 -> 74
+        2 -> 44
+        _ -> 6
   british i =
     case airSel of
       0 -> case i of
-        0 -> 88
-        1 -> 94
-        2 -> 58
-        _ -> 30
-      1 -> case i of
-        0 -> 100
+        0 -> 70
         1 -> 86
-        2 -> 52
-        _ -> 24
+        2 -> 72
+        _ -> 28
+      1 -> case i of
+        0 -> 78
+        1 -> 84
+        2 -> 66
+        _ -> 20
       _ -> case i of
-        0 -> 112
-        1 -> 76
-        2 -> 40
+        0 -> 84
+        1 -> 80
+        2 -> 60
         _ -> 16
   closedBack i =
     case airSel of
       0 -> case i of
-        0 -> 78
-        1 -> 104
-        2 -> 74
-        _ -> 46
+        0 -> 58
+        1 -> 78
+        2 -> 88
+        _ -> 64
       1 -> case i of
-        0 -> 88
-        1 -> 96
-        2 -> 66
-        _ -> 38
+        0 -> 64
+        1 -> 80
+        2 -> 84
+        _ -> 52
       _ -> case i of
-        0 -> 100
-        1 -> 86
-        2 -> 54
-        _ -> 26
+        0 -> 68
+        1 -> 84
+        2 -> 78
+        _ -> 40
 
 cabProductsFrame ::
   Sample -> Sample -> Sample ->
@@ -1334,8 +1626,13 @@ eqProductsFrame f =
   on = flag3 (fGate f)
 
 eqMixFrame :: Frame -> Frame
+-- Real-pedal voicing pass: wrap the post-EQ sum in softClip so a
+-- max-boost on all three bands saturates softly instead of slamming
+-- the satShift7 saturator (audible hard clip). softClip is identity
+-- below its knee, so neutral 128/128/128 EQ remains bit-exact (apart
+-- from the standard satShift7 round-trip).
 eqMixFrame f =
-  f{fL = if on then satShift7 accL else fL f, fR = if on then satShift7 accR else fR f}
+  f{fL = if on then softClip (satShift7 accL) else fL f, fR = if on then softClip (satShift7 accR) else fR f}
  where
   on = flag3 (fGate f)
   accL = fAccL f + fAcc2L f + fAcc3L f
@@ -1349,14 +1646,22 @@ addrNext :: ReverbAddr -> Maybe Frame -> ReverbAddr
 addrNext addr pipe = if isActive pipe then advanceAddr addr else addr
 
 reverbToneProductsFrame :: Sample -> Sample -> Sample -> Sample -> Maybe Frame -> Maybe Frame
+-- Real-pedal voicing pass: scale the tone byte by 7/8 so the maximum
+-- bright setting is ~224 instead of 255. This keeps a small slice
+-- (~12.5%) of the previous tap mixed in at every TONE setting,
+-- providing some high-frequency damping in the recirculation path so
+-- long tails do not turn metallic.
 reverbToneProductsFrame tapL tapR prevL prevR = mapPipe applyTone
  where
   applyTone f =
-    f
-      { fAccL = mulU8 tapL (ctrlB (fReverb f))
-      , fAccR = mulU8 tapR (ctrlB (fReverb f))
-      , fAcc2L = mulU8 prevL (255 - ctrlB (fReverb f))
-      , fAcc2R = mulU8 prevR (255 - ctrlB (fReverb f))
+    let tone       = ctrlB (fReverb f)
+        toneScaled = tone - (tone `shiftR` 3)
+        invTone    = 255 - toneScaled
+    in f
+      { fAccL = mulU8 tapL toneScaled
+      , fAccR = mulU8 tapR toneScaled
+      , fAcc2L = mulU8 prevL invTone
+      , fAcc2R = mulU8 prevR invTone
       }
 
 reverbToneBlendFrame :: Frame -> Frame
@@ -1646,8 +1951,44 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (metalPostLpfFrame <$> metalPostLpPrevL <*> metalPostLpPrevR) <*> metalClipPipe
   metalLevelPipe = register Nothing (mapPipe metalLevelFrame <$> metalPostLpfPipe)
 
+  -- ds1 (5 stages with HPF + post-LPF state)
+  ds1HpfLpPrevL = register 0 (frameOr fEqLowL <$> ds1HpfLpPrevL <*> ds1HpfPipe)
+  ds1HpfLpPrevR = register 0 (frameOr fEqLowR <$> ds1HpfLpPrevR <*> ds1HpfPipe)
+  ds1HpfPipe =
+    register Nothing $
+      mapPipe <$> (ds1HpfFrame <$> ds1HpfLpPrevL <*> ds1HpfLpPrevR) <*> metalLevelPipe
+  ds1MulPipe = register Nothing (mapPipe ds1MulFrame <$> ds1HpfPipe)
+  ds1ClipPipe = register Nothing (mapPipe ds1ClipFrame <$> ds1MulPipe)
+  ds1TonePrevL = register 0 (frameOr fEqHighLpL <$> ds1TonePrevL <*> ds1TonePipe)
+  ds1TonePrevR = register 0 (frameOr fEqHighLpR <$> ds1TonePrevR <*> ds1TonePipe)
+  ds1TonePipe =
+    register Nothing $
+      mapPipe <$> (ds1ToneFrame <$> ds1TonePrevL <*> ds1TonePrevR) <*> ds1ClipPipe
+  ds1LevelPipe = register Nothing (mapPipe ds1LevelFrame <$> ds1TonePipe)
+
+  -- big_muff (5 stages: pre, clip1, clip2, tone+state, level)
+  bigMuffPrePipe = register Nothing (mapPipe bigMuffPreFrame <$> ds1LevelPipe)
+  bigMuffClip1Pipe = register Nothing (mapPipe bigMuffClip1Frame <$> bigMuffPrePipe)
+  bigMuffClip2Pipe = register Nothing (mapPipe bigMuffClip2Frame <$> bigMuffClip1Pipe)
+  bigMuffTonePrevL = register 0 (frameOr fEqHighLpL <$> bigMuffTonePrevL <*> bigMuffTonePipe)
+  bigMuffTonePrevR = register 0 (frameOr fEqHighLpR <$> bigMuffTonePrevR <*> bigMuffTonePipe)
+  bigMuffTonePipe =
+    register Nothing $
+      mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrevL <*> bigMuffTonePrevR) <*> bigMuffClip2Pipe
+  bigMuffLevelPipe = register Nothing (mapPipe bigMuffLevelFrame <$> bigMuffTonePipe)
+
+  -- fuzz_face (4 stages: pre, asym clip, tone+state, level)
+  fuzzFacePrePipe = register Nothing (mapPipe fuzzFacePreFrame <$> bigMuffLevelPipe)
+  fuzzFaceClipPipe = register Nothing (mapPipe fuzzFaceClipFrame <$> fuzzFacePrePipe)
+  fuzzFaceTonePrevL = register 0 (frameOr fEqHighLpL <$> fuzzFaceTonePrevL <*> fuzzFaceTonePipe)
+  fuzzFaceTonePrevR = register 0 (frameOr fEqHighLpR <$> fuzzFaceTonePrevR <*> fuzzFaceTonePipe)
+  fuzzFaceTonePipe =
+    register Nothing $
+      mapPipe <$> (fuzzFaceToneFrame <$> fuzzFaceTonePrevL <*> fuzzFaceTonePrevR) <*> fuzzFaceClipPipe
+  fuzzFaceLevelPipe = register Nothing (mapPipe fuzzFaceLevelFrame <$> fuzzFaceTonePipe)
+
   -- Output of the new pedal section feeds the rest of the chain.
-  distortionPedalsPipe = metalLevelPipe
+  distortionPedalsPipe = fuzzFaceLevelPipe
 
   ampHpInPrevL = register 0 (frameOr fDryL <$> ampHpInPrevL <*> ampHighpassPipe)
   ampHpInPrevR = register 0 (frameOr fDryR <$> ampHpInPrevR <*> ampHighpassPipe)

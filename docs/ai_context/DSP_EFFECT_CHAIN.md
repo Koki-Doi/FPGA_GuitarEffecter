@@ -10,6 +10,14 @@ removed (`DECISIONS.md` D12). They were not on the live PL path and
 their continued presence risked steering future work into "implement
 in C++ then port" loops, which this project does not do.
 
+The live build also carries a "real-pedal voicing pass" of the
+existing stages (`DECISIONS.md` D16); see
+[`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) for
+the per-stage target style, current implementation, gap, plan, risk,
+and listening points. The pass changes constants and clip-helper
+choice inside the existing register stages; it does not change the
+pipeline shape, the GPIO inventory, or the `topEntity` ports.
+
 ## Core types
 
 ```haskell
@@ -59,7 +67,7 @@ makeInput
   -> tube_screamer        (5 stages: HPF -> mul -> asym soft clip -> post LPF -> level)
   -> metal_distortion     (5 stages: tight HPF -> mul -> hard clip -> post LPF -> level)
   -> amp simulator (HPF -> drive -> waveshape -> pre-LPF -> 2nd stage -> tone stack -> power -> resonance/presence -> master)
-  -> cab IR (3-tap convolution + level/mix)
+  -> cab IR (4-tap cabinet FIR + level/mix)
   -> EQ (3-band)
   -> reverb (BRAM tap + tone + feedback + mix)
   -> output AXIS register
@@ -181,10 +189,15 @@ When off, every stage is bit-exact bypass.
 | `clean_boost` (bit 0) | `cleanBoostMulFrame` -> `cleanBoostShiftFrame` -> `cleanBoostLevelFrame` |
 | `tube_screamer` (bit 1) | `tubeScreamerHpfFrame` -> `tubeScreamerMulFrame` -> `tubeScreamerClipFrame` -> `tubeScreamerPostLpfFrame` -> `tubeScreamerLevelFrame` |
 | `rat` (bit 2) | (no new stage — handled by the existing RAT block; Python flips `gate_control` bit 4 to engage it) |
-| `ds1` (bit 3) | reserved; no Clash stage yet, audio passes through |
-| `big_muff` (bit 4) | reserved; same |
-| `fuzz_face` (bit 5) | reserved; same |
 | `metal` (bit 6) | `metalHpfFrame` -> `metalMulFrame` -> `metalClipFrame` -> `metalPostLpfFrame` -> `metalLevelFrame` |
+| `ds1` (bit 3) | `ds1HpfFrame` -> `ds1MulFrame` -> `ds1ClipFrame` -> `ds1ToneFrame` -> `ds1LevelFrame` (BOSS DS-1 style: HPF, drive, asym soft clip with low knees, post LPF, level+safety) |
+| `big_muff` (bit 4) | `bigMuffPreFrame` -> `bigMuffClip1Frame` -> `bigMuffClip2Frame` -> `bigMuffToneFrame` -> `bigMuffLevelFrame` (Big Muff Pi style: pre-gain, two cascaded soft clips, tone LPF, level+safety) |
+| `fuzz_face` (bit 5) | `fuzzFacePreFrame` -> `fuzzFaceClipFrame` -> `fuzzFaceToneFrame` -> `fuzzFaceLevelFrame` (Fuzz Face style: pre-gain, strong asym soft clip, tone LPF, level+safety) |
+
+The pipeline order in `fxPipeline` is:
+`cleanBoost* -> tubeScreamer* -> metal* -> ds1* -> bigMuff* -> fuzzFace*`,
+with `distortionPedalsPipe = fuzzFaceLevelPipe`. Each pedal section
+is independently enabled, so off-pedals never touch the sample.
 
 Per-channel filter state for the HPFs and post-LPFs lives in
 pipeline-level registers wired up in `fxPipeline` (e.g.
@@ -200,6 +213,49 @@ Eight register stages with intermediate state held outside the frame:
 ratClip -> ratPostLowpass -> ratTone -> ratLevel -> ratMix`. This is the
 template for any new "pedal" we add: a small chain of single-purpose
 register stages that each do one thing.
+
+## Amp Simulator section
+
+Driven by the existing `axi_gpio_amp` and `axi_gpio_amp_tone` GPIOs:
+`input_gain` / `master` / `presence` / `resonance` plus B/M/T /
+`character`. Enable remains `gate_control.ctrlA` bit 6. The Amp/Cab
+real-voicing pass changed constants inside the existing stages only;
+no register stage, GPIO, or `topEntity` port was added.
+
+| Stage | What it does |
+| --- | --- |
+| `ampHighpassFrame` | First-order HPF using the existing input/output state registers. Feedback coefficient is now `253/256`, a little tighter than the prior `254/256` path. |
+| `ampDriveMultiplyFrame` / `ampDriveBoostFrame` | Q7-style preamp gain. The ceiling is ~21x rather than ~31x so hot distortion pedals do not get squared again by the amp. |
+| `ampWaveshapeFrame` | Character-controlled asymmetric soft clip with lower hand-rolled knees. Higher `character` lowers the knees and increases asymmetry. |
+| `ampPreLowpassFrame` | One-pole post-clip smoothing. Alpha range is darker (`144..207`) while high character still keeps edge. |
+| `ampSecondStageMultiplyFrame` / `ampSecondStageFrame` | Second gain/clip stage. Gain now depends more on `character` and less on raw input gain. |
+| `ampToneFilterFrame` -> `ampToneMixFrame` | Existing three-band B/M/T tone-stack approximation. |
+| `ampPowerFrame` | `softClipK 3_700_000` power-stage safety instead of the wider default `softClip`. |
+| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance and presence are internally capped (`resonance - resonance/8`, `presence - presence/4`) and mixed through `softClipK 3_700_000`. |
+| `ampMasterFrame` | Master multiply followed by `softClipK 3_600_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
+
+## Cab IR section
+
+Driven by the existing `axi_gpio_cab` GPIO. `ctrlA = mix`,
+`ctrlB = level`, `ctrlC = model`, `ctrlD = air`; those byte meanings
+are unchanged. Enable remains `gate_control.ctrlA` bit 7. The live
+stage is still the existing 4-tap FIR split over `cabProductsFrame`,
+`cabIrFrame`, and `cabLevelMixFrame`; no long IR loader and no extra
+AXI GPIO were added.
+
+The Amp/Cab real-voicing pass rebuilt the 4-tap coefficient table:
+
+| Model | Target | DSP shape |
+| --- | --- | --- |
+| 0 | 1x12 open back style | Lower total body, lighter low end, more open mid/air for clean and crunch. |
+| 1 | 2x12 combo style | Balanced response for Tube Screamer Lead / RAT Rhythm; highs are rolled off but presence remains. |
+| 2 | 4x12 closed back style | More delayed-body tap weight and the strongest high-fizz damping for Metal / Big Muff / Fuzz Face. |
+
+`air` still selects three variants per model, but the brightest row
+only restores a capped amount of direct tap. `air=100` therefore adds
+presence without reverting to raw line-direct tone. `mix=0` remains
+dry/raw and `mix=100` remains fully cabinet-shaped; `level` still runs
+through the existing post-Cab soft clip.
 
 ## Adding a new effect
 
