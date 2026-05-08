@@ -188,10 +188,22 @@ print(AudioLabOverlay.amp_model_to_character("jc_clean"))  # -> 10
 ## DSP 実装の正規パス
 
 このリポジトリのリアルタイム DSP 実装は **Clash/Haskell 記述
-`hw/ip/clash/src/LowPassFir.hs`** が唯一の正です。Clash から VHDL を
-生成し、Vivado で bit / hwh をビルドして PL 側で動かしています。
+`hw/ip/clash/src/LowPassFir.hs` と `hw/ip/clash/src/AudioLab/` 配下の
+module 群** が唯一の正です。Clash から VHDL を生成し、Vivado で
+bit / hwh をビルドして PL 側で動かしています。
 Python 側 (`AudioLabOverlay.py`) は AXI GPIO への制御 word を書き出す
 役割で、音そのものは PL で処理しています。
+
+2026-05-08 の LowPassFir split refactor で、挙動を変えずに
+`LowPassFir.hs` を薄い top module (`topEntity` と外部 interface) にし、
+型定義、固定小数点 helper、制御 word helper、AXIS helper、各 effect
+stage、`fxPipeline` を `AudioLab.*` module に分離しました。DSP 係数、
+bit 幅、pipeline 順、`topEntity` port、`block_design.tcl`、AXI GPIO、
+Python API、Notebook UI、Chain Preset は変更していません。local
+Clash/Vivado build は `WNS = -8.022 ns` / `TNS = -13937.512 ns` /
+`WHS = +0.052 ns` / `THS = 0.000 ns` で、直前 deploy baseline から
+WNS 差分 0.000 ns です。`PYNQ_HOST=192.168.1.9` で deploy 済みで、
+実機 smoke test も通過しています。
 
 過去にあった C++ DSP プロトタイプ (`src/effects/*.cpp`) は **削除済み**
 です。現在のリアルタイム音声経路は使っておらず、新しいエフェクトを
@@ -229,8 +241,32 @@ http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/GuitarPedalboardOneCell.
 この環境では以下に配置済みです。
 
 ```text
-http://192.168.1.8:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
+http://192.168.1.9:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
 ```
+
+## PYNQ-Z2 network
+
+この環境の PYNQ-Z2 は、ルーターの DHCP 固定割当で固定 IP 運用します。
+推奨予約は次の通りです。
+
+```text
+Device name : PYNQ-Z2
+MAC address : 00:05:6B:02:CA:04
+Reserved IP : 192.168.1.9
+Jupyter     : http://192.168.1.9:9090/tree
+SSH         : ssh xilinx@192.168.1.9
+```
+
+MAC / IP の確認には次を使います。
+
+```sh
+bash scripts/show_pynq_network_info.sh
+```
+
+DHCP 固定割当はリポジトリ側だけでは完了しません。ルーター管理画面で
+実機 eth0 MAC と予約 IP を紐づけ、IP 重複がないことを確認してから
+PYNQ-Z2 を再起動してください。PYNQ 側へ静的 IP を直接書く運用は、
+今回は推奨しません。
 
 ## Python API
 
@@ -404,6 +440,21 @@ hw/Pynq-Z2/bitstreams/audio_lab.hwh
 ## PYNQ への配置
 
 PYNQ 側の Python パッケージと Jupyter Notebook に、生成したファイルを配置します。
+
+通常は DHCP 固定割当した `192.168.1.9` を使い、deploy helper を実行します。
+`PYNQ_HOST` を省略した場合も既定値は `192.168.1.9` です。
+
+```sh
+bash scripts/deploy_to_pynq.sh
+# or
+PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
+```
+
+到達不能な場合は、PYNQ-Z2 の電源、LAN ケーブル、ルーター DHCP 固定割当、
+予約 MAC address、IP 重複を確認してください。
+
+古い手動配置手順は以下に残していますが、通常運用では
+`scripts/deploy_to_pynq.sh` を使ってください。
 
 ```sh
 scp hw/Pynq-Z2/bitstreams/audio_lab.bit xilinx@<PYNQ_IP>:/home/xilinx/

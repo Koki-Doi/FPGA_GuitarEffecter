@@ -70,12 +70,12 @@ control effect parameters via AXI GPIO.
 - AXI GPIOs in the design are output-only; the Python side keeps a cache
   of the last word written to each GPIO so that read-modify-write on
   byte-fields is possible.
-- PYNQ-Z2 board is reachable on the lab LAN at **192.168.1.8**, user
+- PYNQ-Z2 board is reachable on the lab LAN at **192.168.1.9**, user
   `xilinx`, with passwordless `sudo` and SSH key auth set up.
 - Deploy target on the board:
   - Repo / package source: `/home/xilinx/Audio-Lab-PYNQ/`
   - Notebooks (Jupyter root): `/home/xilinx/jupyter_notebooks/audio_lab/`
-  - Jupyter URL: `http://192.168.1.8:9090/tree`
+  - Jupyter URL: `http://192.168.1.9:9090/tree`
 - Notebooks shipped with the pedal-mask build:
   `InputDebug.ipynb`, `GuitarEffectsChain.ipynb`,
   `GuitarEffectSwitcher.ipynb` (now with a Distortion Pedalboard

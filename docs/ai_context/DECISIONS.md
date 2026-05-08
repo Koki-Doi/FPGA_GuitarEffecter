@@ -591,3 +591,56 @@ not get removed even when superseded — they get updated.
   topology change. Reuse `ampModelSel` only for small per-band
   constant trims, not for a wide model-select mux over independent
   filters, clippers, or multipliers.
+
+## D21 — LowPassFir split is behavior-preserving only
+
+- **Decision.** The May 8 LowPassFir split refactor separates the
+  Clash source into smaller `AudioLab.*` modules without changing DSP
+  behavior. `LowPassFir.hs` remains the Vivado-visible top module and
+  keeps the `topEntity` type, port names, port order, and external
+  I/O unchanged.
+- **What changed.**
+  - Type aliases, `Frame`, `AxisOut`, and common memory definitions
+    moved to `AudioLab.Types`.
+  - Fixed-point and clipping helpers moved to `AudioLab.FixedPoint`.
+  - `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD`, flag helpers, and
+    distortion-pedal enable helpers moved to `AudioLab.Control`.
+  - AXIS pack/unpack and input/output packet helpers moved to
+    `AudioLab.Axis`.
+  - Existing effect stage functions moved into
+    `AudioLab.Effects.NoiseSuppressor`, `Compressor`, `Overdrive`,
+    `Distortion`, `Amp`, `Cab`, `Eq`, and `Reverb`.
+  - `fxPipeline` and the unchanged register-stage wiring moved to
+    `AudioLab.Pipeline`.
+- **Boundaries.**
+  - **No** DSP algorithm change, coefficient change, clip-knee change,
+    fixed-point arithmetic change, bit-width change, register-stage
+    order change, enable / disable behavior change, or bypass behavior
+    change.
+  - **No** mono conversion, 96 kHz work, PCM1808 / PCM5102 support,
+    external ADC/DAC support, I2S interface change, or internal 32-bit
+    conversion.
+  - **No** `block_design.tcl` change, no new AXI GPIO, no GPIO address
+    or `ctrlA`-`ctrlD` semantic change, no Python API change, no
+    Notebook UI change, and no Chain Preset change.
+  - **No** Delay implementation from `feature/bram-delay-500ms`; no
+    `axi_gpio_delay_line`. Legacy `axi_gpio_delay` remains present.
+  - **No** C++ DSP prototype revival, commercial source import, or GPL
+    code import.
+- **Build result.** Clash type check, VHDL generation, IP repackage,
+  and Vivado bit/hwh rebuild completed locally. Final routed timing:
+  WNS = -8.022 ns, TNS = -13937.512 ns, WHS = +0.052 ns,
+  THS = 0.000 ns. This matches the previous deployed Amp Simulator
+  fizz-control baseline (WNS delta 0.000 ns). Utilization after place:
+  Slice LUTs 21809 (40.99%), Slice Registers 18675 (17.55%),
+  Block RAM Tile 7 (5.00%), DSPs 158 (71.82%).
+- **PYNQ result.** Deployed to PYNQ-Z2 with
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`. Smoke test
+  confirmed `ADC HPF: True`, `R19 = 0x23`,
+  `has delay_line gpio: False`, `has legacy axi_gpio_delay: True`,
+  all four amp models, and the requested chain presets.
+- **How to apply.** Future DSP work should keep dependencies flowing
+  from `LowPassFir` -> `AudioLab.Pipeline` -> `AudioLab.Effects.*` ->
+  `AudioLab.Types` / `FixedPoint` / `Control` / `Axis`. Shared
+  helpers belong in the common modules, not in an effect module that
+  another effect imports.

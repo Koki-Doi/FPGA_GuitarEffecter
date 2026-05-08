@@ -22,6 +22,36 @@ asking it to re-discover the project from scratch.
 > 新エフェクト追加では C++ → 移植の手順に戻らず、Python API / UI
 > 予約 → Clash ステージ追加で進めてください。
 
+## PYNQ-Z2 DHCP reservation / deploy
+
+> PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。
+> 実機 eth0 MAC は `00:05:6B:02:CA:04`、Jupyter は
+> `http://192.168.1.9:9090/tree`、SSH は `ssh xilinx@192.168.1.9`。
+> ルーター管理画面で Device name `PYNQ-Z2`、MAC
+> `00:05:6B:02:CA:04`、Reserved IP `192.168.1.9` を登録し、PYNQ を
+> 再起動してください。確認は
+> `bash scripts/show_pynq_network_info.sh` と
+> `ssh xilinx@192.168.1.9 'hostname; ip -br addr'`。
+> deploy は通常 `bash scripts/deploy_to_pynq.sh` でよく、必要なら
+> `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` と明示します。
+> 到達不能なら電源、LAN、DHCP固定割当、予約MAC、IP重複を確認してください。
+
+## LowPassFir split refactor — local build complete, deploy pending
+
+> `feature/split-lowpassfir-behavior-preserving` では
+> `LowPassFir.hs` を挙動不変で `AudioLab.Types` / `FixedPoint` /
+> `Control` / `Axis` / `Effects.*` / `Pipeline` に分割しました。
+> `LowPassFir.hs` には Vivado-visible な `topEntity` と annotation だけを
+> 残しています。DSP 係数、bit 幅、pipeline 順、`Frame` shape、
+> `topEntity` port、`block_design.tcl`、GPIO、Python API、Notebook UI、
+> Chain Preset は変更していません。Clash type check / VHDL生成、
+> IP repackage、Vivado bit/hwh rebuild は完了し、timing は
+> WNS=-8.022 ns / TNS=-13937.512 ns / WHS=+0.052 ns / THS=0.000 ns
+> で前回 deploy baseline と同値です。local Python tests と Notebook
+> JSON checks も pass 済み。`PYNQ_HOST=192.168.1.9` で deploy 済みで、
+> smoke test では ADC HPF=True / R19=0x23 / delay_line gpio False /
+> legacy axi_gpio_delay True / amp models / 指定 chain preset を確認済みです。
+
 ## Adding a new effect
 
 > 新しいエフェクトを追加するときは、まず
@@ -277,7 +307,7 @@ asking it to re-discover the project from scratch.
 
 ## PYNQ deploy
 
-> deploy は `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh` を
+> deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
 > してください。Vivado 実装で WNS が現行 deploy(-8.731 ns)より明らかに
