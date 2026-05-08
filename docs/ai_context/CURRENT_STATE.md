@@ -1,7 +1,30 @@
 # Current state
 
-Last updated: 2026-05-08 (LowPassFir behavior-preserving module split;
-Clash + Vivado bit/hwh rebuilt and deployed to PYNQ-Z2 at 192.168.1.9).
+Last updated: 2026-05-09 (PYNQ-Z2 DHCP reservation documented;
+LowPassFir split and minimal mono input build deployed at 192.168.1.9).
+
+## PYNQ-Z2 network identity
+
+The lab board should be kept at a stable router DHCP reservation:
+
+| Field | Value |
+| --- | --- |
+| Device name | `PYNQ-Z2` |
+| eth0 MAC | `00:05:6B:02:CA:04` |
+| Reserved IP | `192.168.1.9` |
+| SSH | `ssh xilinx@192.168.1.9` |
+| Jupyter | `http://192.168.1.9:9090/tree` |
+
+Use `bash scripts/show_pynq_network_info.sh` to confirm hostname, IP,
+and eth0 MAC from the board. The reservation itself must be created in
+the router management UI; do not rely on ad-hoc IP scans as normal
+operation, and do not write a static IP directly on the PYNQ for this
+workflow. After changing the reservation, reboot the PYNQ-Z2 and run:
+
+```sh
+ssh xilinx@192.168.1.9 'hostname; ip -br addr; cat /sys/class/net/eth0/address'
+bash scripts/deploy_to_pynq.sh
+```
 
 ## LowPassFir behavior-preserving split (this branch, `feature/split-lowpassfir-behavior-preserving`)
 
@@ -115,7 +138,7 @@ Build/deploy status:
   Registers = 18675 (17.55%), Block RAM Tile = 7 (5.00%), DSPs = 158
   (71.82%). No BRAM increase was introduced by this pass.
 - PYNQ-Z2 deploy completed with
-  `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh`.
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
 - PYNQ smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`
   and `R19 = 0x23`, confirmed `has delay_line gpio: False` and
   `has legacy axi_gpio_delay: True`, exercised all four amp models,
@@ -238,7 +261,7 @@ What landed:
   the previous deployed Amp/Cab build's -7.917 ns, still inside the
   accepted -6..-9 ns deploy band; hold remains clean.
 - PYNQ-Z2 deploy completed with
-  `PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh`.
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
   Smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`,
   `R19_ADC_CONTROL = 0x23`, found both Compressor and Noise Suppressor
   GPIOs, applied Overdrive and Compressor sanity settings, and applied

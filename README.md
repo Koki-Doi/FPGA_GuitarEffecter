@@ -244,6 +244,30 @@ http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/GuitarPedalboardOneCell.
 http://192.168.1.9:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
 ```
 
+## PYNQ-Z2 network
+
+この環境の PYNQ-Z2 は、ルーターの DHCP 固定割当で固定 IP 運用します。
+推奨予約は次の通りです。
+
+```text
+Device name : PYNQ-Z2
+MAC address : 00:05:6B:02:CA:04
+Reserved IP : 192.168.1.9
+Jupyter     : http://192.168.1.9:9090/tree
+SSH         : ssh xilinx@192.168.1.9
+```
+
+MAC / IP の確認には次を使います。
+
+```sh
+bash scripts/show_pynq_network_info.sh
+```
+
+DHCP 固定割当はリポジトリ側だけでは完了しません。ルーター管理画面で
+実機 eth0 MAC と予約 IP を紐づけ、IP 重複がないことを確認してから
+PYNQ-Z2 を再起動してください。PYNQ 側へ静的 IP を直接書く運用は、
+今回は推奨しません。
+
 ## Python API
 
 基本的な使い方です。`noise_gate_threshold` は新スケール 0..100 (100 ≡ 旧 10)。
@@ -416,6 +440,21 @@ hw/Pynq-Z2/bitstreams/audio_lab.hwh
 ## PYNQ への配置
 
 PYNQ 側の Python パッケージと Jupyter Notebook に、生成したファイルを配置します。
+
+通常は DHCP 固定割当した `192.168.1.9` を使い、deploy helper を実行します。
+`PYNQ_HOST` を省略した場合も既定値は `192.168.1.9` です。
+
+```sh
+bash scripts/deploy_to_pynq.sh
+# or
+PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
+```
+
+到達不能な場合は、PYNQ-Z2 の電源、LAN ケーブル、ルーター DHCP 固定割当、
+予約 MAC address、IP 重複を確認してください。
+
+古い手動配置手順は以下に残していますが、通常運用では
+`scripts/deploy_to_pynq.sh` を使ってください。
 
 ```sh
 scp hw/Pynq-Z2/bitstreams/audio_lab.bit xilinx@<PYNQ_IP>:/home/xilinx/

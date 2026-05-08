@@ -104,12 +104,41 @@ significantly, **do not deploy**; report and propose a pipeline change.
 
 ## Deploy to PYNQ-Z2
 
+The lab PYNQ-Z2 is operated through a router DHCP reservation. The
+recommended reservation is:
+
+| Field | Value |
+| --- | --- |
+| Device name | `PYNQ-Z2` |
+| MAC address | `00:05:6B:02:CA:04` |
+| Reserved IP | `192.168.1.9` |
+| Jupyter | `http://192.168.1.9:9090/tree` |
+| SSH | `ssh xilinx@192.168.1.9` |
+
+Set this in the router management UI; the repository cannot create the
+DHCP reservation by itself. Avoid writing a static IP directly on the
+PYNQ for this workflow. After changing the router reservation, reboot
+the PYNQ-Z2 and confirm:
+
 ```sh
+bash scripts/show_pynq_network_info.sh
+ssh xilinx@192.168.1.9 'hostname; ip -br addr'
+```
+
+The deploy script defaults to `PYNQ_HOST=192.168.1.9`; override it only
+when intentionally testing another address.
+
+```sh
+bash scripts/deploy_to_pynq.sh
+# or
 PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
 ```
 
 The script:
 
+- Prints the selected `PYNQ_HOST` and Jupyter URL.
+- Fails with a DHCP-reservation checklist when the reserved address is
+  unreachable.
 - Verifies / installs the SSH key on the board.
 - Detects passwordless sudo.
 - rsyncs `audio_lab_pynq/` plus the freshly built `audio_lab.bit` /
