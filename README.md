@@ -188,10 +188,22 @@ print(AudioLabOverlay.amp_model_to_character("jc_clean"))  # -> 10
 ## DSP 実装の正規パス
 
 このリポジトリのリアルタイム DSP 実装は **Clash/Haskell 記述
-`hw/ip/clash/src/LowPassFir.hs`** が唯一の正です。Clash から VHDL を
-生成し、Vivado で bit / hwh をビルドして PL 側で動かしています。
+`hw/ip/clash/src/LowPassFir.hs` と `hw/ip/clash/src/AudioLab/` 配下の
+module 群** が唯一の正です。Clash から VHDL を生成し、Vivado で
+bit / hwh をビルドして PL 側で動かしています。
 Python 側 (`AudioLabOverlay.py`) は AXI GPIO への制御 word を書き出す
 役割で、音そのものは PL で処理しています。
+
+2026-05-08 の LowPassFir split refactor で、挙動を変えずに
+`LowPassFir.hs` を薄い top module (`topEntity` と外部 interface) にし、
+型定義、固定小数点 helper、制御 word helper、AXIS helper、各 effect
+stage、`fxPipeline` を `AudioLab.*` module に分離しました。DSP 係数、
+bit 幅、pipeline 順、`topEntity` port、`block_design.tcl`、AXI GPIO、
+Python API、Notebook UI、Chain Preset は変更していません。local
+Clash/Vivado build は `WNS = -8.022 ns` / `TNS = -13937.512 ns` /
+`WHS = +0.052 ns` / `THS = 0.000 ns` で、直前 deploy baseline から
+WNS 差分 0.000 ns です。`PYNQ_HOST=192.168.1.9` で deploy 済みで、
+実機 smoke test も通過しています。
 
 過去にあった C++ DSP プロトタイプ (`src/effects/*.cpp`) は **削除済み**
 です。現在のリアルタイム音声経路は使っておらず、新しいエフェクトを
@@ -229,7 +241,7 @@ http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/GuitarPedalboardOneCell.
 この環境では以下に配置済みです。
 
 ```text
-http://192.168.1.8:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
+http://192.168.1.9:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
 ```
 
 ## Python API

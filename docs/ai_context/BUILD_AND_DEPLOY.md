@@ -105,7 +105,7 @@ significantly, **do not deploy**; report and propose a pipeline change.
 ## Deploy to PYNQ-Z2
 
 ```sh
-PYNQ_HOST=192.168.1.8 bash scripts/deploy_to_pynq.sh
+PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
 ```
 
 The script:
@@ -124,7 +124,7 @@ It never stores or logs the board password.
 ## Smoke test on the board
 
 ```sh
-ssh xilinx@192.168.1.8 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 - <<PY
+ssh xilinx@192.168.1.9 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 - <<PY
 from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay
 ovl = AudioLabOverlay()
 print("ADC HPF:", ovl.codec.get_adc_hpf_state())

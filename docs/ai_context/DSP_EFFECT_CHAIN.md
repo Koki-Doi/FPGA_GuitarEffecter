@@ -1,9 +1,21 @@
 # DSP effect chain
 
-The entire PL DSP pipeline lives in a single Clash module:
-`hw/ip/clash/src/LowPassFir.hs` (the file name is historical — it has long
-since stopped being just an FIR). This module is the **only** source of
-truth for DSP behaviour on the live PYNQ-Z2 build.
+The PL DSP pipeline is written in Clash/Haskell under
+`hw/ip/clash/src/LowPassFir.hs` and `hw/ip/clash/src/AudioLab/`. The
+`LowPassFir.hs` file name is historical -- it has long since stopped
+being just an FIR -- and now intentionally stays as the thin
+Vivado-visible top module. The split `AudioLab.*` modules hold the
+types, fixed-point helpers, control-word helpers, AXIS helpers, effect
+stage functions, and `fxPipeline`. Together these modules are the
+**only** source of truth for DSP behaviour on the live PYNQ-Z2 build.
+
+The May 8 behavior-preserving split changed module boundaries only:
+no coefficients, arithmetic widths, pipeline order, enable behavior,
+`Frame` shape, `topEntity` port, GPIO, Python API, Notebook UI, or
+Chain Preset changed. The rebuilt bitstream matched the previous
+deployed timing baseline (WNS = -8.022 ns, WHS = +0.052 ns) and was
+deployed to PYNQ-Z2 at `192.168.1.9`; smoke testing confirmed the
+existing chain presets and control API still work.
 
 The earlier C++ DSP prototypes that lived under `src/effects/` were
 removed (`DECISIONS.md` D12). They were not on the live PL path and
@@ -22,6 +34,12 @@ choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
 ## Core types
+
+Core definitions now live in `AudioLab.Types`; the numeric helper
+functions in the next section live in `AudioLab.FixedPoint`; byte /
+flag helpers live in `AudioLab.Control`; AXIS pack/unpack and packet
+helpers live in `AudioLab.Axis`; the stage functions live under
+`AudioLab.Effects.*`; `fxPipeline` lives in `AudioLab.Pipeline`.
 
 ```haskell
 type Sample = Signed 24    -- Audio samples, two's complement

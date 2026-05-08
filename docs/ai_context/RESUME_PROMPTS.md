@@ -22,6 +22,22 @@ asking it to re-discover the project from scratch.
 > 新エフェクト追加では C++ → 移植の手順に戻らず、Python API / UI
 > 予約 → Clash ステージ追加で進めてください。
 
+## LowPassFir split refactor — local build complete, deploy pending
+
+> `feature/split-lowpassfir-behavior-preserving` では
+> `LowPassFir.hs` を挙動不変で `AudioLab.Types` / `FixedPoint` /
+> `Control` / `Axis` / `Effects.*` / `Pipeline` に分割しました。
+> `LowPassFir.hs` には Vivado-visible な `topEntity` と annotation だけを
+> 残しています。DSP 係数、bit 幅、pipeline 順、`Frame` shape、
+> `topEntity` port、`block_design.tcl`、GPIO、Python API、Notebook UI、
+> Chain Preset は変更していません。Clash type check / VHDL生成、
+> IP repackage、Vivado bit/hwh rebuild は完了し、timing は
+> WNS=-8.022 ns / TNS=-13937.512 ns / WHS=+0.052 ns / THS=0.000 ns
+> で前回 deploy baseline と同値です。local Python tests と Notebook
+> JSON checks も pass 済み。`PYNQ_HOST=192.168.1.9` で deploy 済みで、
+> smoke test では ADC HPF=True / R19=0x23 / delay_line gpio False /
+> legacy axi_gpio_delay True / amp models / 指定 chain preset を確認済みです。
+
 ## Adding a new effect
 
 > 新しいエフェクトを追加するときは、まず

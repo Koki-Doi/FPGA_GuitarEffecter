@@ -6,11 +6,11 @@ This file captures the operational facts about the lab board.
 
 | Field | Value |
 | --- | --- |
-| IP address | `192.168.1.8` |
+| IP address | `192.168.1.9` |
 | User | `xilinx` |
 | SSH key auth | configured (see `scripts/deploy_to_pynq.sh`) |
 | Passwordless `sudo` | configured (`/etc/sudoers.d/xilinx-nopasswd`) |
-| Jupyter URL | `http://192.168.1.8:9090/tree` |
+| Jupyter URL | `http://192.168.1.9:9090/tree` |
 
 Because key auth is in place, the deploy script never asks for a password.
 If a future agent runs `ssh-copy-id` again, it will need an interactive
@@ -30,7 +30,7 @@ TTY and must be invoked by the user, not from inside an automated step.
 Always wrap your command in `sudo env PYTHONPATH=...`:
 
 ```sh
-ssh xilinx@192.168.1.8 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 - <<PY
+ssh xilinx@192.168.1.9 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 - <<PY
 from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay
 ovl = AudioLabOverlay()
 print("ADC HPF:", ovl.codec.get_adc_hpf_state())
@@ -67,7 +67,7 @@ before re-running diagnostics from the user account.
 ## Codec health-check shortcut
 
 ```sh
-ssh xilinx@192.168.1.8 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 -c "
+ssh xilinx@192.168.1.9 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 -c "
 from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay
 ovl = AudioLabOverlay()
 ovl.dump_codec_registers()

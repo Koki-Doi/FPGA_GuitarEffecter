@@ -1,7 +1,71 @@
 # Current state
 
-Last updated: 2026-05-08 (Amp Simulator high-frequency fizz-control
-pass; Clash + Vivado bit/hwh rebuilt and deployed).
+Last updated: 2026-05-08 (LowPassFir behavior-preserving module split;
+Clash + Vivado bit/hwh rebuilt and deployed to PYNQ-Z2 at 192.168.1.9).
+
+## LowPassFir behavior-preserving split (this branch, `feature/split-lowpassfir-behavior-preserving`)
+
+This pass is **only** a Haskell/Clash module split. It prepares the DSP
+source for future mono / 96 kHz / external ADC-DAC / internal-width /
+I2S work without implementing any of those changes now.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs` is now a thin top module that keeps
+  the `LowPassFir` module name, `Synthesize` annotation, `topEntity`
+  type, port names, port order, and external I/O unchanged.
+- New `hw/ip/clash/src/AudioLab/*` modules hold the moved code:
+  `Types`, `FixedPoint`, `Control`, `Axis`,
+  `Effects.NoiseSuppressor`, `Effects.Compressor`,
+  `Effects.Overdrive`, `Effects.Distortion`, `Effects.Amp`,
+  `Effects.Cab`, `Effects.Eq`, `Effects.Reverb`, and `Pipeline`.
+- Function bodies were moved, not retuned. The split keeps the existing
+  `Frame` shape, sample widths, accumulator widths, fixed-point helper
+  arithmetic, coefficients, clip knees, enable / bypass behavior, and
+  pipeline stage order.
+- `AudioLab.Pipeline` owns `fxPipeline`; effect modules expose the
+  same stage functions to the pipeline.
+- `hw/ip/clash/vhdl/LowPassFir/*` was regenerated and the IP was
+  repackaged.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` was rebuilt locally.
+
+Build/deploy status:
+
+- Local tests passed:
+  `python3 -m compileall audio_lab_pynq scripts`,
+  `python3 tests/test_overlay_controls.py`, and Notebook JSON checks
+  for `GuitarPedalboardOneCell.ipynb`, `GuitarEffectSwitcher.ipynb`,
+  and `DistortionModelsDebug.ipynb`.
+- Clash type check and VHDL generation passed. Vivado IP repackage
+  passed. Vivado bitstream build completed with
+  `write_bitstream completed successfully`.
+- Final routed timing: WNS = -8.022 ns, TNS = -13937.512 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. This is equal to the previous
+  deployed Amp Simulator fizz-control baseline (WNS delta 0.000 ns).
+  Hold remains clean.
+- Utilization after place: Slice LUTs = 21809 (40.99%), Slice
+  Registers = 18675 (17.55%), Block RAM Tile = 7 (5.00%), DSPs = 158
+  (71.82%).
+- PYNQ-Z2 deploy completed with
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
+- PYNQ smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`
+  and `R19 = 0x23`, confirmed `has delay_line gpio: False` and
+  `has legacy axi_gpio_delay: True`, listed all four amp models, and
+  applied Safe Bypass, Basic Clean, Tube Screamer Lead, RAT Rhythm,
+  DS-1 Crunch, Big Muff Sustain, Vintage Fuzz, Metal Tight, and
+  Ambient Clean.
+
+What did **not** change:
+
+- No DSP algorithm change, coefficient change, bit-width change,
+  mono conversion, 96 kHz work, PCM1808 / PCM5102 support, I2S
+  interface change, or external ADC/DAC support.
+- No `topEntity` interface change, no `block_design.tcl` change, no
+  new AXI GPIO, and no GPIO address / `ctrlA`-`ctrlD` semantic change.
+- No Python API, Notebook UI, Chain Preset, or effect preset change.
+- No Delay implementation from `feature/bram-delay-500ms`; no
+  `axi_gpio_delay_line`. Legacy `axi_gpio_delay` remains present.
+- No C++ DSP prototype or GPL/commercial source-code import.
 
 ## Amp Simulator fizz-control pass (this branch, `feature/amp-sim-fizz-control`)
 
