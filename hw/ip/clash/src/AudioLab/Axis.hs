@@ -15,11 +15,15 @@ makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctr
 makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl noiseSuppressorControl compressorControl samples validIn lastIn =
   if validIn
     then
-      let (left, right) = unpackChan samples
+      let (left, _) = unpackChan samples
+          -- Guitar input uses the ADAU1761 ADC left channel as the mono
+          -- source. Discard the right channel here to avoid carrying
+          -- unconnected-channel noise into the DSP chain.
+          mono = left
        in Just
             Frame
-              { fL = left
-              , fR = right
+              { fL = mono
+              , fR = mono
               , fLast = lastIn
               , fGate = gateControl
               , fOd = odControl
@@ -33,8 +37,8 @@ makeInput gateControl odControl distControl eqControl ratControl ampControl ampT
               , fNs = noiseSuppressorControl
               , fComp = compressorControl
               , fAddr = 0
-              , fDryL = left
-              , fDryR = right
+              , fDryL = mono
+              , fDryR = mono
               , fWetL = 0
               , fWetR = 0
               , fFbL = 0

@@ -36,13 +36,13 @@ end;
 architecture structural of clash_lowpass_fir is
   signal result_0                                    : clash_lowpass_fir_types.AxisOut;
   signal \c$case_alt\                                : clash_lowpass_fir_types.AxisOut;
-  -- src/AudioLab/Axis.hs:70:1-11
+  -- src/AudioLab/Axis.hs:74:1-11
   signal \new\                                       : boolean;
   signal \c$app_arg\                                 : boolean;
   signal \c$app_arg_0\                               : std_logic_vector(47 downto 0);
-  -- src/AudioLab/Axis.hs:59:1-8
+  -- src/AudioLab/Axis.hs:63:1-8
   signal f                                           : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Axis.hs:70:1-11
+  -- src/AudioLab/Axis.hs:74:1-11
   signal consumed                                    : boolean;
   -- src/AudioLab/Pipeline.hs:47:1-10
   signal outReg                                      : clash_lowpass_fir_types.AxisOut := ( AxisOut_sel0_oData => std_logic_vector'(x"000000000000")
@@ -2282,12 +2282,10 @@ architecture structural of clash_lowpass_fir is
   signal ds1_56                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   -- src/AudioLab/Axis.hs:15:1-9
   signal validIn                                     : boolean;
-  -- src/AudioLab/Axis.hs:15:1-9
-  signal right                                       : signed(23 downto 0);
-  -- src/AudioLab/Axis.hs:15:1-9
-  signal left                                        : signed(23 downto 0);
   signal result_415                                  : clash_lowpass_fir_types.Tuple2_0;
   signal \c$app_arg_495\                             : std_logic_vector(47 downto 0);
+  -- src/AudioLab/Axis.hs:15:1-9
+  signal mono                                        : signed(23 downto 0);
   signal result_416                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Pipeline.hs:47:1-10
   signal \c$reverbAddr_case_alt\                     : clash_lowpass_fir_types.index_1024;
@@ -21743,17 +21741,15 @@ begin
 
   validIn <= axis_in_tvalid and axis_out_tready;
 
-  right <= result_415.Tuple2_0_sel1_signed_1;
-
-  left <= result_415.Tuple2_0_sel0_signed_0;
-
   result_415 <= ( Tuple2_0_sel0_signed_0 => signed((\c$app_arg_495\(23 downto 0)))
                 , Tuple2_0_sel1_signed_1 => signed((\c$app_arg_495\(47 downto 24))) );
 
   \c$app_arg_495\ <= axis_in_tdata;
 
-  result_416 <= std_logic_vector'("1" & ((std_logic_vector(left)
-                 & std_logic_vector(right)
+  mono <= result_415.Tuple2_0_sel0_signed_0;
+
+  result_416 <= std_logic_vector'("1" & ((std_logic_vector(mono)
+                 & std_logic_vector(mono)
                  & clash_lowpass_fir_types.toSLV(axis_in_tlast)
                  & gate_control
                  & overdrive_control
@@ -21767,8 +21763,8 @@ begin
                  & noise_suppressor_control
                  & compressor_control
                  & std_logic_vector(to_unsigned(0,10))
-                 & std_logic_vector(left)
-                 & std_logic_vector(right)
+                 & std_logic_vector(mono)
+                 & std_logic_vector(mono)
                  & std_logic_vector(to_signed(0,24))
                  & std_logic_vector(to_signed(0,24))
                  & std_logic_vector(to_signed(0,24))
