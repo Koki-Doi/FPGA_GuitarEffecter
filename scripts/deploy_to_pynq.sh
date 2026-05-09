@@ -14,7 +14,7 @@
 #   - No HDL / HLS / Clash / block_design.tcl changes are made.
 #
 # Override defaults via environment variables (do not hard-code in files):
-#   PYNQ_HOST       default 192.168.1.8
+#   PYNQ_HOST       default 192.168.1.9
 #   PYNQ_USER       default xilinx
 #   SSH_KEY         default $HOME/.ssh/id_ed25519
 #   PYNQ_REPO_DIR   default /home/xilinx/Audio-Lab-PYNQ
@@ -22,11 +22,12 @@
 #
 set -euo pipefail
 
-PYNQ_HOST="${PYNQ_HOST:-192.168.1.8}"
+PYNQ_HOST="${PYNQ_HOST:-192.168.1.9}"
 PYNQ_USER="${PYNQ_USER:-xilinx}"
 PYNQ_REPO_DIR="${PYNQ_REPO_DIR:-/home/xilinx/Audio-Lab-PYNQ}"
 PYNQ_NB_DIR="${PYNQ_NB_DIR:-/home/xilinx/jupyter_notebooks}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
+PYNQ_JUPYTER_URL="http://${PYNQ_HOST}:9090/tree"
 
 SSH_TARGET="${PYNQ_USER}@${PYNQ_HOST}"
 SSH_BASE_OPTS=(-o ConnectTimeout=5 -o ServerAliveInterval=10 -o ServerAliveCountMax=3)
@@ -49,9 +50,23 @@ rsync_to_pynq() {
         "$@"
 }
 
+unreachable() {
+    err "Cannot reach PYNQ at $PYNQ_HOST"
+    cat >&2 <<EOF
+Check:
+- PYNQ power
+- Ethernet cable
+- router DHCP reservation
+- reserved MAC address
+- IP conflict
+EOF
+}
+
 # --- 1. SSH key bootstrap -------------------------------------------------
 
-log "target: $SSH_TARGET   (Jupyter: http://${PYNQ_HOST}:9090/tree)"
+log "Using PYNQ_HOST=$PYNQ_HOST"
+log "Jupyter: $PYNQ_JUPYTER_URL"
+log "target: $SSH_TARGET"
 
 if ! ping -c 1 -W 2 "$PYNQ_HOST" >/dev/null 2>&1; then
     warn "ping to $PYNQ_HOST failed; will still try SSH"
@@ -61,6 +76,15 @@ if [[ ! -f "$SSH_KEY" ]]; then
     log "generating SSH key at $SSH_KEY (no passphrase)"
     mkdir -p "$(dirname "$SSH_KEY")"
     ssh-keygen -t ed25519 -f "$SSH_KEY" -N '' -C "audio-lab-pynq-deploy" >/dev/null
+fi
+
+SSH_PROBE_RC=0
+SSH_PROBE_OUTPUT=$(
+    ssh "${SSH_BASE_OPTS[@]}" -i "$SSH_KEY" -o BatchMode=yes "$SSH_TARGET" 'echo ok' 2>&1 >/dev/null
+) || SSH_PROBE_RC=$?
+if [[ "$SSH_PROBE_RC" -ne 0 ]] && grep -Eqi 'No route to host|Connection timed out|Connection refused|Could not resolve|Name or service not known' <<<"$SSH_PROBE_OUTPUT"; then
+    unreachable
+    exit 1
 fi
 
 if ssh_keyauth 'echo ok' >/dev/null 2>&1; then
@@ -200,7 +224,7 @@ cat <<EOF
 ----------------------------------------------------------------------
 Deploy complete.
 
-  Jupyter UI         http://${PYNQ_HOST}:9090/tree
+  Jupyter UI         ${PYNQ_JUPYTER_URL}
   Notebooks dir      $PYNQ_NB_DIR/audio_lab/
   Repo on PYNQ       $PYNQ_REPO_DIR/
   Diagnostic CLI     ssh ${SSH_TARGET} \\

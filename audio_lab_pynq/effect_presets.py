@@ -342,7 +342,7 @@ CHAIN_PRESETS = {
                         drive=45, tone=60, level=30, bias=50, tight=50, mix=100),
         amp=dict(enabled=True, input_gain=40, bass=55, middle=55, treble=60,
                  presence=50, resonance=40, master=70, character=40),
-        cab=dict(enabled=True, mix=100, level=100, model=1, air=50),
+        cab=dict(enabled=True, mix=100, level=100, model=2, air=40),
         eq=dict(enabled=False, low=100, mid=100, high=100),
         reverb=dict(enabled=True, decay=25, tone=65, mix=12),
     ),

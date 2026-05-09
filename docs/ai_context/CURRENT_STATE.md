@@ -1,7 +1,348 @@
 # Current state
 
-Last updated: 2026-05-07 (Amp/Cab real-voicing pass landed;
-Clash + Vivado bit/hwh rebuilt and deployed).
+Last updated: 2026-05-09 (internal mono DSP pipeline deployed at
+192.168.1.9; DMA TLAST/backpressure check passed).
+
+## PYNQ-Z2 network identity
+
+The lab board should be kept at a stable router DHCP reservation:
+
+| Field | Value |
+| --- | --- |
+| Device name | `PYNQ-Z2` |
+| eth0 MAC | `00:05:6B:02:CA:04` |
+| Reserved IP | `192.168.1.9` |
+| SSH | `ssh xilinx@192.168.1.9` |
+| Jupyter | `http://192.168.1.9:9090/tree` |
+
+Use `bash scripts/show_pynq_network_info.sh` to confirm hostname, IP,
+and eth0 MAC from the board. The reservation itself must be created in
+the router management UI; do not rely on ad-hoc IP scans as normal
+operation, and do not write a static IP directly on the PYNQ for this
+workflow. After changing the reservation, reboot the PYNQ-Z2 and run:
+
+```sh
+ssh xilinx@192.168.1.9 'hostname; ip -br addr; cat /sys/class/net/eth0/address'
+bash scripts/deploy_to_pynq.sh
+```
+
+## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
+
+This pass converts the active DSP signal path to mono internally while
+preserving the deployed stereo external contract.
+
+What landed:
+
+- `topEntity`, port names, port order, external I/O, AXI Stream 48-bit
+  input/output, `block_design.tcl`, GPIO topology, Python API,
+  Notebook UI, and Chain Presets are unchanged.
+- AXI input still arrives as stereo frames, but `AudioLab.Axis.makeInput`
+  treats ADC Left as the guitar mono source and discards Right to avoid
+  unconnected-channel noise. The physical `Frame` record keeps its
+  L/R-shaped fields for compatibility, but the active helpers use one
+  mono sample/state.
+- Effect stages in `AudioLab.Effects.*` now process the active path from
+  mono helpers/state. The stereo duplicate state in the main path was
+  collapsed where safe; coefficients, clip knees, byte mappings, enable
+  semantics, and stage order were not retuned.
+- `AudioLab.Axis.pipeData` duplicates the mono result to output
+  Left/Right, so the external AXI/I2S stream remains stereo-compatible.
+- AXI Stream packet metadata remains separate from sample data:
+  `Frame.fLast` carries input TLAST to output TLAST, and
+  `AudioLab.Pipeline` now paces accepted input frames so the fixed-
+  latency DSP pipeline does not drop an in-flight output frame or TLAST
+  when the S2MM DMA side briefly deasserts ready.
+- No 96 kHz work, PCM1808 / PCM5102 support, external ADC/DAC support,
+  I2S addition, internal 32-bit conversion, new GPIO, Delay-line IP, or
+  `axi_gpio_delay_line` was added.
+
+Build/deploy status:
+
+- Local tests passed:
+  `python3 -m compileall audio_lab_pynq scripts`,
+  `python3 tests/test_overlay_controls.py`, and Notebook JSON checks
+  for `GuitarPedalboardOneCell.ipynb`, `GuitarEffectSwitcher.ipynb`,
+  and `DistortionModelsDebug.ipynb`.
+- Clash type check and VHDL generation passed. Vivado IP repackage
+  passed. Vivado bitstream build completed with
+  `write_bitstream completed successfully`.
+- Final routed timing: WNS = -8.155 ns, TNS = -6492.876 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. Versus the minimal mono build /
+  `37ef4c7` baseline (WNS = -8.022 ns), WNS delta is -0.133 ns.
+  Hold remains clean.
+- Utilization after place: Slice LUTs = 15473 (29.08%), Slice
+  Registers = 14914 (14.02%), Block RAM Tile = 7 (5.00%), DSPs = 83
+  (37.73%).
+- PYNQ-Z2 deploy completed with `bash scripts/deploy_to_pynq.sh`
+  using the default `PYNQ_HOST=192.168.1.9`.
+- PYNQ smoke test confirmed `ADC HPF: True`, `R19 = 0x23`,
+  `has delay_line gpio: False`, `has legacy axi_gpio_delay: True`,
+  and all requested chain presets.
+- DMA validation after PYNQ reboot used one overlay load and one
+  composite DMA packet for Case A (Left nonzero / Right different),
+  Case B (Left zero / Right large), and Case C (Right inverted noise).
+  All cases completed without timeout; send and recv DMASR both ended
+  at `0x00001002`. With `skip_frames = 16`, output L/R were identical
+  (`max_abs_lr_diff_steady_state = 0`) and Right input rejection was
+  confirmed (`max_abs_output_when_left_zero = 0`,
+  `max_abs_output_change_when_right_input_changes = 0`).
+
+## LowPassFir behavior-preserving split (this branch, `feature/split-lowpassfir-behavior-preserving`)
+
+This pass is **only** a Haskell/Clash module split. It prepares the DSP
+source for future mono / 96 kHz / external ADC-DAC / internal-width /
+I2S work without implementing any of those changes now.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs` is now a thin top module that keeps
+  the `LowPassFir` module name, `Synthesize` annotation, `topEntity`
+  type, port names, port order, and external I/O unchanged.
+- New `hw/ip/clash/src/AudioLab/*` modules hold the moved code:
+  `Types`, `FixedPoint`, `Control`, `Axis`,
+  `Effects.NoiseSuppressor`, `Effects.Compressor`,
+  `Effects.Overdrive`, `Effects.Distortion`, `Effects.Amp`,
+  `Effects.Cab`, `Effects.Eq`, `Effects.Reverb`, and `Pipeline`.
+- Function bodies were moved, not retuned. The split keeps the existing
+  `Frame` shape, sample widths, accumulator widths, fixed-point helper
+  arithmetic, coefficients, clip knees, enable / bypass behavior, and
+  pipeline stage order.
+- `AudioLab.Pipeline` owns `fxPipeline`; effect modules expose the
+  same stage functions to the pipeline.
+- `hw/ip/clash/vhdl/LowPassFir/*` was regenerated and the IP was
+  repackaged.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` was rebuilt locally.
+
+Build/deploy status:
+
+- Local tests passed:
+  `python3 -m compileall audio_lab_pynq scripts`,
+  `python3 tests/test_overlay_controls.py`, and Notebook JSON checks
+  for `GuitarPedalboardOneCell.ipynb`, `GuitarEffectSwitcher.ipynb`,
+  and `DistortionModelsDebug.ipynb`.
+- Clash type check and VHDL generation passed. Vivado IP repackage
+  passed. Vivado bitstream build completed with
+  `write_bitstream completed successfully`.
+- Final routed timing: WNS = -8.022 ns, TNS = -13937.512 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. This is equal to the previous
+  deployed Amp Simulator fizz-control baseline (WNS delta 0.000 ns).
+  Hold remains clean.
+- Utilization after place: Slice LUTs = 21809 (40.99%), Slice
+  Registers = 18675 (17.55%), Block RAM Tile = 7 (5.00%), DSPs = 158
+  (71.82%).
+- PYNQ-Z2 deploy completed with
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
+- PYNQ smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`
+  and `R19 = 0x23`, confirmed `has delay_line gpio: False` and
+  `has legacy axi_gpio_delay: True`, listed all four amp models, and
+  applied Safe Bypass, Basic Clean, Tube Screamer Lead, RAT Rhythm,
+  DS-1 Crunch, Big Muff Sustain, Vintage Fuzz, Metal Tight, and
+  Ambient Clean.
+
+What did **not** change:
+
+- No DSP algorithm change, coefficient change, bit-width change,
+  mono conversion, 96 kHz work, PCM1808 / PCM5102 support, I2S
+  interface change, or external ADC/DAC support.
+- No `topEntity` interface change, no `block_design.tcl` change, no
+  new AXI GPIO, and no GPIO address / `ctrlA`-`ctrlD` semantic change.
+- No Python API, Notebook UI, Chain Preset, or effect preset change.
+- No Delay implementation from `feature/bram-delay-500ms`; no
+  `axi_gpio_delay_line`. Legacy `axi_gpio_delay` remains present.
+- No C++ DSP prototype or GPL/commercial source-code import.
+
+## Amp Simulator fizz-control pass (this branch, `feature/amp-sim-fizz-control`)
+
+This pass targets **only** high-frequency fizz generated inside the
+Amp Simulator. It does not address input -> bypass tone differences,
+noise floor, codec/I2S/hardware routing, or capture-analysis tooling.
+It also does not touch Cab Sim topology, Compressor, Noise Suppressor,
+Reverb, Delay, Python API, Notebook UI, GPIO names/addresses, or
+`block_design.tcl`.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`:
+  - `ampPreLowpassFrame`: existing one-pole post-clip smoothing keeps
+    `baseAlpha = 128 + (charByte >> 2)` but increases the per-model
+    darken from `0 / 2 / 8 / 16` to `0 / 4 / 12 / 24`. `jc_clean`
+    stays bright; `high_gain_stack` is damped most strongly.
+  - `ampTrebleGain`: now takes the existing `amp_character` byte and
+    applies a small model-dependent cap. The base treble return is
+    reduced from roughly `64 + 7/16*T` to `64 + 13/32*T`, then trimmed
+    by `0 / 2 / 5 / 9` for the four amp bands so TREBLE=100 cannot
+    restore as much 8..16 kHz fizz.
+  - `ampResPresenceProductsFrame`: presence remains tied to the
+    existing `amp_presence` byte but gets extra model-dependent trim
+    of `0`, `presence>>5`, `presence>>4`, or `presence>>3`. This keeps
+    clean presence open while capping the high-gain presence return.
+  - `ampPowerFrame` and `ampResPresenceMixFrame`: safety `softClipK`
+    knee tightened from `3_500_000` to `3_400_000` to keep internal
+    gain spikes from leaking as broad high-frequency fizz.
+- `hw/ip/clash/vhdl/LowPassFir/*`: regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}`: rebuilt and deployed.
+
+Build/deploy status:
+
+- Local tests passed:
+  `python3 -m compileall audio_lab_pynq scripts`,
+  `python3 tests/test_overlay_controls.py`, and Notebook JSON checks
+  for `GuitarPedalboardOneCell.ipynb`, `GuitarEffectSwitcher.ipynb`,
+  and `DistortionModelsDebug.ipynb`.
+- Clash type check and VHDL generation passed. Vivado bitstream build
+  completed with `write_bitstream completed successfully`.
+- Final routed timing: WNS = -8.022 ns, TNS = -13937.512 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. This improves WNS by 0.709 ns vs
+  the previous deployed audio-analysis baseline (-8.731 ns). Hold
+  remains clean.
+- Utilization after place: Slice LUTs = 21809 (40.99%), Slice
+  Registers = 18675 (17.55%), Block RAM Tile = 7 (5.00%), DSPs = 158
+  (71.82%). No BRAM increase was introduced by this pass.
+- PYNQ-Z2 deploy completed with
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
+- PYNQ smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`
+  and `R19 = 0x23`, confirmed `has delay_line gpio: False` and
+  `has legacy axi_gpio_delay: True`, exercised all four amp models,
+  and applied Safe Bypass, Basic Clean, Tube Screamer Lead, RAT
+  Rhythm, DS-1 Crunch, Big Muff Sustain, Vintage Fuzz, Metal Tight,
+  and Ambient Clean.
+
+What did **not** change:
+
+- `hw/Pynq-Z2/block_design.tcl`, `topEntity` ports, `Frame` shape,
+  GPIO address map, Python API, Notebook UI, or chain preset structure.
+- Delay implementation from `feature/bram-delay-500ms` was not mixed
+  in; `axi_gpio_delay_line` is absent and legacy `axi_gpio_delay`
+  remains present.
+- Compressor / Noise Suppressor / Overdrive / Distortion Pedalboard /
+  Cab IR / EQ / Reverb voicings were not retuned in this pass.
+- No C++ DSP prototype, commercial amp circuit/IR/coefficients, GPL
+  code, analysis tool, or test-signal generator was added.
+
+## Amp Simulator named models (this branch, `feature/audio-analysis-voicing-fixes`)
+
+Four named amp voicings (`jc_clean` / `clean_combo` / `british_crunch`
+/ `high_gain_stack`) were layered onto the existing
+`amp_character` knob. The Python side adds an
+`AMP_MODELS` table plus `get_amp_model_names`,
+`amp_model_to_character`, and `set_amp_model` convenience helpers; the
+numeric `amp_character` argument still works directly. The Clash side
+quantises the same character byte into a two-bit `ampModelSel` index
+and applies a small extra darken to the post-clip pre-LPF for the
+higher-gain bands so high-gain pedals into the amp do not produce a
+second brightening on top of the audio-analysis pass. **No new GPIO,
+no new `topEntity` port, no `block_design.tcl` change**, no `Frame`
+field added; only one cheap helper and one alpha bias.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`: new `ampModelSel :: Unsigned 8 ->
+  Unsigned 2` helper, and `ampPreLowpassFrame` subtracts a
+  per-model darken (0 / 2 / 8 / 16) from the existing
+  `baseAlpha = 128 + (charByte >> 2)`. Bands match the documented
+  Python ranges (character 0..24 / 25..49 / 50..74 / 75..100).
+- `audio_lab_pynq/effect_defaults.py`: `AMP_MODELS = {jc_clean: 10,
+  clean_combo: 35, british_crunch: 60, high_gain_stack: 85}`.
+- `audio_lab_pynq/AudioLabOverlay.py`: `AMP_MODELS` class attr,
+  `get_amp_model_names()`, `amp_model_to_character(name)`,
+  `set_amp_model(name, **overrides)` convenience method.
+- `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`: Amp
+  Model dropdown above the Character slider; selection writes the
+  matching centre value into the slider so the chain-preset/safe-
+  bypass logic stays untouched. Inline fallback `AMP_MODELS` mirrors
+  the package values byte-for-byte.
+- `tests/test_overlay_controls.py`: anchor / table-shape / mapping
+  / per-model byte-distinctness / overrides tests.
+- `hw/ip/clash/vhdl/LowPassFir/*`: regenerated VHDL + repackaged IP.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}`: rebuilt; final routed
+  timing recorded in `TIMING_AND_FPGA_NOTES.md`.
+
+What did **not** change:
+
+- `block_design.tcl`, `topEntity` port list, `Frame` shape.
+- Existing `amp_character` API surface; the convenience helpers
+  share the same byte and write through `set_guitar_effects`.
+- The audio-analysis voicing fixes (the cap on the post-clip pre-LPF
+  is preserved; the model-specific darken sits on top).
+- Cab IR / Compressor / Overdrive / Distortion Pedalboard / EQ /
+  Reverb voicings (untouched in this pass).
+
+## Audio-analysis voicing fixes (prior arc on this branch)
+
+Recording analysis of Bypass / NoiseSuppressor / Compressor /
+Overdrive / DS-1 / AmpSim / Cabinet / Reverb showed four actionable
+voicing gaps: AmpSim had too much >5 kHz fizz, Cabinet roll-off was
+directionally right but still weak after high-gain pedals, Overdrive
+was nearly indistinguishable from Bypass, and Compressor crest factor
+barely moved. The findings are recorded in
+`docs/ai_context/AUDIO_RECORDING_ANALYSIS.md`.
+
+This pass is **not** a new effect. It retunes only existing
+`LowPassFir.hs` stages and keeps the fixed GPIO contract intact:
+no new AXI GPIO, no new `topEntity` port, no `block_design.tcl`
+change, no AXI address change, and no Python API / Notebook UI
+surface change.
+
+What landed:
+
+- `hw/ip/clash/src/LowPassFir.hs`:
+  - Compressor: `compThresholdSample`, `compEnvNext`,
+    `compTargetGain`, and `compGainNext` now start compression a bit
+    earlier and react a little faster while preserving the makeup
+    safety contract.
+  - Overdrive: `overdriveDriveMultiplyFrame` has a stronger midrange
+    drive curve, `overdriveDriveClipFrame` uses lower asymmetric knees,
+    and `overdriveLevelFrame` adds a lower output safety `softClipK`.
+  - Amp: `ampDriveMultiplyFrame`, `ampPreLowpassFrame`,
+    `ampToneProductsFrame` / `ampTrebleGain`, `ampPowerFrame`,
+    `ampResPresenceProductsFrame` / `ampResPresenceMixFrame`, and
+    `ampMasterFrame` were retuned to reduce painful high-end fizz and
+    keep MASTER / presence / treble from slamming later stages.
+  - Cab: `cabCoeff` was rebuilt again so model 0 / 1 / 2 are more
+    clearly separated. Model 2 is now the darkest 4x12-style setting
+    for DS-1 / RAT / Big Muff / Fuzz / Metal. `cabLevelMixFrame`
+    keeps the existing timing-friendly `softClip`; a lower
+    `softClipK 3_400_000` trial was rejected after timing slipped too
+    far.
+- `audio_lab_pynq/effect_presets.py`:
+  - DS-1 Crunch now leans on Cab model 2 with capped `air`.
+  - Safe Bypass remains all-off, Compressor makeup stays in 45..60,
+    and Distortion levels stay <= 35.
+- `tests/test_overlay_controls.py`:
+  - Added Overdrive enable-word sanity coverage and high-gain Cab
+    model-2 safety coverage for the chain presets.
+- `scripts/analyze_effect_recordings.py`:
+  - Added a lightweight WAV analysis script that regenerates the nine
+    comparison views used for this pass.
+- `hw/ip/clash/vhdl/LowPassFir/*` was regenerated and the Vivado IP
+  repackaged.
+- `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` was rebuilt and deployed.
+  Final routed timing: WNS = -8.731 ns, TNS = -13665.555 ns,
+  WHS = +0.051 ns, THS = 0.000 ns. This regresses WNS by 0.814 ns vs
+  the previous deployed Amp/Cab build's -7.917 ns, still inside the
+  accepted -6..-9 ns deploy band; hold remains clean.
+- PYNQ-Z2 deploy completed with
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
+  Smoke test loaded `AudioLabOverlay`, confirmed `ADC HPF: True`,
+  `R19_ADC_CONTROL = 0x23`, found both Compressor and Noise Suppressor
+  GPIOs, applied Overdrive and Compressor sanity settings, and applied
+  all chain presets.
+- The requested practical check sequence was applied on the board
+  (Safe Bypass, Basic Clean, Light Crunch, Overdrive standalone,
+  Compressor standalone, Tube Screamer Lead, DS-1 Crunch, RAT Rhythm,
+  Big Muff Sustain, Vintage Fuzz, Metal Tight, Ambient Clean). The
+  terminal session can verify preset application, not subjective
+  loudspeaker / headphone listening.
+
+What did **not** change:
+
+- `hw/Pynq-Z2/block_design.tcl`.
+- `topEntity` port list.
+- GPIO names, addresses, or `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD`
+  meanings.
+- Python API method names or Notebook UI structure.
+- C++ DSP prototypes (`src/effects` remains removed).
+- Commercial amp / cabinet IR / pedal circuit constants or GPL code.
 
 ## Amp/Cab real-voicing pass (this branch, `feature/amp-cab-real-voicing`)
 
@@ -500,7 +841,9 @@ returns the section to zero.
 | Noise suppressor add | -7.111 ns | -7683.480 ns | Deployed. |
 | Compressor add | -7.516 ns | -8815.426 ns | Deployed. |
 | Real-pedal voicing pass | -6.405 ns | -8806.714 ns | Deployed. |
-| **Reserved-pedal implementation (current)** | **-7.535 ns** | -11297.604 ns | Deployed. WNS regresses 1.130 ns vs voicing-pass build, still inside the historical -7..-9 ns band. |
+| Reserved-pedal implementation | -7.535 ns | -11297.604 ns | Deployed. WNS regresses 1.130 ns vs voicing-pass build, still inside the historical -7..-9 ns band. |
+| Amp/Cab real-voicing pass | -7.917 ns | -13100.457 ns | Deployed. WNS regresses 0.382 ns vs reserved-pedal build; hold clean. |
+| **Audio-analysis voicing fixes (current)** | **-8.731 ns** | -13665.555 ns | Deployed. WNS regresses 0.814 ns vs Amp/Cab build; hold clean and still inside the accepted deploy band. |
 
 Hold timing is fine (`WHS = +0.051 ns`, `THS = 0.000 ns`). Setup is
 still slightly negative; not a regression versus the historical
@@ -553,9 +896,9 @@ Open work, in roughly priority order:
   seven pedals. That is exactly what regressed timing the first time;
   see `TIMING_AND_FPGA_NOTES.md`.
 - Do **not** deploy a bitstream whose WNS is significantly worse than
-  the current reserved-pedal-implementation build's WNS (-7.535 ns)
-  without flagging the regression
-  first.
+  the current audio-analysis voicing build's WNS (-8.731 ns) without
+  flagging the regression first. A -15 ns-class result remains a hard
+  reject.
 - Do **not** revive the legacy `gateGainNext` / `gateFrame` registers
   in the active pipeline. The active gain stage is the noise
   suppressor (`nsApplyFrame`); the legacy helpers are kept as Haskell

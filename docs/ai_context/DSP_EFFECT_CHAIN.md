@@ -1,24 +1,56 @@
 # DSP effect chain
 
-The entire PL DSP pipeline lives in a single Clash module:
-`hw/ip/clash/src/LowPassFir.hs` (the file name is historical — it has long
-since stopped being just an FIR). This module is the **only** source of
-truth for DSP behaviour on the live PYNQ-Z2 build.
+The PL DSP pipeline is written in Clash/Haskell under
+`hw/ip/clash/src/LowPassFir.hs` and `hw/ip/clash/src/AudioLab/`. The
+`LowPassFir.hs` file name is historical -- it has long since stopped
+being just an FIR -- and now intentionally stays as the thin
+Vivado-visible top module. The split `AudioLab.*` modules hold the
+types, fixed-point helpers, control-word helpers, AXIS helpers, effect
+stage functions, and `fxPipeline`. Together these modules are the
+**only** source of truth for DSP behaviour on the live PYNQ-Z2 build.
+
+The May 8 behavior-preserving split changed module boundaries only:
+no coefficients, arithmetic widths, pipeline order, enable behavior,
+`Frame` shape, `topEntity` port, GPIO, Python API, Notebook UI, or
+Chain Preset changed. The rebuilt bitstream matched the previous
+deployed timing baseline (WNS = -8.022 ns, WHS = +0.052 ns) and was
+deployed to PYNQ-Z2 at `192.168.1.9`; smoke testing confirmed the
+existing chain presets and control API still work.
+
+The May 9 internal mono DSP pass keeps the external AXI/I2S contract as
+48-bit stereo but treats ADC Left as the only guitar source inside the
+DSP chain. Right input is explicitly discarded to avoid unconnected-
+channel noise, the active effect path runs on mono sample/state helpers,
+and the final mono result is duplicated back to output Left/Right.
+`topEntity`, `block_design.tcl`, GPIOs, Python API, Notebooks, and Chain
+Presets remain unchanged. AXI TLAST is carried in `Frame.fLast` from
+input to output; `fxPipeline` paces back-to-back DMA input so the fixed-
+latency DSP core still produces exactly one output frame for each
+accepted input frame even if S2MM ready drops briefly.
 
 The earlier C++ DSP prototypes that lived under `src/effects/` were
 removed (`DECISIONS.md` D12). They were not on the live PL path and
 their continued presence risked steering future work into "implement
 in C++ then port" loops, which this project does not do.
 
-The live build also carries a "real-pedal voicing pass" of the
-existing stages (`DECISIONS.md` D16); see
+The live build also carries a "real-pedal voicing pass" and a later
+recording-analysis-driven voicing pass of the existing stages
+(`DECISIONS.md` D16 / D17); see
 [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) for
 the per-stage target style, current implementation, gap, plan, risk,
-and listening points. The pass changes constants and clip-helper
-choice inside the existing register stages; it does not change the
+and listening points, and
+[`AUDIO_RECORDING_ANALYSIS.md`](AUDIO_RECORDING_ANALYSIS.md) for the
+measurement findings. These passes change constants and clip-helper
+choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
 ## Core types
+
+Core definitions now live in `AudioLab.Types`; the numeric helper
+functions in the next section live in `AudioLab.FixedPoint`; byte /
+flag helpers live in `AudioLab.Control`; AXIS pack/unpack and packet
+helpers live in `AudioLab.Axis`; the stage functions live under
+`AudioLab.Effects.*`; `fxPipeline` lives in `AudioLab.Pipeline`.
 
 ```haskell
 type Sample = Signed 24    -- Audio samples, two's complement
@@ -26,11 +58,16 @@ type Wide   = Signed 48    -- Wide accumulator for products and sums
 type Ctrl   = BitVector 32 -- One AXI GPIO word
 ```
 
-A `Frame` is the data record threaded down the pipeline. It carries the
-left/right sample pair, every effect's control word, the dry copy used by
-wet/dry mixes, and a set of `Wide` accumulators (`fAccL/R`, `fAcc2L/R`,
-`fAcc3L/R`) that successive stages reuse. `Maybe Frame` is the pipeline
-type; `Nothing` means a slot is idle.
+A `Frame` is the data record threaded down the pipeline. The physical
+record still carries left/right-shaped fields for compatibility with the
+split modules and generated IP, but the active guitar path is mono:
+`AudioLab.Axis.makeInput` copies ADC Left into the mono helpers/dry
+fields and discards ADC Right, and effect stages read/write via helpers
+such as `monoSample`, `setMonoSample`, `monoDry`, `monoWet`, and the
+mono EQ accumulator accessors. At output, `AudioLab.Axis.pipeData`
+duplicates that mono sample to both channels with `packChan mono mono`.
+`Frame.fLast` carries AXI TLAST independently of sample data. `Maybe
+Frame` is the pipeline type; `Nothing` means a slot is idle.
 
 ## Numeric primitives
 
@@ -58,6 +95,7 @@ The discipline is: **multiply** in `Wide`, **shift+sat** back into
 
 ```
 makeInput
+  -- ADC Left becomes the mono source; ADC Right is discarded
   -> nsLevel -> nsApply                                 (noise suppressor envelope + apply, replaces the legacy hard gate)
   -> compLevel -> compApply -> compMakeup               (stereo-linked feed-forward peak compressor; bit-exact bypass when off)
   -> overdrive (drive mul -> boost -> clip -> tone -> level)
@@ -70,8 +108,14 @@ makeInput
   -> cab IR (4-tap cabinet FIR + level/mix)
   -> EQ (3-band)
   -> reverb (BRAM tap + tone + feedback + mix)
-  -> output AXIS register
+  -> output AXIS register                               (mono duplicated to output L/R; TLAST propagated)
 ```
+
+For DMA traffic, `fxPipeline` does not infer packet length or TLAST from
+sample values. It accepts an input frame only when the output side and a
+small clock-domain pace counter permit it, then produces one output frame
+with the same `fLast` bit. This avoids dropping TLAST during short S2MM
+backpressure on long back-to-back DMA packets.
 
 ## Noise Suppressor section
 
@@ -134,8 +178,8 @@ Wiring lives in `fxPipeline` as
 | Stage | What it does |
 | --- | --- |
 | `compLevelPipe` (reuses `gateLevelFrame`) | `fWetL = max(\|L\|, \|R\|)` -- one register stage feeding the envelope follower (stereo-linked sidechain). |
-| `compEnv` (`compEnvNext` register feedback) | Peak follower. Attack-instantaneous; release ~ `env >> 8 + 1` per sample plus a response-controlled extra step (`max(1, (255 - response_byte) >> 4)`). Reset to 0 when the compressor enable is clear. |
-| `compGain` (`compGainNext` register feedback) | Smoothed gain. Both attack and release use the same response-controlled step (`max(1, (255 - response_byte) >> 3)`). Target is `gateUnity` when `env <= threshold`, otherwise `gateUnity - reduction`, where `reduction = clamp(0, gateUnity, ((env - threshold) >> 11) * ratio_byte >> 8)`. |
+| `compEnv` (`compEnvNext` register feedback) | Peak follower. Attack-instantaneous; release ~ `env >> 8 + 1` per sample plus a response-controlled extra step (`max(1, ((255 - response_byte) >> 4) + ((255 - response_byte) >> 6))`). Reset to 0 when the compressor enable is clear. |
+| `compGain` (`compGainNext` register feedback) | Smoothed gain. Both attack and release use a response-controlled step (`max(1, ((255 - response_byte) >> 3) + ((255 - response_byte) >> 5))`). Target is `gateUnity` when `env <= softThreshold`, otherwise `gateUnity - reduction`, where the audio-analysis pass uses `threshold = (byte << 13) * 7/8`, `softThreshold = threshold - threshold/8`, and `reduction = clamp(0, gateUnity, (((excess >> 12) + (excess >> 14)) * ratio_byte) >> 8)`. |
 | `compApplyPipe` (`compApplyFrame`) | Multiply each channel by the smoothed gain (`mulU12 x gain`) and saturate (`satShift12`). Bit-exact bypass when the compressor is off. |
 | `compMakeupPipe` (`compMakeupFrame`) | Q8 makeup multiply (`factor = 192 + makeup_u7` in `[192, 319]`, applied via `mulU9 + satShift8`). Bit-exact bypass when the compressor is off. |
 
@@ -143,7 +187,7 @@ Wiring lives in `fxPipeline` as
 
 | Knob | Python | byte (ctrl byte of fComp) | DSP effect |
 | --- | --- | --- | --- |
-| THRESHOLD | 0..100 | `ctrlA = round(threshold * 255 / 100)` | scaled to `Sample` via `compThresholdSample = asSigned9 ctrlA << 13`, identical scaling to `nsThresholdSample` so the byte range feels familiar. |
+| THRESHOLD | 0..100 | `ctrlA = round(threshold * 255 / 100)` | scaled to `Sample` via `compThresholdSample = (asSigned9 ctrlA << 13) - ((asSigned9 ctrlA << 13) >> 3)`, so compression begins a little earlier on guitar-level material. |
 | RATIO | 0..100 | `ctrlB = round(ratio * 255 / 100)` | linear gain-reduction factor: 0 = ~no compression, 255 = strong limiting. Reduction scales with both excess (`env - threshold`) and ratio_byte. |
 | RESPONSE | 0..100 | `ctrlC = round(response * 255 / 100)` | shared attack/release smoothing time. 0 -> fastest; 255 -> slowest (~128 samples to converge). |
 | MAKEUP | 0..100 | `ctrlD bits[6:0] = round(makeup * 127 / 100)` (clamped to 0..127) | Q8 makeup factor `192 + makeup_u7` (range 192..319, ~0.75x..1.25x). Conservative on purpose -- a Compressor preset cannot blow the rest of the chain into clipping. |
@@ -159,6 +203,22 @@ able to flip its own enable without read-modify-write on a shared
 flag byte. So a new `axi_gpio_compressor` IP was added at
 `0x43CD0000` and a new `compressor_control` port was added to the
 Clash top entity. See `DECISIONS.md` D14.
+
+## Overdrive section
+
+Driven by the existing `axi_gpio_overdrive` GPIO. Enable remains
+`gate_control.ctrlA` bit 1, and `ctrlA` / `ctrlB` / `ctrlC` remain
+tone / level / drive. The audio-analysis pass found the stage too close
+to Bypass at the recorded input level, so it retunes existing stages
+only:
+
+| Stage | Current shape |
+| --- | --- |
+| `overdriveDriveMultiplyFrame` | Q8 pre-gain is now `256 + drive*5`, about 1x..6x, so DRIVE 30..50 reaches the asymmetric clip knee more often. |
+| `overdriveDriveBoostFrame` | Existing `satShift8` return to `Sample`. |
+| `overdriveDriveClipFrame` | `asymSoftClip 2_700_000 2_300_000`, lower than the previous `3_300_000 / 2_900_000`, for audible light crunch without becoming DS-1 / RAT style distortion. |
+| `overdriveToneMultiplyFrame` -> `overdriveToneBlendFrame` | Existing one-pole tone blend; no GPIO or UI change. |
+| `overdriveLevelFrame` | Existing Q7 level multiply now runs through `softClipK 3_200_000` so higher drive settings do not create a large output jump. |
 
 ## Legacy distortion section
 
@@ -218,21 +278,23 @@ register stages that each do one thing.
 
 Driven by the existing `axi_gpio_amp` and `axi_gpio_amp_tone` GPIOs:
 `input_gain` / `master` / `presence` / `resonance` plus B/M/T /
-`character`. Enable remains `gate_control.ctrlA` bit 6. The Amp/Cab
-real-voicing pass changed constants inside the existing stages only;
-no register stage, GPIO, or `topEntity` port was added.
+`character`. Enable remains `gate_control.ctrlA` bit 6. The Amp/Cab,
+audio-analysis, named-model, and fizz-control passes changed constants
+inside the existing stages only; no register stage, GPIO, or
+`topEntity` port was added.
 
 | Stage | What it does |
 | --- | --- |
 | `ampHighpassFrame` | First-order HPF using the existing input/output state registers. Feedback coefficient is now `253/256`, a little tighter than the prior `254/256` path. |
-| `ampDriveMultiplyFrame` / `ampDriveBoostFrame` | Q7-style preamp gain. The ceiling is ~21x rather than ~31x so hot distortion pedals do not get squared again by the amp. |
+| `ampDriveMultiplyFrame` / `ampDriveBoostFrame` | Q7-style preamp gain. The ceiling is now ~19x rather than the prior ~21x so Amp-only and post-pedal use do not create as much line-direct fizz. |
 | `ampWaveshapeFrame` | Character-controlled asymmetric soft clip with lower hand-rolled knees. Higher `character` lowers the knees and increases asymmetry. |
-| `ampPreLowpassFrame` | One-pole post-clip smoothing. Alpha range is darker (`144..207`) while high character still keeps edge. |
+| `ampPreLowpassFrame` | One-pole post-clip smoothing. `baseAlpha = 128 + (character >> 2)` (range `128..191`) is biased down by `ampModelSel character` (`0/4/12/24` for the four amp model bands), so high-gain bands shed more 8..16 kHz fizz while clean bands keep edge. The audio-analysis darken cap is preserved. |
+| `ampModelSel` (helper) | `Unsigned 8 -> Unsigned 2` quantiser that maps the `amp_character` byte into four bands matching the Python `AMP_MODELS` table (`jc_clean` 0..62, `clean_combo` 63..125, `british_crunch` 126..189, `high_gain_stack` 190..255). Consumed only by cheap per-band caps in Amp stages; it is not a wide model mux. |
 | `ampSecondStageMultiplyFrame` / `ampSecondStageFrame` | Second gain/clip stage. Gain now depends more on `character` and less on raw input gain. |
-| `ampToneFilterFrame` -> `ampToneMixFrame` | Existing three-band B/M/T tone-stack approximation. |
-| `ampPowerFrame` | `softClipK 3_700_000` power-stage safety instead of the wider default `softClip`. |
-| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance and presence are internally capped (`resonance - resonance/8`, `presence - presence/4`) and mixed through `softClipK 3_700_000`. |
-| `ampMasterFrame` | Master multiply followed by `softClipK 3_600_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
+| `ampToneFilterFrame` -> `ampToneMixFrame` | Existing three-band B/M/T tone-stack approximation. Treble uses `ampTrebleGain character treble`, an internally capped and model-trimmed high-band gain, so treble at 100 keeps 2..4 kHz bite without restoring as much 8..16 kHz fizz. |
+| `ampPowerFrame` | `softClipK 3_400_000` power-stage safety instead of the wider default `softClip`. |
+| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance remains internally capped (`resonance * 3/4`). Presence starts from `presence * 5/8` and subtracts a model-dependent trim (`0`, `presence>>5`, `presence>>4`, or `presence>>3`) before the mix, then runs through `softClipK 3_400_000`. |
+| `ampMasterFrame` | Master multiply followed by `softClipK 3_300_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
 
 ## Cab IR section
 
@@ -243,19 +305,23 @@ stage is still the existing 4-tap FIR split over `cabProductsFrame`,
 `cabIrFrame`, and `cabLevelMixFrame`; no long IR loader and no extra
 AXI GPIO were added.
 
-The Amp/Cab real-voicing pass rebuilt the 4-tap coefficient table:
+The audio-analysis pass rebuilt the 4-tap coefficient table again:
 
 | Model | Target | DSP shape |
 | --- | --- | --- |
-| 0 | 1x12 open back style | Lower total body, lighter low end, more open mid/air for clean and crunch. |
-| 1 | 2x12 combo style | Balanced response for Tube Screamer Lead / RAT Rhythm; highs are rolled off but presence remains. |
-| 2 | 4x12 closed back style | More delayed-body tap weight and the strongest high-fizz damping for Metal / Big Muff / Fuzz Face. |
+| 0 | 1x12 open back style | Lower total body, lighter low end, enough mid/air for clean and crunch, but less direct tap than the previous table. |
+| 1 | 2x12 combo style | Balanced response for Tube Screamer Lead / RAT Rhythm; highs are rolled off more than model 0 but not as dark as model 2. |
+| 2 | 4x12 closed back style | Lowest direct tap and strongest delayed-body taps for DS-1 / Metal / Big Muff / Fuzz Face; strongest high-fizz damping. |
 
 `air` still selects three variants per model, but the brightest row
 only restores a capped amount of direct tap. `air=100` therefore adds
 presence without reverting to raw line-direct tone. `mix=0` remains
 dry/raw and `mix=100` remains fully cabinet-shaped; `level` still runs
-through the existing post-Cab soft clip.
+through the existing `softClip` in the post-Cab mix stage. The May 7
+analysis build briefly tried a lower `softClipK 3_400_000` knee here,
+but that path pushed WNS outside the deployable range; the deployed
+voicing keeps the timing-friendly `softClip` and puts the audible
+high-frequency roll-off in the Cab tap table instead.
 
 ## Adding a new effect
 

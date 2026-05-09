@@ -91,6 +91,26 @@ RAT_DEFAULTS = {
     "mix": 100,
 }
 
+# Amp simulator named "models" -- convenience labels that map onto the
+# existing ``amp_character`` percent value. Four models are documented;
+# they are inspirations, not commercial circuit / IR / coefficient
+# copies (DECISIONS.md D7). The numeric ``amp_character`` knob still
+# works directly; this dict only adds a friendlier API on top.
+#
+# Bands inside the Clash ``ampModelSel`` helper:
+#   character 0..24   -> model 0 (jc_clean)
+#   character 25..49  -> model 1 (clean_combo)
+#   character 50..74  -> model 2 (british_crunch)
+#   character 75..100 -> model 3 (high_gain_stack)
+# The values below land in the centre of each band so the labelled
+# voicings are stable against a small notebook bump.
+AMP_MODELS = {
+    "jc_clean":        10,
+    "clean_combo":     35,
+    "british_crunch":  60,
+    "high_gain_stack": 85,
+}
+
 # Amp simulator (axi_gpio_amp + axi_gpio_amp_tone).
 AMP_DEFAULTS = {
     "enabled": False,
@@ -191,6 +211,7 @@ __all__ = [
     "OVERDRIVE_DEFAULTS",
     "RAT_DEFAULTS",
     "AMP_DEFAULTS",
+    "AMP_MODELS",
     "CAB_DEFAULTS",
     "EQ_DEFAULTS",
     "REVERB_DEFAULTS",
