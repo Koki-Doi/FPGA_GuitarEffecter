@@ -19,6 +19,8 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 - BOSS NS-2 / NS-1X 風 Noise Suppressor、stereo-linked feed-forward
   Compressor、実機ペダル風 voicing pass を反映した既存ステージ
 - Amp Simulator の named model と高域 fizz-control pass
+- ギター入力向けに、DSP内部は ADC Left 由来の mono source で処理し、
+  AXI/I2S の外部 48-bit stereo I/O は維持
 - 13 種類の Chain Preset (Safe Bypass を含む) で 1 クリックでチェーン全体を切替
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
@@ -204,6 +206,19 @@ Clash/Vivado build は `WNS = -8.022 ns` / `TNS = -13937.512 ns` /
 `WHS = +0.052 ns` / `THS = 0.000 ns` で、直前 deploy baseline から
 WNS 差分 0.000 ns です。`PYNQ_HOST=192.168.1.9` で deploy 済みで、
 実機 smoke test も通過しています。
+
+2026-05-09 の internal mono DSP pass で、外部仕様はそのままに DSP
+内部の主経路を mono sample 中心へ整理しました。AXI input は従来どおり
+48-bit stereo (`Left 24-bit + Right 24-bit`) ですが、ギター入力では
+ADC Left channel を mono source として採用し、Right channel は未接続
+ノイズを避けるため破棄します。DSP の最終 mono result は AXI output の
+Left/Right 両方へ複製します。`topEntity` interface、port 名/順序、
+`block_design.tcl`、AXI GPIO、Python API、Notebook、Chain Preset は変更
+していません。AXI Stream metadata は入力から出力へ保持し、TLAST は
+入力 packet 終端をそのまま出力へ伝搬します。DMA 検証では Case A
+(Left nonzero / Right different)、Case B (Left zero / Right large)、
+Case C (Right inverted noise) の全てで timeout なし、skip 16 frame 以降
+の output L/R 完全一致、Right input rejection を確認済みです。
 
 過去にあった C++ DSP プロトタイプ (`src/effects/*.cpp`) は **削除済み**
 です。現在のリアルタイム音声経路は使っておらず、新しいエフェクトを
@@ -537,7 +552,7 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (audio-analysis voicing fixes 版) は `WNS = -8.731 ns` / `TNS = -13665.555 ns` / `WHS = +0.051 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (internal mono DSP 版) は `WNS = -8.155 ns` / `TNS = -6492.876 ns` / `WHS = +0.052 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。

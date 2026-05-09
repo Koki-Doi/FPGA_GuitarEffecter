@@ -310,8 +310,34 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。Vivado 実装で WNS が現行 deploy(-8.731 ns)より明らかに
+> してください。Vivado 実装で WNS が現行 deploy(-8.155 ns)より明らかに
 > 悪い bitstream は deploy しないでください。
+
+## Internal mono DSP pipeline — deployed
+
+> `feature/internal-mono-dsp-pipeline` で、外部 AXI/I2S 48-bit stereo
+> I/O と `topEntity` interface は維持したまま、DSP内部の主経路を
+> ADC Left 由来の mono source に整理済みです。Right input は未接続
+> ノイズ回避のため破棄し、最終 mono result を output L/R に複製します。
+> `block_design.tcl`、GPIO、Python API、Notebook、Chain Preset は変更
+> していません。TLAST は `Frame.fLast` で入力から出力へ伝搬し、
+> `AudioLab.Pipeline` は DMA backpressure で出力 frame/TLAST を落とさない
+> よう accepted input を clock-domain pace します。
+>
+> Build/deploy: local tests、Notebook JSON、Clash/VHDL、IP repackage、
+> Vivado bit/hwh、deploy、normal PYNQ smoke は pass。Timing:
+> WNS=-8.155 ns、TNS=-6492.876 ns、WHS=+0.052 ns、THS=0.000 ns。
+> Utilization: Slice LUTs 15473、Slice Registers 14914、BRAM Tile 7、
+> DSPs 83。DMA確認は PYNQ reboot 後に 1 overlay load / 1 composite DMA
+> packet で Case A (Left nonzero / Right different)、Case B (Left zero /
+> Right large)、Case C (Right inverted noise) を実施し、timeoutなし。
+> send/recv DMASR はどちらも `0x00001002`、skip_frames=16 以降の
+> output L/R は完全一致、Right input rejection も確認済み。
+>
+> 次に触る場合は、内部 mono 方針と AXI TLAST 伝搬を壊さないこと。
+> DMA timeout が再発した場合は、まず `AudioLab.Axis` /
+> `AudioLab.Pipeline` の AXI metadata と accepted-frame pacing を確認して
+> ください。DSP係数や effect voicing の変更と混ぜないでください。
 
 ## Codec / input debug
 

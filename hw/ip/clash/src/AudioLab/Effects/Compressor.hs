@@ -159,7 +159,7 @@ compGainNext gain env (Just f)
 compApplyFrame :: GateGain -> Frame -> Frame
 compApplyFrame gain f
   | not (compOn f) = f
-  | otherwise      = f{fL = applyComp (fL f), fR = applyComp (fR f)}
+  | otherwise      = setMonoSample (applyComp (monoSample f)) f
  where
   applyComp x = satShift12 (mulU12 x gain)
 
@@ -170,7 +170,7 @@ compApplyFrame gain f
 compMakeupFrame :: Frame -> Frame
 compMakeupFrame f
   | not (compOn f) = f
-  | otherwise      = f{fL = applyMakeup (fL f), fR = applyMakeup (fR f)}
+  | otherwise      = setMonoSample (applyMakeup (monoSample f)) f
  where
   factor :: Unsigned 9
   factor = 192 + resize (compMakeupU7 (fComp f))

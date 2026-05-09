@@ -1,7 +1,7 @@
 # Current state
 
-Last updated: 2026-05-09 (PYNQ-Z2 DHCP reservation documented;
-LowPassFir split and minimal mono input build deployed at 192.168.1.9).
+Last updated: 2026-05-09 (internal mono DSP pipeline deployed at
+192.168.1.9; DMA TLAST/backpressure check passed).
 
 ## PYNQ-Z2 network identity
 
@@ -25,6 +25,67 @@ workflow. After changing the reservation, reboot the PYNQ-Z2 and run:
 ssh xilinx@192.168.1.9 'hostname; ip -br addr; cat /sys/class/net/eth0/address'
 bash scripts/deploy_to_pynq.sh
 ```
+
+## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
+
+This pass converts the active DSP signal path to mono internally while
+preserving the deployed stereo external contract.
+
+What landed:
+
+- `topEntity`, port names, port order, external I/O, AXI Stream 48-bit
+  input/output, `block_design.tcl`, GPIO topology, Python API,
+  Notebook UI, and Chain Presets are unchanged.
+- AXI input still arrives as stereo frames, but `AudioLab.Axis.makeInput`
+  treats ADC Left as the guitar mono source and discards Right to avoid
+  unconnected-channel noise. The physical `Frame` record keeps its
+  L/R-shaped fields for compatibility, but the active helpers use one
+  mono sample/state.
+- Effect stages in `AudioLab.Effects.*` now process the active path from
+  mono helpers/state. The stereo duplicate state in the main path was
+  collapsed where safe; coefficients, clip knees, byte mappings, enable
+  semantics, and stage order were not retuned.
+- `AudioLab.Axis.pipeData` duplicates the mono result to output
+  Left/Right, so the external AXI/I2S stream remains stereo-compatible.
+- AXI Stream packet metadata remains separate from sample data:
+  `Frame.fLast` carries input TLAST to output TLAST, and
+  `AudioLab.Pipeline` now paces accepted input frames so the fixed-
+  latency DSP pipeline does not drop an in-flight output frame or TLAST
+  when the S2MM DMA side briefly deasserts ready.
+- No 96 kHz work, PCM1808 / PCM5102 support, external ADC/DAC support,
+  I2S addition, internal 32-bit conversion, new GPIO, Delay-line IP, or
+  `axi_gpio_delay_line` was added.
+
+Build/deploy status:
+
+- Local tests passed:
+  `python3 -m compileall audio_lab_pynq scripts`,
+  `python3 tests/test_overlay_controls.py`, and Notebook JSON checks
+  for `GuitarPedalboardOneCell.ipynb`, `GuitarEffectSwitcher.ipynb`,
+  and `DistortionModelsDebug.ipynb`.
+- Clash type check and VHDL generation passed. Vivado IP repackage
+  passed. Vivado bitstream build completed with
+  `write_bitstream completed successfully`.
+- Final routed timing: WNS = -8.155 ns, TNS = -6492.876 ns,
+  WHS = +0.052 ns, THS = 0.000 ns. Versus the minimal mono build /
+  `37ef4c7` baseline (WNS = -8.022 ns), WNS delta is -0.133 ns.
+  Hold remains clean.
+- Utilization after place: Slice LUTs = 15473 (29.08%), Slice
+  Registers = 14914 (14.02%), Block RAM Tile = 7 (5.00%), DSPs = 83
+  (37.73%).
+- PYNQ-Z2 deploy completed with `bash scripts/deploy_to_pynq.sh`
+  using the default `PYNQ_HOST=192.168.1.9`.
+- PYNQ smoke test confirmed `ADC HPF: True`, `R19 = 0x23`,
+  `has delay_line gpio: False`, `has legacy axi_gpio_delay: True`,
+  and all requested chain presets.
+- DMA validation after PYNQ reboot used one overlay load and one
+  composite DMA packet for Case A (Left nonzero / Right different),
+  Case B (Left zero / Right large), and Case C (Right inverted noise).
+  All cases completed without timeout; send and recv DMASR both ended
+  at `0x00001002`. With `skip_frames = 16`, output L/R were identical
+  (`max_abs_lr_diff_steady_state = 0`) and Right input rejection was
+  confirmed (`max_abs_output_when_left_zero = 0`,
+  `max_abs_output_change_when_right_input_changes = 0`).
 
 ## LowPassFir behavior-preserving split (this branch, `feature/split-lowpassfir-behavior-preserving`)
 

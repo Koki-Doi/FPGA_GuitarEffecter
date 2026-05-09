@@ -77,14 +77,13 @@ cabCoeff model air index =
 
 cabProductsFrame ::
   Sample -> Sample -> Sample ->
-  Sample -> Sample -> Sample ->
   Frame -> Frame
-cabProductsFrame d1L d2L d3L d1R d2R d3R f =
+cabProductsFrame d1 d2 d3 f =
   f
-    { fAccL = if on then earlyL else 0
-    , fAccR = if on then earlyR else 0
-    , fAcc2L = if on then bodyL else 0
-    , fAcc2R = if on then bodyR else 0
+    { fAccL = if on then early else 0
+    , fAccR = 0
+    , fAcc2L = if on then body else 0
+    , fAcc2R = 0
     , fAcc3L = 0
     , fAcc3R = 0
     }
@@ -96,28 +95,23 @@ cabProductsFrame d1L d2L d3L d1R d2R d3R f =
   c1 = cabCoeff model air 1
   c2 = cabCoeff model air 2
   c3 = cabCoeff model air 3
-  earlyL = mulS10 (fL f) c0 + mulS10 d1L c1
-  earlyR = mulS10 (fR f) c0 + mulS10 d1R c1
-  bodyL = mulS10 d2L c2 + mulS10 d3L c3
-  bodyR = mulS10 d2R c2 + mulS10 d3R c3
+  early = mulS10 (monoSample f) c0 + mulS10 d1 c1
+  body = mulS10 d2 c2 + mulS10 d3 c3
 
 cabIrFrame :: Frame -> Frame
 cabIrFrame f =
-  f{fWetL = if on then wetL else fL f, fWetR = if on then wetR else fR f}
+  setMonoWet (if on then wet else monoSample f) f
  where
   on = flag7 (fGate f)
-  wetL = satShift8 (fAccL f + fAcc2L f + fAcc3L f)
-  wetR = satShift8 (fAccR f + fAcc2R f + fAcc3R f)
+  wet = satShift8 (fAccL f + fAcc2L f + fAcc3L f)
 
 cabLevelMixFrame :: Frame -> Frame
 cabLevelMixFrame f =
-  f{fL = if on then softClip mixedL else fL f, fR = if on then softClip mixedR else fR f}
+  setMonoSample (if on then softClip mixed else monoSample f) f
  where
   on = flag7 (fGate f)
   mix = ctrlA (fCab f)
   invMix = 255 - mix
   level = ctrlB (fCab f)
-  wetL = satShift7 (mulU8 (fWetL f) level)
-  wetR = satShift7 (mulU8 (fWetR f) level)
-  mixedL = satShift8 (mulU8 (fL f) invMix + mulU8 wetL mix)
-  mixedR = satShift8 (mulU8 (fR f) invMix + mulU8 wetR mix)
+  wet = satShift7 (mulU8 (monoWet f) level)
+  mixed = satShift8 (mulU8 (monoSample f) invMix + mulU8 wet mix)
