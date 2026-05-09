@@ -61,7 +61,9 @@ makeInput gateControl odControl distControl eqControl ratControl ampControl ampT
     else Nothing
 pipeData :: Maybe Frame -> BitVector 48
 pipeData Nothing = 0
-pipeData (Just f) = packChan (fL f) (fR f)
+pipeData (Just f) = packChan mono mono
+ where
+  mono = monoSample f
 
 pipeLast :: Maybe Frame -> Bool
 pipeLast Nothing = False

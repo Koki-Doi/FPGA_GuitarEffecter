@@ -75,3 +75,60 @@ isActive (Just _) = True
 mapPipe :: (Frame -> Frame) -> Maybe Frame -> Maybe Frame
 mapPipe _ Nothing = Nothing
 mapPipe f (Just x) = Just (f x)
+
+monoSample :: Frame -> Sample
+monoSample = fL
+
+monoDry :: Frame -> Sample
+monoDry = fDryL
+
+monoWet :: Frame -> Sample
+monoWet = fWetL
+
+monoFb :: Frame -> Sample
+monoFb = fFbL
+
+monoEqLow :: Frame -> Sample
+monoEqLow = fEqLowL
+
+monoEqMid :: Frame -> Sample
+monoEqMid = fEqMidL
+
+monoEqHigh :: Frame -> Sample
+monoEqHigh = fEqHighL
+
+monoEqHighLp :: Frame -> Sample
+monoEqHighLp = fEqHighLpL
+
+setMonoSample :: Sample -> Frame -> Frame
+setMonoSample x f = f{fL = x, fR = x}
+
+setMonoDry :: Sample -> Frame -> Frame
+setMonoDry x f = f{fDryL = x, fDryR = x}
+
+setMonoWet :: Sample -> Frame -> Frame
+setMonoWet x f = f{fWetL = x, fWetR = x}
+
+setMonoFb :: Sample -> Frame -> Frame
+setMonoFb x f = f{fFbL = x, fFbR = x}
+
+setMonoEqLow :: Sample -> Frame -> Frame
+setMonoEqLow x f = f{fEqLowL = x, fEqLowR = x}
+
+setMonoEqMid :: Sample -> Frame -> Frame
+setMonoEqMid x f = f{fEqMidL = x, fEqMidR = x}
+
+setMonoEqHigh :: Sample -> Frame -> Frame
+setMonoEqHigh x f = f{fEqHighL = x, fEqHighR = x}
+
+setMonoEqHighLp :: Sample -> Frame -> Frame
+setMonoEqHighLp x f = f{fEqHighLpL = x, fEqHighLpR = x}
+
+setMonoAcc :: Wide -> Frame -> Frame
+setMonoAcc x f = f{fAccL = x, fAccR = 0}
+
+setMonoAcc2 :: Wide -> Frame -> Frame
+setMonoAcc2 x f = f{fAcc2L = x, fAcc2R = 0}
+
+setMonoAcc3 :: Wide -> Frame -> Frame
+setMonoAcc3 x f = f{fAcc3L = x, fAcc3R = 0}

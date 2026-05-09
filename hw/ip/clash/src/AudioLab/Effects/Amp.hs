@@ -8,22 +8,18 @@ import AudioLab.Control
 import AudioLab.FixedPoint
 import AudioLab.Types
 
-ampHighpassFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
-ampHighpassFrame prevInL prevInR prevOutL prevOutR f =
-  f
-    { fDryL = fL f
-    , fDryR = fR f
-    , fWetL = if on then highpass (fL f) prevInL prevOutL else fL f
-    , fWetR = if on then highpass (fR f) prevInR prevOutR else fR f
-    }
+ampHighpassFrame :: Sample -> Sample -> Frame -> Frame
+ampHighpassFrame prevIn prevOut f =
+  setMonoWet (if on then highpass x prevIn prevOut else x) (setMonoDry x f)
  where
   on = flag6 (fGate f)
+  x = monoSample f
   highpass x prevIn prevOut =
     satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 253 `shiftR` 8))
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =
-  f{fAccL = if on then mulU12 (fWetL f) gain else 0, fAccR = if on then mulU12 (fWetR f) gain else 0}
+  f{fAccL = if on then mulU12 (monoWet f) gain else 0, fAccR = 0}
  where
   on = flag6 (fGate f)
   -- 1.0x to about 19x using Q7-style post shift. The recording-analysis
@@ -33,7 +29,7 @@ ampDriveMultiplyFrame f =
 
 ampDriveBoostFrame :: Frame -> Frame
 ampDriveBoostFrame f =
-  f{fWetL = if on then satShift7 (fAccL f) else fL f, fWetR = if on then satShift7 (fAccR f) else fR f}
+  setMonoWet (if on then satShift7 (fAccL f) else monoSample f) f
  where
   on = flag6 (fGate f)
 
@@ -50,7 +46,7 @@ ampAsymClip character x
 
 ampWaveshapeFrame :: Frame -> Frame
 ampWaveshapeFrame f =
-  f{fWetL = if on then ampAsymClip character (fWetL f) else fL f, fWetR = if on then ampAsymClip character (fWetR f) else fR f}
+  setMonoWet (if on then ampAsymClip character (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
   character = ctrlD (fAmpTone f)
@@ -72,9 +68,9 @@ ampModelSel x
   | x < 190   = 2
   | otherwise = 3
 
-ampPreLowpassFrame :: Sample -> Sample -> Frame -> Frame
-ampPreLowpassFrame prevL prevR f =
-  f{fWetL = if on then onePoleU8 alpha prevL (fWetL f) else fL f, fWetR = if on then onePoleU8 alpha prevR (fWetR f) else fR f}
+ampPreLowpassFrame :: Sample -> Frame -> Frame
+ampPreLowpassFrame prev f =
+  setMonoWet (if on then onePoleU8 alpha prev (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
   charByte = ctrlD (fAmpTone f)
@@ -98,43 +94,43 @@ ampPreLowpassFrame prevL prevR f =
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
 ampSecondStageMultiplyFrame f =
-  f{fAccL = if on then mulU9 (fWetL f) gain else 0, fAccR = if on then mulU9 (fWetR f) gain else 0}
+  f{fAccL = if on then mulU9 (monoWet f) gain else 0, fAccR = 0}
  where
   on = flag6 (fGate f)
   gain = resize (112 + (ctrlA (fAmp f) `shiftR` 3) + (ctrlD (fAmpTone f) `shiftR` 2)) :: Unsigned 9
 
 ampSecondStageFrame :: Frame -> Frame
 ampSecondStageFrame f =
-  f{fWetL = if on then ampAsymClip character (satShift7 (fAccL f)) else fL f, fWetR = if on then ampAsymClip character (satShift7 (fAccR f)) else fR f}
+  setMonoWet (if on then ampAsymClip character (satShift7 (fAccL f)) else monoSample f) f
  where
   on = flag6 (fGate f)
   -- Softer than the first clip stage; keeps low-gain response touch-sensitive.
   character = ctrlD (fAmpTone f) `shiftR` 1
 
-ampToneFilterFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
-ampToneFilterFrame prevLowL prevLowR prevHighLpL prevHighLpR f =
+ampToneFilterFrame :: Sample -> Sample -> Frame -> Frame
+ampToneFilterFrame prevLow prevHighLp f =
   f
-    { fEqLowL = lowL
-    , fEqLowR = lowR
-    , fEqHighLpL = highLpL
-    , fEqHighLpR = highLpR
+    { fEqLowL = low
+    , fEqLowR = low
+    , fEqHighLpL = highLp
+    , fEqHighLpR = highLp
     }
  where
-  left = fWetL f
-  right = fWetR f
-  lowL = prevLowL + resize (((resize left - resize prevLowL) :: Signed 25) `shiftR` 5)
-  lowR = prevLowR + resize (((resize right - resize prevLowR) :: Signed 25) `shiftR` 5)
-  highLpL = prevHighLpL + resize (((resize left - resize prevHighLpL) :: Signed 25) `shiftR` 2)
-  highLpR = prevHighLpR + resize (((resize right - resize prevHighLpR) :: Signed 25) `shiftR` 2)
+  x = monoWet f
+  low = prevLow + resize (((resize x - resize prevLow) :: Signed 25) `shiftR` 5)
+  highLp = prevHighLp + resize (((resize x - resize prevHighLp) :: Signed 25) `shiftR` 2)
 
 ampToneBandFrame :: Frame -> Frame
 ampToneBandFrame f =
   f
-    { fEqMidL = satWide (resize (fEqHighLpL f) - resize (fEqLowL f))
-    , fEqMidR = satWide (resize (fEqHighLpR f) - resize (fEqLowR f))
-    , fEqHighL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
-    , fEqHighR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
+    { fEqMidL = mid
+    , fEqMidR = mid
+    , fEqHighL = high
+    , fEqHighR = high
     }
+ where
+  mid = satWide (resize (monoEqHighLp f) - resize (monoEqLow f))
+  high = satWide (resize (monoWet f) - resize (monoEqHighLp f))
 
 ampToneGain :: Unsigned 8 -> Unsigned 8
 ampToneGain x = 64 + (x `shiftR` 1)
@@ -154,12 +150,12 @@ ampTrebleGain character x = base - modelTrim
 ampToneProductsFrame :: Frame -> Frame
 ampToneProductsFrame f =
   f
-    { fAccL = if on then mulU8 (fEqLowL f) (ampToneGain (ctrlA (fAmpTone f))) else 0
-    , fAccR = if on then mulU8 (fEqLowR f) (ampToneGain (ctrlA (fAmpTone f))) else 0
-    , fAcc2L = if on then mulU8 (fEqMidL f) (ampToneGain (ctrlB (fAmpTone f))) else 0
-    , fAcc2R = if on then mulU8 (fEqMidR f) (ampToneGain (ctrlB (fAmpTone f))) else 0
-    , fAcc3L = if on then mulU8 (fEqHighL f) (ampTrebleGain character (ctrlC (fAmpTone f))) else 0
-    , fAcc3R = if on then mulU8 (fEqHighR f) (ampTrebleGain character (ctrlC (fAmpTone f))) else 0
+    { fAccL = if on then mulU8 (monoEqLow f) (ampToneGain (ctrlA (fAmpTone f))) else 0
+    , fAccR = 0
+    , fAcc2L = if on then mulU8 (monoEqMid f) (ampToneGain (ctrlB (fAmpTone f))) else 0
+    , fAcc2R = 0
+    , fAcc3L = if on then mulU8 (monoEqHigh f) (ampTrebleGain character (ctrlC (fAmpTone f))) else 0
+    , fAcc3R = 0
     }
  where
   on = flag6 (fGate f)
@@ -167,54 +163,49 @@ ampToneProductsFrame f =
 
 ampToneMixFrame :: Frame -> Frame
 ampToneMixFrame f =
-  f{fWetL = if on then satShift7 accL else fL f, fWetR = if on then satShift7 accR else fR f}
+  setMonoWet (if on then satShift7 acc else monoSample f) f
  where
   on = flag6 (fGate f)
-  accL = fAccL f + fAcc2L f + fAcc3L f
-  accR = fAccR f + fAcc2R f + fAcc3R f
+  acc = fAccL f + fAcc2L f + fAcc3L f
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  f{fWetL = if on then softClipK 3_400_000 (fWetL f) else fL f, fWetR = if on then softClipK 3_400_000 (fWetR f) else fR f}
+  setMonoWet (if on then softClipK 3_400_000 (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
 
-ampResPresenceFilterFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
-ampResPresenceFilterFrame prevResL prevResR prevPresenceL prevPresenceR f =
+ampResPresenceFilterFrame :: Sample -> Sample -> Frame -> Frame
+ampResPresenceFilterFrame prevRes prevPresence f =
   f
-    { fEqLowL = resL
-    , fEqLowR = resR
-    , fEqHighLpL = presenceLpL
-    , fEqHighLpR = presenceLpR
+    { fEqLowL = res
+    , fEqLowR = res
+    , fEqHighLpL = presenceLp
+    , fEqHighLpR = presenceLp
     }
  where
-  left = fWetL f
-  right = fWetR f
+  x = monoWet f
   -- Slow lowpass approximates resonance around the speaker low-end region.
-  resL = prevResL + resize (((resize left - resize prevResL) :: Signed 25) `shiftR` 8)
-  resR = prevResR + resize (((resize right - resize prevResR) :: Signed 25) `shiftR` 8)
-  presenceLpL = prevPresenceL + resize (((resize left - resize prevPresenceL) :: Signed 25) `shiftR` 3)
-  presenceLpR = prevPresenceR + resize (((resize right - resize prevPresenceR) :: Signed 25) `shiftR` 3)
+  res = prevRes + resize (((resize x - resize prevRes) :: Signed 25) `shiftR` 8)
+  presenceLp = prevPresence + resize (((resize x - resize prevPresence) :: Signed 25) `shiftR` 3)
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  f{fWetL = if on then softClipK 3_400_000 wetL else fL f, fWetR = if on then softClipK 3_400_000 wetR else fR f}
+  setMonoWet (if on then softClipK 3_400_000 wet else monoSample f) f
  where
   on = flag6 (fGate f)
-  wetL = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
-  wetR = satWide (fAccR f + satShift10Wide (fAcc2R f) + satShift9Wide (fAcc3R f))
+  wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
 
 ampResPresenceProductsFrame :: Frame -> Frame
 ampResPresenceProductsFrame f =
   f
-    { fEqHighL = highL
-    , fEqHighR = highR
-    , fAccL = if on then resize (fWetL f) else 0
-    , fAccR = if on then resize (fWetR f) else 0
-    , fAcc2L = if on then mulU8 (fEqLowL f) resonance else 0
-    , fAcc2R = if on then mulU8 (fEqLowR f) resonance else 0
-    , fAcc3L = if on then mulU8 highL presence else 0
-    , fAcc3R = if on then mulU8 highR presence else 0
+    { fEqHighL = high
+    , fEqHighR = high
+    , fAccL = if on then resize (monoWet f) else 0
+    , fAccR = 0
+    , fAcc2L = if on then mulU8 (monoEqLow f) resonance else 0
+    , fAcc2R = 0
+    , fAcc3L = if on then mulU8 high presence else 0
+    , fAcc3R = 0
     }
  where
   on = flag6 (fGate f)
@@ -228,8 +219,7 @@ ampResPresenceProductsFrame f =
     1 -> presenceByte `shiftR` 5
     2 -> presenceByte `shiftR` 4
     _ -> presenceByte `shiftR` 3
-  highL = satWide (resize (fWetL f) - resize (fEqHighLpL f))
-  highR = satWide (resize (fWetR f) - resize (fEqHighLpR f))
+  high = satWide (resize (monoWet f) - resize (monoEqHighLp f))
 
 satShift9Wide :: Wide -> Wide
 satShift9Wide = resize . satShift9
@@ -239,9 +229,8 @@ satShift10Wide = resize . satShift10
 
 ampMasterFrame :: Frame -> Frame
 ampMasterFrame f =
-  f{fL = if on then left else fL f, fR = if on then right else fR f}
+  setMonoSample (if on then out else monoSample f) f
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  left = softClipK 3_300_000 (satShift7 (mulU8 (fWetL f) level))
-  right = softClipK 3_300_000 (satShift7 (mulU8 (fWetR f) level))
+  out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) level))

@@ -22,6 +22,10 @@ frameOr f _ (Just x) = f x
 
 delayNext :: Sample -> Sample -> Maybe Frame -> Sample
 delayNext old incoming pipe = if isActive pipe then incoming else old
+
+nextPace :: Unsigned 4 -> Unsigned 4
+nextPace n = if n == 0 then maxBound else n - 1
+
 fxPipeline
   :: HiddenClockResetEnable AudioDomain
   => Signal AudioDomain Ctrl
@@ -51,10 +55,18 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
     ( oData <$> outReg
     , oValid <$> outReg
     , oLast <$> outReg
-    , readyOut
+    , acceptReady
     )
 
-  acceptedIn = (&&) <$> validIn <*> readyOut
+  -- The DSP core is a fixed-latency register pipeline, not a fully
+  -- stallable AXI pipeline. Pace back-to-back DMA input so the one-beat
+  -- output register can ride through short S2MM ready deassertions
+  -- without dropping an in-flight frame or its TLAST. Live I2S samples
+  -- are much sparser than this clock-domain pacing.
+  paceCount = register (0 :: Unsigned 4) (nextPace <$> paceCount)
+  paceReady = (== 0) <$> paceCount
+  acceptReady = (&&) <$> readyOut <*> paceReady
+  acceptedIn = (&&) <$> validIn <*> acceptReady
 
   inPipe =
     register Nothing $
@@ -103,9 +115,8 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   odDriveBoostPipe = register Nothing (mapPipe overdriveDriveBoostFrame <$> odDriveMulPipe)
   odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odDriveBoostPipe)
 
-  odTonePrevL = register 0 (frameOr fWetL <$> odTonePrevL <*> odToneBlendPipe)
-  odTonePrevR = register 0 (frameOr fWetR <$> odTonePrevR <*> odToneBlendPipe)
-  odToneMulPipe = register Nothing (mapPipe <$> (overdriveToneMultiplyFrame <$> odTonePrevL <*> odTonePrevR) <*> odDrivePipe)
+  odTonePrev = register 0 (frameOr monoWet <$> odTonePrev <*> odToneBlendPipe)
+  odToneMulPipe = register Nothing (mapPipe <$> (overdriveToneMultiplyFrame <$> odTonePrev) <*> odDrivePipe)
   odToneBlendPipe = register Nothing (mapPipe overdriveToneBlendFrame <$> odToneMulPipe)
   odTonePipe = register Nothing (mapPipe overdriveLevelFrame <$> odToneBlendPipe)
 
@@ -117,34 +128,28 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   distDriveBoostPipe = register Nothing (mapPipe distortionDriveBoostFrame <$> distDriveMulPipe)
   distDrivePipe = register Nothing (mapPipe distortionDriveClipFrame <$> distDriveBoostPipe)
 
-  distTonePrevL = register 0 (frameOr fWetL <$> distTonePrevL <*> distToneBlendPipe)
-  distTonePrevR = register 0 (frameOr fWetR <$> distTonePrevR <*> distToneBlendPipe)
-  distToneMulPipe = register Nothing (mapPipe <$> (distortionToneMultiplyFrame <$> distTonePrevL <*> distTonePrevR) <*> distDrivePipe)
+  distTonePrev = register 0 (frameOr monoWet <$> distTonePrev <*> distToneBlendPipe)
+  distToneMulPipe = register Nothing (mapPipe <$> (distortionToneMultiplyFrame <$> distTonePrev) <*> distDrivePipe)
   distToneBlendPipe = register Nothing (mapPipe distortionToneBlendFrame <$> distToneMulPipe)
   distTonePipe = register Nothing (mapPipe distortionLevelFrame <$> distToneBlendPipe)
 
-  ratHpInPrevL = register 0 (frameOr fDryL <$> ratHpInPrevL <*> ratHighpassPipe)
-  ratHpInPrevR = register 0 (frameOr fDryR <$> ratHpInPrevR <*> ratHighpassPipe)
-  ratHpOutPrevL = register 0 (frameOr fWetL <$> ratHpOutPrevL <*> ratHighpassPipe)
-  ratHpOutPrevR = register 0 (frameOr fWetR <$> ratHpOutPrevR <*> ratHighpassPipe)
+  ratHpInPrev = register 0 (frameOr monoDry <$> ratHpInPrev <*> ratHighpassPipe)
+  ratHpOutPrev = register 0 (frameOr monoWet <$> ratHpOutPrev <*> ratHighpassPipe)
   ratHighpassPipe =
     register Nothing $
-      mapPipe <$> (ratHighpassFrame <$> ratHpInPrevL <*> ratHpInPrevR <*> ratHpOutPrevL <*> ratHpOutPrevR) <*> distTonePipe
+      mapPipe <$> (ratHighpassFrame <$> ratHpInPrev <*> ratHpOutPrev) <*> distTonePipe
   ratDriveMulPipe = register Nothing (mapPipe ratDriveMultiplyFrame <$> ratHighpassPipe)
   ratDriveBoostPipe = register Nothing (mapPipe ratDriveBoostFrame <$> ratDriveMulPipe)
 
-  ratOpAmpPrevL = register 0 (frameOr fWetL <$> ratOpAmpPrevL <*> ratOpAmpPipe)
-  ratOpAmpPrevR = register 0 (frameOr fWetR <$> ratOpAmpPrevR <*> ratOpAmpPipe)
-  ratOpAmpPipe = register Nothing (mapPipe <$> (ratOpAmpLowpassFrame <$> ratOpAmpPrevL <*> ratOpAmpPrevR) <*> ratDriveBoostPipe)
+  ratOpAmpPrev = register 0 (frameOr monoWet <$> ratOpAmpPrev <*> ratOpAmpPipe)
+  ratOpAmpPipe = register Nothing (mapPipe <$> (ratOpAmpLowpassFrame <$> ratOpAmpPrev) <*> ratDriveBoostPipe)
   ratClipPipe = register Nothing (mapPipe ratClipFrame <$> ratOpAmpPipe)
 
-  ratPostPrevL = register 0 (frameOr fWetL <$> ratPostPrevL <*> ratPostPipe)
-  ratPostPrevR = register 0 (frameOr fWetR <$> ratPostPrevR <*> ratPostPipe)
-  ratPostPipe = register Nothing (mapPipe <$> (ratPostLowpassFrame <$> ratPostPrevL <*> ratPostPrevR) <*> ratClipPipe)
+  ratPostPrev = register 0 (frameOr monoWet <$> ratPostPrev <*> ratPostPipe)
+  ratPostPipe = register Nothing (mapPipe <$> (ratPostLowpassFrame <$> ratPostPrev) <*> ratClipPipe)
 
-  ratTonePrevL = register 0 (frameOr fWetL <$> ratTonePrevL <*> ratTonePipe)
-  ratTonePrevR = register 0 (frameOr fWetR <$> ratTonePrevR <*> ratTonePipe)
-  ratTonePipe = register Nothing (mapPipe <$> (ratToneFrame <$> ratTonePrevL <*> ratTonePrevR) <*> ratPostPipe)
+  ratTonePrev = register 0 (frameOr monoWet <$> ratTonePrev <*> ratTonePipe)
+  ratTonePipe = register Nothing (mapPipe <$> (ratToneFrame <$> ratTonePrev) <*> ratPostPipe)
   ratLevelPipe = register Nothing (mapPipe ratLevelFrame <$> ratTonePipe)
   ratMixPipe = register Nothing (mapPipe ratMixFrame <$> ratLevelPipe)
 
@@ -158,151 +163,127 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   cleanBoostLevelPipe = register Nothing (mapPipe cleanBoostLevelFrame <$> cleanBoostShiftPipe)
 
   -- tube_screamer (5 stages with HPF + post-LPF state)
-  tsHpfLpPrevL = register 0 (frameOr fEqLowL <$> tsHpfLpPrevL <*> tsHpfPipe)
-  tsHpfLpPrevR = register 0 (frameOr fEqLowR <$> tsHpfLpPrevR <*> tsHpfPipe)
+  tsHpfLpPrev = register 0 (frameOr monoEqLow <$> tsHpfLpPrev <*> tsHpfPipe)
   tsHpfPipe =
     register Nothing $
-      mapPipe <$> (tubeScreamerHpfFrame <$> tsHpfLpPrevL <*> tsHpfLpPrevR) <*> cleanBoostLevelPipe
+      mapPipe <$> (tubeScreamerHpfFrame <$> tsHpfLpPrev) <*> cleanBoostLevelPipe
   tsMulPipe = register Nothing (mapPipe tubeScreamerMulFrame <$> tsHpfPipe)
   tsClipPipe = register Nothing (mapPipe tubeScreamerClipFrame <$> tsMulPipe)
-  tsPostLpPrevL = register 0 (frameOr fEqHighLpL <$> tsPostLpPrevL <*> tsPostLpfPipe)
-  tsPostLpPrevR = register 0 (frameOr fEqHighLpR <$> tsPostLpPrevR <*> tsPostLpfPipe)
+  tsPostLpPrev = register 0 (frameOr monoEqHighLp <$> tsPostLpPrev <*> tsPostLpfPipe)
   tsPostLpfPipe =
     register Nothing $
-      mapPipe <$> (tubeScreamerPostLpfFrame <$> tsPostLpPrevL <*> tsPostLpPrevR) <*> tsClipPipe
+      mapPipe <$> (tubeScreamerPostLpfFrame <$> tsPostLpPrev) <*> tsClipPipe
   tsLevelPipe = register Nothing (mapPipe tubeScreamerLevelFrame <$> tsPostLpfPipe)
 
   -- metal_distortion (5 stages with HPF + post-LPF state)
-  metalHpfLpPrevL = register 0 (frameOr fEqLowL <$> metalHpfLpPrevL <*> metalHpfPipe)
-  metalHpfLpPrevR = register 0 (frameOr fEqLowR <$> metalHpfLpPrevR <*> metalHpfPipe)
+  metalHpfLpPrev = register 0 (frameOr monoEqLow <$> metalHpfLpPrev <*> metalHpfPipe)
   metalHpfPipe =
     register Nothing $
-      mapPipe <$> (metalHpfFrame <$> metalHpfLpPrevL <*> metalHpfLpPrevR) <*> tsLevelPipe
+      mapPipe <$> (metalHpfFrame <$> metalHpfLpPrev) <*> tsLevelPipe
   metalMulPipe = register Nothing (mapPipe metalMulFrame <$> metalHpfPipe)
   metalClipPipe = register Nothing (mapPipe metalClipFrame <$> metalMulPipe)
-  metalPostLpPrevL = register 0 (frameOr fEqHighLpL <$> metalPostLpPrevL <*> metalPostLpfPipe)
-  metalPostLpPrevR = register 0 (frameOr fEqHighLpR <$> metalPostLpPrevR <*> metalPostLpfPipe)
+  metalPostLpPrev = register 0 (frameOr monoEqHighLp <$> metalPostLpPrev <*> metalPostLpfPipe)
   metalPostLpfPipe =
     register Nothing $
-      mapPipe <$> (metalPostLpfFrame <$> metalPostLpPrevL <*> metalPostLpPrevR) <*> metalClipPipe
+      mapPipe <$> (metalPostLpfFrame <$> metalPostLpPrev) <*> metalClipPipe
   metalLevelPipe = register Nothing (mapPipe metalLevelFrame <$> metalPostLpfPipe)
 
   -- ds1 (5 stages with HPF + post-LPF state)
-  ds1HpfLpPrevL = register 0 (frameOr fEqLowL <$> ds1HpfLpPrevL <*> ds1HpfPipe)
-  ds1HpfLpPrevR = register 0 (frameOr fEqLowR <$> ds1HpfLpPrevR <*> ds1HpfPipe)
+  ds1HpfLpPrev = register 0 (frameOr monoEqLow <$> ds1HpfLpPrev <*> ds1HpfPipe)
   ds1HpfPipe =
     register Nothing $
-      mapPipe <$> (ds1HpfFrame <$> ds1HpfLpPrevL <*> ds1HpfLpPrevR) <*> metalLevelPipe
+      mapPipe <$> (ds1HpfFrame <$> ds1HpfLpPrev) <*> metalLevelPipe
   ds1MulPipe = register Nothing (mapPipe ds1MulFrame <$> ds1HpfPipe)
   ds1ClipPipe = register Nothing (mapPipe ds1ClipFrame <$> ds1MulPipe)
-  ds1TonePrevL = register 0 (frameOr fEqHighLpL <$> ds1TonePrevL <*> ds1TonePipe)
-  ds1TonePrevR = register 0 (frameOr fEqHighLpR <$> ds1TonePrevR <*> ds1TonePipe)
+  ds1TonePrev = register 0 (frameOr monoEqHighLp <$> ds1TonePrev <*> ds1TonePipe)
   ds1TonePipe =
     register Nothing $
-      mapPipe <$> (ds1ToneFrame <$> ds1TonePrevL <*> ds1TonePrevR) <*> ds1ClipPipe
+      mapPipe <$> (ds1ToneFrame <$> ds1TonePrev) <*> ds1ClipPipe
   ds1LevelPipe = register Nothing (mapPipe ds1LevelFrame <$> ds1TonePipe)
 
   -- big_muff (5 stages: pre, clip1, clip2, tone+state, level)
   bigMuffPrePipe = register Nothing (mapPipe bigMuffPreFrame <$> ds1LevelPipe)
   bigMuffClip1Pipe = register Nothing (mapPipe bigMuffClip1Frame <$> bigMuffPrePipe)
   bigMuffClip2Pipe = register Nothing (mapPipe bigMuffClip2Frame <$> bigMuffClip1Pipe)
-  bigMuffTonePrevL = register 0 (frameOr fEqHighLpL <$> bigMuffTonePrevL <*> bigMuffTonePipe)
-  bigMuffTonePrevR = register 0 (frameOr fEqHighLpR <$> bigMuffTonePrevR <*> bigMuffTonePipe)
+  bigMuffTonePrev = register 0 (frameOr monoEqHighLp <$> bigMuffTonePrev <*> bigMuffTonePipe)
   bigMuffTonePipe =
     register Nothing $
-      mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrevL <*> bigMuffTonePrevR) <*> bigMuffClip2Pipe
+      mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrev) <*> bigMuffClip2Pipe
   bigMuffLevelPipe = register Nothing (mapPipe bigMuffLevelFrame <$> bigMuffTonePipe)
 
   -- fuzz_face (4 stages: pre, asym clip, tone+state, level)
   fuzzFacePrePipe = register Nothing (mapPipe fuzzFacePreFrame <$> bigMuffLevelPipe)
   fuzzFaceClipPipe = register Nothing (mapPipe fuzzFaceClipFrame <$> fuzzFacePrePipe)
-  fuzzFaceTonePrevL = register 0 (frameOr fEqHighLpL <$> fuzzFaceTonePrevL <*> fuzzFaceTonePipe)
-  fuzzFaceTonePrevR = register 0 (frameOr fEqHighLpR <$> fuzzFaceTonePrevR <*> fuzzFaceTonePipe)
+  fuzzFaceTonePrev = register 0 (frameOr monoEqHighLp <$> fuzzFaceTonePrev <*> fuzzFaceTonePipe)
   fuzzFaceTonePipe =
     register Nothing $
-      mapPipe <$> (fuzzFaceToneFrame <$> fuzzFaceTonePrevL <*> fuzzFaceTonePrevR) <*> fuzzFaceClipPipe
+      mapPipe <$> (fuzzFaceToneFrame <$> fuzzFaceTonePrev) <*> fuzzFaceClipPipe
   fuzzFaceLevelPipe = register Nothing (mapPipe fuzzFaceLevelFrame <$> fuzzFaceTonePipe)
 
   -- Output of the new pedal section feeds the rest of the chain.
   distortionPedalsPipe = fuzzFaceLevelPipe
 
-  ampHpInPrevL = register 0 (frameOr fDryL <$> ampHpInPrevL <*> ampHighpassPipe)
-  ampHpInPrevR = register 0 (frameOr fDryR <$> ampHpInPrevR <*> ampHighpassPipe)
-  ampHpOutPrevL = register 0 (frameOr fWetL <$> ampHpOutPrevL <*> ampHighpassPipe)
-  ampHpOutPrevR = register 0 (frameOr fWetR <$> ampHpOutPrevR <*> ampHighpassPipe)
+  ampHpInPrev = register 0 (frameOr monoDry <$> ampHpInPrev <*> ampHighpassPipe)
+  ampHpOutPrev = register 0 (frameOr monoWet <$> ampHpOutPrev <*> ampHighpassPipe)
   ampHighpassPipe =
     register Nothing $
-      mapPipe <$> (ampHighpassFrame <$> ampHpInPrevL <*> ampHpInPrevR <*> ampHpOutPrevL <*> ampHpOutPrevR) <*> distortionPedalsPipe
+      mapPipe <$> (ampHighpassFrame <$> ampHpInPrev <*> ampHpOutPrev) <*> distortionPedalsPipe
   ampDriveMulPipe = register Nothing (mapPipe ampDriveMultiplyFrame <$> ampHighpassPipe)
   ampDriveBoostPipe = register Nothing (mapPipe ampDriveBoostFrame <$> ampDriveMulPipe)
   ampShapePipe = register Nothing (mapPipe ampWaveshapeFrame <$> ampDriveBoostPipe)
 
-  ampPreLpPrevL = register 0 (frameOr fWetL <$> ampPreLpPrevL <*> ampPreLowpassPipe)
-  ampPreLpPrevR = register 0 (frameOr fWetR <$> ampPreLpPrevR <*> ampPreLowpassPipe)
-  ampPreLowpassPipe = register Nothing (mapPipe <$> (ampPreLowpassFrame <$> ampPreLpPrevL <*> ampPreLpPrevR) <*> ampShapePipe)
+  ampPreLpPrev = register 0 (frameOr monoWet <$> ampPreLpPrev <*> ampPreLowpassPipe)
+  ampPreLowpassPipe = register Nothing (mapPipe <$> (ampPreLowpassFrame <$> ampPreLpPrev) <*> ampShapePipe)
   ampStage2MulPipe = register Nothing (mapPipe ampSecondStageMultiplyFrame <$> ampPreLowpassPipe)
   ampStage2Pipe = register Nothing (mapPipe ampSecondStageFrame <$> ampStage2MulPipe)
 
-  ampToneLowPrevL = register 0 (frameOr fEqLowL <$> ampToneLowPrevL <*> ampToneFilterPipe)
-  ampToneLowPrevR = register 0 (frameOr fEqLowR <$> ampToneLowPrevR <*> ampToneFilterPipe)
-  ampToneHighPrevL = register 0 (frameOr fEqHighLpL <$> ampToneHighPrevL <*> ampToneFilterPipe)
-  ampToneHighPrevR = register 0 (frameOr fEqHighLpR <$> ampToneHighPrevR <*> ampToneFilterPipe)
+  ampToneLowPrev = register 0 (frameOr monoEqLow <$> ampToneLowPrev <*> ampToneFilterPipe)
+  ampToneHighPrev = register 0 (frameOr monoEqHighLp <$> ampToneHighPrev <*> ampToneFilterPipe)
   ampToneFilterPipe =
     register Nothing $
-      mapPipe <$> (ampToneFilterFrame <$> ampToneLowPrevL <*> ampToneLowPrevR <*> ampToneHighPrevL <*> ampToneHighPrevR) <*> ampStage2Pipe
+      mapPipe <$> (ampToneFilterFrame <$> ampToneLowPrev <*> ampToneHighPrev) <*> ampStage2Pipe
   ampToneBandPipe = register Nothing (mapPipe ampToneBandFrame <$> ampToneFilterPipe)
   ampToneProductsPipe = register Nothing (mapPipe ampToneProductsFrame <$> ampToneBandPipe)
   ampToneMixPipe = register Nothing (mapPipe ampToneMixFrame <$> ampToneProductsPipe)
   ampPowerPipe = register Nothing (mapPipe ampPowerFrame <$> ampToneMixPipe)
 
-  ampResPrevL = register 0 (frameOr fEqLowL <$> ampResPrevL <*> ampResPresenceFilterPipe)
-  ampResPrevR = register 0 (frameOr fEqLowR <$> ampResPrevR <*> ampResPresenceFilterPipe)
-  ampPresencePrevL = register 0 (frameOr fEqHighLpL <$> ampPresencePrevL <*> ampResPresenceFilterPipe)
-  ampPresencePrevR = register 0 (frameOr fEqHighLpR <$> ampPresencePrevR <*> ampResPresenceFilterPipe)
+  ampResPrev = register 0 (frameOr monoEqLow <$> ampResPrev <*> ampResPresenceFilterPipe)
+  ampPresencePrev = register 0 (frameOr monoEqHighLp <$> ampPresencePrev <*> ampResPresenceFilterPipe)
   ampResPresenceFilterPipe =
     register Nothing $
-      mapPipe <$> (ampResPresenceFilterFrame <$> ampResPrevL <*> ampResPrevR <*> ampPresencePrevL <*> ampPresencePrevR) <*> ampPowerPipe
+      mapPipe <$> (ampResPresenceFilterFrame <$> ampResPrev <*> ampPresencePrev) <*> ampPowerPipe
   ampResPresenceProductsPipe = register Nothing (mapPipe ampResPresenceProductsFrame <$> ampResPresenceFilterPipe)
   ampResPresencePipe = register Nothing (mapPipe ampResPresenceMixFrame <$> ampResPresenceProductsPipe)
   ampMasterPipe = register Nothing (mapPipe ampMasterFrame <$> ampResPresencePipe)
 
-  cabD1L = register 0 (delayNext <$> cabD1L <*> (frameOr fL 0 <$> ampMasterPipe) <*> ampMasterPipe)
-  cabD1R = register 0 (delayNext <$> cabD1R <*> (frameOr fR 0 <$> ampMasterPipe) <*> ampMasterPipe)
-  cabD2L = register 0 (delayNext <$> cabD2L <*> cabD1L <*> ampMasterPipe)
-  cabD2R = register 0 (delayNext <$> cabD2R <*> cabD1R <*> ampMasterPipe)
-  cabD3L = register 0 (delayNext <$> cabD3L <*> cabD2L <*> ampMasterPipe)
-  cabD3R = register 0 (delayNext <$> cabD3R <*> cabD2R <*> ampMasterPipe)
+  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampMasterPipe) <*> ampMasterPipe)
+  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampMasterPipe)
+  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampMasterPipe)
   cabProductsPipe =
     register Nothing $
-      mapPipe <$> (cabProductsFrame <$> cabD1L <*> cabD2L <*> cabD3L <*> cabD1R <*> cabD2R <*> cabD3R) <*> ampMasterPipe
+      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampMasterPipe
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabProductsPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
 
-  eqLowPrevL = register 0 (frameOr fEqLowL <$> eqLowPrevL <*> eqFilterPipe)
-  eqLowPrevR = register 0 (frameOr fEqLowR <$> eqLowPrevR <*> eqFilterPipe)
-  eqHighPrevL = register 0 (frameOr fEqHighLpL <$> eqHighPrevL <*> eqFilterPipe)
-  eqHighPrevR = register 0 (frameOr fEqHighLpR <$> eqHighPrevR <*> eqFilterPipe)
+  eqLowPrev = register 0 (frameOr monoEqLow <$> eqLowPrev <*> eqFilterPipe)
+  eqHighPrev = register 0 (frameOr monoEqHighLp <$> eqHighPrev <*> eqFilterPipe)
   eqFilterPipe =
     register Nothing $
-      mapPipe <$> (eqFilterFrame <$> eqLowPrevL <*> eqLowPrevR <*> eqHighPrevL <*> eqHighPrevR) <*> cabMixPipe
+      mapPipe <$> (eqFilterFrame <$> eqLowPrev <*> eqHighPrev) <*> cabMixPipe
   eqBandPipe = register Nothing (mapPipe eqBandFrame <$> eqFilterPipe)
   eqProductsPipe = register Nothing (mapPipe eqProductsFrame <$> eqBandPipe)
   eqMixPipe = register Nothing (mapPipe eqMixFrame <$> eqProductsPipe)
 
   reverbAddr = register 0 (addrNext <$> reverbAddr <*> eqMixPipe)
   addrPipe = register Nothing (attachAddr <$> reverbAddr <*> eqMixPipe)
-  reverbL = blockRam zeroReverb reverbAddr (writeReverbL <$> outPipe)
-  reverbR = blockRam zeroReverb reverbAddr (writeReverbR <$> outPipe)
+  reverb = blockRam zeroReverb reverbAddr (writeReverb <$> outPipe)
 
-  reverbTonePrevL = register 0 (frameOr fWetL <$> reverbTonePrevL <*> reverbToneBlendPipe)
-  reverbTonePrevR = register 0 (frameOr fWetR <$> reverbTonePrevR <*> reverbToneBlendPipe)
+  reverbTonePrev = register 0 (frameOr monoWet <$> reverbTonePrev <*> reverbToneBlendPipe)
   reverbToneProductsPipe =
     register Nothing $
       reverbToneProductsFrame
-        <$> reverbL
-        <*> reverbR
-        <*> reverbTonePrevL
-        <*> reverbTonePrevR
+        <$> reverb
+        <*> reverbTonePrev
         <*> addrPipe
   reverbToneBlendPipe = register Nothing (mapPipe reverbToneBlendFrame <$> reverbToneProductsPipe)
   reverbFeedbackProductsPipe = register Nothing (mapPipe reverbFeedbackProductsFrame <$> reverbToneBlendPipe)

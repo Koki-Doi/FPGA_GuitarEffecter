@@ -10,7 +10,7 @@ import AudioLab.Types
 
 overdriveDriveMultiplyFrame :: Frame -> Frame
 overdriveDriveMultiplyFrame f =
-  f{fAccL = if on then mulU12 (fL f) driveGain else 0, fAccR = if on then mulU12 (fR f) driveGain else 0}
+  f{fAccL = if on then mulU12 (monoSample f) driveGain else 0, fAccR = 0}
  where
   on = flag1 (fGate f)
   -- Recording analysis showed the standalone Overdrive was too close to
@@ -21,7 +21,7 @@ overdriveDriveMultiplyFrame f =
 
 overdriveDriveBoostFrame :: Frame -> Frame
 overdriveDriveBoostFrame f =
-  f{fWetL = if on then satShift8 (fAccL f) else fL f, fWetR = if on then satShift8 (fAccR f) else fR f}
+  setMonoWet (if on then satShift8 (fAccL f) else monoSample f) f
  where
   on = flag1 (fGate f)
 
@@ -32,19 +32,19 @@ overdriveDriveBoostFrame f =
 -- bypass when the overdrive flag is clear.
 overdriveDriveClipFrame :: Frame -> Frame
 overdriveDriveClipFrame f =
-  f{fL = if on then asymSoftClip kneeP kneeN (fWetL f) else fL f, fR = if on then asymSoftClip kneeP kneeN (fWetR f) else fR f}
+  setMonoSample (if on then asymSoftClip kneeP kneeN (monoWet f) else monoSample f) f
  where
   on = flag1 (fGate f)
   kneeP = 2_700_000 :: Sample
   kneeN = 2_300_000 :: Sample
 
-overdriveToneMultiplyFrame :: Sample -> Sample -> Frame -> Frame
-overdriveToneMultiplyFrame prevL prevR f =
+overdriveToneMultiplyFrame :: Sample -> Frame -> Frame
+overdriveToneMultiplyFrame prev f =
   f
-    { fAccL = if on then mulU8 (fL f) tone else 0
-    , fAccR = if on then mulU8 (fR f) tone else 0
-    , fAcc2L = if on then mulU8 prevL toneInv else 0
-    , fAcc2R = if on then mulU8 prevR toneInv else 0
+    { fAccL = if on then mulU8 (monoSample f) tone else 0
+    , fAccR = 0
+    , fAcc2L = if on then mulU8 prev toneInv else 0
+    , fAcc2R = 0
     }
  where
   on = flag1 (fGate f)
@@ -53,21 +53,16 @@ overdriveToneMultiplyFrame prevL prevR f =
 
 overdriveToneBlendFrame :: Frame -> Frame
 overdriveToneBlendFrame f =
-  f
-    { fWetL = if on then toneL else fL f
-    , fWetR = if on then toneR else fR f
-    }
+  setMonoWet (if on then tone else monoSample f) f
  where
   on = flag1 (fGate f)
-  toneL = satShift8 (fAccL f + fAcc2L f)
-  toneR = satShift8 (fAccR f + fAcc2R f)
+  tone = satShift8 (fAccL f + fAcc2L f)
 
 overdriveLevelFrame :: Frame -> Frame
 overdriveLevelFrame f =
-  f{fL = if on then left else fL f, fR = if on then right else fR f}
+  setMonoSample (if on then out else monoSample f) f
  where
   on = flag1 (fGate f)
   level = ctrlB (fOd f)
-  left = softClipK safetyKnee (satShift7 (mulU8 (fWetL f) level))
-  right = softClipK safetyKnee (satShift7 (mulU8 (fWetR f) level))
+  out = softClipK safetyKnee (satShift7 (mulU8 (monoWet f) level))
   safetyKnee = 3_200_000 :: Sample

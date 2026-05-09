@@ -644,3 +644,58 @@ not get removed even when superseded — they get updated.
   `AudioLab.Types` / `FixedPoint` / `Control` / `Axis`. Shared
   helpers belong in the common modules, not in an effect module that
   another effect imports.
+
+## D22 — DSP pipeline uses mono internal processing while preserving stereo AXI I/O
+
+- **Decision.** The May 9 internal mono DSP pass keeps the external
+  AXI/I2S interface stereo-compatible while treating guitar audio as a
+  Left-derived mono signal inside the DSP pipeline.
+- **What changed.**
+  - AXI input and output remain 48-bit stereo. `packChan` /
+    `unpackChan`, `topEntity`, port names, port order, and external
+    I/O are unchanged.
+  - `AudioLab.Axis.makeInput` uses ADC Left as the mono source and
+    explicitly discards Right to avoid unconnected-channel noise.
+  - The physical `Frame` record keeps its L/R-shaped fields for module
+    compatibility, but the active path uses mono helpers/state in
+    `AudioLab.Types`, `AudioLab.Pipeline`, and `AudioLab.Effects.*`.
+  - `AudioLab.Axis.pipeData` duplicates the final mono sample to
+    output Left and Right.
+  - AXI Stream metadata is not derived from sample data. `Frame.fLast`
+    carries input TLAST to output TLAST, and `AudioLab.Pipeline` paces
+    accepted DMA input frames so the fixed-latency DSP pipeline keeps
+    one output frame per accepted input frame when S2MM ready briefly
+    deasserts.
+- **Boundaries.**
+  - **No** DSP coefficient retune, clip-knee retune, byte mapping
+    change, enable semantics change, Python API change, Notebook UI
+    change, Chain Preset change, GPIO change, or `block_design.tcl`
+    change.
+  - **No** 96 kHz work, PCM1808 / PCM5102 support, external ADC/DAC
+    support, I2S addition, internal 32-bit conversion, new GPIO, Delay
+    line implementation, or `axi_gpio_delay_line`.
+- **Build / deploy result.** Local Python tests, Notebook JSON checks,
+  Clash type check / VHDL generation, IP repackage, and Vivado bit/hwh
+  rebuild passed. Final routed timing: WNS = -8.155 ns,
+  TNS = -6492.876 ns, WHS = +0.052 ns, THS = 0.000 ns. Versus the
+  minimal mono build / `37ef4c7` baseline (WNS = -8.022 ns), WNS delta
+  is -0.133 ns. Utilization after place: Slice LUTs 15473 (29.08%),
+  Slice Registers 14914 (14.02%), Block RAM Tile 7 (5.00%), DSPs 83
+  (37.73%).
+- **PYNQ result.** Deployed to PYNQ-Z2 at `192.168.1.9` with
+  `bash scripts/deploy_to_pynq.sh`. Smoke test confirmed
+  `ADC HPF: True`, `R19 = 0x23`, no `axi_gpio_delay_line`, legacy
+  `axi_gpio_delay` present, and the requested chain presets.
+- **DMA / L-R result.** After PYNQ reboot, one overlay load and one
+  composite DMA packet covered Case A (Left nonzero / Right different),
+  Case B (Left zero / Right large), and Case C (Right inverted noise).
+  All cases completed without DMA timeout. Send and recv DMASR both
+  ended at `0x00001002`; with `skip_frames = 16`, output L/R were
+  identical (`max_abs_lr_diff_steady_state = 0`) and Right input
+  rejection was confirmed (`max_abs_output_when_left_zero = 0`,
+  `max_abs_output_change_when_right_input_changes = 0`).
+- **How to apply.** Future audio-format changes should preserve the
+  external interface until the user explicitly approves a top-level /
+  block-design migration. For guitar input, continue to treat Left as
+  the mono source and keep AXI metadata propagation independent of
+  sample values.

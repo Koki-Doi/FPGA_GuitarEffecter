@@ -9,7 +9,7 @@ import AudioLab.FixedPoint
 import AudioLab.Types
 
 gateLevelFrame :: Frame -> Frame
-gateLevelFrame f = f{fWetL = maxAbsFrame f}
+gateLevelFrame f = setMonoWet (maxAbsFrame f) f
 
 gateThreshold :: Ctrl -> Sample
 gateThreshold control = resize (asSigned9 (ctrlB control)) `shiftL` 13
@@ -23,9 +23,9 @@ gateEnvNext env (Just f)
  | not (flag0 (fGate f)) = 0
   | level > env = level
   | env > decay = env - decay
-  | otherwise = 0
+ | otherwise = 0
  where
-  level = fWetL f
+  level = monoWet f
   decay = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
 
 gateOpenNext :: Bool -> Sample -> Maybe Frame -> Bool
@@ -51,7 +51,7 @@ gateGainNext gain open (Just f)
 gateFrame :: GateGain -> Frame -> Frame
 gateFrame gain f
   | not (flag0 (fGate f)) = f
-  | otherwise = f{fL = applyGateGain (fL f), fR = applyGateGain (fR f)}
+  | otherwise = setMonoSample (applyGateGain (monoSample f)) f
  where
   applyGateGain x = satShift12 (mulU12 x gain)
 
@@ -178,6 +178,6 @@ nsGainNext gain env (Just f)
 nsApplyFrame :: GateGain -> Frame -> Frame
 nsApplyFrame gain f
   | not (flag0 (fGate f)) = f
-  | otherwise = f{fL = applyNs (fL f), fR = applyNs (fR f)}
+  | otherwise = setMonoSample (applyNs (monoSample f)) f
  where
   applyNs x = satShift12 (mulU12 x gain)

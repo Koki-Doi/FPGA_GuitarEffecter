@@ -111,7 +111,4 @@ gateReleaseStep :: GateGain
 gateReleaseStep = 4
 
 maxAbsFrame :: Frame -> Sample
-maxAbsFrame f = if left > right then left else right
- where
-  left = abs24 (fL f)
-  right = abs24 (fR f)
+maxAbsFrame f = abs24 (monoSample f)

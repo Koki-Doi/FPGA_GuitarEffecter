@@ -17,6 +17,17 @@ deployed timing baseline (WNS = -8.022 ns, WHS = +0.052 ns) and was
 deployed to PYNQ-Z2 at `192.168.1.9`; smoke testing confirmed the
 existing chain presets and control API still work.
 
+The May 9 internal mono DSP pass keeps the external AXI/I2S contract as
+48-bit stereo but treats ADC Left as the only guitar source inside the
+DSP chain. Right input is explicitly discarded to avoid unconnected-
+channel noise, the active effect path runs on mono sample/state helpers,
+and the final mono result is duplicated back to output Left/Right.
+`topEntity`, `block_design.tcl`, GPIOs, Python API, Notebooks, and Chain
+Presets remain unchanged. AXI TLAST is carried in `Frame.fLast` from
+input to output; `fxPipeline` paces back-to-back DMA input so the fixed-
+latency DSP core still produces exactly one output frame for each
+accepted input frame even if S2MM ready drops briefly.
+
 The earlier C++ DSP prototypes that lived under `src/effects/` were
 removed (`DECISIONS.md` D12). They were not on the live PL path and
 their continued presence risked steering future work into "implement
@@ -47,11 +58,16 @@ type Wide   = Signed 48    -- Wide accumulator for products and sums
 type Ctrl   = BitVector 32 -- One AXI GPIO word
 ```
 
-A `Frame` is the data record threaded down the pipeline. It carries the
-left/right sample pair, every effect's control word, the dry copy used by
-wet/dry mixes, and a set of `Wide` accumulators (`fAccL/R`, `fAcc2L/R`,
-`fAcc3L/R`) that successive stages reuse. `Maybe Frame` is the pipeline
-type; `Nothing` means a slot is idle.
+A `Frame` is the data record threaded down the pipeline. The physical
+record still carries left/right-shaped fields for compatibility with the
+split modules and generated IP, but the active guitar path is mono:
+`AudioLab.Axis.makeInput` copies ADC Left into the mono helpers/dry
+fields and discards ADC Right, and effect stages read/write via helpers
+such as `monoSample`, `setMonoSample`, `monoDry`, `monoWet`, and the
+mono EQ accumulator accessors. At output, `AudioLab.Axis.pipeData`
+duplicates that mono sample to both channels with `packChan mono mono`.
+`Frame.fLast` carries AXI TLAST independently of sample data. `Maybe
+Frame` is the pipeline type; `Nothing` means a slot is idle.
 
 ## Numeric primitives
 
@@ -79,6 +95,7 @@ The discipline is: **multiply** in `Wide`, **shift+sat** back into
 
 ```
 makeInput
+  -- ADC Left becomes the mono source; ADC Right is discarded
   -> nsLevel -> nsApply                                 (noise suppressor envelope + apply, replaces the legacy hard gate)
   -> compLevel -> compApply -> compMakeup               (stereo-linked feed-forward peak compressor; bit-exact bypass when off)
   -> overdrive (drive mul -> boost -> clip -> tone -> level)
@@ -91,8 +108,14 @@ makeInput
   -> cab IR (4-tap cabinet FIR + level/mix)
   -> EQ (3-band)
   -> reverb (BRAM tap + tone + feedback + mix)
-  -> output AXIS register
+  -> output AXIS register                               (mono duplicated to output L/R; TLAST propagated)
 ```
+
+For DMA traffic, `fxPipeline` does not infer packet length or TLAST from
+sample values. It accepts an input frame only when the output side and a
+small clock-domain pace counter permit it, then produces one output frame
+with the same `fLast` bit. This avoids dropping TLAST during short S2MM
+backpressure on long back-to-back DMA packets.
 
 ## Noise Suppressor section
 
