@@ -14,3 +14,6 @@ vivado.log
 __pycache__/
 *.pyc
 tests/test_rat_style_distortion
+
+# Runtime GUI state file produced by GUI/pynq_multi_fx_gui.py
+GUI/fx_gui_state.json
