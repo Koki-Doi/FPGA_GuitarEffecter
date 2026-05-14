@@ -5,15 +5,19 @@ This document records the design direction for showing the existing
 breaking the current AudioLab DSP path.
 
 Status: investigation / staged implementation. Phase 1 offscreen render
-benchmark, Phase 2A PYNQ compatibility, and Phase 2B static/change-driven
-render optimization have been completed. The GUI renderer can now import
-and render offscreen on the PYNQ-Z2 without external shims, and the
-PYNQ static mode reduces change-driven redraws to about `256 ms`. No HDMI
-output, Vivado change, bitstream rebuild, deploy, `AudioLabOverlay`
-bridge, GPIO bridge, or `base.bit` load has been done for this HDMI GUI
-integration. See `HDMI_GUI_PHASE1_RENDER_BENCH.md`,
-`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`, and
-`HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the measured results.
+benchmark, Phase 2A PYNQ compatibility, Phase 2B static/change-driven
+render optimization, and Phase 2C AppState-to-`AudioLabOverlay` bridge
+planning have been completed. The GUI renderer can now import and render
+offscreen on the PYNQ-Z2 without external shims, the PYNQ static mode
+reduces change-driven redraws to about `256 ms`, and
+`GUI/audio_lab_gui_bridge.py` can produce dry-run control plans from
+`AppState` without loading an overlay. No HDMI output, Vivado change,
+bitstream rebuild, deploy, actual `AudioLabOverlay()` load, GPIO write,
+or `base.bit` load has been done for this HDMI GUI integration. See
+`HDMI_GUI_PHASE1_RENDER_BENCH.md`,
+`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`,
+`HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`, and
+`HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` for the measured results.
 
 ## 1. Current state
 
@@ -268,6 +272,12 @@ layer that maps user-visible state to existing safe overlay APIs:
 - Bridge applies Safe Bypass through the existing safe API sequence.
 - Bridge applies Chain Presets through `AudioLabOverlay.apply_chain_preset`
   when available.
+
+Phase 2C added `GUI/audio_lab_gui_bridge.py` for this role. The bridge is
+separate from rendering and defaults to dry-run planning. It only calls
+the public `AudioLabOverlay` API when the caller explicitly passes an
+already-loaded overlay with `dry_run=False`; it never instantiates
+`AudioLabOverlay` and never loads a bitstream by itself.
 
 Avoid writing effect GPIOs every video frame. A practical strategy is:
 
@@ -721,16 +731,31 @@ Detailed numbers are recorded in
 ### Phase 2C: AppState / AudioLabOverlay bridge without HDMI
 
 Build a Python bridge that translates `AppState` changes into
-`AudioLabOverlay` API calls. Verify without HDMI by:
+`AudioLabOverlay` API calls. This phase remains HDMI-free and overlay-load
+free.
 
-- saving PNG frames
-- applying Safe Bypass
-- applying Chain Presets
-- changing each supported effect section
-- checking `get_current_pedalboard_state()`
-- ensuring GPIO writes happen on changes, not every render frame
+Phase 2C result (2026-05-14):
 
-No Vivado change in this phase.
+- Added `GUI/audio_lab_gui_bridge.py`.
+- Added `tests/test_hdmi_gui_bridge.py`.
+- Bridge plans calls to `set_noise_suppressor_settings`,
+  `set_compressor_settings`, `set_distortion_settings`,
+  `clear_distortion_pedals`, `set_guitar_effects`, and
+  `apply_chain_preset`.
+- Same-state calls are suppressed by operation signature.
+- Continuous knob drags are throttled to about 10 Hz by default.
+- Safe Bypass and Chain Preset commands are high-priority and not
+  throttled.
+- Chain reorder is warning-only because the FPGA DSP order is fixed.
+- Unsupported effects such as chorus / phaser / octaver / delay /
+  bit-crusher are not mapped to live operations.
+- PYNQ-Z2 dry-run verification succeeded from `/tmp/hdmi_gui_phase2c/`
+  without `AudioLabOverlay()` or HDMI output.
+- `render_frame_pynq_static(AppState())` still produced
+  `[720, 1280, 3]` / `uint8` on the PYNQ during the bridge check.
+
+Detailed results are recorded in
+`docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md`.
 
 ### Phase 3: integrated HDMI Vivado design proposal
 

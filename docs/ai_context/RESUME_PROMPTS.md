@@ -124,6 +124,30 @@ asking it to re-discover the project from scratch.
 > GUI表示は animated loop ではなく static/change-driven 前提にし、
 > visualizer / waveform / meter は freeze または低頻度更新にしてください。
 
+### HDMI GUI Phase 2C result — AppState bridge dry-run ready
+
+> HDMI GUI Phase 2C は完了済みです。
+> `GUI/audio_lab_gui_bridge.py` に renderer から分離した
+> `AppState` -> `AudioLabOverlay` API bridge を追加し、
+> `tests/test_hdmi_gui_bridge.py` で dry-run / same-state skip /
+> knob-drag throttle / Chain Preset alias / Safe Bypass sequence を確認
+> しています。bridge は `AudioLabOverlay()` を生成せず、bitstreamを
+> ロードせず、GPIOを直接叩かず、`dry_run=True` がデフォルトです。
+> 実GPIO writeは `dry_run=False` かつ既にロード済みの overlay を呼び元
+> が渡した場合だけです。PYNQ-Z2 (`192.168.1.9`) の
+> `/tmp/hdmi_gui_phase2c/` で shimなし import 成功、Python 3.6.5、
+> dry-run plan は `set_noise_suppressor_settings` /
+> `set_compressor_settings` / `clear_distortion_pedals` /
+> `set_distortion_settings` / `set_guitar_effects`、同一状態2回目は
+> 0 operations、knob drag は 10Hz 相当で throttle、throttle後は
+> 1 operation。`render_frame_pynq_static(AppState())` は
+> `[720, 1280, 3]` / `uint8` を維持。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` を読んでください。
+> HDMI出力、`run_pynq_hdmi()`、`Overlay("base.bit")`、
+> `AudioLabOverlay()` load、Vivado変更、bitstream rebuild、deploy、
+> Notebook変更、DSP/Clash変更、`git push` / `git pull` / `git fetch`
+> はしていません。
+
 ### HDMI GUI Phase 3 prompt
 
 > HDMI GUI統合の Phase 3 として、`audio_lab.bit` に HDMI video out 系を

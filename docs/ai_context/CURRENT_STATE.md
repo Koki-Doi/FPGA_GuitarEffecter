@@ -1,8 +1,7 @@
 # Current state
 
-Last updated: 2026-05-14 (HDMI GUI Phase 2B PYNQ static/change-driven
-render optimization implemented; HDMI output / bridge / Vivado work not
-started).
+Last updated: 2026-05-14 (HDMI GUI Phase 2C AppState bridge planning
+implemented; HDMI output / Vivado work not started).
 
 ## PYNQ-Z2 network identity
 
@@ -31,10 +30,12 @@ bash scripts/deploy_to_pynq.sh
 
 HDMI GUI integration is still not a live HDMI implementation. Phase 2A
 made minimal Python compatibility changes to `GUI/pynq_multi_fx_gui.py`,
-and Phase 2B optimized the same renderer for static/change-driven
-offscreen rendering on the PYNQ-Z2. No Vivado block design, Clash / DSP
-source, bitstream, notebook, deploy script, overlay load, GPIO bridge, or
-PYNQ runtime behavior has been changed for this work.
+Phase 2B optimized the same renderer for static/change-driven offscreen
+rendering on the PYNQ-Z2, and Phase 2C added a dry-run-capable bridge
+from `AppState` to existing `AudioLabOverlay` API calls. No Vivado block
+design, Clash / DSP source, bitstream, notebook, deploy script, HDMI
+output, overlay load, or PYNQ runtime behavior has been changed for this
+work.
 
 What was found:
 
@@ -58,6 +59,9 @@ Current design direction:
   both the existing AudioLab DSP and a HDMI framebuffer output path.
 - GUI state should be bridged to `AudioLabOverlay` APIs at change time or
   at a throttled control rate, not by writing GPIOs every video frame.
+- `GUI/audio_lab_gui_bridge.py` now implements that bridge as a separated
+  dry-run-first layer; it does not instantiate `AudioLabOverlay` or load
+  a bitstream.
 - Chain reorder in the GUI must be disabled or display-only because the
   current DSP pipeline order is fixed.
 
@@ -65,7 +69,9 @@ See `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` for the full plan,
 risks, prohibited actions, and phase prompts. See
 `docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` and
 `docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the current
-PYNQ rendering results.
+PYNQ rendering results. See
+`docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` for the bridge design
+and dry-run verification.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
@@ -177,6 +183,46 @@ Conclusion: static/change-driven HDMI updates are now plausible from a
 Python rendering perspective. This is still not a live animated
 5/10/15/30fps path; the future HDMI backend should render on visible
 state changes and reuse the previous RGB frame while unchanged.
+
+## HDMI GUI Phase 2C AppState bridge
+
+Phase 2C added a renderer-separated bridge in
+`GUI/audio_lab_gui_bridge.py` plus `tests/test_hdmi_gui_bridge.py`. It did
+not call `run_pynq_hdmi()`, did not load `base.bit`, did not instantiate
+`AudioLabOverlay()`, did not write GPIOs on the board, did not use HDMI
+output, and did not change Vivado, block design, bitstreams, deploy
+scripts, notebooks, or DSP source.
+
+Bridge behavior:
+
+- maps `AppState` to existing `AudioLabOverlay` APIs only
+- produces dry-run plans by default
+- suppresses same-state writes by operation signature
+- throttles continuous knob-drag events to about 10 Hz
+- treats Chain Preset / Safe Bypass as high-priority commands
+- treats chain reorder as warning-only because the FPGA DSP order is
+  fixed
+- does not expose chorus, phaser, octaver, delay, or bit-crusher as live
+  controllable effects
+
+PYNQ-Z2 result from `/tmp/hdmi_gui_phase2c/`:
+
+- raw import without shims: success
+- Python: `3.6.5`
+- import time: `1442.238 ms`
+- dry-run plan methods:
+  `set_noise_suppressor_settings`, `set_compressor_settings`,
+  `clear_distortion_pedals`, `set_distortion_settings`,
+  `set_guitar_effects`
+- same-state second apply: `0` operations
+- knob-drag throttle: `0` operations / `1` skipped inside the throttle
+  window, then `1` operation after the window
+- `render_frame_pynq_static(AppState())` still produced frame shape /
+  dtype `[720, 1280, 3]` / `uint8`
+
+Conclusion: the bridge shape is ready for a later real overlay-backed
+test, but Phase 2C deliberately verified only dry-run planning. Live HDMI
+output still requires a future integrated HDMI video path in `audio_lab.bit`.
 
 ## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
 
