@@ -4,9 +4,11 @@ This document records the design direction for showing the existing
 `GUI/pynq_multi_fx_gui.py` rendering on the PYNQ-Z2 HDMI output without
 breaking the current AudioLab DSP path.
 
-Status: investigation / design only. No Python implementation, Vivado
-change, bitstream rebuild, deploy, or board-side test has been done for
-this HDMI GUI integration.
+Status: investigation / design only. Phase 1 offscreen render benchmark
+has been completed on the PYNQ-Z2; no HDMI output, Python implementation,
+Vivado change, bitstream rebuild, deploy, or GPIO bridge has been done
+for this HDMI GUI integration. See
+`HDMI_GUI_PHASE1_RENDER_BENCH.md` for the measured results.
 
 ## 1. Current state
 
@@ -615,6 +617,26 @@ Run `render_frame(AppState())` on the PYNQ without HDMI output. Measure:
 
 Goal: decide realistic GUI FPS before touching Vivado.
 
+Phase 1 result (2026-05-14):
+
+- Raw import failed on the current PYNQ image because Python 3.6 lacks
+  the `dataclasses` backport.
+- After process-local benchmark shims, rendering also needed
+  NumPy 1.16-compatible `default_rng` and Pillow 5.1 `ImageDraw`
+  compatibility shims.
+- With those temporary shims, one 1280x720 RGB frame rendered
+  successfully with shape `(720, 1280, 3)` and dtype `uint8`.
+- Cold render time was about `3871 ms`.
+- Exact same-state cache hits averaged about `0.177 ms/frame`.
+- A dynamic 30-frame loop averaged about `744 ms/frame` with p95 around
+  `2247 ms`, giving roughly `1.34 fps`.
+- Continuous 5/10/15/30fps HDMI GUI is not realistic with the current
+  full-frame PIL renderer on the PYNQ-Z2 CPU. Static or change-driven
+  display is plausible after compatibility fixes.
+
+Detailed numbers are recorded in
+`docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
+
 ### Phase 2: AppState / AudioLabOverlay bridge without HDMI
 
 Build a Python bridge that translates `AppState` changes into
@@ -757,4 +779,3 @@ Until a future implementation phase explicitly approves otherwise:
 > リソース見積り、timingリスク、address map影響、rollback案をまとめて
 > ください。既存GPIO address / `topEntity` / DSP pipeline は維持する前提です。
 > 結果は docs に記録し、実装が必要な場合はユーザ承認を待ってください。
-

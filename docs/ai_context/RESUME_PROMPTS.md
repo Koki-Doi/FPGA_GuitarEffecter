@@ -49,6 +49,26 @@ asking it to re-discover the project from scratch.
 > ことです。HDMI出力、Vivado変更、bitstream rebuild、deploy、
 > `base.bit` ロードはしないでください。結果を docs に記録してください。
 
+### HDMI GUI Phase 1 result — continue from benchmark
+
+> HDMI GUI Phase 1 の offscreen render benchmark は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md` を読んでから再開して
+> ください。PYNQ-Z2 (`192.168.1.9`) の環境は Python 3.6.5 /
+> NumPy 1.16.0 / Pillow 5.1.0。`GUI/pynq_multi_fx_gui.py` はPYNQ上の
+> repoには未配置だったため、測定時は `/tmp/hdmi_gui_phase1/` に一時
+> コピーしました。raw import は `dataclasses` backport 不足で失敗。
+> 測定専用shimでは NumPy `default_rng` と Pillow `ImageDraw` 互換も
+> 補って render 成功。frame shape は `[720, 1280, 3]`、dtype は
+> `uint8`。cold render は約 `3871 ms`、same-state cache hit は平均
+> `0.177 ms/frame` / p95 `0.242 ms`、dynamic 30-frame loop は平均
+> `744 ms/frame` / p95 `2247 ms` / 推定 `1.34 fps`。現在のrendererで
+> animated 5/10/15/30fps HDMI は現実的ではありません。次に進むなら、
+> HDMIやVivadoではなく、まず Python互換性 (`dataclasses`,
+> NumPy 1.16, Pillow 5.1) と change-driven/static寄りの描画方針を
+> Phase 2 の bridge設計に反映してください。`base.bit` ロード、
+> `run_pynq_hdmi()`、Vivado変更、bitstream rebuild、deploy、
+> `git push` / `git pull` / `git fetch`は禁止です。
+
 ### HDMI GUI Phase 2 prompt
 
 > HDMI GUI統合の Phase 2 を実施してください。HDMI出力と Vivado変更は

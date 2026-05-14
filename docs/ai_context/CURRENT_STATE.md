@@ -1,7 +1,7 @@
 # Current state
 
-Last updated: 2026-05-14 (HDMI GUI integration plan documented;
-implementation not started).
+Last updated: 2026-05-14 (HDMI GUI Phase 1 offscreen render benchmark
+documented; implementation not started).
 
 ## PYNQ-Z2 network identity
 
@@ -60,6 +60,51 @@ Current design direction:
 
 See `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` for the full plan,
 risks, prohibited actions, and phase prompts.
+
+## HDMI GUI Phase 1 render benchmark (docs only)
+
+Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the
+PYNQ-Z2. The test did not call `run_pynq_hdmi()`, did not load
+`base.bit`, did not instantiate `AudioLabOverlay()`, did not write GPIOs,
+did not use HDMI output, and did not change Vivado, bitstreams, deploy
+scripts, or Python source files.
+
+Board-side environment:
+
+- Host: `192.168.1.9`
+- Python: `3.6.5`
+- NumPy: `1.16.0`
+- Pillow: `5.1.0`
+- Benchmark file location: `/tmp/hdmi_gui_phase1/pynq_multi_fx_gui.py`
+  (temporary copy only; no deploy)
+
+Key result:
+
+- Raw import fails on the current PYNQ image:
+  `ModuleNotFoundError: No module named 'dataclasses'`.
+- Rendering also needs compatibility work for NumPy 1.16
+  (`np.random.default_rng`) and Pillow 5.1 `ImageDraw` keyword support.
+- With process-local benchmark shims only, `render_frame_fast(AppState())`
+  produced a 1280x720 RGB frame: shape `[720, 1280, 3]`, dtype `uint8`.
+- Cold render: `3871.43 ms`.
+- Same-state cached render: avg `0.177 ms/frame`, p95 `0.242 ms/frame`
+  over 30 calls; the same cached ndarray object was reused.
+- Dynamic 30-frame loop: avg `744.49 ms/frame`, p95 `2246.92 ms/frame`,
+  estimated `1.34 fps`.
+- Memory high-water mark during the benchmark was about `129380 kB`.
+
+Assessment:
+
+- Current renderer is not suitable for animated 5/10/15/30fps HDMI output
+  on the PYNQ-Z2 CPU.
+- Static or change-driven display is plausible after compatibility fixes,
+  because cache hits are sub-millisecond once a frame is generated.
+- Future Python work should first handle `dataclasses`, NumPy 1.16, and
+  Pillow 5.1 compatibility before building the `AppState` /
+  `AudioLabOverlay` bridge.
+
+Full results are in
+`docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
 
 ## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
 
