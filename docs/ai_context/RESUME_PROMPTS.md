@@ -295,6 +295,36 @@ asking it to re-discover the project from scratch.
 > `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
 > `git push` / `pull` / `fetch` は引き続き禁止です。
 
+### HDMI GUI Phase 4E result — 800x480 logical GUI
+
+> HDMI GUI Phase 4E は完了済みです。
+> 小型HDMI LCDは5インチ800x480の可能性が高いため、1280x720 GUIの縮小
+> ではなく、`GUI/pynq_multi_fx_gui.py::render_frame_800x480(AppState())`
+> を5インチ向けlogical rendererに差し替えました。出力は `[480,800,3]`
+> / `uint8`。既存1280x720 rendererは維持しています。UIはdark
+> AudioLab/plugin調を維持しつつ、24px safe margin、大きいpreset/status、
+> compact chain、selected FX summary、simplified signal monitor、IN/OUT
+> levelを優先表示します。`AudioLabHdmiBackend` はlogical frameを
+> 1280x720 framebuffer中央へ配置でき、800x480では offset `x=240`,
+> `y=120`。VDMA HSIZE/STRIDE/VSIZE、HDMI signal、Vivado、bit/hwh、
+> `block_design.tcl`、`audio_lab.xdc`、`create_project.tcl`、Clash/DSP、
+> `topEntity`、GPIO、HDMI IP構成は変更していません。
+> PYNQ-Z2 (`192.168.1.9`) で
+> `scripts/test_hdmi_800x480_frame.py --hold-seconds 60` が成功しました。
+> `AudioLabOverlay()` は1回だけload、`Overlay("base.bit")` /
+> `run_pynq_hdmi()` / second overlay load は未使用。ADC HPF=True、
+> R19=0x23、`axi_gpio_delay_line=False`、legacy `axi_gpio_delay=True`、
+> HDMI IP present、post Safe Bypass smoke OK。測定値は render=0.317s、
+> center compose=0.026s、full framebuffer copy=0.207s、total update約0.550s。
+> VDMAは `VDMACR=0x00010001`、`DMASR=0x00011000`、HSIZE/STRIDE=3840、
+> VSIZE=720、error bitsなし。VTC=`0x00000006`。
+> 1280x720 `fit-90` の cold path (`2.979 + 0.265 + 0.207s`) より
+> 大幅に軽いですが、copyはまだ1280x720全体をswizzleしています。次は
+> ユーザーの物理目視で読みやすさ・色順・縦横比・中央配置を確認し、
+> 必要なら800x480 layout調整、部分copy最適化、Phase 5 change-driven
+> loopへ進んでください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

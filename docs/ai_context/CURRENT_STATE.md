@@ -1,8 +1,9 @@
 # Current state
 
 Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed,
-Phase 4C static-frame/resource profile measured, and Phase 4D LCD fit
-modes added on the PYNQ-Z2 at `192.168.1.9`).
+Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
+added, and Phase 4E 800x480 logical GUI tested on the PYNQ-Z2 at
+`192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -90,7 +91,9 @@ build, deploy, timing, and smoke result. See
 `docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the
 static-frame recheck, PS runtime profile, and PL before/after summary.
 See `docs/ai_context/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md` for the small
-LCD overscan / safe-area fit test.
+LCD overscan / safe-area fit test. See
+`docs/ai_context/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md` for the
+5-inch 800x480 logical GUI mode and centered framebuffer placement.
 
 ## HDMI GUI Phase 4 integrated overlay
 
@@ -232,6 +235,54 @@ Common HDMI status remained `VDMACR=0x00010001`,
 Recommended first user check is `fit-90`. If it still crops the 40 px
 border or corner labels, try `fit-85`; if `fit-95` already fully fits,
 use `fit-95` to preserve more screen area.
+
+## HDMI GUI Phase 4E 800x480 logical mode
+
+The small HDMI LCD is likely a 5-inch 800x480 panel. Phase 4E adds a
+real 800x480 logical GUI instead of only shrinking the 1280x720 GUI.
+Vivado, bit/hwh, VDMA settings, VTC timing, HDMI IP topology,
+`block_design.tcl`, `audio_lab.xdc`, `create_project.tcl`, Clash/DSP,
+`topEntity`, and GPIO contracts were not changed.
+
+New renderer:
+
+- `GUI/pynq_multi_fx_gui.py::render_frame_800x480(AppState())`
+- output shape `[480,800,3]`, dtype `uint8`
+- same dark AudioLab visual language, but lower information density:
+  large preset/status, compact chain, selected-effect summary,
+  simplified signal monitor, and input/output levels
+- 24 px logical safe margin
+
+Backend placement:
+
+- input logical frame: `800x480`
+- HDMI framebuffer: still `1280x720`
+- placement: `center`
+- offset: `x=240`, `y=120`
+- framebuffer format remains RGB888 input -> DDR `GBR888`
+- VDMA HSIZE/STRIDE remains `3840`, VSIZE remains `720`
+
+PYNQ result:
+
+- `scripts/test_hdmi_800x480_frame.py --hold-seconds 60` completed.
+- `AudioLabOverlay()` loaded once; no `base.bit`, no `run_pynq_hdmi()`,
+  no second overlay.
+- ADC HPF `True`, `R19=0x23`, `axi_gpio_delay_line=False`, legacy
+  `axi_gpio_delay=True`, HDMI IPs present.
+- 800x480 render `0.317 s`.
+- center compose `0.026 s`.
+- full framebuffer copy `0.207 s`.
+- total content update approximately `0.550 s`.
+- `VDMACR=0x00010001`, `DMASR=0x00011000`, no VDMA error bits,
+  VTC `0x00000006`.
+- Post-HDMI Safe Bypass smoke passed.
+
+Compared with the 1280x720 GUI `fit-90` path, the renderer/compose cost
+is much lower (`2.979 + 0.265 s` -> `0.317 + 0.026 s`), but the full
+1280x720 framebuffer copy still costs about `0.207 s`. Future
+optimization should copy only the 800x480 active region if update rate
+becomes important. Physical readability, color order, and final visual
+fit remain user visual confirmation items.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

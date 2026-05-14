@@ -5,14 +5,16 @@ This document records the design direction for showing the existing
 breaking the current AudioLab DSP path.
 
 Status: integrated Phase 4 implementation deployed, Phase 4C runtime
-resource profile measured, and Phase 4D small-LCD fit modes added.
+resource profile measured, Phase 4D small-LCD fit modes added, and
+Phase 4E 800x480 logical GUI mode tested.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
 test on the real deployed overlay, Phase 3 Vivado integration design,
 Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
 static-frame/resource profiling, and Phase 4D LCD safe-area fit testing
-have been completed. Phase 4 implements Option B (`axi_vdma` + `v_tc` +
+and Phase 4E logical-size testing have been completed. Phase 4 implements
+Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
 `AudioLabOverlay()`. See
@@ -26,9 +28,10 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
 `HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`,
 `HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`, and
-`HDMI_GUI_PHASE4D_LCD_FIT_TEST.md` for the measured results, design,
-build, deploy, timing, smoke logs, runtime resource profile, and LCD
-fit test.
+`HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`, and
+`HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md` for the measured results,
+design, build, deploy, timing, smoke logs, runtime resource profile, LCD
+fit test, and 800x480 logical GUI result.
 
 ## 1. Current state
 
@@ -81,6 +84,13 @@ safe area before the existing framebuffer copy:
 The recommended first small-LCD candidate is `fit-90`; the final default
 should be chosen from user visual confirmation of the test pattern and
 GUI frame.
+
+Phase 4E then added a real 800x480 logical GUI for the likely 5-inch
+LCD instead of only shrinking the full 1280x720 layout. The HDMI signal
+and VDMA stay 1280x720, but Python renders `[480,800,3]` and the backend
+centers it in the framebuffer at offset `(240,120)`. This path completed
+a 60-second PYNQ hold with no VDMA error bits and is the better basis for
+future small-LCD UI work than shrinking the dense 1280x720 GUI.
 
 The AudioLab control contract must remain intact:
 
@@ -273,6 +283,18 @@ Measured Phase 4D fit overhead:
 
 Fit mode does not alter VDMA HSIZE/STRIDE/VSIZE or the HDMI IP
 configuration; it only changes the Python RGB frame before scanout.
+
+Measured Phase 4E 800x480 logical mode cost:
+
+- Render: `0.317 s`.
+- Center compose into 1280x720: `0.026 s`.
+- RGB888 -> DDR `GBR888` full-frame copy: `0.207 s`.
+- Total content update: about `0.550 s`.
+
+The renderer/compose work is much cheaper than the 1280x720 `fit-90`
+path, but the current copy still swizzles the full 1280x720 framebuffer.
+Partial copy of the 800x480 active region is the next obvious
+optimization if update rate matters.
 
 The integration must preserve the existing AudioLab design:
 

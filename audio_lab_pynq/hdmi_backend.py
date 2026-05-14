@@ -23,6 +23,7 @@ Public API:
     backend.start(rgb_frame)        # one-shot static frame
     backend.write_frame(rgb_frame)  # overwrite the framebuffer
     backend.write_frame(rgb_frame, fit_mode="fit-90")
+    backend.write_frame(rgb_800x480, placement="center")
     backend.status()                # debug dict
     backend.stop()
 """
@@ -217,6 +218,54 @@ def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
     return canvas, meta
 
 
+def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+                          placement="center", background=(0, 0, 0)):
+    """Place a smaller logical RGB frame inside the fixed HDMI framebuffer."""
+    arr = np.asarray(rgb_frame)
+    if arr.ndim != 3 or arr.shape[2] != 3 or arr.dtype != np.uint8:
+        raise ValueError(
+            "logical rgb_frame must be (h,w,3) uint8 RGB; got shape={}, dtype={}"
+            .format(arr.shape, arr.dtype))
+    in_h, in_w = int(arr.shape[0]), int(arr.shape[1])
+    out_w, out_h = int(width), int(height)
+    if in_w > out_w or in_h > out_h:
+        raise ValueError(
+            "logical frame {}x{} does not fit inside HDMI framebuffer {}x{}"
+            .format(in_w, in_h, out_w, out_h))
+    if str(placement) != "center":
+        raise ValueError("only center placement is supported; got {!r}".format(placement))
+
+    offset_x = (out_w - in_w) // 2
+    offset_y = (out_h - in_h) // 2
+    t0 = time.time()
+    canvas = np.empty((out_h, out_w, 3), dtype=np.uint8)
+    canvas[:, :, 0] = int(background[0]) & 0xFF
+    canvas[:, :, 1] = int(background[1]) & 0xFF
+    canvas[:, :, 2] = int(background[2]) & 0xFF
+    canvas[offset_y:offset_y + in_h, offset_x:offset_x + in_w, :] = arr
+    compose_s = time.time() - t0
+    meta = {
+        "fit_mode": "logical",
+        "scale": 1.0,
+        "input_width": in_w,
+        "input_height": in_h,
+        "input_shape": [in_h, in_w, 3],
+        "output_width": out_w,
+        "output_height": out_h,
+        "scaled_width": in_w,
+        "scaled_height": in_h,
+        "offset_x": offset_x,
+        "offset_y": offset_y,
+        "placement": str(placement),
+        "background_rgb": tuple(int(v) for v in background),
+        "resize_compose_s": compose_s,
+        "compose_s": compose_s,
+        "native_passthrough": False,
+        "logical_placement": True,
+    }
+    return canvas, meta
+
+
 class AudioLabHdmiBackend(object):
     """Direct-MMIO VDMA + VTC driver for the integrated AudioLab HDMI path."""
 
@@ -326,7 +375,7 @@ class AudioLabHdmiBackend(object):
 
     # ---- public API -----------------------------------------------------
     def start(self, rgb_frame=None, fit_mode="native", scale=None,
-              background=(0, 0, 0)):
+              background=(0, 0, 0), placement="center"):
         """Allocate a framebuffer, fill it from ``rgb_frame`` (or black if
         None), program VDMA and VTC, and return the framebuffer ndarray.
         """
@@ -348,14 +397,17 @@ class AudioLabHdmiBackend(object):
                 "scaled_height": self.height,
                 "offset_x": 0,
                 "offset_y": 0,
+                "placement": str(placement),
                 "background_rgb": tuple(int(v) for v in background),
                 "resize_compose_s": 0.0,
+                "compose_s": 0.0,
                 "framebuffer_copy_s": 0.0,
                 "native_passthrough": True,
+                "logical_placement": False,
             }
         else:
             self.write_frame(rgb_frame, fit_mode=fit_mode, scale=scale,
-                             background=background)
+                             background=background, placement=placement)
 
         phys = int(self._framebuffer.physical_address)
         self._program_vdma(phys)
@@ -364,13 +416,26 @@ class AudioLabHdmiBackend(object):
         return self._framebuffer
 
     def write_frame(self, rgb_frame, fit_mode="native", scale=None,
-                    background=(0, 0, 0)):
+                    background=(0, 0, 0), placement="center"):
         """Overwrite the framebuffer in place with a new RGB888 ndarray."""
         if self._framebuffer is None:
             raise RuntimeError("HDMI back end has not been started yet")
-        fitted, meta = compose_fit_frame(
-            rgb_frame, fit_mode=fit_mode, scale=scale, width=self.width,
-            height=self.height, background=background)
+        arr = np.asarray(rgb_frame)
+        if arr.shape == (self.height, self.width, 3):
+            fitted, meta = compose_fit_frame(
+                arr, fit_mode=fit_mode, scale=scale, width=self.width,
+                height=self.height, background=background)
+            meta["placement"] = str(placement)
+            meta["compose_s"] = meta.get("resize_compose_s", 0.0)
+            meta["logical_placement"] = False
+        else:
+            if str(fit_mode) != "native" or scale is not None:
+                raise ValueError(
+                    "fit_mode/scale are only for native 1280x720 frames; "
+                    "logical frames use placement")
+            fitted, meta = compose_logical_frame(
+                arr, width=self.width, height=self.height,
+                placement=placement, background=background)
         t0 = time.time()
         self._copy_rgb(fitted)
         meta["framebuffer_copy_s"] = time.time() - t0
@@ -464,4 +529,5 @@ __all__ = [
     "FIT_MODE_SCALES",
     "fit_mode_scale",
     "compose_fit_frame",
+    "compose_logical_frame",
 ]

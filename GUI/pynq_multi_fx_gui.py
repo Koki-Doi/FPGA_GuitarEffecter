@@ -1937,6 +1937,217 @@ def render_frame_pynq_static(state: AppState, width: int = 1280,
     return render_frame_fast(state, width=width, height=height, cache=cache)
 
 
+def _draw_800x480_chain(img: Image.Image, state: AppState, xy):
+    x0, y0, x1, y1 = [int(v) for v in xy]
+    d = ImageDraw.Draw(img)
+    draw_text(img, (x0, y0), "CHAIN", fill=SCR_TEXT_DIM + (255,),
+              scale=1, letter_spacing=2)
+    row_y0 = y0 + 20
+    row_y1 = y1
+    n = max(1, len(EFFECTS))
+    gap = 6
+    w = int((x1 - x0 - gap * (n - 1)) / n)
+    for pos, eff_idx in enumerate(state.chain[:n]):
+        bx0 = x0 + pos * (w + gap)
+        bx1 = bx0 + w
+        on = bool(state.effect_on[eff_idx]) if eff_idx < len(state.effect_on) else False
+        selected = eff_idx == state.selected_effect
+        if on:
+            fill = (7, 40, 50, 255)
+            outline = LED + ((230,) if selected else (130,))
+            text_col = LED + (255,)
+        else:
+            fill = (13, 16, 21, 255)
+            outline = (85, 94, 104, 220)
+            text_col = (115, 125, 135, 255)
+        rounded_rect(d, (bx0, row_y0, bx1, row_y1), 5,
+                     fill=fill, outline=outline, width=2 if selected else 1)
+        draw_text(img, ((bx0 + bx1) // 2, row_y0 + 9),
+                  EFFECTS_SHORT[eff_idx], fill=text_col, scale=1,
+                  anchor="mt", letter_spacing=1)
+        d.rectangle((bx0 + 7, row_y1 - 8, bx1 - 7, row_y1 - 5),
+                    fill=(LED if on else (45, 52, 60)) + (255,))
+
+
+def _draw_800x480_monitor(img: Image.Image, state: AppState, xy):
+    x0, y0, x1, y1 = [int(v) for v in xy]
+    d = ImageDraw.Draw(img)
+    rounded_rect(d, (x0, y0, x1, y1), 8,
+                 fill=(5, 9, 15, 255), outline=LED + (70,), width=1)
+    draw_text(img, (x0 + 12, y0 + 10), "SIGNAL  MONITOR",
+              fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+    draw_text(img, (x1 - 12, y0 + 10), "STATIC",
+              fill=SCR_TEXT_DEAD + (255,), scale=1, anchor="rt",
+              letter_spacing=1)
+
+    ix0, iy0, ix1, iy1 = x0 + 14, y0 + 34, x1 - 14, y1 - 14
+    for gx in range(ix0, ix1 + 1, 48):
+        d.line((gx, iy0, gx, iy1), fill=SCR_GRID, width=1)
+    for gy in range(iy0, iy1 + 1, 28):
+        d.line((ix0, gy, ix1, gy), fill=SCR_GRID, width=1)
+
+    mid = iy0 + (iy1 - iy0) // 3
+    amp = max(8, (iy1 - iy0) // 5)
+    pts = []
+    samples = 92
+    for i in range(samples):
+        x = ix0 + int((ix1 - ix0) * i / float(samples - 1))
+        y = mid + int(amp * (
+            math.sin(i * 0.18 + state.t * 0.2) * 0.55 +
+            math.sin(i * 0.53) * 0.18))
+        pts.append((x, y))
+    d.line(pts, fill=LED_SOFT, width=2)
+    d.line((ix0, mid, ix1, mid), fill=LED + (70,), width=1)
+
+    bars = 28
+    base_y = iy1
+    bw = (ix1 - ix0) / float(bars)
+    for i in range(bars):
+        phase = i / float(max(1, bars - 1))
+        v = 0.12 + 0.66 * math.exp(-phase * 2.4)
+        v += 0.12 * (0.5 + 0.5 * math.sin(i * 0.71))
+        if i == int((state.selected_effect / float(max(1, len(EFFECTS) - 1))) * (bars - 1)):
+            v = min(1.0, v + 0.20)
+        h = int(v * ((iy1 - iy0) * 0.44))
+        sx0 = int(ix0 + i * bw + 2)
+        sx1 = int(ix0 + (i + 1) * bw - 2)
+        sy0 = base_y - h
+        col = _lerp_color(LED_DIM, LED_SOFT, min(1.0, v))
+        d.rectangle((sx0, sy0, sx1, base_y), fill=col + (230,))
+        d.line((sx0, sy0, sx1, sy0), fill=LED_SOFT + (255,), width=1)
+
+
+def _draw_800x480_levels(img: Image.Image, state: AppState, xy):
+    x0, y0, x1, y1 = [int(v) for v in xy]
+    d = ImageDraw.Draw(img)
+    rounded_rect(d, (x0, y0, x1, y1), 8,
+                 fill=(7, 12, 18, 255), outline=LED + (55,), width=1)
+    draw_text(img, (x0 + 12, y0 + 10), "LEVELS",
+              fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+    draw_text(img, (x1 - 12, y0 + 10), "DSP  OK",
+              fill=LED + (255,), scale=1, anchor="rt", letter_spacing=1)
+    draw_meter(img, x0 + 52, y0 + 38, x1 - x0 - 70, 18,
+               state.in_level, label="IN", segments=18, glow=False)
+    draw_meter(img, x0 + 52, y0 + 74, x1 - x0 - 70, 18,
+               state.out_level, label="OUT", segments=18, glow=False)
+
+
+def _render_frame_800x480_logical(state: AppState, width: int = 800,
+                                  height: int = 480,
+                                  cache: Optional[RenderCache] = None) -> np.ndarray:
+    """Render a 5-inch-LCD logical GUI frame.
+
+    This is not a downscale of the 1280x720 layout. It keeps the same dark
+    AudioLab visual language but prioritizes large preset/status text, a
+    compact chain view, and a simplified signal monitor for an 800x480 panel.
+    """
+    if cache is None:
+        cache = make_pynq_static_render_cache()
+    elif not getattr(cache, "pynq_static_mode", False):
+        cache.pynq_static_mode = True
+        cache.visualizer_fps = 0.0
+        cache.meter_fps = 0.0
+
+    key = ("logical_800x480_v1", int(width), int(height),
+           state_semistatic_signature(state), state_dynamic_signature(state, cache))
+    cached = cache.frame_cache.get(key)
+    if cached is not None:
+        cache.stats["frame_hits"] += 1
+        return cached
+
+    global _ACTIVE_RENDER_CACHE
+    prev = _ACTIVE_RENDER_CACHE
+    _ACTIVE_RENDER_CACHE = cache
+    try:
+        img = Image.new("RGBA", (int(width), int(height)), (0, 0, 0, 255))
+        room = vertical_gradient(int(width), int(height),
+                                 [(0.0, (22, 26, 32)),
+                                  (0.55, (8, 10, 15)),
+                                  (1.0, (3, 4, 7))])
+        img.paste(room, (0, 0))
+
+        d = ImageDraw.Draw(img)
+        safe = 24
+        rounded_rect(d, (8, 8, int(width) - 8, int(height) - 8), 12,
+                     fill=None, outline=(255, 255, 255, 28), width=1)
+        rounded_rect(d, (safe, safe, int(width) - safe, int(height) - safe), 10,
+                     fill=(7, 10, 15, 190), outline=LED + (45,), width=1)
+
+        active_n = sum(1 for v in state.effect_on if v)
+        bypassed = active_n == 0
+        status = "SAFE  BYPASS" if bypassed else "ACTIVE"
+        status_col = (180, 95, 70) if bypassed else LED
+
+        header = (safe + 12, safe + 12, int(width) - safe - 12, safe + 86)
+        hx0, hy0, hx1, hy1 = header
+        rounded_rect(d, header, 8, fill=(8, 16, 23, 255),
+                     outline=LED + (70,), width=1)
+        draw_text(img, (hx0 + 16, hy0 + 12), "PRESET",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+        draw_smooth_text(img, (hx0 + 16, hy0 + 28), state.preset_id,
+                         size=34, fill=INK_HI + (255,), letter_spacing=1)
+        draw_smooth_text(img, ((hx0 + hx1) // 2, hy0 + 20),
+                         state.preset_name.replace("  ", " "),
+                         size=38, fill=INK_HI + (255,), anchor="mt")
+        draw_text(img, (hx1 - 16, hy0 + 16), status,
+                  fill=status_col + (255,), scale=2, anchor="rt",
+                  letter_spacing=1)
+        draw_text(img, (hx1 - 16, hy0 + 50),
+                  "FX {}/{}".format(active_n, len(EFFECTS)),
+                  fill=SCR_TEXT_DIM + (255,), scale=1, anchor="rt",
+                  letter_spacing=1)
+
+        _draw_800x480_chain(img, state,
+                            (safe + 12, safe + 102,
+                             int(width) - safe - 12, safe + 172))
+
+        selected = EFFECTS[state.selected_effect]
+        selected_on = bool(state.effect_on[state.selected_effect])
+        fx_box = (safe + 12, safe + 188, safe + 288, int(height) - safe - 12)
+        fx0, fy0, fx1, fy1 = fx_box
+        rounded_rect(d, fx_box, 8, fill=(8, 13, 20, 255),
+                     outline=LED + (60,), width=1)
+        draw_text(img, (fx0 + 14, fy0 + 12), "SELECTED FX",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+        draw_smooth_text(img, (fx0 + 14, fy0 + 34), selected.upper(),
+                         size=25, fill=LED + (255,))
+        draw_text(img, (fx1 - 14, fy0 + 14), "ON" if selected_on else "BYPASS",
+                  fill=(LED if selected_on else (180, 90, 70)) + (255,),
+                  scale=1, anchor="rt", letter_spacing=1)
+        rows_y = fy0 + 78
+        knobs = state.knobs()[:4]
+        for i, (label, value) in enumerate(knobs):
+            if not label:
+                continue
+            ry = rows_y + i * 36
+            draw_text(img, (fx0 + 16, ry), label,
+                      fill=(LED if i == state.selected_knob else SCR_TEXT_DIM) + (255,),
+                      scale=1, letter_spacing=1)
+            bar_x0, bar_x1 = fx0 + 88, fx1 - 42
+            rounded_rect(d, (bar_x0, ry + 4, bar_x1, ry + 16), 4,
+                         fill=(3, 5, 8, 255), outline=(0, 0, 0, 255), width=1)
+            fill_w = int((bar_x1 - bar_x0 - 2) * max(0.0, min(1.0, value / 100.0)))
+            if fill_w > 0:
+                d.rectangle((bar_x0 + 1, ry + 5, bar_x0 + fill_w, ry + 15),
+                            fill=LED_DIM + (255,))
+            draw_text(img, (fx1 - 14, ry), "{:>3}".format(int(value)),
+                      fill=LED + (255,), scale=1, anchor="rt")
+
+        _draw_800x480_monitor(img, state,
+                              (safe + 304, safe + 188,
+                               int(width) - safe - 12, safe + 330))
+        _draw_800x480_levels(img, state,
+                             (safe + 304, safe + 344,
+                              int(width) - safe - 12, int(height) - safe - 12))
+
+        arr = np.asarray(img.convert("RGB"), dtype=np.uint8)
+        cache.put_frame(key, arr)
+        cache.stats["frame_misses"] += 1
+        return arr
+    finally:
+        _ACTIVE_RENDER_CACHE = prev
+
+
 def render_frame_legacy(state: AppState, width: int = 1280,
                         height: int = 720) -> np.ndarray:
     """Original full-redraw path retained for benchmarking/debugging."""
@@ -1994,9 +2205,12 @@ def render_frame(state: AppState, width: int = 1280,
                              cache=_DEFAULT_RENDER_CACHE)
 
 
-def render_frame_800x480(state: AppState) -> np.ndarray:
-    """Convenience wrapper for the 800x480 small-screen layout."""
-    return render_frame(state, 800, 480)
+def render_frame_800x480(state: AppState, width: int = 800,
+                         height: int = 480,
+                         cache: Optional[RenderCache] = None) -> np.ndarray:
+    """Convenience wrapper for the 800x480 5-inch logical layout."""
+    return _render_frame_800x480_logical(
+        state, width=width, height=height, cache=cache)
 
 
 # =============================================================================
