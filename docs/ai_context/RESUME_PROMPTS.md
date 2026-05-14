@@ -89,9 +89,33 @@ asking it to re-discover the project from scratch.
 > rebuild、deploy、GPIO bridge、DSP変更はしていません。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` を読んでください。
 
-### HDMI GUI Phase 2B prompt
+### HDMI GUI Phase 2B result — static/change-driven renderer optimized
 
-> HDMI GUI統合の Phase 2B を実施してください。HDMI出力と Vivado変更は
+> HDMI GUI Phase 2B は完了済みです。
+> `GUI/pynq_multi_fx_gui.py` に static/change-driven 向け軽量化を入れ、
+> HDMI出力なしで PYNQ-Z2 (`192.168.1.9`) 上の offscreen benchmark を
+> 再実行しました。変更は Python renderer と docs のみで、Vivado、
+> bitstream、deploy、`AudioLabOverlay()`、GPIO bridge、DSP/Clash は
+> 触っていません。主な変更: static LCD / knob-panel chrome を
+> `render_static_base()` に移してcache、main display / knob panel を
+> static chrome と state content に分離、knob body cache 追加、
+> `make_pynq_static_render_cache()` と `render_frame_pynq_static()` 追加、
+> PYNQ static mode では synthetic visualizer / waveform を固定し、
+> glow / blur stamp を抑制。raw import 成功、frame shape/dtype は
+> `[720, 1280, 3]` / `uint8`。default fast change-driven は Phase 2A の
+> avg `1972.889 ms` / p95 `2111.738 ms` から avg `690.397 ms` /
+> p95 `726.448 ms` に改善。PYNQ static mode は cold `2886.108 ms`、
+> same-state p95 `0.200019 ms`、change-driven avg `255.625 ms` /
+> p95 `276.171 ms`。PNG は
+> `/tmp/hdmi_gui_phase2b/phase2b_pynq_static.png` に保存し、1280x720 RGBで
+> 見た目の大きな崩れなし。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` を読んでください。
+> `base.bit` ロード、`run_pynq_hdmi()`、Vivado変更、bitstream rebuild、
+> deploy、`git push` / `git pull` / `git fetch`は禁止です。
+
+### HDMI GUI Phase 2C prompt
+
+> HDMI GUI統合の Phase 2C を実施してください。HDMI出力と Vivado変更は
 > まだしないでください。`GUI/pynq_multi_fx_gui.py` の描画を温存し、
 > `AppState` 変更を `AudioLabOverlay` の既存APIへ反映する bridge を
 > 作ってください。GPIO write は毎frameではなく変更時または低rateにし、

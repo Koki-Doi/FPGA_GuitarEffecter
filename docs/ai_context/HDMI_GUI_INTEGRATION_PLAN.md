@@ -5,12 +5,15 @@ This document records the design direction for showing the existing
 breaking the current AudioLab DSP path.
 
 Status: investigation / staged implementation. Phase 1 offscreen render
-benchmark and Phase 2A PYNQ compatibility work have been completed. The
-GUI renderer can now import and render offscreen on the PYNQ-Z2 without
-external shims. No HDMI output, Vivado change, bitstream rebuild, deploy,
-`AudioLabOverlay` bridge, GPIO bridge, or `base.bit` load has been done
-for this HDMI GUI integration. See `HDMI_GUI_PHASE1_RENDER_BENCH.md` and
-`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` for the measured results.
+benchmark, Phase 2A PYNQ compatibility, and Phase 2B static/change-driven
+render optimization have been completed. The GUI renderer can now import
+and render offscreen on the PYNQ-Z2 without external shims, and the
+PYNQ static mode reduces change-driven redraws to about `256 ms`. No HDMI
+output, Vivado change, bitstream rebuild, deploy, `AudioLabOverlay`
+bridge, GPIO bridge, or `base.bit` load has been done for this HDMI GUI
+integration. See `HDMI_GUI_PHASE1_RENDER_BENCH.md`,
+`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`, and
+`HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the measured results.
 
 ## 1. Current state
 
@@ -679,7 +682,43 @@ render only on visible state changes, reuse the previous RGB frame while
 unchanged, and keep `state.t` fixed unless an explicit low-rate refresh
 is requested.
 
-### Phase 2B: AppState / AudioLabOverlay bridge without HDMI
+### Phase 2B: PYNQ static/change-driven render optimization
+
+Optimize the renderer for static HDMI GUI use before adding any hardware
+bridge. This phase stays offscreen-only:
+
+- no HDMI output
+- no `run_pynq_hdmi()`
+- no `Overlay("base.bit")`
+- no `AudioLabOverlay()`
+- no Vivado or bitstream work
+- no GPIO bridge
+
+Phase 2B result (2026-05-14):
+
+- Static LCD / knob-panel chrome moved into the cached base layer.
+- Semistatic redraw now draws only state-dependent content.
+- Knob body chrome is cached.
+- `RenderCache(pynq_static_mode=True)`,
+  `make_pynq_static_render_cache()`, and `render_frame_pynq_static()`
+  provide the PYNQ static/change-driven profile.
+- PYNQ static mode freezes the synthetic visualizer / waveform into the
+  cached base and suppresses high-cost glow / blur stamps.
+- Raw import still succeeds on PYNQ.
+- Frame shape / dtype remains `[720, 1280, 3]` / `uint8`.
+- Default fast path change-driven redraw improved from Phase 2A
+  `1972.889 ms` avg / `2111.738 ms` p95 to `690.397 ms` avg /
+  `726.448 ms` p95.
+- PYNQ static mode change-driven redraw measured `255.625 ms` avg /
+  `276.171 ms` p95.
+- Same-state cache p95 stayed sub-millisecond.
+- PNG output was saved to `/tmp/hdmi_gui_phase2b/phase2b_pynq_static.png`
+  and visually checked.
+
+Detailed numbers are recorded in
+`docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`.
+
+### Phase 2C: AppState / AudioLabOverlay bridge without HDMI
 
 Build a Python bridge that translates `AppState` changes into
 `AudioLabOverlay` API calls. Verify without HDMI by:
@@ -798,9 +837,9 @@ Until a future implementation phase explicitly approves otherwise:
 > `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` または関連docsに追記して
 > ください。`git push` / `git pull` / `git fetch`は禁止です。
 
-### Phase 2B prompt: AppState / AudioLabOverlay bridge
+### Phase 2C prompt: AppState / AudioLabOverlay bridge
 
-> HDMI GUI統合の Phase 2B を実施してください。まだ HDMI 出力と Vivado変更は
+> HDMI GUI統合の Phase 2C を実施してください。まだ HDMI 出力と Vivado変更は
 > しないでください。`GUI/pynq_multi_fx_gui.py` の描画をなるべく温存し、
 > `AppState` の変更を `AudioLabOverlay` の既存API
 > (`set_noise_suppressor_settings`, `set_compressor_settings`,

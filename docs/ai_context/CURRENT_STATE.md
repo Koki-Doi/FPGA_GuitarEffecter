@@ -1,7 +1,8 @@
 # Current state
 
-Last updated: 2026-05-14 (HDMI GUI Phase 2A PYNQ offscreen compatibility
-implemented; HDMI output / bridge / Vivado work not started).
+Last updated: 2026-05-14 (HDMI GUI Phase 2B PYNQ static/change-driven
+render optimization implemented; HDMI output / bridge / Vivado work not
+started).
 
 ## PYNQ-Z2 network identity
 
@@ -29,11 +30,11 @@ bash scripts/deploy_to_pynq.sh
 ## HDMI GUI integration planning
 
 HDMI GUI integration is still not a live HDMI implementation. Phase 2A
-made minimal Python compatibility changes to `GUI/pynq_multi_fx_gui.py`
-only, so it can import and render offscreen on the PYNQ-Z2 without
-temporary benchmark shims. No Vivado block design, Clash / DSP source,
-bitstream, notebook, deploy script, overlay load, GPIO bridge, or PYNQ
-runtime behavior has been changed for this work.
+made minimal Python compatibility changes to `GUI/pynq_multi_fx_gui.py`,
+and Phase 2B optimized the same renderer for static/change-driven
+offscreen rendering on the PYNQ-Z2. No Vivado block design, Clash / DSP
+source, bitstream, notebook, deploy script, overlay load, GPIO bridge, or
+PYNQ runtime behavior has been changed for this work.
 
 What was found:
 
@@ -62,8 +63,9 @@ Current design direction:
 
 See `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` for the full plan,
 risks, prohibited actions, and phase prompts. See
-`docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` for the current
-PYNQ compatibility result.
+`docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` and
+`docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the current
+PYNQ rendering results.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
@@ -137,6 +139,44 @@ on the board, but live animated HDMI remains unrealistic. The future HDMI
 backend should be static/change-driven, freeze or heavily throttle
 visualizer / waveform / meter animation, and reuse the previous RGB frame
 while state is unchanged.
+
+## HDMI GUI Phase 2B render optimization
+
+Phase 2B changed only `GUI/pynq_multi_fx_gui.py` and docs. It did not call
+`run_pynq_hdmi()`, did not load `base.bit`, did not instantiate
+`AudioLabOverlay()`, did not write GPIOs, did not use HDMI output, and did
+not change Vivado, block design, bitstreams, deploy scripts, notebooks, or
+DSP source.
+
+Key renderer changes:
+
+- cached static LCD / knob-panel chrome in `render_static_base()`
+- split main display and knob panel into static chrome and state content
+- cached knob body chrome
+- added `make_pynq_static_render_cache()` and `render_frame_pynq_static()`
+- in PYNQ static mode, froze the synthetic visualizer / waveform and
+  suppressed high-cost glow / blur stamps
+
+PYNQ-Z2 result from `/tmp/hdmi_gui_phase2b/pynq_multi_fx_gui.py`:
+
+- raw import without shims: success
+- import time: `464.178 ms`
+- frame shape / dtype: `[720, 1280, 3]` / `uint8`
+- default fast cold render: `3407.583 ms`
+- default fast change-driven redraw: avg `690.397 ms/frame`, p95
+  `726.448 ms/frame`
+- PYNQ static cold render: `2886.108 ms`
+- PYNQ static same-state cache: avg `0.491993 ms/frame`, p95
+  `0.200019 ms/frame` (one scheduler outlier affected the avg)
+- PYNQ static change-driven redraw: avg `255.625 ms/frame`, p95
+  `276.171 ms/frame`
+- saved PNG: `/tmp/hdmi_gui_phase2b/phase2b_pynq_static.png`, 1280x720
+  RGB, visually checked
+
+Conclusion: static/change-driven HDMI updates are now plausible from a
+Python rendering perspective. This is still not a live animated
+5/10/15/30fps path; the future HDMI backend should render on visible
+state changes and reuse the previous RGB frame while unchanged.
 
 ## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
 

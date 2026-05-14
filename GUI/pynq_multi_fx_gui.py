@@ -166,6 +166,10 @@ _patch_old_pillow_draw_keywords()
 _ACTIVE_RENDER_CACHE = None
 
 
+def _pynq_static_mode() -> bool:
+    return bool(getattr(_ACTIVE_RENDER_CACHE, "pynq_static_mode", False))
+
+
 # =============================================================================
 # CANVAS / PALETTE
 # =============================================================================
@@ -471,7 +475,7 @@ def draw_text(img: Image.Image, xy, text: str, fill, scale: int = 1,
     ay = {"t": 0, "m": -sh // 2, "b": -sh}[anchor[1]]
     px, py = int(xy[0]) + ax, int(xy[1]) + ay
 
-    if glow:
+    if glow and not _pynq_static_mode():
         # neon glow halo
         halo = Image.new("RGBA", scratch.size, (0, 0, 0, 0))
         halo_d = ImageDraw.Draw(halo)
@@ -701,7 +705,7 @@ def draw_background(img: Image.Image, state: AppState):
 def draw_led(img: Image.Image, x: int, y: int, on: bool = True,
              color: Tuple[int, int, int] = LED, size: int = 8):
     """Round LED with bloom when on."""
-    if on:
+    if on and not _pynq_static_mode():
         halo = Image.new("RGBA", (size * 6, size * 6), (0, 0, 0, 0))
         hd = ImageDraw.Draw(halo)
         for r, a in [(size * 2.6, 60), (size * 1.8, 110), (size * 1.2, 180)]:
@@ -731,7 +735,8 @@ def draw_led(img: Image.Image, x: int, y: int, on: bool = True,
 
 
 def draw_meter(img: Image.Image, x: int, y: int, w: int, h: int,
-               value: float, label: str = "", segments: int = 18):
+               value: float, label: str = "", segments: int = 18,
+               glow: bool = True):
     """Horizontal segmented meter with cyan→amber→red ramp."""
     # housing
     d = ImageDraw.Draw(img)
@@ -758,12 +763,13 @@ def draw_meter(img: Image.Image, x: int, y: int, w: int, h: int,
         sy2 = y + h - pad
         if i < lit:
             # glowing stamp
-            stamp = Image.new("RGBA", (int(seg_w + 8), int(sy2 - sy + 8)), (0, 0, 0, 0))
-            sd = ImageDraw.Draw(stamp)
-            sd.rectangle((4, 4, int(seg_w + 4), int(sy2 - sy + 4)),
-                         fill=col + (255,))
-            stamp = stamp.filter(ImageFilter.GaussianBlur(1.6))
-            img.alpha_composite(stamp, (int(sx) - 4, int(sy) - 4))
+            if glow and not _pynq_static_mode():
+                stamp = Image.new("RGBA", (int(seg_w + 8), int(sy2 - sy + 8)), (0, 0, 0, 0))
+                sd = ImageDraw.Draw(stamp)
+                sd.rectangle((4, 4, int(seg_w + 4), int(sy2 - sy + 4)),
+                             fill=col + (255,))
+                stamp = stamp.filter(ImageFilter.GaussianBlur(1.6))
+                img.alpha_composite(stamp, (int(sx) - 4, int(sy) - 4))
             d.rectangle((int(sx), int(sy), int(sx2), int(sy2)), fill=col)
         else:
             d.rectangle((int(sx), int(sy), int(sx2), int(sy2)),
@@ -796,41 +802,67 @@ def draw_top_status(img: Image.Image, state: AppState):
 # =============================================================================
 # MAIN DISPLAY (preset card + signal chain + visualizer + side panel)
 # =============================================================================
-def draw_main_display(img: Image.Image, state: AppState):
-    """Recessed LCD area broken into preset/chain/viz/right-meter zones."""
-    # Top bar removed — reclaim that strip so the main display fills the
-    # full available height between the chassis edges.
+def _main_display_layout():
     x0, y0, x1, y1 = 36, 32, W - 36, 458
+    sx0, sy0, sx1, sy1 = x0 + 12, y0 + 12, x1 - 12, y1 - 12
+    sep1 = sx0 + 268
+    sep2 = sx1 - 280
+    mx0 = sep1 + 14
+    mx1 = sep2 - 14
+    return {
+        "panel": (x0, y0, x1, y1),
+        "screen": (sx0, sy0, sx1, sy1),
+        "separators": (sep1, sep2),
+        "preset": (sx0 + 12, sy0 + 10, sep1 - 12, sy1 - 10),
+        "chain": (mx0, sy0 + 10, mx1, sy0 + 162),
+        "visualizer": (mx0, sy0 + 174, mx1, sy1 - 10),
+        "right": (sep2 + 14, sy0 + 10, sx1 - 12, sy1 - 10),
+    }
+
+
+def draw_main_display_static_chrome(img: Image.Image, include_static_monitor: bool = False):
+    """State-independent LCD panel chrome, cached in the fast render base."""
+    layout = _main_display_layout()
+    x0, y0, x1, y1 = layout["panel"]
     panel_with_bevel(img, (x0, y0, x1, y1),
                      fill_top=(20, 23, 28), fill_bot=(10, 12, 16), radius=10)
 
     # inset screen
     inset_screen(img, (x0 + 12, y0 + 12, x1 - 12, y1 - 12), radius=8)
 
-    # zone splits (computed off the inset rect)
-    sx0, sy0, sx1, sy1 = x0 + 12, y0 + 12, x1 - 12, y1 - 12
-
     # vertical separators
     d = ImageDraw.Draw(img)
-    sep1 = sx0 + 268
-    sep2 = sx1 - 280
+    sx0, sy0, sx1, sy1 = layout["screen"]
+    sep1, sep2 = layout["separators"]
     for sep in (sep1, sep2):
         d.line((sep, sy0 + 14, sep, sy1 - 14), fill=(0, 0, 0, 200), width=1)
         d.line((sep + 1, sy0 + 14, sep + 1, sy1 - 14), fill=LED + (28,), width=1)
 
+    if include_static_monitor:
+        draw_visualizer_static(img, layout["visualizer"])
+
+
+def draw_main_display_content(img: Image.Image, state: AppState):
+    """State-dependent LCD contents drawn over cached chrome."""
+    layout = _main_display_layout()
     # ---- LEFT: preset card ----
-    _draw_preset_card(img, (sx0 + 12, sy0 + 10, sep1 - 12, sy1 - 10), state)
+    _draw_preset_card(img, layout["preset"], state)
 
     # ---- MIDDLE: signal chain (top) + visualizer (bottom) ----
-    mx0 = sep1 + 14
-    mx1 = sep2 - 14
-    chain_box = (mx0, sy0 + 10, mx1, sy0 + 162)
-    viz_box   = (mx0, sy0 + 174, mx1, sy1 - 10)
-    draw_signal_chain(img, state, chain_box)
-    draw_visualizer(img, state, viz_box)
+    draw_signal_chain(img, state, layout["chain"])
+    if not _pynq_static_mode():
+        draw_visualizer(img, state, layout["visualizer"])
 
     # ---- RIGHT: tuner + IN meter + DSP load ----
-    _draw_right_panel(img, (sep2 + 14, sy0 + 10, sx1 - 12, sy1 - 10), state)
+    _draw_right_panel(img, layout["right"], state)
+
+
+def draw_main_display(img: Image.Image, state: AppState):
+    """Recessed LCD area broken into preset/chain/viz/right-meter zones."""
+    # Top bar removed — reclaim that strip so the main display fills the
+    # full available height between the chassis edges.
+    draw_main_display_static_chrome(img)
+    draw_main_display_content(img, state)
 
 
 def _draw_preset_card(img: Image.Image, xy, state: AppState):
@@ -1066,11 +1098,12 @@ def _wire(img: Image.Image, x0, y0, x1, y1, on: bool):
     d = ImageDraw.Draw(img)
     if on:
         # glow trace
-        trace = Image.new("RGBA", (max(2, int(x1 - x0)) + 12, 18), (0, 0, 0, 0))
-        td = ImageDraw.Draw(trace)
-        td.rectangle((6, 7, max(7, int(x1 - x0)) + 6, 11), fill=LED + (180,))
-        trace = trace.filter(ImageFilter.GaussianBlur(2))
-        img.alpha_composite(trace, (int(x0) - 6, int(y0) - 9))
+        if not _pynq_static_mode():
+            trace = Image.new("RGBA", (max(2, int(x1 - x0)) + 12, 18), (0, 0, 0, 0))
+            td = ImageDraw.Draw(trace)
+            td.rectangle((6, 7, max(7, int(x1 - x0)) + 6, 11), fill=LED + (180,))
+            trace = trace.filter(ImageFilter.GaussianBlur(2))
+            img.alpha_composite(trace, (int(x0) - 6, int(y0) - 9))
         d.line((x0, y0, x1, y1), fill=LED, width=2)
         # flowing dots
         d.ellipse((x0 - 2, y0 - 2, x0 + 2, y0 + 2), fill=LED_SOFT + (255,))
@@ -1155,7 +1188,7 @@ def _draw_chain_block(img: Image.Image, xy, eff_idx: int,
     rounded_rect(ImageDraw.Draw(mask), (0, 0, x1 - x0, y1 - y0), 5, fill=255)
     img.paste(grad, (x0, y0), mask)
 
-    if selected:
+    if selected and not _pynq_static_mode():
         # outer cyan glow
         halo = Image.new("RGBA", (x1 - x0 + 24, y1 - y0 + 24), (0, 0, 0, 0))
         rounded_rect(ImageDraw.Draw(halo),
@@ -1193,10 +1226,11 @@ def _draw_chain_block(img: Image.Image, xy, eff_idx: int,
     by  = y1 - 11
     if on:
         # bloom
-        bloom = Image.new("RGBA", (bar_w + 12, 14), (0, 0, 0, 0))
-        ImageDraw.Draw(bloom).rectangle((6, 4, bar_w + 6, 8), fill=LED + (210,))
-        bloom = bloom.filter(ImageFilter.GaussianBlur(2))
-        img.alpha_composite(bloom, (bx0 - 6, by - 4))
+        if not _pynq_static_mode():
+            bloom = Image.new("RGBA", (bar_w + 12, 14), (0, 0, 0, 0))
+            ImageDraw.Draw(bloom).rectangle((6, 4, bar_w + 6, 8), fill=LED + (210,))
+            bloom = bloom.filter(ImageFilter.GaussianBlur(2))
+            img.alpha_composite(bloom, (bx0 - 6, by - 4))
         d.rectangle((bx0, by - 1, bx0 + bar_w, by + 2), fill=LED)
     else:
         d.rectangle((bx0, by - 1, bx0 + bar_w, by + 2), fill=(40, 50, 58, 255))
@@ -1205,6 +1239,65 @@ def _draw_chain_block(img: Image.Image, xy, eff_idx: int,
 # =============================================================================
 # VISUALIZER
 # =============================================================================
+def draw_visualizer_static(img: Image.Image, xy):
+    """Low-cost frozen SIGNAL MONITOR for PYNQ static/change-driven mode."""
+    x0, y0, x1, y1 = xy
+    d = ImageDraw.Draw(img)
+
+    draw_text(img, (x0, y0), "SIGNAL  MONITOR",
+              fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+    draw_text(img, (x1, y0), "STATIC  PREVIEW",
+              fill=SCR_TEXT_DEAD + (255,), scale=1, anchor="rt", letter_spacing=2)
+
+    fy0 = y0 + 18
+    fy1 = y1 - 4
+    rounded_rect(d, (x0, fy0, x1, fy1), 5,
+                 outline=LED + (40,), width=1)
+
+    inner_w = x1 - x0 - 4
+    inner_h = fy1 - fy0 - 4
+    ix0, iy0 = x0 + 2, fy0 + 2
+
+    for gx in range(0, inner_w, 24):
+        d.line((ix0 + gx, iy0, ix0 + gx, iy0 + inner_h), fill=SCR_GRID, width=1)
+    for gy in range(0, inner_h, 18):
+        d.line((ix0, iy0 + gy, ix0 + inner_w, iy0 + gy), fill=SCR_GRID, width=1)
+
+    n = 36
+    bar_area_h = int(inner_h * 0.55)
+    base_y = iy0 + inner_h
+    bw = inner_w / n
+    for i in range(n):
+        phase = i / float(max(1, n - 1))
+        v = 0.10 + 0.62 * math.exp(-phase * 2.1)
+        v += 0.14 * (0.5 + 0.5 * math.sin(i * 0.73))
+        v = max(0.04, min(1.0, v))
+        sx = int(ix0 + i * bw + 2)
+        sx2 = int(ix0 + (i + 1) * bw - 2)
+        h = int(v * (bar_area_h - 6))
+        sy = base_y - h
+        sy2 = base_y - 2
+        d.rectangle((sx, sy, sx2, sy2), fill=LED_DIM + (210,))
+        d.line((sx, sy, sx2, sy), fill=LED_SOFT + (220,), width=1)
+
+    wave_top = iy0
+    wave_bot = iy0 + int(inner_h * 0.45)
+    mid = (wave_top + wave_bot) // 2
+    amp = (wave_bot - wave_top) // 2 - 5
+    pts = []
+    samples = 96
+    for i in range(samples):
+        x = ix0 + 2 + int((inner_w - 4) * i / float(samples - 1))
+        y = mid + int(amp * (
+            math.sin(i * 0.22) * 0.52 +
+            math.sin(i * 0.71) * 0.18
+        ))
+        pts.append((x, y))
+    d.line(pts, fill=LED_SOFT, width=1)
+    d.line((ix0 + 2, mid, ix0 + inner_w - 2, mid),
+           fill=LED + (60,), width=1)
+
+
 def draw_visualizer(img: Image.Image, state: AppState, xy):
     """Fixed-mode SIGNAL MONITOR: spectrum bars + waveform overlay.
 
@@ -1304,6 +1397,60 @@ def draw_visualizer(img: Image.Image, state: AppState, xy):
 # =============================================================================
 # KNOB & KNOB PANEL
 # =============================================================================
+def _knob_body_layer(radius: int) -> Image.Image:
+    """Cached knob chrome shared by all knob values in fast render mode."""
+    R = int(radius)
+    global _ACTIVE_RENDER_CACHE
+    cache = _ACTIVE_RENDER_CACHE
+    key = ("knob_body_v2", R)
+    if cache is not None:
+        cached = cache.knob_body_cache.get(key)
+        if cached is not None:
+            return cached
+
+    size = R * 3
+    cc = size // 2
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+
+    rim = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rim)
+    rd.ellipse((cc - R - 2, cc - R - 2, cc + R + 2, cc + R + 2),
+               fill=(50, 55, 62, 255))
+    layer.alpha_composite(rim.filter(ImageFilter.GaussianBlur(0.5)))
+
+    bd = ImageDraw.Draw(layer)
+    for i in range(R, 0, -1):
+        t = (R - i) / max(1, R)
+        base_top = (90, 96, 105)
+        base_bot = (10, 12, 16)
+        col = _lerp_color(base_bot, base_top, 1.0 - t * 0.85)
+        ox = -int(t * 2)
+        oy = -int(t * 2)
+        bd.ellipse((cc + ox - i, cc + oy - i,
+                    cc + ox + i, cc + oy + i), fill=col + (255,))
+    bd.ellipse((cc - R, cc - R, cc + R, cc + R),
+               outline=(0, 0, 0, 220), width=1)
+    bd.ellipse((cc - R + 1, cc - R + 1, cc + R - 1, cc + R - 1),
+               outline=(255, 255, 255, 30), width=1)
+
+    cap_r = int(R * 0.62)
+    cd = ImageDraw.Draw(layer)
+    for i in range(cap_r, 0, -1):
+        t = (cap_r - i) / max(1, cap_r)
+        col = _lerp_color((6, 8, 12), (60, 66, 74), 1.0 - t * 0.9)
+        cd.ellipse((cc - i, cc - i, cc + i, cc + i), fill=col + (255,))
+
+    spec = Image.new("RGBA", (R * 2, R * 2), (0, 0, 0, 0))
+    ImageDraw.Draw(spec).ellipse((R // 4, R // 6, R, R // 2),
+                                 fill=(255, 255, 255, 28))
+    spec = spec.filter(ImageFilter.GaussianBlur(2))
+    layer.alpha_composite(spec, (cc - R, cc - R))
+
+    if cache is not None:
+        cache.knob_body_cache[key] = layer
+    return layer
+
+
 def draw_knob(img: Image.Image, x: int, y: int, value: float,
               label: str = "", active: bool = True, selected: bool = False,
               radius: int = 36):
@@ -1318,7 +1465,7 @@ def draw_knob(img: Image.Image, x: int, y: int, value: float,
     angle = start + norm * (end - start)
 
     # outer halo (glow when selected)
-    if selected and active:
+    if selected and active and not _pynq_static_mode():
         halo = Image.new("RGBA", (R * 4, R * 4), (0, 0, 0, 0))
         ImageDraw.Draw(halo).ellipse(
             (R - 2, R - 2, 3 * R + 2, 3 * R + 2),
@@ -1345,54 +1492,11 @@ def draw_knob(img: Image.Image, x: int, y: int, value: float,
             w = 1
         d.line((x1, y1, x2, y2), fill=col, width=w)
 
-    # outer body (rim)
-    rim = Image.new("RGBA", (R * 3, R * 3), (0, 0, 0, 0))
-    rd = ImageDraw.Draw(rim)
-    cx_ = R * 3 // 2
-    rd.ellipse((cx_ - R - 2, cx_ - R - 2, cx_ + R + 2, cx_ + R + 2),
-               fill=(50, 55, 62, 255))
-    rim_img = rim.filter(ImageFilter.GaussianBlur(0.5))
-    img.alpha_composite(rim_img, (x - R * 3 // 2, y - R * 3 // 2))
-
-    # body — dark metal radial fake
-    body = Image.new("RGBA", (R * 2 + 4, R * 2 + 4), (0, 0, 0, 0))
-    bd = ImageDraw.Draw(body)
-    # concentric ellipses, light from top-left
-    for i in range(R, 0, -1):
-        t = (R - i) / max(1, R)
-        # inner darker, outer lighter overall
-        base_top = (90, 96, 105)
-        base_bot = (10, 12, 16)
-        col = _lerp_color(base_bot, base_top, 1.0 - t * 0.85)
-        # offset gives top-left highlight
-        ox = -int(t * 2)
-        oy = -int(t * 2)
-        bd.ellipse((R + 2 + ox - i, R + 2 + oy - i,
-                    R + 2 + ox + i, R + 2 + oy + i), fill=col + (255,))
-    # rim shadow ring
-    bd.ellipse((2, 2, R * 2 + 2, R * 2 + 2),
-               outline=(0, 0, 0, 220), width=1)
-    bd.ellipse((3, 3, R * 2 + 1, R * 2 + 1),
-               outline=(255, 255, 255, 30), width=1)
-    img.alpha_composite(body, (x - R - 2, y - R - 2))
+    body = _knob_body_layer(R)
+    img.alpha_composite(body, (x - body.width // 2, y - body.height // 2))
 
     # inner cap
     cap_r = int(R * 0.62)
-    cap = Image.new("RGBA", (cap_r * 2 + 4, cap_r * 2 + 4), (0, 0, 0, 0))
-    cd = ImageDraw.Draw(cap)
-    for i in range(cap_r, 0, -1):
-        t = (cap_r - i) / max(1, cap_r)
-        col = _lerp_color((6, 8, 12), (60, 66, 74), 1.0 - t * 0.9)
-        cd.ellipse((cap_r + 2 - i, cap_r + 2 - i,
-                    cap_r + 2 + i, cap_r + 2 + i), fill=col + (255,))
-    img.alpha_composite(cap, (x - cap_r - 2, y - cap_r - 2))
-
-    # specular highlight
-    spec = Image.new("RGBA", (R * 2, R * 2), (0, 0, 0, 0))
-    ImageDraw.Draw(spec).ellipse((R // 4, R // 6, R, R // 2),
-                                 fill=(255, 255, 255, 28))
-    spec = spec.filter(ImageFilter.GaussianBlur(2))
-    img.alpha_composite(spec, (x - R, y - R))
 
     # value indicator line
     a_rad = math.radians(angle)
@@ -1400,14 +1504,15 @@ def draw_knob(img: Image.Image, x: int, y: int, value: float,
     iy = y - math.cos(a_rad) * (cap_r - 4)
     ind_col = LED if active else (90, 100, 110)
     # glow
-    line_layer = Image.new("RGBA", (R * 2 + 8, R * 2 + 8), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(line_layer)
-    ld.line((R + 4, R + 4,
-             R + 4 + math.sin(a_rad) * (cap_r - 4),
-             R + 4 - math.cos(a_rad) * (cap_r - 4)),
-            fill=ind_col + (255,), width=3)
-    line_layer = line_layer.filter(ImageFilter.GaussianBlur(1.6))
-    img.alpha_composite(line_layer, (x - R - 4, y - R - 4))
+    if not _pynq_static_mode():
+        line_layer = Image.new("RGBA", (R * 2 + 8, R * 2 + 8), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(line_layer)
+        ld.line((R + 4, R + 4,
+                 R + 4 + math.sin(a_rad) * (cap_r - 4),
+                 R + 4 - math.cos(a_rad) * (cap_r - 4)),
+                fill=ind_col + (255,), width=3)
+        line_layer = line_layer.filter(ImageFilter.GaussianBlur(1.6))
+        img.alpha_composite(line_layer, (x - R - 4, y - R - 4))
     d.line((x, y, ix, iy), fill=ind_col, width=2)
     d.ellipse((ix - 2, iy - 2, ix + 2, iy + 2), fill=ind_col)
 
@@ -1434,9 +1539,18 @@ def draw_knob_panel(img: Image.Image, state: AppState):
     # Enlarged: was y0=472..y1=580. Now reaches further down where
     # the old footswitch row used to live.
     x0, y0, x1, y1 = 36, 472, W - 36, 700
+    draw_knob_panel_static_chrome(img)
+    draw_knob_panel_content(img, state)
+
+
+def draw_knob_panel_static_chrome(img: Image.Image):
+    x0, y0, x1, y1 = 36, 472, W - 36, 700
     panel_with_bevel(img, (x0, y0, x1, y1),
                      fill_top=(40, 44, 52), fill_bot=(16, 18, 24), radius=10)
 
+
+def draw_knob_panel_content(img: Image.Image, state: AppState):
+    x0, y0, x1, y1 = 36, 472, W - 36, 700
     # title strip — small, neutral label (no "EDIT XXX" framing)
     d = ImageDraw.Draw(img)
     eff = EFFECTS[state.selected_effect]
@@ -1599,10 +1713,11 @@ class RenderCache:
     throttled to lower FPS.
     """
     def __init__(self, visualizer_fps: float = 5.0, meter_fps: float = 10.0,
-                 max_frame_entries: int = 8):
+                 max_frame_entries: int = 8, pynq_static_mode: bool = False):
         self.visualizer_fps = float(visualizer_fps)
         self.meter_fps = float(meter_fps)
         self.max_frame_entries = int(max_frame_entries)
+        self.pynq_static_mode = bool(pynq_static_mode)
         self.static_layers = {}
         self.semi_static_layers = {}
         self.text_cache = {}
@@ -1650,6 +1765,13 @@ class RenderCache:
 _DEFAULT_RENDER_CACHE = RenderCache()
 
 
+def make_pynq_static_render_cache(max_frame_entries: int = 8) -> RenderCache:
+    """Cache profile for PYNQ HDMI static/change-driven display."""
+    return RenderCache(visualizer_fps=0.0, meter_fps=0.0,
+                       max_frame_entries=max_frame_entries,
+                       pynq_static_mode=True)
+
+
 def state_semistatic_signature(state: AppState):
     """State components that require the non-background UI to be redrawn.
 
@@ -1679,10 +1801,12 @@ def state_dynamic_signature(state: AppState, cache: RenderCache):
     This is the practical part that makes Tk/PYNQ display usable: frames between
     buckets can reuse the previous RGB array.
     """
-    vf = max(0.5, cache.visualizer_fps)
-    mf = max(1.0, cache.meter_fps)
-    viz_bucket = int(float(state.t) * vf)
-    meter_bucket = int(float(state.t) * mf)
+    if getattr(cache, "pynq_static_mode", False):
+        return ("static",)
+    vf = float(cache.visualizer_fps)
+    mf = float(cache.meter_fps)
+    viz_bucket = 0 if vf <= 0 else int(float(state.t) * max(0.5, vf))
+    meter_bucket = 0 if mf <= 0 else int(float(state.t) * max(1.0, mf))
     # Level values are intentionally not part of the key; they are sampled at
     # the beginning of each meter bucket. Including raw/quantized levels here
     # would invalidate the frame cache almost every tick and undo throttling.
@@ -1695,7 +1819,8 @@ def render_static_base(width: int, height: int, cache: RenderCache) -> Image.Ima
     The returned image must be copied by callers before compositing dynamic
     layers over it.
     """
-    key = (int(width), int(height), "static_base_v1")
+    key = (int(width), int(height), "static_base_v2",
+           bool(getattr(cache, "pynq_static_mode", False)))
     if key in cache.static_layers:
         cache.stats["static_hits"] += 1
         return cache.static_layers[key]
@@ -1705,6 +1830,10 @@ def render_static_base(width: int, height: int, cache: RenderCache) -> Image.Ima
     try:
         base = Image.new("RGBA", (W, H), (0, 0, 0, 255))
         draw_background(base, AppState())
+        draw_main_display_static_chrome(
+            base,
+            include_static_monitor=bool(getattr(cache, "pynq_static_mode", False)))
+        draw_knob_panel_static_chrome(base)
         if (width, height) != (W, H):
             base = base.resize((width, height), Image.BILINEAR)
         cache.static_layers[key] = base
@@ -1734,8 +1863,8 @@ def render_semistatic_layer(state: AppState, width: int, height: int,
     _ACTIVE_RENDER_CACHE = cache
     try:
         layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        draw_main_display(layer, state)
-        draw_knob_panel(layer, state)
+        draw_main_display_content(layer, state)
+        draw_knob_panel_content(layer, state)
         if state.save_flash > 0:
             flash = Image.new("RGBA", (W, H), (0, 0, 0, 0))
             d = ImageDraw.Draw(flash)
@@ -1751,7 +1880,8 @@ def render_semistatic_layer(state: AppState, width: int, height: int,
         cache.semi_static_layers[key] = layer
         cache.stats["semistatic_misses"] += 1
         # Coarse counters for bench diagnostics.
-        cache.stats["visualizer_updates"] += 1
+        if not getattr(cache, "pynq_static_mode", False):
+            cache.stats["visualizer_updates"] += 1
         cache.stats["meter_updates"] += 1
         # Prevent unbounded memory growth; keep latest few UI states.
         if len(cache.semi_static_layers) > cache.max_frame_entries:
@@ -1792,6 +1922,19 @@ def render_frame_fast(state: AppState, width: int = 1280, height: int = 720,
     cache.put_frame(key, arr)
     cache.stats["frame_misses"] += 1
     return arr
+
+
+def render_frame_pynq_static(state: AppState, width: int = 1280,
+                             height: int = 720,
+                             cache: Optional[RenderCache] = None) -> np.ndarray:
+    """Render using the PYNQ static/change-driven profile."""
+    if cache is None:
+        cache = make_pynq_static_render_cache()
+    elif not getattr(cache, "pynq_static_mode", False):
+        cache.pynq_static_mode = True
+        cache.visualizer_fps = 0.0
+        cache.meter_fps = 0.0
+    return render_frame_fast(state, width=width, height=height, cache=cache)
 
 
 def render_frame_legacy(state: AppState, width: int = 1280,
