@@ -24,6 +24,7 @@ Public API:
     backend.write_frame(rgb_frame)  # overwrite the framebuffer
     backend.write_frame(rgb_frame, fit_mode="fit-90")
     backend.write_frame(rgb_800x480, placement="center")
+    backend.write_frame(rgb_800x480, placement="manual", offset_x=0, offset_y=0)
     backend.status()                # debug dict
     backend.stop()
 """
@@ -219,7 +220,8 @@ def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
 
 
 def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-                          placement="center", background=(0, 0, 0)):
+                          placement="center", offset_x=None, offset_y=None,
+                          background=(0, 0, 0)):
     """Place a smaller logical RGB frame inside the fixed HDMI framebuffer."""
     arr = np.asarray(rgb_frame)
     if arr.ndim != 3 or arr.shape[2] != 3 or arr.dtype != np.uint8:
@@ -228,21 +230,37 @@ def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
             .format(arr.shape, arr.dtype))
     in_h, in_w = int(arr.shape[0]), int(arr.shape[1])
     out_w, out_h = int(width), int(height)
-    if in_w > out_w or in_h > out_h:
+    placement = str(placement)
+    if placement == "center":
+        ox = (out_w - in_w) // 2
+        oy = (out_h - in_h) // 2
+    elif placement == "manual":
+        ox = int(offset_x) if offset_x is not None else 0
+        oy = int(offset_y) if offset_y is not None else 0
+    else:
         raise ValueError(
-            "logical frame {}x{} does not fit inside HDMI framebuffer {}x{}"
-            .format(in_w, in_h, out_w, out_h))
-    if str(placement) != "center":
-        raise ValueError("only center placement is supported; got {!r}".format(placement))
+            "unknown placement {!r}; expected center or manual".format(placement))
 
-    offset_x = (out_w - in_w) // 2
-    offset_y = (out_h - in_h) // 2
     t0 = time.time()
     canvas = np.empty((out_h, out_w, 3), dtype=np.uint8)
     canvas[:, :, 0] = int(background[0]) & 0xFF
     canvas[:, :, 1] = int(background[1]) & 0xFF
     canvas[:, :, 2] = int(background[2]) & 0xFF
-    canvas[offset_y:offset_y + in_h, offset_x:offset_x + in_w, :] = arr
+
+    dst_x0 = min(max(0, ox), out_w)
+    dst_y0 = min(max(0, oy), out_h)
+    dst_x1 = max(0, min(out_w, ox + in_w))
+    dst_y1 = max(0, min(out_h, oy + in_h))
+    src_x0 = max(0, -ox)
+    src_y0 = max(0, -oy)
+    src_x1 = src_x0 + max(0, dst_x1 - dst_x0)
+    src_y1 = src_y0 + max(0, dst_y1 - dst_y0)
+    copied_w = max(0, dst_x1 - dst_x0)
+    copied_h = max(0, dst_y1 - dst_y0)
+    if copied_w > 0 and copied_h > 0:
+        canvas[dst_y0:dst_y1, dst_x0:dst_x1, :] = \
+            arr[src_y0:src_y1, src_x0:src_x1, :]
+
     compose_s = time.time() - t0
     meta = {
         "fit_mode": "logical",
@@ -254,14 +272,23 @@ def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
         "output_height": out_h,
         "scaled_width": in_w,
         "scaled_height": in_h,
-        "offset_x": offset_x,
-        "offset_y": offset_y,
-        "placement": str(placement),
+        "offset_x": ox,
+        "offset_y": oy,
+        "placement": placement,
         "background_rgb": tuple(int(v) for v in background),
         "resize_compose_s": compose_s,
         "compose_s": compose_s,
         "native_passthrough": False,
         "logical_placement": True,
+        "source_visible_region": {
+            "x0": src_x0, "y0": src_y0, "x1": src_x1, "y1": src_y1,
+            "width": copied_w, "height": copied_h,
+        },
+        "framebuffer_copied_region": {
+            "x0": dst_x0, "y0": dst_y0, "x1": dst_x1, "y1": dst_y1,
+            "width": copied_w, "height": copied_h,
+        },
+        "copied_pixels": int(copied_w * copied_h),
     }
     return canvas, meta
 
@@ -375,7 +402,8 @@ class AudioLabHdmiBackend(object):
 
     # ---- public API -----------------------------------------------------
     def start(self, rgb_frame=None, fit_mode="native", scale=None,
-              background=(0, 0, 0), placement="center"):
+              background=(0, 0, 0), placement="center",
+              offset_x=None, offset_y=None):
         """Allocate a framebuffer, fill it from ``rgb_frame`` (or black if
         None), program VDMA and VTC, and return the framebuffer ndarray.
         """
@@ -407,7 +435,8 @@ class AudioLabHdmiBackend(object):
             }
         else:
             self.write_frame(rgb_frame, fit_mode=fit_mode, scale=scale,
-                             background=background, placement=placement)
+                             background=background, placement=placement,
+                             offset_x=offset_x, offset_y=offset_y)
 
         phys = int(self._framebuffer.physical_address)
         self._program_vdma(phys)
@@ -416,7 +445,8 @@ class AudioLabHdmiBackend(object):
         return self._framebuffer
 
     def write_frame(self, rgb_frame, fit_mode="native", scale=None,
-                    background=(0, 0, 0), placement="center"):
+                    background=(0, 0, 0), placement="center",
+                    offset_x=None, offset_y=None):
         """Overwrite the framebuffer in place with a new RGB888 ndarray."""
         if self._framebuffer is None:
             raise RuntimeError("HDMI back end has not been started yet")
@@ -435,12 +465,21 @@ class AudioLabHdmiBackend(object):
                     "logical frames use placement")
             fitted, meta = compose_logical_frame(
                 arr, width=self.width, height=self.height,
-                placement=placement, background=background)
+                placement=placement, offset_x=offset_x, offset_y=offset_y,
+                background=background)
         t0 = time.time()
         self._copy_rgb(fitted)
         meta["framebuffer_copy_s"] = time.time() - t0
         self._last_frame_write = meta
         return dict(meta)
+
+    def write_logical_frame(self, rgb_frame, placement="center",
+                            offset_x=None, offset_y=None,
+                            background=(0, 0, 0)):
+        """Overwrite the framebuffer with a smaller logical RGB frame."""
+        return self.write_frame(
+            rgb_frame, placement=placement, offset_x=offset_x,
+            offset_y=offset_y, background=background)
 
     def _copy_rgb(self, rgb_frame):
         arr = np.asarray(rgb_frame)

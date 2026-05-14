@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Phase 4E 800x480 logical HDMI GUI check.
+"""Phase 4E/4F 800x480 logical HDMI GUI check.
 
 Loads ``AudioLabOverlay`` exactly once, renders
 ``render_frame_800x480(AppState())``, places that logical frame at the
-center of the fixed 1280x720 HDMI framebuffer, and prints VDMA/VTC status.
+requested offset of the fixed 1280x720 HDMI framebuffer, and prints
+VDMA/VTC status.
 
 This script does not load ``base.bit``, does not load a second overlay,
 and does not call ``run_pynq_hdmi()``.
@@ -64,7 +65,12 @@ def smoke(overlay):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--hold-seconds", type=int, default=60)
-    parser.add_argument("--placement", default="center", choices=("center",))
+    parser.add_argument("--placement", default="center",
+                        choices=("center", "manual"))
+    parser.add_argument("--offset-x", type=int, default=None,
+                        help="manual placement X offset in the 1280x720 framebuffer")
+    parser.add_argument("--offset-y", type=int, default=None,
+                        help="manual placement Y offset in the 1280x720 framebuffer")
     args = parser.parse_args()
 
     repo_paths()
@@ -72,6 +78,8 @@ def main():
         "phase": "4E-800x480-logical-gui",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "placement": args.placement,
+        "offset_x": args.offset_x,
+        "offset_y": args.offset_y,
         "hold_seconds": int(args.hold_seconds),
     }
 
@@ -118,9 +126,11 @@ def main():
         raise SystemExit("[phase4e] renderer returned unexpected frame")
 
     backend = AudioLabHdmiBackend(overlay)
-    print("[phase4e] starting HDMI back end with centered logical frame")
+    print("[phase4e] starting HDMI back end placement={} offset=({}, {})".format(
+        args.placement, args.offset_x, args.offset_y))
     t0 = time.time()
-    backend.start(frame, placement=args.placement)
+    backend.start(frame, placement=args.placement,
+                  offset_x=args.offset_x, offset_y=args.offset_y)
     backend_start_s = time.time() - t0
     time.sleep(0.1)
 
@@ -130,8 +140,11 @@ def main():
     report["backend_start_s"] = backend_start_s
     report["hdmi_status"] = status
     report["hdmi_errors"] = errors
+    last_write = status.get("last_frame_write", {})
+    report["last_frame_write"] = last_write
     print(json.dumps({"hdmi_status": status, "hdmi_errors": errors,
-                      "backend_start_s": backend_start_s},
+                      "backend_start_s": backend_start_s,
+                      "last_frame_write": last_write},
                      indent=2, sort_keys=True))
     if errors.get("dmainterr") or errors.get("dmaslverr") or errors.get("dmadecerr"):
         raise SystemExit("[phase4e] VDMA error bits set")

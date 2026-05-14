@@ -325,6 +325,35 @@ asking it to re-discover the project from scratch.
 > loopへ進んでください。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`。
 
+### HDMI GUI Phase 4F result — viewport calibration and manual placement
+
+> HDMI GUI Phase 4F は完了済みです。
+> Phase 4E の800x480 logical GUI中央配置 offset `(240,120)` は、実機
+> 5インチLCD上で大きく右寄りに見えました。1280x720 framebuffer全体を
+> LCDが正しく縮小表示しているなら中央に見えるはずなので、LCD側crop
+> または viewport sampling ずれの可能性が高いです。Vivado rebuild、
+> bit/hwh再生成/転送、`block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP構成 /
+> VDMA設定変更はしていません。`AudioLabHdmiBackend` に
+> `placement="manual"`、`offset_x`、`offset_y` を追加し、logical frameが
+> framebuffer外へ出る場合もclipして安全にcopyします。`placement="center"`
+> は既存互換です。新規 `scripts/test_hdmi_viewport_calibration.py` は
+> 1280x720座標grid、FB四隅/中央ラベル、800x480候補枠 `(0,0)` /
+> `(120,60)` / `(240,120)` / `(320,120)` を描きます。
+> PYNQ-Z2 (`192.168.1.9`) では calibration pattern と manual offset
+> `(0,0)`、`(80,40)`、`(120,60)` の800x480 GUI testがすべて60秒hold成功。
+> `AudioLabOverlay()` は1回だけload、`Overlay("base.bit")` /
+> `run_pynq_hdmi()` / second overlay load は未使用。ADC HPF=True、
+> R19=0x23、`axi_gpio_delay_line=False`、legacy `axi_gpio_delay=True`、
+> post Safe Bypass smoke OK。共通statusは `VDMACR=0x00010001`、
+> `DMASR=0x00011000`、HSIZE/STRIDE=3840、VSIZE=720、VTC=`0x00000006`、
+> error bitsなし。manual GUIは render約0.315s、compose約0.025s、
+> full framebuffer copy約0.207s。最終offsetはユーザー目視で決めてください:
+> `(0,0)` が合うなら左上crop、`(80,40)` が合うなら軽いoverscan、
+> `(120,60)` が合うなら中程度offset、どれも合わないならHDMI timing /
+> LCD controller側を疑います。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

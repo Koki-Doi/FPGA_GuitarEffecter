@@ -2,8 +2,8 @@
 
 Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed,
 Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
-added, and Phase 4E 800x480 logical GUI tested on the PYNQ-Z2 at
-`192.168.1.9`).
+added, Phase 4E 800x480 logical GUI tested, and Phase 4F manual
+viewport calibration added on the PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -283,6 +283,58 @@ is much lower (`2.979 + 0.265 s` -> `0.317 + 0.026 s`), but the full
 optimization should copy only the 800x480 active region if update rate
 becomes important. Physical readability, color order, and final visual
 fit remain user visual confirmation items.
+
+## HDMI GUI Phase 4F viewport calibration
+
+User visual feedback on the likely 5-inch LCD showed that the Phase 4E
+800x480 center placement `(240,120)` appears strongly right-shifted. If
+the LCD were scaling the full 1280x720 framebuffer, center placement
+would look centered, so the current working hypothesis is LCD-side crop
+or non-uniform viewport sampling.
+
+Phase 4F is Python-only. It did not rebuild Vivado, regenerate or copy
+bit/hwh, change `block_design.tcl`, `audio_lab.xdc`,
+`create_project.tcl`, Clash/DSP, `topEntity`, GPIO semantics, HDMI IP
+topology, VDMA settings, or VTC timing.
+
+Backend changes:
+
+- `AudioLabHdmiBackend.start()` / `write_frame()` now support
+  `placement="manual"`, `offset_x`, and `offset_y` for logical frames.
+- `placement="center"` remains the Phase 4E-compatible default.
+- Manual placement clips safely if the logical frame extends outside the
+  1280x720 framebuffer.
+- `last_frame_write` logs requested offset, source visible region,
+  framebuffer copied region, compose time, and copy time.
+
+New calibration script:
+
+- `scripts/test_hdmi_viewport_calibration.py --hold-seconds 60`
+- draws a 1280x720 coordinate grid, framebuffer corner/center labels,
+  and 800x480 candidate boxes at `(0,0)`, `(120,60)`, `(240,120)`, and
+  `(320,120)`.
+
+PYNQ result:
+
+- Targeted deploy copied only Python/script files; `audio_lab.bit`
+  stayed `4,045,680` bytes and `audio_lab.hwh` stayed `1,054,120`
+  bytes.
+- Viewport calibration run completed, draw `0.211 s`, native full-frame
+  copy `0.208 s`, `VDMACR=0x00010001`, `DMASR=0x00011000`, VTC
+  `0x00000006`, no VDMA error bits.
+- 800x480 manual offset tests completed for `(0,0)`, `(80,40)`, and
+  `(120,60)`. All used `AudioLabOverlay()` once, no `base.bit`, no
+  `run_pynq_hdmi()`, no second overlay, ADC HPF `True`, `R19=0x23`,
+  post-HDMI Safe Bypass smoke OK, and no VDMA error bits.
+- Timing for the manual-offset GUI tests remained about render
+  `0.315..0.316 s`, compose `0.025 s`, full framebuffer copy `0.207 s`.
+
+User visual decision is still required. If `(0,0)` fits best, the LCD is
+likely showing a left/top crop. If `(80,40)` fits best, treat it as light
+overscan/viewport shift. If `(120,60)` fits best, treat it as medium
+offset. If none fit, investigate HDMI timing or the LCD controller's 720p
+sampling behavior. Full details are in
+`docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

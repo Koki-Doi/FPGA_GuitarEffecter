@@ -5,15 +5,17 @@ This document records the design direction for showing the existing
 breaking the current AudioLab DSP path.
 
 Status: integrated Phase 4 implementation deployed, Phase 4C runtime
-resource profile measured, Phase 4D small-LCD fit modes added, and
-Phase 4E 800x480 logical GUI mode tested.
+resource profile measured, Phase 4D small-LCD fit modes added, Phase 4E
+800x480 logical GUI mode tested, and Phase 4F manual viewport
+calibration added.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
 test on the real deployed overlay, Phase 3 Vivado integration design,
 Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
-static-frame/resource profiling, and Phase 4D LCD safe-area fit testing
-and Phase 4E logical-size testing have been completed. Phase 4 implements
+static-frame/resource profiling, Phase 4D LCD safe-area fit testing,
+Phase 4E logical-size testing, and Phase 4F viewport calibration have
+been completed. Phase 4 implements
 Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
@@ -27,11 +29,12 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`, and
 `HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
 `HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`,
-`HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`, and
-`HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`, and
-`HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md` for the measured results,
+`HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`,
+`HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`,
+`HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`, and
+`HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md` for the measured results,
 design, build, deploy, timing, smoke logs, runtime resource profile, LCD
-fit test, and 800x480 logical GUI result.
+fit test, 800x480 logical GUI result, and viewport calibration result.
 
 ## 1. Current state
 
@@ -91,6 +94,14 @@ and VDMA stay 1280x720, but Python renders `[480,800,3]` and the backend
 centers it in the framebuffer at offset `(240,120)`. This path completed
 a 60-second PYNQ hold with no VDMA error bits and is the better basis for
 future small-LCD UI work than shrinking the dense 1280x720 GUI.
+
+User visual feedback then showed that the centered 800x480 placement
+appears strongly right-shifted on the LCD. Phase 4F therefore added
+manual logical placement (`placement="manual"`, `offset_x`, `offset_y`)
+and a viewport calibration pattern. The HDMI signal remains 1280x720 and
+VDMA/VTC settings are unchanged. Calibration and manual-offset GUI tests
+for `(0,0)`, `(80,40)`, and `(120,60)` completed on the PYNQ-Z2 with no
+VDMA error bits. The final offset is still a user visual decision.
 
 The AudioLab control contract must remain intact:
 
