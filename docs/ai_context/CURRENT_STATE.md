@@ -1,7 +1,9 @@
 # Current state
 
-Last updated: 2026-05-14 (HDMI GUI Phase 2C AppState bridge planning
-implemented; HDMI output / Vivado work not started).
+Last updated: 2026-05-14 (HDMI GUI Phase 2D bridge runtime test on the
+real `AudioLabOverlay` and Phase 3 Vivado integration design proposal
+completed; HDMI output / `block_design.tcl` edit / Vivado build /
+bitstream rebuild / deploy not started).
 
 ## PYNQ-Z2 network identity
 
@@ -31,11 +33,13 @@ bash scripts/deploy_to_pynq.sh
 HDMI GUI integration is still not a live HDMI implementation. Phase 2A
 made minimal Python compatibility changes to `GUI/pynq_multi_fx_gui.py`,
 Phase 2B optimized the same renderer for static/change-driven offscreen
-rendering on the PYNQ-Z2, and Phase 2C added a dry-run-capable bridge
-from `AppState` to existing `AudioLabOverlay` API calls. No Vivado block
-design, Clash / DSP source, bitstream, notebook, deploy script, HDMI
-output, overlay load, or PYNQ runtime behavior has been changed for this
-work.
+rendering on the PYNQ-Z2, Phase 2C added a dry-run-capable bridge from
+`AppState` to existing `AudioLabOverlay` API calls, Phase 2D drove that
+bridge with `dry_run=False` against the real deployed `audio_lab.bit`
+through a single `AudioLabOverlay()` load, and Phase 3 wrote the Vivado
+integration proposal for adding an HDMI framebuffer path to that
+bitstream. No Vivado block design, Clash / DSP source, bitstream, hwh,
+notebook, deploy script, or HDMI output has been changed for this work.
 
 What was found:
 
@@ -71,7 +75,16 @@ risks, prohibited actions, and phase prompts. See
 `docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the current
 PYNQ rendering results. See
 `docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` for the bridge design
-and dry-run verification.
+and dry-run verification. See
+`docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md` for the live
+bridge runtime test against the real overlay. See
+`docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for the
+recommended HDMI Vivado architecture, IP list, clocking, AXI / DDR
+plan, address-map impact, resource / timing risks, and rollback. See
+`docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md` for the proposed
+shape of the `block_design.tcl` patch (not applied) and
+`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md` for
+the future Phase 4 prompt template.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
@@ -223,6 +236,102 @@ PYNQ-Z2 result from `/tmp/hdmi_gui_phase2c/`:
 Conclusion: the bridge shape is ready for a later real overlay-backed
 test, but Phase 2C deliberately verified only dry-run planning. Live HDMI
 output still requires a future integrated HDMI video path in `audio_lab.bit`.
+
+## HDMI GUI Phase 2D bridge runtime test on real AudioLabOverlay
+
+Phase 2D ran `GUI/audio_lab_gui_bridge.py` with `dry_run=False` against
+the deployed `audio_lab.bit` on the PYNQ-Z2 (`192.168.1.9`). The
+`AudioLabOverlay()` was loaded exactly once for the entire test. No
+HDMI output, no `run_pynq_hdmi()`, no `Overlay("base.bit")`, no second
+overlay load, no Vivado / block-design / bitstream / hwh / Notebook /
+DSP change, no `scripts/deploy_to_pynq.sh`, and no
+`git push` / `pull` / `fetch`.
+
+Operations actually written via the public `AudioLabOverlay` API (in
+order, single `AudioLabOverlay()` load throughout):
+
+- Safe Bypass: `clear_distortion_pedals`, `set_distortion_settings`,
+  `set_noise_suppressor_settings`, `set_compressor_settings`,
+  `set_guitar_effects`.
+- Chain Preset apply: `apply_chain_preset(name="Basic Clean")`.
+- Forced baseline `apply(force=True)`: `set_noise_suppressor_settings`,
+  `set_compressor_settings`, `clear_distortion_pedals`,
+  `set_distortion_settings`, `set_guitar_effects`.
+- Same-state second apply: `0` operations, `0` skipped.
+- Noise Sup THRESHOLD only: `set_noise_suppressor_settings` +
+  `set_guitar_effects` (legacy mirror byte; documented in
+  `GPIO_CONTROL_MAP.md`).
+- Compressor RATIO only: `set_compressor_settings` (1 op).
+- Knob-drag inside the 100 ms throttle window: `0` operations,
+  `1` skipped.
+- Knob-drag after the throttle window: `1` operation.
+- Final Safe Bypass at end of test.
+
+Pre and post smoke (`/tmp/hdmi_gui_phase2d/phase2d_report.json`):
+
+- `ADC HPF`: `True`
+- `R19`: `0x23`
+- `has delay_line gpio`: `False`
+- `has legacy axi_gpio_delay`: `True`
+
+Detailed results are recorded in
+`docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`.
+
+## HDMI GUI Phase 3 Vivado integration design proposal
+
+Phase 3 is a design-only proposal for adding a HDMI framebuffer output
+path to the existing `audio_lab.bit`. **No `hw/Pynq-Z2/block_design.tcl`
+edit, no IP add, no Vivado build, no bitstream / hwh rebuild, no deploy,
+and no HDMI output** was performed.
+
+Recommendation: **Option B** — minimal `axi_vdma` + `v_tc` +
+`v_axi4s_vid_out` + Digilent `rgb2dvi`, with one new `clk_wiz` for
+`pixel_clk = 74.25 MHz` and `serial_clk = 371.25 MHz`, one new
+`proc_sys_reset` for the pixel / serial domain, and `S_AXI_HP0` enabled
+on the existing `processing_system7_0` for the VDMA MM2S framebuffer
+read path. Single fixed mode is 1280x720@60.
+
+Address-map additions (candidates, not yet allocated):
+
+- `axi_vdma_hdmi/S_AXI_LITE` -> `0x43CE0000`, range `0x00010000`
+- `v_tc_hdmi/CTRL` -> `0x43CF0000`, range `0x00010000`
+- `rgb2dvi_hdmi/CTRL` -> `0x43D00000`, range `0x00010000` (if applicable)
+
+No existing AXI GPIO address, name, or `ctrlA`-`ctrlD` semantic is
+changed. The legacy `axi_gpio_delay` stays at `0x43C80000`. The
+`fx_gain_0` HLS block stays where it is at `0x43C20000`.
+
+Framebuffer plan:
+
+- 1280x720 XRGB8888 in PS DDR, allocated via `pynq.allocate` (or
+  `cacheable=False` for a small write penalty and no cache flush).
+- Renderer keeps producing RGB888 `(720, 1280, 3)` `uint8`; the HDMI
+  back end copies into XRGB888.
+- Double-buffered scanout to avoid tear.
+- Realistic target: 2..4 fps change-driven update on top of a 60 Hz
+  scanout. Phase 2B PYNQ static redraw cost (~256 ms / frame)
+  remains the dominant cost; the scanout itself is free.
+
+Resource / timing budget estimate (Vivado run will replace these
+numbers):
+
+- Audio baseline (deployed `audio_lab.bit`): WNS `-8.155 ns`,
+  LUTs 15473 (29.08%), Regs 14914 (14.02%), BRAM 7 (5.00%),
+  DSPs 83 (37.73%).
+- Estimated extra: ~3.4 k..4.0 k LUTs, ~4.8 k..5.3 k FFs, ~4..7 BRAM,
+  0 extra DSPs. PYNQ-Z2 still has plenty of headroom.
+- Deploy gate: audio-domain WNS must not slip materially below
+  `-8.5 ns`. Pixel and serial domains must close (WNS >= 0).
+
+Rollback: dated bit/hwh backups + `git revert` on the future
+feature branch. Local commits only.
+
+Detailed proposal is in
+`docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`. The
+proposed `block_design.tcl` patch shape is in
+`docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`. The Phase 4
+implementation prompt draft is in
+`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`.
 
 ## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
 

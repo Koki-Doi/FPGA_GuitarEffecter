@@ -158,6 +158,58 @@ asking it to re-discover the project from scratch.
 > resource/timingリスク、address map影響、rollback案を docs にまとめ、
 > 実装はユーザ承認を待ってください。
 
+### HDMI GUI Phase 2D result — bridge runtime test on real overlay
+
+> HDMI GUI Phase 2D は完了済みです。
+> PYNQ-Z2 (`192.168.1.9`) 上で `GUI/audio_lab_gui_bridge.py` を
+> 実 `AudioLabOverlay()` に対して `dry_run=False` で実行し、
+> `clear_distortion_pedals` / `set_distortion_settings` /
+> `set_noise_suppressor_settings` / `set_compressor_settings` /
+> `set_guitar_effects` / `apply_chain_preset` を本当に呼びました。
+> `AudioLabOverlay()` のロードは 1 回のみ、HDMI出力なし、
+> `Overlay("base.bit")` 未使用、second overlay load なし、
+> `render_frame*` 未呼び、Vivado / block_design / bitstream / hwh /
+> Notebook / DSP 変更なし、`scripts/deploy_to_pynq.sh` 未実行、
+> `git push` / `git pull` / `git fetch` 未実施。Safe Bypass 適用、
+> Basic Clean chain preset 適用、same-state 2 回目は 0 ops、
+> Noise Sup THRESHOLD だけ変更 → `set_noise_suppressor_settings` +
+> `set_guitar_effects` (legacy mirror) で section-scoped、
+> Compressor RATIO だけ変更 → `set_compressor_settings` のみ、
+> knob_drag throttle 100 ms 窓の内側は 0 ops / 1 skipped、
+> 窓の外は 1 op。pre/post smoke はどちらも `ADC HPF=True`、
+> `R19=0x23`、`has delay_line gpio=False`、
+> `has legacy axi_gpio_delay=True`。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`。
+
+### HDMI GUI Phase 3 result — Vivado integration proposal
+
+> HDMI GUI Phase 3 は完了済みです。`hw/Pynq-Z2/block_design.tcl`、
+> `audio_lab.xdc`、Clash / DSP、bitstream、hwh、deploy は触っていません。
+> 推奨構成は Option B (`axi_vdma` + `v_tc` + `v_axi4s_vid_out` +
+> Digilent `rgb2dvi`) を 1280x720@60 固定モードで使用、追加 `clk_wiz`
+> で `pixel_clk=74.25 MHz` と `serial_clk=371.25 MHz` を生成、
+> 追加 `proc_sys_reset` で video domain reset、
+> `processing_system7_0` の `S_AXI_HP0` を有効化して VDMA MM2S を
+> PS DDR フレームバッファに繋ぐ、`ps7_0_axi_periph` の `NUM_MI` を
+> 15 → 17 に拡張、VDMA / VTC の AXI-Lite control 用 address 候補は
+> `0x43CE0000` / `0x43CF0000` / `0x43D00000` (rgb2dvi 用 control が
+> 必要な場合)。既存 `axi_gpio_*` の address / name / `ctrlA`-`ctrlD`
+> semantics は一切変更しない。`axi_gpio_delay` (legacy RAT) も
+> そのまま保持。framebuffer は XRGB8888、double buffer、Python は
+> `render_frame_pynq_static` を変更時のみ呼んで一度コピーする
+> change-driven 運用。Phase 2B 計測ベースで現実的なredrawは
+> 2..4 fps。リソース追加見積りは LUT +3.4k..+4.0k、FF +4.8k..+5.3k、
+> BRAM +4..+7、DSP +0。Deploy gate は audio domain WNS が baseline
+> -8.155 ns から significantly に悪化していないこと。pixel / serial
+> 両 domain は WNS >= 0。Rollback は bit/hwh 日付付きバックアップと
+> 将来 feature branch 上の `git revert`、`git push` / `pull` /
+> `fetch` は引き続き禁止。設計書は
+> `docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`、
+> `block_design.tcl` パッチ案 (未適用) は
+> `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`、Phase 4
+> 実装用プロンプト雛形は
+> `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。
