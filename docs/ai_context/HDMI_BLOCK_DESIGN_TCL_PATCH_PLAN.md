@@ -1,12 +1,13 @@
-# HDMI block_design.tcl patch plan (Phase 4 reference, not applied)
+# HDMI block_design.tcl patch plan (Phase 4 implemented reference)
 
 Date: 2026-05-14
 
-Status: **DESIGN-ONLY.** This file describes the structural changes
-that `hw/Pynq-Z2/block_design.tcl` would receive in Phase 4. **Phase 3
-does NOT apply these edits.** The tcl file remains unchanged on disk;
-this document only records the patch shape so Phase 4 can land it in
-one well-scoped pass.
+Status: **IMPLEMENTED IN PHASE 4.** This file began as the Phase 3
+design-only patch plan. Phase 4 implemented the HDMI pieces in the
+separate helper `hw/Pynq-Z2/hdmi_integration.tcl`, which is sourced by
+`hw/Pynq-Z2/create_project.tcl` after the existing audio
+`block_design.tcl`. The plan remains as the architectural reference and
+is now aligned with the built RGB888 / 24-bit VDMA path.
 
 Refer to `HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for context on
 why Option B (`axi_vdma` + `v_tc` + `v_axi4s_vid_out` + `rgb2dvi`) is
@@ -58,21 +59,21 @@ After the existing `axi_gpio_compressor` block, add (in this order to
 keep the tcl readable):
 
 ```tcl
-  # Create instance: clk_wiz_hdmi
+  # Create instance: clk_wiz_hdmi (single pixel clock; rgb2dvi makes its own serial clock)
   set clk_wiz_hdmi [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_hdmi ]
   set_property -dict [ list \
    CONFIG.PRIMITIVE {MMCM} \
    CONFIG.PRIM_IN_FREQ {100.000} \
    CONFIG.CLKOUT1_USED {true} \
    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {74.250} \
-   CONFIG.CLKOUT2_USED {true} \
-   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {371.250} \
+   CONFIG.CLKOUT2_USED {false} \
+   CONFIG.USE_RESET {true} \
    CONFIG.RESET_PORT {resetn} \
    CONFIG.RESET_TYPE {ACTIVE_LOW} \
  ] $clk_wiz_hdmi
 
-  # Create instance: proc_sys_reset_hdmi
-  set proc_sys_reset_hdmi [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_hdmi ]
+  # Create instance: rst_video_0
+  set rst_video_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_video_0 ]
 
   # Create instance: axi_vdma_hdmi
   set axi_vdma_hdmi [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_vdma:6.3 axi_vdma_hdmi ]
@@ -83,8 +84,14 @@ keep the tcl readable):
    CONFIG.c_num_fstores {3} \
  ] $axi_vdma_hdmi
 
-  # Create instance: v_tc_hdmi
-  set v_tc_hdmi [ create_bd_cell -type ip -vlnv xilinx.com:ip:v_tc:6.2 v_tc_hdmi ]
+  # The Python renderer input is RGB888, but the DDR framebuffer is
+  # written as packed GBR888. That feeds VDMA byte0/1/2 into
+  # vid_pData[7:0]/[15:8]/[23:16], matching Digilent rgb2dvi's
+  # [23:16]=R, [15:8]=B, [7:0]=G mapping without an extra color
+  # converter.
+
+  # Create instance: v_tc_hdmi (Vivado 2019.1 local catalog ships v_tc 6.1)
+  set v_tc_hdmi [ create_bd_cell -type ip -vlnv xilinx.com:ip:v_tc:6.1 v_tc_hdmi ]
   set_property -dict [ list \
    CONFIG.enable_generation {true} \
    CONFIG.enable_detection {false} \
@@ -96,15 +103,19 @@ keep the tcl readable):
    CONFIG.C_HAS_ASYNC_CLK {1} \
  ] $v_axi4s_vid_out_hdmi
 
-  # Create instance: rgb2dvi_hdmi (Digilent IP repo required)
+  # Create instance: rgb2dvi_hdmi (Digilent IP repo required;
+  # kGenerateSerialClk=true keeps the IP's internal PLL,
+  # kClkRange=3 is the < 80 MHz / 720p band that matches 74.25 MHz pixel clock,
+  # kRstActiveHigh=false aligns with proc_sys_reset peripheral_aresetn)
   set rgb2dvi_hdmi [ create_bd_cell -type ip -vlnv digilentinc.com:ip:rgb2dvi:1.4 rgb2dvi_hdmi ]
   set_property -dict [ list \
-   CONFIG.kClkRange {1} \
+   CONFIG.kClkRange {3} \
    CONFIG.kRstActiveHigh {false} \
+   CONFIG.kGenerateSerialClk {true} \
  ] $rgb2dvi_hdmi
 ```
 
-Exact VLNVs (`axi_vdma:6.3`, `v_tc:6.2`, `v_axi4s_vid_out:4.0`,
+Exact VLNVs (`axi_vdma:6.3`, `v_tc:6.1`, `v_axi4s_vid_out:4.0`,
 `rgb2dvi:1.4`) need a single Vivado 2019.1 IP catalog check in
 Phase 4 — versions may have shifted in the local install.
 
@@ -147,14 +158,11 @@ Connect video data path:
 Connect clocks and resets:
 
 ```tcl
-  # pixel domain
+  # pixel domain (serial clock is generated inside rgb2dvi)
   connect_bd_net [get_bd_pins clk_wiz_hdmi/clk_out1] \
                  [get_bd_pins v_axi4s_vid_out_hdmi/vid_io_out_clk] \
                  [get_bd_pins v_tc_hdmi/clk] \
                  [get_bd_pins rgb2dvi_hdmi/PixelClk]
-  # serial domain (5x pixel)
-  connect_bd_net [get_bd_pins clk_wiz_hdmi/clk_out2] \
-                 [get_bd_pins rgb2dvi_hdmi/SerialClk]
   # FCLK side
   connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK0] \
                  [get_bd_pins axi_vdma_hdmi/s_axi_lite_aclk] \
@@ -169,12 +177,12 @@ Connect clocks and resets:
                  [get_bd_pins axi_smc_hdmi/aresetn] \
                  [get_bd_pins v_tc_hdmi/s_axi_aresetn]
   connect_bd_net [get_bd_pins clk_wiz_hdmi/locked] \
-                 [get_bd_pins proc_sys_reset_hdmi/dcm_locked]
+                 [get_bd_pins rst_video_0/dcm_locked]
   connect_bd_net [get_bd_pins rst_ps7_0_100M/peripheral_aresetn] \
-                 [get_bd_pins proc_sys_reset_hdmi/ext_reset_in]
-  connect_bd_net [get_bd_pins proc_sys_reset_hdmi/peripheral_aresetn] \
+                 [get_bd_pins rst_video_0/ext_reset_in]
+  connect_bd_net [get_bd_pins rst_video_0/peripheral_aresetn] \
                  [get_bd_pins v_axi4s_vid_out_hdmi/aresetn]
-  connect_bd_net [get_bd_pins proc_sys_reset_hdmi/peripheral_aresetn] \
+  connect_bd_net [get_bd_pins rst_video_0/peripheral_aresetn] \
                  [get_bd_pins rgb2dvi_hdmi/aRst_n]
 ```
 
@@ -219,36 +227,36 @@ Add at the bottom of the existing constraints file:
 
 ```tcl
 # HDMI TX (PYNQ-Z2 HDMI OUT)
-set_property PACKAGE_PIN H16 [get_ports hdmi_tx_clk_p]
-set_property IOSTANDARD TMDS_33 [get_ports hdmi_tx_clk_p]
-set_property PACKAGE_PIN H17 [get_ports hdmi_tx_clk_n]
-set_property IOSTANDARD TMDS_33 [get_ports hdmi_tx_clk_n]
+# Pin locations are taken from the TUL PYNQ-Z2 board file
+# /home/doi20/board_files/XilinxBoardStore/boards/TUL/pynq-z2/1.0/part0_pins.xml
+# Keep only PACKAGE_PIN constraints here. Digilent rgb2dvi instantiates
+# OBUFDS outputs and sets its own TMDS_33 IOSTANDARD; adding LVCMOS33 to
+# these differential top-level ports makes Vivado placement fail.
+set_property PACKAGE_PIN L16 [get_ports hdmi_tx_clk_p]
+set_property PACKAGE_PIN L17 [get_ports hdmi_tx_clk_n]
 
-set_property PACKAGE_PIN D19 [get_ports {hdmi_tx_data_p[0]}]
-set_property IOSTANDARD TMDS_33 [get_ports {hdmi_tx_data_p[0]}]
-set_property PACKAGE_PIN D20 [get_ports {hdmi_tx_data_n[0]}]
-set_property IOSTANDARD TMDS_33 [get_ports {hdmi_tx_data_n[0]}]
+set_property PACKAGE_PIN K17 [get_ports {hdmi_tx_data_p[0]}]
+set_property PACKAGE_PIN K18 [get_ports {hdmi_tx_data_n[0]}]
 
-set_property PACKAGE_PIN C20 [get_ports {hdmi_tx_data_p[1]}]
-set_property IOSTANDARD TMDS_33 [get_ports {hdmi_tx_data_p[1]}]
-set_property PACKAGE_PIN B20 [get_ports {hdmi_tx_data_n[1]}]
-set_property IOSTANDARD TMDS_33 [get_ports {hdmi_tx_data_n[1]}]
+set_property PACKAGE_PIN K19 [get_ports {hdmi_tx_data_p[1]}]
+set_property PACKAGE_PIN J19 [get_ports {hdmi_tx_data_n[1]}]
 
-set_property PACKAGE_PIN B19 [get_ports {hdmi_tx_data_p[2]}]
-set_property IOSTANDARD TMDS_33 [get_ports {hdmi_tx_data_p[2]}]
-set_property PACKAGE_PIN A20 [get_ports {hdmi_tx_data_n[2]}]
-set_property IOSTANDARD TMDS_33 [get_ports {hdmi_tx_data_n[2]}]
+set_property PACKAGE_PIN J18 [get_ports {hdmi_tx_data_p[2]}]
+set_property PACKAGE_PIN H18 [get_ports {hdmi_tx_data_n[2]}]
 
-# Cross-domain false paths
-set_false_path -from [get_clocks clk_fpga_0] -to [get_clocks clk_out1_clk_wiz_hdmi]
-set_false_path -from [get_clocks clk_out1_clk_wiz_hdmi] -to [get_clocks clk_fpga_0]
-set_false_path -from [get_clocks clk_fpga_0] -to [get_clocks clk_out2_clk_wiz_hdmi]
-set_false_path -from [get_clocks clk_out2_clk_wiz_hdmi] -to [get_clocks clk_fpga_0]
+# Cross-domain false paths between audio AXI clock (FCLK_CLK0) and the
+# new pixel-clock domain. rgb2dvi's internally generated 5x serial clock
+# stays inside the rgb2dvi PLL and is constrained by the IP-provided
+# OOC XDC; no false_path entry is needed for it here.
+set_false_path -from [get_clocks clk_fpga_0] -to [get_clocks -of_objects [get_pins clk_wiz_hdmi/inst/mmcm_adv_inst/CLKOUT0]]
+set_false_path -from [get_clocks -of_objects [get_pins clk_wiz_hdmi/inst/mmcm_adv_inst/CLKOUT0]] -to [get_clocks clk_fpga_0]
 ```
 
-Pin assignments above are **candidates** taken from the public PYNQ-Z2
-schematic for HDMI TX. Verify against the user's board revision in
-Phase 4 before committing.
+Pin assignments above come directly from the PYNQ-Z2 board file. The
+prior Phase 3 draft incorrectly used `H16/H17/D19/D20/C20/B20/B19/A20`
+under IOSTANDARD `TMDS_33`, which is the pin layout for a different
+Digilent board (Arty Z7 / Zybo Z7); on PYNQ-Z2 those pins drive
+different signals, so the original draft would not have worked.
 
 ## 7. Validation steps in Phase 4
 

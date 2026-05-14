@@ -9,9 +9,15 @@ and no HDMI output is performed in Phase 3.** This document only
 prepares Phase 4 by spelling out the IP list, clocking, AXI / DDR
 plan, address-map impact, resource and timing risks, and rollback.
 
-This proposal must be revisited before any Phase 4 implementation;
-treat every "candidate" or "preferred" item as a starting point that
-still needs a one-off Vivado experiment.
+Phase 4 has now implemented this proposal as the minimal Option B path,
+with the practical updates captured in
+`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`: RGB888 renderer input,
+packed DDR `GBR888`, 24-bit VDMA MM2S stream, `v_tc` 6.1, Digilent
+`rgb2dvi` 1.4, and HDMI XDC `PACKAGE_PIN` constraints only.
+
+For future HDMI changes, treat this proposal as historical context and
+use the Phase 4 result document plus the generated HWH/timing reports as
+the current source of truth.
 
 ## 1. Current AudioLab block design summary
 
@@ -276,13 +282,13 @@ mode.** Reasons:
 
 ## 5. Concrete IP candidates (Vivado 2019.1 / PYNQ-Z2)
 
-| IP | Vendor / VLNV (candidate) | Purpose |
+| IP | Vendor / VLNV (verified in local Vivado 2019.1 catalog) | Purpose |
 | --- | --- | --- |
 | `axi_vdma:6.3` | `xilinx.com:ip:axi_vdma:6.3` | Framebuffer scanout; MM2S into AXI4-Stream video |
-| `v_tc:6.2` | `xilinx.com:ip:v_tc:6.2` | Video timing generator for 1280x720@60 |
+| `v_tc:6.1` | `xilinx.com:ip:v_tc:6.1` | Video timing generator for 1280x720@60. Local catalog ships 6.1, not 6.2. |
 | `v_axi4s_vid_out:4.0` | `xilinx.com:ip:v_axi4s_vid_out:4.0` | AXI4-Stream -> parallel video |
-| `rgb2dvi:1.4` (or current) | `digilentinc.com:ip:rgb2dvi:1.4` | TMDS encoder for HDMI TX |
-| `clk_wiz:6.0` (new) | `xilinx.com:ip:clk_wiz:6.0` | Generate `pixel_clk = 74.25 MHz` and `serial_clk = 5x pixel_clk = 371.25 MHz`; input is `FCLK_CLK0` (100 MHz) |
+| `rgb2dvi:1.4` | `digilentinc.com:ip:rgb2dvi:1.4` | TMDS encoder for HDMI TX. Needs the Digilent vivado-library IP repo on `ip_repo_paths` (e.g. clone https://github.com/Digilent/vivado-library outside the AudioLab tree and point `DIGILENT_VIVADO_LIBRARY` at it). Defaults: `kGenerateSerialClk=true` (the IP synthesises its own 5x serial clock from PixelClk using an internal PLL), `kRstActiveHigh=true`. `kClkRange` must be set to `3` (< 80 MHz / 720p) for 74.25 MHz pixel clock; the default `1` is for 1080p. |
+| `clk_wiz:6.0` (new) | `xilinx.com:ip:clk_wiz:6.0` | Generate `pixel_clk = 74.25 MHz` only; input is `FCLK_CLK0` (100 MHz). The 5x TMDS serial clock is generated inside `rgb2dvi` itself, so no second clk_wiz output is needed. |
 | `proc_sys_reset:5.0` (new) | `xilinx.com:ip:proc_sys_reset:5.0` | Synchronous reset for pixel + 5x domains |
 | `axi_smartconnect:1.0` (or reuse existing `axi_smc`) | `xilinx.com:ip:smartconnect:1.0` | One new SI for VDMA MM2S; routes to S_AXI_HP0 |
 | Optional `axi_interconnect:2.1` extension | `xilinx.com:ip:axi_interconnect:2.1` | If we choose to add the VDMA AXI-Lite control via `ps7_0_axi_periph` (NUM_MI 15 -> 16 or 17) |
@@ -311,7 +317,10 @@ Plan:
   - Input: `FCLK_CLK0` (100 MHz). FCLK1/2/3 are currently OFF; we do
     **not** turn them on to avoid changing the PS7 clock plan.
   - Output 0: `pixel_clk` 74.25 MHz, BUFG.
-  - Output 1: `serial_clk` 371.25 MHz, BUFG.
+  - **No second `clk_wiz` output is required.** `rgb2dvi` with
+    `kGenerateSerialClk = true` (default) hosts its own internal PLL
+    and produces the 5x serial clock from PixelClk; `kClkRange = 3`
+    constrains that PLL to the < 80 MHz / 720p band.
 - Add a new `proc_sys_reset` for the video domain.
 - Audio stays on `FCLK_CLK0` exactly as today. The `clash_lowpass_fir_0`
   and every `axi_gpio_*` ACLK keep their FCLK_CLK0 connections — that
@@ -341,24 +350,28 @@ CDC risk:
 
 Framebuffer location:
 
-- PS DDR. Allocate one or two contiguous buffers with
-  `pynq.allocate(shape=(720, 1280, 4), dtype="u1")` so the buffer is
-  PL-visible and 4-byte-aligned.
-- Use XRGB8888 (or BGRX8888 / RGBX8888 depending on `rgb2dvi`
-  channel mapping) as the in-DDR pixel format. The renderer produces
-  RGB888; a small NumPy view `frame_xrgb[:, :, :3] = rgb888` (and
-  `frame_xrgb[:, :, 3] = 0`) reaches 1280x720x4 = 3.6 MiB per
-  framebuffer. 32-bit-per-pixel is friendlier to AXI bursts than
-  packed RGB888.
-- Double-buffer to keep tear off the visible frame.
+- PS DDR. Phase 4A/4B uses one contiguous static buffer allocated as
+  `pynq.allocate(shape=(720, 1280, 3), dtype="u1", cacheable=False)`;
+  the VDMA is configured with three frame stores all pointing at that
+  same buffer and is parked on frame 0. A later interactive loop can
+  add true double-buffering once static scanout is proven.
+- Renderer input format remains RGB888:
+  `numpy.ndarray` shape `(720, 1280, 3)`, dtype `uint8`.
+- DDR / VDMA memory format is packed **GBR888**. This is deliberate:
+  the VDMA emits byte 0 on AXIS `TDATA[7:0]`, byte 1 on `TDATA[15:8]`,
+  and byte 2 on `TDATA[23:16]`; Digilent `rgb2dvi` maps its
+  `vid_pData` bus as `[23:16]=R`, `[15:8]=B`, `[7:0]=G`. Therefore
+  the Python back end writes framebuffer bytes as G, B, R while keeping
+  its public API RGB888.
+- Framebuffer size is 1280 x 720 x 3 = 2,764,800 bytes.
 
 AXI path:
 
-- VDMA MM2S issues 32-bit reads at 1280 px/line x 720 lines x 60 Hz
-  = ~221 MB/s. With one read per pixel that is well inside an HP0
-  port budget (3.2 GB/s theoretical). On the AudioLab side the
-  audio AXI traffic is tiny (one 64-bit sample per 48 kHz audio
-  frame).
+- VDMA MM2S issues 24-bit stream data backed by a 32-bit AXI memory
+  interface. The visible payload is 1280 px/line x 720 lines x 3
+  bytes x 60 Hz = ~166 MB/s, well inside an HP0 port budget
+  (3.2 GB/s theoretical). On the AudioLab side the audio AXI traffic
+  is tiny (one 64-bit sample per 48 kHz audio frame).
 - Wire VDMA M_AXI_MM2S to `processing_system7_0/S_AXI_HP0`, NOT to
   `S_AXI_GP0`. The audio `axi_dma_0` keeps its current GP0 SMC
   route. HP0 must be enabled in the PS7 config
@@ -375,10 +388,11 @@ AXI path:
 Python NumPy / framebuffer copy plan:
 
 - Renderer produces RGB888 `numpy.ndarray` shape `(720, 1280, 3)`,
-  dtype `uint8`. Copy into the XRGB framebuffer with a stride of
-  5120 bytes per line (1280 * 4). On the PYNQ-Z2 CPU this is a
-  single contiguous memcpy through NumPy slicing; we measured
-  Phase 2B redraw at ~256 ms which dominates the per-frame cost.
+  dtype `uint8`. Copy into the packed GBR framebuffer with a stride of
+  3840 bytes per line (1280 * 3). The back end performs three direct
+  slice copies (`G`, `B`, `R`) to avoid a temporary 720p swizzle buffer.
+  We measured Phase 2B redraw at ~256 ms, which should dominate the
+  per-frame cost.
 - After the copy, flush the cache range so VDMA reads the fresh
   pixels (`pynq.allocate(cacheable=False)` avoids the explicit
   flush; the cost is slightly slower CPU writes).

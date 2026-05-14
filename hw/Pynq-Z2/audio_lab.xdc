@@ -94,3 +94,25 @@ set_property IOSTANDARD LVCMOS33 [get_ports {lrclk}]
 #AC_GPIO1     : in    STD_LOGIC                      -- I2S MOSI
 #AC_GPIO2     : in    STD_LOGIC                      -- I2S_bclk
 #AC_GPIO3     : in    STD_LOGIC                      -- I2S_LR
+
+
+###################################################
+## HDMI TX (PYNQ-Z2 HDMI OUT)
+##
+## Pin locations come from the TUL PYNQ-Z2 board file
+## (/home/doi20/board_files/XilinxBoardStore/boards/TUL/pynq-z2/1.0/part0_pins.xml).
+## Do not set IOSTANDARD here: Digilent rgb2dvi instantiates OBUFDS with
+## its own TMDS_33 IOSTANDARD, and adding LVCMOS33 to these differential
+## top-level ports makes Vivado placement fail.
+###################################################
+set_property PACKAGE_PIN L16 [get_ports {hdmi_tx_clk_p}]
+set_property PACKAGE_PIN L17 [get_ports {hdmi_tx_clk_n}]
+
+set_property PACKAGE_PIN K17 [get_ports {hdmi_tx_data_p[0]}]
+set_property PACKAGE_PIN K18 [get_ports {hdmi_tx_data_n[0]}]
+
+set_property PACKAGE_PIN K19 [get_ports {hdmi_tx_data_p[1]}]
+set_property PACKAGE_PIN J19 [get_ports {hdmi_tx_data_n[1]}]
+
+set_property PACKAGE_PIN J18 [get_ports {hdmi_tx_data_p[2]}]
+set_property PACKAGE_PIN H18 [get_ports {hdmi_tx_data_n[2]}]

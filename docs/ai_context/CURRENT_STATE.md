@@ -1,9 +1,7 @@
 # Current state
 
-Last updated: 2026-05-14 (HDMI GUI Phase 2D bridge runtime test on the
-real `AudioLabOverlay` and Phase 3 Vivado integration design proposal
-completed; HDMI output / `block_design.tcl` edit / Vivado build /
-bitstream rebuild / deploy not started).
+Last updated: 2026-05-15 (HDMI GUI Phase 4 recovered, Vivado-built,
+deployed, and runtime-smoked on the PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -30,25 +28,28 @@ bash scripts/deploy_to_pynq.sh
 
 ## HDMI GUI integration planning
 
-HDMI GUI integration is still not a live HDMI implementation. Phase 2A
-made minimal Python compatibility changes to `GUI/pynq_multi_fx_gui.py`,
-Phase 2B optimized the same renderer for static/change-driven offscreen
-rendering on the PYNQ-Z2, Phase 2C added a dry-run-capable bridge from
-`AppState` to existing `AudioLabOverlay` API calls, Phase 2D drove that
-bridge with `dry_run=False` against the real deployed `audio_lab.bit`
-through a single `AudioLabOverlay()` load, and Phase 3 wrote the Vivado
-integration proposal for adding an HDMI framebuffer path to that
-bitstream. No Vivado block design, Clash / DSP source, bitstream, hwh,
-notebook, deploy script, or HDMI output has been changed for this work.
+HDMI GUI integration is now a first integrated implementation, not only
+a design proposal. Phase 4 added a fixed 1280x720 framebuffer scanout
+path to the AudioLab overlay through `axi_vdma_hdmi`, `v_tc_hdmi`,
+`v_axi4s_vid_out_hdmi`, and Digilent `rgb2dvi_hdmi`, without changing
+Clash / DSP source, `topEntity`, existing audio GPIO names/addresses, or
+the legacy `axi_gpio_delay` RAT contract. The implementation is built by
+sourcing `hw/Pynq-Z2/hdmi_integration.tcl` from `create_project.tcl`.
+
+The runtime path still loads exactly one overlay: `AudioLabOverlay()`.
+Do not call `Overlay("base.bit")`, do not call
+`GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()`, and do not load a second
+overlay after the AudioLab overlay.
 
 What was found:
 
-- The current `audio_lab.bit` does not contain a HDMI video-output path.
+- The current deployed `audio_lab.bit` contains the Phase 4 HDMI
+  framebuffer output path.
 - `GUI/pynq_multi_fx_gui.py` is a good rendering candidate because
   `render_frame(state)` returns a 1280x720 RGB `numpy.ndarray`, but its
   existing `run_pynq_hdmi()` helper loads `Overlay("base.bit")`.
-- Loading `base.bit` would replace the AudioLab DSP overlay in the PL,
-  so that helper cannot be used for a live AudioLab HDMI GUI.
+- Loading `base.bit` would still replace the AudioLab DSP overlay in the
+  PL, so that helper must not be used for the live AudioLab HDMI GUI.
 - `HDMI/GUI.py` is a Windows Tkinter / PIL preview application and is
   not a direct PYNQ HDMI backend.
 - `HDMI/FPGA/Vivado_project` is a passthrough experiment, not a complete
@@ -59,8 +60,8 @@ Current design direction:
 - Keep `GUI/pynq_multi_fx_gui.py`'s renderer as much as possible.
 - Do not use `base.bit` for the live GUI path.
 - Do not load another full overlay after `AudioLabOverlay()`.
-- A future live HDMI GUI needs one integrated `audio_lab.bit` containing
-  both the existing AudioLab DSP and a HDMI framebuffer output path.
+- The live HDMI GUI uses one integrated `audio_lab.bit` containing both
+  the existing AudioLab DSP and a HDMI framebuffer output path.
 - GUI state should be bridged to `AudioLabOverlay` APIs at change time or
   at a throttled control rate, not by writing GPIOs every video frame.
 - `GUI/audio_lab_gui_bridge.py` now implements that bridge as a separated
@@ -82,9 +83,50 @@ bridge runtime test against the real overlay. See
 recommended HDMI Vivado architecture, IP list, clocking, AXI / DDR
 plan, address-map impact, resource / timing risks, and rollback. See
 `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md` for the proposed
-shape of the `block_design.tcl` patch (not applied) and
-`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md` for
-the future Phase 4 prompt template.
+shape of the implemented HDMI Tcl split and
+`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md` for the
+build, deploy, timing, and smoke result.
+
+## HDMI GUI Phase 4 integrated overlay
+
+Phase 4 recovered from a dirty intermediate Vivado state and completed
+both Phase 4A and Phase 4B:
+
+- Digilent `vivado-library`: `/home/doi20/digilent-vivado-library`.
+- Vivado IP catalog confirmed `digilentinc.com:ip:rgb2dvi:1.4`.
+- HDMI OUT pins use the PYNQ-Z2 board-file locations
+  `L16/L17/K17/K18/K19/J19/J18/H18`.
+- `audio_lab.xdc` constrains only `PACKAGE_PIN` for HDMI TX; `rgb2dvi`
+  owns the `OBUFDS` / `TMDS_33` output primitive settings internally.
+- Pixel path: GUI RGB888 `[720,1280,3]` / `uint8` -> packed DDR
+  `GBR888` -> 24-bit VDMA MM2S -> `v_axi4s_vid_out` ->
+  `rgb2dvi`.
+- VDMA HSIZE/STRIDE: `3840` bytes; VSIZE: `720`.
+- New AXI-Lite addresses: `axi_vdma_hdmi` at `0x43CE0000`,
+  `v_tc_hdmi` at `0x43CF0000`.
+- Final routed timing: WNS `-8.163 ns`, TNS `-6599.061 ns`,
+  WHS `+0.051 ns`, THS `0.000 ns`.
+- Utilization after place: LUT `18619`, Registers `20846`, BRAM `9`,
+  DSP `83`.
+- Deployed to PYNQ-Z2 with `bash scripts/deploy_to_pynq.sh`.
+- Smoke passed: ADC HPF `True`, `R19=0x23`,
+  `axi_gpio_delay_line=False`, legacy `axi_gpio_delay=True`,
+  noise suppressor/compressor GPIOs present, required chain presets
+  apply successfully.
+- Current `CHAIN_PRESETS` count is `13`; the required `Safe Bypass`,
+  `Basic Clean`, and `Metal Tight` smoke cases pass and the board is
+  returned to `Safe Bypass` after the test.
+- HDMI static frame test passed to the level observable over SSH:
+  GUI renderer produced RGB888, VDMA started from framebuffer
+  `0x16900000`, `DMASR=0x00011000`, no internal/slave/decode error
+  bits. Physical display output still needs a connected monitor for
+  visual confirmation.
+
+Runtime caveat: PYNQ exposes `axi_vdma_hdmi` in `overlay.ip_dict`, but
+attribute access tries to instantiate PYNQ's base-video `AxiVDMA`
+driver and fails on this MM2S-only instance. Use
+`audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`, which creates direct
+`pynq.MMIO` handles from `ip_dict`.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

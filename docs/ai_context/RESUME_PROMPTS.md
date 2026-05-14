@@ -210,6 +210,35 @@ asking it to re-discover the project from scratch.
 > 実装用プロンプト雛形は
 > `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`。
 
+### HDMI GUI Phase 4 result — integrated overlay deployed
+
+> HDMI GUI Phase 4 は完了済みです。
+> `feature/hdmi-gui-phase4-vivado-integration` で dirty recovery から
+> 再開し、Digilent `vivado-library`
+> (`/home/doi20/digilent-vivado-library`) の
+> `digilentinc.com:ip:rgb2dvi:1.4` を Vivado 2019.1 catalog で確認後、
+> `hw/Pynq-Z2/hdmi_integration.tcl` を `create_project.tcl` から source
+> する形で HDMI path を統合しました。追加 IP は
+> `axi_vdma_hdmi` (`0x43CE0000`)、`v_tc_hdmi` (`0x43CF0000`)、
+> `v_axi4s_vid_out_hdmi`、`rgb2dvi_hdmi`、`clk_wiz_hdmi`、
+> `rst_video_0`、`axi_smc_hdmi`。GUI renderer output は
+> RGB888 `[720,1280,3]` / `uint8`、DDR framebuffer は packed `GBR888`、
+> VDMA HSIZE/STRIDE は `3840`、VSIZE は `720`。Vivado build は
+> `write_bitstream` 成功、timing は WNS=-8.163 ns / TNS=-6599.061 ns /
+> WHS=+0.051 ns / THS=0.000 ns。Utilization は LUT 18619、Registers
+> 20846、BRAM 9、DSP 83。`bash scripts/deploy_to_pynq.sh` で
+> PYNQ-Z2 (`192.168.1.9`) に deploy 済み。Smoke は ADC HPF=True /
+> R19=0x23 / `axi_gpio_delay_line=False` / legacy `axi_gpio_delay=True` /
+> noise_suppressor と compressor GPIO present / required chain presets
+> OK。HDMI static frame は renderer が RGB888 を生成し、VDMA は
+> framebuffer `0x16900000`、`DMASR=0x00011000`、error bits なし。
+> 物理 display の目視確認だけ未実施。`AudioLabHdmiBackend` は
+> PYNQ の `AxiVDMA` driver ではなく `ip_dict` から `pynq.MMIO` を直接
+> 作る設計です。`Overlay("base.bit")`、`run_pynq_hdmi()`、second
+> overlay load、DSP/Clash/topEntity/GPIO 変更、`git push` / `pull` /
+> `fetch` は引き続き禁止です。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

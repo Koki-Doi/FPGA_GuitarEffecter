@@ -4,21 +4,16 @@ This document records the design direction for showing the existing
 `GUI/pynq_multi_fx_gui.py` rendering on the PYNQ-Z2 HDMI output without
 breaking the current AudioLab DSP path.
 
-Status: investigation / staged implementation. Phase 1 offscreen render
-benchmark, Phase 2A PYNQ compatibility, Phase 2B static/change-driven
-render optimization, Phase 2C AppState-to-`AudioLabOverlay` bridge
-planning, Phase 2D bridge runtime test on the real deployed overlay,
-and Phase 3 Vivado integration design proposal have been completed. The
-GUI renderer can now import and render offscreen on the PYNQ-Z2 without
-external shims, the PYNQ static mode reduces change-driven redraws to
-about `256 ms`, `GUI/audio_lab_gui_bridge.py` produces section-scoped
-control plans against the real `AudioLabOverlay` with same-state skip
-and throttled knob-drag behavior, and Phase 3 picks Option B
-(`axi_vdma` + `v_tc` + `v_axi4s_vid_out` + `rgb2dvi`) as the
-recommended Vivado HDMI architecture. No HDMI output, no
-`hw/Pynq-Z2/block_design.tcl` edit, no Vivado build, no bitstream /
-hwh rebuild, no deploy, and no `base.bit` load has been done for this
-HDMI GUI integration. See
+Status: integrated Phase 4 implementation deployed. Phase 1 offscreen
+render benchmark, Phase 2A PYNQ compatibility, Phase 2B
+static/change-driven render optimization, Phase 2C
+AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
+test on the real deployed overlay, Phase 3 Vivado integration design,
+and Phase 4 integrated HDMI framebuffer build/deploy/smoke have been
+completed. Phase 4 implements Option B (`axi_vdma` + `v_tc` +
+`v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
+No `base.bit` load is used; runtime still loads exactly one
+`AudioLabOverlay()`. See
 `HDMI_GUI_PHASE1_RENDER_BENCH.md`,
 `HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`,
 `HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`,
@@ -26,8 +21,9 @@ HDMI GUI integration. See
 `HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`,
 `HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`,
 `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`, and
-`HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md` for the measured
-results and design.
+`HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
+`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md` for the measured results,
+design, build, deploy, timing, and smoke logs.
 
 ## 1. Current state
 
@@ -45,9 +41,17 @@ The current `audio_lab.bit` owns the real-time DSP path:
 - AXI GPIOs drive effect enable flags and parameters.
 - Audio returns to the ADAU1761 headphone / line output.
 
-The current `audio_lab.bit` does not contain a HDMI video-output
-subsystem. Searching the current `hw/Pynq-Z2` design found no HDMI /
-video timing / VDMA style output path.
+The current deployed `audio_lab.bit` contains a fixed 1280x720 HDMI
+framebuffer output subsystem:
+
+- `axi_vdma_hdmi` MM2S framebuffer scanout at `0x43CE0000`
+- `v_tc_hdmi` timing generator at `0x43CF0000`
+- `v_axi4s_vid_out_hdmi`
+- Digilent `rgb2dvi_hdmi`
+- `clk_wiz_hdmi`, `rst_video_0`, and `axi_smc_hdmi`
+
+The HDMI Tcl is isolated in `hw/Pynq-Z2/hdmi_integration.tcl` and is
+sourced by `create_project.tcl` after the existing audio block design.
 
 The AudioLab control contract must remain intact:
 
@@ -154,7 +158,7 @@ audio DSP and the HDMI output path must live in one integrated bitstream.
 
 ## 3. Recommended architecture
 
-The recommended architecture is a single integrated `audio_lab.bit`
+The implemented architecture is a single integrated `audio_lab.bit`
 containing both:
 
 - the existing AudioLab audio DSP, codec routing, AXI Stream path, and
@@ -210,12 +214,14 @@ integrated bitstream will likely need the following video pieces:
 - AXI memory path from PS DDR to video scanout
 - RGB framebuffer format compatible with the Python renderer
 
-Target display format:
+Implemented display format:
 
 - Resolution: 1280x720
-- Pixel format: RGB, 24-bit if the chosen IP supports it directly
+- GUI renderer output: RGB888 ndarray `[720,1280,3]` / `uint8`
+- DDR framebuffer format: packed `GBR888`
+- VDMA MM2S stream: 24-bit, HSIZE/STRIDE `3840`, VSIZE `720`
 - Frame source: Python-generated NumPy / PIL frame copied to PS DDR
-  framebuffer
+  framebuffer by `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`
 
 The integration must preserve the existing AudioLab design:
 
