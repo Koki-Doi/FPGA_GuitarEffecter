@@ -239,6 +239,34 @@ asking it to re-discover the project from scratch.
 > `fetch` は引き続き禁止です。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`。
 
+### HDMI GUI Phase 4C result — static frame and resource profile
+
+> HDMI GUI Phase 4C は完了済みです。
+> Vivado rebuild、bit/hwh再生成、full deploy、`block_design.tcl` /
+> `audio_lab.xdc` / `create_project.tcl` / Clash / DSP / `topEntity` /
+> GPIO変更はしていません。追加した測定スクリプトは
+> `scripts/profile_hdmi_static_frame.py`、結果docsは
+> `docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` です。
+> PYNQ-Z2 (`192.168.1.9`) で `AudioLabOverlay()` を1回だけロードし、
+> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load は
+> 未使用です。Static frame再確認は ADC HPF=True / R19=0x23 /
+> `axi_gpio_delay_line=False` / legacy `axi_gpio_delay=True` /
+> HDMI IP present / renderer `[720,1280,3] uint8` / framebuffer
+> `0x16900000` / VDMA HSIZE=3840 STRIDE=3840 VSIZE=720 /
+> `VDMACR=0x00010001` / `DMASR=0x00011000` / error bitsなし。
+> VTC readback は `0x00000006`。物理HDMIモニタと色順は
+> Codexでは目視未確認なので、ユーザー確認待ちです。
+> 60秒hold profileでは cold render=2.979s、same-state cached
+> avg/p95=0.00052s/0.00217s、change-driven render avg/p95=0.276s/0.280s、
+> RGB888->DDR GBR888 copy avg/p95=0.206s/0.206s、VDMA/VTC start=0.0023s。
+> Hold中process CPU avg/max=0.352%/0.418%、system CPU avg/max=0.190%/0.990%、
+> process max RSS=136876 kB、MemAvailable before/after=390860/270764 kB。
+> 温度はPYNQ imageが thermal/hwmon temp file を公開していなかったため
+> 取得不能。実用的なwarm change-driven更新は約2.1fpsで、現行Python
+> full-frame renderer/copyのまま30fps連続GUIは非現実的です。
+> 次はユーザーの物理HDMI目視確認、任意の10分hold test、その後 Phase 5
+> change-driven GUI loopです。`git push` / `pull` / `fetch`は禁止です。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

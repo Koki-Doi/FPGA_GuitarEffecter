@@ -4,13 +4,15 @@ This document records the design direction for showing the existing
 `GUI/pynq_multi_fx_gui.py` rendering on the PYNQ-Z2 HDMI output without
 breaking the current AudioLab DSP path.
 
-Status: integrated Phase 4 implementation deployed. Phase 1 offscreen
-render benchmark, Phase 2A PYNQ compatibility, Phase 2B
+Status: integrated Phase 4 implementation deployed and Phase 4C runtime
+resource profile measured. Phase 1 offscreen render benchmark, Phase 2A
+PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
 test on the real deployed overlay, Phase 3 Vivado integration design,
-and Phase 4 integrated HDMI framebuffer build/deploy/smoke have been
-completed. Phase 4 implements Option B (`axi_vdma` + `v_tc` +
+Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
+static-frame/resource profiling have been completed. Phase 4 implements
+Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
 `AudioLabOverlay()`. See
@@ -22,8 +24,9 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`,
 `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`, and
 `HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
-`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md` for the measured results,
-design, build, deploy, timing, and smoke logs.
+`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`, and
+`HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the measured results, design,
+build, deploy, timing, smoke logs, and runtime resource profile.
 
 ## 1. Current state
 
@@ -52,6 +55,15 @@ framebuffer output subsystem:
 
 The HDMI Tcl is isolated in `hw/Pynq-Z2/hdmi_integration.tcl` and is
 sourced by `create_project.tcl` after the existing audio block design.
+
+Phase 4C re-ran the static-frame test and profiled the already-deployed
+path without rebuilding or changing the bitstream. VDMA scanout started
+from framebuffer `0x16900000` with HSIZE/STRIDE `3840`, VSIZE `720`,
+`VDMACR=0x00010001`, and no VDMA error bits. The 60-second hold showed
+that HDMI scanout itself does not busy-loop on the PS: process CPU
+averaged `0.352%` and maxed at `0.418%` while VDMA held the frame.
+Physical monitor output and color order still require user visual
+confirmation.
 
 The AudioLab control contract must remain intact:
 
@@ -222,6 +234,16 @@ Implemented display format:
 - VDMA MM2S stream: 24-bit, HSIZE/STRIDE `3840`, VSIZE `720`
 - Frame source: Python-generated NumPy / PIL frame copied to PS DDR
   framebuffer by `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`
+
+Measured Phase 4C update cost on the PYNQ-Z2:
+
+- Cold render: `2.979 s`.
+- Same-state cached render avg/p95: `0.00052 s` / `0.00217 s`.
+- Change-driven render avg/p95: `0.276 s` / `0.280 s`.
+- RGB888 -> DDR `GBR888` full-frame copy avg/p95:
+  `0.206 s` / `0.206 s`.
+- VDMA/VTC init + start: `0.0023 s`.
+- Practical warm change-driven update rate: about `2.1 fps`.
 
 The integration must preserve the existing AudioLab design:
 

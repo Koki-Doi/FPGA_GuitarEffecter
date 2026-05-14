@@ -1,7 +1,8 @@
 # Current state
 
-Last updated: 2026-05-15 (HDMI GUI Phase 4 recovered, Vivado-built,
-deployed, and runtime-smoked on the PYNQ-Z2 at `192.168.1.9`).
+Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed
+and Phase 4C static-frame/resource profile measured on the PYNQ-Z2 at
+`192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -85,7 +86,9 @@ plan, address-map impact, resource / timing risks, and rollback. See
 `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md` for the proposed
 shape of the implemented HDMI Tcl split and
 `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md` for the
-build, deploy, timing, and smoke result.
+build, deploy, timing, and smoke result. See
+`docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the
+static-frame recheck, PS runtime profile, and PL before/after summary.
 
 ## HDMI GUI Phase 4 integrated overlay
 
@@ -127,6 +130,61 @@ attribute access tries to instantiate PYNQ's base-video `AxiVDMA`
 driver and fails on this MM2S-only instance. Use
 `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`, which creates direct
 `pynq.MMIO` handles from `ip_dict`.
+
+## HDMI GUI Phase 4C resource profile
+
+Phase 4C did not rebuild Vivado, regenerate `audio_lab.bit` /
+`audio_lab.hwh`, redeploy the full tree, or change `block_design.tcl`,
+`audio_lab.xdc`, `create_project.tcl`, Clash/DSP, `topEntity`, or GPIO
+semantics. It added `scripts/profile_hdmi_static_frame.py` and measured
+the already-deployed Phase 4 HDMI framebuffer path on PYNQ-Z2.
+
+Static-frame recheck over SSH passed again:
+
+- `AudioLabOverlay()` load OK; no `base.bit`, no `run_pynq_hdmi()`, no
+  second overlay.
+- ADC HPF `True`, `R19=0x23`, `axi_gpio_delay_line=False`, legacy
+  `axi_gpio_delay=True`.
+- HDMI IP present in `ip_dict` / HWH.
+- Renderer output `[720,1280,3]` / `uint8`; render time `2.924 s`.
+- Framebuffer `0x16900000`, format packed DDR `GBR888`, size
+  `2764800` bytes.
+- VDMA HSIZE/STRIDE `3840`, VSIZE `720`, `VDMACR=0x00010001`,
+  `DMASR=0x00011000`, no internal/slave/decode error bits.
+- VTC control/status register readback: `0x00000006`.
+- Physical HDMI monitor output and color order are still user visual
+  confirmation pending; the verified claim is scanout start plus healthy
+  VDMA/VTC status.
+
+Resource profile command on the board:
+
+```sh
+sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+  python3 scripts/profile_hdmi_static_frame.py \
+  --hold-seconds 60 --iterations 10 \
+  --out-dir /tmp/hdmi_phase4c_resource_profile
+```
+
+Measured PS-side cost:
+
+- Cold GUI render `2.979 s`.
+- Same-state cached render avg/p95 `0.00052 s` / `0.00217 s`.
+- Change-driven render avg/p95 `0.276 s` / `0.280 s`.
+- RGB888 -> packed DDR `GBR888` framebuffer copy avg/p95
+  `0.206 s` / `0.206 s`.
+- VDMA/VTC init + start `0.0023 s`.
+- 60-second static hold: process CPU avg/max `0.352%` / `0.418%`,
+  system CPU avg/max `0.190%` / `0.990%`.
+- Process max RSS `136876 kB`; `MemAvailable` before/after
+  `390860 kB` / `270764 kB`.
+- Temperature was unavailable because this PYNQ image exposed no
+  thermal/hwmon temp files.
+
+Interpretation: static scanout itself is cheap after VDMA starts. The
+expensive parts remain Python/PIL/NumPy rendering and full-frame copy.
+Warm change-driven updates are about `0.276 + 0.206 = 0.482 s`, or
+roughly `2.1 fps`; continuous 30fps GUI output is not realistic without
+a substantially different renderer/copy strategy.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
