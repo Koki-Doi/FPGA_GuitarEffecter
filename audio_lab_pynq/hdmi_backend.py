@@ -222,7 +222,16 @@ def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
 def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                           placement="center", offset_x=None, offset_y=None,
                           background=(0, 0, 0)):
-    """Place a smaller logical RGB frame inside the fixed HDMI framebuffer."""
+    """Place a smaller logical RGB frame inside the fixed HDMI framebuffer.
+
+    ``placement="manual"`` accepts negative ``offset_x`` / ``offset_y``. The
+    requested rectangle is clipped against the framebuffer on every side, and
+    the corresponding source region is shifted so that any negative offset
+    crops the logical frame instead of indexing into a previous row. The
+    returned meta records the requested destination region, the clipped
+    destination region, and the source crop, so a user-facing log can
+    distinguish a clipped placement from a fully-visible one.
+    """
     arr = np.asarray(rgb_frame)
     if arr.ndim != 3 or arr.shape[2] != 3 or arr.dtype != np.uint8:
         raise ValueError(
@@ -241,27 +250,33 @@ def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
         raise ValueError(
             "unknown placement {!r}; expected center or manual".format(placement))
 
+    req_x0, req_y0 = int(ox), int(oy)
+    req_x1, req_y1 = req_x0 + in_w, req_y0 + in_h
+
     t0 = time.time()
     canvas = np.empty((out_h, out_w, 3), dtype=np.uint8)
     canvas[:, :, 0] = int(background[0]) & 0xFF
     canvas[:, :, 1] = int(background[1]) & 0xFF
     canvas[:, :, 2] = int(background[2]) & 0xFF
 
-    dst_x0 = min(max(0, ox), out_w)
-    dst_y0 = min(max(0, oy), out_h)
-    dst_x1 = max(0, min(out_w, ox + in_w))
-    dst_y1 = max(0, min(out_h, oy + in_h))
-    src_x0 = max(0, -ox)
-    src_y0 = max(0, -oy)
-    src_x1 = src_x0 + max(0, dst_x1 - dst_x0)
-    src_y1 = src_y0 + max(0, dst_y1 - dst_y0)
+    dst_x0 = min(max(0, req_x0), out_w)
+    dst_y0 = min(max(0, req_y0), out_h)
+    dst_x1 = max(0, min(out_w, req_x1))
+    dst_y1 = max(0, min(out_h, req_y1))
+    src_x0 = max(0, -req_x0)
+    src_y0 = max(0, -req_y0)
     copied_w = max(0, dst_x1 - dst_x0)
     copied_h = max(0, dst_y1 - dst_y0)
+    src_x1 = src_x0 + copied_w
+    src_y1 = src_y0 + copied_h
     if copied_w > 0 and copied_h > 0:
         canvas[dst_y0:dst_y1, dst_x0:dst_x1, :] = \
             arr[src_y0:src_y1, src_x0:src_x1, :]
 
     compose_s = time.time() - t0
+    clipped = (req_x0 < 0 or req_y0 < 0
+               or req_x1 > out_w or req_y1 > out_h)
+    fully_offscreen = (copied_w <= 0 or copied_h <= 0)
     meta = {
         "fit_mode": "logical",
         "scale": 1.0,
@@ -272,14 +287,21 @@ def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
         "output_height": out_h,
         "scaled_width": in_w,
         "scaled_height": in_h,
-        "offset_x": ox,
-        "offset_y": oy,
+        "offset_x": req_x0,
+        "offset_y": req_y0,
         "placement": placement,
         "background_rgb": tuple(int(v) for v in background),
         "resize_compose_s": compose_s,
         "compose_s": compose_s,
         "native_passthrough": False,
         "logical_placement": True,
+        "negative_offset": bool(req_x0 < 0 or req_y0 < 0),
+        "clipped": bool(clipped),
+        "fully_offscreen": bool(fully_offscreen),
+        "requested_destination_region": {
+            "x0": req_x0, "y0": req_y0, "x1": req_x1, "y1": req_y1,
+            "width": in_w, "height": in_h,
+        },
         "source_visible_region": {
             "x0": src_x0, "y0": src_y0, "x1": src_x1, "y1": src_y1,
             "width": copied_w, "height": copied_h,

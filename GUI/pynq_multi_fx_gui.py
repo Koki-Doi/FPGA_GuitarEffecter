@@ -2148,6 +2148,264 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
         _ACTIVE_RENDER_CACHE = prev
 
 
+def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
+                                     height: int = 480,
+                                     cache: Optional[RenderCache] = None,
+                                     placement_label: Optional[str] = None
+                                     ) -> np.ndarray:
+    """Phase 4G compact-v2 800x480 layout for the 5-inch HDMI LCD.
+
+    The v1 logical layout looked right-shifted on the actual panel because
+    its inner safe margin combined with the LCD's viewport cropping left a
+    wide blank strip on the left. v2 keeps the same dark visual language
+    but tightens the outer margin, fills the full 776x456 inner area,
+    uses larger text and 2 px strokes, and draws corner markers so a
+    photo can verify which framebuffer pixels reach the panel.
+    """
+    if cache is None:
+        cache = make_pynq_static_render_cache()
+    elif not getattr(cache, "pynq_static_mode", False):
+        cache.pynq_static_mode = True
+        cache.visualizer_fps = 0.0
+        cache.meter_fps = 0.0
+
+    label_key = "" if placement_label is None else str(placement_label)
+    key = ("compact_v2_800x480", int(width), int(height), label_key,
+           state_semistatic_signature(state),
+           state_dynamic_signature(state, cache))
+    cached = cache.frame_cache.get(key)
+    if cached is not None:
+        cache.stats["frame_hits"] += 1
+        return cached
+
+    global _ACTIVE_RENDER_CACHE
+    prev = _ACTIVE_RENDER_CACHE
+    _ACTIVE_RENDER_CACHE = cache
+    try:
+        Wv = int(width)
+        Hv = int(height)
+        img = Image.new("RGBA", (Wv, Hv), (0, 0, 0, 255))
+        gradient = vertical_gradient(Wv, Hv,
+                                     [(0.0, (24, 28, 36)),
+                                      (0.55, (10, 13, 20)),
+                                      (1.0, (4, 5, 9))])
+        img.paste(gradient, (0, 0))
+        d = ImageDraw.Draw(img)
+
+        # Outer chassis frame: 12 px margin on every side.
+        outer = (12, 12, Wv - 12, Hv - 12)
+        rounded_rect(d, outer, 12,
+                     fill=(7, 10, 16, 220), outline=LED + (90,), width=2)
+
+        active_n = sum(1 for v in state.effect_on if v)
+        bypassed = active_n == 0
+        status = "SAFE  BYPASS" if bypassed else "ACTIVE"
+        status_col = (220, 110, 75) if bypassed else LED
+
+        # Header band y=20..100.
+        header = (24, 20, Wv - 24, 100)
+        hx0, hy0, hx1, hy1 = header
+        rounded_rect(d, header, 10, fill=(10, 18, 26, 255),
+                     outline=LED + (110,), width=2)
+        draw_text(img, (hx0 + 18, hy0 + 10), "PRESET",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+        draw_smooth_text(img, (hx0 + 18, hy0 + 28),
+                         state.preset_id, size=44,
+                         fill=INK_HI + (255,), letter_spacing=1)
+        draw_smooth_text(img, ((hx0 + hx1) // 2, hy0 + 22),
+                         state.preset_name.replace("  ", " "),
+                         size=36, fill=INK_HI + (255,), anchor="mt")
+        chip_w, chip_h = 158, 34
+        chip = (hx1 - 16 - chip_w, hy0 + 12,
+                hx1 - 16, hy0 + 12 + chip_h)
+        rounded_rect(d, chip, 8, fill=(8, 14, 20, 255),
+                     outline=status_col + (255,), width=2)
+        draw_text(img, ((chip[0] + chip[2]) // 2,
+                        (chip[1] + chip[3]) // 2),
+                  status, fill=status_col + (255,), scale=2,
+                  anchor="mm", letter_spacing=2)
+        draw_text(img, (hx1 - 16, hy0 + 54),
+                  "FX  {}/{}".format(active_n, len(EFFECTS)),
+                  fill=LED + (255,), scale=2, anchor="rt",
+                  letter_spacing=2)
+
+        # Chain row y=110..250.
+        chain = (24, 110, Wv - 24, 250)
+        cx0, cy0, cx1, cy1 = chain
+        rounded_rect(d, chain, 10, fill=(8, 13, 20, 255),
+                     outline=LED + (90,), width=2)
+        draw_text(img, (cx0 + 16, cy0 + 10), "SIGNAL  CHAIN",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+        draw_text(img, (cx1 - 16, cy0 + 10),
+                  "SEL {}".format(EFFECTS_SHORT[state.selected_effect]),
+                  fill=LED + (255,), scale=1, anchor="rt",
+                  letter_spacing=2)
+        n = max(1, len(EFFECTS))
+        gap = 8
+        inner_pad = 14
+        row_y0 = cy0 + 36
+        row_y1 = cy1 - 14
+        avail_w = (cx1 - cx0) - inner_pad * 2
+        cell_w = int((avail_w - gap * (n - 1)) / n)
+        for pos, eff_idx in enumerate(state.chain[:n]):
+            bx0 = cx0 + inner_pad + pos * (cell_w + gap)
+            bx1 = bx0 + cell_w
+            on = (bool(state.effect_on[eff_idx])
+                  if eff_idx < len(state.effect_on) else False)
+            selected = eff_idx == state.selected_effect
+            if on:
+                fill = (8, 44, 56, 255)
+                outline = LED + ((255,) if selected else (170,))
+                text_col = LED + (255,)
+            else:
+                fill = (14, 18, 24, 255)
+                outline = (95, 105, 117, 220)
+                text_col = (135, 146, 158, 255)
+            rounded_rect(d, (bx0, row_y0, bx1, row_y1), 8,
+                         fill=fill, outline=outline,
+                         width=3 if selected else 2)
+            draw_text(img, ((bx0 + bx1) // 2, row_y0 + 14),
+                      EFFECTS_SHORT[eff_idx],
+                      fill=text_col, scale=2, anchor="mt",
+                      letter_spacing=2)
+            badge_y = row_y1 - 14
+            d.rectangle((bx0 + 10, badge_y, bx1 - 10, badge_y + 6),
+                        fill=(LED if on else (52, 60, 70)) + (255,))
+
+        # Bottom-left selected FX y=260..(Hv-26).
+        fx_box = (24, 260, Wv // 2 - 8, Hv - 26)
+        fx0, fy0, fx1, fy1 = fx_box
+        rounded_rect(d, fx_box, 10, fill=(8, 14, 22, 255),
+                     outline=LED + (90,), width=2)
+        selected_name = EFFECTS[state.selected_effect]
+        selected_on = bool(state.effect_on[state.selected_effect])
+        draw_text(img, (fx0 + 16, fy0 + 10), "SELECTED  FX",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+        draw_smooth_text(img, (fx0 + 16, fy0 + 28),
+                         selected_name.upper(), size=30,
+                         fill=LED + (255,))
+        s_chip_w, s_chip_h = 110, 30
+        s_chip = (fx1 - 16 - s_chip_w, fy0 + 18,
+                  fx1 - 16, fy0 + 18 + s_chip_h)
+        s_col = LED if selected_on else (220, 110, 75)
+        rounded_rect(d, s_chip, 6, fill=(6, 10, 16, 255),
+                     outline=s_col + (255,), width=2)
+        draw_text(img, ((s_chip[0] + s_chip[2]) // 2,
+                        (s_chip[1] + s_chip[3]) // 2),
+                  "ON" if selected_on else "BYPASS",
+                  fill=s_col + (255,), scale=2, anchor="mm",
+                  letter_spacing=2)
+        knobs = [k for k in state.knobs()[:4] if k[0]]
+        rows_top = fy0 + 74
+        rows_bot = fy1 - 12
+        n_rows = max(1, len(knobs))
+        rows_h = max(1, rows_bot - rows_top)
+        row_dy = rows_h // n_rows
+        for i, (label, value) in enumerate(knobs):
+            ry = rows_top + i * row_dy
+            is_sel = (i == state.selected_knob)
+            draw_text(img, (fx0 + 18, ry), label,
+                      fill=(LED if is_sel else SCR_TEXT_DIM) + (255,),
+                      scale=1, letter_spacing=2)
+            bar_x0 = fx0 + 18
+            bar_x1 = fx1 - 64
+            bar_y0 = ry + 14
+            bar_y1 = ry + 24
+            rounded_rect(d, (bar_x0, bar_y0, bar_x1, bar_y1), 4,
+                         fill=(4, 6, 10, 255), outline=(0, 0, 0, 255),
+                         width=1)
+            v_clamp = max(0.0, min(1.0, value / 100.0))
+            fill_w = int((bar_x1 - bar_x0 - 2) * v_clamp)
+            if fill_w > 0:
+                d.rectangle((bar_x0 + 1, bar_y0 + 1,
+                             bar_x0 + fill_w, bar_y1 - 1),
+                            fill=(LED if is_sel else LED_DIM) + (255,))
+            draw_text(img, (fx1 - 16, ry + 6),
+                      "{:>3}".format(int(value)),
+                      fill=LED + (255,), scale=2, anchor="rt",
+                      letter_spacing=1)
+
+        # Bottom-right monitor + IN/OUT meters y=260..(Hv-26).
+        side = (Wv // 2 + 8, 260, Wv - 24, Hv - 26)
+        sxl, syt, sxr, syb = side
+        rounded_rect(d, side, 10, fill=(6, 10, 16, 255),
+                     outline=LED + (90,), width=2)
+        draw_text(img, (sxl + 14, syt + 10), "MONITOR",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+        draw_text(img, (sxr - 14, syt + 10), "STATIC",
+                  fill=SCR_TEXT_DEAD + (255,), scale=1, anchor="rt",
+                  letter_spacing=2)
+        spec_y0 = syt + 34
+        spec_y1 = syt + 102
+        bars = 18
+        bw = max(1.0, (sxr - sxl - 28) / float(bars))
+        base_y = spec_y1
+        sel_idx = int((state.selected_effect /
+                       float(max(1, len(EFFECTS) - 1))) * (bars - 1))
+        for i in range(bars):
+            phase = i / float(max(1, bars - 1))
+            v = 0.18 + 0.62 * math.exp(-phase * 2.1)
+            v += 0.10 * (0.5 + 0.5 * math.sin(i * 0.71 + state.t * 0.2))
+            if i == sel_idx:
+                v = min(1.0, v + 0.18)
+            bar_h = max(2, int(v * (spec_y1 - spec_y0)))
+            bx0 = int(sxl + 14 + i * bw + 2)
+            bx1 = int(sxl + 14 + (i + 1) * bw - 2)
+            if bx1 <= bx0:
+                bx1 = bx0 + 1
+            by0 = base_y - bar_h
+            d.rectangle((bx0, by0, bx1, base_y),
+                        fill=LED_DIM + (230,))
+            d.line((bx0, by0, bx1, by0),
+                   fill=LED_SOFT + (255,), width=2)
+        meter_left = sxl + 14
+        meter_w = (sxr - sxl) - 28
+        in_y = spec_y1 + 12
+        draw_text(img, (meter_left, in_y + 6), "IN",
+                  fill=SCR_TEXT_DIM + (255,), scale=2, letter_spacing=2)
+        draw_meter(img, meter_left + 50, in_y + 4,
+                   meter_w - 54, 20,
+                   state.in_level, label="", segments=16, glow=False)
+        out_y = in_y + 30
+        draw_text(img, (meter_left, out_y + 6), "OUT",
+                  fill=SCR_TEXT_DIM + (255,), scale=2, letter_spacing=2)
+        draw_meter(img, meter_left + 50, out_y + 4,
+                   meter_w - 54, 20,
+                   state.out_level, label="", segments=16, glow=False)
+
+        # Corner canvas markers + variant label.
+        marker = LED + (255,)
+        d.rectangle((2, 2, 18, 5), fill=marker)
+        d.rectangle((2, 2, 5, 18), fill=marker)
+        d.rectangle((Wv - 18, 2, Wv - 3, 5), fill=marker)
+        d.rectangle((Wv - 5, 2, Wv - 3, 18), fill=marker)
+        d.rectangle((2, Hv - 5, 18, Hv - 3), fill=marker)
+        d.rectangle((2, Hv - 18, 5, Hv - 3), fill=marker)
+        d.rectangle((Wv - 18, Hv - 5, Wv - 3, Hv - 3), fill=marker)
+        d.rectangle((Wv - 5, Hv - 18, Wv - 3, Hv - 3), fill=marker)
+        draw_text(img, (8, 8), "TL", fill=marker, scale=1, letter_spacing=1)
+        draw_text(img, (Wv - 8, 8), "TR", fill=marker, scale=1,
+                  anchor="rt", letter_spacing=1)
+        draw_text(img, (8, Hv - 8), "BL", fill=marker, scale=1,
+                  anchor="lb", letter_spacing=1)
+        draw_text(img, (Wv - 8, Hv - 8), "BR", fill=marker, scale=1,
+                  anchor="rb", letter_spacing=1)
+
+        label_text = "v=compact-v2"
+        if placement_label:
+            label_text = "v=compact-v2  " + str(placement_label)
+        draw_text(img, (Wv // 2, Hv - 4), label_text,
+                  fill=LED_SOFT + (255,), scale=1, anchor="mb",
+                  letter_spacing=2)
+
+        arr = np.asarray(img.convert("RGB"), dtype=np.uint8)
+        cache.put_frame(key, arr)
+        cache.stats["frame_misses"] += 1
+        return arr
+    finally:
+        _ACTIVE_RENDER_CACHE = prev
+
+
 def render_frame_legacy(state: AppState, width: int = 1280,
                         height: int = 720) -> np.ndarray:
     """Original full-redraw path retained for benchmarking/debugging."""
@@ -2207,10 +2465,40 @@ def render_frame(state: AppState, width: int = 1280,
 
 def render_frame_800x480(state: AppState, width: int = 800,
                          height: int = 480,
-                         cache: Optional[RenderCache] = None) -> np.ndarray:
-    """Convenience wrapper for the 800x480 5-inch logical layout."""
-    return _render_frame_800x480_logical(
-        state, width=width, height=height, cache=cache)
+                         cache: Optional[RenderCache] = None,
+                         variant: str = "compact-v1",
+                         placement_label: Optional[str] = None) -> np.ndarray:
+    """Convenience wrapper for the 800x480 5-inch logical layout.
+
+    ``variant`` selects which 800x480 design to render. The Phase 4E
+    layout is preserved as ``compact-v1`` for the existing call sites.
+    ``compact-v2`` is the Phase 4G layout tuned for the 5-inch LCD; it
+    tightens margins, uses larger text, and draws TL/TR/BL/BR corner
+    markers plus an optional ``placement_label`` overlay so a photo can
+    confirm which pixels reach the panel.
+    """
+    v = str(variant).lower()
+    if v in ("compact-v1", "v1", "logical", ""):
+        return _render_frame_800x480_logical(
+            state, width=width, height=height, cache=cache)
+    if v in ("compact-v2", "v2"):
+        return _render_frame_800x480_compact_v2(
+            state, width=width, height=height, cache=cache,
+            placement_label=placement_label)
+    raise ValueError(
+        "unknown 800x480 variant {!r}; expected compact-v1 or compact-v2"
+        .format(variant))
+
+
+def render_frame_800x480_compact_v2(state: AppState, width: int = 800,
+                                    height: int = 480,
+                                    cache: Optional[RenderCache] = None,
+                                    placement_label: Optional[str] = None
+                                    ) -> np.ndarray:
+    """Direct entry point for the Phase 4G compact-v2 800x480 layout."""
+    return _render_frame_800x480_compact_v2(
+        state, width=width, height=height, cache=cache,
+        placement_label=placement_label)
 
 
 # =============================================================================

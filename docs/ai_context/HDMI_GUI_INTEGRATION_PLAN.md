@@ -6,16 +6,17 @@ breaking the current AudioLab DSP path.
 
 Status: integrated Phase 4 implementation deployed, Phase 4C runtime
 resource profile measured, Phase 4D small-LCD fit modes added, Phase 4E
-800x480 logical GUI mode tested, and Phase 4F manual viewport
-calibration added.
+800x480 logical GUI mode tested, Phase 4F manual viewport calibration
+added, and Phase 4G compact-v2 layout plus negative-offset placement
+added.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
 test on the real deployed overlay, Phase 3 Vivado integration design,
 Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
 static-frame/resource profiling, Phase 4D LCD safe-area fit testing,
-Phase 4E logical-size testing, and Phase 4F viewport calibration have
-been completed. Phase 4 implements
+Phase 4E logical-size testing, Phase 4F viewport calibration, and
+Phase 4G layout correction have been completed. Phase 4 implements
 Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
@@ -31,10 +32,12 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`,
 `HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`,
 `HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`,
-`HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`, and
-`HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md` for the measured results,
-design, build, deploy, timing, smoke logs, runtime resource profile, LCD
-fit test, 800x480 logical GUI result, and viewport calibration result.
+`HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`,
+`HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`, and
+`HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md` for the measured
+results, design, build, deploy, timing, smoke logs, runtime resource
+profile, LCD fit test, 800x480 logical GUI result, viewport calibration
+result, and 800x480 compact-v2 layout correction.
 
 ## 1. Current state
 
@@ -102,6 +105,20 @@ and a viewport calibration pattern. The HDMI signal remains 1280x720 and
 VDMA/VTC settings are unchanged. Calibration and manual-offset GUI tests
 for `(0,0)`, `(80,40)`, and `(120,60)` completed on the PYNQ-Z2 with no
 VDMA error bits. The final offset is still a user visual decision.
+
+Phase 4G then added a `compact-v2` 800x480 renderer and negative-offset
+placement after Phase 4F's positive-offset sweep still left a left-side
+blank strip on the LCD. The new renderer uses a 12 px outer margin,
+2-3 px strokes, larger text, TL/TR/BL/BR corner markers, and a
+variant + offset tag at the bottom edge so any photo identifies the
+placement. `compose_logical_frame` now accepts negative offsets and
+reports `negative_offset`, `clipped`, `fully_offscreen`, and the
+un-clipped `requested_destination_region`.
+`scripts/test_hdmi_800x480_cycle_offsets.py` walks the eight offsets
+`(0,0)`, `(-80,0)`, `(-120,0)`, `(-160,0)`, `(-240,0)`, `(0,-40)`,
+`(-120,-40)`, `(-160,-40)` for user photo comparison. All offsets ran
+on the PYNQ-Z2 with no VDMA error bits and the bit/hwh on the board
+were not modified.
 
 The AudioLab control contract must remain intact:
 

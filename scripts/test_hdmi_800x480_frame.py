@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Phase 4E/4F 800x480 logical HDMI GUI check.
+"""Phase 4E/4F/4G 800x480 logical HDMI GUI check.
 
-Loads ``AudioLabOverlay`` exactly once, renders
-``render_frame_800x480(AppState())``, places that logical frame at the
-requested offset of the fixed 1280x720 HDMI framebuffer, and prints
-VDMA/VTC status.
+Loads ``AudioLabOverlay`` exactly once, renders an 800x480 logical GUI
+frame via ``render_frame_800x480`` (variant-selectable), places that
+logical frame at the requested offset of the fixed 1280x720 HDMI
+framebuffer, and prints VDMA / VTC status plus the source / destination
+copy regions.
 
 This script does not load ``base.bit``, does not load a second overlay,
 and does not call ``run_pynq_hdmi()``.
@@ -65,35 +66,41 @@ def smoke(overlay):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--hold-seconds", type=int, default=60)
-    parser.add_argument("--placement", default="center",
+    parser.add_argument("--variant", default="compact-v2",
+                        choices=("compact-v1", "compact-v2"),
+                        help="800x480 layout variant")
+    parser.add_argument("--placement", default="manual",
                         choices=("center", "manual"))
-    parser.add_argument("--offset-x", type=int, default=None,
-                        help="manual placement X offset in the 1280x720 framebuffer")
-    parser.add_argument("--offset-y", type=int, default=None,
-                        help="manual placement Y offset in the 1280x720 framebuffer")
+    parser.add_argument("--offset-x", type=int, default=0,
+                        help="manual placement X offset (may be negative)")
+    parser.add_argument("--offset-y", type=int, default=0,
+                        help="manual placement Y offset (may be negative)")
     args = parser.parse_args()
 
     repo_paths()
+    placement_label = "p={} off=({:+d},{:+d})".format(
+        args.placement, int(args.offset_x), int(args.offset_y))
     report = {
-        "phase": "4E-800x480-logical-gui",
+        "phase": "4G-800x480-compact-v2",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "variant": args.variant,
         "placement": args.placement,
-        "offset_x": args.offset_x,
-        "offset_y": args.offset_y,
+        "offset_x": int(args.offset_x),
+        "offset_y": int(args.offset_y),
         "hold_seconds": int(args.hold_seconds),
     }
 
-    print("[phase4e] importing AudioLabOverlay")
+    print("[phase4g] importing AudioLabOverlay")
     t0 = time.time()
     from audio_lab_pynq import AudioLabOverlay
     overlay_import_s = time.time() - t0
-    print("[phase4e] AudioLabOverlay imported in {:.3f} s".format(overlay_import_s))
+    print("[phase4g] AudioLabOverlay imported in {:.3f} s".format(overlay_import_s))
 
-    print("[phase4e] loading AudioLabOverlay() (single load)")
+    print("[phase4g] loading AudioLabOverlay() (single load)")
     t0 = time.time()
     overlay = AudioLabOverlay()
     overlay_load_s = time.time() - t0
-    print("[phase4e] AudioLabOverlay() ready in {:.3f} s".format(overlay_load_s))
+    print("[phase4g] AudioLabOverlay() ready in {:.3f} s".format(overlay_load_s))
 
     pre_smoke = smoke(overlay)
     report["overlay_import_s"] = overlay_import_s
@@ -107,7 +114,7 @@ def main():
             pre_smoke["has v_tc_hdmi ip_dict"] and
             pre_smoke["has rgb2dvi_hdmi in HWH"] and
             pre_smoke["has v_axi4s_vid_out_hdmi in HWH"]):
-        raise SystemExit("[phase4e] pre-HDMI smoke failed")
+        raise SystemExit("[phase4g] pre-HDMI smoke failed")
 
     from pynq_multi_fx_gui import (
         AppState, make_pynq_static_render_cache, render_frame_800x480,
@@ -116,18 +123,23 @@ def main():
 
     state = AppState()
     cache = make_pynq_static_render_cache()
-    print("[phase4e] rendering 800x480 logical GUI frame")
+    print("[phase4g] rendering 800x480 logical GUI frame variant={}".format(
+        args.variant))
     t0 = time.time()
-    frame = render_frame_800x480(state, cache=cache)
+    frame = render_frame_800x480(state, cache=cache,
+                                 variant=args.variant,
+                                 placement_label=placement_label)
     render_s = time.time() - t0
-    print("[phase4e] frame shape={} dtype={} render={:.3f}s".format(
+    print("[phase4g] frame shape={} dtype={} render={:.3f}s".format(
         list(frame.shape), frame.dtype, render_s))
     if list(frame.shape) != [480, 800, 3] or str(frame.dtype) != "uint8":
-        raise SystemExit("[phase4e] renderer returned unexpected frame")
+        raise SystemExit("[phase4g] renderer returned unexpected frame")
 
     backend = AudioLabHdmiBackend(overlay)
-    print("[phase4e] starting HDMI back end placement={} offset=({}, {})".format(
-        args.placement, args.offset_x, args.offset_y))
+    print("[phase4g] starting HDMI back end variant={} placement={} "
+          "offset=({:+d}, {:+d})".format(
+              args.variant, args.placement,
+              int(args.offset_x), int(args.offset_y)))
     t0 = time.time()
     backend.start(frame, placement=args.placement,
                   offset_x=args.offset_x, offset_y=args.offset_y)
@@ -136,25 +148,43 @@ def main():
 
     status = backend.status()
     errors = backend.errors()
+    last_write = status.get("last_frame_write", {}) or {}
     report["render_s"] = render_s
     report["backend_start_s"] = backend_start_s
     report["hdmi_status"] = status
     report["hdmi_errors"] = errors
-    last_write = status.get("last_frame_write", {})
     report["last_frame_write"] = last_write
-    print(json.dumps({"hdmi_status": status, "hdmi_errors": errors,
-                      "backend_start_s": backend_start_s,
-                      "last_frame_write": last_write},
+    summary_copy = {
+        "input_shape": last_write.get("input_shape"),
+        "requested_destination_region":
+            last_write.get("requested_destination_region"),
+        "source_visible_region": last_write.get("source_visible_region"),
+        "framebuffer_copied_region":
+            last_write.get("framebuffer_copied_region"),
+        "negative_offset": last_write.get("negative_offset"),
+        "clipped": last_write.get("clipped"),
+        "fully_offscreen": last_write.get("fully_offscreen"),
+        "compose_s": last_write.get("compose_s"),
+        "resize_compose_s": last_write.get("resize_compose_s"),
+        "framebuffer_copy_s": last_write.get("framebuffer_copy_s"),
+        "placement": last_write.get("placement"),
+        "offset_x": last_write.get("offset_x"),
+        "offset_y": last_write.get("offset_y"),
+    }
+    report["placement_summary"] = summary_copy
+    print(json.dumps({"placement_summary": summary_copy,
+                      "hdmi_errors": errors,
+                      "backend_start_s": backend_start_s},
                      indent=2, sort_keys=True))
     if errors.get("dmainterr") or errors.get("dmaslverr") or errors.get("dmadecerr"):
-        raise SystemExit("[phase4e] VDMA error bits set")
+        raise SystemExit("[phase4g] VDMA error bits set")
 
     if int(args.hold_seconds) > 0:
-        print("[phase4e] holding HDMI scanout for {} seconds".format(
+        print("[phase4g] holding HDMI scanout for {} seconds".format(
             int(args.hold_seconds)))
         time.sleep(int(args.hold_seconds))
 
-    print("[phase4e] applying Safe Bypass through existing overlay APIs")
+    print("[phase4g] applying Safe Bypass through existing overlay APIs")
     overlay.clear_distortion_pedals()
     overlay.set_noise_suppressor_settings(enabled=False)
     overlay.set_compressor_settings(enabled=False)
@@ -166,9 +196,10 @@ def main():
     post_smoke = smoke(overlay)
     report["smoke_post_hdmi"] = post_smoke
     print(json.dumps({"smoke_post_hdmi": post_smoke}, indent=2, sort_keys=True))
-    print("[phase4e] physical 5-inch LCD readability is user visual confirmation pending")
-    print(json.dumps({"summary": report}, indent=2, sort_keys=True))
-    print("[phase4e] OK")
+    print("[phase4g] physical 5-inch LCD readability is user visual confirmation pending")
+    print(json.dumps({"summary": report}, indent=2, sort_keys=True,
+                     default=str))
+    print("[phase4g] OK")
 
 
 if __name__ == "__main__":

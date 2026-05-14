@@ -354,6 +354,42 @@ asking it to re-discover the project from scratch.
 > LCD controller側を疑います。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`。
 
+### HDMI GUI Phase 4G result — compact-v2 layout and negative offsets
+
+> HDMI GUI Phase 4G は完了済みです。
+> Phase 4F の中央/正方向offsetでも5インチLCD上で左に大きな空白が残り、
+> GUIが右寄りに見えていました。Phase 4Gでは、Vivado rebuild / bit /
+> hwh再生成 / `block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP /
+> VDMA / VTC設定を一切触らず、Python側だけで以下2点を追加しました。
+> (1) `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2` を
+> 新設し、`render_frame_800x480(state, variant="compact-v2",
+> placement_label=...)` でも呼べます。`compact-v1` は既存呼び出し用に
+> 残しています。compact-v2は外枠12pxマージン、2-3px stroke、横一列
+> chain (NS/CMP/OD/DIST/AMP/CAB/EQ/RVB)、`AMP SIM` などの hero text、
+> 4本knob bar、16-segment IN/OUT meter、TL/TR/BL/BR の四隅マーカー、
+> 画面下部に `v=compact-v2 p=manual off=(x,y)` の小ラベルを描きます。
+> (2) `audio_lab_pynq/hdmi_backend.py::compose_logical_frame` が
+> 負offsetを受けてsource側をclipし、`negative_offset` / `clipped` /
+> `fully_offscreen` / `requested_destination_region` をmetaに追加。
+> `scripts/test_hdmi_800x480_frame.py` は `--variant`、`--placement`、
+> 負値可の `--offset-x` / `--offset-y` を取り、新規
+> `scripts/test_hdmi_800x480_cycle_offsets.py` は `AudioLabOverlay()`
+> を1回だけloadして `(0,0)`、`(-80,0)`、`(-120,0)`、`(-160,0)`、
+> `(-240,0)`、`(0,-40)`、`(-120,-40)`、`(-160,-40)` を順に表示します。
+> PYNQ-Z2 (`192.168.1.9`) では board上の `audio_lab.bit` (4,045,680B)
+> と `audio_lab.hwh` (1,054,120B) はdeploy前後で同サイズのままで、
+> Python/scriptsだけを `scp` で更新しました。compact-v2 `(0,0)` 単発は
+> 60秒hold成功、render `0.337s`、compose `0.026s`、framebuffer copy
+> `0.207s`、`VDMACR=0x00010001`、`DMASR=0x00011000`、
+> `vtc_ctl=0x00000006`、error bitsなし。8 offset cycleも全offsetで
+> error bitsなし、各offset render 約0.09s (label変化のためcache miss)、
+> compose 約0.025s、copy 約0.206s、負offsetは
+> `negative_offset=True` / `clipped=True` / `fully_offscreen=False`。
+> post Safe Bypass smoke OK。最適offsetはユーザー目視で
+> `--seconds-per-offset 15` 等で再撮影して決定してください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

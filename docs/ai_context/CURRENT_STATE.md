@@ -2,8 +2,9 @@
 
 Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed,
 Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
-added, Phase 4E 800x480 logical GUI tested, and Phase 4F manual
-viewport calibration added on the PYNQ-Z2 at `192.168.1.9`).
+added, Phase 4E 800x480 logical GUI tested, Phase 4F manual viewport
+calibration added, and Phase 4G compact-v2 layout + negative-offset
+placement added on the PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -335,6 +336,56 @@ overscan/viewport shift. If `(120,60)` fits best, treat it as medium
 offset. If none fit, investigate HDMI timing or the LCD controller's 720p
 sampling behavior. Full details are in
 `docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`.
+
+## HDMI GUI Phase 4G compact-v2 + negative offsets
+
+Phase 4F's center / positive-offset placement on the 5-inch LCD still
+showed a left-side blank strip with the GUI shifted right. Phase 4G
+keeps the HDMI signal, VDMA configuration, Vivado design, and bit/hwh
+unchanged, and adds two Python-side changes:
+
+1. A `compact-v2` 800x480 renderer:
+   `GUI/pynq_multi_fx_gui.render_frame_800x480_compact_v2`, also
+   reachable via `render_frame_800x480(state, variant="compact-v2",
+   placement_label=...)`. It uses a 12 px outer margin (vs. 24 px in
+   `compact-v1`), 2-3 px strokes, wider chain cells, hero `AMP SIM`
+   text, larger knob bars and value text, two 16-segment IN / OUT
+   meters, TL / TR / BL / BR corner markers, and a variant + offset
+   tag at the bottom edge so the placement is visible in any photo.
+   `compact-v1` is preserved for the existing Phase 4E call sites.
+2. Negative `offset_x` / `offset_y` are supported by
+   `audio_lab_pynq.hdmi_backend.compose_logical_frame`. The off-screen
+   portion of the source is clipped, and meta now reports
+   `negative_offset`, `clipped`, `fully_offscreen`, and the un-clipped
+   `requested_destination_region` alongside the existing
+   `source_visible_region` and `framebuffer_copied_region`.
+
+`scripts/test_hdmi_800x480_frame.py` now takes
+`--variant compact-v1|compact-v2`, `--placement center|manual`, and
+optionally-negative `--offset-x` / `--offset-y`. A new
+`scripts/test_hdmi_800x480_cycle_offsets.py` loads `AudioLabOverlay()`
+once and walks the offsets `(0,0)`, `(-80,0)`, `(-120,0)`, `(-160,0)`,
+`(-240,0)`, `(0,-40)`, `(-120,-40)`, `(-160,-40)`, holding each for a
+configurable interval so the user can photograph the panel and pick the
+best fit.
+
+PYNQ runs (selective `scp` only, full deploy script not used):
+
+- Board-side `audio_lab.bit` stayed `4,045,680` bytes and
+  `audio_lab.hwh` stayed `1,054,120` bytes.
+- `compact-v2` single-frame at `(0,0)`: render `0.337 s` cold, compose
+  `0.026 s`, framebuffer copy `0.207 s`, `VDMACR=0x00010001`,
+  `DMASR=0x00011000`, `vtc_ctl=0x00000006`, no VDMA error bits.
+- Eight-offset cycle: every offset produced no VDMA error bits.
+  Per-offset render `~0.09 s` (cache miss because the placement label
+  changes), compose `~0.025 s`, copy `~0.206 s`. Negative offsets
+  reported `negative_offset=True`, `clipped=True`, `fully_offscreen=False`.
+- Post-HDMI Safe Bypass smoke OK in both runs.
+
+User visual decision is still required to pick the final offset and to
+confirm that `compact-v2` fixes the right-shift on the 5-inch LCD.
+Phase 4G details are in
+`docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
