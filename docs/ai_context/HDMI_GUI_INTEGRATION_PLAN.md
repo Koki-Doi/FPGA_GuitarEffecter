@@ -4,15 +4,15 @@ This document records the design direction for showing the existing
 `GUI/pynq_multi_fx_gui.py` rendering on the PYNQ-Z2 HDMI output without
 breaking the current AudioLab DSP path.
 
-Status: integrated Phase 4 implementation deployed and Phase 4C runtime
-resource profile measured. Phase 1 offscreen render benchmark, Phase 2A
-PYNQ compatibility, Phase 2B
+Status: integrated Phase 4 implementation deployed, Phase 4C runtime
+resource profile measured, and Phase 4D small-LCD fit modes added.
+Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
 test on the real deployed overlay, Phase 3 Vivado integration design,
 Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
-static-frame/resource profiling have been completed. Phase 4 implements
-Option B (`axi_vdma` + `v_tc` +
+static-frame/resource profiling, and Phase 4D LCD safe-area fit testing
+have been completed. Phase 4 implements Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
 `AudioLabOverlay()`. See
@@ -24,9 +24,11 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`,
 `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`, and
 `HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
-`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`, and
-`HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the measured results, design,
-build, deploy, timing, smoke logs, and runtime resource profile.
+`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`,
+`HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`, and
+`HDMI_GUI_PHASE4D_LCD_FIT_TEST.md` for the measured results, design,
+build, deploy, timing, smoke logs, runtime resource profile, and LCD
+fit test.
 
 ## 1. Current state
 
@@ -64,6 +66,21 @@ that HDMI scanout itself does not busy-loop on the PS: process CPU
 averaged `0.352%` and maxed at `0.418%` while VDMA held the frame.
 Physical monitor output and color order still require user visual
 confirmation.
+
+User visual inspection later confirmed that the small HDMI LCD does show
+the GUI but crops the native frame. Phase 4D added Python-only fit modes
+to `AudioLabHdmiBackend` so the GUI can be scaled and centered into a
+safe area before the existing framebuffer copy:
+
+- `native`: 1280x720, offset `(0,0)`.
+- `fit-95`: 1216x684, offset `(32,18)`.
+- `fit-90`: 1152x648, offset `(64,36)`.
+- `fit-85`: 1088x612, offset `(96,54)`.
+- `fit-80`: 1024x576, offset `(128,72)`.
+
+The recommended first small-LCD candidate is `fit-90`; the final default
+should be chosen from user visual confirmation of the test pattern and
+GUI frame.
 
 The AudioLab control contract must remain intact:
 
@@ -244,6 +261,18 @@ Measured Phase 4C update cost on the PYNQ-Z2:
   `0.206 s` / `0.206 s`.
 - VDMA/VTC init + start: `0.0023 s`.
 - Practical warm change-driven update rate: about `2.1 fps`.
+
+Measured Phase 4D fit overhead:
+
+- Pattern `fit-95`: resize/compose `0.289 s`, framebuffer copy
+  `0.207 s`.
+- Pattern `fit-90`: resize/compose `0.266 s`, framebuffer copy
+  `0.207 s`.
+- GUI `fit-90`: render `2.979 s`, resize/compose `0.265 s`,
+  framebuffer copy `0.207 s`.
+
+Fit mode does not alter VDMA HSIZE/STRIDE/VSIZE or the HDMI IP
+configuration; it only changes the Python RGB frame before scanout.
 
 The integration must preserve the existing AudioLab design:
 

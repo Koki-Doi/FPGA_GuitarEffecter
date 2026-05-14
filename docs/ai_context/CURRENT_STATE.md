@@ -1,8 +1,8 @@
 # Current state
 
-Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed
-and Phase 4C static-frame/resource profile measured on the PYNQ-Z2 at
-`192.168.1.9`).
+Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed,
+Phase 4C static-frame/resource profile measured, and Phase 4D LCD fit
+modes added on the PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -89,6 +89,8 @@ shape of the implemented HDMI Tcl split and
 build, deploy, timing, and smoke result. See
 `docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the
 static-frame recheck, PS runtime profile, and PL before/after summary.
+See `docs/ai_context/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md` for the small
+LCD overscan / safe-area fit test.
 
 ## HDMI GUI Phase 4 integrated overlay
 
@@ -185,6 +187,51 @@ expensive parts remain Python/PIL/NumPy rendering and full-frame copy.
 Warm change-driven updates are about `0.276 + 0.206 = 0.482 s`, or
 roughly `2.1 fps`; continuous 30fps GUI output is not realistic without
 a substantially different renderer/copy strategy.
+
+## HDMI GUI Phase 4D LCD fit modes
+
+User visual inspection confirmed that the integrated HDMI output appears
+on the small HDMI LCD, but the native 1280x720 GUI is cropped by the
+display. Phase 4D fixes this on the Python side only: the backend can
+resize the rendered RGB888 frame, center it on a black 1280x720 canvas,
+and then use the existing RGB888 -> DDR `GBR888` copy path. VDMA timing
+and framebuffer dimensions stay unchanged.
+
+Phase 4D did not rebuild Vivado, regenerate bit/hwh, or change
+`block_design.tcl`, `audio_lab.xdc`, `create_project.tcl`, Clash/DSP,
+`topEntity`, GPIOs, or HDMI IP configuration. Because this phase was
+explicitly required not to overwrite bit/hwh during deploy, only the
+changed Python/script files were copied to the PYNQ repo.
+
+Available fit modes:
+
+- `native`: scale `1.00`, size `1280x720`, offset `(0,0)`.
+- `fit-97`: scale `0.97`, size `1242x698`, offset `(19,11)`.
+- `fit-95`: scale `0.95`, size `1216x684`, offset `(32,18)`.
+- `fit-90`: scale `0.90`, size `1152x648`, offset `(64,36)`.
+- `fit-85`: scale `0.85`, size `1088x612`, offset `(96,54)`.
+- `fit-80`: scale `0.80`, size `1024x576`, offset `(128,72)`.
+- `--scale FLOAT` can override the named mode for custom values.
+
+Test results on PYNQ-Z2:
+
+- `scripts/test_hdmi_fit_frame.py --fit-mode native --hold-seconds 60`:
+  OK, no VDMA error bits, copy `0.208 s`.
+- `scripts/test_hdmi_fit_frame.py --fit-mode fit-95 --hold-seconds 60`:
+  OK, no VDMA error bits, resize/compose `0.289 s`, copy `0.207 s`.
+- `scripts/test_hdmi_fit_frame.py --fit-mode fit-90 --hold-seconds 60`:
+  OK, no VDMA error bits, resize/compose `0.266 s`, copy `0.207 s`.
+- `scripts/test_hdmi_static_frame.py --fit-mode fit-90 --hold-seconds 60`:
+  OK, no VDMA error bits, GUI render `2.979 s`, resize/compose
+  `0.265 s`, copy `0.207 s`.
+
+Common HDMI status remained `VDMACR=0x00010001`,
+`DMASR=0x00011000`, VDMA HSIZE/STRIDE `3840`, VSIZE `720`, VTC
+`0x00000006`, framebuffer `0x16900000`.
+
+Recommended first user check is `fit-90`. If it still crops the 40 px
+border or corner labels, try `fit-85`; if `fit-95` already fully fits,
+use `fit-95` to preserve more screen area.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

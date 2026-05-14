@@ -12,17 +12,27 @@ Intended invocation on the board:
     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
         /home/xilinx/Audio-Lab-PYNQ/scripts/test_hdmi_static_frame.py
 
+LCD overscan fit check:
+
+    sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+        /home/xilinx/Audio-Lab-PYNQ/scripts/test_hdmi_static_frame.py \
+        --fit-mode fit-90 --hold-seconds 60
+
 This script does NOT load ``base.bit``, does NOT load a second overlay,
 does NOT touch audio-side GPIOs beyond Safe Bypass, and does NOT call
 ``run_pynq_hdmi()`` from the renderer.
 """
 from __future__ import print_function
 
+import argparse
 import json
 import os
 import sys
 import time
 import traceback
+
+
+FIT_MODE_CHOICES = ("native", "fit-97", "fit-95", "fit-90", "fit-85", "fit-80")
 
 
 def smoke(overlay):
@@ -73,9 +83,22 @@ def make_app_state_default():
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fit-mode", default="native",
+                        choices=FIT_MODE_CHOICES,
+                        help="optional LCD overscan fit mode")
+    parser.add_argument("--scale", type=float, default=None,
+                        help="custom 0..1 scale overriding --fit-mode")
+    parser.add_argument("--hold-seconds", type=int, default=0,
+                        help="hold HDMI scanout before post-smoke")
+    args = parser.parse_args()
+
     report = {
-        "phase": "4B",
+        "phase": "4D-static-gui-fit",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "fit_mode": args.fit_mode,
+        "scale_override": args.scale,
+        "hold_seconds": int(args.hold_seconds),
         "steps": [],
     }
 
@@ -116,21 +139,35 @@ def main():
     t0 = time.time()
     cache = make_pynq_static_render_cache()
     frame = render_frame_pynq_static(state, cache=cache)
+    render_s = time.time() - t0
     print("[phase4b] frame shape={}, dtype={}, render={:.3f} s".format(
-        list(frame.shape), str(frame.dtype), time.time() - t0))
+        list(frame.shape), str(frame.dtype), render_s))
     if list(frame.shape) != [720, 1280, 3] or str(frame.dtype) != "uint8":
         raise SystemExit("[phase4b] renderer returned an unexpected frame")
+    report["render_s"] = render_s
 
-    print("[phase4b] starting HDMI back end with the frame")
+    print("[phase4b] starting HDMI back end with the frame "
+          "(fit_mode={}, scale_override={})".format(args.fit_mode, args.scale))
     backend = AudioLabHdmiBackend(overlay)
-    backend.start(frame)
+    t0 = time.time()
+    backend.start(frame, fit_mode=args.fit_mode, scale=args.scale)
+    backend_start_s = time.time() - t0
     time.sleep(0.1)
     post = backend.status()
     err = backend.errors()
     report["hdmi_status_post_start"] = post
     report["hdmi_errors_post_start"] = err
+    report["backend_start_s"] = backend_start_s
     print(json.dumps({"hdmi_status_post_start": post,
-                      "hdmi_errors_post_start": err}, indent=2))
+                      "hdmi_errors_post_start": err,
+                      "backend_start_s": backend_start_s}, indent=2))
+    if err.get("dmainterr") or err.get("dmaslverr") or err.get("dmadecerr"):
+        raise SystemExit("[phase4b] VDMA error bits set")
+
+    if int(args.hold_seconds) > 0:
+        print("[phase4b] holding HDMI scanout for {} seconds".format(
+            int(args.hold_seconds)))
+        time.sleep(int(args.hold_seconds))
 
     # Quick Safe Bypass through the existing API so we know audio control
     # still works while HDMI is scanning out.

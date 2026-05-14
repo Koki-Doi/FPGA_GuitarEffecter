@@ -267,6 +267,34 @@ asking it to re-discover the project from scratch.
 > 次はユーザーの物理HDMI目視確認、任意の10分hold test、その後 Phase 5
 > change-driven GUI loopです。`git push` / `pull` / `fetch`は禁止です。
 
+### HDMI GUI Phase 4D result — small LCD fit modes
+
+> HDMI GUI Phase 4D は完了済みです。
+> ユーザー目視で小型HDMI LCDにGUI表示は確認済みですが、native 1280x720
+> はLCD側crop/overscanで画面からはみ出していました。Vivado rebuild、
+> bit/hwh再生成、`block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP構成
+> 変更はしていません。`audio_lab_pynq/hdmi_backend.py` にPython側
+> fit modeを追加し、RGB888 frameを縮小して黒背景1280x720へ中央配置
+> してから既存のDDR `GBR888` copyを使うようにしました。追加modeは
+> `native`、`fit-97`、`fit-95`、`fit-90`、`fit-85`、`fit-80` と
+> custom `--scale`。新規 `scripts/test_hdmi_fit_frame.py` は1px外枠、
+> 10/20/40px inset border、TL/TR/BL/BR、CENTER、grid、crosshair、
+> 1280x720表記、fit mode表記を描画します。PYNQ-Z2 (`192.168.1.9`)
+> では `native`、`fit-95`、`fit-90` test pattern と GUI `fit-90` が
+> すべて60秒hold成功、VDMA error bitsなし。`fit-90` は scaled
+> `1152x648`、offset `(64,36)`、GUI render=2.979s、
+> resize/compose=0.265s、copy=0.207s。共通statusは
+> `VDMACR=0x00010001`、`DMASR=0x00011000`、HSIZE/STRIDE=3840、
+> VSIZE=720、VTC=`0x00000006`、framebuffer=`0x16900000`。
+> 推奨候補はまず `fit-90`。まだ40px borderやcorner labelが切れるなら
+> `fit-85`、`fit-95`で全て見えるなら `fit-95` が画面面積を多く使えます。
+> Codexは物理画面を見られないため、最終fit mode、色順、文字可読性、
+> 縦横比はユーザー目視で決定してください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`。
+> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
+> `git push` / `pull` / `fetch` は引き続き禁止です。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

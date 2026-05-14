@@ -22,6 +22,7 @@ Public API:
     backend = AudioLabHdmiBackend(overlay)
     backend.start(rgb_frame)        # one-shot static frame
     backend.write_frame(rgb_frame)  # overwrite the framebuffer
+    backend.write_frame(rgb_frame, fit_mode="fit-90")
     backend.status()                # debug dict
     backend.stop()
 """
@@ -79,6 +80,15 @@ DEFAULT_HEIGHT               = 720
 DEFAULT_BYTES_PER_PIXEL      = 3
 DEFAULT_NUM_FSTORES          = 3
 
+FIT_MODE_SCALES = {
+    "native": 1.00,
+    "fit-97": 0.97,
+    "fit-95": 0.95,
+    "fit-90": 0.90,
+    "fit-85": 0.85,
+    "fit-80": 0.80,
+}
+
 
 class HdmiNotIntegratedError(RuntimeError):
     """Raised when the running overlay does not contain the HDMI subsystem.
@@ -134,6 +144,79 @@ def _allocate_framebuffer(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                               cacheable=False)
 
 
+def fit_mode_scale(fit_mode="native", scale=None):
+    """Resolve a named HDMI LCD fit mode to a numeric scale."""
+    if scale is not None:
+        value = float(scale)
+    else:
+        try:
+            value = FIT_MODE_SCALES[str(fit_mode)]
+        except KeyError:
+            raise ValueError(
+                "unknown fit_mode {!r}; expected one of {}".format(
+                    fit_mode, sorted(FIT_MODE_SCALES)))
+    if value <= 0.0 or value > 1.0:
+        raise ValueError("HDMI fit scale must be > 0.0 and <= 1.0; got {}".format(value))
+    return value
+
+
+def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
+                      width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+                      background=(0, 0, 0)):
+    """Return a 1280x720 RGB frame after optional LCD overscan fitting.
+
+    ``native`` returns the input ndarray and records zero offset. Other modes
+    resize the input with Pillow's old-version-compatible constants and paste
+    it onto a black RGB888 canvas. The framebuffer dimensions and VDMA
+    programming stay unchanged.
+    """
+    arr = np.asarray(rgb_frame)
+    if arr.shape != (int(height), int(width), 3) or arr.dtype != np.uint8:
+        raise ValueError(
+            "rgb_frame must be ({},{},3) uint8 RGB; got shape={}, dtype={}"
+            .format(int(height), int(width), arr.shape, arr.dtype))
+
+    requested_mode = str(fit_mode)
+    resolved_scale = fit_mode_scale(requested_mode, scale=scale)
+    scaled_w = max(1, int(round(int(width) * resolved_scale)))
+    scaled_h = max(1, int(round(int(height) * resolved_scale)))
+    offset_x = (int(width) - scaled_w) // 2
+    offset_y = (int(height) - scaled_h) // 2
+    meta = {
+        "fit_mode": requested_mode,
+        "scale": resolved_scale,
+        "input_width": int(width),
+        "input_height": int(height),
+        "scaled_width": scaled_w,
+        "scaled_height": scaled_h,
+        "offset_x": offset_x,
+        "offset_y": offset_y,
+        "background_rgb": tuple(int(v) for v in background),
+        "resize_compose_s": 0.0,
+        "native_passthrough": bool(resolved_scale == 1.0),
+    }
+    if resolved_scale == 1.0:
+        return arr, meta
+
+    t0 = time.time()
+    try:
+        from PIL import Image
+    except Exception as exc:
+        raise RuntimeError("Pillow is required for HDMI fit modes: {}".format(exc))
+
+    canvas = np.empty((int(height), int(width), 3), dtype=np.uint8)
+    canvas[:, :, 0] = int(background[0]) & 0xFF
+    canvas[:, :, 1] = int(background[1]) & 0xFF
+    canvas[:, :, 2] = int(background[2]) & 0xFF
+
+    pil = Image.fromarray(arr, "RGB")
+    resized = pil.resize((scaled_w, scaled_h), Image.BILINEAR)
+    canvas[offset_y:offset_y + scaled_h,
+           offset_x:offset_x + scaled_w, :] = np.asarray(resized, dtype=np.uint8)
+    meta["resize_compose_s"] = time.time() - t0
+    return canvas, meta
+
+
 class AudioLabHdmiBackend(object):
     """Direct-MMIO VDMA + VTC driver for the integrated AudioLab HDMI path."""
 
@@ -155,6 +238,7 @@ class AudioLabHdmiBackend(object):
         self._framebuffer = None
         self._started = False
         self._last_vdma_start = {}
+        self._last_frame_write = {}
 
     # ---- MMIO helpers --------------------------------------------------
     def _vdma_read(self, offset):
@@ -241,7 +325,8 @@ class AudioLabHdmiBackend(object):
                         VTC_CTL_GENERATION_ENABLE | VTC_CTL_REG_UPDATE)
 
     # ---- public API -----------------------------------------------------
-    def start(self, rgb_frame=None):
+    def start(self, rgb_frame=None, fit_mode="native", scale=None,
+              background=(0, 0, 0)):
         """Allocate a framebuffer, fill it from ``rgb_frame`` (or black if
         None), program VDMA and VTC, and return the framebuffer ndarray.
         """
@@ -254,8 +339,23 @@ class AudioLabHdmiBackend(object):
         # Fill with content
         if rgb_frame is None:
             self._framebuffer[...] = 0
+            self._last_frame_write = {
+                "fit_mode": str(fit_mode),
+                "scale": fit_mode_scale(fit_mode, scale=scale),
+                "input_width": self.width,
+                "input_height": self.height,
+                "scaled_width": self.width,
+                "scaled_height": self.height,
+                "offset_x": 0,
+                "offset_y": 0,
+                "background_rgb": tuple(int(v) for v in background),
+                "resize_compose_s": 0.0,
+                "framebuffer_copy_s": 0.0,
+                "native_passthrough": True,
+            }
         else:
-            self._copy_rgb(rgb_frame)
+            self.write_frame(rgb_frame, fit_mode=fit_mode, scale=scale,
+                             background=background)
 
         phys = int(self._framebuffer.physical_address)
         self._program_vdma(phys)
@@ -263,11 +363,19 @@ class AudioLabHdmiBackend(object):
         self._started = True
         return self._framebuffer
 
-    def write_frame(self, rgb_frame):
+    def write_frame(self, rgb_frame, fit_mode="native", scale=None,
+                    background=(0, 0, 0)):
         """Overwrite the framebuffer in place with a new RGB888 ndarray."""
         if self._framebuffer is None:
             raise RuntimeError("HDMI back end has not been started yet")
-        self._copy_rgb(rgb_frame)
+        fitted, meta = compose_fit_frame(
+            rgb_frame, fit_mode=fit_mode, scale=scale, width=self.width,
+            height=self.height, background=background)
+        t0 = time.time()
+        self._copy_rgb(fitted)
+        meta["framebuffer_copy_s"] = time.time() - t0
+        self._last_frame_write = meta
+        return dict(meta)
 
     def _copy_rgb(self, rgb_frame):
         arr = np.asarray(rgb_frame)
@@ -317,6 +425,7 @@ class AudioLabHdmiBackend(object):
                 "rgb2dvi_hdmi and v_axi4s_vid_out_hdmi are HWH-only video "
                 "pipeline IPs; they are not exposed as PYNQ MMIO attributes"),
             "last_vdma_start": self._last_vdma_start,
+            "last_frame_write": self._last_frame_write,
             "started": self._started,
         }
 
@@ -352,4 +461,7 @@ __all__ = [
     "DEFAULT_WIDTH",
     "DEFAULT_HEIGHT",
     "DEFAULT_BYTES_PER_PIXEL",
+    "FIT_MODE_SCALES",
+    "fit_mode_scale",
+    "compose_fit_frame",
 ]
