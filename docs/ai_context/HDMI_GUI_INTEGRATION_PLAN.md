@@ -4,11 +4,13 @@ This document records the design direction for showing the existing
 `GUI/pynq_multi_fx_gui.py` rendering on the PYNQ-Z2 HDMI output without
 breaking the current AudioLab DSP path.
 
-Status: investigation / design only. Phase 1 offscreen render benchmark
-has been completed on the PYNQ-Z2; no HDMI output, Python implementation,
-Vivado change, bitstream rebuild, deploy, or GPIO bridge has been done
-for this HDMI GUI integration. See
-`HDMI_GUI_PHASE1_RENDER_BENCH.md` for the measured results.
+Status: investigation / staged implementation. Phase 1 offscreen render
+benchmark and Phase 2A PYNQ compatibility work have been completed. The
+GUI renderer can now import and render offscreen on the PYNQ-Z2 without
+external shims. No HDMI output, Vivado change, bitstream rebuild, deploy,
+`AudioLabOverlay` bridge, GPIO bridge, or `base.bit` load has been done
+for this HDMI GUI integration. See `HDMI_GUI_PHASE1_RENDER_BENCH.md` and
+`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` for the measured results.
 
 ## 1. Current state
 
@@ -637,7 +639,47 @@ Phase 1 result (2026-05-14):
 Detailed numbers are recorded in
 `docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
 
-### Phase 2: AppState / AudioLabOverlay bridge without HDMI
+### Phase 2A: PYNQ offscreen compatibility without HDMI
+
+Make the GUI renderer run on the PYNQ-Z2 without process-local benchmark
+shims. This phase is Python compatibility only:
+
+- no HDMI output
+- no `run_pynq_hdmi()`
+- no `Overlay("base.bit")`
+- no `AudioLabOverlay()`
+- no Vivado or bitstream work
+- no GPIO bridge
+
+Phase 2A result (2026-05-14):
+
+- `GUI/pynq_multi_fx_gui.py` now has local compatibility helpers for
+  missing `dataclasses`, NumPy 1.16 RNG, and Pillow 5.1 `ImageDraw`
+  keyword support.
+- Raw import on the PYNQ-Z2 succeeds without shims.
+- `render_frame_fast(AppState())` succeeds offscreen with frame shape
+  `[720, 1280, 3]` and dtype `uint8`.
+- Import time was `451.188 ms`.
+- Cold render was `3764.514 ms`.
+- Same-state cached render averaged `0.171034 ms/frame` with p95
+  `0.201208 ms/frame`.
+- Change-driven redraw samples with animation time held static averaged
+  `1972.889 ms/frame` with p95 `2111.738 ms/frame`.
+- The generated PNG at `/tmp/hdmi_gui_phase2a/phase2a_render.png` was
+  visually inspected and showed the expected 1280x720 GUI.
+- Continuous animated HDMI output remains unrealistic; future live mode
+  should be static/change-driven.
+
+Detailed numbers are recorded in
+`docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`.
+
+Live HDMI mode should therefore freeze or heavily throttle the current
+animated visualizer / waveform / synthetic meters. The backend should
+render only on visible state changes, reuse the previous RGB frame while
+unchanged, and keep `state.t` fixed unless an explicit low-rate refresh
+is requested.
+
+### Phase 2B: AppState / AudioLabOverlay bridge without HDMI
 
 Build a Python bridge that translates `AppState` changes into
 `AudioLabOverlay` API calls. Verify without HDMI by:
@@ -756,9 +798,9 @@ Until a future implementation phase explicitly approves otherwise:
 > `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` または関連docsに追記して
 > ください。`git push` / `git pull` / `git fetch`は禁止です。
 
-### Phase 2 prompt: AppState / AudioLabOverlay bridge
+### Phase 2B prompt: AppState / AudioLabOverlay bridge
 
-> HDMI GUI統合の Phase 2 を実施してください。まだ HDMI 出力と Vivado変更は
+> HDMI GUI統合の Phase 2B を実施してください。まだ HDMI 出力と Vivado変更は
 > しないでください。`GUI/pynq_multi_fx_gui.py` の描画をなるべく温存し、
 > `AppState` の変更を `AudioLabOverlay` の既存API
 > (`set_noise_suppressor_settings`, `set_compressor_settings`,

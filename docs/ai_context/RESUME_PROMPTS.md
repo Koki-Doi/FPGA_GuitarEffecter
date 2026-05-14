@@ -69,14 +69,36 @@ asking it to re-discover the project from scratch.
 > `run_pynq_hdmi()`、Vivado変更、bitstream rebuild、deploy、
 > `git push` / `git pull` / `git fetch`は禁止です。
 
-### HDMI GUI Phase 2 prompt
+### HDMI GUI Phase 2A result — PYNQ-compatible offscreen renderer
 
-> HDMI GUI統合の Phase 2 を実施してください。HDMI出力と Vivado変更は
+> HDMI GUI Phase 2A は完了済みです。
+> `GUI/pynq_multi_fx_gui.py` は PYNQ-Z2 の Python 3.6.5 /
+> NumPy 1.16.0 / Pillow 5.1.0 で shim なしに import / offscreen render
+> できるよう、最小互換修正済みです。`dataclasses` fallback、
+> NumPy 1.16 用 RNG adapter、Pillow 5.1 の `ImageDraw` keyword 互換を
+> 追加しています。PYNQ 上の `/tmp/hdmi_gui_phase2a/` で raw import
+> 成功、`render_frame_fast(AppState())` 成功、frame shape は
+> `[720, 1280, 3]`、dtype は `uint8`。import は `451.188 ms`、
+> cold render は `3764.514 ms`、same-state cache hit は平均
+> `0.171034 ms/frame` / p95 `0.201208 ms`。change-driven redraw sample
+> は平均 `1972.889 ms/frame` / p95 `2111.738 ms` で、animated
+> 5/10/15/30fps HDMI は引き続き非現実的です。PNG は
+> `/tmp/hdmi_gui_phase2a/phase2a_render.png` に保存し、1280x720 RGBで
+> 見た目の大きな崩れなし。HDMI出力、`run_pynq_hdmi()`、
+> `Overlay("base.bit")`、`AudioLabOverlay()`、Vivado変更、bitstream
+> rebuild、deploy、GPIO bridge、DSP変更はしていません。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` を読んでください。
+
+### HDMI GUI Phase 2B prompt
+
+> HDMI GUI統合の Phase 2B を実施してください。HDMI出力と Vivado変更は
 > まだしないでください。`GUI/pynq_multi_fx_gui.py` の描画を温存し、
 > `AppState` 変更を `AudioLabOverlay` の既存APIへ反映する bridge を
 > 作ってください。GPIO write は毎frameではなく変更時または低rateにし、
 > chain drag reorder は現行DSP固定順序と矛盾しないようライブモードで
 > 無効化または表示専用にしてください。`base.bit` はロード禁止です。
+> GUI表示は animated loop ではなく static/change-driven 前提にし、
+> visualizer / waveform / meter は freeze または低頻度更新にしてください。
 
 ### HDMI GUI Phase 3 prompt
 

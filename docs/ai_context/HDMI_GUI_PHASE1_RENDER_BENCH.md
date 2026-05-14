@@ -238,3 +238,25 @@ These are Python compatibility changes only. They do not require Vivado
 or bitstream work, but they should be implemented intentionally and
 tested on both desktop and PYNQ.
 
+## Phase 2A follow-up
+
+Phase 2A implemented those Python compatibility fixes in
+`GUI/pynq_multi_fx_gui.py` and re-tested on the PYNQ-Z2 without
+process-local shims. Raw import and `render_frame_fast(AppState())`
+now succeed directly on Python 3.6.5 / NumPy 1.16.0 / Pillow 5.1.0.
+
+Key Phase 2A numbers:
+
+- import time: `451.188 ms`
+- frame shape / dtype: `[720, 1280, 3]` / `uint8`
+- cold render: `3764.514 ms`
+- same-state cached render: avg `0.171034 ms/frame`, p95
+  `0.201208 ms/frame`
+- change-driven redraw sample with animation time held static: avg
+  `1972.889 ms/frame`, p95 `2111.738 ms/frame`
+
+The conclusion remains that animated HDMI at 5/10/15/30fps is not
+realistic on the current PYNQ-Z2 CPU path. The future HDMI backend should
+be static/change-driven and should freeze or heavily throttle visualizer,
+waveform, and meter animation. Full Phase 2A details are in
+`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`.
