@@ -22,6 +22,52 @@ asking it to re-discover the project from scratch.
 > 新エフェクト追加では C++ → 移植の手順に戻らず、Python API / UI
 > 予約 → Clash ステージ追加で進めてください。
 
+## HDMI GUI integration — design only, not implemented
+
+> HDMI GUI統合は調査/設計段階で、まだ実装していません。
+> まず `AGENTS.md`、`docs/ai_context/PROJECT_CONTEXT.md`、
+> `CURRENT_STATE.md`、`DECISIONS.md` を読み、続けて
+> `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` を読んでください。
+> 現在の `audio_lab.bit` には HDMI video out 系 IP が無く、
+> `GUI/pynq_multi_fx_gui.py` の既存 `run_pynq_hdmi()` は
+> `Overlay("base.bit")` をロードするため、そのまま使うと
+> AudioLab DSP overlay が消えます。PYNQ は基本的に full bitstream を
+> 1つしかロードできないので、AudioLab DSP と HDMI GUI を同時に使うには
+> 将来的に `audio_lab.bit` 側へ HDMI framebuffer output path を統合する
+> 必要があります。次作業を始める前に `git status --short` と
+> `git diff --stat` を確認してください。`base.bit` をロードしないで
+> ください。`AudioLabOverlay()` の後に別 `Overlay()` をロードしないで
+> ください。`hw/Pynq-Z2/block_design.tcl`、Clash/DSP、Pythonコード、
+> bitstream、deploy はユーザの明示承認なしに変更しないでください。
+> `git push` / `git pull` / `git fetch` は禁止です。
+
+### HDMI GUI Phase 1 prompt
+
+> HDMI GUI統合の Phase 1 を実施してください。対象は
+> `GUI/pynq_multi_fx_gui.py` の `render_frame(AppState())` を PYNQ-Z2 上で
+> offscreen 実行し、1 frame生成時間、cached path、必要メモリを測定する
+> ことです。HDMI出力、Vivado変更、bitstream rebuild、deploy、
+> `base.bit` ロードはしないでください。結果を docs に記録してください。
+
+### HDMI GUI Phase 2 prompt
+
+> HDMI GUI統合の Phase 2 を実施してください。HDMI出力と Vivado変更は
+> まだしないでください。`GUI/pynq_multi_fx_gui.py` の描画を温存し、
+> `AppState` 変更を `AudioLabOverlay` の既存APIへ反映する bridge を
+> 作ってください。GPIO write は毎frameではなく変更時または低rateにし、
+> chain drag reorder は現行DSP固定順序と矛盾しないようライブモードで
+> 無効化または表示専用にしてください。`base.bit` はロード禁止です。
+
+### HDMI GUI Phase 3 prompt
+
+> HDMI GUI統合の Phase 3 として、`audio_lab.bit` に HDMI video out 系を
+> 統合する Vivado設計案だけを作成してください。まだ
+> `hw/Pynq-Z2/block_design.tcl` は変更しないでください。AXI VDMA または
+> PYNQ video subsystem 相当、HDMI output IP、video timing、clocking、
+> framebuffer path、1280x720 RGB、既存Audio DSPとの共存、AXI/DDR負荷、
+> resource/timingリスク、address map影響、rollback案を docs にまとめ、
+> 実装はユーザ承認を待ってください。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

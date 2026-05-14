@@ -1,7 +1,7 @@
 # Current state
 
-Last updated: 2026-05-09 (internal mono DSP pipeline deployed at
-192.168.1.9; DMA TLAST/backpressure check passed).
+Last updated: 2026-05-14 (HDMI GUI integration plan documented;
+implementation not started).
 
 ## PYNQ-Z2 network identity
 
@@ -25,6 +25,41 @@ workflow. After changing the reservation, reboot the PYNQ-Z2 and run:
 ssh xilinx@192.168.1.9 'hostname; ip -br addr; cat /sys/class/net/eth0/address'
 bash scripts/deploy_to_pynq.sh
 ```
+
+## HDMI GUI integration planning (docs only)
+
+HDMI GUI integration is currently in investigation / design state only.
+No Python code, Vivado block design, Clash / DSP source, bitstream,
+notebook, deploy script, or PYNQ runtime behavior has been changed for
+this work.
+
+What was found:
+
+- The current `audio_lab.bit` does not contain a HDMI video-output path.
+- `GUI/pynq_multi_fx_gui.py` is a good rendering candidate because
+  `render_frame(state)` returns a 1280x720 RGB `numpy.ndarray`, but its
+  existing `run_pynq_hdmi()` helper loads `Overlay("base.bit")`.
+- Loading `base.bit` would replace the AudioLab DSP overlay in the PL,
+  so that helper cannot be used for a live AudioLab HDMI GUI.
+- `HDMI/GUI.py` is a Windows Tkinter / PIL preview application and is
+  not a direct PYNQ HDMI backend.
+- `HDMI/FPGA/Vivado_project` is a passthrough experiment, not a complete
+  HDMI output design for the current AudioLab overlay.
+
+Current design direction:
+
+- Keep `GUI/pynq_multi_fx_gui.py`'s renderer as much as possible.
+- Do not use `base.bit` for the live GUI path.
+- Do not load another full overlay after `AudioLabOverlay()`.
+- A future live HDMI GUI needs one integrated `audio_lab.bit` containing
+  both the existing AudioLab DSP and a HDMI framebuffer output path.
+- GUI state should be bridged to `AudioLabOverlay` APIs at change time or
+  at a throttled control rate, not by writing GPIOs every video frame.
+- Chain reorder in the GUI must be disabled or display-only because the
+  current DSP pipeline order is fixed.
+
+See `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` for the full plan,
+risks, prohibited actions, and phase prompts.
 
 ## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
 
