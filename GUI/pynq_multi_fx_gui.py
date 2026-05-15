@@ -204,6 +204,165 @@ INK_LO           = (90, 100, 112)
 
 
 # =============================================================================
+# 800x480 THEME PALETTES
+# =============================================================================
+# Phase 5D introduces a Pip-Boy-inspired phosphor-green palette for the
+# 5-inch LCD compact-v2 layout. The look is "phosphor green monochrome
+# CRT" with an amber warning accent, dark olive background, and a soft
+# horizontal scanline overlay -- no Pip-Boy logo, fonts, icons, or
+# screen layouts are copied. The original cyan palette is preserved as
+# theme "cyan" for legacy callers.
+#
+# Each theme is a flat dict. The compact-v2 renderer reads colours only
+# from the palette dict; the 1280x720 / compact-v1 paths still read
+# from the module-level constants above and are not retuned in this
+# phase.
+
+def _make_theme(*, name,
+                led, led_soft, led_dim, led_deep, led_ghost,
+                scr_text, scr_text_dim, scr_text_dead, scr_grid,
+                ink_hi, ink_mid, ink_lo,
+                warn_amber, bypass_col,
+                bg_grad,
+                chassis_inner_fill,
+                panel_header_fill, panel_chain_fill, panel_fx_fill,
+                header_chip_fill, fx_chip_fill,
+                chain_on_fill, chain_off_fill,
+                chain_off_outline, chain_off_text, chain_badge_off,
+                bar_bg_fill, bar_outline,
+                scanline_rgba=None, scanline_step=0):
+    return {
+        "name": name,
+        "LED": led, "LED_SOFT": led_soft, "LED_DIM": led_dim,
+        "LED_DEEP": led_deep, "LED_GHOST": led_ghost,
+        "SCR_TEXT": scr_text, "SCR_TEXT_DIM": scr_text_dim,
+        "SCR_TEXT_DEAD": scr_text_dead, "SCR_GRID": scr_grid,
+        "INK_HI": ink_hi, "INK_MID": ink_mid, "INK_LO": ink_lo,
+        "WARN_AMBER": warn_amber, "BYPASS_COL": bypass_col,
+        "BG_GRAD": list(bg_grad),
+        "CHASSIS_INNER_FILL": chassis_inner_fill,
+        "PANEL_HEADER_FILL": panel_header_fill,
+        "PANEL_CHAIN_FILL": panel_chain_fill,
+        "PANEL_FX_FILL": panel_fx_fill,
+        "HEADER_CHIP_FILL": header_chip_fill,
+        "FX_CHIP_FILL": fx_chip_fill,
+        "CHAIN_ON_FILL": chain_on_fill,
+        "CHAIN_OFF_FILL": chain_off_fill,
+        "CHAIN_OFF_OUTLINE": chain_off_outline,
+        "CHAIN_OFF_TEXT": chain_off_text,
+        "CHAIN_BADGE_OFF": chain_badge_off,
+        "BAR_BG_FILL": bar_bg_fill,
+        "BAR_OUTLINE": bar_outline,
+        "SCANLINE_RGBA": scanline_rgba,
+        "SCANLINE_STEP": int(scanline_step),
+    }
+
+
+CYAN_THEME = _make_theme(
+    name="cyan",
+    led=LED, led_soft=LED_SOFT, led_dim=LED_DIM,
+    led_deep=LED_DEEP, led_ghost=LED_GHOST,
+    scr_text=SCR_TEXT, scr_text_dim=SCR_TEXT_DIM,
+    scr_text_dead=SCR_TEXT_DEAD, scr_grid=SCR_GRID,
+    ink_hi=INK_HI, ink_mid=INK_MID, ink_lo=INK_LO,
+    warn_amber=WARN_AMBER,
+    bypass_col=(220, 110, 75),
+    bg_grad=[(0.0, (24, 28, 36)), (0.55, (10, 13, 20)), (1.0, (4, 5, 9))],
+    chassis_inner_fill=(7, 10, 16, 220),
+    panel_header_fill=(10, 18, 26, 255),
+    panel_chain_fill=(8, 13, 20, 255),
+    panel_fx_fill=(8, 14, 22, 255),
+    header_chip_fill=(8, 14, 20, 255),
+    fx_chip_fill=(6, 10, 16, 255),
+    chain_on_fill=(8, 44, 56, 255),
+    chain_off_fill=(14, 18, 24, 255),
+    chain_off_outline=(95, 105, 117, 220),
+    chain_off_text=(135, 146, 158, 255),
+    chain_badge_off=(52, 60, 70),
+    bar_bg_fill=(4, 6, 10, 255),
+    bar_outline=(0, 0, 0, 255),
+    scanline_rgba=None,
+    scanline_step=0,
+)
+
+# Pip-Boy-inspired phosphor green CRT palette. Intentionally generic:
+# this is "phosphor green monochrome with amber accent and dark olive
+# chassis", not a recreation of any specific game's UI. No logos,
+# fonts, icons, or screen text are copied.
+PIPBOY_THEME = _make_theme(
+    name="pipboy-green",
+    led=(90, 220, 110),
+    led_soft=(175, 245, 185),
+    led_dim=(52, 140, 76),
+    led_deep=(28, 76, 38),
+    led_ghost=(12, 30, 16),
+    scr_text=(170, 240, 180),
+    scr_text_dim=(90, 160, 100),
+    scr_text_dead=(50, 90, 60),
+    scr_grid=(16, 50, 22),
+    ink_hi=(210, 245, 210),
+    ink_mid=(130, 195, 140),
+    ink_lo=(80, 130, 90),
+    warn_amber=(255, 178, 60),
+    bypass_col=(235, 165, 70),
+    bg_grad=[(0.0, (12, 28, 14)), (0.55, (6, 16, 8)), (1.0, (3, 8, 4))],
+    chassis_inner_fill=(5, 14, 7, 220),
+    panel_header_fill=(8, 22, 12, 255),
+    panel_chain_fill=(7, 18, 10, 255),
+    panel_fx_fill=(7, 20, 11, 255),
+    header_chip_fill=(6, 16, 9, 255),
+    fx_chip_fill=(4, 10, 6, 255),
+    chain_on_fill=(10, 46, 18, 255),
+    chain_off_fill=(10, 22, 14, 255),
+    chain_off_outline=(60, 100, 70, 220),
+    chain_off_text=(110, 160, 120, 255),
+    chain_badge_off=(38, 64, 44),
+    bar_bg_fill=(4, 10, 6, 255),
+    bar_outline=(0, 0, 0, 255),
+    scanline_rgba=(0, 100, 40, 32),
+    scanline_step=3,
+)
+
+THEMES = {
+    "cyan": CYAN_THEME,
+    "pipboy-green": PIPBOY_THEME,
+}
+DEFAULT_800X480_THEME = "pipboy-green"
+
+
+def resolve_theme(theme):
+    """Look up a palette by name. Falls back to the default theme."""
+    if isinstance(theme, dict):
+        return theme
+    if theme is None:
+        return THEMES[DEFAULT_800X480_THEME]
+    return THEMES.get(str(theme), THEMES[DEFAULT_800X480_THEME])
+
+
+def _apply_scanlines_inplace(arr, step, rgba):
+    """Blend a thin horizontal scanline colour onto every ``step``th row
+    of an ``HxWx3`` uint8 RGB array, in-place. Cheap O(H/step * W * 3)
+    numpy slice + multiply -- no PIL alpha_composite cost. Returns
+    ``arr`` for convenience; returns the input untouched when scanlines
+    are disabled (``step <= 0`` or ``rgba`` is ``None``).
+    """
+    if rgba is None or int(step) <= 0:
+        return arr
+    step = int(step)
+    sr, sg, sb, sa = (int(c) for c in rgba)
+    a = max(0, min(255, sa)) / 255.0
+    if a <= 0.0:
+        return arr
+    rows = arr[step - 1::step, :, :].astype(np.float32)
+    blend = np.array([sr, sg, sb], dtype=np.float32)
+    rows *= (1.0 - a)
+    rows += a * blend
+    np.clip(rows, 0, 255, out=rows)
+    arr[step - 1::step, :, :] = rows.astype(np.uint8)
+    return arr
+
+
+# =============================================================================
 # EFFECTS / CONSTANTS
 # =============================================================================
 # Audio-Lab-PYNQ chain order:
@@ -958,7 +1117,8 @@ def compact_v2_panel_boxes(width=800, height=480):
 def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                                      height: int = 480,
                                      cache: Optional[RenderCache] = None,
-                                     placement_label: Optional[str] = None
+                                     placement_label: Optional[str] = None,
+                                     theme=None
                                      ) -> np.ndarray:
     """Phase 4G compact-v2 800x480 layout for the 5-inch HDMI LCD.
 
@@ -984,14 +1144,28 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         cache.visualizer_fps = 0.0
         cache.meter_fps = 0.0
 
+    palette = resolve_theme(theme)
+    theme_name = str(palette.get("name", DEFAULT_800X480_THEME))
+
     label_key = "" if placement_label is None else str(placement_label)
     key = ("compact_v2_800x480", int(width), int(height), label_key,
+           theme_name,
            state_semistatic_signature(state),
            state_dynamic_signature(state, cache))
     cached = cache.frame_cache.get(key)
     if cached is not None:
         cache.stats["frame_hits"] += 1
         return cached
+
+    # Palette-resolved local aliases. These shadow the module-level
+    # constants for the body of this function so existing call sites
+    # like ``LED + (255,)`` keep working without renames.
+    LED       = palette["LED"]
+    LED_SOFT  = palette["LED_SOFT"]
+    LED_DIM   = palette["LED_DIM"]
+    SCR_TEXT_DIM = palette["SCR_TEXT_DIM"]
+    INK_HI    = palette["INK_HI"]
+    bypass_color = palette["BYPASS_COL"]
 
     global _ACTIVE_RENDER_CACHE
     prev = _ACTIVE_RENDER_CACHE
@@ -1000,26 +1174,24 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         Wv = int(width)
         Hv = int(height)
         img = Image.new("RGBA", (Wv, Hv), (0, 0, 0, 255))
-        gradient = vertical_gradient(Wv, Hv,
-                                     [(0.0, (24, 28, 36)),
-                                      (0.55, (10, 13, 20)),
-                                      (1.0, (4, 5, 9))])
+        gradient = vertical_gradient(Wv, Hv, palette["BG_GRAD"])
         img.paste(gradient, (0, 0))
         d = ImageDraw.Draw(img)
 
         boxes = compact_v2_panel_boxes(Wv, Hv)
         outer = boxes["outer"]
         rounded_rect(d, outer, 12,
-                     fill=(7, 10, 16, 220), outline=LED + (90,), width=2)
+                     fill=palette["CHASSIS_INNER_FILL"],
+                     outline=LED + (90,), width=2)
 
         active_n = sum(1 for v in state.effect_on if v)
         bypassed = active_n == 0
         status = "SAFE  BYPASS" if bypassed else "ACTIVE"
-        status_col = (220, 110, 75) if bypassed else LED
+        status_col = bypass_color if bypassed else LED
 
         header = boxes["header"]
         hx0, hy0, hx1, hy1 = header
-        rounded_rect(d, header, 10, fill=(10, 18, 26, 255),
+        rounded_rect(d, header, 10, fill=palette["PANEL_HEADER_FILL"],
                      outline=LED + (110,), width=2)
         draw_text(img, (hx0 + 18, hy0 + 10), "PRESET",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
@@ -1032,7 +1204,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         chip_w, chip_h = 158, 34
         chip = (hx1 - 16 - chip_w, hy0 + 12,
                 hx1 - 16, hy0 + 12 + chip_h)
-        rounded_rect(d, chip, 8, fill=(8, 14, 20, 255),
+        rounded_rect(d, chip, 8, fill=palette["HEADER_CHIP_FILL"],
                      outline=status_col + (255,), width=2)
         draw_text(img, ((chip[0] + chip[2]) // 2,
                         (chip[1] + chip[3]) // 2),
@@ -1045,7 +1217,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
 
         chain = boxes["chain"]
         cx0, cy0, cx1, cy1 = chain
-        rounded_rect(d, chain, 10, fill=(8, 13, 20, 255),
+        rounded_rect(d, chain, 10, fill=palette["PANEL_CHAIN_FILL"],
                      outline=LED + (90,), width=2)
         draw_text(img, (cx0 + 16, cy0 + 10), "SIGNAL  CHAIN",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
@@ -1067,13 +1239,13 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   if eff_idx < len(state.effect_on) else False)
             selected = eff_idx == state.selected_effect
             if on:
-                fill = (8, 44, 56, 255)
+                fill = palette["CHAIN_ON_FILL"]
                 outline = LED + ((255,) if selected else (170,))
                 text_col = LED + (255,)
             else:
-                fill = (14, 18, 24, 255)
-                outline = (95, 105, 117, 220)
-                text_col = (135, 146, 158, 255)
+                fill = palette["CHAIN_OFF_FILL"]
+                outline = palette["CHAIN_OFF_OUTLINE"]
+                text_col = palette["CHAIN_OFF_TEXT"]
             rounded_rect(d, (bx0, row_y0, bx1, row_y1), 8,
                          fill=fill, outline=outline,
                          width=3 if selected else 2)
@@ -1083,24 +1255,47 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                       letter_spacing=2)
             badge_y = row_y1 - 14
             d.rectangle((bx0 + 10, badge_y, bx1 - 10, badge_y + 6),
-                        fill=(LED if on else (52, 60, 70)) + (255,))
+                        fill=(LED if on else palette["CHAIN_BADGE_OFF"]) + (255,))
 
         fx_box = boxes["fx"]
         fx0, fy0, fx1, fy1 = fx_box
-        rounded_rect(d, fx_box, 10, fill=(8, 14, 22, 255),
+        rounded_rect(d, fx_box, 10, fill=palette["PANEL_FX_FILL"],
                      outline=LED + (90,), width=2)
         selected_name = EFFECTS[state.selected_effect]
+        selected_short = EFFECTS_SHORT[state.selected_effect]
         selected_on = bool(state.effect_on[state.selected_effect])
+        # DIST / AMP / CAB carry an additional named model index; the
+        # MODEL row sits between the title and the knob grid.
+        model_label = None
+        if selected_short == "DIST":
+            idx = max(0, min(len(DIST_MODELS) - 1,
+                             int(getattr(state, "dist_model_idx", 0) or 0)))
+            model_label = DIST_MODELS[idx]
+        elif selected_short == "AMP":
+            idx = max(0, min(len(AMP_MODELS) - 1,
+                             int(getattr(state, "amp_model_idx", 0) or 0)))
+            model_label = AMP_MODELS[idx][0]
+        elif selected_short == "CAB":
+            idx = max(0, min(len(CAB_MODELS) - 1,
+                             int(getattr(state, "cab_model_idx", 0) or 0)))
+            model_label = CAB_MODELS[idx]
+        title_size = 26 if model_label is not None else 30
+        title_y = fy0 + 24 if model_label is not None else fy0 + 28
         draw_text(img, (fx0 + 16, fy0 + 10), "SELECTED  FX",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
-        draw_smooth_text(img, (fx0 + 16, fy0 + 28),
-                         selected_name.upper(), size=30,
+        draw_smooth_text(img, (fx0 + 16, title_y),
+                         selected_name.upper(), size=title_size,
                          fill=LED + (255,))
+        if model_label is not None:
+            draw_text(img, (fx0 + 16, fy0 + 52),
+                      "MODEL  {}".format(model_label),
+                      fill=SCR_TEXT_DIM + (255,), scale=1,
+                      letter_spacing=2)
         s_chip_w, s_chip_h = 110, 30
         s_chip = (fx1 - 16 - s_chip_w, fy0 + 18,
                   fx1 - 16, fy0 + 18 + s_chip_h)
-        s_col = LED if selected_on else (220, 110, 75)
-        rounded_rect(d, s_chip, 6, fill=(6, 10, 16, 255),
+        s_col = LED if selected_on else bypass_color
+        rounded_rect(d, s_chip, 6, fill=palette["FX_CHIP_FILL"],
                      outline=s_col + (255,), width=2)
         draw_text(img, ((s_chip[0] + s_chip[2]) // 2,
                         (s_chip[1] + s_chip[3]) // 2),
@@ -1161,8 +1356,8 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             bar_x0 = cx0
             bar_x1 = cx1
             rounded_rect(d, (bar_x0, bar_y0, bar_x1, bar_y1), 4,
-                         fill=(4, 6, 10, 255), outline=(0, 0, 0, 255),
-                         width=1)
+                         fill=palette["BAR_BG_FILL"],
+                         outline=palette["BAR_OUTLINE"], width=1)
             v_clamp = max(0.0, min(1.0, value / 100.0))
             fill_w = int((bar_x1 - bar_x0 - 2) * v_clamp)
             if fill_w > 0:
@@ -1195,7 +1390,14 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   fill=LED_SOFT + (255,), scale=1, anchor="mb",
                   letter_spacing=2)
 
-        arr = np.asarray(img.convert("RGB"), dtype=np.uint8)
+        # Convert to a writable RGB ndarray *before* applying the
+        # Pip-Boy-style scanline overlay so the blend is a single
+        # vectorised numpy slice (much cheaper than PIL
+        # alpha_composite on a 480x800 RGBA buffer).
+        arr = np.array(img.convert("RGB"), dtype=np.uint8)
+        _apply_scanlines_inplace(arr,
+                                 palette.get("SCANLINE_STEP", 0),
+                                 palette.get("SCANLINE_RGBA"))
         cache.put_frame(key, arr)
         cache.stats["frame_misses"] += 1
         return arr
@@ -1208,7 +1410,8 @@ def render_frame_800x480(state: AppState, width: int = 800,
                          height: int = 480,
                          cache: Optional[RenderCache] = None,
                          variant: str = "compact-v1",
-                         placement_label: Optional[str] = None) -> np.ndarray:
+                         placement_label: Optional[str] = None,
+                         theme=None) -> np.ndarray:
     """Convenience wrapper for the 800x480 5-inch logical layout.
 
     ``variant`` selects which 800x480 design to render. The Phase 4E
@@ -1217,6 +1420,12 @@ def render_frame_800x480(state: AppState, width: int = 800,
     tightens margins, uses larger text, and draws TL/TR/BL/BR corner
     markers plus an optional ``placement_label`` overlay so a photo can
     confirm which pixels reach the panel.
+
+    ``theme`` selects an 800x480 colour palette. Valid names are listed
+    in ``THEMES``; the default is ``DEFAULT_800X480_THEME`` (Phase 5D
+    Pip-Boy-inspired phosphor green). Pass ``"cyan"`` for the legacy
+    look. compact-v1 ignores the theme and keeps the pre-Phase-5D
+    visuals so prior tooling stays bit-stable.
     """
     v = str(variant).lower()
     if v in ("compact-v1", "v1", "logical", ""):
@@ -1225,7 +1434,7 @@ def render_frame_800x480(state: AppState, width: int = 800,
     if v in ("compact-v2", "v2"):
         return _render_frame_800x480_compact_v2(
             state, width=width, height=height, cache=cache,
-            placement_label=placement_label)
+            placement_label=placement_label, theme=theme)
     raise ValueError(
         "unknown 800x480 variant {!r}; expected compact-v1 or compact-v2"
         .format(variant))
@@ -1234,12 +1443,18 @@ def render_frame_800x480(state: AppState, width: int = 800,
 def render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                                     height: int = 480,
                                     cache: Optional[RenderCache] = None,
-                                    placement_label: Optional[str] = None
+                                    placement_label: Optional[str] = None,
+                                    theme=None
                                     ) -> np.ndarray:
-    """Direct entry point for the Phase 4G compact-v2 800x480 layout."""
+    """Direct entry point for the Phase 4G compact-v2 800x480 layout.
+
+    ``theme`` selects an 800x480 colour palette. Defaults to
+    ``DEFAULT_800X480_THEME`` (Phase 5D Pip-Boy-inspired phosphor green);
+    pass ``"cyan"`` for the legacy look.
+    """
     return _render_frame_800x480_compact_v2(
         state, width=width, height=height, cache=cache,
-        placement_label=placement_label)
+        placement_label=placement_label, theme=theme)
 
 
 # =============================================================================

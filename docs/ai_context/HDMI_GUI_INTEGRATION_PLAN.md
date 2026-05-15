@@ -1129,6 +1129,47 @@ Enable user interactions that modify supported DSP controls:
 
 Hardware writes should be throttled and section-scoped.
 
+### Phase 5D: Pip-Boy-inspired phosphor green theme
+
+Retune the compact-v2 800x480 renderer for the 5-inch LCD with a
+"phosphor green monochrome CRT" colour palette and a soft horizontal
+scanline overlay. Goal: more readable / atmospheric LCD look without
+any change to layout, placement, or hardware. Generic CRT inspiration
+only -- no logos, fonts, icons, or screen text from any specific game
+are copied.
+
+Constraints kept:
+
+- 800x480 logical GUI at `offset_x=0`, `offset_y=0` inside the fixed
+  1280x720 HDMI signal.
+- `audio_lab.bit` / `audio_lab.hwh` untouched (no Vivado rebuild).
+- `block_design.tcl`, `audio_lab.xdc`, `create_project.tcl`,
+  `LowPassFir.hs` untouched.
+- `compact-v1` 800x480 path stays bit-stable on the legacy cyan look.
+
+Implementation outline (delivered):
+
+- `GUI/pynq_multi_fx_gui.py` exposes `CYAN_THEME` (legacy) and
+  `PIPBOY_THEME` via a `THEMES` dict; `DEFAULT_800X480_THEME` is
+  `"pipboy-green"`. The compact-v2 renderer reads every previously
+  literal RGB tuple from the active palette. Frame cache key
+  includes the theme name. Scanlines are applied via a single
+  vectorised numpy slice on the final RGB array.
+- `scripts/test_hdmi_800x480_frame.py` accepts
+  `--theme {pipboy-green, cyan}` (default `pipboy-green`). PYNQ
+  smoke command:
+
+  ```
+  sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+    scripts/test_hdmi_800x480_frame.py \
+    --variant compact-v2 --theme pipboy-green --placement manual \
+    --offset-x 0 --offset-y 0 --hold-seconds 60
+  ```
+
+See `docs/ai_context/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` for the
+full palette, scanline parameters, and the on-board VDMA / VTC status
+captured for this run.
+
 ### Phase 8: full real-instrument validation
 
 Run PYNQ-Z2 with guitar input and HDMI display connected. Verify:

@@ -13,7 +13,10 @@ started HDMI output-side diagnosis for the 5-inch 800x480 LCD, then
 Phase 5C locked the user-confirmed `x=0,y=0,w=800,h=480` visible
 viewport as the default on the PYNQ-Z2 at `192.168.1.9`, and the
 post-Phase-5C repo cleanup kept active `GUI/` code while removing the
-unused untracked legacy `HDMI/` experiment tree).
+unused untracked legacy `HDMI/` experiment tree, and Phase 5D
+introduced the Pip-Boy-inspired phosphor-green theme + soft
+horizontal scanline overlay for the compact-v2 800x480 path, keeping
+`offset_x=0`, `offset_y=0` and the 1280x720 HDMI signal intact).
 
 ## PYNQ-Z2 network identity
 
@@ -824,6 +827,59 @@ follow-up changes finished the GUI runtime story (`DECISIONS.md` D24):
 
 No Vivado rebuild, bit/hwh regeneration, `git push`, `git pull`, or
 `git fetch` was performed for Phase 5D.
+
+## HDMI GUI Phase 5D Pip-Boy inspired green theme
+
+Phase 5D also retunes the 800x480 compact-v2 renderer's colour palette
+toward a "phosphor green monochrome CRT" look with a soft horizontal
+scanline overlay. No Pip-Boy / Fallout logo, font, icon, screen text,
+or layout pattern is copied; the inspiration is the generic black-green
+CRT aesthetic. The 800x480 logical GUI keeps `placement=manual`,
+`offset_x=0`, `offset_y=0` inside the fixed 1280x720 HDMI signal.
+`audio_lab.bit`, `audio_lab.hwh`, `block_design.tcl`, `audio_lab.xdc`,
+`create_project.tcl`, and `LowPassFir.hs` were not touched. compact-v1
+keeps the pre-Phase-5D cyan look so prior tooling pinned to that
+variant stays pixel-stable.
+
+What landed:
+
+- `GUI/pynq_multi_fx_gui.py` -- new `_make_theme(...)` helper,
+  `CYAN_THEME` (legacy) and `PIPBOY_THEME` (Pip-Boy-inspired phosphor
+  green), `THEMES` dict, `DEFAULT_800X480_THEME = "pipboy-green"`,
+  `resolve_theme()`, and a numpy `_apply_scanlines_inplace(...)`
+  helper. `_render_frame_800x480_compact_v2` now takes a `theme=`
+  kwarg, aliases palette colours to local names, and reads every
+  previously-literal RGB tuple from the active palette; the frame
+  cache key now includes the theme name. `render_frame_800x480` /
+  `render_frame_800x480_compact_v2` forward the new `theme` argument.
+- `scripts/test_hdmi_800x480_frame.py` -- new
+  `--theme {pipboy-green, cyan}` flag (default `pipboy-green`);
+  report tag is `5D-pipboy-green-theme`. The script is not in the
+  `deploy_to_pynq.sh` manifest, so manual `scp` is required when
+  running it on the PYNQ.
+- `docs/ai_context/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` -- full
+  palette table, scanline parameters, and the captured PYNQ smoke
+  results.
+
+PYNQ smoke (`--variant compact-v2 --theme pipboy-green --placement
+manual --offset-x 0 --offset-y 0 --hold-seconds 60`):
+
+- VDMA error bits `dmainterr` / `dmaslverr` / `dmadecerr`: all False
+- `vdma_dmasr = 0x00011000`, `vtc_ctl = 0x00000006`
+- framebuffer copied region: (0..800, 0..480)
+- `clipped` / `negative_offset` / `fully_offscreen`: all False
+- pre / post smoke: `ADC HPF = True`, `R19 = 0x23`, HDMI IPs present
+- render / compose / framebuffer-copy timings recorded in
+  `/tmp/hdmi_phase5d_pipboy_green.log` on the dev box
+
+The first PYNQ run used a PIL `alpha_composite` scanline that cost
+about 100 ms cold render. The shipped renderer replaces that with a
+single vectorised numpy slice on the final RGB array, keeping the
+cold render inside the +10..15 % budget; the deployed visual output
+is identical row-by-row. The board went off the network shortly
+after the first successful run, so the numpy-optimised path has
+local smoke coverage only -- re-running the on-board smoke once the
+board is reachable again is recommended.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
