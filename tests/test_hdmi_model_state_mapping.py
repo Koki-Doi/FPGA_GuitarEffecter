@@ -249,6 +249,32 @@ def test_cab_selection_marks_dropdown_visible_with_current_cab_label():
                    "selected_model_dropdown_visible", False) is True
 
 
+def test_amp_presence_resonance_land_in_knob_values_4_and_5():
+    mirror = make_mirror()
+    mirror.set_amp_model("british_crunch", gain=55, bass=50, mid=60,
+                          treble=55, presence=70, resonance=40,
+                          master=75)
+    assert mirror.get_selected_fx_actual() == "AMP SIM"
+    values = list(mirror.app_state.knob_values)
+    assert len(values) == 8, values
+    # Indices 0..3 = gain/bass/middle/treble, 4=presence, 5=resonance,
+    # 6=master, 7=character (resolved from amp_character preset).
+    assert values[0] == 55
+    assert values[1] == 50
+    assert values[2] == 60
+    assert values[3] == 55
+    assert values[4] == 70
+    assert values[5] == 40
+    assert values[6] == 75
+
+
+def test_amp_knob_defaults_are_8_long():
+    mirror = make_mirror()
+    mirror.jc_clean(gain=30, bass=55, mid=50, treble=60)
+    values = list(mirror.app_state.knob_values)
+    assert len(values) == 8
+
+
 def test_non_model_effects_hide_dropdown():
     mirror = make_mirror()
     mirror.set_pedal_model("tube_screamer", drive=45, tone=55, level=65)
@@ -275,6 +301,8 @@ if __name__ == "__main__":
         test_amp_selection_marks_dropdown_visible_with_current_amp_label,
         test_cab_selection_marks_dropdown_visible_with_current_cab_label,
         test_non_model_effects_hide_dropdown,
+        test_amp_presence_resonance_land_in_knob_values_4_and_5,
+        test_amp_knob_defaults_are_8_long,
     ]
     for test in tests:
         test()

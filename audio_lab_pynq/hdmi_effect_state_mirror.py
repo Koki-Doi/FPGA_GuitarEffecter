@@ -23,23 +23,29 @@ GUI_EFFECTS = [
     "Amp Sim", "Cab IR", "EQ", "Reverb",
 ]
 
+# Phase 6E: 8-slot knob layout. AMP SIM uses all 8 indices
+# (GAIN / BASS / MIDDLE / TREBLE / PRESENCE / RESONANCE / MASTER /
+# CHARACTER); the other effects fill 3-6 slots and leave the rest as
+# the empty marker so the renderer can ignore them.
 GUI_EFFECT_KNOBS = {
-    "Noise Sup":  [("THRESH", 35), ("DECAY", 45), ("DAMP", 80),
-                   ("", 0), ("", 0), ("", 0)],
-    "Compressor": [("THRESH", 50), ("RATIO", 45), ("RESPONSE", 40),
-                   ("MAKEUP", 55), ("", 0), ("", 0)],
+    "Noise Sup":  [("THRESHOLD", 35), ("DECAY", 45), ("DAMP", 80),
+                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
+    "Compressor": [("THRESHOLD", 50), ("RATIO", 45), ("RESPONSE", 40),
+                   ("MAKEUP", 55), ("", 0), ("", 0), ("", 0), ("", 0)],
     "Overdrive":  [("DRIVE", 35), ("TONE", 60), ("LEVEL", 60),
-                   ("", 0), ("", 0), ("", 0)],
+                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
     "Distortion": [("DRIVE", 50), ("TONE", 55), ("LEVEL", 35),
-                   ("BIAS", 50), ("TIGHT", 60), ("MIX", 100)],
-    "Amp Sim":    [("GAIN", 45), ("BASS", 55), ("MID", 60),
-                   ("TREBLE", 50), ("MASTER", 70), ("CHAR", 60)],
+                   ("BIAS", 50), ("TIGHT", 60), ("MIX", 100),
+                   ("", 0), ("", 0)],
+    "Amp Sim":    [("GAIN", 45), ("BASS", 55), ("MIDDLE", 60),
+                   ("TREBLE", 50), ("PRESENCE", 45), ("RESONANCE", 35),
+                   ("MASTER", 70), ("CHARACTER", 60)],
     "Cab IR":     [("MIX", 100), ("LEVEL", 70), ("MODEL", 33),
-                   ("AIR", 35), ("", 0), ("", 0)],
+                   ("AIR", 35), ("", 0), ("", 0), ("", 0), ("", 0)],
     "EQ":         [("LOW", 50), ("MID", 55), ("HIGH", 55),
-                   ("", 0), ("", 0), ("", 0)],
+                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
     "Reverb":     [("DECAY", 30), ("TONE", 65), ("MIX", 25),
-                   ("", 0), ("", 0), ("", 0)],
+                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
 }
 
 PEDAL_MODELS = (
@@ -895,7 +901,7 @@ class HdmiEffectStateMirror(object):
         if idx is None:
             return None
         current = int(getattr(self.app_state, "selected_effect", idx) or idx)
-        if current != idx or len(getattr(self.app_state, "knob_values", []) or []) != 6:
+        if current != idx or len(getattr(self.app_state, "knob_values", []) or []) != 8:
             self.app_state.selected_effect = idx
             self.app_state.knob_values = _knob_defaults_for_effect_index(idx)
         else:
@@ -917,12 +923,12 @@ class HdmiEffectStateMirror(object):
         if idx is None:
             return
         values = list(getattr(self.app_state, "knob_values", []) or [])
-        if len(values) != 6:
+        if len(values) != 8:
             values = _knob_defaults_for_effect_index(idx)
         for knob_index, value in updates.items():
-            if 0 <= int(knob_index) < 6:
+            if 0 <= int(knob_index) < 8:
                 values[int(knob_index)] = _clamp_percent(value)
-        self.app_state.knob_values = values[:6]
+        self.app_state.knob_values = values[:8]
 
     def _apply_noise_suppressor_state(self, kwargs):
         updates = {}
@@ -1125,9 +1131,14 @@ class HdmiEffectStateMirror(object):
                     updates[idx] = values[key]
             self._set_knobs(selected_fx, updates)
         elif selected_fx == "AMP SIM":
+            # Phase 6E: PRESENCE and RESONANCE join the AMP knob set at
+            # indices 4 and 5; MASTER and CHARACTER move to 6 and 7. The
+            # DSP already wires them via axi_gpio_amp.ctrlC/ctrlD on the
+            # Amp.hs side -- no bit/hwh change.
             for key, idx in (("amp_input_gain", 0), ("amp_bass", 1),
                              ("amp_middle", 2), ("amp_treble", 3),
-                             ("amp_master", 4), ("amp_character", 5)):
+                             ("amp_presence", 4), ("amp_resonance", 5),
+                             ("amp_master", 6), ("amp_character", 7)):
                 if key in values:
                     updates[idx] = values[key]
             self._set_knobs(selected_fx, updates)

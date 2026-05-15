@@ -372,25 +372,76 @@ EFFECTS = ["Noise Sup", "Compressor", "Overdrive", "Distortion",
            "Amp Sim", "Cab IR", "EQ", "Reverb"]
 EFFECTS_SHORT = ["NS", "CMP", "OD", "DIST", "AMP", "CAB", "EQ", "RVB"]
 
-# Per-effect knob assignments (label, default 0..100). Up to 6 are shown
-# in the panel; longer sets (Amp=8, Distortion=6) are truncated to top 6.
+# Per-effect knob assignments (label, default 0..100). The fixed 8-slot
+# layout matches the AMP SIM expansion in Phase 6E (GAIN / BASS /
+# MIDDLE / TREBLE / PRESENCE / RESONANCE / MASTER / CHARACTER); shorter
+# effects pad the remaining slots with the empty marker ("", 0) so the
+# panel renderer can filter unused entries.
 EFFECT_KNOBS = {
-    "Noise Sup":  [("THRESH", 35),  ("DECAY", 45),   ("DAMP", 80),
-                   ("", 0),         ("", 0),         ("", 0)],
-    "Compressor": [("THRESH", 50),  ("RATIO", 45),   ("RESPONSE", 40),
-                   ("MAKEUP", 55),  ("", 0),         ("", 0)],
-    "Overdrive":  [("DRIVE", 35),   ("TONE", 60),    ("LEVEL", 60),
-                   ("", 0),         ("", 0),         ("", 0)],
-    "Distortion": [("DRIVE", 50),   ("TONE", 55),    ("LEVEL", 35),
-                   ("BIAS", 50),    ("TIGHT", 60),   ("MIX", 100)],
-    "Amp Sim":    [("GAIN", 45),    ("BASS", 55),    ("MID", 60),
-                   ("TREBLE", 50),  ("MASTER", 70),  ("CHAR", 60)],
-    "Cab IR":     [("MIX", 100),    ("LEVEL", 70),   ("MODEL", 33),
-                   ("AIR", 35),     ("", 0),         ("", 0)],
-    "EQ":         [("LOW", 50),     ("MID", 55),     ("HIGH", 55),
-                   ("", 0),         ("", 0),         ("", 0)],
-    "Reverb":     [("DECAY", 30),   ("TONE", 65),    ("MIX", 25),
-                   ("", 0),         ("", 0),         ("", 0)],
+    "Noise Sup":  [("THRESHOLD", 35), ("DECAY", 45),   ("DAMP", 80),
+                   ("", 0),           ("", 0),         ("", 0),
+                   ("", 0),           ("", 0)],
+    "Compressor": [("THRESHOLD", 50), ("RATIO", 45),   ("RESPONSE", 40),
+                   ("MAKEUP", 55),    ("", 0),         ("", 0),
+                   ("", 0),           ("", 0)],
+    "Overdrive":  [("DRIVE", 35),     ("TONE", 60),    ("LEVEL", 60),
+                   ("", 0),           ("", 0),         ("", 0),
+                   ("", 0),           ("", 0)],
+    "Distortion": [("DRIVE", 50),     ("TONE", 55),    ("LEVEL", 35),
+                   ("BIAS", 50),      ("TIGHT", 60),   ("MIX", 100),
+                   ("", 0),           ("", 0)],
+    "Amp Sim":    [("GAIN", 45),      ("BASS", 55),    ("MIDDLE", 60),
+                   ("TREBLE", 50),    ("PRESENCE", 45),("RESONANCE", 35),
+                   ("MASTER", 70),    ("CHARACTER", 60)],
+    "Cab IR":     [("MIX", 100),      ("LEVEL", 70),   ("MODEL", 33),
+                   ("AIR", 35),       ("", 0),         ("", 0),
+                   ("", 0),           ("", 0)],
+    "EQ":         [("LOW", 50),       ("MID", 55),     ("HIGH", 55),
+                   ("", 0),           ("", 0),         ("", 0),
+                   ("", 0),           ("", 0)],
+    "Reverb":     [("DECAY", 30),     ("TONE", 65),    ("MIX", 25),
+                   ("", 0),           ("", 0),         ("", 0),
+                   ("", 0),           ("", 0)],
+}
+
+# Phase 6E: SELECTED-FX-driven display layout for the per-effect knob
+# grid that replaced the PEDAL / AMP / CAB slot rows. Each entry is
+# ``(label, knob_values_index)``; the mirror writes parameter values
+# into ``knob_values[index]`` so the grid stays decoupled from the
+# selected_effect's EFFECT_KNOBS order. Display order is what the user
+# requested in Phase 6E (Noise Suppressor THRESHOLD/DECAY/DAMP,
+# Compressor THRESHOLD/RATIO/RESPONSE/MAKEUP, Overdrive TONE/LEVEL/
+# DRIVE, Distortion Pedalboard TONE/LEVEL/DRIVE/BIAS/TIGHT/MIX,
+# RAT FILTER/LEVEL/DRIVE/MIX, Amp Simulator GAIN/BASS/MIDDLE/TREBLE/
+# PRESENCE/RESONANCE/MASTER/CHARACTER, Cab IR MIX/LEVEL/MODEL/AIR,
+# EQ LOW/MID/HIGH, Reverb DECAY/TONE/MIX). PEDAL sub-models (CLEAN
+# BOOST etc.) share the Distortion Pedalboard layout.
+_DISTORTION_PARAM_LAYOUT = [
+    ("TONE", 1), ("LEVEL", 2), ("DRIVE", 0),
+    ("BIAS", 3), ("TIGHT", 4), ("MIX", 5),
+]
+SELECTED_FX_PARAM_LAYOUT = {
+    "NOISE SUPPRESSOR": [("THRESHOLD", 0), ("DECAY", 1), ("DAMP", 2)],
+    "COMPRESSOR": [("THRESHOLD", 0), ("RATIO", 1),
+                   ("RESPONSE", 2), ("MAKEUP", 3)],
+    "OVERDRIVE": [("TONE", 1), ("LEVEL", 2), ("DRIVE", 0)],
+    "DISTORTION": list(_DISTORTION_PARAM_LAYOUT),
+    "CLEAN BOOST": list(_DISTORTION_PARAM_LAYOUT),
+    "TUBE SCREAMER": list(_DISTORTION_PARAM_LAYOUT),
+    "DS-1": list(_DISTORTION_PARAM_LAYOUT),
+    "DS 1": list(_DISTORTION_PARAM_LAYOUT),
+    "BIG MUFF": list(_DISTORTION_PARAM_LAYOUT),
+    "FUZZ FACE": list(_DISTORTION_PARAM_LAYOUT),
+    "METAL": list(_DISTORTION_PARAM_LAYOUT),
+    "RAT": [("FILTER", 1), ("LEVEL", 2), ("DRIVE", 0), ("MIX", 3)],
+    "AMP SIM": [("GAIN", 0), ("BASS", 1), ("MIDDLE", 2), ("TREBLE", 3),
+                ("PRESENCE", 4), ("RESONANCE", 5),
+                ("MASTER", 6), ("CHARACTER", 7)],
+    "CAB": [("MIX", 0), ("LEVEL", 1), ("MODEL", 2), ("AIR", 3)],
+    "EQ": [("LOW", 0), ("MID", 1), ("HIGH", 2)],
+    "REVERB": [("DECAY", 0), ("TONE", 1), ("MIX", 2)],
+    "SAFE BYPASS": [],
+    "PRESET": [],
 }
 
 # Distortion Pedalboard model names (pedal-mask bit -> name).
@@ -441,8 +492,11 @@ class AppState:
     selected_effect: int  = 4   # Amp Sim
     selected_fx: Optional[str] = None  # Display override for notebook-driven mirrors
 
-    # parameter knobs (6 per effect, 0..100)
-    knob_values: List[float] = field(default_factory=lambda: [45, 55, 60, 50, 70, 60])
+    # parameter knobs (8 slots; AMP SIM uses all 8 for GAIN/BASS/MIDDLE/
+    # TREBLE/PRESENCE/RESONANCE/MASTER/CHARACTER, other effects fill only
+    # the first 3-6 slots with the rest left at 0)
+    knob_values: List[float] = field(default_factory=lambda:
+        [45, 55, 60, 50, 45, 35, 70, 60])
     selected_knob: int       = 0
 
     # model-pick indices for the three model-driven effects
@@ -646,6 +700,19 @@ def _selected_model_dropdown_label(state) -> str:
     if category == "CAB":
         return _cab_label(state)
     return ""
+
+
+def selected_fx_param_layout(state) -> list:
+    """Phase 6E: per-SELECTED-FX parameter list for the knob grid.
+
+    Returns a list of ``(label, knob_values_index)`` pairs ordered for
+    display. Mirrors :data:`SELECTED_FX_PARAM_LAYOUT` but resolves the
+    SELECTED FX override on ``state`` so callers do not need to do the
+    lookup themselves. Returns ``[]`` for SAFE BYPASS / PRESET / any
+    SELECTED FX that has no parameter knobs.
+    """
+    label = _normalize_selected_fx_label(_selected_fx_label(state))
+    return list(SELECTED_FX_PARAM_LAYOUT.get(label, []))
 
 
 def _draw_dropdown_arrow(draw, xy, color):
@@ -1605,24 +1672,93 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                           text, fill=text_col, scale=1, anchor="mm",
                           letter_spacing=1)
 
-        draw_text(img, (fx0 + 16, fy0 + 72), "PEDAL  MODEL",
-                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
-        _slot_row(DIST_SLOT_LABELS, pedal_idx, fx0 + 16, fy0 + 92,
-                  fx1 - 16, 24, gap=5)
-
-        bottom_y = fy0 + 126
-        draw_text(img, (fx0 + 16, bottom_y), "AMP  MODEL",
-                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
-        _slot_row(AMP_SLOT_LABELS, amp_idx, fx0 + 16, bottom_y + 20,
-                  fx0 + 350, 24, gap=6)
-
-        draw_text(img, (fx0 + 372, bottom_y), "CAB",
-                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
-        _slot_row(CAB_SLOT_LABELS, cab_idx, fx0 + 372, bottom_y + 20,
-                  fx0 + 526, 24, gap=5)
-
+        # Phase 6E: replace the PEDAL MODEL / AMP MODEL / CAB slot rows
+        # with a per-SELECTED-FX parameter knob grid (label + value bar +
+        # numeric percent). Layout adapts to the parameter count:
+        #   3 knobs -> 3x1
+        #   4 knobs -> 2x2
+        #   6 knobs -> 3x2
+        #   8 knobs -> 4x2 (AMP SIM)
+        # The IN / OUT meters keep their original anchor on the right.
+        # Phase 6E: the ACTIVE MODELS column's CAB row ends near fy0+78,
+        # so the knob grid starts at fy0+82 to leave breathing room and
+        # not paint over the CAB live label.
+        knob_y0 = fy0 + 82
+        knob_y1 = fy1 - 14
         meter_x0 = fx0 + 548
         meter_x1 = fx1 - 18
+        knob_x0 = fx0 + 16
+        knob_x1 = meter_x0 - 12
+
+        params = selected_fx_param_layout(state)
+        values = list(getattr(state, "knob_values", []) or [])
+        # Pad short value lists so we can index up to 8 without IndexError.
+        while len(values) < 8:
+            values.append(0)
+        count = len(params)
+        if count == 0:
+            cols, rows = 0, 0
+        elif count <= 3:
+            cols, rows = count, 1
+        elif count == 4:
+            cols, rows = 2, 2
+        elif count <= 6:
+            cols, rows = 3, 2
+        else:
+            cols, rows = 4, 2
+
+        if count > 0:
+            grid_gap_x = 8
+            grid_gap_y = 6
+            cell_w = int((knob_x1 - knob_x0 - grid_gap_x * (cols - 1))
+                         / cols)
+            cell_h = int((knob_y1 - knob_y0 - grid_gap_y * (rows - 1))
+                         / rows)
+            for slot, (param_label, knob_idx) in enumerate(params):
+                col = slot % cols
+                row = slot // cols
+                bx0 = knob_x0 + col * (cell_w + grid_gap_x)
+                by0 = knob_y0 + row * (cell_h + grid_gap_y)
+                bx1 = bx0 + cell_w
+                by1 = by0 + cell_h
+                rounded_rect(d, (bx0, by0, bx1, by1), 6,
+                             fill=palette["FX_CHIP_FILL"],
+                             outline=LED + (110,), width=1)
+                # Label on the top row of the cell.
+                draw_text(img, (bx0 + 8, by0 + 6), param_label,
+                          fill=SCR_TEXT_DIM + (255,), scale=1,
+                          letter_spacing=2)
+                # Numeric percent on the right of the same row.
+                try:
+                    raw_value = float(values[knob_idx])
+                except (TypeError, ValueError, IndexError):
+                    raw_value = 0.0
+                percent = max(0.0, min(150.0, raw_value))
+                draw_text(img, (bx1 - 8, by0 + 6),
+                          "{:d}".format(int(round(percent))),
+                          fill=LED + (255,), scale=1, anchor="rt",
+                          letter_spacing=1)
+                # Value bar across the bottom half of the cell.
+                bar_x0 = bx0 + 8
+                bar_x1 = bx1 - 8
+                bar_y0 = by1 - 14
+                bar_y1 = by1 - 6
+                rounded_rect(d, (bar_x0, bar_y0, bar_x1, bar_y1), 3,
+                             fill=palette["BAR_BG_FILL"],
+                             outline=palette["BAR_OUTLINE"], width=1)
+                bar_pct = max(0.0, min(1.0, percent / 100.0))
+                fill_w = int((bar_x1 - bar_x0 - 2) * bar_pct)
+                if fill_w > 0:
+                    d.rectangle((bar_x0 + 1, bar_y0 + 1,
+                                 bar_x0 + fill_w, bar_y1 - 1),
+                                fill=LED_DIM + (255,))
+        else:
+            draw_text(img, (knob_x0, knob_y0 + 8),
+                      "NO  PARAMETERS",
+                      fill=SCR_TEXT_DIM + (255,), scale=1,
+                      letter_spacing=3)
+
+        bottom_y = fy0 + 126
         draw_text(img, (meter_x0, bottom_y), "LEVELS",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
         def _mini_meter(label, y, value):
@@ -1768,14 +1904,18 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
         # sanity: list lengths
         if len(state.effect_on) != len(EFFECTS):
             state.effect_on = [True] * len(EFFECTS)
-        if len(state.knob_values) != 6:
-            state.knob_values = [k[1] for k in
-                                 EFFECT_KNOBS[EFFECTS[state.selected_effect]]]
+        if len(state.knob_values) != 8:
+            defaults = [k[1] for k in
+                        EFFECT_KNOBS[EFFECTS[state.selected_effect]]]
+            # pad short legacy snapshots to the Phase 6E 8-slot layout
+            while len(defaults) < 8:
+                defaults.append(0)
+            state.knob_values = defaults[:8]
         if len(state.chain) != len(EFFECTS):
             state.chain = list(range(len(EFFECTS)))
         state.selected_effect = max(0, min(len(EFFECTS) - 1,
                                            state.selected_effect))
-        state.selected_knob = max(0, min(5, state.selected_knob))
+        state.selected_knob = max(0, min(7, state.selected_knob))
     except Exception as exc:
         print(f"[state] load failed ({exc}); using defaults")
         state = AppState()

@@ -149,6 +149,37 @@ def test_renderer_compact_v2_non_model_fx_has_no_extra_chip():
         assert frame.shape == (480, 800, 3), fx
 
 
+def test_selected_fx_param_layout_returns_expected_labels():
+    """Phase 6E: per-SELECTED-FX knob label list matches user spec."""
+    from pynq_multi_fx_gui import AppState, selected_fx_param_layout
+
+    def labels(fx):
+        state = AppState()
+        state.selected_fx = fx
+        return [label for label, _idx in selected_fx_param_layout(state)]
+
+    assert labels("NOISE SUPPRESSOR") == ["THRESHOLD", "DECAY", "DAMP"]
+    assert labels("COMPRESSOR") == ["THRESHOLD", "RATIO", "RESPONSE",
+                                    "MAKEUP"]
+    assert labels("OVERDRIVE") == ["TONE", "LEVEL", "DRIVE"]
+    assert labels("DISTORTION") == ["TONE", "LEVEL", "DRIVE", "BIAS",
+                                    "TIGHT", "MIX"]
+    assert labels("RAT") == ["FILTER", "LEVEL", "DRIVE", "MIX"]
+    assert labels("AMP SIM") == ["GAIN", "BASS", "MIDDLE", "TREBLE",
+                                 "PRESENCE", "RESONANCE", "MASTER",
+                                 "CHARACTER"]
+    assert labels("CAB") == ["MIX", "LEVEL", "MODEL", "AIR"]
+    assert labels("EQ") == ["LOW", "MID", "HIGH"]
+    assert labels("REVERB") == ["DECAY", "TONE", "MIX"]
+    assert labels("SAFE BYPASS") == []
+    assert labels("PRESET") == []
+    # PEDAL sub-models reuse the Distortion Pedalboard knob layout.
+    for fx in ("CLEAN BOOST", "TUBE SCREAMER", "DS-1", "BIG MUFF",
+               "FUZZ FACE", "METAL"):
+        assert labels(fx) == ["TONE", "LEVEL", "DRIVE", "BIAS",
+                              "TIGHT", "MIX"], fx
+
+
 def test_renderer_compact_v2_pedal_fx_has_dropdown_marker():
     """Phase 6D: PEDAL / AMP / CAB selection draws the dropdown marker
     on the matching ACTIVE MODELS row.
@@ -182,6 +213,7 @@ if __name__ == "__main__":
         test_renderer_compact_v2_paints_across_full_x_range,
         test_renderer_compact_v2_dropdown_chip_does_not_overflow,
         test_renderer_compact_v2_non_model_fx_has_no_extra_chip,
+        test_selected_fx_param_layout_returns_expected_labels,
         test_renderer_compact_v2_pedal_fx_has_dropdown_marker,
     ]
     for fn in tests:

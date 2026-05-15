@@ -1092,6 +1092,75 @@ bit/hwh / Clash / GPIO change, no remote git operation. Remote
 Phase 6D full notes are recorded in
 `docs/ai_context/HDMI_GUI_PHASE6D_RESTORE_UI_AND_CONDITIONAL_DROPDOWN.md`.
 
+## HDMI GUI Phase 6E per-effect knob grid + AMP presence/resonance
+
+Phase 6D restored the compact-v2 layout but kept the
+`PEDAL MODEL / AMP MODEL / CAB` slot rows with abbreviated model
+names (`CLEAN / TS / RAT / DS1 / MUFF / FUZZ / METAL` etc.). The
+user asked for **per-effect parameter labels** instead. Phase 6E
+replaces the slot rows with a per-SELECTED-FX knob grid:
+
+- Noise Suppressor: THRESHOLD / DECAY / DAMP (3x1)
+- Compressor: THRESHOLD / RATIO / RESPONSE / MAKEUP (2x2)
+- Overdrive: TONE / LEVEL / DRIVE (3x1)
+- Distortion Pedalboard: TONE / LEVEL / DRIVE / BIAS / TIGHT / MIX (3x2)
+- RAT Distortion: FILTER / LEVEL / DRIVE / MIX (2x2)
+- Amp Simulator: GAIN / BASS / MIDDLE / TREBLE / PRESENCE / RESONANCE
+  / MASTER / CHARACTER (4x2)
+- Cab IR: MIX / LEVEL / MODEL / AIR (2x2)
+- EQ: LOW / MID / HIGH (3x1)
+- Reverb: DECAY / TONE / MIX (3x1)
+- SAFE BYPASS / PRESET: `NO  PARAMETERS` notice, no knob cells.
+
+Each knob cell shows the label (top-left), numeric percent
+(top-right), and a horizontal value bar (bottom). The ACTIVE MODELS
+column (with the Phase 6D conditional dropdown marker), the
+ON/BYPASS chip, and IN/OUT LEVELS meters stay in place.
+
+PRESENCE / RESONANCE were already wired in the DSP via
+`axi_gpio_amp.ctrlC` / `axi_gpio_amp.ctrlD` (`fAmp` in
+`hw/ip/clash/src/AudioLab/Effects/Amp.hs`), and exposed through
+`AudioLabOverlay.set_guitar_effects(amp_presence=..., amp_resonance=...)`.
+Phase 6E reorganises `AppState.knob_values` from length 6 to 8 so
+the existing DSP capability surfaces in the AMP knob grid: gain=0,
+bass=1, middle=2, treble=3, **presence=4**, **resonance=5**,
+master=6, character=7. `load_state_json` pads short legacy
+snapshots from 6 to 8 on load. No bit/hwh / Clash / Vivado work
+needed; the remote PYNQ `audio_lab.bit` / `audio_lab.hwh` md5 still
+match the local copies.
+
+`HdmiEffectStateMirror._set_knobs` and
+`_set_effect_index_for_selected_fx` were widened to length 8, and
+the `_apply_guitar_effects_state("AMP SIM", ...)` mapping now
+includes `amp_presence -> idx 4`, `amp_resonance -> idx 5`,
+`amp_master -> idx 6`, `amp_character -> idx 7`. The existing
+`set_amp_model(...)` / `jc_clean / clean_combo / british_crunch /
+high_gain_stack(...)` already accepted `presence=` / `resonance=`
+kwargs and forwarded them to the overlay, so they hit the DSP
+directly.
+
+Renderer additions: `SELECTED_FX_PARAM_LAYOUT` dict and
+`selected_fx_param_layout(state)` helper. Tests covering the new
+layout + the AMP idx 4/5 mapping live in
+`tests/test_hdmi_origin_mapping.py` and
+`tests/test_hdmi_model_state_mapping.py`. `notebooks/HdmiRealtime
+PedalboardOneCell.ipynb` adds `presence` and `resonance` IntSliders
+to Section D and wires them through both Apply Amp and Apply
+Selected Model paths.
+
+Workstation tests: 51 PASS across selected-fx-state (8),
+model-state-mapping (13), origin-mapping (7), resource-monitor
+(15), gui-bridge (exit 0). PYNQ-Z2 (192.168.1.9):
+`scripts/test_hdmi_realtime_pedalboard_controls.py` 16/16 PASS
+including the three amp steps with explicit presence/resonance
+kwargs; `scripts/test_hdmi_model_selection_ui.py` 16/16 PASS. VDMA
+DMASR `0x00011000`, VTC ctl `0x00000006`, framebuffer
+`(0,0,800,480)`, ADC HPF true, R19 0x23. No git push / pull /
+fetch. No Vivado / Clash / bit / hwh / GPIO change.
+
+Phase 6E full notes are recorded in
+`docs/ai_context/HDMI_GUI_PHASE6E_PER_EFFECT_KNOB_GRID.md`.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the

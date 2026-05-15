@@ -139,6 +139,18 @@ and `DECISIONS.md` D24):
   the gating decision explicit for tests and the mirror.
   Notebook ipywidgets remain the only control surface; HDMI stays
   display-only. No bit/hwh change.
+- Phase 6E replaces the bottom PEDAL MODEL / AMP MODEL / CAB slot
+  rows with a per-SELECTED-FX parameter knob grid. Each cell shows
+  the label, numeric percent, and a horizontal value bar; the grid
+  adapts to the parameter count (3 -> 3x1, 4 -> 2x2, 6 -> 3x2,
+  8 -> 4x2 for AMP). PRESENCE and RESONANCE join the AMP knob set
+  at indices 4 and 5 (master / character move to 6 / 7);
+  `AppState.knob_values` grows from 6 to 8 slots. PRESENCE /
+  RESONANCE were already in the DSP (`fAmp.ctrlC` / `fAmp.ctrlD`
+  in `Amp.hs`) and exposed via
+  `AudioLabOverlay.set_guitar_effects(amp_presence=...,
+  amp_resonance=...)`, so Phase 6E only touches AppState / mirror /
+  GUI / notebook / tests. No bit/hwh change.
 
 ### AudioLabOverlay and audio_lab.bit
 

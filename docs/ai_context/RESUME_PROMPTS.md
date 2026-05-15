@@ -138,6 +138,39 @@ asking it to re-discover the project from scratch.
 > Clash 変更なし、`Overlay("base.bit")` / `run_pynq_hdmi()` /
 > second overlay 禁止、`git push` / `git pull` / `git fetch` 禁止。
 
+### HDMI GUI Phase 6E result — Per-effect knob grid + AMP presence/resonance
+
+> HDMI GUI Phase 6E は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6E_PER_EFFECT_KNOB_GRID.md` を読んで
+> から再開してください。Phase 6D の compact-v2 で残っていた
+> `PEDAL MODEL / AMP MODEL / CAB` の slot 行 (CLEAN/TS/RAT/DS1/MUFF/
+> FUZZ/METAL 等) を撤去し、SELECTED FX に連動した per-effect ノブ
+> グリッドを描画します。レイアウト: 3 ノブ→3x1, 4→2x2, 6→3x2,
+> 8→4x2 (AMP)。各セルに label / numeric percent / 値バー を表示。
+> SAFE BYPASS と PRESET は `NO PARAMETERS` 注記のみ。ACTIVE MODELS
+> 列 + 条件付き dropdown マーカー + ON/BYPASS chip + IN/OUT meters
+> は Phase 6D のまま。
+> Amp Simulator は 8 ノブに拡張 (GAIN/BASS/MIDDLE/TREBLE/PRESENCE/
+> RESONANCE/MASTER/CHARACTER)。PRESENCE / RESONANCE は既存 DSP
+> (`Amp.hs` の `fAmp.ctrlC` / `ctrlD`) と `AudioLabOverlay.
+> set_guitar_effects(amp_presence=..., amp_resonance=...)` に既に
+> 通っていたため、Clash / Vivado / bit / hwh 変更は不要でした。
+> `AppState.knob_values` は length 6 -> 8。AMP の index map は
+> gain=0 / bass=1 / middle=2 / treble=3 / presence=4 / resonance=5
+> / master=6 / character=7。
+> 新規 helper: `selected_fx_param_layout(state)`,
+> `SELECTED_FX_PARAM_LAYOUT`. `notebooks/HdmiRealtimePedalboard
+> OneCell.ipynb` Section D に presence / resonance IntSlider を
+> 追加し、`Apply Amp` と `Apply Selected Model` 両方で渡します。
+> ローカル unit tests 51 PASS、PYNQ-Z2 (`192.168.1.9`) で
+> `scripts/test_hdmi_realtime_pedalboard_controls.py` 16/16 PASS
+> (presence/resonance kwargs 含む)、`scripts/test_hdmi_model_
+> selection_ui.py` 16/16 PASS。DMASR=`0x00011000`, vtc_ctl=
+> `0x00000006`, 800x480 (0,0,800,480)、ADC HPF true、R19=0x23。
+> `Overlay("base.bit")` / `run_pynq_hdmi()` / second overlay 禁止、
+> Vivado rebuild / Clash 変更 / bit / hwh 変更 禁止、`git push` /
+> `git pull` / `git fetch` 禁止。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は
