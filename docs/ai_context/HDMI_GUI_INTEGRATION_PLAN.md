@@ -14,7 +14,8 @@ positive-offset direction back to the Phase 4G compact-v2 baseline,
 Phase 4J began a horizontal-only negative-offset sweep but was left
 uncommitted, Phase 5A switched diagnosis to the HDMI output side, and
 Phase 5C locks the user-confirmed top-left 800x480 visible viewport as
-the default.
+the default. The post-Phase-5C repo cleanup kept active `GUI/` code and
+removed the unused untracked legacy `HDMI/` experiment tree after backup.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -91,8 +92,9 @@ from framebuffer `0x16900000` with HSIZE/STRIDE `3840`, VSIZE `720`,
 `VDMACR=0x00010001`, and no VDMA error bits. The 60-second hold showed
 that HDMI scanout itself does not busy-loop on the PS: process CPU
 averaged `0.352%` and maxed at `0.418%` while VDMA held the frame.
-Physical monitor output and color order still require user visual
-confirmation.
+Phase 5A/5C later confirmed physical output on the 5-inch LCD and
+selected the framebuffer's top-left 800x480 region as the practical
+visible viewport for that panel.
 
 User visual inspection later confirmed that the small HDMI LCD does show
 the GUI but crops the native frame. Phase 4D added Python-only fit modes
@@ -105,9 +107,9 @@ safe area before the existing framebuffer copy:
 - `fit-85`: 1088x612, offset `(96,54)`.
 - `fit-80`: 1024x576, offset `(128,72)`.
 
-The recommended first small-LCD candidate is `fit-90`; the final default
-should be chosen from user visual confirmation of the test pattern and
-GUI frame.
+The first small-LCD fit candidate was `fit-90`, but this path was later
+superseded by the 800x480 logical GUI and Phase 5C's top-left
+`x=0,y=0,w=800,h=480` visible viewport.
 
 Phase 4E then added a real 800x480 logical GUI for the likely 5-inch
 LCD instead of only shrinking the full 1280x720 layout. The HDMI signal
@@ -241,41 +243,45 @@ is structured as a renderer plus optional desktop preview helpers:
 The renderer can be preserved. The overlay-loading and HDMI backend must
 be replaced before it can be used with the live audio DSP.
 
-### HDMI/GUI.py
+### Removed legacy HDMI/GUI.py
 
-`HDMI/GUI.py` is a separate Tkinter application. It uses:
+The former untracked `HDMI/GUI.py` was a separate Tkinter application.
+Before removal, it was inspected and found to use:
 
 - `tkinter.Canvas`
 - `PIL.ImageTk`
 - Windows monitor enumeration through `ctypes.windll.user32`
 - Windows fullscreen / monitor selection assumptions
-- image assets under `HDMI/assets`
+- image assets under the old `HDMI/assets`
 
-This file is not a direct PYNQ HDMI solution. It is useful as a visual
-or interaction reference, but it is Windows-desktop GUI code and cannot
-drive the PYNQ-Z2 HDMI framebuffer directly.
+This file was not a direct PYNQ HDMI solution. It was Windows-desktop GUI
+code and could not drive the PYNQ-Z2 HDMI framebuffer directly. Current
+live GUI work uses `GUI/pynq_multi_fx_gui.py`,
+`GUI/audio_lab_gui_bridge.py`, and `audio_lab_pynq/hdmi_backend.py`.
 
 It also contains effect names such as chorus, phaser, octaver, delay,
 and bit-crusher style labels that do not match the current deployed
 AudioLab DSP chain. Those must not be presented as live controllable
 DSP effects unless corresponding FPGA stages exist.
 
-### HDMI/FPGA/Vivado_project
+### Removed legacy HDMI/FPGA/Vivado_project
 
-`HDMI/FPGA/Vivado_project` is not a completed HDMI output design for
-AudioLab. The observed files describe an older / separate passthrough
-experiment:
+The former untracked `HDMI/FPGA/Vivado_project` was not a completed HDMI
+output design for AudioLab. The observed files described an older /
+separate passthrough experiment:
 
 - `passthrough.cpp` is a small AXI Stream HLS passthrough.
 - `build_passthrough_bd.tcl` creates a PS7 + AXI DMA + passthrough block
   design.
 - No HDMI output IP, video timing controller, VDMA-to-HDMI path, or
   PYNQ video subsystem equivalent was found in this directory.
-- The design is not integrated with the current `hw/Pynq-Z2` AudioLab
+- The design was not integrated with the current `hw/Pynq-Z2` AudioLab
   block design.
 
-Treat it as reference material only. It should not be copied into the
-live design as a HDMI solution.
+Repo-wide reference checks found no current deploy, test, or runtime
+script dependency on the untracked `HDMI/` tree. It was backed up under
+`/tmp/fpga_guitar_effecter_backup/` and removed from the working tree.
+Do not reintroduce it as a HDMI solution.
 
 ### run_pynq_hdmi() problem
 

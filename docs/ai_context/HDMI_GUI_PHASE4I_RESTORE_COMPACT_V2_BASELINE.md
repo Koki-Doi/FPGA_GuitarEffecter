@@ -117,11 +117,20 @@ This is the Phase 4G compact-v2 baseline. The Phase 4H positive
 do **not** use a positive `offset_y` to "fix" the top-clip; that
 direction has been verified as wrong on the real panel.
 
-## Next direction (not yet implemented)
+## Later resolution
 
-The remaining 5-inch-LCD symptoms (top-clip, unused left strip) are
-better addressed by changing the UI itself rather than chasing
-viewport offsets:
+Phase 4I's immediate conclusion was to stop adding vertical offsets.
+Phase 5A/5C then resolved the remaining 5-inch-LCD placement issue by
+diagnosing the HDMI output-side mapping:
+
+- The LCD's practical visible viewport is framebuffer
+  `x=0,y=0,w=800,h=480` inside the fixed 1280x720 HDMI signal.
+- The accepted runtime placement is compact-v2 at
+  `placement=manual`, `offset_x=0`, `offset_y=0`.
+- Center placement `(240,120)`, positive offsets, and negative offset
+  sweeps are not normal operation for this LCD.
+
+Future candidates if the Phase 5C default stops being sufficient:
 
 1. **Internal UI density / size tuning at offset 0,0** — shrink the
    chassis outline stroke, header band height, and chain row height
@@ -132,10 +141,10 @@ viewport offsets:
    composite at offset `(20, 20)` on the 800x480 framebuffer so the
    UI sits in the LCD's visible viewport with a known margin. Still
    no Vivado / VTC / VDMA change, no positive runtime offset.
-3. **Phase 5 (out of scope for Phase 4)** — change the HDMI timing to
+3. **Native 800x480 timing (Phase 5B candidate)** — change the HDMI timing to
    match the 5-inch panel's native 800x480 mode in Vivado. Requires
    a bit / hwh rebuild and a timing-summary review, so it is
-   explicitly deferred.
+   explicitly deferred until separately approved.
 
 ## Files touched
 

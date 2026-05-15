@@ -163,6 +163,31 @@ PY'
 
 A clean run prints `ADC HPF: True` and `R19_ADC_CONTROL: 0x23`.
 
+## HDMI GUI checks
+
+The live HDMI GUI path is part of the integrated `audio_lab.bit`. It
+loads `AudioLabOverlay()` exactly once and must not use
+`Overlay("base.bit")`, `run_pynq_hdmi()`, or a second overlay load.
+
+For the 5-inch 800x480 LCD, the Phase 5C default is the fixed 1280x720
+HDMI signal with the compact 800x480 GUI placed in the top-left
+framebuffer viewport:
+
+```sh
+ssh xilinx@192.168.1.9 '
+  cd /home/xilinx/Audio-Lab-PYNQ &&
+  sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+    python3 scripts/test_hdmi_800x480_frame.py \
+      --variant compact-v2 --placement manual \
+      --offset-x 0 --offset-y 0 --hold-seconds 60
+'
+```
+
+If only HDMI Python scripts or docs changed and the bitstream must not be
+overwritten, use selective `scp` for the relevant `scripts/test_hdmi_*.py`
+file instead of the full deploy script. `scripts/deploy_to_pynq.sh`
+always stages the current `audio_lab.bit` / `audio_lab.hwh` as-is.
+
 ## What `make` from the repo root does
 
 `Makefile` at the root has these targets:

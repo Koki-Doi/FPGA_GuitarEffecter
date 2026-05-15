@@ -225,36 +225,21 @@ Result:
 - VDMA error bits: none.
 - Post Safe Bypass smoke OK.
 
-## Open user-visual decisions
+## Later resolution
 
-The HDMI path is stable. The remaining choices need the panel:
+The HDMI path was stable, but Phase 4H's positive-`offset_y` direction
+was rolled back in Phase 4I. Phase 5A/5C then resolved the visible
+viewport as an output-side mapping issue, not a vertical offset default.
 
-1. Is the top edge no longer clipping the header at `offset_y=0` thanks
-   to the Phase 4H top safe margin alone, or is a `+offset_y` still
-   needed? Compare `offset_y in {0, 10, 20, 30}` photos.
-2. Does the LEFT STRIP x=0..100 actually reach the LCD viewport? The
-   layout-debug overlay's red strip + `x100` label answer this in one
-   photo.
-3. Are `header`, `chain`, `fx`, `side` bboxes fully visible at the
-   chosen `offset_y`?
-4. Do TL / TR / BL / BR markers reach the panel, or are only the
-   inset LED-soft "safe corner" marks visible?
+- The accepted 5-inch LCD default is compact-v2 at `placement=manual`,
+  `offset_x=0`, `offset_y=0`.
+- Positive-`offset_y` sweeps remain archived diagnostics only.
+- The Phase 5A output mapping pattern is the better tool when a new LCD
+  needs viewport characterization.
 
-If the LEFT STRIP is actually invisible on the LCD, the right next
-step is still NOT to apply `offset_x > 0`; instead it points to the
-panel cropping its left edge, which would be confirmed by the
-layout-debug photo and then addressed either by an HDMI timing /
-panel-driver change (out of scope here, would require LCD-side work)
-or by moving non-critical compact-v2 content out of `x=0..100` while
-keeping critical content centred. If the LEFT STRIP is visible but
-empty, the compact-v2 panel left margin can be reduced further in a
-future pass, again without offset_x.
+Candidate next steps after Phase 5C:
 
-Candidate next steps after the panel photos are reviewed:
-
-- Bake the chosen `offset_y` into the compact-v2 default placement.
-- Promote compact-v2 to be the default 800x480 variant.
 - Add a partial framebuffer copy that writes only the visible logical
   region instead of the full 1280x720 swizzle (currently `~0.207 s`
   per frame).
-- Build the Phase 5 change-driven update loop on top of compact-v2.
+- Build a change-driven update loop on top of compact-v2.

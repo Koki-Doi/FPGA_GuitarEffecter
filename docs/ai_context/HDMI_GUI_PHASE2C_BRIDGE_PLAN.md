@@ -157,7 +157,7 @@ All commands passed. `tests/test_overlay_controls.py` reported:
 AudioLabOverlay guitar effect control tests passed
 ```
 
-## Untracked files
+## Historical untracked files
 
 These files / directories were already untracked and were not used or
 staged for Phase 2C:
@@ -166,8 +166,10 @@ staged for Phase 2C:
 - `GUI/fx_gui_state.json`
 - `HDMI/`
 
-`GUI/fx_gui_state.json` still looks like runtime state and remains a
-`.gitignore` candidate. `.gitignore` was not changed in this phase.
+Post-Phase-5C cleanup resolved this historical state: `GUI/README.md`
+was replaced with current integrated-HDMI documentation, `GUI/fx_gui_state.json`
+is runtime state ignored by git, and the unused untracked `HDMI/` tree was
+backed up and removed.
 
 ## Explicitly not done
 

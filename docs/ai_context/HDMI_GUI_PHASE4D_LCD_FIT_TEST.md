@@ -117,9 +117,11 @@ Common status across the Phase 4D runs:
 
 Codex cannot visually inspect the physical LCD. The verified claim is
 healthy VDMA/VTC scanout with the requested frame composition. The final
-choice of fit mode still requires user visual confirmation.
+choice of fit mode was later superseded by Phase 5A/5C output mapping:
+the 5-inch LCD uses the top-left `800x480` framebuffer viewport rather
+than a centered scaled 1280x720 fit mode.
 
-## Recommendation
+## Historical recommendation
 
 Start with `fit-90` for the small HDMI LCD. It gives a 64 px horizontal
 and 36 px vertical safety margin while preserving the GUI's aspect ratio
@@ -128,6 +130,10 @@ and readability better than `fit-85` / `fit-80`.
 If the LCD still clips the 40 px border or corner labels in `fit-90`,
 try `fit-85`. If `fit-95` already shows every outer marker, it is the
 less conservative choice and wastes less screen area.
+
+Post-Phase-5C recommendation: use `scripts/test_hdmi_800x480_frame.py`
+with `--variant compact-v2 --placement manual --offset-x 0 --offset-y 0`
+for this 5-inch LCD. Keep fit modes only as diagnostics for other panels.
 
 ## User Visual Checklist
 
@@ -145,7 +151,8 @@ less conservative choice and wastes less screen area.
 
 ## Remaining Work
 
-- User chooses the default fit mode after visual inspection.
+- Default fit-mode selection is no longer the active path for this LCD;
+  Phase 5C selected top-left 800x480 logical placement instead.
 - Text size / layout are not redesigned yet; this phase only adds
   safe-area composition.
 - HDMI hotplug / reconnect behavior is still untested.

@@ -124,7 +124,9 @@ Result:
 - VDMA error bits: none.
 - VTC `0x00000006`.
 - Native full-frame copy `0.208 s`.
-- Physical coordinate reading is user visual confirmation pending.
+- Physical coordinate reading was superseded by the Phase 5A output
+  mapping test; Phase 5C adopts `x=0,y=0,w=800,h=480` as the default
+  visible viewport.
 
 ### 800x480 Manual Offset Tests
 
@@ -150,6 +152,7 @@ The HDMI framebuffer path remains stable for all tested offsets. The
 right-shifted Phase 4E center placement is not a VDMA or VTC error; it is
 a physical-display viewport issue. Phase 4F provides the calibration
 pattern and manual placement controls needed to select a per-LCD offset.
+Phase 5C later resolved the current 5-inch LCD default as `(0,0)`.
 
 Initial decision guide:
 
@@ -162,11 +165,12 @@ Initial decision guide:
 
 ## Remaining Work
 
-- User visually reads the calibration grid and chooses the best offset.
-- User checks whether all important 800x480 GUI text is visible and
-  readable for the chosen offset.
+- User visual choice is complete for the current 5-inch LCD:
+  `offset_x=0`, `offset_y=0`.
+- Future panels may still use this calibration script to choose a
+  different offset.
 - Color order and aspect ratio remain user visual checks.
-- Once the offset is known, choose a default for the 5-inch LCD path or
-  add a persistent runtime setting.
+- The default for the 5-inch LCD path is now Phase 5C compact-v2 at
+  `placement=manual`, `offset_x=0`, `offset_y=0`.
 - Phase 5 can then build the change-driven GUI loop on top of the
   calibrated 800x480 logical mode.

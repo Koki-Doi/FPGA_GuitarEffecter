@@ -105,8 +105,9 @@ Result:
 - HDMI IPs present in `ip_dict` / HWH.
 - 60-second hold completed.
 - Post-HDMI Safe Bypass smoke completed.
-- Physical readability and final visual fit are user confirmation
-  pending.
+- Physical readability and final visual fit were resolved in later
+  phases: Phase 5C adopts top-left `800x480` at `offset_x=0`,
+  `offset_y=0`, not the centered `(240,120)` placement from this phase.
 
 ## Measurements
 
@@ -140,10 +141,14 @@ Common status from the successful run:
 
 ## Remaining Work
 
-- User visually confirms readability, color order, aspect ratio, and
-  whether the centered 800x480 UI lands well on the 5-inch LCD.
+- User visual confirmation later showed the centered 800x480 placement
+  does not match this 5-inch LCD's practical viewport.
 - Tune the 800x480 UI after visual feedback, especially text hierarchy
   and how much selected-effect detail is useful on the panel.
 - Add a partial framebuffer copy path for logical frames if the full
   1280x720 copy becomes the limiting cost.
 - Build the Phase 5 change-driven GUI loop on top of the logical mode.
+
+Post-Phase-5C note: the standard runtime placement is
+`--variant compact-v2 --placement manual --offset-x 0 --offset-y 0` on
+the fixed 1280x720 HDMI signal.

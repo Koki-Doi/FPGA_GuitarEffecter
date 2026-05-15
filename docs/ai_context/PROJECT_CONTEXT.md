@@ -33,9 +33,13 @@ control effect parameters via AXI GPIO.
 | `audio_lab_pynq/AudioLabOverlay.py` | Python facade: overlay loading, AXIS routing, GPIO writes. |
 | `audio_lab_pynq/AudioCodec.py` | ADAU1761 register driver and config sequence. |
 | `audio_lab_pynq/diagnostics.py` | Phase-1 input/output diagnostics. |
+| `audio_lab_pynq/hdmi_backend.py` | Direct MMIO HDMI framebuffer backend for the integrated AudioLab HDMI path; avoids PYNQ's base-overlay video driver. |
 | `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. |
+| `GUI/pynq_multi_fx_gui.py` | HDMI GUI renderer and optional desktop preview; live AudioLab output uses its frame renderers, not its old `run_pynq_hdmi()` helper. |
+| `GUI/audio_lab_gui_bridge.py` | Dry-run-first bridge from GUI `AppState` to existing `AudioLabOverlay` control APIs. |
 | `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install package, install notebooks. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |
+| `scripts/test_hdmi_800x480_frame.py` | Phase 5C default 5-inch LCD check: compact 800x480 GUI at framebuffer `x=0,y=0` on the fixed 1280x720 HDMI signal. |
 | `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. |
 | `audio_lab_pynq/effect_defaults.py` | Per-effect default parameter dicts (re-exported as `AudioLabOverlay.DISTORTION_DEFAULTS` etc.). |
 | `audio_lab_pynq/effect_presets.py` | Notebook + API presets (Noise Suppressor / Distortion / Safe Bypass). |
@@ -72,6 +76,11 @@ control effect parameters via AXI GPIO.
   byte-fields is possible.
 - PYNQ-Z2 board is reachable on the lab LAN at **192.168.1.9**, user
   `xilinx`, with passwordless `sudo` and SSH key auth set up.
+- The integrated HDMI GUI path uses the deployed 1280x720 framebuffer
+  output in `audio_lab.bit`. For the 5-inch 800x480 LCD, Phase 5A/5C
+  established the top-left `x=0,y=0,w=800,h=480` framebuffer region as
+  the default visible viewport. Do not use `Overlay("base.bit")` or
+  `run_pynq_hdmi()` for live AudioLab HDMI.
 - Deploy target on the board:
   - Repo / package source: `/home/xilinx/Audio-Lab-PYNQ/`
   - Notebooks (Jupyter root): `/home/xilinx/jupyter_notebooks/audio_lab/`
@@ -82,6 +91,9 @@ control effect parameters via AXI GPIO.
   section), `DistortionModelsDebug.ipynb` (rewritten for the
   pedal-mask API), and `GuitarPedalboardOneCell.ipynb` (new — a
   one-cell ipywidgets UI for the whole chain).
+- The old untracked `HDMI/` experiment tree was removed after repo-wide
+  reference checks showed it was not used by the current deploy,
+  tests, or HDMI runtime scripts. The active GUI code is `GUI/`.
 
 ## Key principles for new work
 

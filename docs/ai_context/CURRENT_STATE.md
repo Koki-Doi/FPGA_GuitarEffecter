@@ -11,7 +11,9 @@ compact-v2 baseline, Phase 4J began a horizontal-only negative-offset
 sweep but was left uncommitted and superseded by Phase 5A, and Phase 5A
 started HDMI output-side diagnosis for the 5-inch 800x480 LCD, then
 Phase 5C locked the user-confirmed `x=0,y=0,w=800,h=480` visible
-viewport as the default on the PYNQ-Z2 at `192.168.1.9`).
+viewport as the default on the PYNQ-Z2 at `192.168.1.9`, and the
+post-Phase-5C repo cleanup kept active `GUI/` code while removing the
+unused untracked legacy `HDMI/` experiment tree).
 
 ## PYNQ-Z2 network identity
 
@@ -60,10 +62,13 @@ What was found:
   existing `run_pynq_hdmi()` helper loads `Overlay("base.bit")`.
 - Loading `base.bit` would still replace the AudioLab DSP overlay in the
   PL, so that helper must not be used for the live AudioLab HDMI GUI.
-- `HDMI/GUI.py` is a Windows Tkinter / PIL preview application and is
-  not a direct PYNQ HDMI backend.
-- `HDMI/FPGA/Vivado_project` is a passthrough experiment, not a complete
-  HDMI output design for the current AudioLab overlay.
+- The former untracked `HDMI/GUI.py` was a Windows Tkinter / PIL preview
+  application and was not a direct PYNQ HDMI backend.
+- The former untracked `HDMI/FPGA/Vivado_project` was a passthrough
+  experiment, not a complete HDMI output design for the current AudioLab
+  overlay.
+- Repo-wide reference checks found no current deploy, test, or runtime
+  script dependency on `HDMI/`; the directory was backed up and removed.
 
 Current design direction:
 
@@ -165,9 +170,9 @@ Static-frame recheck over SSH passed again:
 - VDMA HSIZE/STRIDE `3840`, VSIZE `720`, `VDMACR=0x00010001`,
   `DMASR=0x00011000`, no internal/slave/decode error bits.
 - VTC control/status register readback: `0x00000006`.
-- Physical HDMI monitor output and color order are still user visual
-  confirmation pending; the verified claim is scanout start plus healthy
-  VDMA/VTC status.
+- Phase 5A/5C later confirmed physical output on the 5-inch LCD and
+  selected the framebuffer's top-left 800x480 region as the practical
+  visible viewport for that panel.
 
 Resource profile command on the board:
 
@@ -289,8 +294,9 @@ Compared with the 1280x720 GUI `fit-90` path, the renderer/compose cost
 is much lower (`2.979 + 0.265 s` -> `0.317 + 0.026 s`), but the full
 1280x720 framebuffer copy still costs about `0.207 s`. Future
 optimization should copy only the 800x480 active region if update rate
-becomes important. Physical readability, color order, and final visual
-fit remain user visual confirmation items.
+becomes important. Phase 5A/5C later resolved final placement for the
+current 5-inch LCD as top-left `800x480` at `offset_x=0`,
+`offset_y=0`.
 
 ## HDMI GUI Phase 4F viewport calibration
 
@@ -337,11 +343,9 @@ PYNQ result:
 - Timing for the manual-offset GUI tests remained about render
   `0.315..0.316 s`, compose `0.025 s`, full framebuffer copy `0.207 s`.
 
-User visual decision is still required. If `(0,0)` fits best, the LCD is
-likely showing a left/top crop. If `(80,40)` fits best, treat it as light
-overscan/viewport shift. If `(120,60)` fits best, treat it as medium
-offset. If none fit, investigate HDMI timing or the LCD controller's 720p
-sampling behavior. Full details are in
+Phase 5A/5C later resolved the decision for the current 5-inch LCD:
+`(0,0)` is the correct practical visible viewport, which supports the
+LCD-side crop/viewport hypothesis. Full details are in
 `docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`.
 
 ## HDMI GUI Phase 4G compact-v2 + negative offsets
@@ -389,8 +393,8 @@ PYNQ runs (selective `scp` only, full deploy script not used):
   reported `negative_offset=True`, `clipped=True`, `fully_offscreen=False`.
 - Post-HDMI Safe Bypass smoke OK in both runs.
 
-User visual decision is still required to pick the final offset and to
-confirm that `compact-v2` fixes the right-shift on the 5-inch LCD.
+Phase 5A/5C later resolved the final offset as `offset_x=0`,
+`offset_y=0`; the negative-offset sweep remains diagnostic history.
 Phase 4G details are in
 `docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`.
 
@@ -455,11 +459,9 @@ PYNQ runs (selective `scp` only):
   bits.
 - Single-frame `offset_y=30`: same state, no VDMA error bits.
 
-User visual decision is still required to (1) confirm whether the
-Phase 4H top safe margin already fixes the top-clip at `offset_y=0`
-or whether `offset_y in [20, 30]` is still needed, and (2) interpret
-the layout-debug photo to decide whether the left-side strip is
-cropped by the panel or just left unused by the renderer.
+Phase 4H's positive-`offset_y` direction was rolled back in Phase 4I.
+Phase 5A/5C later resolved the current LCD placement as top-left
+`800x480` at `offset_x=0`, `offset_y=0`.
 Phase 4H details are in
 `docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`.
 
@@ -550,7 +552,8 @@ Renderer / backend unchanged in Phase 4J:
 - `scripts/test_hdmi_800x480_frame.py` — defaults still
   `--variant compact-v2 --placement manual --offset-x 0
   --offset-y 0`; Phase 4J runs pass `--offset-x -40` via CLI, no
-  default rewrite yet (pending user photo decision).
+  default rewrite was made. Phase 5C later kept `offset_x=0`,
+  `offset_y=0` as the default.
 
 PYNQ runs (selective `scp` only; deploy script does not stage
 `scripts/test_hdmi_800x480_*.py`):
@@ -705,6 +708,40 @@ Result:
 - pre/post HDMI smoke kept ADC HPF `true`, `R19=0x23`,
   `axi_gpio_delay_line=false`, HDMI IPs present
 
+## Repository cleanup after Phase 5C
+
+A repo-wide reference check was run before cleanup:
+
+- `GUI/` is active and must be kept. `GUI/pynq_multi_fx_gui.py` and
+  `GUI/audio_lab_gui_bridge.py` are tracked, copied by
+  `scripts/deploy_to_pynq.sh`, imported by HDMI tests, and covered by
+  local tests/docs.
+- The old untracked `GUI/README.md` described a stale `base.bit` /
+  `run_pynq_hdmi()` workflow. It has been replaced with a current README
+  that documents the integrated `AudioLabOverlay()` HDMI path and the
+  Phase 5C top-left 800x480 default viewport.
+- `HDMI/` was untracked legacy material. Current tracked source did not
+  import it, deploy it, or require its assets. The useful historical
+  judgement is preserved in the HDMI docs: it was a Windows preview /
+  passthrough experiment, not the live AudioLab HDMI implementation.
+- The untracked Phase 4J horizontal-offset sweep script/doc were also
+  obsolete after Phase 5A/5C and were not committed as a runtime default.
+
+Backup before deletion:
+
+```text
+/tmp/fpga_guitar_effecter_backup/repo_cleanup_unused_hdmi_phase4j_20260515_130135.tar.gz
+```
+
+Removed from the working tree after backup:
+
+- `HDMI/`
+- `docs/ai_context/HDMI_GUI_PHASE4J_HORIZONTAL_LEFT_SHIFT.md`
+- `scripts/test_hdmi_800x480_horizontal_offsets.py`
+
+No Vivado rebuild, bit/hwh regeneration, deploy, `git push`, `git pull`,
+or `git fetch` was performed for this cleanup.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the
@@ -852,9 +889,9 @@ PYNQ-Z2 result from `/tmp/hdmi_gui_phase2c/`:
 - `render_frame_pynq_static(AppState())` still produced frame shape /
   dtype `[720, 1280, 3]` / `uint8`
 
-Conclusion: the bridge shape is ready for a later real overlay-backed
-test, but Phase 2C deliberately verified only dry-run planning. Live HDMI
-output still requires a future integrated HDMI video path in `audio_lab.bit`.
+Conclusion at the time: the bridge shape was ready for a later real
+overlay-backed test, but Phase 2C deliberately verified only dry-run
+planning. The integrated HDMI video path was later implemented in Phase 4.
 
 ## HDMI GUI Phase 2D bridge runtime test on real AudioLabOverlay
 

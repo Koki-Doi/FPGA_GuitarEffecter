@@ -699,3 +699,39 @@ not get removed even when superseded — they get updated.
   block-design migration. For guitar input, continue to treat Left as
   the mono source and keep AXI metadata propagation independent of
   sample values.
+
+## D23 — HDMI GUI uses integrated AudioLab overlay and top-left 800x480 LCD viewport
+
+- **Decision.** The live HDMI GUI path uses the integrated AudioLab
+  `audio_lab.bit`; it must not load PYNQ `base.bit` or any second full
+  overlay. For the current 5-inch 800x480 HDMI LCD, the adopted default
+  visible viewport is the top-left `x=0,y=0,w=800,h=480` region inside
+  the fixed 1280x720 HDMI framebuffer.
+- **Why.** Phase 5A output mapping showed that the LCD does not behave
+  like a clean full-frame 1280x720-to-800x480 scaler. User visual
+  inspection confirmed the `800x480 x0 y0` candidate box is correctly
+  positioned. Center placement `(240,120)` and further positive/negative
+  offset sweeps are therefore not the normal runtime path.
+- **Runtime contract.**
+  - Load `AudioLabOverlay()` exactly once.
+  - Use `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`.
+  - Use `GUI/pynq_multi_fx_gui.py::render_frame_800x480(...,
+    variant="compact-v2")` for the default small-LCD frame.
+  - Do not call `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()`.
+  - Do not call `Overlay("base.bit")`.
+  - Do not load another overlay after `AudioLabOverlay()`.
+- **Current default command.**
+
+  ```sh
+  sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+    python3 scripts/test_hdmi_800x480_frame.py \
+      --variant compact-v2 --placement manual \
+      --offset-x 0 --offset-y 0 --hold-seconds 60
+  ```
+
+- **Boundaries.** Native 800x480 HDMI timing remains a Phase 5B candidate,
+  but it is not required for correct placement now. Any native-timing
+  trial is a separate Vivado rebuild / timing-review / bit-hwh deploy
+  decision. The old untracked `HDMI/` experiment tree was removed after
+  confirming current deploy, tests, and runtime scripts use `GUI/` plus
+  `audio_lab_pynq/hdmi_backend.py` instead.

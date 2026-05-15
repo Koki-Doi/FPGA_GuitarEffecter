@@ -46,6 +46,11 @@ uncommitted offset-side diagnostic that is useful as a log but
 superseded by this output-side diagnosis. It is not a completed runtime
 default selection.
 
+Post-Phase-5C cleanup removed the untracked Phase 4J script/doc from the
+working tree after backing them up, because the user-confirmed default is
+the top-left `800x480` viewport at `offset_x=0`, `offset_y=0`, not another
+offset sweep.
+
 At preflight, these Vivado / bitstream paths had no dirty status:
 
 - `hw/Pynq-Z2/block_design.tcl`
