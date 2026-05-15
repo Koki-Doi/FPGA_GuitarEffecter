@@ -12,7 +12,9 @@ Phase 4H vertical safe margin + layout-debug overlay + vertical-only
 offset sweep added, Phase 4I rolled the Phase 4H push-down +
 positive-offset direction back to the Phase 4G compact-v2 baseline,
 Phase 4J began a horizontal-only negative-offset sweep but was left
-uncommitted, and Phase 5A switches diagnosis to the HDMI output side.
+uncommitted, Phase 5A switched diagnosis to the HDMI output side, and
+Phase 5C locks the user-confirmed top-left 800x480 visible viewport as
+the default.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -51,7 +53,9 @@ resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
 vertical safe margin + horizontal layout diagnosis, 800x480
 compact-v2 baseline restore, HDMI output-side diagnosis, and the
-native 800x480 timing plan.
+native 800x480 timing plan. Phase 5C's adopted runtime mode is the
+existing 1280x720 HDMI signal with the 800x480 compact GUI at
+framebuffer `x=0,y=0`.
 
 ## 1. Current state
 
@@ -191,6 +195,21 @@ current XDC does not connect HDMI OUT DDC. Phase 5B native 800x480
 timing is documented as the next implementation candidate, but it is
 deferred until separately approved because it requires a Vivado rebuild,
 fresh timing summary, and bit/hwh deploy decision.
+
+Phase 5C records the user's visual conclusion from the output mapping
+test: the `800x480 x0 y0` candidate box is perfectly positioned on the
+5-inch LCD. The project now treats the top-left `800x480` region of the
+fixed 1280x720 framebuffer as the default visible viewport for this
+panel. The standard command is
+`scripts/test_hdmi_800x480_frame.py --variant compact-v2 --placement
+manual --offset-x 0 --offset-y 0 --hold-seconds 60`. Center placement
+`(240,120)` and further positive/negative offset sweeps are not adopted
+for normal operation on this LCD. Native 800x480 timing remains useful
+as a future optimization or compatibility experiment, but it is no
+longer required to achieve correct placement. The Phase 5C PYNQ run
+completed with render `0.417 s`, compose `0.0254 s`, framebuffer copy
+`0.2076 s`, copied region `x=0..800, y=0..480`,
+`DMASR=0x00011000`, `vtc_ctl=0x00000006`, and no VDMA error bits.
 
 The AudioLab control contract must remain intact:
 

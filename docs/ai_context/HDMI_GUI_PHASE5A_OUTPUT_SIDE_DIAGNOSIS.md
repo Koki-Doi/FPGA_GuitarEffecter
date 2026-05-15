@@ -275,13 +275,64 @@ hold. Codex cannot visually inspect the LCD; the user must read and
 report the visible x/y coordinate labels and candidate boxes from the
 physical panel.
 
+## Phase 5C user visual conclusion
+
+After the Phase 5A output mapping run, the user visually confirmed that
+the `800x480 x0 y0` candidate box is the correct visible viewport on
+the 5-inch HDMI LCD.
+
+Adopted operational rule:
+
+- treat the 1280x720 HDMI framebuffer's top-left `800x480` region as
+  the practical LCD-visible viewport
+- default visible viewport: `x=0`, `y=0`, `w=800`, `h=480`
+- display the compact 800x480 GUI at `placement=manual`,
+  `offset_x=0`, `offset_y=0`
+- stop offset sweeps for this LCD
+- do not use center placement `(240,120)` as the default for this LCD
+- do not pursue positive or negative offset compensation as the
+  standard path
+
+Interpretation:
+
+- the LCD is very likely not scaling the entire 1280x720 active area
+  into the 800x480 panel
+- the current 1280x720 signal remains usable because the LCD's visible
+  viewport lines up with the framebuffer's top-left 800x480 region
+- native 800x480 HDMI timing remains a possible future optimization,
+  but it is not required to get a correctly positioned UI today
+
+Phase 5C validation command:
+
+```sh
+sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+  python3 scripts/test_hdmi_800x480_frame.py \
+  --variant compact-v2 --placement manual \
+  --offset-x 0 --offset-y 0 --hold-seconds 60
+```
+
+Validation result:
+
+- script completed successfully on PYNQ-Z2
+- render `0.417 s`
+- compose `0.0254 s`
+- framebuffer copy `0.2076 s`
+- framebuffer copied region `x=0..800`, `y=0..480`
+- `clipped=false`
+- `negative_offset=false`
+- VDMA `DMACR=0x00010001`, `DMASR=0x00011000`
+- VTC control register `0x00000006`
+- no VDMA error bits
+
 ## Phase 5B conditions
 
 Proceed to native 800x480 timing only after:
 
-- the 720p mapping pattern confirms the LCD is not displaying the full
-  1280x720 active area as expected, or the visible coordinates remain
-  inconsistent with Python placement
+- the user explicitly decides that the current 1280x720 signal plus
+  top-left 800x480 viewport is no longer sufficient
+- current full-frame copy cost becomes a practical bottleneck
+- native timing is needed to test LCD compatibility or reduce resource
+  / copy cost
 - current bit/hwh are backed up
 - Phase 5B edits are explicitly approved
 - the implementation plan in

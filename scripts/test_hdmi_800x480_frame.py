@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Phase 4E/4F/4G 800x480 logical HDMI GUI check.
+"""Phase 5C default 800x480 logical HDMI GUI check.
 
 Loads ``AudioLabOverlay`` exactly once, renders an 800x480 logical GUI
 frame via ``render_frame_800x480`` (variant-selectable), places that
 logical frame at the requested offset of the fixed 1280x720 HDMI
 framebuffer, and prints VDMA / VTC status plus the source / destination
 copy regions.
+
+Phase 5C locks the default 5-inch LCD placement to compact-v2 at
+``placement=manual``, ``offset_x=0``, ``offset_y=0``. CLI overrides are
+kept for diagnostics, but center placement and offset sweeps are no
+longer the standard path for this LCD.
 
 This script does not load ``base.bit``, does not load a second overlay,
 and does not call ``run_pynq_hdmi()``.
@@ -64,7 +69,12 @@ def smoke(overlay):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Display the Phase 5C default 800x480 compact GUI in the "
+            "top-left visible viewport of the fixed 1280x720 HDMI "
+            "framebuffer. Defaults are compact-v2, manual placement, "
+            "offset_x=0, offset_y=0."))
     parser.add_argument("--hold-seconds", type=int, default=60)
     parser.add_argument("--variant", default="compact-v2",
                         choices=("compact-v1", "compact-v2"),
@@ -81,7 +91,7 @@ def main():
     placement_label = "p={} off=({:+d},{:+d})".format(
         args.placement, int(args.offset_x), int(args.offset_y))
     report = {
-        "phase": "4G-800x480-compact-v2",
+        "phase": "5C-800x480-default-visible-viewport",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "variant": args.variant,
         "placement": args.placement,
@@ -90,17 +100,17 @@ def main():
         "hold_seconds": int(args.hold_seconds),
     }
 
-    print("[phase4g] importing AudioLabOverlay")
+    print("[phase5c] importing AudioLabOverlay")
     t0 = time.time()
     from audio_lab_pynq import AudioLabOverlay
     overlay_import_s = time.time() - t0
-    print("[phase4g] AudioLabOverlay imported in {:.3f} s".format(overlay_import_s))
+    print("[phase5c] AudioLabOverlay imported in {:.3f} s".format(overlay_import_s))
 
-    print("[phase4g] loading AudioLabOverlay() (single load)")
+    print("[phase5c] loading AudioLabOverlay() (single load)")
     t0 = time.time()
     overlay = AudioLabOverlay()
     overlay_load_s = time.time() - t0
-    print("[phase4g] AudioLabOverlay() ready in {:.3f} s".format(overlay_load_s))
+    print("[phase5c] AudioLabOverlay() ready in {:.3f} s".format(overlay_load_s))
 
     pre_smoke = smoke(overlay)
     report["overlay_import_s"] = overlay_import_s
@@ -114,7 +124,7 @@ def main():
             pre_smoke["has v_tc_hdmi ip_dict"] and
             pre_smoke["has rgb2dvi_hdmi in HWH"] and
             pre_smoke["has v_axi4s_vid_out_hdmi in HWH"]):
-        raise SystemExit("[phase4g] pre-HDMI smoke failed")
+        raise SystemExit("[phase5c] pre-HDMI smoke failed")
 
     from pynq_multi_fx_gui import (
         AppState, make_pynq_static_render_cache, render_frame_800x480,
@@ -123,20 +133,20 @@ def main():
 
     state = AppState()
     cache = make_pynq_static_render_cache()
-    print("[phase4g] rendering 800x480 logical GUI frame variant={}".format(
+    print("[phase5c] rendering 800x480 logical GUI frame variant={}".format(
         args.variant))
     t0 = time.time()
     frame = render_frame_800x480(state, cache=cache,
                                  variant=args.variant,
                                  placement_label=placement_label)
     render_s = time.time() - t0
-    print("[phase4g] frame shape={} dtype={} render={:.3f}s".format(
+    print("[phase5c] frame shape={} dtype={} render={:.3f}s".format(
         list(frame.shape), frame.dtype, render_s))
     if list(frame.shape) != [480, 800, 3] or str(frame.dtype) != "uint8":
-        raise SystemExit("[phase4g] renderer returned unexpected frame")
+        raise SystemExit("[phase5c] renderer returned unexpected frame")
 
     backend = AudioLabHdmiBackend(overlay)
-    print("[phase4g] starting HDMI back end variant={} placement={} "
+    print("[phase5c] starting HDMI back end variant={} placement={} "
           "offset=({:+d}, {:+d})".format(
               args.variant, args.placement,
               int(args.offset_x), int(args.offset_y)))
@@ -173,18 +183,18 @@ def main():
     }
     report["placement_summary"] = summary_copy
     print(json.dumps({"placement_summary": summary_copy,
-                      "hdmi_errors": errors,
-                      "backend_start_s": backend_start_s},
+                     "hdmi_errors": errors,
+                     "backend_start_s": backend_start_s},
                      indent=2, sort_keys=True))
     if errors.get("dmainterr") or errors.get("dmaslverr") or errors.get("dmadecerr"):
-        raise SystemExit("[phase4g] VDMA error bits set")
+        raise SystemExit("[phase5c] VDMA error bits set")
 
     if int(args.hold_seconds) > 0:
-        print("[phase4g] holding HDMI scanout for {} seconds".format(
+        print("[phase5c] holding HDMI scanout for {} seconds".format(
             int(args.hold_seconds)))
         time.sleep(int(args.hold_seconds))
 
-    print("[phase4g] applying Safe Bypass through existing overlay APIs")
+    print("[phase5c] applying Safe Bypass through existing overlay APIs")
     overlay.clear_distortion_pedals()
     overlay.set_noise_suppressor_settings(enabled=False)
     overlay.set_compressor_settings(enabled=False)
@@ -196,10 +206,10 @@ def main():
     post_smoke = smoke(overlay)
     report["smoke_post_hdmi"] = post_smoke
     print(json.dumps({"smoke_post_hdmi": post_smoke}, indent=2, sort_keys=True))
-    print("[phase4g] physical 5-inch LCD readability is user visual confirmation pending")
+    print("[phase5c] default visible viewport is 800x480 at framebuffer x=0 y=0")
     print(json.dumps({"summary": report}, indent=2, sort_keys=True,
                      default=str))
-    print("[phase4g] OK")
+    print("[phase5c] OK")
 
 
 if __name__ == "__main__":

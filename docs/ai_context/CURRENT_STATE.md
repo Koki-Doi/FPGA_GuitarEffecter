@@ -9,8 +9,9 @@ placement added, Phase 4H vertical safe margin + layout-debug overlay
 chassis push-down + positive-offset direction back to the Phase 4G
 compact-v2 baseline, Phase 4J began a horizontal-only negative-offset
 sweep but was left uncommitted and superseded by Phase 5A, and Phase 5A
-started HDMI output-side diagnosis for the 5-inch 800x480 LCD on the
-PYNQ-Z2 at `192.168.1.9`).
+started HDMI output-side diagnosis for the 5-inch 800x480 LCD, then
+Phase 5C locked the user-confirmed `x=0,y=0,w=800,h=480` visible
+viewport as the default on the PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -653,6 +654,56 @@ HDMI timing. The plan is documented in
 `docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`.
 Phase 5A details are in
 `docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`.
+
+## HDMI GUI Phase 5C default visible viewport
+
+After the Phase 5A output mapping test, the user visually confirmed
+that the `800x480 x0 y0` candidate box is the correct viewport on the
+5-inch HDMI LCD. The practical operating model is now:
+
+- HDMI signal remains `1280x720`.
+- Treat framebuffer `x=0`, `y=0`, `w=800`, `h=480` as the LCD-visible
+  UI viewport.
+- Standard compact GUI placement is `placement=manual`,
+  `offset_x=0`, `offset_y=0`.
+- `scripts/test_hdmi_800x480_frame.py` defaults are the standard path:
+  `--variant compact-v2 --placement manual --offset-x 0 --offset-y 0
+  --hold-seconds 60`.
+- Center placement `(240,120)` is not adopted for this LCD.
+- Positive and negative offset sweeps are ended for normal operation.
+- Native 800x480 HDMI timing remains a Phase 5B candidate, but it is
+  not required for correct visible placement now.
+
+`scripts/test_hdmi_800x480_frame.py` keeps CLI overrides for diagnostic
+use, but its logs now identify the default run as Phase 5C. It still
+loads `AudioLabOverlay()` once, does not load `base.bit`, does not call
+`run_pynq_hdmi()`, and does not load a second overlay.
+
+PYNQ-Z2 run:
+
+```sh
+sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+  python3 scripts/test_hdmi_800x480_frame.py \
+  --variant compact-v2 --placement manual \
+  --offset-x 0 --offset-y 0 --hold-seconds 60
+```
+
+Result:
+
+- render `0.417 s`
+- compose `0.0254 s`
+- framebuffer copy `0.2076 s`
+- backend start `0.276 s`
+- requested destination/source/framebuffer copied region all
+  `x0=0`, `y0=0`, `x1=800`, `y1=480`
+- `clipped=false`, `negative_offset=false`, `fully_offscreen=false`
+- `VDMACR=0x00010001`, `DMASR=0x00011000`
+- VDMA HSIZE/STRIDE/VSIZE `3840/3840/720`
+- framebuffer `0x16900000`, size `2,764,800` bytes
+- `vtc_ctl=0x00000006`
+- VDMA error bits all false
+- pre/post HDMI smoke kept ADC HPF `true`, `R19=0x23`,
+  `axi_gpio_delay_line=false`, HDMI IPs present
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

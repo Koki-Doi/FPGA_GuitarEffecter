@@ -13,6 +13,23 @@ offsets.
 Do not implement this plan without explicit user approval. Phase 5A
 does not rebuild bit/hwh.
 
+## Phase 5C status
+
+Phase 5C locks the practical 5-inch LCD operating mode to the current
+1280x720 HDMI signal with the compact 800x480 GUI placed in the
+top-left framebuffer region:
+
+- visible viewport: `x=0`, `y=0`, `w=800`, `h=480`
+- standard GUI placement: `placement=manual`, `offset_x=0`,
+  `offset_y=0`
+- center placement `(240,120)` is not used for this LCD
+- positive / negative offset sweeps are no longer the default
+  diagnosis path
+
+This means native 800x480 timing is no longer urgent. It remains a
+candidate if the project needs lower copy cost, a true 800x480
+framebuffer, or a cleaner LCD-native signal later.
+
 ## Current 720p baseline
 
 The deployed Phase 4 HDMI path is:
@@ -32,6 +49,9 @@ The current Python backend assumes `DEFAULT_WIDTH=1280`,
 `DEFAULT_HEIGHT=720`, and full-frame copy size `2,764,800` bytes.
 
 ## Proposed 800x480 target
+
+This target is now an optional optimization / compatibility experiment,
+not a required fix for visible placement.
 
 Target active region:
 
@@ -54,6 +74,23 @@ Copy-load comparison:
 
 The copy cost should fall to roughly 42% of the current full-frame path,
 assuming the same Python slice-copy implementation and memory bandwidth.
+
+Potential benefits:
+
+- copy volume drops from `2,764,800` bytes to `1,152,000` bytes per
+  frame
+- the framebuffer and logical GUI would share the same `800x480`
+  dimensions
+- the LCD controller might behave more predictably if it accepts its
+  native timing directly
+
+Reasons not to rush:
+
+- a Vivado rebuild and fresh timing review are required
+- the current Phase 5C mode already places the UI correctly
+- this LCD is not guaranteed to accept a non-CEA native 800x480 HDMI
+  mode
+- rollback requires keeping the current 1280x720 bit/hwh pair available
 
 ## Timing selection
 

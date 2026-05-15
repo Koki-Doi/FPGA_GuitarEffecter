@@ -542,6 +542,45 @@ asking it to re-discover the project from scratch.
 > `docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md` と
 > `docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`。
 
+### HDMI GUI Phase 5C result — default 800x480 x0 y0 viewport
+
+> Phase 5A output mapping test のユーザー目視結果として、5-inch HDMI
+> LCDでは `800x480 x0 y0` candidate box が完璧な位置と確認済みです。
+> 結論: LCDは1280x720全体を縮小表示していない可能性が高く、実運用では
+> 1280x720 framebuffer の左上 `x=0, y=0, w=800, h=480` を visible
+> viewport として扱います。
+>
+> 標準表示は `scripts/test_hdmi_800x480_frame.py --variant compact-v2
+> --placement manual --offset-x 0 --offset-y 0 --hold-seconds 60`。
+> script default も `variant=compact-v2`, `placement=manual`,
+> `offset_x=0`, `offset_y=0`, `hold_seconds=60` です。CLI override と
+> `--placement center` は診断用に残していますが、このLCDの標準では
+> center placement `(240,120)` は不採用。positive / negative offset
+> sweep も終了です。
+>
+> `scripts/test_hdmi_800x480_frame.py` は Phase 5C default viewport
+> script として docstring / argparse description / log prefix /
+> report phase を更新済み。`AudioLabOverlay()` は1回だけloadし、
+> `base.bit`、`run_pynq_hdmi()`、2つ目のoverlay loadは使いません。
+> Vivado rebuild / bit / hwh / `block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP /
+> VDMA / VTC は変更していません。
+>
+> PYNQ-Z2 run は成功:
+> render `0.417s`, compose `0.0254s`, framebuffer copy `0.2076s`,
+> copied region `x=0..800 y=0..480`, `clipped=false`,
+> `negative_offset=false`, `VDMACR=0x00010001`,
+> `DMASR=0x00011000`, HSIZE/STRIDE/VSIZE=`3840/3840/720`,
+> framebuffer=`0x16900000`, `vtc_ctl=0x00000006`,
+> VDMA error bits all false。pre/post smoke で ADC HPF true,
+> `R19=0x23`, HDMI IP present を確認済み。
+>
+> Phase 5B native 800x480 timing は引き続き候補ですが、現時点では
+> 急ぎません。メリットはcopy量削減 (`2,764,800 -> 1,152,000`
+> bytes)、framebuffer 800x480化、LCD-native signal化の可能性。
+> リスクはVivado rebuild、clock/timing再確認、LCDがnative 800x480
+> HDMI timingを受ける保証がないことです。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。
