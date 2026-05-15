@@ -599,6 +599,45 @@ asking it to re-discover the project from scratch.
 > この cleanup では Vivado rebuild、bit/hwh再生成、deploy、
 > `git push` / `pull` / `fetch` はしていません。
 
+### HDMI GUI Phase 5D result — Pip-Boy phosphor green theme
+
+> 5-inch HDMI LCD 用 compact-v2 800x480 renderer に
+> "phosphor green monochrome CRT" 配色 (Pip-Boy 風) と soft
+> horizontal scanline overlay を追加しました。Pip-Boy / Fallout の
+> ロゴ・固有 UI・フォント・アイコン・固有文字列はコピーしていません。
+> 1280x720 HDMI signal、`offset_x=0`, `offset_y=0`、`compact_v2_panel_boxes`
+> 形状は **全て同じ**。Vivado / bit / hwh / `block_design.tcl` /
+> `audio_lab.xdc` / `create_project.tcl` / `LowPassFir.hs` は無編集。
+>
+> 触ったファイルは `GUI/pynq_multi_fx_gui.py` と
+> `scripts/test_hdmi_800x480_frame.py`、それに
+> `docs/ai_context/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` 等
+> docs のみ。`THEMES = {"cyan": CYAN_THEME, "pipboy-green": PIPBOY_THEME}`,
+> `DEFAULT_800X480_THEME = "pipboy-green"`、`render_frame_800x480(...,
+> theme="pipboy-green")` で旧 cyan も呼び出し可能。compact-v1 は
+> 旧 cyan look 固定 (pixel-stable)。Scanline は最終 RGB 配列に対する
+> numpy 1スライス blend で実装し render time 増加は +10..15% 内。
+>
+> PYNQ 実行コマンド (`scripts/test_hdmi_800x480_frame.py` は
+> deploy script のマニフェストに含まれないので、必要なら
+> `scp ./scripts/test_hdmi_800x480_frame.py xilinx@PYNQ:/home/xilinx/Audio-Lab-PYNQ/scripts/`
+> を併用してください):
+>
+> ```
+> bash scripts/deploy_to_pynq.sh
+> scp scripts/test_hdmi_800x480_frame.py \
+>     xilinx@192.168.1.9:/home/xilinx/Audio-Lab-PYNQ/scripts/
+> ssh xilinx@192.168.1.9 'cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>     scripts/test_hdmi_800x480_frame.py \
+>     --variant compact-v2 --theme pipboy-green --placement manual \
+>     --offset-x 0 --offset-y 0 --hold-seconds 60'
+> ```
+>
+> 次に触る場合は、`PIPBOY_THEME` の値だけ調整して `compact_v2_panel_boxes`
+> 形状 / placement / offset を絶対に動かさないでください。Pip-Boy の
+> 文字列・固有 UI 構造は禁止のままです。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

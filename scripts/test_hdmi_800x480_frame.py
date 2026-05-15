@@ -85,15 +85,22 @@ def main():
                         help="manual placement X offset (may be negative)")
     parser.add_argument("--offset-y", type=int, default=0,
                         help="manual placement Y offset (may be negative)")
+    parser.add_argument("--theme", default="pipboy-green",
+                        choices=("pipboy-green", "cyan"),
+                        help=("800x480 colour palette. Phase 5D defaults "
+                              "to the Pip-Boy-inspired phosphor-green "
+                              "theme; pass 'cyan' for the pre-Phase-5D "
+                              "look. compact-v1 ignores this flag."))
     args = parser.parse_args()
 
     repo_paths()
     placement_label = "p={} off=({:+d},{:+d})".format(
         args.placement, int(args.offset_x), int(args.offset_y))
     report = {
-        "phase": "5C-800x480-default-visible-viewport",
+        "phase": "5D-pipboy-green-theme",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "variant": args.variant,
+        "theme": args.theme,
         "placement": args.placement,
         "offset_x": int(args.offset_x),
         "offset_y": int(args.offset_y),
@@ -133,12 +140,13 @@ def main():
 
     state = AppState()
     cache = make_pynq_static_render_cache()
-    print("[phase5c] rendering 800x480 logical GUI frame variant={}".format(
-        args.variant))
+    print("[phase5c] rendering 800x480 logical GUI frame variant={} theme={}".format(
+        args.variant, args.theme))
     t0 = time.time()
     frame = render_frame_800x480(state, cache=cache,
                                  variant=args.variant,
-                                 placement_label=placement_label)
+                                 placement_label=placement_label,
+                                 theme=args.theme)
     render_s = time.time() - t0
     print("[phase5c] frame shape={} dtype={} render={:.3f}s".format(
         list(frame.shape), frame.dtype, render_s))
