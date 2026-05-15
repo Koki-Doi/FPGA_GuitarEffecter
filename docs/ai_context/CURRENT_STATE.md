@@ -3,8 +3,10 @@
 Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed,
 Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
 added, Phase 4E 800x480 logical GUI tested, Phase 4F manual viewport
-calibration added, and Phase 4G compact-v2 layout + negative-offset
-placement added on the PYNQ-Z2 at `192.168.1.9`).
+calibration added, Phase 4G compact-v2 layout + negative-offset
+placement added, and Phase 4H vertical safe margin + layout-debug
+overlay + vertical-only offset sweep added on the PYNQ-Z2 at
+`192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -386,6 +388,75 @@ User visual decision is still required to pick the final offset and to
 confirm that `compact-v2` fixes the right-shift on the 5-inch LCD.
 Phase 4G details are in
 `docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`.
+
+## HDMI GUI Phase 4H vertical margin + layout-debug
+
+After Phase 4G the user reported on the 5-inch LCD that (a) the top
+edge clips a few pixels, (b) the horizontal direction does NOT
+overflow, and (c) the left side either shows an invisible band or an
+unused cosmetically empty strip. Phase 4H treats the horizontal symptom
+as a layout / viewport diagnosis problem instead of an `offset_x`
+correction problem. No Vivado / bit / hwh / block_design / xdc /
+GPIO / VDMA / VTC change.
+
+Compact-v2 layout updates:
+
+- New module dict `COMPACT_V2_LAYOUT` plus public helper
+  `compact_v2_panel_boxes(width=800, height=480)`. The renderer reads
+  its coordinates from the dict.
+- Outer chassis moved from `(12,12)..(788,468)` to
+  `(12,30)..(788,470)`; the canvas now has ~18 px more breathing room
+  at the top so a LCD that crops 20-30 px at the top no longer kills
+  the header.
+- Panels moved from `x=24` left margin to `x=18` left margin (and
+  matching `x=Wv-18` right margin); the left strip is now used by the
+  panel content instead of left as cosmetic padding.
+- Header band `y=44..118` (was `y=20..100`), chain `y=128..258` (was
+  `y=110..250`), bottom row `y=268..458` (was `y=260..454`), variant
+  label `y=472` (was `y=Hv-4`).
+- New inset "safe corner" L-shapes are drawn in LED-soft at the outer
+  rectangle corners alongside the existing canvas-edge TL / TR / BL /
+  BR markers. A photo can tell whether the chassis frame itself
+  reaches the panel even when the absolute canvas corner is cropped.
+
+New scripts:
+
+- `scripts/test_hdmi_800x480_layout_debug.py`: renders compact-v2,
+  composites a 50 px coordinate grid, axis labels, panel bboxes from
+  `compact_v2_panel_boxes`, a red `LEFT STRIP x=0..100` band, a cyan
+  `TOP STRIP y=0..40` band, and a footer with the current variant /
+  offset / canvas size.
+- `scripts/test_hdmi_800x480_vertical_offsets.py`: keeps `offset_x=0`
+  and walks `offset_y` through `{0, 10, 20, 30, 40, 50}`. Emits a
+  warning if `--offset-x` is non-zero because Phase 4H's hypothesis is
+  that horizontal correction is the wrong tool.
+
+`scripts/test_hdmi_800x480_frame.py` defaults stay at
+`--variant compact-v2 --placement manual --offset-x 0 --offset-y 0`.
+The recommended `offset_y` initial range based on the Phase 4G
+top-clip observation is `20..30`, but the final value waits on a user
+photo session.
+
+PYNQ runs (selective `scp` only):
+
+- Board-side `audio_lab.bit` stayed `4,045,680` bytes,
+  `audio_lab.hwh` stayed `1,054,120` bytes, both with the same May 14
+  mtime.
+- Layout-debug at `offset_y=0`: base render `0.336 s`, overlay compose
+  `0.204 s`, framebuffer copy `0.207 s`, `VDMACR=0x00010001`,
+  `DMASR=0x00011000`, `vtc_ctl=0x00000006`, no VDMA error bits.
+- Vertical sweep `offset_y in {0,10,20,30,40,50}`: every step
+  `compose~0.025 s`, `copy~0.206 s`, `clipped=False`, no VDMA error
+  bits.
+- Single-frame `offset_y=30`: same state, no VDMA error bits.
+
+User visual decision is still required to (1) confirm whether the
+Phase 4H top safe margin already fixes the top-clip at `offset_y=0`
+or whether `offset_y in [20, 30]` is still needed, and (2) interpret
+the layout-debug photo to decide whether the left-side strip is
+cropped by the panel or just left unused by the renderer.
+Phase 4H details are in
+`docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

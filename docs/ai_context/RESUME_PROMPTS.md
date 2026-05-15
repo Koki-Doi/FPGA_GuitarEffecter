@@ -390,6 +390,54 @@ asking it to re-discover the project from scratch.
 > `--seconds-per-offset 15` 等で再撮影して決定してください。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`。
 
+### HDMI GUI Phase 4H result — vertical safe margin + layout diagnosis
+
+> HDMI GUI Phase 4H は完了済みです。
+> Phase 4G 完了後、ユーザー目視では (a) 上端が少しだけ切れる、
+> (b) 横方向ははみ出していない、(c) 左側に表示されていない/使われて
+> いない領域がある、でした。横方向は `offset_x` 補正ではなく、layout /
+> viewport diagnosis として扱う方針です。Vivado rebuild / bit / hwh /
+> `block_design.tcl` / `audio_lab.xdc` / `create_project.tcl` /
+> Clash / DSP / `topEntity` / GPIO / HDMI IP / VDMA / VTC は一切
+> 変更していません。
+>
+> Phase 4H で compact-v2 layout を変更しました。外枠を
+> `(12,30)..(788,470)` (旧 `(12,12)..(788,468)`) へ下げ、左 margin を
+> `x=18` (旧 `x=24`) に詰め、header `y=44..118`、chain `y=128..258`、
+> 下段 `y=268..458` に再配置。`GUI/pynq_multi_fx_gui.py` に
+> `COMPACT_V2_LAYOUT` dict と `compact_v2_panel_boxes()` を追加して
+> diagnostic script から同じ bbox を読めるようにし、outer の四隅に
+> LED-soft 22px L字 marker を追加 (絶対 canvas 端 TL/TR/BL/BR は維持)。
+>
+> 新規 `scripts/test_hdmi_800x480_layout_debug.py` は compact-v2 frame
+> の上に 50px grid、x/y 軸ラベル、panel bbox、`LEFT STRIP x=0..100` の
+> 赤帯、`TOP STRIP y=0..40` の青帯、底部に `debug=layout
+> variant=compact-v2 offset=(+0,+0) canvas=800x480` の footer を
+> overlay します。これで「左側が映っていないのか / 描画されていない
+> のか」を写真で判断できます。
+>
+> 新規 `scripts/test_hdmi_800x480_vertical_offsets.py` は
+> `offset_x=0` を固定し、`offset_y in {0,10,20,30,40,50}` を順に表示。
+> `--offset-x` が非ゼロだと警告を出します。
+> `scripts/test_hdmi_800x480_frame.py` の default は
+> `--variant compact-v2 --placement manual --offset-x 0 --offset-y 0`
+> のまま。Phase 4G の top-clip 観察から推奨 `offset_y` 初期候補は
+> `20..30` ですが、最終値はユーザー目視待ち。
+>
+> PYNQ-Z2 (`192.168.1.9`) では board 上の `audio_lab.bit`
+> (4,045,680B) と `audio_lab.hwh` (1,054,120B) は deploy 前後で同サイズ
+> ・同 mtime のままで、Python/scripts だけを `scp` で更新しました。
+> layout debug `offset_y=0`: base render `0.336s`、overlay compose
+> `0.204s`、framebuffer copy `0.207s`、`VDMACR=0x00010001`、
+> `DMASR=0x00011000`、`vtc_ctl=0x00000006`、error bits なし。
+> vertical sweep `offset_y in {0..50}`: 全 step `compose~0.025s`、
+> `copy~0.206s`、`clipped=False`、error bits なし。
+> 単発 `offset_y=30`: 同 state、error bits なし。post Safe Bypass smoke
+> OK。最終 `offset_y` と layout-debug 写真の解釈はユーザー目視で
+> `--seconds-per-offset 15 --hold-final-seconds 30` 等で再撮影して
+> 決定してください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

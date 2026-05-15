@@ -7,16 +7,18 @@ breaking the current AudioLab DSP path.
 Status: integrated Phase 4 implementation deployed, Phase 4C runtime
 resource profile measured, Phase 4D small-LCD fit modes added, Phase 4E
 800x480 logical GUI mode tested, Phase 4F manual viewport calibration
-added, and Phase 4G compact-v2 layout plus negative-offset placement
-added.
+added, Phase 4G compact-v2 layout plus negative-offset placement added,
+and Phase 4H vertical safe margin + layout-debug overlay +
+vertical-only offset sweep added.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
 test on the real deployed overlay, Phase 3 Vivado integration design,
 Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
 static-frame/resource profiling, Phase 4D LCD safe-area fit testing,
-Phase 4E logical-size testing, Phase 4F viewport calibration, and
-Phase 4G layout correction have been completed. Phase 4 implements
+Phase 4E logical-size testing, Phase 4F viewport calibration, Phase 4G
+layout correction, and Phase 4H vertical safe margin + horizontal
+layout diagnosis have been completed. Phase 4 implements
 Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
@@ -33,11 +35,13 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`,
 `HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`,
 `HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`,
-`HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`, and
-`HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md` for the measured
-results, design, build, deploy, timing, smoke logs, runtime resource
-profile, LCD fit test, 800x480 logical GUI result, viewport calibration
-result, and 800x480 compact-v2 layout correction.
+`HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`,
+`HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`, and
+`HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md` for the
+measured results, design, build, deploy, timing, smoke logs, runtime
+resource profile, LCD fit test, 800x480 logical GUI result, viewport
+calibration result, 800x480 compact-v2 layout correction, and
+800x480 vertical safe margin + horizontal layout diagnosis.
 
 ## 1. Current state
 
@@ -119,6 +123,22 @@ un-clipped `requested_destination_region`.
 `(-120,-40)`, `(-160,-40)` for user photo comparison. All offsets ran
 on the PYNQ-Z2 with no VDMA error bits and the bit/hwh on the board
 were not modified.
+
+Phase 4H then handled the residual top-edge clip and the left-strip
+"invisible or unused" symptom. Horizontal is treated as a layout /
+viewport diagnosis instead of an `offset_x` correction; `offset_x = 0`
+remains the default. The compact-v2 outer chassis now starts at `y=30`
+(was `y=12`), the inner panels use `x=18` left margin (was `x=24`),
+the header band moves to `y=44..118`, the chain to `y=128..258`, the
+bottom row to `y=268..458`, and a public `compact_v2_panel_boxes()`
+helper exposes those rectangles. Two new diagnostic scripts run:
+`scripts/test_hdmi_800x480_layout_debug.py` composites a 50 px grid,
+panel bboxes, axis labels, and explicit LEFT STRIP / TOP STRIP bands
+on top of the compact-v2 frame; and
+`scripts/test_hdmi_800x480_vertical_offsets.py` keeps `offset_x = 0`
+and walks `offset_y in {0, 10, 20, 30, 40, 50}`. All steps ran on the
+PYNQ-Z2 with no VDMA error bits and the bit/hwh on the board were
+not modified.
 
 The AudioLab control contract must remain intact:
 
