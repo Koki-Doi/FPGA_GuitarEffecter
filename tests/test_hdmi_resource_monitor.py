@@ -186,6 +186,9 @@ def test_dropdown_short_label_known_and_fallback():
 
 
 def test_dropdown_label_for_routes_by_category():
+    # Phase 6D: dropdown_label_for() returns "" for non-model effects so
+    # the renderer can hide the [model ▼] marker. Only PEDAL / AMP / CAB
+    # produce a non-empty label.
     assert dropdown_label_for("TUBE SCREAMER", "TUBE SCREAMER",
                                 "JC CLEAN", "1x12 OPEN") == "TUBE SCREAMER"
     assert dropdown_label_for("AMP SIM", "TUBE SCREAMER",
@@ -193,9 +196,15 @@ def test_dropdown_label_for_routes_by_category():
     assert dropdown_label_for("CAB", "TUBE SCREAMER",
                                 "JC CLEAN", "2x12 COMBO") == "2X12 COMBO"
     assert dropdown_label_for("REVERB", "TUBE SCREAMER",
-                                "JC CLEAN", "1x12 OPEN") == "REVERB"
+                                "JC CLEAN", "1x12 OPEN") == ""
     assert dropdown_label_for("SAFE BYPASS", "TUBE SCREAMER",
-                                "JC CLEAN", "1x12 OPEN") == "SAFE BYPASS"
+                                "JC CLEAN", "1x12 OPEN") == ""
+    assert dropdown_label_for("EQ", "TUBE SCREAMER",
+                                "JC CLEAN", "1x12 OPEN") == ""
+    assert dropdown_label_for("COMPRESSOR", "TUBE SCREAMER",
+                                "JC CLEAN", "1x12 OPEN") == ""
+    assert dropdown_label_for("NOISE SUPPRESSOR", "TUBE SCREAMER",
+                                "JC CLEAN", "1x12 OPEN") == ""
 
 
 def test_mirror_updates_app_state_dropdown_fields_on_pedal_edit():
@@ -222,12 +231,17 @@ def test_mirror_updates_app_state_dropdown_fields_on_cab_edit():
     assert mirror.app_state.dropdown_short_label == "2x12 CMB"
 
 
-def test_mirror_safe_bypass_dropdown_is_safe():
+def test_mirror_safe_bypass_dropdown_is_hidden():
+    # Phase 6D: SAFE BYPASS is not a model-driven effect, so the
+    # mirror clears dropdown_label / dropdown_short_label and the
+    # selected_model_dropdown_visible flag is False.
     mirror = make_mirror()
     mirror.safe_bypass()
     assert mirror.app_state.selected_model_category == "SAFE"
-    assert mirror.app_state.dropdown_label == "SAFE BYPASS"
-    assert mirror.app_state.dropdown_short_label == "SAFE"
+    assert mirror.app_state.dropdown_label == ""
+    assert mirror.app_state.dropdown_short_label == ""
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", True) is False
 
 
 def test_mirror_resource_summary_has_expected_keys():
@@ -281,7 +295,7 @@ if __name__ == "__main__":
         test_mirror_updates_app_state_dropdown_fields_on_pedal_edit,
         test_mirror_updates_app_state_dropdown_fields_on_amp_edit,
         test_mirror_updates_app_state_dropdown_fields_on_cab_edit,
-        test_mirror_safe_bypass_dropdown_is_safe,
+        test_mirror_safe_bypass_dropdown_is_hidden,
         test_mirror_resource_summary_has_expected_keys,
         test_mirror_render_records_resource_sample_and_total_update,
         test_mirror_set_pedal_model_invokes_real_overlay_apis,

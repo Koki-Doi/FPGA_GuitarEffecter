@@ -14,6 +14,8 @@ _SPEC.loader.exec_module(_MODULE)
 
 HdmiEffectStateMirror = _MODULE.HdmiEffectStateMirror
 normalize_selected_fx = _MODULE.normalize_selected_fx
+dropdown_visible_for = _MODULE.dropdown_visible_for
+dropdown_label_for = _MODULE.dropdown_label_for
 
 
 class FakeAppState(object):
@@ -222,6 +224,52 @@ def test_set_guitar_effects_last_kwarg_category_wins():
     assert mirror.get_selected_fx_actual() == "AMP SIM"
 
 
+def test_dropdown_visible_only_for_pedal_amp_cab():
+    visible = ["CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
+               "BIG MUFF", "FUZZ FACE", "METAL", "AMP SIM", "CAB"]
+    hidden = ["REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
+              "SAFE BYPASS", "PRESET", "OVERDRIVE"]
+    for fx in visible:
+        assert dropdown_visible_for(fx) is True, fx
+    for fx in hidden:
+        assert dropdown_visible_for(fx) is False, fx
+
+
+def test_dropdown_label_for_pedal_amp_cab():
+    assert dropdown_label_for("CLEAN BOOST", "TUBE SCREAMER",
+                              "BRITISH CRUNCH", "4x12 CLOSED") == "TUBE SCREAMER"
+    assert dropdown_label_for("AMP SIM", "TUBE SCREAMER",
+                              "BRITISH CRUNCH", "4x12 CLOSED") == "BRITISH CRUNCH"
+    assert dropdown_label_for("CAB", "TUBE SCREAMER",
+                              "BRITISH CRUNCH", "4x12 CLOSED") == "4X12 CLOSED"
+    for fx in ("REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
+               "SAFE BYPASS", "PRESET"):
+        assert dropdown_label_for(fx, "TUBE SCREAMER",
+                                  "BRITISH CRUNCH", "4x12 CLOSED") == "", fx
+
+
+def test_mirror_sets_dropdown_visibility_on_app_state():
+    mirror = make_mirror()
+    mirror.tube_screamer(drive=45, tone=55, level=65)
+    assert mirror.app_state.dropdown_label == "TUBE SCREAMER"
+    assert mirror.app_state.selected_model_category == "PEDAL"
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", False) is True
+
+    mirror.set_guitar_effects(reverb_on=True, reverb_mix=20)
+    assert mirror.get_selected_fx_actual() == "REVERB"
+    assert mirror.app_state.dropdown_label == ""
+    assert mirror.app_state.selected_model_category == "REVERB"
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", True) is False
+
+    mirror.set_compressor_settings(enabled=True, threshold=40, ratio=30,
+                                   response=50, makeup=50)
+    assert mirror.app_state.dropdown_label == ""
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", True) is False
+
+
 if __name__ == "__main__":
     tests = [
         test_normalize_selected_fx_aliases,
@@ -229,6 +277,9 @@ if __name__ == "__main__":
         test_mark_selected_fx_and_assertion_failure,
         test_render_validates_expected_selected_fx,
         test_set_guitar_effects_last_kwarg_category_wins,
+        test_dropdown_visible_only_for_pedal_amp_cab,
+        test_dropdown_label_for_pedal_amp_cab,
+        test_mirror_sets_dropdown_visibility_on_app_state,
     ]
     for test in tests:
         test()

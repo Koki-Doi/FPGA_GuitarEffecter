@@ -459,6 +459,7 @@ class AppState:
     selected_model_category: str = ""
     dropdown_label: str = ""
     dropdown_short_label: str = ""
+    selected_model_dropdown_visible: bool = False
     active_pedals: List[str] = field(default_factory=list)
     model_slots: Dict[str, List[Dict[str, object]]] = field(default_factory=dict)
 
@@ -615,41 +616,57 @@ def _dropdown_label(state) -> str:
     return category or "N/A"
 
 
-def _draw_dropdown_chip(img, draw, xy, text, color, palette,
-                        outline=None):
-    """Phase 6C: render a [text ▼] selection box.
+def _should_show_selected_model_dropdown(state) -> bool:
+    """Phase 6D: dropdown indicator visible only for PEDAL / AMP / CAB.
 
-    The text mirrors the live model. The triangle is a filled polygon
-    rather than a Unicode glyph so the bitmap font on PYNQ Pillow 5.1
-    renders consistently.
+    The HDMI GUI restores the compact-v2 layout from commit 0a07f2a, so
+    no extra chip is drawn for REVERB / EQ / COMPRESSOR / NOISE
+    SUPPRESSOR / SAFE BYPASS / PRESET / OVERDRIVE. The indicator is a
+    thin outline + triangle glyph painted around the matching row of
+    ACTIVE MODELS; selecting the chip is still notebook-side.
     """
+    category = _dropdown_category(state)
+    return category in ("PEDAL", "AMP", "CAB")
+
+
+def _selected_model_dropdown_label(state) -> str:
+    """Phase 6D: text the conditional [model ▼] marker reflects.
+
+    Returns the current pedal / amp / cab label for PEDAL / AMP / CAB
+    categories and an empty string otherwise so callers can use the
+    truthiness as a visibility flag.
+    """
+    if not _should_show_selected_model_dropdown(state):
+        return ""
+    category = _dropdown_category(state)
+    if category == "PEDAL":
+        return _pedal_label(state)
+    if category == "AMP":
+        return _amp_label(state)
+    if category == "CAB":
+        return _cab_label(state)
+    return ""
+
+
+def _draw_dropdown_arrow(draw, xy, color):
+    """Phase 6D: small filled triangle glyph used by the dropdown marker."""
     x0, y0, x1, y1 = (int(v) for v in xy)
     if x1 <= x0 or y1 <= y0:
         return
-    fill = palette.get("FX_CHIP_FILL", (4, 10, 6, 255))
-    outline_col = outline if outline is not None else color + (255,)
-    rounded_rect(draw, (x0, y0, x1, y1), 6, fill=fill,
-                 outline=outline_col, width=2)
-    tri_w = 10
-    tri_h = 6
-    pad_right = 10
-    tri_cx = x1 - pad_right - tri_w // 2
-    tri_top = (y0 + y1) // 2 - tri_h // 2
+    tri_w = max(6, min(10, x1 - x0))
+    tri_h = max(4, min(6, y1 - y0))
+    cx = (x0 + x1) // 2
+    top = (y0 + y1) // 2 - tri_h // 2
     triangle = [
-        (tri_cx - tri_w // 2, tri_top),
-        (tri_cx + tri_w // 2, tri_top),
-        (tri_cx, tri_top + tri_h),
+        (cx - tri_w // 2, top),
+        (cx + tri_w // 2, top),
+        (cx, top + tri_h),
     ]
     try:
         draw.polygon(triangle, fill=color + (255,),
                      outline=color + (255,))
     except TypeError:
         draw.polygon(triangle, fill=color + (255,))
-    text_x = x0 + 12
-    text_y = (y0 + y1) // 2
-    short = _dropdown_short(text)
-    draw_text(img, (text_x, text_y), short, fill=color + (255,),
-              scale=1, anchor="lm", letter_spacing=1)
 
 
 def _pedal_label(state: AppState) -> str:
@@ -1049,6 +1066,7 @@ def state_semistatic_signature(state: AppState):
         getattr(state, "selected_model_category", None),
         getattr(state, "dropdown_label", None),
         getattr(state, "dropdown_short_label", None),
+        bool(getattr(state, "selected_model_dropdown_visible", False)),
         tuple(getattr(state, "active_pedals", []) or []),
         bool(state.save_flash > 0),
     )
@@ -1514,16 +1532,16 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   fill=s_col + (255,), scale=2, anchor="mm",
                   letter_spacing=2)
 
-        # Phase 6C: [model ▼] dropdown-style chip rendered between the
-        # SELECTED FX name and the ON/BYPASS chip. Display-only -- the
-        # actual selection control lives in the Notebook ipywidgets.
-        dropdown_text = _dropdown_label(state)
-        dd_chip_w, dd_chip_h = 150, 30
-        dd_chip = (s_chip[0] - 12 - dd_chip_w, fy0 + 18,
-                   s_chip[0] - 12, fy0 + 18 + dd_chip_h)
-        _draw_dropdown_chip(img, d, dd_chip, dropdown_text,
-                            color=LED, palette=palette)
-
+        # Phase 6D: restore the compact-v2 layout from 0a07f2a. The
+        # standalone [model ▼] chip Phase 6C dropped between the
+        # SELECTED FX name and the ON/BYPASS chip overlapped the
+        # ACTIVE MODELS column, which hid the PEDAL / AMP rows. The
+        # dropdown marker is now a thin outline + triangle glyph drawn
+        # only around the matching ACTIVE MODELS row (PEDAL / AMP / CAB)
+        # when the SELECTED FX category warrants it. Other effects --
+        # REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR / SAFE / PRESET --
+        # get no extra marker and the row renders identically to
+        # 0a07f2a. The Notebook ipywidgets remain the actual control.
         model_x0 = fx0 + 270
         model_x1 = fx1 - 16
         draw_text(img, (model_x0, fy0 + 10), "ACTIVE  MODELS",
@@ -1533,13 +1551,41 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             ("AMP", _compact_model_label(amp_label)),
             ("CAB", _compact_model_label(cab_label)),
         ]
+        dropdown_category = (_dropdown_category(state)
+                             if _should_show_selected_model_dropdown(state)
+                             else "")
+        category_to_row = {"PEDAL": 0, "AMP": 1, "CAB": 2}
+        highlight_row = category_to_row.get(dropdown_category, -1)
+        # The ON/BYPASS chip lives at (s_chip[0], fy0+18) -- y=18..48 in
+        # FX-panel-local coordinates. The PEDAL row sits at ry=fy0+31,
+        # so its highlight rect would collide with the chip if it
+        # extended to model_x1. Cap the right edge at s_chip[0]-12 for
+        # the PEDAL row only, and let AMP/CAB rows (below the chip)
+        # extend all the way to model_x1.
         for row, (label, value) in enumerate(model_rows):
             ry = fy0 + 31 + row * 18
+            if row == highlight_row:
+                outline_y0 = ry - 3
+                outline_y1 = ry + 13
+                outline_x0 = model_x0 + 64
+                if outline_y1 > fy0 + 18 and outline_y0 < fy0 + 48:
+                    outline_x1 = min(model_x1 - 4, s_chip[0] - 12)
+                else:
+                    outline_x1 = model_x1 - 4
+                rounded_rect(d,
+                             (outline_x0, outline_y0,
+                              outline_x1, outline_y1),
+                             4, fill=palette["FX_CHIP_FILL"],
+                             outline=LED + (220,), width=1)
+                _draw_dropdown_arrow(
+                    d, (outline_x1 - 12, ry + 1,
+                        outline_x1 - 4, ry + 9), LED)
             draw_text(img, (model_x0, ry), label,
                       fill=SCR_TEXT_DIM + (255,), scale=1,
                       letter_spacing=2)
+            value_color = LED + (255,)
             draw_text(img, (model_x0 + 72, ry), value,
-                      fill=LED + (255,), scale=1, letter_spacing=1)
+                      fill=value_color, scale=1, letter_spacing=1)
 
         def _slot_row(labels, active_index, x0, y0, x1, h, gap=6):
             count = max(1, len(labels))

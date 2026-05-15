@@ -118,14 +118,27 @@ and `DECISIONS.md` D24):
   resource monitor. Every widget call goes through
   `HdmiEffectStateMirror` -> `AudioLabOverlay` (real DSP edit) ->
   800x480 HDMI render at `placement="manual"`, `offset_x=0`,
-  `offset_y=0`. The compact-v2 fx panel now also draws a `[model ▼]`
-  dropdown-style chip next to SELECTED FX, mirroring the currently
-  selected pedal / amp / cab / effect-family label (truncated:
-  `TUBE SCRMR`, `BRIT CRUNCH`, `HI-GAIN`, `CLN BOOST`, `FUZZ`,
-  `2x12 CMB`, `SAFE`, etc.). The mirror exposes a `/proc`-based
+  `offset_y=0`. The mirror exposes a `/proc`-based
   `ResourceSampler` and `resource_summary()` for the Notebook panel.
   HDMI panel remains display-only; no event input back to the mirror.
-  No bit/hwh change.
+  No bit/hwh change. The standalone `[model ▼]` chip Phase 6C
+  initially drew between SELECTED FX and the ON/BYPASS chip was
+  removed in Phase 6D -- see below.
+- Phase 6D restores the `0a07f2a` compact-v2 fx panel layout. The
+  Phase 6C dropdown chip occluded the PEDAL / AMP rows of ACTIVE
+  MODELS; Phase 6D drops it and replaces it with a thin outline +
+  filled-triangle glyph drawn **around the matching ACTIVE MODELS
+  row only when the SELECTED FX category is PEDAL / AMP / CAB**.
+  Non-model effects (REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR /
+  SAFE BYPASS / PRESET / OVERDRIVE) render the row identically to
+  `0a07f2a` with no extra marker. `dropdown_label_for(...)` and the
+  AppState `dropdown_label` / `dropdown_short_label` fields now
+  produce `""` for non-model effects so the renderer can use
+  truthiness as a visibility flag. A new
+  `selected_model_dropdown_visible: bool` field on AppState makes
+  the gating decision explicit for tests and the mirror.
+  Notebook ipywidgets remain the only control surface; HDMI stays
+  display-only. No bit/hwh change.
 
 ### AudioLabOverlay and audio_lab.bit
 

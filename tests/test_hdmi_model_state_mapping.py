@@ -19,6 +19,9 @@ normalize_cab_model = _MODULE.normalize_cab_model
 pedal_model_label = _MODULE.pedal_model_label
 amp_model_label = _MODULE.amp_model_label
 cab_model_label = _MODULE.cab_model_label
+selected_fx_category = _MODULE.selected_fx_category
+dropdown_label_for = _MODULE.dropdown_label_for
+dropdown_visible_for = _MODULE.dropdown_visible_for
 
 
 class FakeAppState(object):
@@ -205,6 +208,60 @@ def test_selected_fx_history_for_models():
     assert history == ["CLEAN BOOST", "DS-1", "AMP SIM", "CAB"]
 
 
+def test_selected_fx_category_mapping():
+    for fx in ("CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
+               "BIG MUFF", "FUZZ FACE", "METAL"):
+        assert selected_fx_category(fx) == "PEDAL"
+    assert selected_fx_category("AMP SIM") == "AMP"
+    assert selected_fx_category("CAB") == "CAB"
+    assert selected_fx_category("REVERB") == "REVERB"
+    assert selected_fx_category("EQ") == "EQ"
+    assert selected_fx_category("COMPRESSOR") == "COMPRESSOR"
+    assert selected_fx_category("NOISE SUPPRESSOR") == "NOISE SUPPRESSOR"
+    assert selected_fx_category("SAFE BYPASS") == "SAFE"
+    assert selected_fx_category("PRESET") == "PRESET"
+
+
+def test_pedal_selection_marks_dropdown_visible_with_current_pedal_label():
+    mirror = make_mirror()
+    mirror.set_pedal_model("ds1", drive=50, tone=50, level=55)
+    assert mirror.app_state.selected_model_category == "PEDAL"
+    assert mirror.app_state.dropdown_label == "DS-1"
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", False) is True
+
+
+def test_amp_selection_marks_dropdown_visible_with_current_amp_label():
+    mirror = make_mirror()
+    mirror.set_amp_model("high_gain_stack", gain=70, bass=55, mid=50, treble=60)
+    assert mirror.app_state.selected_model_category == "AMP"
+    assert mirror.app_state.dropdown_label == "HIGH GAIN STACK"
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", False) is True
+
+
+def test_cab_selection_marks_dropdown_visible_with_current_cab_label():
+    mirror = make_mirror()
+    mirror.set_cab_model("2x12", air=40)
+    assert mirror.app_state.selected_model_category == "CAB"
+    assert mirror.app_state.dropdown_label == "2x12 COMBO".upper()
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", False) is True
+
+
+def test_non_model_effects_hide_dropdown():
+    mirror = make_mirror()
+    mirror.set_pedal_model("tube_screamer", drive=45, tone=55, level=65)
+    # Switching to a non-model effect should clear the dropdown label.
+    mirror.set_guitar_effects(reverb_on=True, reverb_mix=20)
+    assert mirror.get_selected_fx_actual() == "REVERB"
+    assert mirror.app_state.dropdown_label == ""
+    assert mirror.app_state.dropdown_short_label == ""
+    assert getattr(mirror.app_state,
+                   "selected_model_dropdown_visible", True) is False
+    assert dropdown_visible_for("REVERB") is False
+
+
 if __name__ == "__main__":
     tests = [
         test_model_name_normalize_and_labels,
@@ -213,6 +270,11 @@ if __name__ == "__main__":
         test_amp_model_updates_selected_fx_and_app_state,
         test_cab_model_updates_selected_fx_and_app_state,
         test_selected_fx_history_for_models,
+        test_selected_fx_category_mapping,
+        test_pedal_selection_marks_dropdown_visible_with_current_pedal_label,
+        test_amp_selection_marks_dropdown_visible_with_current_amp_label,
+        test_cab_selection_marks_dropdown_visible_with_current_cab_label,
+        test_non_model_effects_hide_dropdown,
     ]
     for test in tests:
         test()

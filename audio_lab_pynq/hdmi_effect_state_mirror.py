@@ -482,12 +482,14 @@ def dropdown_short_label(value):
 
 
 def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label):
-    """Phase 6C: pick the [model ▼] chip text for the SELECTED FX panel.
+    """Phase 6D: pick the [model ▼] marker text for the SELECTED FX panel.
 
-    The chip mirrors the currently-selected model when the SELECTED FX
-    is a model-driven effect (PEDAL / AMP / CAB) and otherwise reflects
-    the effect family itself (REVERB / EQ / COMP / NS / OD / PRESET /
-    SAFE).
+    The dropdown marker is only shown for model-driven effects
+    (PEDAL / AMP / CAB) and stays hidden for REVERB / EQ / COMPRESSOR /
+    NOISE SUPPRESSOR / SAFE / PRESET / OVERDRIVE. This helper returns
+    the matching model label for PEDAL / AMP / CAB and an empty string
+    otherwise so the renderer and AppState mirror can use the
+    truthiness as a visibility flag.
     """
     canonical = canonical_selected_fx(selected_fx)
     category = SELECTED_FX_CATEGORY.get(canonical, canonical)
@@ -497,21 +499,14 @@ def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label):
         return str(amp_label or "").upper()
     if category == "CAB":
         return str(cab_label or "").upper()
-    if category == "SAFE":
-        return "SAFE BYPASS"
-    if category == "PRESET":
-        return "PRESET"
-    if category == "REVERB":
-        return "REVERB"
-    if category == "EQ":
-        return "EQ"
-    if category == "COMPRESSOR":
-        return "COMPRESSOR"
-    if category == "NOISE SUPPRESSOR":
-        return "NOISE SUPPRESSOR"
-    if category == "OVERDRIVE":
-        return "OVERDRIVE"
-    return canonical or "N/A"
+    return ""
+
+
+def dropdown_visible_for(selected_fx):
+    """Phase 6D: True when the SELECTED FX has a PEDAL/AMP/CAB dropdown."""
+    canonical = canonical_selected_fx(selected_fx)
+    category = SELECTED_FX_CATEGORY.get(canonical, canonical)
+    return category in ("PEDAL", "AMP", "CAB")
 
 
 def _parse_proc_meminfo_text(text):
@@ -839,11 +834,14 @@ class HdmiEffectStateMirror(object):
         self._update_dropdown_app_state()
 
     def _update_dropdown_app_state(self, selected_fx=None):
-        """Phase 6C: keep selected_model_category / dropdown_label on AppState.
+        """Phase 6D: keep selected_model_category / dropdown_label on AppState.
 
         Called from ``mark_selected_fx`` and ``_sync_model_state_to_app_state``
-        so the HDMI GUI always sees the [model ▼] chip in sync with both the
-        last edited model and the last edited effect.
+        so the HDMI GUI always sees the conditional [model ▼] marker in
+        sync with both the last edited model and the last edited
+        effect. Non-model effects (REVERB / EQ / COMPRESSOR / NOISE
+        SUPPRESSOR / SAFE / PRESET / OVERDRIVE) yield an empty
+        ``dropdown_label`` so the renderer hides the marker.
         """
         if selected_fx is None:
             selected_fx = self.get_selected_fx_actual()
@@ -854,10 +852,13 @@ class HdmiEffectStateMirror(object):
             self.current_pedal_label,
             self.current_amp_label,
             self.current_cab_label)
-        short = dropdown_short_label(label)
+        short = dropdown_short_label(label) if label else ""
+        visible = dropdown_visible_for(canonical)
         setattr(self.app_state, "selected_model_category", category)
         setattr(self.app_state, "dropdown_label", label)
         setattr(self.app_state, "dropdown_short_label", short)
+        setattr(self.app_state, "selected_model_dropdown_visible",
+                bool(visible))
 
     def _set_current_pedal_model(self, model, enabled=True):
         self.current_pedal_model = normalize_pedal_model(model)
@@ -1699,6 +1700,7 @@ __all__ = [
     "selected_fx_category",
     "dropdown_short_label",
     "dropdown_label_for",
+    "dropdown_visible_for",
     "normalize_selected_fx",
     "canonical_selected_fx",
     "normalize_pedal_model",

@@ -112,9 +112,9 @@ def test_renderer_compact_v2_paints_across_full_x_range():
 
 
 def test_renderer_compact_v2_dropdown_chip_does_not_overflow():
-    """The Phase 6C [model ▼] chip must not push pixels past x=799."""
+    """The Phase 6D [model ▼] marker must not push pixels past x=799."""
     state = AppState()
-    state.preset_id = "06C"
+    state.preset_id = "06D"
     state.preset_name = "DROPDOWN  RIGHT"
     state.selected_fx = "AMP SIM"
     state.pedal_model_label = "TUBE SCREAMER"
@@ -128,12 +128,61 @@ def test_renderer_compact_v2_dropdown_chip_does_not_overflow():
     assert max_x <= 799, "dropdown chip overflowed x=799: max_x={}".format(max_x)
 
 
+def test_renderer_compact_v2_non_model_fx_has_no_extra_chip():
+    """Phase 6D: REVERB / EQ / COMPRESSOR / NOISE / SAFE / PRESET must
+    render the same compact-v2 panel as the pre-Phase-6C baseline; no
+    extra outline or triangle glyph is drawn around ACTIVE MODELS.
+    """
+    import numpy as np
+    from pynq_multi_fx_gui import (
+        _should_show_selected_model_dropdown,
+        _selected_model_dropdown_label,
+    )
+    for fx in ("REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
+               "SAFE BYPASS", "PRESET"):
+        state = AppState()
+        state.selected_fx = fx
+        assert _should_show_selected_model_dropdown(state) is False, fx
+        assert _selected_model_dropdown_label(state) == "", fx
+        frame = render_frame_800x480_compact_v2(
+            state, theme="pipboy-green")
+        assert frame.shape == (480, 800, 3), fx
+
+
+def test_renderer_compact_v2_pedal_fx_has_dropdown_marker():
+    """Phase 6D: PEDAL / AMP / CAB selection draws the dropdown marker
+    on the matching ACTIVE MODELS row.
+    """
+    from pynq_multi_fx_gui import (
+        _should_show_selected_model_dropdown,
+        _selected_model_dropdown_label,
+    )
+    cases = [
+        ("CLEAN BOOST", "PEDAL"),
+        ("TUBE SCREAMER", "PEDAL"),
+        ("RAT", "PEDAL"),
+        ("DS-1", "PEDAL"),
+        ("BIG MUFF", "PEDAL"),
+        ("FUZZ FACE", "PEDAL"),
+        ("METAL", "PEDAL"),
+        ("AMP SIM", "AMP"),
+        ("CAB", "CAB"),
+    ]
+    for fx, _cat in cases:
+        state = AppState()
+        state.selected_fx = fx
+        assert _should_show_selected_model_dropdown(state) is True, fx
+        assert _selected_model_dropdown_label(state) != "", fx
+
+
 if __name__ == "__main__":
     tests = [
         test_compose_logical_manual_x0_y0_places_at_origin,
         test_compose_logical_negative_offset_clips_not_indexes_offsides,
         test_renderer_compact_v2_paints_across_full_x_range,
         test_renderer_compact_v2_dropdown_chip_does_not_overflow,
+        test_renderer_compact_v2_non_model_fx_has_no_extra_chip,
+        test_renderer_compact_v2_pedal_fx_has_dropdown_marker,
     ]
     for fn in tests:
         fn()

@@ -113,6 +113,31 @@ asking it to re-discover the project from scratch.
 > `run_pynq_hdmi()` / second overlay 禁止、`git push` / `git pull` /
 > `git fetch` 禁止。
 
+### HDMI GUI Phase 6D result — Restore compact UI + conditional dropdown
+
+> HDMI GUI Phase 6D は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6D_RESTORE_UI_AND_CONDITIONAL_DROPDOWN.md`
+> を読んでから再開してください。Phase 6C の `[model ▼]` chip が
+> ACTIVE MODELS の PEDAL / AMP 行に重なって status 表示が消えていた
+> 問題を解消し、`0a07f2a` 時点の compact-v2 800x480 レイアウトを復元
+> しました。chip 描画は廃止し、SELECTED FX のカテゴリが PEDAL / AMP
+> / CAB のときだけ、ACTIVE MODELS の対応行に細い outline + 三角形
+> マーカーを描きます。REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR /
+> SAFE BYPASS / PRESET / OVERDRIVE では追加マーカーは描きません。
+> AppState に `selected_model_dropdown_visible: bool` を追加し、
+> mirror の `dropdown_label_for(...)` は非モデルカテゴリで `""` を
+> 返すよう契約を変更しました (truthiness で表示判定可能)。
+> Notebook ipywidgets が唯一のコントロール面、HDMI は display-only
+> のまま。`scripts/test_hdmi_model_selection_ui.py` は 16/16 PASS
+> (7 PEDAL, 3 AMP, 1 CAB, REVERB, COMPRESSOR, NOISE SUPPRESSOR,
+> SAFE BYPASS, PRESET)、`render_s ~0.15-0.18 s`,
+> `framebuffer_copy_s ~0.21 s`, `DMASR=0x00011000`,
+> `vtc_ctl=0x00000006`, 800x480 `x=0,y=0` 維持、ADC HPF true、
+> R19=0x23。ローカル unit tests も 40 PASS。bit/hwh / Vivado /
+> `block_design.tcl` / `audio_lab.xdc` / `create_project.tcl` /
+> Clash 変更なし、`Overlay("base.bit")` / `run_pynq_hdmi()` /
+> second overlay 禁止、`git push` / `git pull` / `git fetch` 禁止。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は

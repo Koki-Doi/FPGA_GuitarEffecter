@@ -1040,6 +1040,58 @@ No Vivado rebuild, bit/hwh regeneration, `block_design.tcl`,
 Phase 6C full notes are recorded in
 `docs/ai_context/HDMI_GUI_PHASE6C_REALTIME_NOTEBOOK_PEDALBOARD.md`.
 
+## HDMI GUI Phase 6D restore compact UI + conditional dropdown
+
+Phase 6C's `[model ▼]` chip was drawn at `(488, 278, 638, 308)` --
+directly on top of the ACTIVE MODELS PEDAL row (y=291) and the upper
+half of the AMP row (y=309). On the LCD this read as "UIが前と全然
+違う / 各ステータスの値が消えている". Phase 6D removes the
+standalone chip, restores the `0a07f2a` compact-v2 layout, and adds
+a thin outline + filled-triangle glyph **around the matching ACTIVE
+MODELS row** only when the SELECTED FX category is PEDAL / AMP /
+CAB. REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR / SAFE / PRESET /
+OVERDRIVE produce no extra marker.
+
+For the PEDAL row the highlight rectangle is clipped to
+`s_chip[0] - 12` so it cannot collide with the ON/BYPASS chip; AMP /
+CAB rows extend to `model_x1 - 4`. The triangle is drawn through the
+new `_draw_dropdown_arrow` helper so the bitmap font on PYNQ Pillow
+5.1 does not need a `▼` glyph.
+
+Renderer helpers added: `_should_show_selected_model_dropdown`,
+`_selected_model_dropdown_label`, `_draw_dropdown_arrow`. The old
+`_draw_dropdown_chip` was removed. `AppState` gained
+`selected_model_dropdown_visible: bool`.
+
+Mirror helpers updated:
+`dropdown_label_for(...)` returns `""` for non-PEDAL/AMP/CAB
+categories, `dropdown_visible_for(selected_fx)` is the new public
+helper, and `_update_dropdown_app_state` sets
+`selected_model_dropdown_visible` on AppState. The Notebook
+ipywidgets remain the only control surface; HDMI is display-only.
+
+`scripts/test_hdmi_model_selection_ui.py` now drives 16 steps (7
+PEDAL, 3 AMP, 1 CAB, REVERB, COMPRESSOR, NOISE SUPPRESSOR, SAFE
+BYPASS, PRESET) and asserts both visibility and label-vs-empty per
+category. On PYNQ-Z2 (192.168.1.9) all 16 steps PASS with
+`render_s ~ 0.15-0.18 s`, `compose_s ~ 0.026 s`,
+`framebuffer_copy_s ~ 0.21 s`, VDMA DMASR `0x00011000`, VTC ctl
+`0x00000006`, framebuffer `(0,0,800,480)`, ADC HPF true, R19 0x23.
+
+Tests on the workstation: 40 PASS across
+`tests/test_hdmi_selected_fx_state.py` (+3 new),
+`tests/test_hdmi_model_state_mapping.py` (+5 new),
+`tests/test_hdmi_origin_mapping.py` (+2 new),
+`tests/test_hdmi_resource_monitor.py` (1 test renamed,
+`dropdown_label_for("REVERB",...)` contract flipped to `""`), plus
+`tests/test_hdmi_gui_bridge.py`. `git diff --check` clean. Notebook
+one-cell shape preserved for both HDMI notebooks. No Vivado /
+bit/hwh / Clash / GPIO change, no remote git operation. Remote
+`audio_lab.bit` / `audio_lab.hwh` md5 match local.
+
+Phase 6D full notes are recorded in
+`docs/ai_context/HDMI_GUI_PHASE6D_RESTORE_UI_AND_CONDITIONAL_DROPDOWN.md`.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the

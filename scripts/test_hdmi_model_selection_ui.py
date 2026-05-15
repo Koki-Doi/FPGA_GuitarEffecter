@@ -75,6 +75,11 @@ def print_step_result(row):
     print("pedal model         : {}".format(row.get("pedal_model_label")))
     print("amp model           : {}".format(row.get("amp_model_label")))
     print("cab model           : {}".format(row.get("cab_model_label")))
+    print("category            : {}".format(row.get("category")))
+    print("dropdown visible    : expected={} actual={}".format(
+        row.get("expected_dropdown_visible"),
+        row.get("actual_dropdown_visible")))
+    print("dropdown label      : {}".format(row.get("dropdown_label")))
     print("result              : {}".format(row["result"]))
     if row.get("skip_reason"):
         print("skip reason         : {}".format(row["skip_reason"]))
@@ -153,7 +158,7 @@ def main():
     )
     from audio_lab_pynq.hdmi_backend import AudioLabHdmiBackend  # noqa: E402
     from audio_lab_pynq.hdmi_effect_state_mirror import (  # noqa: E402
-        HdmiEffectStateMirror,
+        HdmiEffectStateMirror, dropdown_visible_for, selected_fx_category,
     )
 
     theme = args.theme
@@ -215,14 +220,33 @@ def main():
         ("reverb", "REVERB",
          lambda: mirror.reverb(mix=25, decay=50),
          {}),
+        ("compressor", "COMPRESSOR",
+         lambda: mirror.set_compressor_settings(
+             enabled=True, threshold=40, ratio=30, response=50, makeup=50),
+         {}),
+        ("noise_suppressor", "NOISE SUPPRESSOR",
+         lambda: mirror.set_noise_suppressor_settings(
+             enabled=True, threshold=25, decay=80, damp=80),
+         {}),
+        ("safe_bypass", "SAFE BYPASS",
+         lambda: mirror.safe_bypass(),
+         {}),
+        ("preset_basic_clean", "PRESET",
+         lambda: mirror.apply_chain_preset("Basic Clean"),
+         {}),
     ]
 
     for index, (operation, expected, callback, model_expected) in enumerate(steps, 1):
+        expected_visible = dropdown_visible_for(expected)
         row = {
             "step": index,
             "operation": operation,
             "expected": expected,
             "actual": None,
+            "category": None,
+            "expected_dropdown_visible": expected_visible,
+            "actual_dropdown_visible": None,
+            "dropdown_label": None,
             "result": "FAIL",
             "render_s": None,
             "compose_s": None,
@@ -241,6 +265,11 @@ def main():
             actual = mirror.get_selected_fx_actual()
             info = dict(mirror.last_render_info or {})
             errors = info.get("hdmi_errors") or {}
+            actual_visible = bool(getattr(
+                mirror.app_state,
+                "selected_model_dropdown_visible", False))
+            dropdown_label = getattr(
+                mirror.app_state, "dropdown_label", "")
             row.update({
                 "actual": actual,
                 "result": "PASS",
@@ -250,6 +279,9 @@ def main():
                 "pedal_model_label": mirror.current_pedal_label,
                 "amp_model_label": mirror.current_amp_label,
                 "cab_model_label": mirror.current_cab_label,
+                "category": selected_fx_category(actual),
+                "actual_dropdown_visible": actual_visible,
+                "dropdown_label": dropdown_label,
                 "render_s": info.get("render_s"),
                 "backend_update_s": info.get("backend_update_s"),
                 "compose_s": info.get("compose_s"),
@@ -259,6 +291,23 @@ def main():
                 "vtc_ctl": (info.get("hdmi_status") or {}).get("vtc_ctl"),
                 "last_frame_write": info.get("last_frame_write"),
             })
+            if actual_visible != expected_visible:
+                row["result"] = "FAIL"
+                row["error"] = (
+                    "dropdown visibility mismatch: "
+                    "expected={} actual={}".format(
+                        expected_visible, actual_visible))
+                report["failures"].append(row)
+            if expected_visible and not dropdown_label:
+                row["result"] = "FAIL"
+                row["error"] = (
+                    "dropdown label empty for category that should show it")
+                report["failures"].append(row)
+            if not expected_visible and dropdown_label:
+                row["result"] = "FAIL"
+                row["error"] = (
+                    "dropdown label non-empty for category that should hide it")
+                report["failures"].append(row)
             if serious_vdma_error(errors):
                 row["result"] = "FAIL"
                 row["error"] = "VDMA internal/slave/decode error bit asserted"
