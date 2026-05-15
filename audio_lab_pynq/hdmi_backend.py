@@ -1,9 +1,10 @@
 """Minimal HDMI framebuffer back end for the Phase 4 integrated AudioLab
 overlay.
 
-Single-purpose role: take a 1280x720 RGB888 ``numpy.ndarray`` from
-``GUI.pynq_multi_fx_gui.render_frame_pynq_static`` and scan it out to
-HDMI through the integrated ``axi_vdma_hdmi`` / ``v_tc_hdmi`` /
+Single-purpose role: take an RGB888 ``numpy.ndarray`` from
+``GUI.pynq_multi_fx_gui.render_frame_800x480_compact_v2`` (or the native
+1280x720 path used by the diagnostic scripts) and scan it out to HDMI
+through the integrated ``axi_vdma_hdmi`` / ``v_tc_hdmi`` /
 ``v_axi4s_vid_out_hdmi`` / ``rgb2dvi_hdmi`` block in ``audio_lab.bit``.
 The DDR framebuffer is 24-bit packed GBR888 because Digilent ``rgb2dvi``
 maps ``vid_pData`` as ``[23:16]=R``, ``[15:8]=B``, ``[7:0]=G``.

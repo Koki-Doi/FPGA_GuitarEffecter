@@ -1,6 +1,5 @@
 import os
 import shutil
-from distutils.dir_util import copy_tree
 
 from .AxisSwitch import AxisSwitch
 from .AudioLabOverlay import XbarSource, XbarEffect, XbarSink, AudioLabOverlay
@@ -22,8 +21,18 @@ def install_notebooks(notebook_dir=None):
     src_bs_dir = os.path.join(os.path.dirname(__file__), 'bitstreams')
     dst_nb_dir = os.path.join(notebook_dir, 'audio_lab')
     dst_bs_dir = os.path.join(dst_nb_dir, 'bitstreams')
+    # `shutil.copytree` with `dirs_exist_ok` is the simplest reliable copy on
+    # Python 3.8+, but PYNQ-Z2 ships Python 3.6, so wipe-and-recreate is the
+    # only portable option here. `distutils.dir_util.copy_tree` was used
+    # previously but its module-level `_path_created` cache occasionally
+    # left zero-byte files on retry; `shutil.copytree` does not have that
+    # caching layer.
     if os.path.exists(dst_nb_dir):
         shutil.rmtree(dst_nb_dir)
-    copy_tree(src_nb_dir, dst_nb_dir)
-    os.mkdir(dst_bs_dir)
-    copy_tree(src_bs_dir, dst_bs_dir)
+    shutil.copytree(src_nb_dir, dst_nb_dir)
+    os.makedirs(dst_bs_dir, exist_ok=True)
+    for entry in os.listdir(src_bs_dir):
+        src = os.path.join(src_bs_dir, entry)
+        dst = os.path.join(dst_bs_dir, entry)
+        if os.path.isfile(src):
+            shutil.copyfile(src, dst)
