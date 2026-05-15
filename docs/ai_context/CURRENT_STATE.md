@@ -5,9 +5,12 @@ Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
 added, Phase 4E 800x480 logical GUI tested, Phase 4F manual viewport
 calibration added, Phase 4G compact-v2 layout + negative-offset
 placement added, Phase 4H vertical safe margin + layout-debug overlay
-+ vertical-only offset sweep added, and Phase 4I rolled the Phase 4H
++ vertical-only offset sweep added, Phase 4I rolled the Phase 4H
 chassis push-down + positive-offset direction back to the Phase 4G
-compact-v2 baseline on the PYNQ-Z2 at `192.168.1.9`).
+compact-v2 baseline, Phase 4J began a horizontal-only negative-offset
+sweep but was left uncommitted and superseded by Phase 5A, and Phase 5A
+started HDMI output-side diagnosis for the 5-inch 800x480 LCD on the
+PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -509,6 +512,147 @@ rebuild and a timing-summary review.
 
 Phase 4I details are in
 `docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`.
+
+## HDMI GUI Phase 4J horizontal sweep (superseded)
+
+With Phase 4I deployed the user reports the vertical placement on the
+5-inch HDMI LCD is now correct but the layout is shifted to the
+right: the right edge of the chassis is clipped by the LCD viewport
+and a corresponding empty strip is visible on the left. Phase 4J began
+an offset-side horizontal sweep in Python, without disturbing the
+(now correct) vertical direction or adding new UI to the left strip.
+Claude hit a limit before the Phase 4J work was committed. Phase 5A
+backs up this dirty state and treats the Phase 4J sweep as an
+interrupted diagnostic log, not as a completed correction or runtime
+default. No Vivado / bit / hwh / `block_design.tcl` /
+`audio_lab.xdc` / `create_project.tcl` / Clash / DSP / `topEntity` /
+GPIO / HDMI IP / VDMA / VTC change. `offset_y` is held at `0` for
+the entire phase.
+
+New diagnostic script:
+
+- `scripts/test_hdmi_800x480_horizontal_offsets.py` walks
+  `offset_x in {0, -20, -40, -60, -80, -100, -120}` with
+  `offset_y = 0` held constant, paints a large `OFFSET X=<value>`
+  banner on top of each rendered frame so the active offset is
+  readable from a 5-inch LCD photo, captures per-step VDMA error
+  bits, and finishes with a Safe Bypass smoke. AudioLabOverlay is
+  loaded once; `base.bit` is not loaded and `run_pynq_hdmi()` is
+  not called.
+
+Renderer / backend unchanged in Phase 4J:
+
+- `GUI/pynq_multi_fx_gui.py` — Phase 4I (= Phase 4G) compact-v2
+  coordinates untouched.
+- `audio_lab_pynq/hdmi_backend.py` — manual negative-`offset_x`
+  placement path already exists from Phase 4G.
+- `scripts/test_hdmi_800x480_frame.py` — defaults still
+  `--variant compact-v2 --placement manual --offset-x 0
+  --offset-y 0`; Phase 4J runs pass `--offset-x -40` via CLI, no
+  default rewrite yet (pending user photo decision).
+
+PYNQ runs (selective `scp` only; deploy script does not stage
+`scripts/test_hdmi_800x480_*.py`):
+
+- Single frame `offset_x=-40, offset_y=0`: render `0.446 s`,
+  compose `0.0254 s`, framebuffer copy `0.2073 s`,
+  `negative_offset=true`, `clipped=true` (40 px clipped on the left
+  as designed), `source_visible_region = (40, 0, 800, 480)`,
+  `VDMACR=0x00010001`, `DMASR=0x00011000`, `vtc_ctl=0x00000006`, no
+  VDMA error bits, post Safe Bypass smoke OK.
+- Cycle `offset_x in {0,-20,-40,-60,-80,-100,-120}`,
+  `--seconds-per-offset 15 --hold-final-seconds 30`: every step
+  `compose ~0.025 s`, `framebuffer copy ~0.206 s`,
+  `banner overlay ~0.077 s`, `render` jumps to `~0.09 s` on negative
+  offsets because each step has a distinct `placement_label` and
+  therefore misses the per-label compact-v2 frame cache (steady-state
+  runtime keeps the label constant so this only affects the
+  diagnostic sweep). No VDMA error bits at any offset. Final
+  `VDMACR=0x00010001`, `DMASR=0x00011000`, `vtc_ctl=0x00000006`. Post
+  Safe Bypass smoke OK.
+
+Phase 5A supersedes the Phase 4J offset-side path. The useful record is
+that all tested Python offsets kept VDMA/VTC healthy, but the user
+judgement is now that the symptom likely comes from the HDMI output
+timing / LCD viewport relationship. Do not default-ize a Phase 4J
+negative offset unless the user explicitly returns to that path.
+The untracked Phase 4J script/doc contents were backed up under
+`/tmp/fpga_guitar_effecter_backup/` before Phase 5A edits.
+
+## HDMI GUI Phase 5A output-side diagnosis
+
+Phase 5A stops Python offset chasing and investigates the HDMI output
+side of the 5-inch LCD issue. The main suspicion is that the current
+1280x720 active area is not being scaled to the LCD's native 800x480
+panel as expected; the LCD controller may be cropping, shifting, or
+mis-detecting the active viewport.
+
+Phase 5A is docs/script-only. No Vivado rebuild, no bit/hwh
+regeneration, no deploy of a new bitstream, no `block_design.tcl`,
+`audio_lab.xdc`, `create_project.tcl`, Clash/DSP, `topEntity`, GPIO,
+VDMA, VTC, `v_axi4s_vid_out`, or `rgb2dvi` change.
+
+Safety and dirty-state handling:
+
+- Dirty pre-Phase-5A state backed up to
+  `/tmp/fpga_guitar_effecter_backup/phase5a_before_output_diagnosis_dirty.patch`
+  and
+  `/tmp/fpga_guitar_effecter_backup/phase5a_before_output_diagnosis_status.txt`.
+- Because untracked files are not included in `git diff`, the
+  Phase 4J untracked script/doc were also copied into the same backup
+  directory.
+- `hw/Pynq-Z2/block_design.tcl`, `hw/Pynq-Z2/audio_lab.xdc`,
+  `hw/Pynq-Z2/create_project.tcl`,
+  `hw/Pynq-Z2/bitstreams/audio_lab.bit`, and
+  `hw/Pynq-Z2/bitstreams/audio_lab.hwh` had no dirty status at
+  Phase 5A preflight.
+
+Current output-side facts:
+
+- HDMI signal remains 1280x720 with 74.25 MHz pixel clock.
+- `axi_vdma_hdmi` at `0x43CE0000`, `v_tc_hdmi` at `0x43CF0000`.
+- `v_axi4s_vid_out_hdmi` and `rgb2dvi_hdmi` are HWH-only pipeline IPs.
+- VDMA is MM2S-only, 32-bit memory, 24-bit stream.
+- Framebuffer is 1280x720 RGB888 input packed as DDR `GBR888`.
+- VDMA HSIZE/STRIDE/VSIZE remain `3840` / `3840` / `720`.
+- VTC HWH reports active `1280x720`, H frame `1650`, V frame `750`,
+  high-polarity H/V sync, and 720p video mode.
+- `rgb2dvi_hdmi` receives `vid_pData[23:16]=R`, `[15:8]=B`,
+  `[7:0]=G`, plus `vid_pVDE`, `vid_pHSync`, and `vid_pVSync` from
+  `v_axi4s_vid_out_hdmi`.
+
+New output mapping script:
+
+- `scripts/test_hdmi_output_mapping_720p.py` loads `AudioLabOverlay()`
+  once, draws a full 1280x720 coordinate grid with 800x480 candidate
+  boxes, starts `AudioLabHdmiBackend`, prints VDMA/VTC status, and
+  holds the frame so the user can read visible x/y coordinates on the
+  physical LCD. It does not tune offsets.
+- PYNQ run with `--hold-seconds 60` completed without exception.
+  `VDMACR=0x00010001`, `DMASR=0x00011000`, VDMA HSIZE/STRIDE/VSIZE
+  `3840/3840/720`, framebuffer `0x16900000`, framebuffer size
+  `2,764,800` bytes, `vtc_ctl=0x00000006`, and VDMA error bits
+  `dmainterr/dmaslverr/dmadecerr/halted/idle` all false.
+  Codex cannot visually inspect the LCD; the user must read the visible
+  x/y coordinate labels and candidate boxes from the panel.
+
+EDID/DDC status:
+
+- The local PYNQ-Z2 board file exposes HDMI OUT TMDS pins and
+  `hdmi_tx_hpd`, but only HDMI IN DDC pins (`hdmi_in_ddc_scl/sda`).
+- The current `audio_lab.xdc` connects PS IIC_1 to audio I2C pins
+  `U9/T9`, not HDMI OUT DDC.
+- Board-side `/sys/class/drm` exposes `card0`, `renderD128`, and
+  `version`, but no EDID file or connector status for the PL HDMI out.
+- `/dev/i2c-0` and `/dev/i2c-1` exist (`Cadence I2C` adapters), but
+  Phase 5A did not perform blind I2C probing or writes. EDID is not
+  currently available from the software path.
+
+The next approved implementation candidate is Phase 5B native 800x480
+HDMI timing. The plan is documented in
+`docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`.
+Phase 5A details are in
+`docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

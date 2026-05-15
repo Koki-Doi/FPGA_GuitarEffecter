@@ -9,8 +9,10 @@ resource profile measured, Phase 4D small-LCD fit modes added, Phase 4E
 800x480 logical GUI mode tested, Phase 4F manual viewport calibration
 added, Phase 4G compact-v2 layout plus negative-offset placement added,
 Phase 4H vertical safe margin + layout-debug overlay + vertical-only
-offset sweep added, and Phase 4I rolled the Phase 4H push-down +
-positive-offset direction back to the Phase 4G compact-v2 baseline.
+offset sweep added, Phase 4I rolled the Phase 4H push-down +
+positive-offset direction back to the Phase 4G compact-v2 baseline,
+Phase 4J began a horizontal-only negative-offset sweep but was left
+uncommitted, and Phase 5A switches diagnosis to the HDMI output side.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -19,8 +21,9 @@ Phase 4 integrated HDMI framebuffer build/deploy/smoke, and Phase 4C
 static-frame/resource profiling, Phase 4D LCD safe-area fit testing,
 Phase 4E logical-size testing, Phase 4F viewport calibration, Phase 4G
 layout correction, Phase 4H vertical safe margin + horizontal layout
-diagnosis, and Phase 4I compact-v2 baseline restore have been
-completed. Phase 4 implements
+diagnosis, and Phase 4I compact-v2 baseline restore are complete.
+Phase 4J's offset-side sweep is treated as superseded diagnostic
+context, not as a completed default selection. Phase 4 implements
 Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
@@ -39,13 +42,16 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`,
 `HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`,
 `HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`,
-`HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`, and
-`HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md` for the
+`HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`,
+`HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`,
+`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, and
+`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md` for the
 measured results, design, build, deploy, timing, smoke logs, runtime
 resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
-vertical safe margin + horizontal layout diagnosis, and 800x480
-compact-v2 baseline restore.
+vertical safe margin + horizontal layout diagnosis, 800x480
+compact-v2 baseline restore, HDMI output-side diagnosis, and the
+native 800x480 timing plan.
 
 ## 1. Current state
 
@@ -162,6 +168,29 @@ direction was rolled back. Recommended runtime placement remains
 No Vivado / bit / hwh / `block_design.tcl` / `audio_lab.xdc` /
 `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP /
 VDMA / VTC change in Phase 4I.
+
+Phase 4J began the residual horizontal-direction check. The user
+reported that with Phase 4I deployed the vertical placement on the
+5-inch HDMI LCD is correct, but the layout is shifted to the right
+(right edge clipped, empty strip visible on the left). The dirty
+Phase 4J files added a horizontal offset sweep, but the work stopped
+before commit. Phase 5A backs up that dirty state and supersedes the
+offset-side direction because the symptom now looks more like a
+1280x720 HDMI timing / LCD scaler viewport mismatch than a Python
+placement default.
+
+Phase 5A therefore adds a 1280x720 output mapping pattern instead of
+another offset test. `scripts/test_hdmi_output_mapping_720p.py` loads
+`AudioLabOverlay()` once, draws a 50 px 720p coordinate grid with
+800x480 candidate boxes, starts `AudioLabHdmiBackend`, prints VDMA/VTC
+status, and holds the frame so the user can read visible x/y labels on
+the physical LCD. The 60-second PYNQ run completed with no VDMA error
+bits (`DMASR=0x00011000`, `vtc_ctl=0x00000006`). EDID was not
+available through Linux DRM, and the
+current XDC does not connect HDMI OUT DDC. Phase 5B native 800x480
+timing is documented as the next implementation candidate, but it is
+deferred until separately approved because it requires a Vivado rebuild,
+fresh timing summary, and bit/hwh deploy decision.
 
 The AudioLab control contract must remain intact:
 

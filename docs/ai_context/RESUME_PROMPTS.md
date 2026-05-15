@@ -484,6 +484,64 @@ asking it to re-discover the project from scratch.
 > として明示的に後回し。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`。
 
+### HDMI GUI Phase 5A result — output-side diagnosis
+
+> HDMI GUI Phase 4J は Claude limit で commit 前に中断しました。
+> Phase 5A 開始時に dirty patch と status を
+> `/tmp/fpga_guitar_effecter_backup/phase5a_before_output_diagnosis_dirty.patch`
+> /
+> `/tmp/fpga_guitar_effecter_backup/phase5a_before_output_diagnosis_status.txt`
+> に保存済みです。`git diff` は untracked 本文を含まないため、
+> untracked の `scripts/test_hdmi_800x480_horizontal_offsets.py` と
+> `docs/ai_context/HDMI_GUI_PHASE4J_HORIZONTAL_LEFT_SHIFT.md` も同じ
+> backup dir へコピー済みです。Phase 4J は「完了」ではなく、
+> offset-side diagnostic log として扱い、Phase 5A で output-side
+> diagnosis に切り替えています。
+>
+> Phase 5A では Python offset 補正を続けず、HDMI output timing /
+> VTC / VDMA / `v_axi4s_vid_out` / `rgb2dvi` / LCD viewport を調査。
+> 現行 bitstream は 1280x720 active, pixel clock 74.25 MHz,
+> `axi_vdma_hdmi`=`0x43CE0000`, `v_tc_hdmi`=`0x43CF0000`,
+> VDMA HSIZE/STRIDE/VSIZE=`3840/3840/720`, RGB888 input -> DDR
+> `GBR888` -> 24-bit stream -> `rgb2dvi` です。HWH は VTC active
+> `1280x720`, H frame `1650`, V frame `750`, H/V sync polarity high,
+> video mode `720p` を示します。
+>
+> 新規 `scripts/test_hdmi_output_mapping_720p.py` は
+> `AudioLabOverlay()` を 1 回だけ load し、1280x720 全域に 50px
+> grid、x/y labels、`OUTPUT MAP 720P`、`1280x720 HDMI ACTIVE`、
+> 800x480 candidate boxes `(0,0)`, `(240,120)`, `(0,120)`,
+> `(160,120)` を描画します。offset 調整ではなく、LCD 上で見える
+> x/y 座標をユーザーが読むための mapping test です。`base.bit`、
+> `run_pynq_hdmi()`、2つ目の overlay load は禁止のまま。
+> PYNQ run `--hold-seconds 60` は例外なしで完了し、
+> `VDMACR=0x00010001`, `DMASR=0x00011000`,
+> HSIZE/STRIDE/VSIZE=`3840/3840/720`, framebuffer=`0x16900000`,
+> framebuffer size=`2,764,800`, `vtc_ctl=0x00000006`。
+> VDMA error bits (`dmainterr/dmaslverr/dmadecerr/halted/idle`) は
+> 全て false。Codex はLCDを目視できないので、ユーザーが物理panel上の
+> visible x/y labels と candidate boxes を読む必要があります。
+>
+> EDID/DDC: PYNQ-Z2 board file は HDMI OUT TMDS と `hdmi_tx_hpd` は
+> 持つが、DDC は HDMI IN (`hdmi_in_ddc_scl/sda`) としてのみ出て
+> います。現 `audio_lab.xdc` の `IIC_1_scl_io` / `IIC_1_sda_io`
+> は audio I2C pins `U9/T9`。PYNQ Linux 側は `/sys/class/drm` に
+> `card0`, `renderD128`, `version` のみで EDID file/connector status
+> はなし。`/dev/i2c-0` / `/dev/i2c-1` と Cadence I2C adapters は
+> 見えるが、Phase 5A では blind I2C probe/write はしていません。
+> EDID は現 software path では読めない扱いです。
+>
+> Phase 5B の本命案は native 800x480 HDMI timing。active 800x480,
+> framebuffer 800x480 RGB888, VDMA HSIZE/STRIDE/VSIZE=`2400/2400/480`,
+> copy bytes `2,764,800 -> 1,152,000` (約42%)。pixel clock は
+> EDID/spec 優先、取れなければ documented generic 800x480@60 trial。
+> `rgb2dvi` `kClkRange` も低pixel clock向けに再確認が必要。
+> Phase 5B は別承認、Vivado rebuild、fresh timing summary、
+> WNS baseline `-8.163 ns` との比較、rollback bit/hwh backup 前提。
+> 詳細は
+> `docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md` と
+> `docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。
