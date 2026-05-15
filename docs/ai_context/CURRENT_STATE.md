@@ -16,7 +16,9 @@ post-Phase-5C repo cleanup kept active `GUI/` code while removing the
 unused untracked legacy `HDMI/` experiment tree, and Phase 5D
 introduced the Pip-Boy-inspired phosphor-green theme + soft
 horizontal scanline overlay for the compact-v2 800x480 path, keeping
-`offset_x=0`, `offset_y=0` and the 1280x720 HDMI signal intact).
+`offset_x=0`, `offset_y=0` and the 1280x720 HDMI signal intact, and
+Phase 6A added a Notebook-driven HDMI effect state mirror with
+SELECTED FX = last edited effect verification).
 
 ## PYNQ-Z2 network identity
 
@@ -880,6 +882,58 @@ is identical row-by-row. The board went off the network shortly
 after the first successful run, so the numpy-optimised path has
 local smoke coverage only -- re-running the on-board smoke once the
 board is reachable again is recommended.
+
+## HDMI GUI Phase 6A selected FX state mirror
+
+Phase 6A adds `audio_lab_pynq/hdmi_effect_state_mirror.py`, a one-way
+Notebook-driven state mirror for the HDMI GUI. Notebook operations now go
+through `HdmiEffectStateMirror`, which calls the existing `AudioLabOverlay`
+API, updates `AppState`, records `selected_fx_history`, asserts
+`SELECTED FX`, and redraws the 800x480 GUI through `AudioLabHdmiBackend`.
+The GUI still does not control the DSP.
+
+`GUI/pynq_multi_fx_gui.py` now has an optional `AppState.selected_fx`
+display override. When unset, the renderer keeps the existing
+`selected_effect` behavior. When set by the mirror, the 800x480
+`SELECTED FX` card shows values such as `PRESET`, `SAFE BYPASS`,
+`NOISE SUPPRESSOR`, `RAT`, or `AMP SIM`.
+
+New user Notebook:
+
+- `notebooks/HdmiEffectStatusOneCell.ipynb`
+- exactly one code cell
+- loads `AudioLabOverlay()` once
+- creates one `AudioLabHdmiBackend`
+- leaves a user-facing `fx` object:
+  `fx.safe_bypass()`, `fx.basic_clean()`, `fx.noise_gate(...)`,
+  `fx.comp(...)`, `fx.od(...)`, `fx.dist(...)`, `fx.rat(...)`,
+  `fx.amp(...)`, `fx.cab(...)`, `fx.eq(...)`, `fx.reverb(...)`,
+  `fx.render()`, `fx.summary()`, `fx.selected_history()`
+
+Validation:
+
+- `python3 tests/test_hdmi_selected_fx_state.py`: PASS
+- Notebook JSON check: one cell / one code cell
+- PYNQ command:
+  `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 scripts/test_hdmi_selected_fx_switch.py --hold-seconds-per-step 1 --final-hold-seconds 10`
+- PYNQ result: all SELECTED FX steps PASS, no skips/failures
+- verified order:
+  `SAFE BYPASS -> PRESET -> NOISE SUPPRESSOR -> COMPRESSOR ->
+  OVERDRIVE -> DISTORTION -> RAT -> AMP SIM -> CAB -> EQ -> REVERB`
+- pre/post smoke: ADC HPF `true`, `R19=0x23`, HDMI IPs present
+- final VDMA/VTC: `VDMACR=0x00010001`, `DMASR=0x00011000`,
+  `vtc_ctl=0x00000006`, no internal/slave/decode error bits
+- 800x480 placement remained `placement=manual`, `offset_x=0`,
+  `offset_y=0`, framebuffer copied region `x=0..800`, `y=0..480`
+- representative final render/compose/copy:
+  `0.145 s` / `0.02571 s` / `0.20560 s`
+
+The full result is recorded in
+`docs/ai_context/HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md`.
+
+No Vivado rebuild, bit/hwh regeneration, `block_design.tcl`,
+`audio_lab.xdc`, `create_project.tcl`, Clash/DSP, HDMI IP, VDMA/VTC,
+`git push`, `git pull`, or `git fetch` change was made.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

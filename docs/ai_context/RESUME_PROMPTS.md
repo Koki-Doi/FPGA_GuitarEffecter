@@ -42,6 +42,28 @@ asking it to re-discover the project from scratch.
 > ください。
 > `git push` / `git pull` / `git fetch` は禁止です。
 
+### HDMI GUI Phase 6A result — Notebook-driven selected FX mirror
+
+> HDMI GUI Phase 6A は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md` を読んで
+> から再開してください。Notebookからの操作を
+> `audio_lab_pynq.hdmi_effect_state_mirror.HdmiEffectStateMirror` 経由にし、
+> 既存 `AudioLabOverlay` API write、`AppState` 更新、`SELECTED FX`
+> 履歴記録、800x480 HDMI再描画を1操作にまとめました。
+> GUIはまだDSPを操作しません。`SELECTED FX` は last edited effect で、
+> Safe Bypass=`SAFE BYPASS`、preset=`PRESET`、Noise Suppressor /
+> Compressor / Overdrive / Distortion / RAT / Amp / Cab / EQ / Reverb
+> の各操作で対応する表示に切り替わります。Notebookは
+> `notebooks/HdmiEffectStatusOneCell.ipynb`、1 code cellのみ。
+> 実機CLI `scripts/test_hdmi_selected_fx_switch.py` はPYNQ-Z2
+> (`192.168.1.9`) 上で全step PASS、VDMA error bitsなし、
+> `DMASR=0x00011000`、`vtc_ctl=0x00000006`、800x480 `x=0,y=0` 維持。
+> 今後も direct `ovl.set_*` だけでは last edited effect を検出できない
+> ので、Notebook操作は `fx.*` または `mirror.*` 経由にしてください。
+> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
+> Vivado rebuild、bit/hwh再生成、`git push` / `git pull` / `git fetch`
+> は禁止です。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は

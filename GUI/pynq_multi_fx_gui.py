@@ -432,6 +432,7 @@ class AppState:
     effect_on: List[bool] = field(default_factory=lambda:
         [True,  True, False, False, True, True, True, True])
     selected_effect: int  = 4   # Amp Sim
+    selected_fx: Optional[str] = None  # Display override for notebook-driven mirrors
 
     # parameter knobs (6 per effect, 0..100)
     knob_values: List[float] = field(default_factory=lambda: [45, 55, 60, 50, 70, 60])
@@ -464,6 +465,27 @@ class AppState:
     def knobs(self) -> List[Tuple[str, float]]:
         labels = [k[0] for k in EFFECT_KNOBS[EFFECTS[self.selected_effect]]]
         return list(zip(labels, self.knob_values))
+
+
+def _normalize_selected_fx_label(value) -> str:
+    text = str(value or "").replace("_", " ").replace("-", " ").strip().upper()
+    return " ".join(text.split())
+
+
+def _selected_fx_label(state: AppState) -> str:
+    override = getattr(state, "selected_fx", None)
+    if override is not None and str(override).strip():
+        return str(override).strip()
+    return EFFECTS[state.selected_effect]
+
+
+def _selected_fx_on(state: AppState) -> bool:
+    label = _normalize_selected_fx_label(_selected_fx_label(state))
+    if label == "SAFE BYPASS":
+        return False
+    if label == "PRESET":
+        return any(bool(v) for v in getattr(state, "effect_on", []) or [])
+    return bool(state.effect_on[state.selected_effect])
 
 
 # =============================================================================
@@ -820,6 +842,7 @@ def state_semistatic_signature(state: AppState):
         tuple(state.chain),
         tuple(bool(v) for v in state.effect_on),
         int(state.selected_effect),
+        getattr(state, "selected_fx", None),
         int(state.selected_knob),
         tuple(int(round(v)) for v in state.knob_values),
         getattr(state, "dist_model_idx", None),
@@ -1013,8 +1036,8 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
                             (safe + 12, safe + 102,
                              int(width) - safe - 12, safe + 172))
 
-        selected = EFFECTS[state.selected_effect]
-        selected_on = bool(state.effect_on[state.selected_effect])
+        selected = _selected_fx_label(state)
+        selected_on = _selected_fx_on(state)
         fx_box = (safe + 12, safe + 188, safe + 288, int(height) - safe - 12)
         fx0, fy0, fx1, fy1 = fx_box
         rounded_rect(d, fx_box, 8, fill=(8, 13, 20, 255),
@@ -1261,9 +1284,9 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         fx0, fy0, fx1, fy1 = fx_box
         rounded_rect(d, fx_box, 10, fill=palette["PANEL_FX_FILL"],
                      outline=LED + (90,), width=2)
-        selected_name = EFFECTS[state.selected_effect]
+        selected_name = _selected_fx_label(state)
         selected_short = EFFECTS_SHORT[state.selected_effect]
-        selected_on = bool(state.effect_on[state.selected_effect])
+        selected_on = _selected_fx_on(state)
         # DIST / AMP / CAB carry an additional named model index; the
         # MODEL row sits between the title and the knob grid.
         model_label = None
@@ -1463,7 +1486,7 @@ def render_frame_800x480_compact_v2(state: AppState, width: int = 800,
 STATE_FILE = "fx_gui_state.json"
 
 _STATE_KEYS = ("preset_id", "preset_name", "preset_idx",
-               "selected_effect", "selected_knob",
+               "selected_effect", "selected_fx", "selected_knob",
                "effect_on", "knob_values", "chain", "display_mode",
                "dist_model_idx", "amp_model_idx", "cab_model_idx",
                "fs_states", "fs_selected")
@@ -1503,5 +1526,3 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
         print(f"[state] load failed ({exc}); using defaults")
         state = AppState()
     return state
-
-

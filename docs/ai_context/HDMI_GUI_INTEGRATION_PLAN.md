@@ -16,6 +16,9 @@ uncommitted, Phase 5A switched diagnosis to the HDMI output side, and
 Phase 5C locks the user-confirmed top-left 800x480 visible viewport as
 the default. The post-Phase-5C repo cleanup kept active `GUI/` code and
 removed the unused untracked legacy `HDMI/` experiment tree after backup.
+Phase 5D made `pipboy-green` the compact-v2 default theme, and Phase 6A
+adds a Notebook-driven effect state mirror where `SELECTED FX` follows
+the last edited effect.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -47,16 +50,17 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`,
 `HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`,
 `HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`,
-`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, and
-`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md` for the
+`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
+`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, and
+`HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md` for the
 measured results, design, build, deploy, timing, smoke logs, runtime
 resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
 vertical safe margin + horizontal layout diagnosis, 800x480
 compact-v2 baseline restore, HDMI output-side diagnosis, and the
-native 800x480 timing plan. Phase 5C's adopted runtime mode is the
-existing 1280x720 HDMI signal with the 800x480 compact GUI at
-framebuffer `x=0,y=0`.
+native 800x480 timing plan, and the Phase 6A selected-FX mirror result.
+Phase 5C's adopted runtime mode is the existing 1280x720 HDMI signal
+with the 800x480 compact GUI at framebuffer `x=0,y=0`.
 
 ## 1. Current state
 
@@ -92,6 +96,12 @@ and `DECISIONS.md` D24):
 - `audio_lab_pynq/__init__.py::install_notebooks()` is now
   `shutil`-based; the old `distutils.dir_util.copy_tree` left a zero-byte
   `HdmiGui.ipynb` after one re-deploy, which Jupyter refused to open.
+- Phase 6A adds `HdmiEffectStateMirror` and
+  `notebooks/HdmiEffectStatusOneCell.ipynb` for Notebook-driven effect
+  edits mirrored to HDMI. `SELECTED FX` shows the last edited effect
+  (`PRESET`, `SAFE BYPASS`, `NOISE SUPPRESSOR`, `COMPRESSOR`,
+  `OVERDRIVE`, `DISTORTION`, `RAT`, `AMP SIM`, `CAB`, `EQ`, `REVERB`).
+  The GUI remains display-only and does not write DSP controls.
 
 ### AudioLabOverlay and audio_lab.bit
 
