@@ -22,7 +22,35 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
 - ギター入力向けに、DSP内部は ADC Left 由来の mono source で処理し、
   AXI/I2S の外部 48-bit stereo I/O は維持
 - 13 種類の Chain Preset (Safe Bypass を含む) で 1 クリックでチェーン全体を切替
+- 統合 `audio_lab.bit` の HDMI framebuffer 出力。5インチ 800x480 LCD
+  では 1280x720 framebuffer の左上 `800x480` (`x=0`, `y=0`) を
+  標準 visible viewport として使用
 - DMA を使った入力/出力経路のデバッグ用ノートブック
+
+## HDMI GUI
+
+HDMI GUI は現在、AudioLab DSP と同じ `audio_lab.bit` に統合された
+framebuffer 出力を使います。`AudioLabOverlay()` を 1 回だけロードし、
+`Overlay("base.bit")` や `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()` は
+使用しません。
+
+5インチ 800x480 LCD では Phase 5A の output mapping test により、
+1280x720 全体の縮小表示ではなく左上 `800x480` が実用上の表示領域だと
+確認しています。標準確認コマンドは次の通りです。
+
+```sh
+ssh xilinx@192.168.1.9 '
+  cd /home/xilinx/Audio-Lab-PYNQ &&
+  sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+    python3 scripts/test_hdmi_800x480_frame.py \
+      --variant compact-v2 --placement manual \
+      --offset-x 0 --offset-y 0 --hold-seconds 60
+'
+```
+
+現行 renderer と bridge は `GUI/` 配下にあります。旧 untracked
+`HDMI/` 実験ツリーは現行 deploy / tests / runtime scripts から使われて
+いないことを確認したため削除済みです。
 
 ## エフェクトチェーン
 
@@ -52,7 +80,7 @@ Noise Suppressor -> Compressor -> Overdrive -> Distortion Pedalboard -> RAT Dist
 
 旧 Noise Gate 段は **専用 AXI GPIO** (`axi_gpio_noise_suppressor` @ `0x43CC0000`) で制御する Noise Suppressor に置き換わっています。FPGA 側ではエンベロープ追従 + 平滑化されたゲインステージで構成されており、`gate_control` bit 0 (legacy `noise_gate_on`) が引き続き ON/OFF を制御します。
 
-| 知能 | 範囲 | 内容 |
+| 項目 | 範囲 | 内容 |
 | --- | --- | --- |
 | `THRESHOLD` | 0..100 | 検出エンベロープと比較する基準レベル。byte = `round(threshold * 255 / 1000)` (新スケール 100 ≡ 旧 10) |
 | `DECAY` | 0..100 | 閉じる速さ。0 = タイト (~1.4 ms full close)、100 = サステイン保持 (~85 ms full close) |
@@ -64,7 +92,7 @@ Noise Suppressor -> Compressor -> Overdrive -> Distortion Pedalboard -> RAT Dist
 
 Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で制御するステレオリンクの feed-forward peak compressor です。Noise Suppressor の後段、Overdrive の前段に配置され、ピッキングの粒を揃えてサステインを伸ばします。enable は専用 GPIO の `ctrlD` bit 7。
 
-| 知能 | 範囲 | 内容 |
+| 項目 | 範囲 | 内容 |
 | --- | --- | --- |
 | `THRESHOLD` | 0..100 | 圧縮を開始するエンベロープ・レベル (低いほど弱い入力から圧縮) |
 | `RATIO` | 0..100 | 圧縮の強さ。0 ≒ ほぼ 1:1、100 ≒ 強いリミッター寄り |
@@ -90,7 +118,7 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 共有パラメータ:
 
-| 知能 | 範囲 | 内容 |
+| 項目 | 範囲 | 内容 |
 | --- | --- | --- |
 | `DRIVE` | 0..100 | 前段ゲイン量 |
 | `TONE` | 0..100 | 出力 LPF (alpha マッピング) |

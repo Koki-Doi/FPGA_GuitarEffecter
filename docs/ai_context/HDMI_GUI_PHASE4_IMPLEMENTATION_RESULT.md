@@ -484,3 +484,9 @@ Tag: `before-hdmi-gui-phase4` at `7db1707`.
 Backup: `/tmp/audio_lab_bit_backup_phase4_20260514_221716/`.
 
 No `git push` / `git pull` / `git fetch` was performed.
+
+Post-Phase-5C cleanup note: the historical untracked `GUI/README.md` was
+replaced with current integrated-HDMI renderer documentation, and the
+unused untracked `HDMI/` tree was backed up under
+`/tmp/fpga_guitar_effecter_backup/` and removed after repo-wide reference
+checks confirmed it was not used by deploy, tests, or runtime scripts.

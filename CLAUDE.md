@@ -27,6 +27,7 @@ Then the topic file that matches the task:
 | Vivado / timing | `docs/ai_context/TIMING_AND_FPGA_NOTES.md` |
 | Bitstream build / deploy | `docs/ai_context/BUILD_AND_DEPLOY.md` |
 | PYNQ-Z2 board operations | `docs/ai_context/PYNQ_RUNTIME.md` |
+| HDMI GUI / 5-inch LCD | `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` (+ `HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`) |
 | Resuming after a stop | `docs/ai_context/RESUME_PROMPTS.md` |
 
 ## Resuming after a rate-limit / context reset
@@ -74,6 +75,12 @@ When a previous turn stopped mid-implementation:
   baseline is recorded in `docs/ai_context/TIMING_AND_FPGA_NOTES.md`).
 - Notebook-only edits do **not** rebuild the bitstream. Update the
   notebook, run `bash scripts/deploy_to_pynq.sh`, done.
+- HDMI GUI runtime uses the integrated AudioLab overlay. Load
+  `AudioLabOverlay()` once and use `audio_lab_pynq.hdmi_backend`; do not
+  call `Overlay("base.bit")`, do not call `run_pynq_hdmi()`, and do not
+  load a second overlay after AudioLab. For the 5-inch 800x480 LCD, the
+  Phase 5C default visible viewport is framebuffer `x=0,y=0,w=800,h=480`
+  inside the fixed 1280x720 HDMI signal.
 - `git push`, `git pull`, `git fetch`, and other remote operations are
   forbidden. Local commits only.
 - Do not clone reference repositories into the tree. Do not paste GPL code

@@ -180,7 +180,7 @@ inspected. The layout remains coherent at 1280x720. The main intentional
 visual difference is that the signal monitor is a frozen `STATIC PREVIEW`
 instead of an animated waveform / spectrum.
 
-## Untracked files
+## Historical untracked files
 
 The following files / directories were already untracked and were not used
 or staged for Phase 2B:
@@ -189,8 +189,10 @@ or staged for Phase 2B:
 - `GUI/fx_gui_state.json`
 - `HDMI/`
 
-`GUI/fx_gui_state.json` appears to be runtime state and is a `.gitignore`
-candidate, but `.gitignore` was not changed in this phase.
+Post-Phase-5C cleanup resolved this historical state: `GUI/README.md`
+was replaced with an accurate current renderer README, `GUI/fx_gui_state.json`
+is runtime state ignored by git, and the unused untracked `HDMI/` tree was
+backed up and removed.
 
 ## Explicitly not done
 

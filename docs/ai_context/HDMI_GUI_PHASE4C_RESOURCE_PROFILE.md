@@ -20,7 +20,7 @@ or GPIO semantics, and did **not** load `base.bit`.
 | PYNQ Python | `3.6.5` |
 | Bitstream | deployed Phase 4 `audio_lab.bit`, 4,045,680 bytes |
 | HWH | deployed Phase 4 `audio_lab.hwh`, 1,054,120 bytes |
-| Physical HDMI display | user visual confirmation pending |
+| Physical HDMI display | later confirmed by Phase 5A/5C; 5-inch LCD uses top-left 800x480 viewport |
 | Scanout/log status | VDMA/VTC started; no VDMA internal/slave/decode error bits |
 | Board output dir | `/tmp/hdmi_phase4c_resource_profile/` |
 | Local logs | `/tmp/hdmi_phase4c_static_frame.log`, `/tmp/hdmi_phase4c_resource_profile.log` |
@@ -146,9 +146,10 @@ The Phase 4B static-frame test was re-run before profiling:
 
 The difference between the static-test and profile `DMASR` raw values
 did not affect the error-bit decode; both runs reported no VDMA error
-conditions. Physical HDMI display is **not** verified by Codex; it still
-needs user visual confirmation on a connected monitor. The verified
-claim is scanout start plus healthy VDMA/VTC register status.
+conditions. At Phase 4C time, Codex could verify only scanout start plus
+healthy VDMA/VTC register status. Phase 5A/5C later added user visual
+confirmation on the 5-inch LCD and selected the top-left 800x480
+framebuffer viewport.
 
 ## Interpretation
 

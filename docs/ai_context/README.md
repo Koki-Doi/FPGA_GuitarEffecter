@@ -48,6 +48,20 @@ The current load-bearing facts:
   (`feature/real-pedal-voicing-pass`). Together they brought the
   user-facing pedalboard to its current shape. See `DECISIONS.md`
   D15 / D16.
+- The **HDMI GUI framebuffer path shipped** in the integrated
+  `audio_lab.bit`. Live HDMI uses `AudioLabOverlay()` plus
+  `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`; it must not load
+  `Overlay("base.bit")` or call `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()`.
+  For the 5-inch 800x480 LCD, Phase 5C adopts the fixed 1280x720 HDMI
+  signal with the compact 800x480 GUI at framebuffer `x=0,y=0`. See
+  `HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
+  `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, and
+  `HDMI_GUI_INTEGRATION_PLAN.md`.
+- Repo cleanup after Phase 5C confirmed `GUI/` is active code, while the
+  old untracked `HDMI/` experiment tree is unused by deploy, tests, and
+  runtime scripts. `HDMI/` was backed up under `/tmp/fpga_guitar_effecter_backup/`
+  and removed from the working tree; active GUI documentation now lives
+  in `GUI/README.md`.
 
 See `CURRENT_STATE.md` for the post-deploy snapshot.
 
@@ -74,6 +88,9 @@ Then read whatever is topical for the task at hand:
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
+| [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4/5 status. |
+| [`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`](HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md) | Output-side mapping result for the 5-inch LCD and the adopted top-left 800x480 viewport. |
+| [`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`](HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md) | Deferred native 800x480 timing trial plan and rollback conditions. |
 | [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |
 | [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) | Reference voicings the existing effect stages aim at. |
 | [`RESUME_PROMPTS.md`](RESUME_PROMPTS.md) | Re-entering after rate-limit or context reset. |

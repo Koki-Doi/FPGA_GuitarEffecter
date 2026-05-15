@@ -22,23 +22,24 @@ asking it to re-discover the project from scratch.
 > 新エフェクト追加では C++ → 移植の手順に戻らず、Python API / UI
 > 予約 → Clash ステージ追加で進めてください。
 
-## HDMI GUI integration — design only, not implemented
+## HDMI GUI integration — implemented, one-overlay only
 
-> HDMI GUI統合は調査/設計段階で、まだ実装していません。
+> HDMI GUI統合は Phase 4 で `audio_lab.bit` に実装済みです。
 > まず `AGENTS.md`、`docs/ai_context/PROJECT_CONTEXT.md`、
 > `CURRENT_STATE.md`、`DECISIONS.md` を読み、続けて
 > `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` を読んでください。
-> 現在の `audio_lab.bit` には HDMI video out 系 IP が無く、
-> `GUI/pynq_multi_fx_gui.py` の既存 `run_pynq_hdmi()` は
-> `Overlay("base.bit")` をロードするため、そのまま使うと
-> AudioLab DSP overlay が消えます。PYNQ は基本的に full bitstream を
-> 1つしかロードできないので、AudioLab DSP と HDMI GUI を同時に使うには
-> 将来的に `audio_lab.bit` 側へ HDMI framebuffer output path を統合する
-> 必要があります。次作業を始める前に `git status --short` と
-> `git diff --stat` を確認してください。`base.bit` をロードしないで
-> ください。`AudioLabOverlay()` の後に別 `Overlay()` をロードしないで
-> ください。`hw/Pynq-Z2/block_design.tcl`、Clash/DSP、Pythonコード、
-> bitstream、deploy はユーザの明示承認なしに変更しないでください。
+> 現在の live path は `AudioLabOverlay()` を1回だけloadし、
+> `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend` で統合 HDMI
+> framebuffer を扱います。`GUI/pynq_multi_fx_gui.py` の既存
+> `run_pynq_hdmi()` は `Overlay("base.bit")` をロードする旧経路なので
+> live AudioLab では使いません。5-inch LCD の標準は compact-v2
+> `800x480` を `placement=manual`, `offset_x=0`, `offset_y=0` で
+> framebuffer左上に表示する Phase 5C 構成です。次作業を始める前に
+> `git status --short` と `git diff --stat` を確認してください。
+> `base.bit` をロードしないでください。`AudioLabOverlay()` の後に別
+> `Overlay()` をロードしないでください。`hw/Pynq-Z2/block_design.tcl`、
+> Clash/DSP、bitstream、deploy はユーザの明示承認なしに変更しないで
+> ください。
 > `git push` / `git pull` / `git fetch` は禁止です。
 
 ### HDMI GUI Phase 1 prompt
@@ -581,6 +582,23 @@ asking it to re-discover the project from scratch.
 > リスクはVivado rebuild、clock/timing再確認、LCDがnative 800x480
 > HDMI timingを受ける保証がないことです。
 
+### Repo cleanup after Phase 5C
+
+> Phase 5C後に repo-wide reference check を実施し、`GUI/` は現行の
+> renderer / bridge として使用中、旧 untracked `HDMI/` は deploy /
+> tests / runtime scripts から未使用と確認しました。`HDMI/` と
+> untracked Phase 4J offset sweep 残骸
+> (`docs/ai_context/HDMI_GUI_PHASE4J_HORIZONTAL_LEFT_SHIFT.md`,
+> `scripts/test_hdmi_800x480_horizontal_offsets.py`) は
+> `/tmp/fpga_guitar_effecter_backup/repo_cleanup_unused_hdmi_phase4j_20260515_130135.tar.gz`
+> に backup 後、working tree から削除済みです。
+>
+> `GUI/README.md` は旧 `base.bit` / `run_pynq_hdmi()` 前提の内容をやめ、
+> 現行の `AudioLabOverlay()` + `AudioLabHdmiBackend` + Phase 5C
+> top-left `800x480` viewport を説明する tracked README に更新済み。
+> この cleanup では Vivado rebuild、bit/hwh再生成、deploy、
+> `git push` / `pull` / `fetch` はしていません。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。
@@ -595,7 +613,7 @@ asking it to re-discover the project from scratch.
 > `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` と明示します。
 > 到達不能なら電源、LAN、DHCP固定割当、予約MAC、IP重複を確認してください。
 
-## LowPassFir split refactor — local build complete, deploy pending
+## LowPassFir split refactor — deployed
 
 > `feature/split-lowpassfir-behavior-preserving` では
 > `LowPassFir.hs` を挙動不変で `AudioLab.Types` / `FixedPoint` /

@@ -42,6 +42,30 @@ the system has an older copy of the package under
 `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/`, and unless our
 copy wins the resolution race, tests will exercise the stale code.
 
+## HDMI GUI runtime
+
+The live HDMI GUI uses the integrated AudioLab overlay. Load
+`AudioLabOverlay()` once through the HDMI test script; do not load
+`Overlay("base.bit")`, do not call `run_pynq_hdmi()`, and do not load a
+second overlay after AudioLab.
+
+For the 5-inch 800x480 LCD, the standard Phase 5C viewport is the
+top-left `800x480` region of the fixed 1280x720 framebuffer:
+
+```sh
+ssh xilinx@192.168.1.9 '
+  cd /home/xilinx/Audio-Lab-PYNQ &&
+  sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+    python3 scripts/test_hdmi_800x480_frame.py \
+      --variant compact-v2 --placement manual \
+      --offset-x 0 --offset-y 0 --hold-seconds 60
+'
+```
+
+Expected healthy status remains `DMASR=0x00011000`, VDMA error bits all
+false, VDMA HSIZE/STRIDE/VSIZE `3840/3840/720`, and
+`vtc_ctl=0x00000006`.
+
 ## Filesystem layout on the board
 
 | Path | What it is |

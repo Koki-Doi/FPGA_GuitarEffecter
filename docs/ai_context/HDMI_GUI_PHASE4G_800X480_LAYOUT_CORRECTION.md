@@ -229,25 +229,20 @@ Common HDMI state across the cycle:
 
 Post-HDMI Safe Bypass smoke passed.
 
-## Open user-visual decisions
+## Later resolution
 
-The HDMI path is stable. The remaining choices need the physical panel:
+The HDMI path was stable for every tested offset. Later Phase 5A/5C
+output-side diagnosis resolved the physical-panel choice:
 
-- Which offset out of the eight tested makes the compact-v2 GUI fit the
-  LCD best.
-- Whether TL / TR / BL / BR corner markers are all visible at that
-  offset.
-- Whether the variant + offset tag at the bottom edge is visible.
-- Whether IN / OUT meters, knob bars, and the chain row text are
-  readable.
-- Color order and aspect ratio.
+- The accepted 5-inch LCD default is compact-v2 at `placement=manual`,
+  `offset_x=0`, `offset_y=0`.
+- Negative-offset sweeps remain diagnostics only, not the runtime path.
+- Center placement `(240,120)` is not used for this LCD.
 
-Once the user picks a final offset, follow-up candidates:
+Follow-up candidates after Phase 5C:
 
-1. Make the picked offset the default for the 5-inch LCD path and
-   document the rationale in `HDMI_GUI_INTEGRATION_PLAN.md`.
-2. Add a partial framebuffer copy that writes only the clipped
+1. Add a partial framebuffer copy that writes only the clipped
    destination region instead of the full 1280x720 swizzle.
-3. Build the Phase 5 change-driven update loop on top of compact-v2.
-4. Promote compact-v2 to the default 800x480 variant once the LCD path
-   is calibrated.
+2. Build a change-driven update loop on top of compact-v2.
+3. Revisit native 800x480 HDMI timing only as a separate Phase 5B
+   Vivado/timing experiment.
