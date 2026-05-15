@@ -456,6 +456,9 @@ class AppState:
     amp_model_label: str = "BRITISH CRUNCH"
     cab_model_label: str = "4x12 CLOSED"
     active_model_category: str = ""
+    selected_model_category: str = ""
+    dropdown_label: str = ""
+    dropdown_short_label: str = ""
     active_pedals: List[str] = field(default_factory=list)
     model_slots: Dict[str, List[Dict[str, object]]] = field(default_factory=dict)
 
@@ -513,6 +516,140 @@ def _compact_model_label(label: str) -> str:
         "CLEAN BOOST": "CLEAN BOOST",
     }
     return replacements.get(label, label)
+
+
+# Phase 6C: short labels for the [model ▼] dropdown chip drawn next to
+# SELECTED FX. The chip is ~150 px wide on the compact-v2 800x480 panel,
+# so anything beyond ~12 characters runs off the right edge.
+_DROPDOWN_CHIP_SHORT = {
+    "CLEAN BOOST": "CLN BOOST",
+    "TUBE SCREAMER": "TUBE SCRMR",
+    "RAT": "RAT",
+    "DS-1": "DS-1",
+    "BIG MUFF": "BIG MUFF",
+    "FUZZ FACE": "FUZZ",
+    "METAL": "METAL",
+    "JC CLEAN": "JC CLEAN",
+    "CLEAN COMBO": "CLN COMBO",
+    "BRITISH CRUNCH": "BRIT CRUNCH",
+    "HIGH GAIN STACK": "HI-GAIN",
+    "1X12 OPEN": "1x12 OPN",
+    "2X12 COMBO": "2x12 CMB",
+    "4X12 CLOSED": "4x12 CLS",
+    "REVERB": "REVERB",
+    "EQ": "EQ",
+    "COMPRESSOR": "COMP",
+    "NOISE SUPPRESSOR": "NOISE SUP",
+    "OVERDRIVE": "OD",
+    "SAFE BYPASS": "SAFE",
+    "PRESET": "PRESET",
+}
+
+# SELECTED FX -> dropdown category. Mirrors
+# audio_lab_pynq.hdmi_effect_state_mirror.SELECTED_FX_CATEGORY but kept
+# here so the renderer does not need to import the mirror module.
+_DROPDOWN_CATEGORY = {
+    "CLEAN BOOST": "PEDAL",
+    "TUBE SCREAMER": "PEDAL",
+    "RAT": "PEDAL",
+    "DS 1": "PEDAL",
+    "DS-1": "PEDAL",
+    "BIG MUFF": "PEDAL",
+    "FUZZ FACE": "PEDAL",
+    "METAL": "PEDAL",
+    "DISTORTION": "PEDAL",
+    "OVERDRIVE": "OVERDRIVE",
+    "AMP SIM": "AMP",
+    "CAB": "CAB",
+    "REVERB": "REVERB",
+    "EQ": "EQ",
+    "COMPRESSOR": "COMPRESSOR",
+    "NOISE SUPPRESSOR": "NOISE SUPPRESSOR",
+    "SAFE BYPASS": "SAFE",
+    "PRESET": "PRESET",
+}
+
+
+def _dropdown_short(label: str) -> str:
+    text = str(label or "").upper()
+    return _DROPDOWN_CHIP_SHORT.get(text, text)
+
+
+def _dropdown_category(state) -> str:
+    label = _normalize_selected_fx_label(_selected_fx_label(state))
+    return _DROPDOWN_CATEGORY.get(label, label)
+
+
+def _dropdown_label(state) -> str:
+    """Phase 6C: text rendered inside the SELECTED FX [model ▼] chip.
+
+    Mirrors the live model selection when SELECTED FX is a model-driven
+    effect (PEDAL / AMP / CAB) and otherwise echoes the effect family.
+    Prefers the explicit ``dropdown_label`` AppState field when present
+    so the mirror can override the renderer-derived choice.
+    """
+    explicit = getattr(state, "dropdown_label", None)
+    if explicit:
+        return str(explicit).upper()
+    category = _dropdown_category(state)
+    if category == "PEDAL":
+        return _pedal_label(state)
+    if category == "AMP":
+        return _amp_label(state)
+    if category == "CAB":
+        return _cab_label(state)
+    if category == "SAFE":
+        return "SAFE BYPASS"
+    if category == "PRESET":
+        return "PRESET"
+    if category == "REVERB":
+        return "REVERB"
+    if category == "EQ":
+        return "EQ"
+    if category == "COMPRESSOR":
+        return "COMPRESSOR"
+    if category == "NOISE SUPPRESSOR":
+        return "NOISE SUPPRESSOR"
+    if category == "OVERDRIVE":
+        return "OVERDRIVE"
+    return category or "N/A"
+
+
+def _draw_dropdown_chip(img, draw, xy, text, color, palette,
+                        outline=None):
+    """Phase 6C: render a [text ▼] selection box.
+
+    The text mirrors the live model. The triangle is a filled polygon
+    rather than a Unicode glyph so the bitmap font on PYNQ Pillow 5.1
+    renders consistently.
+    """
+    x0, y0, x1, y1 = (int(v) for v in xy)
+    if x1 <= x0 or y1 <= y0:
+        return
+    fill = palette.get("FX_CHIP_FILL", (4, 10, 6, 255))
+    outline_col = outline if outline is not None else color + (255,)
+    rounded_rect(draw, (x0, y0, x1, y1), 6, fill=fill,
+                 outline=outline_col, width=2)
+    tri_w = 10
+    tri_h = 6
+    pad_right = 10
+    tri_cx = x1 - pad_right - tri_w // 2
+    tri_top = (y0 + y1) // 2 - tri_h // 2
+    triangle = [
+        (tri_cx - tri_w // 2, tri_top),
+        (tri_cx + tri_w // 2, tri_top),
+        (tri_cx, tri_top + tri_h),
+    ]
+    try:
+        draw.polygon(triangle, fill=color + (255,),
+                     outline=color + (255,))
+    except TypeError:
+        draw.polygon(triangle, fill=color + (255,))
+    text_x = x0 + 12
+    text_y = (y0 + y1) // 2
+    short = _dropdown_short(text)
+    draw_text(img, (text_x, text_y), short, fill=color + (255,),
+              scale=1, anchor="lm", letter_spacing=1)
 
 
 def _pedal_label(state: AppState) -> str:
@@ -909,6 +1046,9 @@ def state_semistatic_signature(state: AppState):
         getattr(state, "amp_model_label", None),
         getattr(state, "cab_model_label", None),
         getattr(state, "active_model_category", None),
+        getattr(state, "selected_model_category", None),
+        getattr(state, "dropdown_label", None),
+        getattr(state, "dropdown_short_label", None),
         tuple(getattr(state, "active_pedals", []) or []),
         bool(state.save_flash > 0),
     )
@@ -1373,6 +1513,16 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   "ON" if selected_on else "BYPASS",
                   fill=s_col + (255,), scale=2, anchor="mm",
                   letter_spacing=2)
+
+        # Phase 6C: [model ▼] dropdown-style chip rendered between the
+        # SELECTED FX name and the ON/BYPASS chip. Display-only -- the
+        # actual selection control lives in the Notebook ipywidgets.
+        dropdown_text = _dropdown_label(state)
+        dd_chip_w, dd_chip_h = 150, 30
+        dd_chip = (s_chip[0] - 12 - dd_chip_w, fy0 + 18,
+                   s_chip[0] - 12, fy0 + 18 + dd_chip_h)
+        _draw_dropdown_chip(img, d, dd_chip, dropdown_text,
+                            color=LED, palette=palette)
 
         model_x0 = fx0 + 270
         model_x1 = fx1 - 16

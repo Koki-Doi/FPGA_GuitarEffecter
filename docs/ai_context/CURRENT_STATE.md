@@ -986,6 +986,60 @@ No Vivado rebuild, bit/hwh regeneration, `block_design.tcl`,
 `audio_lab.xdc`, `create_project.tcl`, Clash/DSP, HDMI IP, VDMA/VTC,
 `git push`, `git pull`, or `git fetch` change was made.
 
+## HDMI GUI Phase 6C realtime notebook pedalboard
+
+Phase 6C wires `GuitarPedalboardOneCell`-style ipywidgets onto the
+Phase 6B mirror. A new one-cell Notebook
+(`notebooks/HdmiRealtimePedalboardOneCell.ipynb`) exposes a category
+dropdown (PEDAL / AMP / CAB / REVERB / EQ / COMPRESSOR / NOISE
+SUPPRESSOR), a model dropdown filtered by category, ON/OFF toggles,
+parameter sliders, and a `widgets.HTML` resource panel. Every
+interaction calls a `HdmiEffectStateMirror` method which calls the
+deployed `AudioLabOverlay` API, refreshes the AppState
+`selected_model_category` / `dropdown_label` / `dropdown_short_label`
+fields, and re-renders the 800x480 GUI at `placement="manual"`,
+`offset_x=0`, `offset_y=0`.
+
+The compact-v2 800x480 fx panel now draws a `[model ▼]` chip between
+the SELECTED FX name and the ON/BYPASS chip (150x30 px,
+`fx1 - 16 - 110 - 12 = x=638`, well inside the 800 px canvas). Long
+labels truncate to `TUBE SCRMR`, `BRIT CRUNCH`, `HI-GAIN`,
+`CLN BOOST`, `FUZZ`, `2x12 CMB`, `SAFE` etc. The triangle is drawn as
+a filled polygon so Pillow 5.1's default bitmap font does not need a
+`▼` glyph.
+
+`audio_lab_pynq/hdmi_effect_state_mirror.py` grew a
+`/proc`-based `ResourceSampler` (no `psutil` dependency), pure-text
+parsers for `meminfo`/`status`/`stat`, a `resource_summary()` method
+that combines CPU/RSS/MemAvailable/temperature/render/compose/copy
+timings/VDMA DMASR/VTC ctl/dropdown bookkeeping/static PL utilization,
+and `selected_history()` / `summary()` helpers. `render()` now records
+`total_update_s` and a `resource_sample` per render.
+
+Scripts:
+
+- `scripts/test_hdmi_realtime_pedalboard_controls.py` -- CLI replay of
+  the Notebook sequence on PYNQ; checks SELECTED FX, expected
+  `selected_model_category`, expected dropdown label, VDMA error bits.
+- `scripts/test_hdmi_800x480_origin_guard.py` -- mechanical right-skew
+  guard: writes a synthetic frame with marker columns at x=0/10/20/799,
+  asserts `placement="manual"`, `offset_x=offset_y=0`,
+  `framebuffer_copied_region.x0=y0=0`, then drops back to the real GUI
+  frame. Supports `--dry-run` for workstation runs.
+
+Tests on the workstation: 30 PASS across
+`tests/test_hdmi_selected_fx_state.py`,
+`tests/test_hdmi_model_state_mapping.py`,
+`tests/test_hdmi_origin_mapping.py`, and
+`tests/test_hdmi_resource_monitor.py`. `git diff --check` clean.
+
+No Vivado rebuild, bit/hwh regeneration, `block_design.tcl`,
+`audio_lab.xdc`, `create_project.tcl`, Clash/DSP, HDMI IP, VDMA/VTC,
+`git push`, `git pull`, or `git fetch` change was made.
+
+Phase 6C full notes are recorded in
+`docs/ai_context/HDMI_GUI_PHASE6C_REALTIME_NOTEBOOK_PEDALBOARD.md`.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the

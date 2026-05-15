@@ -14,6 +14,7 @@ from __future__ import print_function
 
 import inspect
 import json
+import os
 import time
 
 
@@ -167,6 +168,58 @@ CAB_MODEL_ALIASES = {
     "closed_4x12": "4x12",
     "4x12_british": "4x12",
     "british_4x12": "4x12",
+}
+
+
+# Phase 6C: SELECTED FX -> model category. Drives the [model ▼] chip
+# rendered next to SELECTED FX on the HDMI GUI, the AppState
+# ``active_model_category`` field, and the Notebook ipywidgets
+# category dropdown.
+SELECTED_FX_CATEGORY = {
+    "CLEAN BOOST": "PEDAL",
+    "TUBE SCREAMER": "PEDAL",
+    "RAT": "PEDAL",
+    "DS-1": "PEDAL",
+    "BIG MUFF": "PEDAL",
+    "FUZZ FACE": "PEDAL",
+    "METAL": "PEDAL",
+    "DISTORTION": "PEDAL",
+    "OVERDRIVE": "OVERDRIVE",
+    "AMP SIM": "AMP",
+    "CAB": "CAB",
+    "REVERB": "REVERB",
+    "EQ": "EQ",
+    "COMPRESSOR": "COMPRESSOR",
+    "NOISE SUPPRESSOR": "NOISE SUPPRESSOR",
+    "SAFE BYPASS": "SAFE",
+    "PRESET": "PRESET",
+}
+
+# Phase 6C: short labels for the [model ▼] chip drawn inside SELECTED FX.
+# The chip space on the 800x480 LCD is tight; long model names overflow
+# the fx panel without truncation.
+DROPDOWN_SHORT_LABELS = {
+    "CLEAN BOOST": "CLN BOOST",
+    "TUBE SCREAMER": "TUBE SCRMR",
+    "RAT": "RAT",
+    "DS-1": "DS-1",
+    "BIG MUFF": "BIG MUFF",
+    "FUZZ FACE": "FUZZ",
+    "METAL": "METAL",
+    "JC CLEAN": "JC CLEAN",
+    "CLEAN COMBO": "CLN COMBO",
+    "BRITISH CRUNCH": "BRIT CRUNCH",
+    "HIGH GAIN STACK": "HI-GAIN",
+    "1X12 OPEN": "1x12 OPN",
+    "2X12 COMBO": "2x12 CMB",
+    "4X12 CLOSED": "4x12 CLS",
+    "SAFE BYPASS": "SAFE",
+    "PRESET": "PRESET",
+    "REVERB": "REVERB",
+    "EQ": "EQ",
+    "COMPRESSOR": "COMP",
+    "NOISE SUPPRESSOR": "NOISE SUP",
+    "OVERDRIVE": "OD",
 }
 
 
@@ -405,6 +458,247 @@ def _has_asserted_vdma_error(errors):
     )
 
 
+def selected_fx_category(value):
+    """Phase 6C: classify a SELECTED FX label by model category.
+
+    Returns one of ``"PEDAL"``, ``"AMP"``, ``"CAB"``, ``"REVERB"``,
+    ``"EQ"``, ``"COMPRESSOR"``, ``"NOISE SUPPRESSOR"``, ``"OVERDRIVE"``,
+    ``"PRESET"``, or ``"SAFE"``. Unknown labels fall back to the
+    canonical string.
+    """
+    canonical = canonical_selected_fx(value)
+    return SELECTED_FX_CATEGORY.get(canonical, canonical)
+
+
+def dropdown_short_label(value):
+    """Phase 6C: shorten a model/effect label so it fits the dropdown chip.
+
+    Falls back to the upper-cased input. The chip width is ~150 px on
+    the compact-v2 800x480 fx panel, so anything past ~12 characters
+    gets clipped.
+    """
+    text = str(value or "").strip().upper()
+    return DROPDOWN_SHORT_LABELS.get(text, text)
+
+
+def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label):
+    """Phase 6C: pick the [model ▼] chip text for the SELECTED FX panel.
+
+    The chip mirrors the currently-selected model when the SELECTED FX
+    is a model-driven effect (PEDAL / AMP / CAB) and otherwise reflects
+    the effect family itself (REVERB / EQ / COMP / NS / OD / PRESET /
+    SAFE).
+    """
+    canonical = canonical_selected_fx(selected_fx)
+    category = SELECTED_FX_CATEGORY.get(canonical, canonical)
+    if category == "PEDAL":
+        return str(pedal_label or "").upper()
+    if category == "AMP":
+        return str(amp_label or "").upper()
+    if category == "CAB":
+        return str(cab_label or "").upper()
+    if category == "SAFE":
+        return "SAFE BYPASS"
+    if category == "PRESET":
+        return "PRESET"
+    if category == "REVERB":
+        return "REVERB"
+    if category == "EQ":
+        return "EQ"
+    if category == "COMPRESSOR":
+        return "COMPRESSOR"
+    if category == "NOISE SUPPRESSOR":
+        return "NOISE SUPPRESSOR"
+    if category == "OVERDRIVE":
+        return "OVERDRIVE"
+    return canonical or "N/A"
+
+
+def _parse_proc_meminfo_text(text):
+    """Phase 6C: parse a /proc/meminfo blob into a {key: kB int} dict."""
+    info = {}
+    for raw in str(text or "").splitlines():
+        if ":" not in raw:
+            continue
+        key, _, rest = raw.partition(":")
+        parts = rest.strip().split()
+        if not parts:
+            continue
+        try:
+            info[key.strip()] = int(parts[0])
+        except (TypeError, ValueError):
+            continue
+    return info
+
+
+def _parse_proc_status_text(text):
+    """Phase 6C: parse a /proc/self/status blob into a {key: value} dict."""
+    out = {}
+    for raw in str(text or "").splitlines():
+        if ":" not in raw:
+            continue
+        key, _, rest = raw.partition(":")
+        out[key.strip()] = rest.strip()
+    return out
+
+
+def _parse_proc_stat_cpu_line(line):
+    """Phase 6C: parse the aggregate CPU line of /proc/stat.
+
+    Returns ``(total_jiffies, idle_jiffies)`` or ``None`` if the line is
+    malformed. ``idle_jiffies`` includes iowait (field 4) so the
+    derived %CPU includes both run-time-blocked and on-CPU work.
+    """
+    parts = str(line or "").split()
+    if len(parts) < 5 or parts[0] != "cpu":
+        return None
+    try:
+        nums = [int(x) for x in parts[1:]]
+    except ValueError:
+        return None
+    idle = nums[3] + (nums[4] if len(nums) > 4 else 0)
+    total = sum(nums)
+    return total, idle
+
+
+def _parse_proc_self_stat_times(text):
+    """Phase 6C: parse utime + stime jiffies out of /proc/self/stat.
+
+    The ``comm`` field is enclosed in parens and may itself contain
+    spaces, so split off the last ``)`` before tokenising. Returns
+    ``None`` when fields cannot be parsed.
+    """
+    data = str(text or "")
+    rparen = data.rfind(")")
+    if rparen < 0:
+        return None
+    rest = data[rparen + 1:].split()
+    try:
+        utime = int(rest[11])
+        stime = int(rest[12])
+    except (IndexError, ValueError):
+        return None
+    return utime + stime
+
+
+class ResourceSampler(object):
+    """Phase 6C: tiny /proc-based CPU / memory sampler.
+
+    No ``psutil`` dependency; older PYNQ images do not ship it. The
+    sampler returns ``None`` for percentages on the first call so the
+    caller can ignore the bootstrap delta. Subsequent ``sample()`` calls
+    return absolute deltas against the previous call.
+    """
+
+    def __init__(self):
+        self._prev_proc_cpu = None
+        self._prev_sys_cpu = None
+        self._prev_t = None
+        try:
+            self.ticks_per_sec = float(os.sysconf("SC_CLK_TCK"))
+        except (AttributeError, OSError, ValueError):
+            self.ticks_per_sec = 100.0
+        try:
+            self.cpu_count = int(os.sysconf("SC_NPROCESSORS_ONLN"))
+        except (AttributeError, OSError, ValueError):
+            self.cpu_count = 1
+
+    @staticmethod
+    def _read_text(path):
+        try:
+            with open(path, "r") as fp:
+                return fp.read()
+        except (IOError, OSError):
+            return ""
+
+    def _read_sys_cpu(self):
+        text = self._read_text("/proc/stat")
+        first = text.split("\n", 1)[0] if text else ""
+        return _parse_proc_stat_cpu_line(first)
+
+    def _read_proc_cpu(self):
+        return _parse_proc_self_stat_times(self._read_text("/proc/self/stat"))
+
+    def _read_meminfo(self):
+        return _parse_proc_meminfo_text(self._read_text("/proc/meminfo"))
+
+    def _read_status(self):
+        return _parse_proc_status_text(self._read_text("/proc/self/status"))
+
+    def _temperature_c(self):
+        path = "/sys/class/thermal/thermal_zone0/temp"
+        try:
+            with open(path, "r") as fp:
+                raw = fp.read().strip()
+        except (IOError, OSError):
+            return None
+        try:
+            return float(raw) / 1000.0
+        except (TypeError, ValueError):
+            return None
+
+    def sample(self):
+        """Return a snapshot dict. First call's CPU% fields are ``None``."""
+        t_now = time.time()
+        sys_cpu = self._read_sys_cpu()
+        proc_cpu = self._read_proc_cpu()
+        meminfo = self._read_meminfo()
+        status = self._read_status()
+
+        sys_cpu_pct = None
+        if sys_cpu is not None and self._prev_sys_cpu is not None:
+            total_now, idle_now = sys_cpu
+            total_prev, idle_prev = self._prev_sys_cpu
+            d_total = total_now - total_prev
+            d_idle = idle_now - idle_prev
+            if d_total > 0:
+                sys_cpu_pct = 100.0 * (1.0 - (float(d_idle) / float(d_total)))
+
+        proc_cpu_pct = None
+        if (proc_cpu is not None and self._prev_proc_cpu is not None
+                and self._prev_t is not None):
+            dt = t_now - self._prev_t
+            d_ticks = proc_cpu - self._prev_proc_cpu
+            if dt > 0 and self.ticks_per_sec > 0:
+                proc_cpu_pct = 100.0 * (
+                    (float(d_ticks) / self.ticks_per_sec) / dt)
+
+        self._prev_sys_cpu = sys_cpu
+        self._prev_proc_cpu = proc_cpu
+        self._prev_t = t_now
+
+        def _kb(field):
+            try:
+                return int(status.get(field, "0 kB").split()[0])
+            except (IndexError, ValueError):
+                return 0
+
+        return {
+            "time_s": t_now,
+            "proc_rss_kb": _kb("VmRSS"),
+            "proc_vmsize_kb": _kb("VmSize"),
+            "mem_total_kb": int(meminfo.get("MemTotal", 0)),
+            "mem_avail_kb": int(meminfo.get("MemAvailable", 0)),
+            "mem_free_kb": int(meminfo.get("MemFree", 0)),
+            "sys_cpu_pct": sys_cpu_pct,
+            "proc_cpu_pct": proc_cpu_pct,
+            "cpu_count": int(self.cpu_count),
+            "temperature_c": self._temperature_c(),
+        }
+
+
+# Phase 6C: static PL utilization snapshot. Read from the latest Vivado
+# implementation report; updated only when bit/hwh is rebuilt.
+STATIC_PL_UTILIZATION = {
+    "source": "Vivado utilization_placed (latest deployed audio_lab.bit)",
+    "lut": 18619,
+    "registers": 20846,
+    "bram_36k": 9,
+    "dsp48": 83,
+    "ioob": 60,
+}
+
+
 class HdmiEffectStateMirror(object):
     """Mirror Notebook-driven effect edits onto the HDMI GUI AppState."""
 
@@ -447,7 +741,10 @@ class HdmiEffectStateMirror(object):
         self.current_amp_label = AMP_MODEL_LABELS[self.current_amp_model]
         self.current_cab_label = CAB_MODEL_LABELS[self.current_cab_model]
         self.active_pedals = []
+        self.resource_sampler = ResourceSampler()
+        self.last_resource_sample = self.resource_sampler.sample()
         self._sync_model_state_to_app_state()
+        self._update_dropdown_app_state()
 
     # ---- SELECTED FX -------------------------------------------------
     def get_selected_fx_actual(self):
@@ -468,6 +765,7 @@ class HdmiEffectStateMirror(object):
         self.last_edited_effect = display
         self._set_effect_index_for_selected_fx(display)
         setattr(self.app_state, "selected_fx", display)
+        self._update_dropdown_app_state(display)
         self.last_selected_fx_actual = self.get_selected_fx_actual()
         entry = {
             "index": len(self.selected_fx_history) + 1,
@@ -538,6 +836,28 @@ class HdmiEffectStateMirror(object):
                 for name in CAB_MODELS
             ],
         })
+        self._update_dropdown_app_state()
+
+    def _update_dropdown_app_state(self, selected_fx=None):
+        """Phase 6C: keep selected_model_category / dropdown_label on AppState.
+
+        Called from ``mark_selected_fx`` and ``_sync_model_state_to_app_state``
+        so the HDMI GUI always sees the [model ▼] chip in sync with both the
+        last edited model and the last edited effect.
+        """
+        if selected_fx is None:
+            selected_fx = self.get_selected_fx_actual()
+        canonical = canonical_selected_fx(selected_fx)
+        category = SELECTED_FX_CATEGORY.get(canonical, canonical)
+        label = dropdown_label_for(
+            canonical,
+            self.current_pedal_label,
+            self.current_amp_label,
+            self.current_cab_label)
+        short = dropdown_short_label(label)
+        setattr(self.app_state, "selected_model_category", category)
+        setattr(self.app_state, "dropdown_label", label)
+        setattr(self.app_state, "dropdown_short_label", short)
 
     def _set_current_pedal_model(self, model, enabled=True):
         self.current_pedal_model = normalize_pedal_model(model)
@@ -903,6 +1223,12 @@ class HdmiEffectStateMirror(object):
         if expected_selected_fx is not None:
             self.assert_selected_fx(expected_selected_fx)
 
+        try:
+            resource_sample = self.resource_sampler.sample()
+        except Exception as exc:
+            resource_sample = {"error": str(exc)}
+        self.last_resource_sample = resource_sample
+
         info = {
             "index": len(self.render_history) + 1,
             "reason": reason,
@@ -910,6 +1236,8 @@ class HdmiEffectStateMirror(object):
             "actual_selected_fx": self.get_selected_fx_actual(),
             "render_s": render_s,
             "backend_update_s": backend_update_s,
+            "total_update_s": render_s + backend_update_s,
+            "resource_sample": resource_sample,
             "compose_s": meta.get("compose_s") if isinstance(meta, dict) else None,
             "resize_compose_s": (
                 meta.get("resize_compose_s") if isinstance(meta, dict) else None),
@@ -1276,6 +1604,77 @@ class HdmiEffectStateMirror(object):
         for item in self.selected_fx_history:
             print("[{index:02d}] {selected_fx}  reason={reason}".format(**item))
 
+    def selected_history(self):
+        """Return a copy of the SELECTED FX history list."""
+        return [dict(item) for item in self.selected_fx_history]
+
+    def resource_summary(self):
+        """Return a snapshot of PS / GUI / HDMI resource usage.
+
+        The dict is safe to print or render in a Notebook widget. Includes
+        the latest /proc CPU and memory sample, the last render/compose/
+        framebuffer-copy timings, VDMA / VTC status, and the SELECTED FX
+        bookkeeping fields the user typically wants to display alongside
+        these numbers.
+        """
+        sample = self.resource_sampler.sample()
+        self.last_resource_sample = sample
+        info = dict(self.last_render_info or {})
+        status = info.get("hdmi_status") or {}
+        errors = info.get("hdmi_errors") or {}
+        last_write = info.get("last_frame_write") or status.get(
+            "last_frame_write", {}) or {}
+        return {
+            "time_s": sample.get("time_s"),
+            "proc_rss_kb": sample.get("proc_rss_kb"),
+            "proc_vmsize_kb": sample.get("proc_vmsize_kb"),
+            "mem_total_kb": sample.get("mem_total_kb"),
+            "mem_avail_kb": sample.get("mem_avail_kb"),
+            "mem_free_kb": sample.get("mem_free_kb"),
+            "sys_cpu_pct": sample.get("sys_cpu_pct"),
+            "proc_cpu_pct": sample.get("proc_cpu_pct"),
+            "cpu_count": sample.get("cpu_count"),
+            "temperature_c": sample.get("temperature_c"),
+            "render_s": info.get("render_s"),
+            "backend_update_s": info.get("backend_update_s"),
+            "compose_s": info.get("compose_s"),
+            "framebuffer_copy_s": info.get("framebuffer_copy_s"),
+            "total_update_s": info.get("total_update_s"),
+            "vdma_dmacr": status.get("vdma_dmacr"),
+            "vdma_dmasr": status.get("vdma_dmasr"),
+            "vdma_error_raw": errors.get("raw"),
+            "vdma_error_bits": {
+                "halted": errors.get("halted"),
+                "idle": errors.get("idle"),
+                "dmainterr": errors.get("dmainterr"),
+                "dmaslverr": errors.get("dmaslverr"),
+                "dmadecerr": errors.get("dmadecerr"),
+            },
+            "vtc_ctl": status.get("vtc_ctl"),
+            "last_frame_write": last_write,
+            "selected_fx": self.get_selected_fx_actual(),
+            "selected_model_category": getattr(
+                self.app_state, "selected_model_category", None),
+            "dropdown_label": getattr(self.app_state, "dropdown_label", None),
+            "dropdown_short_label": getattr(
+                self.app_state, "dropdown_short_label", None),
+            "current_pedal_model": self.current_pedal_model,
+            "current_amp_model": self.current_amp_model,
+            "current_cab_model": self.current_cab_model,
+            "current_pedal_label": self.current_pedal_label,
+            "current_amp_label": self.current_amp_label,
+            "current_cab_label": self.current_cab_label,
+            "last_edited_effect": self.last_edited_effect,
+            "render_count": len(self.render_history),
+            "pl_utilization": dict(STATIC_PL_UTILIZATION),
+        }
+
+    def summary(self):
+        """Phase 6C: combined state + resource snapshot for Notebook UIs."""
+        data = self.get_state_summary()
+        data["resource"] = self.resource_summary()
+        return data
+
     def summary_json(self):
         return json.dumps(self.get_state_summary(), indent=2, sort_keys=True,
                           default=str)
@@ -1290,6 +1689,16 @@ __all__ = [
     "PEDAL_MODEL_TO_INDEX",
     "AMP_MODEL_TO_INDEX",
     "CAB_MODEL_TO_INDEX",
+    "PEDAL_MODELS",
+    "AMP_MODELS",
+    "CAB_MODELS",
+    "SELECTED_FX_CATEGORY",
+    "DROPDOWN_SHORT_LABELS",
+    "STATIC_PL_UTILIZATION",
+    "ResourceSampler",
+    "selected_fx_category",
+    "dropdown_short_label",
+    "dropdown_label_for",
     "normalize_selected_fx",
     "canonical_selected_fx",
     "normalize_pedal_model",
@@ -1298,4 +1707,8 @@ __all__ = [
     "pedal_model_label",
     "amp_model_label",
     "cab_model_label",
+    "_parse_proc_meminfo_text",
+    "_parse_proc_status_text",
+    "_parse_proc_stat_cpu_line",
+    "_parse_proc_self_stat_times",
 ]

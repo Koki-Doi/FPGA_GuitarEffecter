@@ -85,6 +85,34 @@ asking it to re-discover the project from scratch.
 > Vivado rebuild、bit/hwh再生成、`git push` / `git pull` / `git fetch`
 > は禁止です。
 
+### HDMI GUI Phase 6C result — Realtime notebook pedalboard + dropdown chip
+
+> HDMI GUI Phase 6C は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6C_REALTIME_NOTEBOOK_PEDALBOARD.md`
+> を読んでから再開してください。Phase 6B の `HdmiEffectStateMirror`
+> を拡張し、新規 `notebooks/HdmiRealtimePedalboardOneCell.ipynb`
+> (1 code cell only) の ipywidgets でカテゴリ / モデル dropdown,
+> ON/OFF, slider, リソースモニタを提供します。各操作は mirror 経由で
+> 既存 `AudioLabOverlay` API を呼んで実 DSP を更新し、800x480 HDMI を
+> `placement="manual"`, `offset_x=0`, `offset_y=0` で再描画します。
+> compact-v2 fx panel には SELECTED FX 名の右に `[model ▼]` chip
+> (150x30 px, 三角はpolygon) を追加し、`TUBE SCRMR` / `BRIT CRUNCH`
+> / `HI-GAIN` / `CLN BOOST` / `FUZZ` / `2x12 CMB` / `SAFE` などに
+> 短縮しています。`audio_lab_pynq/hdmi_effect_state_mirror.py` には
+> `/proc` ベース `ResourceSampler` (psutil 不要)、
+> `SELECTED_FX_CATEGORY` / `DROPDOWN_SHORT_LABELS` / 関連 helper、
+> `resource_summary()` / `selected_history()` / `summary()` を追加。
+> 新規 CLI:
+> `scripts/test_hdmi_realtime_pedalboard_controls.py` と
+> `scripts/test_hdmi_800x480_origin_guard.py` (右寄り検出 + 実 HDMI
+> 表示確認; `--dry-run` 対応)。新規 unit tests:
+> `tests/test_hdmi_origin_mapping.py` と
+> `tests/test_hdmi_resource_monitor.py`。ローカルで 30 PASS。
+> bit/hwh / Vivado / `block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash 変更なし、`Overlay("base.bit")` /
+> `run_pynq_hdmi()` / second overlay 禁止、`git push` / `git pull` /
+> `git fetch` 禁止。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は

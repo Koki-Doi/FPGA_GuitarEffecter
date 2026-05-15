@@ -112,6 +112,20 @@ and `DECISIONS.md` D24):
   `amp_character`, and cab models are the current `cab_model=0/1/2`
   DSP set. The compact-v2 bottom panel now shows active PEDAL / AMP /
   CAB model labels and model slot rows while keeping 800x480 x0/y0.
+- Phase 6C adds `notebooks/HdmiRealtimePedalboardOneCell.ipynb`, a
+  single-code-cell ipywidgets pedalboard with category / model
+  dropdowns, ON/OFF toggles, parameter sliders, and a PS/GUI/HDMI
+  resource monitor. Every widget call goes through
+  `HdmiEffectStateMirror` -> `AudioLabOverlay` (real DSP edit) ->
+  800x480 HDMI render at `placement="manual"`, `offset_x=0`,
+  `offset_y=0`. The compact-v2 fx panel now also draws a `[model ▼]`
+  dropdown-style chip next to SELECTED FX, mirroring the currently
+  selected pedal / amp / cab / effect-family label (truncated:
+  `TUBE SCRMR`, `BRIT CRUNCH`, `HI-GAIN`, `CLN BOOST`, `FUZZ`,
+  `2x12 CMB`, `SAFE`, etc.). The mirror exposes a `/proc`-based
+  `ResourceSampler` and `resource_summary()` for the Notebook panel.
+  HDMI panel remains display-only; no event input back to the mirror.
+  No bit/hwh change.
 
 ### AudioLabOverlay and audio_lab.bit
 
