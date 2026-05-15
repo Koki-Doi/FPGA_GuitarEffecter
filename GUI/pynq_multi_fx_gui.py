@@ -1371,18 +1371,20 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
 
 
 COMPACT_V2_LAYOUT = {
-    # Phase 4G compact-v2 coordinates for 800x480 (Phase 4I restored
-    # baseline). Phase 4H pushed everything down by ~18 px and tightened
-    # the left margin from 24 to 18 to chase a reported top-clip / unused
-    # left strip on the 5-inch LCD; on the real panel that direction
-    # produced a layout shifted down and to the right rather than fixing
-    # the symptom, so Phase 4I rolled it back to the Phase 4G values
-    # below. The dict is kept (instead of inlining literals as Phase 4G
-    # did) so diagnostic scripts can read the exact same bboxes the
-    # renderer draws.
-    "outer": (12, 12, 788, 468),
-    "left": 24,
-    "right": 24,
+    # Phase 6F: shift the chassis ~24 px left so the LCD viewport no
+    # longer leaves an empty strip on its left edge. The Phase 4G
+    # baseline used left=24 and outer=(12,12,788,468); on the real
+    # 5-inch LCD that produced a visible right-shift with the chassis
+    # outline starting around LCD x=24. Phase 6F moves the outer
+    # chassis to (0,12,764,468) and the inner panel margin from 24 to
+    # 4, keeping symmetric 4 px panel-inside-chassis padding. The right
+    # side of the canvas (x=764..799) is canvas background and lives
+    # outside the LCD's visible region. The framebuffer destination
+    # stays at (0,0,800,480) and ``offset_x`` / ``offset_y`` remain 0;
+    # only the rendered content's horizontal placement changes.
+    "outer": (0, 12, 764, 468),
+    "left": 4,
+    "right": 40,
     "header_y": (20, 100),
     "chain_y": (110, 250),
     "bottom_y": (260, 454),
