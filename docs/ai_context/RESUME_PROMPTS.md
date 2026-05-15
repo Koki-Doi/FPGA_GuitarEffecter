@@ -64,6 +64,27 @@ asking it to re-discover the project from scratch.
 > Vivado rebuild、bit/hwh再生成、`git push` / `git pull` / `git fetch`
 > は禁止です。
 
+### HDMI GUI Phase 6B result — Notebook-controlled model labels
+
+> HDMI GUI Phase 6B は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6B_MODEL_SELECTION_UI.md` を読んでから
+> 再開してください。Phase 6A の `HdmiEffectStateMirror` を拡張し、
+> Notebook の `fx.*` 操作で pedal / amp / cab model を切替え、その
+> SELECTED FX と model label を 800x480 HDMI GUI に反映します。
+> GUI は引き続き display-only で DSP を操作しません。pedal は既存
+> `axi_gpio_distortion.ctrlD` pedal mask (`clean_boost`,
+> `tube_screamer`, `rat`, `ds1`, `big_muff`, `fuzz_face`, `metal`)、
+> amp は既存 `set_amp_model()` / `amp_character`、cab は既存
+> `cab_model=0/1/2` (`1x12 OPEN`, `2x12 COMBO`, `4x12 CLOSED`) を使い、
+> bit/hwh 変更は不要です。標準表示は compact-v2 `pipboy-green`,
+> `placement=manual`, `offset_x=0`, `offset_y=0` です。
+> 実機CLI `scripts/test_hdmi_model_selection_ui.py` はPYNQ-Z2
+> (`192.168.1.9`) 上で12/12 PASS、skip/failureなし、VDMA error bits
+> なし、`DMASR=0x00011000`、`vtc_ctl=0x00000006`。
+> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
+> Vivado rebuild、bit/hwh再生成、`git push` / `git pull` / `git fetch`
+> は禁止です。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は

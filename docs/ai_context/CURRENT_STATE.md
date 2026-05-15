@@ -18,7 +18,9 @@ introduced the Pip-Boy-inspired phosphor-green theme + soft
 horizontal scanline overlay for the compact-v2 800x480 path, keeping
 `offset_x=0`, `offset_y=0` and the 1280x720 HDMI signal intact, and
 Phase 6A added a Notebook-driven HDMI effect state mirror with
-SELECTED FX = last edited effect verification).
+SELECTED FX = last edited effect verification, and Phase 6B extends the
+mirror with Notebook-controlled pedal/amp/cab model labels on the HDMI
+GUI).
 
 ## PYNQ-Z2 network identity
 
@@ -930,6 +932,55 @@ Validation:
 
 The full result is recorded in
 `docs/ai_context/HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md`.
+
+No Vivado rebuild, bit/hwh regeneration, `block_design.tcl`,
+`audio_lab.xdc`, `create_project.tcl`, Clash/DSP, HDMI IP, VDMA/VTC,
+`git push`, `git pull`, or `git fetch` change was made.
+
+## HDMI GUI Phase 6B model selection UI
+
+Phase 6B keeps the Phase 6A one-way Notebook control path and adds
+pedal/amp/cab model state to `HdmiEffectStateMirror`, `AppState`, and
+the compact-v2 HDMI GUI. The GUI remains display-only. Notebook
+operations go through `fx.*` / `mirror.*`; direct `ovl.set_*` calls are
+still avoided because they do not update the last-edited model/effect
+state.
+
+Model support uses the existing deployed API and bitstream:
+
+- Pedal models: `clean_boost`, `tube_screamer`, `rat`, `ds1`,
+  `big_muff`, `fuzz_face`, `metal`; all map to the existing
+  `axi_gpio_distortion.ctrlD` pedal mask bits 0..6. RAT still asserts
+  the legacy `axi_gpio_delay` RAT controls and does not add a new stage.
+- Amp models: `jc_clean`, `clean_combo`, `british_crunch`,
+  `high_gain_stack`; all use existing `set_amp_model()` /
+  `amp_character` values 10 / 35 / 60 / 85.
+- Cab models: current DSP `cab_model=0/1/2` only, shown as
+  `1x12 OPEN`, `2x12 COMBO`, `4x12 CLOSED`.
+
+The compact-v2 bottom panel now shows `SELECTED FX`, ON/BYPASS status,
+`ACTIVE MODELS` for PEDAL / AMP / CAB, model slot rows, and small IN/OUT
+level bars. The `pipboy-green` theme remains the default and the
+standard placement remains `placement=manual`, `offset_x=0`,
+`offset_y=0`.
+
+New validation coverage:
+
+- `scripts/test_hdmi_model_selection_ui.py`
+- `tests/test_hdmi_model_state_mapping.py`
+- PYNQ result: `scripts/test_hdmi_model_selection_ui.py`
+  completed 12/12 PASS, 0 skips, 0 failures. Verified sequence:
+  `CLEAN BOOST -> TUBE SCREAMER -> RAT -> DS-1 -> BIG MUFF ->
+  FUZZ FACE -> METAL -> AMP SIM -> AMP SIM -> AMP SIM -> CAB ->
+  REVERB`. Final model labels were PEDAL `METAL`, AMP
+  `HIGH GAIN STACK`, CAB `2x12 COMBO`.
+- PYNQ HDMI status: ADC HPF `true`, `R19=0x23`, `DMASR=0x00011000`,
+  `VDMACR=0x00010001`, `vtc_ctl=0x00000006`, no VDMA
+  internal/slave/decode error bits. Final render/compose/copy:
+  `0.1537 s` / `0.0261 s` / `0.2056 s`.
+
+The full mapping table and Phase 6B test notes are recorded in
+`docs/ai_context/HDMI_GUI_PHASE6B_MODEL_SELECTION_UI.md`.
 
 No Vivado rebuild, bit/hwh regeneration, `block_design.tcl`,
 `audio_lab.xdc`, `create_project.tcl`, Clash/DSP, HDMI IP, VDMA/VTC,

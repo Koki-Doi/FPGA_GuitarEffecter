@@ -16,9 +16,10 @@ uncommitted, Phase 5A switched diagnosis to the HDMI output side, and
 Phase 5C locks the user-confirmed top-left 800x480 visible viewport as
 the default. The post-Phase-5C repo cleanup kept active `GUI/` code and
 removed the unused untracked legacy `HDMI/` experiment tree after backup.
-Phase 5D made `pipboy-green` the compact-v2 default theme, and Phase 6A
+Phase 5D made `pipboy-green` the compact-v2 default theme, Phase 6A
 adds a Notebook-driven effect state mirror where `SELECTED FX` follows
-the last edited effect.
+the last edited effect, and Phase 6B adds Notebook-controlled pedal /
+amp / cab model labels to that HDMI state mirror.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -52,13 +53,15 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`,
 `HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
 `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, and
-`HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md` for the
+`HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md`, and
+`HDMI_GUI_PHASE6B_MODEL_SELECTION_UI.md` for the
 measured results, design, build, deploy, timing, smoke logs, runtime
 resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
 vertical safe margin + horizontal layout diagnosis, 800x480
 compact-v2 baseline restore, HDMI output-side diagnosis, and the
-native 800x480 timing plan, and the Phase 6A selected-FX mirror result.
+native 800x480 timing plan, the Phase 6A selected-FX mirror result, and
+the Phase 6B model-selection UI result.
 Phase 5C's adopted runtime mode is the existing 1280x720 HDMI signal
 with the 800x480 compact GUI at framebuffer `x=0,y=0`.
 
@@ -102,6 +105,13 @@ and `DECISIONS.md` D24):
   (`PRESET`, `SAFE BYPASS`, `NOISE SUPPRESSOR`, `COMPRESSOR`,
   `OVERDRIVE`, `DISTORTION`, `RAT`, `AMP SIM`, `CAB`, `EQ`, `REVERB`).
   The GUI remains display-only and does not write DSP controls.
+- Phase 6B extends the same mirror and one-cell notebook with model
+  operations. Pedal models are selected by the existing distortion pedal
+  mask (`clean_boost`, `tube_screamer`, `rat`, `ds1`, `big_muff`,
+  `fuzz_face`, `metal`), amp models use existing `set_amp_model()` /
+  `amp_character`, and cab models are the current `cab_model=0/1/2`
+  DSP set. The compact-v2 bottom panel now shows active PEDAL / AMP /
+  CAB model labels and model slot rows while keeping 800x480 x0/y0.
 
 ### AudioLabOverlay and audio_lab.bit
 

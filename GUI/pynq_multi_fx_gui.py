@@ -19,7 +19,7 @@ import json
 import math
 import os
 import time
-from typing import List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -396,15 +396,22 @@ EFFECT_KNOBS = {
 # Distortion Pedalboard model names (pedal-mask bit -> name).
 DIST_MODELS = ["CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
                "BIG MUFF", "FUZZ FACE", "METAL"]
+DIST_MODEL_KEYS = ["clean_boost", "tube_screamer", "rat", "ds1",
+                   "big_muff", "fuzz_face", "metal"]
+DIST_SLOT_LABELS = ["CLEAN", "TS", "RAT", "DS1", "MUFF", "FUZZ", "METAL"]
 # Legacy alias.
 DISTORTION_PEDALS = [m.lower().replace(" ", "_").replace("-", "") for m in DIST_MODELS]
 
 # Amp Simulator named voicings (label, character byte center value).
 AMP_MODELS = [("JC CLEAN", 10), ("CLEAN COMBO", 35),
               ("BRITISH CRUNCH", 60), ("HIGH GAIN STACK", 85)]
+AMP_MODEL_KEYS = ["jc_clean", "clean_combo", "british_crunch", "high_gain_stack"]
+AMP_SLOT_LABELS = ["JC", "CLEAN", "BRIT", "HIGH"]
 
-# Cabinet IR model names.
-CAB_MODELS = ["1x12 COMBO", "2x12 BLACK", "4x12 BRITISH", "4x12 V30", "DIRECT DI"]
+# Cabinet IR model names. The deployed DSP exposes cab_model 0/1/2.
+CAB_MODELS = ["1x12 OPEN", "2x12 COMBO", "4x12 CLOSED"]
+CAB_MODEL_KEYS = ["1x12", "2x12", "4x12"]
+CAB_SLOT_LABELS = ["1x12", "2x12", "4x12"]
 
 # 13 Chain Presets (1-click chain swap).
 CHAIN_PRESETS = [
@@ -442,6 +449,15 @@ class AppState:
     dist_model_idx: int = 1   # Tube Screamer
     amp_model_idx:  int = 2   # British Crunch
     cab_model_idx:  int = 2   # 4x12 British
+    pedal_model: str = "tube_screamer"
+    amp_model: str = "british_crunch"
+    cab_model: str = "4x12"
+    pedal_model_label: str = "TUBE SCREAMER"
+    amp_model_label: str = "BRITISH CRUNCH"
+    cab_model_label: str = "4x12 CLOSED"
+    active_model_category: str = ""
+    active_pedals: List[str] = field(default_factory=list)
+    model_slots: Dict[str, List[Dict[str, object]]] = field(default_factory=dict)
 
     # footswitches
     fs_states: List[bool] = field(default_factory=lambda:
@@ -486,6 +502,44 @@ def _selected_fx_on(state: AppState) -> bool:
     if label == "PRESET":
         return any(bool(v) for v in getattr(state, "effect_on", []) or [])
     return bool(state.effect_on[state.selected_effect])
+
+
+def _compact_model_label(label: str) -> str:
+    label = str(label or "").upper()
+    replacements = {
+        "TUBE SCREAMER": "TUBE SCRMR",
+        "BRITISH CRUNCH": "BRIT CRUNCH",
+        "HIGH GAIN STACK": "HI-GAIN STACK",
+        "CLEAN BOOST": "CLEAN BOOST",
+    }
+    return replacements.get(label, label)
+
+
+def _pedal_label(state: AppState) -> str:
+    label = getattr(state, "pedal_model_label", None)
+    if label:
+        return str(label).upper()
+    idx = max(0, min(len(DIST_MODELS) - 1,
+                     int(getattr(state, "dist_model_idx", 0) or 0)))
+    return DIST_MODELS[idx]
+
+
+def _amp_label(state: AppState) -> str:
+    label = getattr(state, "amp_model_label", None)
+    if label:
+        return str(label).upper()
+    idx = max(0, min(len(AMP_MODELS) - 1,
+                     int(getattr(state, "amp_model_idx", 0) or 0)))
+    return AMP_MODELS[idx][0]
+
+
+def _cab_label(state: AppState) -> str:
+    label = getattr(state, "cab_model_label", None)
+    if label:
+        return str(label).upper()
+    idx = max(0, min(len(CAB_MODELS) - 1,
+                     int(getattr(state, "cab_model_idx", 0) or 0)))
+    return CAB_MODELS[idx]
 
 
 # =============================================================================
@@ -848,6 +902,14 @@ def state_semistatic_signature(state: AppState):
         getattr(state, "dist_model_idx", None),
         getattr(state, "amp_model_idx", None),
         getattr(state, "cab_model_idx", None),
+        getattr(state, "pedal_model", None),
+        getattr(state, "amp_model", None),
+        getattr(state, "cab_model", None),
+        getattr(state, "pedal_model_label", None),
+        getattr(state, "amp_model_label", None),
+        getattr(state, "cab_model_label", None),
+        getattr(state, "active_model_category", None),
+        tuple(getattr(state, "active_pedals", []) or []),
         bool(state.save_flash > 0),
     )
 
@@ -1285,35 +1347,21 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         rounded_rect(d, fx_box, 10, fill=palette["PANEL_FX_FILL"],
                      outline=LED + (90,), width=2)
         selected_name = _selected_fx_label(state)
-        selected_short = EFFECTS_SHORT[state.selected_effect]
         selected_on = _selected_fx_on(state)
-        # DIST / AMP / CAB carry an additional named model index; the
-        # MODEL row sits between the title and the knob grid.
-        model_label = None
-        if selected_short == "DIST":
-            idx = max(0, min(len(DIST_MODELS) - 1,
-                             int(getattr(state, "dist_model_idx", 0) or 0)))
-            model_label = DIST_MODELS[idx]
-        elif selected_short == "AMP":
-            idx = max(0, min(len(AMP_MODELS) - 1,
+        pedal_idx = max(0, min(len(DIST_MODELS) - 1,
+                               int(getattr(state, "dist_model_idx", 0) or 0)))
+        amp_idx = max(0, min(len(AMP_MODELS) - 1,
                              int(getattr(state, "amp_model_idx", 0) or 0)))
-            model_label = AMP_MODELS[idx][0]
-        elif selected_short == "CAB":
-            idx = max(0, min(len(CAB_MODELS) - 1,
+        cab_idx = max(0, min(len(CAB_MODELS) - 1,
                              int(getattr(state, "cab_model_idx", 0) or 0)))
-            model_label = CAB_MODELS[idx]
-        title_size = 26 if model_label is not None else 30
-        title_y = fy0 + 24 if model_label is not None else fy0 + 28
+        pedal_label = _pedal_label(state)
+        amp_label = _amp_label(state)
+        cab_label = _cab_label(state)
         draw_text(img, (fx0 + 16, fy0 + 10), "SELECTED  FX",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
-        draw_smooth_text(img, (fx0 + 16, title_y),
-                         selected_name.upper(), size=title_size,
+        draw_smooth_text(img, (fx0 + 16, fy0 + 28),
+                         selected_name.upper(), size=28,
                          fill=LED + (255,))
-        if model_label is not None:
-            draw_text(img, (fx0 + 16, fy0 + 52),
-                      "MODEL  {}".format(model_label),
-                      fill=SCR_TEXT_DIM + (255,), scale=1,
-                      letter_spacing=2)
         s_chip_w, s_chip_h = 110, 30
         s_chip = (fx1 - 16 - s_chip_w, fy0 + 18,
                   fx1 - 16, fy0 + 18 + s_chip_h)
@@ -1325,68 +1373,78 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   "ON" if selected_on else "BYPASS",
                   fill=s_col + (255,), scale=2, anchor="mm",
                   letter_spacing=2)
-        knobs = [k for k in state.knobs() if k[0]]
-        n_knobs = len(knobs)
-        # Grid layout per effect (knob count -> cols, rows):
-        #   3 knobs (NS, OD, EQ, RVB): 3 cols x 1 row
-        #   4 knobs (CMP, CAB):        2 cols x 2 rows
-        #   6 knobs (DIST, AMP):       3 cols x 2 rows
-        if n_knobs <= 3:
-            cols, rows = max(1, n_knobs), 1
-        elif n_knobs == 4:
-            cols, rows = 2, 2
-        else:
-            cols, rows = 3, 2
 
-        grid_x0 = fx0 + 20
-        grid_x1 = fx1 - 20
-        grid_y0 = fy0 + 64
-        grid_y1 = fy1 - 14
-        col_gap = 28
-        row_gap = 14
-        col_w = (grid_x1 - grid_x0 - col_gap * (cols - 1)) // cols
-        row_h = (grid_y1 - grid_y0 - row_gap * (rows - 1)) // rows
-        bar_h = 12
-        for i, (label, value) in enumerate(knobs):
-            col = i % cols
-            row = i // cols
-            cx0 = grid_x0 + col * (col_w + col_gap)
-            cx1 = cx0 + col_w
-            cy0r = grid_y0 + row * (row_h + row_gap)
-            cy1r = cy0r + row_h
-            is_sel = (i == state.selected_knob)
+        model_x0 = fx0 + 270
+        model_x1 = fx1 - 16
+        draw_text(img, (model_x0, fy0 + 10), "ACTIVE  MODELS",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+        model_rows = [
+            ("PEDAL", _compact_model_label(pedal_label)),
+            ("AMP", _compact_model_label(amp_label)),
+            ("CAB", _compact_model_label(cab_label)),
+        ]
+        for row, (label, value) in enumerate(model_rows):
+            ry = fy0 + 31 + row * 18
+            draw_text(img, (model_x0, ry), label,
+                      fill=SCR_TEXT_DIM + (255,), scale=1,
+                      letter_spacing=2)
+            draw_text(img, (model_x0 + 72, ry), value,
+                      fill=LED + (255,), scale=1, letter_spacing=1)
 
-            label_y = cy0r + 4
-            value_y = cy0r + 4
-            draw_text(img, (cx0, label_y), label,
-                      fill=(LED if is_sel else SCR_TEXT_DIM) + (255,),
-                      scale=2, letter_spacing=2)
-            draw_text(img, (cx1, value_y),
-                      "{:>3}".format(int(value)),
-                      fill=LED + (255,), scale=2, anchor="rt",
-                      letter_spacing=1)
+        def _slot_row(labels, active_index, x0, y0, x1, h, gap=6):
+            count = max(1, len(labels))
+            cell_w = int((x1 - x0 - gap * (count - 1)) / count)
+            for i, text in enumerate(labels):
+                bx0 = x0 + i * (cell_w + gap)
+                bx1 = bx0 + cell_w
+                active = i == active_index
+                fill = (palette["CHAIN_ON_FILL"] if active
+                        else palette["CHAIN_OFF_FILL"])
+                outline = LED + ((230,) if active else (90,))
+                text_col = LED + (255,) if active else SCR_TEXT_DIM + (255,)
+                rounded_rect(d, (bx0, y0, bx1, y0 + h), 5,
+                             fill=fill, outline=outline,
+                             width=2 if active else 1)
+                draw_text(img, ((bx0 + bx1) // 2, y0 + h // 2),
+                          text, fill=text_col, scale=1, anchor="mm",
+                          letter_spacing=1)
 
-            # `draw_text` with the bundled PIL font inserts ~8 px of top
-            # padding inside its scratch image and a scale=2 glyph is
-            # ~16 px tall, so reserve ~30 px below `label_y` before the
-            # bar starts in the 1-row layout.
-            text_block_h = 30
-            if rows == 1:
-                bar_y0 = label_y + text_block_h
-            else:
-                bar_y0 = cy1r - bar_h
-            bar_y1 = bar_y0 + bar_h
-            bar_x0 = cx0
-            bar_x1 = cx1
-            rounded_rect(d, (bar_x0, bar_y0, bar_x1, bar_y1), 4,
+        draw_text(img, (fx0 + 16, fy0 + 72), "PEDAL  MODEL",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+        _slot_row(DIST_SLOT_LABELS, pedal_idx, fx0 + 16, fy0 + 92,
+                  fx1 - 16, 24, gap=5)
+
+        bottom_y = fy0 + 126
+        draw_text(img, (fx0 + 16, bottom_y), "AMP  MODEL",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+        _slot_row(AMP_SLOT_LABELS, amp_idx, fx0 + 16, bottom_y + 20,
+                  fx0 + 350, 24, gap=6)
+
+        draw_text(img, (fx0 + 372, bottom_y), "CAB",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+        _slot_row(CAB_SLOT_LABELS, cab_idx, fx0 + 372, bottom_y + 20,
+                  fx0 + 526, 24, gap=5)
+
+        meter_x0 = fx0 + 548
+        meter_x1 = fx1 - 18
+        draw_text(img, (meter_x0, bottom_y), "LEVELS",
+                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+        def _mini_meter(label, y, value):
+            draw_text(img, (meter_x0, y - 1), label,
+                      fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=1)
+            bx0 = meter_x0 + 32
+            bx1 = meter_x1
+            rounded_rect(d, (bx0, y, bx1, y + 9), 3,
                          fill=palette["BAR_BG_FILL"],
                          outline=palette["BAR_OUTLINE"], width=1)
-            v_clamp = max(0.0, min(1.0, value / 100.0))
-            fill_w = int((bar_x1 - bar_x0 - 2) * v_clamp)
+            v = max(0.0, min(1.0, float(value)))
+            fill_w = int((bx1 - bx0 - 2) * v)
             if fill_w > 0:
-                d.rectangle((bar_x0 + 1, bar_y0 + 1,
-                             bar_x0 + fill_w, bar_y1 - 1),
-                            fill=(LED if is_sel else LED_DIM) + (255,))
+                d.rectangle((bx0 + 1, y + 1,
+                             bx0 + fill_w, y + 8),
+                            fill=LED_DIM + (255,))
+        _mini_meter("IN", bottom_y + 20, state.in_level)
+        _mini_meter("OUT", bottom_y + 40, state.out_level)
 
         # Corner canvas markers + variant label.
         marker = LED + (255,)

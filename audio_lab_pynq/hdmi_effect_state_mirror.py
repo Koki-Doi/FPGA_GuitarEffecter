@@ -41,6 +41,134 @@ GUI_EFFECT_KNOBS = {
                    ("", 0), ("", 0), ("", 0)],
 }
 
+PEDAL_MODELS = (
+    "clean_boost",
+    "tube_screamer",
+    "rat",
+    "ds1",
+    "big_muff",
+    "fuzz_face",
+    "metal",
+)
+
+PEDAL_MODEL_LABELS = {
+    "clean_boost": "CLEAN BOOST",
+    "tube_screamer": "TUBE SCREAMER",
+    "rat": "RAT",
+    "ds1": "DS-1",
+    "big_muff": "BIG MUFF",
+    "fuzz_face": "FUZZ FACE",
+    "metal": "METAL",
+}
+
+PEDAL_MODEL_TO_INDEX = dict((name, index)
+                            for index, name in enumerate(PEDAL_MODELS))
+
+PEDAL_MODEL_ALIASES = {
+    "clean_boost": "clean_boost",
+    "cleanboost": "clean_boost",
+    "boost": "clean_boost",
+    "tube_screamer": "tube_screamer",
+    "tubescreamer": "tube_screamer",
+    "ts": "tube_screamer",
+    "rat": "rat",
+    "ds1": "ds1",
+    "ds_1": "ds1",
+    "big_muff": "big_muff",
+    "bigmuff": "big_muff",
+    "muff": "big_muff",
+    "fuzz_face": "fuzz_face",
+    "fuzzface": "fuzz_face",
+    "fuzz": "fuzz_face",
+    "metal": "metal",
+}
+
+AMP_MODELS = (
+    "jc_clean",
+    "clean_combo",
+    "british_crunch",
+    "high_gain_stack",
+)
+
+AMP_MODEL_LABELS = {
+    "jc_clean": "JC CLEAN",
+    "clean_combo": "CLEAN COMBO",
+    "british_crunch": "BRITISH CRUNCH",
+    "high_gain_stack": "HIGH GAIN STACK",
+}
+
+AMP_MODEL_CHARACTER = {
+    "jc_clean": 10,
+    "clean_combo": 35,
+    "british_crunch": 60,
+    "high_gain_stack": 85,
+}
+
+AMP_MODEL_TO_INDEX = dict((name, index)
+                          for index, name in enumerate(AMP_MODELS))
+
+AMP_MODEL_ALIASES = {
+    "jc_clean": "jc_clean",
+    "jcclean": "jc_clean",
+    "jc": "jc_clean",
+    "clean_combo": "clean_combo",
+    "cleancombo": "clean_combo",
+    "combo": "clean_combo",
+    "british_crunch": "british_crunch",
+    "britishcrunch": "british_crunch",
+    "brit_crunch": "british_crunch",
+    "brit": "british_crunch",
+    "crunch": "british_crunch",
+    "high_gain_stack": "high_gain_stack",
+    "highgainstack": "high_gain_stack",
+    "hi_gain_stack": "high_gain_stack",
+    "higainstack": "high_gain_stack",
+    "high_gain": "high_gain_stack",
+    "higain": "high_gain_stack",
+    "high": "high_gain_stack",
+}
+
+# Existing cab DSP exposes three numeric models through cab_model 0/1/2.
+CAB_MODELS = (
+    "1x12",
+    "2x12",
+    "4x12",
+)
+
+CAB_MODEL_LABELS = {
+    "1x12": "1x12 OPEN",
+    "2x12": "2x12 COMBO",
+    "4x12": "4x12 CLOSED",
+}
+
+CAB_MODEL_TO_INDEX = dict((name, index)
+                          for index, name in enumerate(CAB_MODELS))
+
+CAB_MODEL_ALIASES = {
+    "0": "1x12",
+    "model_0": "1x12",
+    "model0": "1x12",
+    "1x12": "1x12",
+    "1x12_open": "1x12",
+    "open_1x12": "1x12",
+    "1x12_combo": "1x12",
+    "1": "2x12",
+    "model_1": "2x12",
+    "model1": "2x12",
+    "2x12": "2x12",
+    "2x12_combo": "2x12",
+    "2x12_black": "2x12",
+    "black_2x12": "2x12",
+    "2": "4x12",
+    "model_2": "4x12",
+    "model2": "4x12",
+    "4x12": "4x12",
+    "4x12_closed": "4x12",
+    "closed_4x12": "4x12",
+    "4x12_british": "4x12",
+    "british_4x12": "4x12",
+}
+
 
 CANONICAL_SELECTED_FX = {
     "PRESET": "PRESET",
@@ -49,7 +177,14 @@ CANONICAL_SELECTED_FX = {
     "COMPRESSOR": "COMPRESSOR",
     "OVERDRIVE": "OVERDRIVE",
     "DISTORTION": "DISTORTION",
+    "CLEAN BOOST": "CLEAN BOOST",
+    "TUBE SCREAMER": "TUBE SCREAMER",
     "RAT": "RAT",
+    "DS 1": "DS-1",
+    "DS-1": "DS-1",
+    "BIG MUFF": "BIG MUFF",
+    "FUZZ FACE": "FUZZ FACE",
+    "METAL": "METAL",
     "AMP SIM": "AMP SIM",
     "CAB": "CAB",
     "EQ": "EQ",
@@ -69,7 +204,23 @@ SELECTED_FX_ALIASES = {
     "OVERDRIVE": "OVERDRIVE",
     "DIST": "DISTORTION",
     "DISTORTION": "DISTORTION",
+    "CLEAN BOOST": "CLEAN BOOST",
+    "CLEANBOOST": "CLEAN BOOST",
+    "BOOST": "CLEAN BOOST",
+    "TUBE SCREAMER": "TUBE SCREAMER",
+    "TUBESCREAMER": "TUBE SCREAMER",
+    "TS": "TUBE SCREAMER",
     "RAT": "RAT",
+    "DS 1": "DS-1",
+    "DS1": "DS-1",
+    "DS-1": "DS-1",
+    "BIG MUFF": "BIG MUFF",
+    "BIGMUFF": "BIG MUFF",
+    "MUFF": "BIG MUFF",
+    "FUZZ FACE": "FUZZ FACE",
+    "FUZZFACE": "FUZZ FACE",
+    "FUZZ": "FUZZ FACE",
+    "METAL": "METAL",
     "AMP": "AMP SIM",
     "AMP SIM": "AMP SIM",
     "AMP SIMULATOR": "AMP SIM",
@@ -91,7 +242,13 @@ EFFECT_INDEX_BY_SELECTED_FX = {
     "COMPRESSOR": 1,
     "OVERDRIVE": 2,
     "DISTORTION": 3,
+    "CLEAN BOOST": 3,
+    "TUBE SCREAMER": 3,
     "RAT": 3,
+    "DS-1": 3,
+    "BIG MUFF": 3,
+    "FUZZ FACE": 3,
+    "METAL": 3,
     "AMP SIM": 4,
     "CAB": 5,
     "EQ": 6,
@@ -146,6 +303,61 @@ def normalize_selected_fx(value):
 def canonical_selected_fx(value):
     normalized = normalize_selected_fx(value)
     return CANONICAL_SELECTED_FX.get(normalized, normalized or "")
+
+
+def _model_key(value):
+    text = str(value or "").strip().lower()
+    for ch in (" ", "-", "/", "."):
+        text = text.replace(ch, "_")
+    while "__" in text:
+        text = text.replace("__", "_")
+    return text.strip("_")
+
+
+def _normalize_index_or_name(value, names, aliases, model_type):
+    if isinstance(value, int):
+        index = value
+        if 0 <= index < len(names):
+            return names[index]
+        raise ValueError(
+            "unsupported {} model index {!r}; valid range is 0..{}"
+            .format(model_type, value, len(names) - 1))
+    key = _model_key(value)
+    if key in aliases:
+        return aliases[key]
+    if key in names:
+        return key
+    valid = ", ".join(names)
+    raise ValueError(
+        "unsupported {} model {!r}; valid models are {}"
+        .format(model_type, value, valid))
+
+
+def normalize_pedal_model(value):
+    return _normalize_index_or_name(
+        value, PEDAL_MODELS, PEDAL_MODEL_ALIASES, "pedal")
+
+
+def normalize_amp_model(value):
+    return _normalize_index_or_name(
+        value, AMP_MODELS, AMP_MODEL_ALIASES, "amp")
+
+
+def normalize_cab_model(value):
+    return _normalize_index_or_name(
+        value, CAB_MODELS, CAB_MODEL_ALIASES, "cab")
+
+
+def pedal_model_label(value):
+    return PEDAL_MODEL_LABELS[normalize_pedal_model(value)]
+
+
+def amp_model_label(value):
+    return AMP_MODEL_LABELS[normalize_amp_model(value)]
+
+
+def cab_model_label(value):
+    return CAB_MODEL_LABELS[normalize_cab_model(value)]
 
 
 def _clamp_percent(value):
@@ -222,6 +434,21 @@ class HdmiEffectStateMirror(object):
         self.last_selected_fx_expected = None
         self.last_selected_fx_actual = None
 
+        dist_idx = int(getattr(self.app_state, "dist_model_idx", 1) or 0)
+        amp_idx = int(getattr(self.app_state, "amp_model_idx", 2) or 0)
+        cab_idx = int(getattr(self.app_state, "cab_model_idx", 2) or 0)
+        self.current_pedal_model = PEDAL_MODELS[
+            max(0, min(len(PEDAL_MODELS) - 1, dist_idx))]
+        self.current_amp_model = AMP_MODELS[
+            max(0, min(len(AMP_MODELS) - 1, amp_idx))]
+        self.current_cab_model = CAB_MODELS[
+            max(0, min(len(CAB_MODELS) - 1, cab_idx))]
+        self.current_pedal_label = PEDAL_MODEL_LABELS[self.current_pedal_model]
+        self.current_amp_label = AMP_MODEL_LABELS[self.current_amp_model]
+        self.current_cab_label = CAB_MODEL_LABELS[self.current_cab_model]
+        self.active_pedals = []
+        self._sync_model_state_to_app_state()
+
     # ---- SELECTED FX -------------------------------------------------
     def get_selected_fx_actual(self):
         value = getattr(self.app_state, "selected_fx", None)
@@ -239,6 +466,7 @@ class HdmiEffectStateMirror(object):
         if not display:
             raise ValueError("effect_name must not be empty")
         self.last_edited_effect = display
+        self._set_effect_index_for_selected_fx(display)
         setattr(self.app_state, "selected_fx", display)
         self.last_selected_fx_actual = self.get_selected_fx_actual()
         entry = {
@@ -264,6 +492,82 @@ class HdmiEffectStateMirror(object):
         return True
 
     # ---- AppState helpers ------------------------------------------
+    def _sync_model_state_to_app_state(self, active_model_category=None):
+        self.current_pedal_label = PEDAL_MODEL_LABELS[self.current_pedal_model]
+        self.current_amp_label = AMP_MODEL_LABELS[self.current_amp_model]
+        self.current_cab_label = CAB_MODEL_LABELS[self.current_cab_model]
+
+        self.app_state.dist_model_idx = PEDAL_MODEL_TO_INDEX[self.current_pedal_model]
+        self.app_state.amp_model_idx = AMP_MODEL_TO_INDEX[self.current_amp_model]
+        self.app_state.cab_model_idx = CAB_MODEL_TO_INDEX[self.current_cab_model]
+        setattr(self.app_state, "pedal_model", self.current_pedal_model)
+        setattr(self.app_state, "amp_model", self.current_amp_model)
+        setattr(self.app_state, "cab_model", self.current_cab_model)
+        setattr(self.app_state, "pedal_model_label", self.current_pedal_label)
+        setattr(self.app_state, "amp_model_label", self.current_amp_label)
+        setattr(self.app_state, "cab_model_label", self.current_cab_label)
+        setattr(self.app_state, "active_pedals", list(self.active_pedals))
+        if active_model_category is not None:
+            setattr(self.app_state, "active_model_category",
+                    str(active_model_category).upper())
+        elif not hasattr(self.app_state, "active_model_category"):
+            setattr(self.app_state, "active_model_category", "")
+        setattr(self.app_state, "model_slots", {
+            "pedal": [
+                {
+                    "name": name,
+                    "label": PEDAL_MODEL_LABELS[name],
+                    "active": name == self.current_pedal_model,
+                }
+                for name in PEDAL_MODELS
+            ],
+            "amp": [
+                {
+                    "name": name,
+                    "label": AMP_MODEL_LABELS[name],
+                    "active": name == self.current_amp_model,
+                }
+                for name in AMP_MODELS
+            ],
+            "cab": [
+                {
+                    "name": name,
+                    "label": CAB_MODEL_LABELS[name],
+                    "active": name == self.current_cab_model,
+                }
+                for name in CAB_MODELS
+            ],
+        })
+
+    def _set_current_pedal_model(self, model, enabled=True):
+        self.current_pedal_model = normalize_pedal_model(model)
+        if enabled:
+            self.active_pedals = [self.current_pedal_model]
+        else:
+            self.active_pedals = []
+        self._sync_model_state_to_app_state("PEDAL")
+
+    def _set_current_amp_model(self, model):
+        self.current_amp_model = normalize_amp_model(model)
+        self._sync_model_state_to_app_state("AMP")
+
+    def _set_current_cab_model(self, model):
+        self.current_cab_model = normalize_cab_model(model)
+        self._sync_model_state_to_app_state("CAB")
+
+    def _amp_model_from_character(self, value):
+        try:
+            v = float(value)
+        except Exception:
+            v = AMP_MODEL_CHARACTER[self.current_amp_model]
+        if v < 25:
+            return "jc_clean"
+        if v < 50:
+            return "clean_combo"
+        if v < 75:
+            return "british_crunch"
+        return "high_gain_stack"
+
     def _set_effect_index_for_selected_fx(self, effect_name):
         canonical = canonical_selected_fx(effect_name)
         idx = EFFECT_INDEX_BY_SELECTED_FX.get(canonical)
@@ -325,8 +629,28 @@ class HdmiEffectStateMirror(object):
             if key in kwargs and kwargs[key] is not None:
                 updates[idx] = kwargs[key]
         self._set_knobs("DISTORTION", updates)
+        if kwargs.get("pedal") is not None:
+            self._set_current_pedal_model(kwargs["pedal"], enabled=True)
+        elif kwargs.get("pedals") is not None:
+            pedals = kwargs.get("pedals")
+            selected = None
+            if isinstance(pedals, dict):
+                for name, is_enabled in pedals.items():
+                    if is_enabled:
+                        selected = name
+            else:
+                try:
+                    for name in pedals:
+                        selected = name
+                except TypeError:
+                    selected = pedals
+            if selected is not None:
+                self._set_current_pedal_model(selected, enabled=True)
         if enabled is not None:
             self._set_effect_enabled("DISTORTION", enabled)
+            if not enabled:
+                self.active_pedals = []
+                self._sync_model_state_to_app_state()
         elif kwargs.get("pedal") is not None or kwargs.get("pedals") is not None:
             self._set_effect_enabled("DISTORTION", True)
 
@@ -358,12 +682,30 @@ class HdmiEffectStateMirror(object):
         for section_name, selected_fx in sections:
             section = preset.get(section_name, {})
             self._set_effect_enabled(selected_fx, bool(section.get("enabled", False)))
+        dist = preset.get("distortion", {})
+        if dist.get("pedal"):
+            self._set_current_pedal_model(
+                dist.get("pedal"), enabled=bool(dist.get("enabled", False)))
+        else:
+            self.active_pedals = []
+        amp = preset.get("amp", {})
+        if "character" in amp:
+            self.current_amp_model = self._amp_model_from_character(
+                amp.get("character"))
+        cab = preset.get("cab", {})
+        if "model" in cab:
+            cab_idx = max(0, min(len(CAB_MODELS) - 1,
+                                 int(cab.get("model"))))
+            self.current_cab_model = CAB_MODELS[cab_idx]
+        self._sync_model_state_to_app_state()
 
     def _apply_safe_bypass_to_app_state(self):
         self.app_state.preset_idx = 0
         self.app_state.preset_id = "01A"
         self.app_state.preset_name = "SAFE BYPASS"
         self.app_state.effect_on = [False] * len(GUI_EFFECTS)
+        self.active_pedals = []
+        self._sync_model_state_to_app_state()
 
     def _category_from_guitar_kwarg(self, key):
         key_norm = str(key)
@@ -398,8 +740,11 @@ class HdmiEffectStateMirror(object):
             self._set_effect_enabled("OVERDRIVE", values["overdrive_on"])
         if "distortion_on" in values:
             self._set_effect_enabled("DISTORTION", values["distortion_on"])
-        if "rat_on" in values:
-            self._set_effect_enabled("RAT", values["rat_on"])
+            if not values["distortion_on"]:
+                self.active_pedals = []
+        if "rat_on" in values and values["rat_on"]:
+            self._set_effect_enabled("RAT", True)
+            self._set_current_pedal_model("rat", enabled=True)
         if "amp_on" in values:
             self._set_effect_enabled("AMP SIM", values["amp_on"])
         if "cab_on" in values:
@@ -408,6 +753,27 @@ class HdmiEffectStateMirror(object):
             self._set_effect_enabled("EQ", values["eq_on"])
         if "reverb_on" in values:
             self._set_effect_enabled("REVERB", values["reverb_on"])
+
+        if "distortion_pedal_mask" in values:
+            try:
+                mask = int(values["distortion_pedal_mask"]) & 0x7F
+            except Exception:
+                mask = 0
+            selected = None
+            for index, name in enumerate(PEDAL_MODELS):
+                if mask & (1 << index):
+                    selected = name
+            if selected is not None:
+                self._set_current_pedal_model(selected, enabled=True)
+        if "amp_character" in values:
+            self.current_amp_model = self._amp_model_from_character(
+                values["amp_character"])
+            self._sync_model_state_to_app_state("AMP")
+        if "cab_model" in values:
+            cab_idx = max(0, min(len(CAB_MODELS) - 1,
+                                 int(values["cab_model"])))
+            self.current_cab_model = CAB_MODELS[cab_idx]
+            self._sync_model_state_to_app_state("CAB")
 
         if selected_fx is None:
             return
@@ -629,6 +995,200 @@ class HdmiEffectStateMirror(object):
                     expected_selected_fx=expected)
         return result
 
+    # ---- model-selection operations ---------------------------------
+    def set_pedal_model(self, model, drive=None, tone=None, level=None,
+                        mix=None, bias=None, tight=None, rat_filter=None,
+                        filt=None, enabled=True):
+        model = normalize_pedal_model(model)
+        pedal_idx = PEDAL_MODEL_TO_INDEX[model]
+        dist_kwargs = {"pedal": model, "exclusive": True}
+        for key, value in (("drive", drive), ("tone", tone),
+                           ("level", level), ("mix", mix),
+                           ("bias", bias), ("tight", tight)):
+            if value is not None:
+                dist_kwargs[key] = value
+        dist_result = self.overlay.set_distortion_settings(**dist_kwargs)
+
+        guitar_kwargs = {
+            "distortion_on": bool(enabled),
+            "distortion_pedal_mask": (1 << pedal_idx) if enabled else 0,
+            "rat_on": bool(enabled and model == "rat"),
+        }
+        for key, value in (("distortion", drive),
+                           ("distortion_tone", tone),
+                           ("distortion_level", level),
+                           ("distortion_mix", mix),
+                           ("distortion_bias", bias),
+                           ("distortion_tight", tight)):
+            if value is not None:
+                guitar_kwargs[key] = value
+        rat_filter_value = rat_filter if rat_filter is not None else filt
+        if model == "rat":
+            for key, value in (("rat_drive", drive),
+                               ("rat_filter", rat_filter_value),
+                               ("rat_level", level),
+                               ("rat_mix", mix)):
+                if value is not None:
+                    guitar_kwargs[key] = value
+        guitar_result = self.overlay.set_guitar_effects(**guitar_kwargs)
+
+        self._set_current_pedal_model(model, enabled=bool(enabled))
+        self._apply_distortion_state(dist_kwargs, enabled=bool(enabled))
+        self._apply_guitar_effects_state(guitar_kwargs,
+                                         selected_fx="DISTORTION")
+        expected = self.mark_selected_fx(
+            PEDAL_MODEL_LABELS[model],
+            reason="set_pedal_model:" + model)
+        self.render(reason="set_pedal_model:" + model,
+                    expected_selected_fx=expected)
+        return {
+            "distortion_settings": dist_result,
+            "guitar_effects": guitar_result,
+        }
+
+    def set_drive_model(self, model, drive=None, tone=None, level=None,
+                        mix=None):
+        return self.set_pedal_model(
+            model, drive=drive, tone=tone, level=level, mix=mix)
+
+    def clean_boost(self, drive=None, tone=None, level=None, mix=None):
+        return self.set_pedal_model(
+            "clean_boost", drive=drive, tone=tone, level=level, mix=mix)
+
+    def tube_screamer(self, drive=None, tone=None, level=None, mix=None):
+        return self.set_pedal_model(
+            "tube_screamer", drive=drive, tone=tone, level=level, mix=mix)
+
+    def rat(self, drive=None, filter=None, filt=None, level=None, mix=None,
+            tone=None):
+        rat_filter = filter if filter is not None else filt
+        return self.set_pedal_model(
+            "rat", drive=drive, tone=tone, level=level, mix=mix,
+            rat_filter=rat_filter)
+
+    def ds1(self, drive=None, tone=None, level=None, mix=None):
+        return self.set_pedal_model(
+            "ds1", drive=drive, tone=tone, level=level, mix=mix)
+
+    def big_muff(self, drive=None, tone=None, level=None, mix=None):
+        return self.set_pedal_model(
+            "big_muff", drive=drive, tone=tone, level=level, mix=mix)
+
+    def fuzz_face(self, drive=None, tone=None, level=None, mix=None):
+        return self.set_pedal_model(
+            "fuzz_face", drive=drive, tone=tone, level=level, mix=mix)
+
+    def metal(self, drive=None, tone=None, level=None, mix=None):
+        return self.set_pedal_model(
+            "metal", drive=drive, tone=tone, level=level, mix=mix)
+
+    def set_amp_model(self, model, gain=None, bass=None, mid=None,
+                      treble=None, presence=None, resonance=None,
+                      master=None, sink=None):
+        model = normalize_amp_model(model)
+        amp_kwargs = {}
+        for key, value in (("amp_input_gain", gain),
+                           ("amp_bass", bass),
+                           ("amp_middle", mid),
+                           ("amp_treble", treble),
+                           ("amp_presence", presence),
+                           ("amp_resonance", resonance),
+                           ("amp_master", master)):
+            if value is not None:
+                amp_kwargs[key] = value
+        if hasattr(self.overlay, "set_amp_model"):
+            if sink is None:
+                result = self.overlay.set_amp_model(model, **amp_kwargs)
+            else:
+                result = self.overlay.set_amp_model(
+                    model, sink=sink, **amp_kwargs)
+        else:
+            amp_kwargs["amp_on"] = True
+            amp_kwargs["amp_character"] = AMP_MODEL_CHARACTER[model]
+            result = self.overlay.set_guitar_effects(**amp_kwargs)
+
+        values = dict(amp_kwargs)
+        values.setdefault("amp_on", True)
+        values.setdefault("amp_character", AMP_MODEL_CHARACTER[model])
+        self._set_current_amp_model(model)
+        self._apply_guitar_effects_state(values, selected_fx="AMP SIM")
+        expected = self.mark_selected_fx(
+            "AMP SIM", reason="set_amp_model:" + model)
+        self.render(reason="set_amp_model:" + model,
+                    expected_selected_fx=expected)
+        return result
+
+    def jc_clean(self, gain=None, bass=None, mid=None, treble=None,
+                 presence=None, resonance=None, master=None):
+        return self.set_amp_model(
+            "jc_clean", gain=gain, bass=bass, mid=mid, treble=treble,
+            presence=presence, resonance=resonance, master=master)
+
+    def clean_combo(self, gain=None, bass=None, mid=None, treble=None,
+                    presence=None, resonance=None, master=None):
+        return self.set_amp_model(
+            "clean_combo", gain=gain, bass=bass, mid=mid, treble=treble,
+            presence=presence, resonance=resonance, master=master)
+
+    def british_crunch(self, gain=None, bass=None, mid=None, treble=None,
+                       presence=None, resonance=None, master=None):
+        return self.set_amp_model(
+            "british_crunch", gain=gain, bass=bass, mid=mid,
+            treble=treble, presence=presence, resonance=resonance,
+            master=master)
+
+    def high_gain_stack(self, gain=None, bass=None, mid=None, treble=None,
+                        presence=None, resonance=None, master=None):
+        return self.set_amp_model(
+            "high_gain_stack", gain=gain, bass=bass, mid=mid,
+            treble=treble, presence=presence, resonance=resonance,
+            master=master)
+
+    def set_cab_model(self, model, air=None, mix=None, level=None,
+                      enabled=True):
+        model = normalize_cab_model(model)
+        cab_kwargs = {
+            "cab_on": bool(enabled),
+            "cab_model": CAB_MODEL_TO_INDEX[model],
+        }
+        for key, value in (("cab_air", air), ("cab_mix", mix),
+                           ("cab_level", level)):
+            if value is not None:
+                cab_kwargs[key] = value
+        result = self.overlay.set_guitar_effects(**cab_kwargs)
+        self._set_current_cab_model(model)
+        self._apply_guitar_effects_state(cab_kwargs, selected_fx="CAB")
+        expected = self.mark_selected_fx("CAB",
+                                         reason="set_cab_model:" + model)
+        self.render(reason="set_cab_model:" + model,
+                    expected_selected_fx=expected)
+        return result
+
+    def cab(self, model="2x12", air=None, mix=None, level=None,
+            enabled=True):
+        return self.set_cab_model(
+            model, air=air, mix=mix, level=level, enabled=enabled)
+
+    def eq(self, enabled=True, low=None, mid=None, high=None):
+        kwargs = {"eq_on": bool(enabled)}
+        if low is not None:
+            kwargs["eq_low"] = low * 2
+        if mid is not None:
+            kwargs["eq_mid"] = mid * 2
+        if high is not None:
+            kwargs["eq_high"] = high * 2
+        return self.set_guitar_effects(**kwargs)
+
+    def reverb(self, enabled=True, mix=None, decay=None, tone=None):
+        kwargs = {"reverb_on": bool(enabled)}
+        if mix is not None:
+            kwargs["reverb_mix"] = mix
+        if decay is not None:
+            kwargs["reverb_decay"] = decay
+        if tone is not None:
+            kwargs["reverb_tone"] = tone
+        return self.set_guitar_effects(**kwargs)
+
     def set_guitar_effects(self, *args, **kwargs):
         selected_fx = self._selected_fx_from_guitar_kwargs(kwargs)
         result = self.overlay.set_guitar_effects(*args, **kwargs)
@@ -675,6 +1235,13 @@ class HdmiEffectStateMirror(object):
             "last_edited_effect": self.last_edited_effect,
             "selected_fx_actual": self.get_selected_fx_actual(),
             "selected_fx_expected": self.last_selected_fx_expected,
+            "current_pedal_model": self.current_pedal_model,
+            "current_amp_model": self.current_amp_model,
+            "current_cab_model": self.current_cab_model,
+            "current_pedal_label": self.current_pedal_label,
+            "current_amp_label": self.current_amp_label,
+            "current_cab_label": self.current_cab_label,
+            "active_pedals": list(self.active_pedals),
             "selected_fx_history": list(self.selected_fx_history),
             "render_count": len(self.render_history),
             "last_render_info": dict(self.last_render_info),
@@ -686,6 +1253,19 @@ class HdmiEffectStateMirror(object):
                 "preset_idx": getattr(self.app_state, "preset_idx", None),
                 "selected_effect": getattr(self.app_state, "selected_effect", None),
                 "selected_fx": getattr(self.app_state, "selected_fx", None),
+                "pedal_model": getattr(self.app_state, "pedal_model", None),
+                "amp_model": getattr(self.app_state, "amp_model", None),
+                "cab_model": getattr(self.app_state, "cab_model", None),
+                "pedal_model_label": getattr(
+                    self.app_state, "pedal_model_label", None),
+                "amp_model_label": getattr(
+                    self.app_state, "amp_model_label", None),
+                "cab_model_label": getattr(
+                    self.app_state, "cab_model_label", None),
+                "active_model_category": getattr(
+                    self.app_state, "active_model_category", None),
+                "active_pedals": list(
+                    getattr(self.app_state, "active_pedals", []) or []),
                 "effect_on": list(getattr(self.app_state, "effect_on", []) or []),
                 "knob_values": list(getattr(self.app_state, "knob_values", []) or []),
             },
@@ -704,6 +1284,18 @@ class HdmiEffectStateMirror(object):
 __all__ = [
     "HdmiEffectStateMirror",
     "METHOD_SELECTED_FX",
+    "PEDAL_MODEL_LABELS",
+    "AMP_MODEL_LABELS",
+    "CAB_MODEL_LABELS",
+    "PEDAL_MODEL_TO_INDEX",
+    "AMP_MODEL_TO_INDEX",
+    "CAB_MODEL_TO_INDEX",
     "normalize_selected_fx",
     "canonical_selected_fx",
+    "normalize_pedal_model",
+    "normalize_amp_model",
+    "normalize_cab_model",
+    "pedal_model_label",
+    "amp_model_label",
+    "cab_model_label",
 ]
