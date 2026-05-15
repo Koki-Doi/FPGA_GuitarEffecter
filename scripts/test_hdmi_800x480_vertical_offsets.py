@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
-"""Phase 4H 800x480 vertical-only offset sweep.
+"""Phase 4H 800x480 vertical-only offset sweep (ARCHIVED DIAGNOSTIC).
 
-Phase 4G concluded the horizontal direction does not overflow on the
-5-inch LCD; the user only sees a slight top-edge clip. The Phase 4G
-cycle script swept negative ``offset_x`` because at that point we did
-not yet know whether the visible viewport was right-shifted or top-
-shifted. This Phase 4H script keeps ``offset_x = 0`` and walks
-``offset_y`` in small positive steps, with a large on-screen label per
-offset, so the user can confirm which downward shift makes the top of
-the compact-v2 layout visible without clipping the bottom.
+Status: ARCHIVED / FAILED DIRECTION.
+
+This script was added in Phase 4H to chase a reported top-clip on the
+5-inch HDMI LCD by walking ``offset_y`` in small positive steps with
+``offset_x = 0`` fixed. The hypothesis was that the visible viewport
+needed a downward shift to make the top of the compact-v2 layout
+visible. On the real panel that direction (combined with the Phase 4H
+chassis push-down) produced a layout shifted down and to the right
+instead of fixing the top-clip, so Phase 4I rolled the renderer back
+to the Phase 4G compact-v2 baseline and stopped recommending positive
+``offset_y`` as a corrective tool.
+
+The script is kept as a diagnostic record so the failed direction can
+be reproduced from photos if needed, but the recommended runtime
+placement on the 5-inch LCD is ``offset_x=0, offset_y=0``. Future
+calibration work should change UI density / size or the logical canvas
+size first (e.g. 760x440 logical UI at offset 0,0), not chase the
+top-clip with a vertical viewport offset.
 
 Loads ``AudioLabOverlay()`` exactly once, does not load ``base.bit``,
 does not load a second overlay, and does not call ``run_pynq_hdmi()``.
@@ -84,7 +94,17 @@ def parse_offsets_y(raw, fallback):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "ARCHIVED Phase 4H diagnostic. Positive offset_y direction "
+            "was rolled back in Phase 4I; the recommended runtime "
+            "placement on the 5-inch LCD is offset_x=0 offset_y=0. This "
+            "sweep is kept only to reproduce the failed direction from "
+            "photos."),
+        epilog=(
+            "Phase 4I rolled back the Phase 4H push-down + 18 px left "
+            "margin; do not use this sweep to pick a runtime offset_y."),
+    )
     parser.add_argument("--seconds-per-offset", type=int, default=10)
     parser.add_argument("--hold-final-seconds", type=int, default=30)
     parser.add_argument("--variant", default="compact-v2",
@@ -96,6 +116,9 @@ def main():
                         help="constant horizontal offset (default 0; phase 4H "
                              "deliberately keeps the horizontal direction fixed)")
     args = parser.parse_args()
+    print("[phase4h] NOTE: this script is an ARCHIVED Phase 4H diagnostic; "
+          "Phase 4I rolled back the positive offset_y direction. "
+          "Recommended runtime placement remains offset_x=0 offset_y=0.")
 
     offsets_y = parse_offsets_y(args.offsets_y, DEFAULT_OFFSETS_Y)
     if int(args.offset_x) != 0:

@@ -4,9 +4,10 @@ Last updated: 2026-05-15 (HDMI GUI Phase 4 integrated overlay deployed,
 Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
 added, Phase 4E 800x480 logical GUI tested, Phase 4F manual viewport
 calibration added, Phase 4G compact-v2 layout + negative-offset
-placement added, and Phase 4H vertical safe margin + layout-debug
-overlay + vertical-only offset sweep added on the PYNQ-Z2 at
-`192.168.1.9`).
+placement added, Phase 4H vertical safe margin + layout-debug overlay
++ vertical-only offset sweep added, and Phase 4I rolled the Phase 4H
+chassis push-down + positive-offset direction back to the Phase 4G
+compact-v2 baseline on the PYNQ-Z2 at `192.168.1.9`).
 
 ## PYNQ-Z2 network identity
 
@@ -457,6 +458,57 @@ the layout-debug photo to decide whether the left-side strip is
 cropped by the panel or just left unused by the renderer.
 Phase 4H details are in
 `docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`.
+
+## HDMI GUI Phase 4I restore compact-v2 baseline
+
+Phase 4H deployed but on the real 5-inch HDMI LCD the chassis
+push-down (`y=30`) and tighter left margin (`18`), paired with a
+positive-`offset_y` sweep recommendation, produced a layout shifted
+down and to the right rather than fixing the reported top-edge clip.
+Phase 4I rolls the renderer back to the Phase 4G compact-v2 baseline
+and keeps the Phase 4H diagnostic scripts only as archived
+references. No Vivado / bit / hwh / `block_design.tcl` /
+`audio_lab.xdc` / `create_project.tcl` / Clash / DSP / `topEntity` /
+GPIO / HDMI IP / VDMA / VTC change.
+
+Renderer rollback in `GUI/pynq_multi_fx_gui.py`:
+
+- `COMPACT_V2_LAYOUT` and `compact_v2_panel_boxes()` kept (so
+  diagnostic scripts still read the same bboxes the renderer draws),
+  but every coordinate moved back to Phase 4G values: outer
+  `(12,12)..(788,468)` for 800x480, panel `left` / `right` `24`,
+  header `(20, 100)`, chain `(110, 250)`, bottom `(260, 454)`, FX /
+  side divider at `Wv//2 +/- 8` via new `divider_half_gap = 8`,
+  variant label `y = Hv - 4`.
+- Cache key suffix back to `compact_v2_800x480` (was
+  `compact_v2_800x480_p4h`).
+- Inset LED-soft "safe corner" L-shapes added in Phase 4H removed;
+  only the canvas-edge TL / TR / BL / BR markers remain, matching
+  Phase 4G.
+
+Phase 4H diagnostic scripts kept as archived diagnostics:
+
+- `scripts/test_hdmi_800x480_layout_debug.py` — module docstring and
+  argparse `description` / `epilog` declare the script an archived
+  Phase 4H diagnostic; startup banner reinforces that Phase 4I rolled
+  back the paired positive `offset_y`.
+- `scripts/test_hdmi_800x480_vertical_offsets.py` — same treatment;
+  module docstring states the positive-`offset_y` direction is a
+  failed direction, not a runtime calibration target. Recommended
+  runtime placement remains `offset_x = 0`, `offset_y = 0`.
+- `scripts/test_hdmi_800x480_frame.py` — unchanged; defaults stayed
+  at `--variant compact-v2 --placement manual --offset-x 0
+  --offset-y 0` through Phase 4H and Phase 4I.
+
+Next direction for the 5-inch LCD top-clip / unused-left-strip
+symptoms is internal UI density / size tuning at offset `0, 0` and,
+if needed, a smaller logical canvas (e.g. 760x440 at composite offset
+`(20, 20)`). Changing the HDMI timing to native 800x480 in Vivado is
+explicitly deferred to a Phase 5 task because it requires a bit / hwh
+rebuild and a timing-summary review.
+
+Phase 4I details are in
+`docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`.
 
 ## HDMI GUI Phase 1 render benchmark (docs only)
 

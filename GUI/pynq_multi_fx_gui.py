@@ -2149,17 +2149,22 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
 
 
 COMPACT_V2_LAYOUT = {
-    # Phase 4H: keep the canvas 800x480, push the chassis down so the LCD
-    # can crop ~20-30 px at the top without losing the header, and pull
-    # panels closer to the left edge so the visible area on the 5-inch LCD
-    # is actually used instead of leaving a left strip cosmetically blank.
-    "outer": (12, 30, 788, 470),
-    "left": 18,
-    "right": 18,
-    "header_y": (44, 118),
-    "chain_y": (128, 258),
-    "bottom_y": (268, 458),
-    "variant_label_y": 472,
+    # Phase 4G compact-v2 coordinates for 800x480 (Phase 4I restored
+    # baseline). Phase 4H pushed everything down by ~18 px and tightened
+    # the left margin from 24 to 18 to chase a reported top-clip / unused
+    # left strip on the 5-inch LCD; on the real panel that direction
+    # produced a layout shifted down and to the right rather than fixing
+    # the symptom, so Phase 4I rolled it back to the Phase 4G values
+    # below. The dict is kept (instead of inlining literals as Phase 4G
+    # did) so diagnostic scripts can read the exact same bboxes the
+    # renderer draws.
+    "outer": (12, 12, 788, 468),
+    "left": 24,
+    "right": 24,
+    "header_y": (20, 100),
+    "chain_y": (110, 250),
+    "bottom_y": (260, 454),
+    "divider_half_gap": 8,
 }
 
 
@@ -2183,17 +2188,20 @@ def compact_v2_panel_boxes(width=800, height=480):
     right = COMPACT_V2_LAYOUT["right"]
     hy0, hy1 = COMPACT_V2_LAYOUT["header_y"]
     cy0, cy1 = COMPACT_V2_LAYOUT["chain_y"]
-    by0, by1 = COMPACT_V2_LAYOUT["bottom_y"]
+    gap = COMPACT_V2_LAYOUT["divider_half_gap"]
     if Wv == 800 and Hv == 480:
         outer = COMPACT_V2_LAYOUT["outer"]
+        by0, by1 = COMPACT_V2_LAYOUT["bottom_y"]
     else:
-        outer = (12, 30, Wv - 12, Hv - 10)
+        outer = (12, 12, Wv - 12, Hv - 12)
+        by0 = COMPACT_V2_LAYOUT["bottom_y"][0]
+        by1 = Hv - 26
     boxes = {
         "outer": outer,
         "header": (left, hy0, Wv - right, hy1),
         "chain": (left, cy0, Wv - right, cy1),
-        "fx": (left, by0, Wv // 2 - 6, by1),
-        "side": (Wv // 2 + 6, by0, Wv - right, by1),
+        "fx": (left, by0, Wv // 2 - gap, by1),
+        "side": (Wv // 2 + gap, by0, Wv - right, by1),
     }
     return boxes
 
@@ -2203,14 +2211,22 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                                      cache: Optional[RenderCache] = None,
                                      placement_label: Optional[str] = None
                                      ) -> np.ndarray:
-    """Phase 4G/4H compact-v2 800x480 layout for the 5-inch HDMI LCD.
+    """Phase 4G compact-v2 800x480 layout for the 5-inch HDMI LCD.
 
-    Phase 4G tightened margins and used larger text so the GUI did not
-    look right-shifted on the panel. Phase 4H pushes the chassis down by
-    ~18 px so the small LCD can crop the top of the framebuffer without
-    losing the preset / status header, and pulls the side panels to a
-    18 px left margin (instead of 24 px) so the visible area is actually
-    used and not left as a cosmetic blank strip on the left.
+    The v1 logical layout looked right-shifted on the actual panel because
+    its inner safe margin combined with the LCD's viewport cropping left a
+    wide blank strip on the left. v2 keeps the same dark visual language
+    but tightens the outer margin, fills the full 776x456 inner area,
+    uses larger text and 2 px strokes, and draws corner markers so a
+    photo can verify which framebuffer pixels reach the panel.
+
+    Phase 4H briefly tried to push the chassis down ~18 px and use an
+    18 px left margin to chase a reported top-clip / unused left strip;
+    on the actual 5-inch LCD that direction produced a downward + right
+    skew, so Phase 4I rolled the coordinates back to this Phase 4G
+    baseline. The renderer still reads its rectangles from the public
+    ``compact_v2_panel_boxes`` helper so diagnostic scripts can overlay
+    the same bboxes.
     """
     if cache is None:
         cache = make_pynq_static_render_cache()
@@ -2220,7 +2236,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         cache.meter_fps = 0.0
 
     label_key = "" if placement_label is None else str(placement_label)
-    key = ("compact_v2_800x480_p4h", int(width), int(height), label_key,
+    key = ("compact_v2_800x480", int(width), int(height), label_key,
            state_semistatic_signature(state),
            state_dynamic_signature(state, cache))
     cached = cache.frame_cache.get(key)
@@ -2244,8 +2260,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
 
         boxes = compact_v2_panel_boxes(Wv, Hv)
         outer = boxes["outer"]
-        left = COMPACT_V2_LAYOUT["left"]
-        right = COMPACT_V2_LAYOUT["right"]
         rounded_rect(d, outer, 12,
                      fill=(7, 10, 16, 220), outline=LED + (90,), width=2)
 
@@ -2421,12 +2435,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                    meter_w - 54, 20,
                    state.out_level, label="", segments=16, glow=False)
 
-        # Canvas-edge corner markers. These probe whether the panel sees
-        # the absolute (0..18) edge of the 800x480 logical canvas. Phase 4H
-        # additionally draws "safe" inset markers at (outer top, outer
-        # bottom, panel left, panel right) so a photo can tell whether the
-        # main chassis frame itself reaches the viewport even when the
-        # canvas edge is cropped.
+        # Corner canvas markers + variant label.
         marker = LED + (255,)
         d.rectangle((2, 2, 18, 5), fill=marker)
         d.rectangle((2, 2, 5, 18), fill=marker)
@@ -2444,22 +2453,10 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         draw_text(img, (Wv - 8, Hv - 8), "BR", fill=marker, scale=1,
                   anchor="rb", letter_spacing=1)
 
-        ox0, oy0, ox1, oy1 = outer
-        safe_marker = LED_SOFT + (255,)
-        d.line((ox0, oy0, ox0 + 22, oy0), fill=safe_marker, width=2)
-        d.line((ox0, oy0, ox0, oy0 + 22), fill=safe_marker, width=2)
-        d.line((ox1 - 22, oy0, ox1, oy0), fill=safe_marker, width=2)
-        d.line((ox1, oy0, ox1, oy0 + 22), fill=safe_marker, width=2)
-        d.line((ox0, oy1 - 22, ox0, oy1), fill=safe_marker, width=2)
-        d.line((ox0, oy1, ox0 + 22, oy1), fill=safe_marker, width=2)
-        d.line((ox1, oy1 - 22, ox1, oy1), fill=safe_marker, width=2)
-        d.line((ox1 - 22, oy1, ox1, oy1), fill=safe_marker, width=2)
-
         label_text = "v=compact-v2"
         if placement_label:
             label_text = "v=compact-v2  " + str(placement_label)
-        draw_text(img, (Wv // 2, COMPACT_V2_LAYOUT["variant_label_y"]),
-                  label_text,
+        draw_text(img, (Wv // 2, Hv - 4), label_text,
                   fill=LED_SOFT + (255,), scale=1, anchor="mb",
                   letter_spacing=2)
 

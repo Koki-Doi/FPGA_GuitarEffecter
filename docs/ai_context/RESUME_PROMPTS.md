@@ -438,6 +438,52 @@ asking it to re-discover the project from scratch.
 > 決定してください。詳細は
 > `docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`。
 
+### HDMI GUI Phase 4I result — restore compact-v2 baseline
+
+> HDMI GUI Phase 4I は完了済みです。
+> Phase 4H の chassis 押し下げ (`outer y=30`) と left margin 詰め
+> (`x=18`) は、実機 5-inch HDMI LCD では top-edge clip を直すのでなく
+> 右下方向にズレた layout になりました。`offset_y` を正方向に振る
+> Phase 4H の推奨方針も誤りでした。Phase 4I は renderer を Phase 4G
+> compact-v2 baseline に戻し、Phase 4H で追加した diagnostic script
+> 群は archived として残しました。Vivado rebuild / bit / hwh /
+> `block_design.tcl` / `audio_lab.xdc` / `create_project.tcl` /
+> Clash / DSP / `topEntity` / GPIO / HDMI IP / VDMA / VTC は一切
+> 変更していません。
+>
+> `GUI/pynq_multi_fx_gui.py` の `COMPACT_V2_LAYOUT` dict と
+> `compact_v2_panel_boxes()` helper は残しつつ、座標を Phase 4G に
+> 戻しました: outer `(12,12)..(788,468)` (800x480 時)、panel `left`
+> / `right` `24`、header `(20, 100)`、chain `(110, 250)`、bottom
+> `(260, 454)`、FX/side divider `Wv//2 +/- 8` (`divider_half_gap=8`)、
+> variant label `y = Hv - 4`、cache key suffix
+> `compact_v2_800x480` (Phase 4H の `_p4h` を撤去)。LED-soft 安全
+> コーナー L字 marker (Phase 4H 追加) も削除し、canvas 端 TL / TR /
+> BL / BR marker のみ残しました。
+>
+> `scripts/test_hdmi_800x480_layout_debug.py` と
+> `scripts/test_hdmi_800x480_vertical_offsets.py` は module docstring
+> と argparse `description` / `epilog`、起動 banner で
+> "ARCHIVED Phase 4H diagnostic / 正方向 `offset_y` は撤回された失敗
+> 方向" と明記。runtime 推奨 placement は引き続き
+> `--offset-x 0 --offset-y 0`。
+> `scripts/test_hdmi_800x480_frame.py` は Phase 4H 期から既に
+> default `offset_x=0 offset_y=0` のままで未変更。
+>
+> PYNQ-Z2 (`192.168.1.9`) では Python/scripts/docs だけを deploy。
+> board 上の `audio_lab.bit` / `audio_lab.hwh` は同サイズ・同 mtime
+> のまま。`test_hdmi_800x480_frame.py --variant compact-v2
+> --placement manual --offset-x 0 --offset-y 0 --hold-seconds 60` を
+> 実行し、VDMA error bits なし / 例外なし / Safe Bypass smoke OK を
+> 確認しました。
+>
+> 次の調整方針: viewport offset で top-clip を追わず、UI 内部の
+> 密度・サイズ調整、もしくは 760x440 logical UI を `(20, 20)` で
+> composite する方向。HDMI timing を native 800x480 にする Vivado
+> 対応は Phase 5 (bit / hwh rebuild + timing summary review 必要)
+> として明示的に後回し。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。

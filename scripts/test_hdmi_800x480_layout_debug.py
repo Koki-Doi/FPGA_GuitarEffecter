@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Phase 4H 800x480 layout-debug overlay.
+"""Phase 4H 800x480 layout-debug overlay (ARCHIVED DIAGNOSTIC).
+
+Status: ARCHIVED DIAGNOSTIC.
 
 Renders the compact-v2 800x480 logical GUI and draws a diagnostic
 overlay on top: a 50 px coordinate grid, axis labels around the
@@ -7,14 +9,15 @@ border, panel bounding boxes for header / chain / FX / monitor, the
 canvas outer frame, and a footer that names the variant, the
 placement offset, and the canvas size.
 
-This script is used after Phase 4G when the user reports the
-horizontal direction does not overflow on the 5-inch LCD but the left
-strip still appears unused or invisible. The overlay makes it possible
-to see, from a single photo:
-
-- whether x=0..100 of the logical canvas reaches the panel at all,
-- whether the renderer leaves any logical region cosmetically empty,
-- which panel bbox lands where on the visible viewport.
+This script is preserved from Phase 4H as a one-shot photo aid for
+deciding whether the LCD is cropping a logical strip or the renderer
+is leaving it cosmetically empty. The Phase 4H hypothesis that paired
+this overlay with a positive ``offset_y`` shift was rolled back in
+Phase 4I after the real panel showed a downward + right skew rather
+than a fix; the renderer now reads the Phase 4G compact-v2
+coordinates via ``compact_v2_panel_boxes`` and the recommended runtime
+placement is ``offset_x=0, offset_y=0``. Use this overlay only as a
+diagnostic record, not as a calibration target.
 
 The script loads ``AudioLabOverlay()`` exactly once, does not load
 ``base.bit``, does not load a second overlay, and does not call
@@ -220,7 +223,16 @@ def overlay_layout_debug(rgb_frame, offset_x, offset_y, variant_label):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "ARCHIVED Phase 4H layout-debug overlay. Useful as a "
+            "one-shot photo aid; Phase 4I rolled back the paired "
+            "positive offset_y direction and restored the Phase 4G "
+            "compact-v2 baseline at offset_x=0 offset_y=0."),
+        epilog=(
+            "Renderer reads coordinates from compact_v2_panel_boxes; "
+            "do not rely on this overlay to calibrate a runtime offset."),
+    )
     parser.add_argument("--hold-seconds", type=int, default=60)
     parser.add_argument("--variant", default="compact-v2",
                         choices=("compact-v1", "compact-v2"))
@@ -231,6 +243,9 @@ def main():
     parser.add_argument("--offset-y", type=int, default=0,
                         help="manual placement Y offset (may be negative)")
     args = parser.parse_args()
+    print("[phase4h] NOTE: this script is an ARCHIVED Phase 4H diagnostic; "
+          "Phase 4I rolled back the paired offset_y direction. "
+          "Recommended runtime placement remains offset_x=0 offset_y=0.")
 
     repo_paths()
     variant_label = args.variant
