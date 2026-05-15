@@ -128,6 +128,12 @@ cp "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.hwh" \
 
 mkdir -p "$STAGE_DIR/scripts"
 cp "$REPO_ROOT/scripts/audio_diagnostics.py" "$STAGE_DIR/scripts/"
+[[ -f "$REPO_ROOT/scripts/test_hdmi_static_frame.py" ]] && \
+    cp "$REPO_ROOT/scripts/test_hdmi_static_frame.py" "$STAGE_DIR/scripts/"
+
+mkdir -p "$STAGE_DIR/GUI"
+cp "$REPO_ROOT/GUI/pynq_multi_fx_gui.py" "$STAGE_DIR/GUI/"
+cp "$REPO_ROOT/GUI/audio_lab_gui_bridge.py" "$STAGE_DIR/GUI/"
 
 # Mirror the hw/ shape that setup.py expects for first-time pip install.
 mkdir -p "$STAGE_DIR/hw/Pynq-Z2/bitstreams"
@@ -178,6 +184,7 @@ mods = [
     "audio_lab_pynq.AudioLabOverlay",
     "audio_lab_pynq.AxisSwitch",
     "audio_lab_pynq.diagnostics",
+    "audio_lab_pynq.hdmi_backend",
 ]
 for m in mods:
     importlib.import_module(m)
@@ -229,6 +236,8 @@ Deploy complete.
   Repo on PYNQ       $PYNQ_REPO_DIR/
   Diagnostic CLI     ssh ${SSH_TARGET} \\
                      'sudo python3 ${PYNQ_REPO_DIR}/scripts/audio_diagnostics.py --help'
+  HDMI static test   ssh ${SSH_TARGET} \\
+                     'sudo env PYTHONPATH=${PYNQ_REPO_DIR} python3 ${PYNQ_REPO_DIR}/scripts/test_hdmi_static_frame.py'
 
 Quick smoke test (run on the board):
   ssh ${SSH_TARGET} 'sudo python3 -c "

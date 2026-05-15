@@ -22,6 +22,565 @@ asking it to re-discover the project from scratch.
 > 新エフェクト追加では C++ → 移植の手順に戻らず、Python API / UI
 > 予約 → Clash ステージ追加で進めてください。
 
+## HDMI GUI integration — design only, not implemented
+
+> HDMI GUI統合は調査/設計段階で、まだ実装していません。
+> まず `AGENTS.md`、`docs/ai_context/PROJECT_CONTEXT.md`、
+> `CURRENT_STATE.md`、`DECISIONS.md` を読み、続けて
+> `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` を読んでください。
+> 現在の `audio_lab.bit` には HDMI video out 系 IP が無く、
+> `GUI/pynq_multi_fx_gui.py` の既存 `run_pynq_hdmi()` は
+> `Overlay("base.bit")` をロードするため、そのまま使うと
+> AudioLab DSP overlay が消えます。PYNQ は基本的に full bitstream を
+> 1つしかロードできないので、AudioLab DSP と HDMI GUI を同時に使うには
+> 将来的に `audio_lab.bit` 側へ HDMI framebuffer output path を統合する
+> 必要があります。次作業を始める前に `git status --short` と
+> `git diff --stat` を確認してください。`base.bit` をロードしないで
+> ください。`AudioLabOverlay()` の後に別 `Overlay()` をロードしないで
+> ください。`hw/Pynq-Z2/block_design.tcl`、Clash/DSP、Pythonコード、
+> bitstream、deploy はユーザの明示承認なしに変更しないでください。
+> `git push` / `git pull` / `git fetch` は禁止です。
+
+### HDMI GUI Phase 1 prompt
+
+> HDMI GUI統合の Phase 1 を実施してください。対象は
+> `GUI/pynq_multi_fx_gui.py` の `render_frame(AppState())` を PYNQ-Z2 上で
+> offscreen 実行し、1 frame生成時間、cached path、必要メモリを測定する
+> ことです。HDMI出力、Vivado変更、bitstream rebuild、deploy、
+> `base.bit` ロードはしないでください。結果を docs に記録してください。
+
+### HDMI GUI Phase 1 result — continue from benchmark
+
+> HDMI GUI Phase 1 の offscreen render benchmark は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md` を読んでから再開して
+> ください。PYNQ-Z2 (`192.168.1.9`) の環境は Python 3.6.5 /
+> NumPy 1.16.0 / Pillow 5.1.0。`GUI/pynq_multi_fx_gui.py` はPYNQ上の
+> repoには未配置だったため、測定時は `/tmp/hdmi_gui_phase1/` に一時
+> コピーしました。raw import は `dataclasses` backport 不足で失敗。
+> 測定専用shimでは NumPy `default_rng` と Pillow `ImageDraw` 互換も
+> 補って render 成功。frame shape は `[720, 1280, 3]`、dtype は
+> `uint8`。cold render は約 `3871 ms`、same-state cache hit は平均
+> `0.177 ms/frame` / p95 `0.242 ms`、dynamic 30-frame loop は平均
+> `744 ms/frame` / p95 `2247 ms` / 推定 `1.34 fps`。現在のrendererで
+> animated 5/10/15/30fps HDMI は現実的ではありません。次に進むなら、
+> HDMIやVivadoではなく、まず Python互換性 (`dataclasses`,
+> NumPy 1.16, Pillow 5.1) と change-driven/static寄りの描画方針を
+> Phase 2 の bridge設計に反映してください。`base.bit` ロード、
+> `run_pynq_hdmi()`、Vivado変更、bitstream rebuild、deploy、
+> `git push` / `git pull` / `git fetch`は禁止です。
+
+### HDMI GUI Phase 2A result — PYNQ-compatible offscreen renderer
+
+> HDMI GUI Phase 2A は完了済みです。
+> `GUI/pynq_multi_fx_gui.py` は PYNQ-Z2 の Python 3.6.5 /
+> NumPy 1.16.0 / Pillow 5.1.0 で shim なしに import / offscreen render
+> できるよう、最小互換修正済みです。`dataclasses` fallback、
+> NumPy 1.16 用 RNG adapter、Pillow 5.1 の `ImageDraw` keyword 互換を
+> 追加しています。PYNQ 上の `/tmp/hdmi_gui_phase2a/` で raw import
+> 成功、`render_frame_fast(AppState())` 成功、frame shape は
+> `[720, 1280, 3]`、dtype は `uint8`。import は `451.188 ms`、
+> cold render は `3764.514 ms`、same-state cache hit は平均
+> `0.171034 ms/frame` / p95 `0.201208 ms`。change-driven redraw sample
+> は平均 `1972.889 ms/frame` / p95 `2111.738 ms` で、animated
+> 5/10/15/30fps HDMI は引き続き非現実的です。PNG は
+> `/tmp/hdmi_gui_phase2a/phase2a_render.png` に保存し、1280x720 RGBで
+> 見た目の大きな崩れなし。HDMI出力、`run_pynq_hdmi()`、
+> `Overlay("base.bit")`、`AudioLabOverlay()`、Vivado変更、bitstream
+> rebuild、deploy、GPIO bridge、DSP変更はしていません。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` を読んでください。
+
+### HDMI GUI Phase 2B result — static/change-driven renderer optimized
+
+> HDMI GUI Phase 2B は完了済みです。
+> `GUI/pynq_multi_fx_gui.py` に static/change-driven 向け軽量化を入れ、
+> HDMI出力なしで PYNQ-Z2 (`192.168.1.9`) 上の offscreen benchmark を
+> 再実行しました。変更は Python renderer と docs のみで、Vivado、
+> bitstream、deploy、`AudioLabOverlay()`、GPIO bridge、DSP/Clash は
+> 触っていません。主な変更: static LCD / knob-panel chrome を
+> `render_static_base()` に移してcache、main display / knob panel を
+> static chrome と state content に分離、knob body cache 追加、
+> `make_pynq_static_render_cache()` と `render_frame_pynq_static()` 追加、
+> PYNQ static mode では synthetic visualizer / waveform を固定し、
+> glow / blur stamp を抑制。raw import 成功、frame shape/dtype は
+> `[720, 1280, 3]` / `uint8`。default fast change-driven は Phase 2A の
+> avg `1972.889 ms` / p95 `2111.738 ms` から avg `690.397 ms` /
+> p95 `726.448 ms` に改善。PYNQ static mode は cold `2886.108 ms`、
+> same-state p95 `0.200019 ms`、change-driven avg `255.625 ms` /
+> p95 `276.171 ms`。PNG は
+> `/tmp/hdmi_gui_phase2b/phase2b_pynq_static.png` に保存し、1280x720 RGBで
+> 見た目の大きな崩れなし。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` を読んでください。
+> `base.bit` ロード、`run_pynq_hdmi()`、Vivado変更、bitstream rebuild、
+> deploy、`git push` / `git pull` / `git fetch`は禁止です。
+
+### HDMI GUI Phase 2C prompt
+
+> HDMI GUI統合の Phase 2C を実施してください。HDMI出力と Vivado変更は
+> まだしないでください。`GUI/pynq_multi_fx_gui.py` の描画を温存し、
+> `AppState` 変更を `AudioLabOverlay` の既存APIへ反映する bridge を
+> 作ってください。GPIO write は毎frameではなく変更時または低rateにし、
+> chain drag reorder は現行DSP固定順序と矛盾しないようライブモードで
+> 無効化または表示専用にしてください。`base.bit` はロード禁止です。
+> GUI表示は animated loop ではなく static/change-driven 前提にし、
+> visualizer / waveform / meter は freeze または低頻度更新にしてください。
+
+### HDMI GUI Phase 2C result — AppState bridge dry-run ready
+
+> HDMI GUI Phase 2C は完了済みです。
+> `GUI/audio_lab_gui_bridge.py` に renderer から分離した
+> `AppState` -> `AudioLabOverlay` API bridge を追加し、
+> `tests/test_hdmi_gui_bridge.py` で dry-run / same-state skip /
+> knob-drag throttle / Chain Preset alias / Safe Bypass sequence を確認
+> しています。bridge は `AudioLabOverlay()` を生成せず、bitstreamを
+> ロードせず、GPIOを直接叩かず、`dry_run=True` がデフォルトです。
+> 実GPIO writeは `dry_run=False` かつ既にロード済みの overlay を呼び元
+> が渡した場合だけです。PYNQ-Z2 (`192.168.1.9`) の
+> `/tmp/hdmi_gui_phase2c/` で shimなし import 成功、Python 3.6.5、
+> dry-run plan は `set_noise_suppressor_settings` /
+> `set_compressor_settings` / `clear_distortion_pedals` /
+> `set_distortion_settings` / `set_guitar_effects`、同一状態2回目は
+> 0 operations、knob drag は 10Hz 相当で throttle、throttle後は
+> 1 operation。`render_frame_pynq_static(AppState())` は
+> `[720, 1280, 3]` / `uint8` を維持。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` を読んでください。
+> HDMI出力、`run_pynq_hdmi()`、`Overlay("base.bit")`、
+> `AudioLabOverlay()` load、Vivado変更、bitstream rebuild、deploy、
+> Notebook変更、DSP/Clash変更、`git push` / `git pull` / `git fetch`
+> はしていません。
+
+### HDMI GUI Phase 3 prompt
+
+> HDMI GUI統合の Phase 3 として、`audio_lab.bit` に HDMI video out 系を
+> 統合する Vivado設計案だけを作成してください。まだ
+> `hw/Pynq-Z2/block_design.tcl` は変更しないでください。AXI VDMA または
+> PYNQ video subsystem 相当、HDMI output IP、video timing、clocking、
+> framebuffer path、1280x720 RGB、既存Audio DSPとの共存、AXI/DDR負荷、
+> resource/timingリスク、address map影響、rollback案を docs にまとめ、
+> 実装はユーザ承認を待ってください。
+
+### HDMI GUI Phase 2D result — bridge runtime test on real overlay
+
+> HDMI GUI Phase 2D は完了済みです。
+> PYNQ-Z2 (`192.168.1.9`) 上で `GUI/audio_lab_gui_bridge.py` を
+> 実 `AudioLabOverlay()` に対して `dry_run=False` で実行し、
+> `clear_distortion_pedals` / `set_distortion_settings` /
+> `set_noise_suppressor_settings` / `set_compressor_settings` /
+> `set_guitar_effects` / `apply_chain_preset` を本当に呼びました。
+> `AudioLabOverlay()` のロードは 1 回のみ、HDMI出力なし、
+> `Overlay("base.bit")` 未使用、second overlay load なし、
+> `render_frame*` 未呼び、Vivado / block_design / bitstream / hwh /
+> Notebook / DSP 変更なし、`scripts/deploy_to_pynq.sh` 未実行、
+> `git push` / `git pull` / `git fetch` 未実施。Safe Bypass 適用、
+> Basic Clean chain preset 適用、same-state 2 回目は 0 ops、
+> Noise Sup THRESHOLD だけ変更 → `set_noise_suppressor_settings` +
+> `set_guitar_effects` (legacy mirror) で section-scoped、
+> Compressor RATIO だけ変更 → `set_compressor_settings` のみ、
+> knob_drag throttle 100 ms 窓の内側は 0 ops / 1 skipped、
+> 窓の外は 1 op。pre/post smoke はどちらも `ADC HPF=True`、
+> `R19=0x23`、`has delay_line gpio=False`、
+> `has legacy axi_gpio_delay=True`。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`。
+
+### HDMI GUI Phase 3 result — Vivado integration proposal
+
+> HDMI GUI Phase 3 は完了済みです。`hw/Pynq-Z2/block_design.tcl`、
+> `audio_lab.xdc`、Clash / DSP、bitstream、hwh、deploy は触っていません。
+> 推奨構成は Option B (`axi_vdma` + `v_tc` + `v_axi4s_vid_out` +
+> Digilent `rgb2dvi`) を 1280x720@60 固定モードで使用、追加 `clk_wiz`
+> で `pixel_clk=74.25 MHz` と `serial_clk=371.25 MHz` を生成、
+> 追加 `proc_sys_reset` で video domain reset、
+> `processing_system7_0` の `S_AXI_HP0` を有効化して VDMA MM2S を
+> PS DDR フレームバッファに繋ぐ、`ps7_0_axi_periph` の `NUM_MI` を
+> 15 → 17 に拡張、VDMA / VTC の AXI-Lite control 用 address 候補は
+> `0x43CE0000` / `0x43CF0000` / `0x43D00000` (rgb2dvi 用 control が
+> 必要な場合)。既存 `axi_gpio_*` の address / name / `ctrlA`-`ctrlD`
+> semantics は一切変更しない。`axi_gpio_delay` (legacy RAT) も
+> そのまま保持。framebuffer は XRGB8888、double buffer、Python は
+> `render_frame_pynq_static` を変更時のみ呼んで一度コピーする
+> change-driven 運用。Phase 2B 計測ベースで現実的なredrawは
+> 2..4 fps。リソース追加見積りは LUT +3.4k..+4.0k、FF +4.8k..+5.3k、
+> BRAM +4..+7、DSP +0。Deploy gate は audio domain WNS が baseline
+> -8.155 ns から significantly に悪化していないこと。pixel / serial
+> 両 domain は WNS >= 0。Rollback は bit/hwh 日付付きバックアップと
+> 将来 feature branch 上の `git revert`、`git push` / `pull` /
+> `fetch` は引き続き禁止。設計書は
+> `docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`、
+> `block_design.tcl` パッチ案 (未適用) は
+> `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`、Phase 4
+> 実装用プロンプト雛形は
+> `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`。
+
+### HDMI GUI Phase 4 result — integrated overlay deployed
+
+> HDMI GUI Phase 4 は完了済みです。
+> `feature/hdmi-gui-phase4-vivado-integration` で dirty recovery から
+> 再開し、Digilent `vivado-library`
+> (`/home/doi20/digilent-vivado-library`) の
+> `digilentinc.com:ip:rgb2dvi:1.4` を Vivado 2019.1 catalog で確認後、
+> `hw/Pynq-Z2/hdmi_integration.tcl` を `create_project.tcl` から source
+> する形で HDMI path を統合しました。追加 IP は
+> `axi_vdma_hdmi` (`0x43CE0000`)、`v_tc_hdmi` (`0x43CF0000`)、
+> `v_axi4s_vid_out_hdmi`、`rgb2dvi_hdmi`、`clk_wiz_hdmi`、
+> `rst_video_0`、`axi_smc_hdmi`。GUI renderer output は
+> RGB888 `[720,1280,3]` / `uint8`、DDR framebuffer は packed `GBR888`、
+> VDMA HSIZE/STRIDE は `3840`、VSIZE は `720`。Vivado build は
+> `write_bitstream` 成功、timing は WNS=-8.163 ns / TNS=-6599.061 ns /
+> WHS=+0.051 ns / THS=0.000 ns。Utilization は LUT 18619、Registers
+> 20846、BRAM 9、DSP 83。`bash scripts/deploy_to_pynq.sh` で
+> PYNQ-Z2 (`192.168.1.9`) に deploy 済み。Smoke は ADC HPF=True /
+> R19=0x23 / `axi_gpio_delay_line=False` / legacy `axi_gpio_delay=True` /
+> noise_suppressor と compressor GPIO present / required chain presets
+> OK。HDMI static frame は renderer が RGB888 を生成し、VDMA は
+> framebuffer `0x16900000`、`DMASR=0x00011000`、error bits なし。
+> 物理 display の目視確認だけ未実施。`AudioLabHdmiBackend` は
+> PYNQ の `AxiVDMA` driver ではなく `ip_dict` から `pynq.MMIO` を直接
+> 作る設計です。`Overlay("base.bit")`、`run_pynq_hdmi()`、second
+> overlay load、DSP/Clash/topEntity/GPIO 変更、`git push` / `pull` /
+> `fetch` は引き続き禁止です。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`。
+
+### HDMI GUI Phase 4C result — static frame and resource profile
+
+> HDMI GUI Phase 4C は完了済みです。
+> Vivado rebuild、bit/hwh再生成、full deploy、`block_design.tcl` /
+> `audio_lab.xdc` / `create_project.tcl` / Clash / DSP / `topEntity` /
+> GPIO変更はしていません。追加した測定スクリプトは
+> `scripts/profile_hdmi_static_frame.py`、結果docsは
+> `docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` です。
+> PYNQ-Z2 (`192.168.1.9`) で `AudioLabOverlay()` を1回だけロードし、
+> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load は
+> 未使用です。Static frame再確認は ADC HPF=True / R19=0x23 /
+> `axi_gpio_delay_line=False` / legacy `axi_gpio_delay=True` /
+> HDMI IP present / renderer `[720,1280,3] uint8` / framebuffer
+> `0x16900000` / VDMA HSIZE=3840 STRIDE=3840 VSIZE=720 /
+> `VDMACR=0x00010001` / `DMASR=0x00011000` / error bitsなし。
+> VTC readback は `0x00000006`。物理HDMIモニタと色順は
+> Codexでは目視未確認なので、ユーザー確認待ちです。
+> 60秒hold profileでは cold render=2.979s、same-state cached
+> avg/p95=0.00052s/0.00217s、change-driven render avg/p95=0.276s/0.280s、
+> RGB888->DDR GBR888 copy avg/p95=0.206s/0.206s、VDMA/VTC start=0.0023s。
+> Hold中process CPU avg/max=0.352%/0.418%、system CPU avg/max=0.190%/0.990%、
+> process max RSS=136876 kB、MemAvailable before/after=390860/270764 kB。
+> 温度はPYNQ imageが thermal/hwmon temp file を公開していなかったため
+> 取得不能。実用的なwarm change-driven更新は約2.1fpsで、現行Python
+> full-frame renderer/copyのまま30fps連続GUIは非現実的です。
+> 次はユーザーの物理HDMI目視確認、任意の10分hold test、その後 Phase 5
+> change-driven GUI loopです。`git push` / `pull` / `fetch`は禁止です。
+
+### HDMI GUI Phase 4D result — small LCD fit modes
+
+> HDMI GUI Phase 4D は完了済みです。
+> ユーザー目視で小型HDMI LCDにGUI表示は確認済みですが、native 1280x720
+> はLCD側crop/overscanで画面からはみ出していました。Vivado rebuild、
+> bit/hwh再生成、`block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP構成
+> 変更はしていません。`audio_lab_pynq/hdmi_backend.py` にPython側
+> fit modeを追加し、RGB888 frameを縮小して黒背景1280x720へ中央配置
+> してから既存のDDR `GBR888` copyを使うようにしました。追加modeは
+> `native`、`fit-97`、`fit-95`、`fit-90`、`fit-85`、`fit-80` と
+> custom `--scale`。新規 `scripts/test_hdmi_fit_frame.py` は1px外枠、
+> 10/20/40px inset border、TL/TR/BL/BR、CENTER、grid、crosshair、
+> 1280x720表記、fit mode表記を描画します。PYNQ-Z2 (`192.168.1.9`)
+> では `native`、`fit-95`、`fit-90` test pattern と GUI `fit-90` が
+> すべて60秒hold成功、VDMA error bitsなし。`fit-90` は scaled
+> `1152x648`、offset `(64,36)`、GUI render=2.979s、
+> resize/compose=0.265s、copy=0.207s。共通statusは
+> `VDMACR=0x00010001`、`DMASR=0x00011000`、HSIZE/STRIDE=3840、
+> VSIZE=720、VTC=`0x00000006`、framebuffer=`0x16900000`。
+> 推奨候補はまず `fit-90`。まだ40px borderやcorner labelが切れるなら
+> `fit-85`、`fit-95`で全て見えるなら `fit-95` が画面面積を多く使えます。
+> Codexは物理画面を見られないため、最終fit mode、色順、文字可読性、
+> 縦横比はユーザー目視で決定してください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`。
+> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
+> `git push` / `pull` / `fetch` は引き続き禁止です。
+
+### HDMI GUI Phase 4E result — 800x480 logical GUI
+
+> HDMI GUI Phase 4E は完了済みです。
+> 小型HDMI LCDは5インチ800x480の可能性が高いため、1280x720 GUIの縮小
+> ではなく、`GUI/pynq_multi_fx_gui.py::render_frame_800x480(AppState())`
+> を5インチ向けlogical rendererに差し替えました。出力は `[480,800,3]`
+> / `uint8`。既存1280x720 rendererは維持しています。UIはdark
+> AudioLab/plugin調を維持しつつ、24px safe margin、大きいpreset/status、
+> compact chain、selected FX summary、simplified signal monitor、IN/OUT
+> levelを優先表示します。`AudioLabHdmiBackend` はlogical frameを
+> 1280x720 framebuffer中央へ配置でき、800x480では offset `x=240`,
+> `y=120`。VDMA HSIZE/STRIDE/VSIZE、HDMI signal、Vivado、bit/hwh、
+> `block_design.tcl`、`audio_lab.xdc`、`create_project.tcl`、Clash/DSP、
+> `topEntity`、GPIO、HDMI IP構成は変更していません。
+> PYNQ-Z2 (`192.168.1.9`) で
+> `scripts/test_hdmi_800x480_frame.py --hold-seconds 60` が成功しました。
+> `AudioLabOverlay()` は1回だけload、`Overlay("base.bit")` /
+> `run_pynq_hdmi()` / second overlay load は未使用。ADC HPF=True、
+> R19=0x23、`axi_gpio_delay_line=False`、legacy `axi_gpio_delay=True`、
+> HDMI IP present、post Safe Bypass smoke OK。測定値は render=0.317s、
+> center compose=0.026s、full framebuffer copy=0.207s、total update約0.550s。
+> VDMAは `VDMACR=0x00010001`、`DMASR=0x00011000`、HSIZE/STRIDE=3840、
+> VSIZE=720、error bitsなし。VTC=`0x00000006`。
+> 1280x720 `fit-90` の cold path (`2.979 + 0.265 + 0.207s`) より
+> 大幅に軽いですが、copyはまだ1280x720全体をswizzleしています。次は
+> ユーザーの物理目視で読みやすさ・色順・縦横比・中央配置を確認し、
+> 必要なら800x480 layout調整、部分copy最適化、Phase 5 change-driven
+> loopへ進んでください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`。
+
+### HDMI GUI Phase 4F result — viewport calibration and manual placement
+
+> HDMI GUI Phase 4F は完了済みです。
+> Phase 4E の800x480 logical GUI中央配置 offset `(240,120)` は、実機
+> 5インチLCD上で大きく右寄りに見えました。1280x720 framebuffer全体を
+> LCDが正しく縮小表示しているなら中央に見えるはずなので、LCD側crop
+> または viewport sampling ずれの可能性が高いです。Vivado rebuild、
+> bit/hwh再生成/転送、`block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP構成 /
+> VDMA設定変更はしていません。`AudioLabHdmiBackend` に
+> `placement="manual"`、`offset_x`、`offset_y` を追加し、logical frameが
+> framebuffer外へ出る場合もclipして安全にcopyします。`placement="center"`
+> は既存互換です。新規 `scripts/test_hdmi_viewport_calibration.py` は
+> 1280x720座標grid、FB四隅/中央ラベル、800x480候補枠 `(0,0)` /
+> `(120,60)` / `(240,120)` / `(320,120)` を描きます。
+> PYNQ-Z2 (`192.168.1.9`) では calibration pattern と manual offset
+> `(0,0)`、`(80,40)`、`(120,60)` の800x480 GUI testがすべて60秒hold成功。
+> `AudioLabOverlay()` は1回だけload、`Overlay("base.bit")` /
+> `run_pynq_hdmi()` / second overlay load は未使用。ADC HPF=True、
+> R19=0x23、`axi_gpio_delay_line=False`、legacy `axi_gpio_delay=True`、
+> post Safe Bypass smoke OK。共通statusは `VDMACR=0x00010001`、
+> `DMASR=0x00011000`、HSIZE/STRIDE=3840、VSIZE=720、VTC=`0x00000006`、
+> error bitsなし。manual GUIは render約0.315s、compose約0.025s、
+> full framebuffer copy約0.207s。最終offsetはユーザー目視で決めてください:
+> `(0,0)` が合うなら左上crop、`(80,40)` が合うなら軽いoverscan、
+> `(120,60)` が合うなら中程度offset、どれも合わないならHDMI timing /
+> LCD controller側を疑います。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`。
+
+### HDMI GUI Phase 4G result — compact-v2 layout and negative offsets
+
+> HDMI GUI Phase 4G は完了済みです。
+> Phase 4F の中央/正方向offsetでも5インチLCD上で左に大きな空白が残り、
+> GUIが右寄りに見えていました。Phase 4Gでは、Vivado rebuild / bit /
+> hwh再生成 / `block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP /
+> VDMA / VTC設定を一切触らず、Python側だけで以下2点を追加しました。
+> (1) `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2` を
+> 新設し、`render_frame_800x480(state, variant="compact-v2",
+> placement_label=...)` でも呼べます。`compact-v1` は既存呼び出し用に
+> 残しています。compact-v2は外枠12pxマージン、2-3px stroke、横一列
+> chain (NS/CMP/OD/DIST/AMP/CAB/EQ/RVB)、`AMP SIM` などの hero text、
+> 4本knob bar、16-segment IN/OUT meter、TL/TR/BL/BR の四隅マーカー、
+> 画面下部に `v=compact-v2 p=manual off=(x,y)` の小ラベルを描きます。
+> (2) `audio_lab_pynq/hdmi_backend.py::compose_logical_frame` が
+> 負offsetを受けてsource側をclipし、`negative_offset` / `clipped` /
+> `fully_offscreen` / `requested_destination_region` をmetaに追加。
+> `scripts/test_hdmi_800x480_frame.py` は `--variant`、`--placement`、
+> 負値可の `--offset-x` / `--offset-y` を取り、新規
+> `scripts/test_hdmi_800x480_cycle_offsets.py` は `AudioLabOverlay()`
+> を1回だけloadして `(0,0)`、`(-80,0)`、`(-120,0)`、`(-160,0)`、
+> `(-240,0)`、`(0,-40)`、`(-120,-40)`、`(-160,-40)` を順に表示します。
+> PYNQ-Z2 (`192.168.1.9`) では board上の `audio_lab.bit` (4,045,680B)
+> と `audio_lab.hwh` (1,054,120B) はdeploy前後で同サイズのままで、
+> Python/scriptsだけを `scp` で更新しました。compact-v2 `(0,0)` 単発は
+> 60秒hold成功、render `0.337s`、compose `0.026s`、framebuffer copy
+> `0.207s`、`VDMACR=0x00010001`、`DMASR=0x00011000`、
+> `vtc_ctl=0x00000006`、error bitsなし。8 offset cycleも全offsetで
+> error bitsなし、各offset render 約0.09s (label変化のためcache miss)、
+> compose 約0.025s、copy 約0.206s、負offsetは
+> `negative_offset=True` / `clipped=True` / `fully_offscreen=False`。
+> post Safe Bypass smoke OK。最適offsetはユーザー目視で
+> `--seconds-per-offset 15` 等で再撮影して決定してください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`。
+
+### HDMI GUI Phase 4H result — vertical safe margin + layout diagnosis
+
+> HDMI GUI Phase 4H は完了済みです。
+> Phase 4G 完了後、ユーザー目視では (a) 上端が少しだけ切れる、
+> (b) 横方向ははみ出していない、(c) 左側に表示されていない/使われて
+> いない領域がある、でした。横方向は `offset_x` 補正ではなく、layout /
+> viewport diagnosis として扱う方針です。Vivado rebuild / bit / hwh /
+> `block_design.tcl` / `audio_lab.xdc` / `create_project.tcl` /
+> Clash / DSP / `topEntity` / GPIO / HDMI IP / VDMA / VTC は一切
+> 変更していません。
+>
+> Phase 4H で compact-v2 layout を変更しました。外枠を
+> `(12,30)..(788,470)` (旧 `(12,12)..(788,468)`) へ下げ、左 margin を
+> `x=18` (旧 `x=24`) に詰め、header `y=44..118`、chain `y=128..258`、
+> 下段 `y=268..458` に再配置。`GUI/pynq_multi_fx_gui.py` に
+> `COMPACT_V2_LAYOUT` dict と `compact_v2_panel_boxes()` を追加して
+> diagnostic script から同じ bbox を読めるようにし、outer の四隅に
+> LED-soft 22px L字 marker を追加 (絶対 canvas 端 TL/TR/BL/BR は維持)。
+>
+> 新規 `scripts/test_hdmi_800x480_layout_debug.py` は compact-v2 frame
+> の上に 50px grid、x/y 軸ラベル、panel bbox、`LEFT STRIP x=0..100` の
+> 赤帯、`TOP STRIP y=0..40` の青帯、底部に `debug=layout
+> variant=compact-v2 offset=(+0,+0) canvas=800x480` の footer を
+> overlay します。これで「左側が映っていないのか / 描画されていない
+> のか」を写真で判断できます。
+>
+> 新規 `scripts/test_hdmi_800x480_vertical_offsets.py` は
+> `offset_x=0` を固定し、`offset_y in {0,10,20,30,40,50}` を順に表示。
+> `--offset-x` が非ゼロだと警告を出します。
+> `scripts/test_hdmi_800x480_frame.py` の default は
+> `--variant compact-v2 --placement manual --offset-x 0 --offset-y 0`
+> のまま。Phase 4G の top-clip 観察から推奨 `offset_y` 初期候補は
+> `20..30` ですが、最終値はユーザー目視待ち。
+>
+> PYNQ-Z2 (`192.168.1.9`) では board 上の `audio_lab.bit`
+> (4,045,680B) と `audio_lab.hwh` (1,054,120B) は deploy 前後で同サイズ
+> ・同 mtime のままで、Python/scripts だけを `scp` で更新しました。
+> layout debug `offset_y=0`: base render `0.336s`、overlay compose
+> `0.204s`、framebuffer copy `0.207s`、`VDMACR=0x00010001`、
+> `DMASR=0x00011000`、`vtc_ctl=0x00000006`、error bits なし。
+> vertical sweep `offset_y in {0..50}`: 全 step `compose~0.025s`、
+> `copy~0.206s`、`clipped=False`、error bits なし。
+> 単発 `offset_y=30`: 同 state、error bits なし。post Safe Bypass smoke
+> OK。最終 `offset_y` と layout-debug 写真の解釈はユーザー目視で
+> `--seconds-per-offset 15 --hold-final-seconds 30` 等で再撮影して
+> 決定してください。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`。
+
+### HDMI GUI Phase 4I result — restore compact-v2 baseline
+
+> HDMI GUI Phase 4I は完了済みです。
+> Phase 4H の chassis 押し下げ (`outer y=30`) と left margin 詰め
+> (`x=18`) は、実機 5-inch HDMI LCD では top-edge clip を直すのでなく
+> 右下方向にズレた layout になりました。`offset_y` を正方向に振る
+> Phase 4H の推奨方針も誤りでした。Phase 4I は renderer を Phase 4G
+> compact-v2 baseline に戻し、Phase 4H で追加した diagnostic script
+> 群は archived として残しました。Vivado rebuild / bit / hwh /
+> `block_design.tcl` / `audio_lab.xdc` / `create_project.tcl` /
+> Clash / DSP / `topEntity` / GPIO / HDMI IP / VDMA / VTC は一切
+> 変更していません。
+>
+> `GUI/pynq_multi_fx_gui.py` の `COMPACT_V2_LAYOUT` dict と
+> `compact_v2_panel_boxes()` helper は残しつつ、座標を Phase 4G に
+> 戻しました: outer `(12,12)..(788,468)` (800x480 時)、panel `left`
+> / `right` `24`、header `(20, 100)`、chain `(110, 250)`、bottom
+> `(260, 454)`、FX/side divider `Wv//2 +/- 8` (`divider_half_gap=8`)、
+> variant label `y = Hv - 4`、cache key suffix
+> `compact_v2_800x480` (Phase 4H の `_p4h` を撤去)。LED-soft 安全
+> コーナー L字 marker (Phase 4H 追加) も削除し、canvas 端 TL / TR /
+> BL / BR marker のみ残しました。
+>
+> `scripts/test_hdmi_800x480_layout_debug.py` と
+> `scripts/test_hdmi_800x480_vertical_offsets.py` は module docstring
+> と argparse `description` / `epilog`、起動 banner で
+> "ARCHIVED Phase 4H diagnostic / 正方向 `offset_y` は撤回された失敗
+> 方向" と明記。runtime 推奨 placement は引き続き
+> `--offset-x 0 --offset-y 0`。
+> `scripts/test_hdmi_800x480_frame.py` は Phase 4H 期から既に
+> default `offset_x=0 offset_y=0` のままで未変更。
+>
+> PYNQ-Z2 (`192.168.1.9`) では Python/scripts/docs だけを deploy。
+> board 上の `audio_lab.bit` / `audio_lab.hwh` は同サイズ・同 mtime
+> のまま。`test_hdmi_800x480_frame.py --variant compact-v2
+> --placement manual --offset-x 0 --offset-y 0 --hold-seconds 60` を
+> 実行し、VDMA error bits なし / 例外なし / Safe Bypass smoke OK を
+> 確認しました。
+>
+> 次の調整方針: viewport offset で top-clip を追わず、UI 内部の
+> 密度・サイズ調整、もしくは 760x440 logical UI を `(20, 20)` で
+> composite する方向。HDMI timing を native 800x480 にする Vivado
+> 対応は Phase 5 (bit / hwh rebuild + timing summary review 必要)
+> として明示的に後回し。詳細は
+> `docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`。
+
+### HDMI GUI Phase 5A result — output-side diagnosis
+
+> HDMI GUI Phase 4J は Claude limit で commit 前に中断しました。
+> Phase 5A 開始時に dirty patch と status を
+> `/tmp/fpga_guitar_effecter_backup/phase5a_before_output_diagnosis_dirty.patch`
+> /
+> `/tmp/fpga_guitar_effecter_backup/phase5a_before_output_diagnosis_status.txt`
+> に保存済みです。`git diff` は untracked 本文を含まないため、
+> untracked の `scripts/test_hdmi_800x480_horizontal_offsets.py` と
+> `docs/ai_context/HDMI_GUI_PHASE4J_HORIZONTAL_LEFT_SHIFT.md` も同じ
+> backup dir へコピー済みです。Phase 4J は「完了」ではなく、
+> offset-side diagnostic log として扱い、Phase 5A で output-side
+> diagnosis に切り替えています。
+>
+> Phase 5A では Python offset 補正を続けず、HDMI output timing /
+> VTC / VDMA / `v_axi4s_vid_out` / `rgb2dvi` / LCD viewport を調査。
+> 現行 bitstream は 1280x720 active, pixel clock 74.25 MHz,
+> `axi_vdma_hdmi`=`0x43CE0000`, `v_tc_hdmi`=`0x43CF0000`,
+> VDMA HSIZE/STRIDE/VSIZE=`3840/3840/720`, RGB888 input -> DDR
+> `GBR888` -> 24-bit stream -> `rgb2dvi` です。HWH は VTC active
+> `1280x720`, H frame `1650`, V frame `750`, H/V sync polarity high,
+> video mode `720p` を示します。
+>
+> 新規 `scripts/test_hdmi_output_mapping_720p.py` は
+> `AudioLabOverlay()` を 1 回だけ load し、1280x720 全域に 50px
+> grid、x/y labels、`OUTPUT MAP 720P`、`1280x720 HDMI ACTIVE`、
+> 800x480 candidate boxes `(0,0)`, `(240,120)`, `(0,120)`,
+> `(160,120)` を描画します。offset 調整ではなく、LCD 上で見える
+> x/y 座標をユーザーが読むための mapping test です。`base.bit`、
+> `run_pynq_hdmi()`、2つ目の overlay load は禁止のまま。
+> PYNQ run `--hold-seconds 60` は例外なしで完了し、
+> `VDMACR=0x00010001`, `DMASR=0x00011000`,
+> HSIZE/STRIDE/VSIZE=`3840/3840/720`, framebuffer=`0x16900000`,
+> framebuffer size=`2,764,800`, `vtc_ctl=0x00000006`。
+> VDMA error bits (`dmainterr/dmaslverr/dmadecerr/halted/idle`) は
+> 全て false。Codex はLCDを目視できないので、ユーザーが物理panel上の
+> visible x/y labels と candidate boxes を読む必要があります。
+>
+> EDID/DDC: PYNQ-Z2 board file は HDMI OUT TMDS と `hdmi_tx_hpd` は
+> 持つが、DDC は HDMI IN (`hdmi_in_ddc_scl/sda`) としてのみ出て
+> います。現 `audio_lab.xdc` の `IIC_1_scl_io` / `IIC_1_sda_io`
+> は audio I2C pins `U9/T9`。PYNQ Linux 側は `/sys/class/drm` に
+> `card0`, `renderD128`, `version` のみで EDID file/connector status
+> はなし。`/dev/i2c-0` / `/dev/i2c-1` と Cadence I2C adapters は
+> 見えるが、Phase 5A では blind I2C probe/write はしていません。
+> EDID は現 software path では読めない扱いです。
+>
+> Phase 5B の本命案は native 800x480 HDMI timing。active 800x480,
+> framebuffer 800x480 RGB888, VDMA HSIZE/STRIDE/VSIZE=`2400/2400/480`,
+> copy bytes `2,764,800 -> 1,152,000` (約42%)。pixel clock は
+> EDID/spec 優先、取れなければ documented generic 800x480@60 trial。
+> `rgb2dvi` `kClkRange` も低pixel clock向けに再確認が必要。
+> Phase 5B は別承認、Vivado rebuild、fresh timing summary、
+> WNS baseline `-8.163 ns` との比較、rollback bit/hwh backup 前提。
+> 詳細は
+> `docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md` と
+> `docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`。
+
+### HDMI GUI Phase 5C result — default 800x480 x0 y0 viewport
+
+> Phase 5A output mapping test のユーザー目視結果として、5-inch HDMI
+> LCDでは `800x480 x0 y0` candidate box が完璧な位置と確認済みです。
+> 結論: LCDは1280x720全体を縮小表示していない可能性が高く、実運用では
+> 1280x720 framebuffer の左上 `x=0, y=0, w=800, h=480` を visible
+> viewport として扱います。
+>
+> 標準表示は `scripts/test_hdmi_800x480_frame.py --variant compact-v2
+> --placement manual --offset-x 0 --offset-y 0 --hold-seconds 60`。
+> script default も `variant=compact-v2`, `placement=manual`,
+> `offset_x=0`, `offset_y=0`, `hold_seconds=60` です。CLI override と
+> `--placement center` は診断用に残していますが、このLCDの標準では
+> center placement `(240,120)` は不採用。positive / negative offset
+> sweep も終了です。
+>
+> `scripts/test_hdmi_800x480_frame.py` は Phase 5C default viewport
+> script として docstring / argparse description / log prefix /
+> report phase を更新済み。`AudioLabOverlay()` は1回だけloadし、
+> `base.bit`、`run_pynq_hdmi()`、2つ目のoverlay loadは使いません。
+> Vivado rebuild / bit / hwh / `block_design.tcl` / `audio_lab.xdc` /
+> `create_project.tcl` / Clash / DSP / `topEntity` / GPIO / HDMI IP /
+> VDMA / VTC は変更していません。
+>
+> PYNQ-Z2 run は成功:
+> render `0.417s`, compose `0.0254s`, framebuffer copy `0.2076s`,
+> copied region `x=0..800 y=0..480`, `clipped=false`,
+> `negative_offset=false`, `VDMACR=0x00010001`,
+> `DMASR=0x00011000`, HSIZE/STRIDE/VSIZE=`3840/3840/720`,
+> framebuffer=`0x16900000`, `vtc_ctl=0x00000006`,
+> VDMA error bits all false。pre/post smoke で ADC HPF true,
+> `R19=0x23`, HDMI IP present を確認済み。
+>
+> Phase 5B native 800x480 timing は引き続き候補ですが、現時点では
+> 急ぎません。メリットはcopy量削減 (`2,764,800 -> 1,152,000`
+> bytes)、framebuffer 800x480化、LCD-native signal化の可能性。
+> リスクはVivado rebuild、clock/timing再確認、LCDがnative 800x480
+> HDMI timingを受ける保証がないことです。
+
 ## PYNQ-Z2 DHCP reservation / deploy
 
 > PYNQ-Z2 はルーター DHCP 固定割当で `192.168.1.9` に固定して運用します。
