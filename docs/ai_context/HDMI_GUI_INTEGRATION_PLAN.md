@@ -60,6 +60,39 @@ framebuffer `x=0,y=0`.
 
 ## 1. Current state
 
+### Phase 5D snapshot (post-cleanup runtime)
+
+The HDMI GUI runtime as it ships today (see `CURRENT_STATE.md` "Phase 5D"
+and `DECISIONS.md` D24):
+
+- Canonical entry: `audio_lab_pynq/notebooks/HdmiGui.ipynb` — one code
+  cell that loads `AudioLabOverlay()` once, brings up
+  `AudioLabHdmiBackend`, renders `render_frame_800x480_compact_v2(state)`
+  at ~5 fps, and prints a live resource monitor (FPS, render/write ms,
+  CPU%, loadavg, MemAvailable RAM, VDMA error bits, current offset,
+  `framebuffer_copied_region`). `OFFSET_X` / `OFFSET_Y` at the top of
+  the cell let the user recalibrate the framebuffer placement without
+  editing the renderer.
+- `GUI/pynq_multi_fx_gui.py` is now 800x480-only. The 1280x720
+  reference renderer (`render_frame*`, `_render_full`, static /
+  semistatic layer caches, every 1280x720 chassis chrome helper),
+  the Tkinter Windows preview app (`TkApp`, `run_windows_*`,
+  `get_monitor_rects`, demo / CLI loop / hit-test / benchmark blocks),
+  and `run_pynq_hdmi()` have been deleted. The dependent
+  `scripts/test_hdmi_static_frame.py` and
+  `scripts/profile_hdmi_static_frame.py` were removed too.
+- Compact-v2 layout: `header`, `chain`, and a full-width `fx` panel.
+  The bottom-right `side` (MONITOR + IN/OUT meters) panel was removed.
+  The selected-FX knob grid is `EFFECT_KNOBS`-driven and adapts per
+  effect: 3 knobs → 3×1, 4 knobs → 2×2, 6 knobs → 3×2.
+- Diagnostic script equivalent of the notebook is
+  `scripts/test_hdmi_800x480_frame.py`
+  (`--variant compact-v2 --placement manual --offset-x 0 --offset-y 0
+  --hold-seconds 60`).
+- `audio_lab_pynq/__init__.py::install_notebooks()` is now
+  `shutil`-based; the old `distutils.dir_util.copy_tree` left a zero-byte
+  `HdmiGui.ipynb` after one re-deploy, which Jupyter refused to open.
+
 ### AudioLabOverlay and audio_lab.bit
 
 The live audio system is loaded through `audio_lab_pynq.AudioLabOverlay`.

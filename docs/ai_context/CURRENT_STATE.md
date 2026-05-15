@@ -742,6 +742,89 @@ Removed from the working tree after backup:
 No Vivado rebuild, bit/hwh regeneration, deploy, `git push`, `git pull`,
 or `git fetch` was performed for this cleanup.
 
+## HDMI GUI Phase 5D notebook + renderer cleanup
+
+After Phase 5C confirmed the `x=0,y=0,w=800,h=480` LCD viewport, three
+follow-up changes finished the GUI runtime story (`DECISIONS.md` D24):
+
+1. **Single-cell HDMI GUI notebook** — `audio_lab_pynq/notebooks/HdmiGui.ipynb`
+   is the canonical Jupyter entry point. One code cell loads
+   `AudioLabOverlay()`, brings up `AudioLabHdmiBackend`, renders
+   `render_frame_800x480_compact_v2(state)` at ~5 fps, and prints a live
+   resource report (target/actual FPS, render+VDMA-write ms, CPU%,
+   loadavg, MemAvailable-based RAM use, VDMA error bits, current
+   `OFFSET_X`/`OFFSET_Y`, `framebuffer_copied_region`). `OFFSET_X` and
+   `OFFSET_Y` are configurable at the top of the cell so an LCD whose
+   visible viewport drifts off `(0,0)` can be recalibrated without
+   editing the renderer. `Interrupt Kernel` (`I,I`) drops into a
+   `finally:` that calls `backend.stop()` cleanly.
+
+2. **1280x720 reference renderer + Windows preview removed.**
+   `GUI/pynq_multi_fx_gui.py` shrank from 3372 to ~1314 lines after
+   removing `render_frame`, `render_frame_fast`, `render_frame_legacy`,
+   `render_frame_pynq_static`, `_render_full`, the static/semistatic
+   layer cache helpers, `TkApp`, `run_windows_window`,
+   `run_windows_fullscreen`, `get_monitor_rects`, the demo PNG / CLI
+   loop / hit-test / benchmark sections, `run_pynq_hdmi()`, the
+   `_build_argparser` CLI entry, and the 1280x720 chassis chrome
+   helpers (`draw_background`, `draw_top_status`, `draw_main_display*`,
+   `_draw_preset_card`, `_draw_right_panel`, `draw_signal_chain`,
+   `_io_marker` / `_wire` / `_block_icon` / `_draw_chain_block`,
+   `draw_visualizer*`, `draw_knob_panel*`, `draw_knob`,
+   `_knob_body_layer`, `draw_footswitch*`, `draw_led`, plus
+   `panel_with_bevel`, `inset_screen`, `screw`, `add_brushed_metal`,
+   and the orphan `W, H, CHASSIS_PAD, Y_TOPBAR_T/B, RECT_*, COL_*`
+   layout constants). Public API is now `AppState`,
+   `render_frame_800x480`, `render_frame_800x480_compact_v2`,
+   `make_pynq_static_render_cache`, `compact_v2_panel_boxes`,
+   `save_state_json`, `load_state_json`. Dependent scripts
+   `scripts/test_hdmi_static_frame.py` and
+   `scripts/profile_hdmi_static_frame.py` were deleted; remaining
+   diagnostic scripts use the 800x480 path or build their own 1280x720
+   test pattern directly. `GUI/README.md` and the top of
+   `audio_lab_pynq/hdmi_backend.py` were updated to point at
+   `render_frame_800x480_compact_v2`.
+
+3. **compact-v2 layout: full-width SELECTED FX + per-effect knob grid.**
+   The `side` (MONITOR + IN/OUT meters) panel was removed and `fx`
+   now spans `(24, 260, 776, 454)`. The selected-FX knob grid is
+   driven by `state.knobs()` filtered against the empty `("", 0)`
+   slots in `EFFECT_KNOBS`, and chooses cols/rows from the live knob
+   count:
+
+   | Effect | Knobs (from `EFFECT_KNOBS`) | Grid |
+   | --- | --- | --- |
+   | Noise Sup | THRESH, DECAY, DAMP | 3 × 1 |
+   | Compressor | THRESH, RATIO, RESPONSE, MAKEUP | 2 × 2 |
+   | Overdrive | DRIVE, TONE, LEVEL | 3 × 1 |
+   | Distortion | DRIVE, TONE, LEVEL, BIAS, TIGHT, MIX | 3 × 2 |
+   | Amp Sim | GAIN, BASS, MID, TREBLE, MASTER, CHAR | 3 × 2 |
+   | Cab IR | MIX, LEVEL, MODEL, AIR | 2 × 2 |
+   | EQ | LOW, MID, HIGH | 3 × 1 |
+   | Reverb | DECAY, TONE, MIX | 3 × 1 |
+
+   `compact_v2_panel_boxes()` now returns `outer`, `header`, `chain`,
+   and `fx` only (no `side`); `divider_half_gap` was dropped.
+   `scripts/test_hdmi_800x480_layout_debug.py` iterates the dict and
+   already tolerates the smaller set.
+
+4. **`install_notebooks()` is `shutil`-based.** During an earlier
+   re-deploy, the Jupyter copy of `HdmiGui.ipynb` ended up as a
+   zero-byte file (Jupyter refused to open it). Root cause was the
+   module-level `_path_created` cache inside
+   `distutils.dir_util.copy_tree`, which on retry can mark a directory
+   as already-handled and skip the real copy. `audio_lab_pynq/__init__.py`
+   now uses `shutil.copytree` for the notebooks tree (after the
+   existing `rmtree`) and an explicit per-file `shutil.copyfile` loop
+   for the bitstreams subdir. The 0-byte deploy was repaired
+   in place by `sudo cp` from
+   `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/notebooks/HdmiGui.ipynb`
+   onto the Jupyter tree; the next clean `bash scripts/deploy_to_pynq.sh`
+   confirmed md5 `632c58fbdfb995f969862af8bc618c10` end-to-end.
+
+No Vivado rebuild, bit/hwh regeneration, `git push`, `git pull`, or
+`git fetch` was performed for Phase 5D.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the

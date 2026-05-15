@@ -735,3 +735,54 @@ not get removed even when superseded — they get updated.
   decision. The old untracked `HDMI/` experiment tree was removed after
   confirming current deploy, tests, and runtime scripts use `GUI/` plus
   `audio_lab_pynq/hdmi_backend.py` instead.
+
+## D24 — 800x480 compact-v2 is the only renderer; HDMI GUI runs from `HdmiGui.ipynb`
+
+- **Decision.** `GUI/pynq_multi_fx_gui.py` is now an 800x480-only
+  renderer. The 1280x720 reference renderer (`render_frame`,
+  `render_frame_fast`, `render_frame_legacy`, `render_frame_pynq_static`,
+  `_render_full`, the static / semistatic layer cache, all 1280x720
+  chassis chrome helpers, `panel_with_bevel`, `inset_screen`, `screw`,
+  `add_brushed_metal`, `draw_led`) and the Windows preview app
+  (`TkApp`, `run_windows_window`, `run_windows_fullscreen`,
+  `get_monitor_rects`, the demo PNG / CLI loop / hit-test / `run_bench`
+  / `run_pynq_hdmi` / `_build_argparser` blocks) are removed. Public
+  API is `AppState`, `render_frame_800x480`,
+  `render_frame_800x480_compact_v2`, `make_pynq_static_render_cache`,
+  `compact_v2_panel_boxes`, `save_state_json`, `load_state_json`. The
+  compact-v2 layout drops the bottom-right `side` panel
+  (MONITOR + IN/OUT meters); `fx` spans the full bottom row
+  `(24, 260, 776, 454)`. The selected-FX knob grid adapts per effect
+  (3 → 3×1, 4 → 2×2, 6 → 3×2) by filtering `EFFECT_KNOBS` against
+  the empty `("", 0)` slots, so adding a new effect only requires
+  extending `EFFECT_KNOBS`. `audio_lab_pynq/notebooks/HdmiGui.ipynb`
+  is the canonical runtime entry: one cell, live CPU / RAM / FPS /
+  VDMA-error monitor, with `OFFSET_X` / `OFFSET_Y` calibration knobs
+  for LCDs whose visible viewport drifts off `(0,0)`.
+- **Why.** The 1280x720 renderer and Tk preview were a legacy
+  Windows-side reference design that has not been the live runtime
+  since Phase 4E (800x480 logical mode) and Phase 5C (top-left LCD
+  viewport). They paid context cost on every read of the file without
+  contributing to the actual HDMI output. The compact-v2 side monitor
+  was a placeholder for input / output meters that never reflected
+  real codec levels; the saved space gives the selected-FX knobs (3-6
+  per effect, depending on `EFFECT_KNOBS`) enough room to render real
+  labels and values.
+- **Boundaries.**
+  - Reintroducing a 1280x720 layout requires a new design pass; do
+    not resurrect the removed helpers piecemeal.
+  - The bottom-right `side` panel is gone for compact-v2; any new
+    side panel must come with a real signal source (real codec
+    meters or scope data), not a placeholder animation.
+  - Adding an effect: extend `EFFECT_KNOBS` with the real knob labels
+    and defaults; the grid (3 / 2 columns, 1 / 2 rows) follows
+    automatically from the live knob count. Do not hard-code a fixed
+    knob count in the renderer.
+- **`install_notebooks()` implementation.**
+  `audio_lab_pynq/__init__.py::install_notebooks()` uses
+  `shutil.copytree` (after `shutil.rmtree`) for the notebooks tree and
+  an explicit `shutil.copyfile` loop for the bitstreams subdir.
+  `distutils.dir_util.copy_tree` was dropped because its module-level
+  `_path_created` cache occasionally left a zero-byte
+  `/home/xilinx/jupyter_notebooks/audio_lab/HdmiGui.ipynb` on retry,
+  which Jupyter refused to open.
