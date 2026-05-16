@@ -5,6 +5,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _pynq_mock  # noqa: F401  -- stubs pynq / pylibi2c before audio_lab_pynq
 
 _SPEC = importlib.util.spec_from_file_location(
     "hdmi_effect_state_mirror",
