@@ -201,6 +201,38 @@ asking it to re-discover the project from scratch.
 > `scripts/test_hdmi_800x480_viewport_calibration.py` に残してあり、
 > 再測定や別シフト値の試行に使えます。
 
+### HDMI GUI Phase 6F result -- Right-shift root-cause audit + VTC default rollback
+
+> HDMI GUI Phase 6F は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md` を読んで
+> から再開してください。Python パイプライン全体 (renderer, backend
+> compose, mirror, notebooks, scripts) を bbox / origin guard /
+> calibration / VTC sweep の 4 段階で検査し、すべて正しい (renderer
+> `min_x=0/max_x=799`, backend `framebuffer_copied_region=(0,0,800,
+> 480)` / `source_visible_region=(0,0,800,480)` /
+> `placement="manual"` / `offset_x=0` / `offset_y=0`) ことを実証。
+> `scripts/test_hdmi_vtc_hsync_sweep.py` を 0 / +50 / +100 / +150 /
+> +200 / +300 / -150 cycles でスイープし、ユーザー実機目視で
+> `shift=0` (= IP-baked default, HSync 1390..1430, back porch 220)
+> がベストと確認。Phase 6G の `+150` デフォルトは
+> `VTC_HSYNC_SHIFT_DEFAULT = 0` にロールバック。実行時 override hook
+> (`AUDIOLAB_HDMI_HSYNC_SHIFT` env var, `hsync_shift=N` 引数) と
+> `backend.status()` の `vtc_gen_hsync` / `vtc_hsync_shift` /
+> `vtc_original_hsync` / `vtc_patched_hsync` フィールドは将来の
+> LCD 互換用に保持。LCD 残存の右寄りはソフトウェアで再現できず、
+> renderer / backend / VTC 層は正しい。bit/hwh / Vivado / Clash 変更
+> なし。ローカル unit tests 51 PASS、PYNQ-Z2 `scripts/test_hdmi_model_
+> selection_ui.py` 16/16 PASS, `DMASR=0x00011000`, `vtc_ctl=
+> 0x00000006`, ADC HPF true, R19=`0x23`。
+> 診断スクリプト: `scripts/test_hdmi_render_bbox.py`,
+> `scripts/test_hdmi_800x480_origin_guard.py`,
+> `scripts/test_hdmi_vtc_dump.py`,
+> `scripts/test_hdmi_vtc_hsync_shift.py`,
+> `scripts/test_hdmi_vtc_hsync_sweep.py`,
+> `scripts/test_hdmi_800x480_viewport_calibration.py`。
+> `Overlay("base.bit")` / `run_pynq_hdmi()` / second overlay 禁止、
+> `git push` / `git pull` / `git fetch` 禁止。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は

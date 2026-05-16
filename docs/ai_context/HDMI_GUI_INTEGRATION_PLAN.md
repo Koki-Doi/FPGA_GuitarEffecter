@@ -156,12 +156,27 @@ and `DECISIONS.md` D24):
   Phase 6G VTC HSync runtime shift into the restored Pip-Boy
   compact-v2 baseline. The chassis returns to the Phase 4G
   `outer=(12,12,788,468)` / `left=24` / `right=24` coordinates;
-  `AudioLabHdmiBackend._start_vtc` patches `VTC_GEN_HSYNC` from
-  HSTART/HEND `1390/1430` to `1540/1580` (back porch 220 -> 70) so
-  the LCD viewport aligns source x=0 with LCD x=0. The framebuffer
-  destination, placement, and offsets are untouched. No bit/hwh /
-  Vivado / Clash change; the shift is runtime MMIO only and can be
-  disabled via `AUDIOLAB_HDMI_HSYNC_SHIFT=0`.
+  `AudioLabHdmiBackend._start_vtc` keeps a VTC HSync patch hook
+  (env var / constructor override) for diagnostic tuning, but the
+  default is `0` (= unmodified IP-baked timing) after Phase 6F
+  empirical sweep proved non-zero shifts did not improve the LCD
+  view. The framebuffer destination, placement, and offsets are
+  untouched. No bit/hwh / Vivado / Clash change.
+- Phase 6F end-to-end audit confirmed the Python pipeline is
+  correct: renderer paints `min_x=0, max_x=799` for every SELECTED
+  FX, backend compose produces
+  `framebuffer_copied_region=(0,0,800,480)` and
+  `source_visible_region=(0,0,800,480)` with
+  `placement="manual"`, `offset_x=0`, `offset_y=0`. The LCD did
+  not respond to a VTC HSync sweep (+50/+100/+150/+200/+300/-150),
+  so the Phase 6G `+150` default was rolled back to `0`. The
+  diagnostic infrastructure -- `scripts/test_hdmi_render_bbox.py`,
+  `scripts/test_hdmi_800x480_origin_guard.py` (with explicit
+  `source_visible_region` asserts), `scripts/test_hdmi_vtc_dump.py`,
+  `scripts/test_hdmi_vtc_hsync_shift.py`,
+  `scripts/test_hdmi_vtc_hsync_sweep.py`, and the
+  `vtc_*` fields in `backend.status()` -- stays in place for
+  future LCD investigations.
 
 ### AudioLabOverlay and audio_lab.bit
 

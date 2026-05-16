@@ -80,18 +80,21 @@ VTC_CTL_GENERATION_ENABLE    = 1 << 2
 VTC_CTL_DETECTION_ENABLE     = 1 << 3
 # Bit 5 = FSync enable, bit 6 = SyncEnable. We do not use FSync inputs.
 
-# Phase 6G: live-patch the VTC HSync position to compensate the 5-inch
-# LCD's 150 px right-shift. The IP-baked 1280x720@60 timing has HSync
-# at 1390..1429 (40-cycle sync, 220-cycle back porch). The LCD samples
-# active video 150 cycles later than expected, which puts source x=0
-# at LCD x=150 and cuts the right ~150 px of an 800x480 logical frame
-# off the LCD. Moving HSync 150 cycles later (1540..1579) shrinks the
-# back porch to 70 and shifts the visible source region 150 cycles
-# left, aligning source x=0 with LCD x=0. The shift can be disabled at
-# runtime by setting environment variable ``AUDIOLAB_HDMI_HSYNC_SHIFT``
-# to ``0`` or by passing ``hsync_shift=0`` to
-# ``AudioLabHdmiBackend(...)``.
-VTC_HSYNC_SHIFT_DEFAULT      = 150
+# Phase 6F: VTC HSync shift hook. Phase 6G tried a +150 shift to
+# compensate a reported 150 px LCD right-margin, but the Phase 6F
+# sweep on the real 5-inch LCD (scripts/test_hdmi_vtc_hsync_sweep.py)
+# proved the LCD viewport does not respond meaningfully to HSync
+# position changes -- the IP-baked timing (HSync 1390..1429, back
+# porch 220) is what the LCD locks onto best, and any non-zero shift
+# either had no visible effect or made things worse. The default is
+# therefore 0 (= unmodified IP-baked timing). The hook is retained
+# so a future LCD with a different sync-recovery offset can be
+# compensated via the ``AUDIOLAB_HDMI_HSYNC_SHIFT`` env var or
+# ``hsync_shift=N`` constructor argument, and the
+# ``vtc_hsync_shift`` / ``vtc_original_hsync`` / ``vtc_patched_hsync``
+# fields in ``status()`` make the active value observable for
+# diagnostics.
+VTC_HSYNC_SHIFT_DEFAULT      = 0
 
 DEFAULT_WIDTH                = 1280
 DEFAULT_HEIGHT               = 720

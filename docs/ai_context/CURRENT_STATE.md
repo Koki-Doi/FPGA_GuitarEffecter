@@ -1219,6 +1219,50 @@ push / pull / fetch.
 Phase 6E full notes (Pip-Boy restoration) are recorded in
 `docs/ai_context/HDMI_GUI_PHASE6E_RESTORE_PIPBOY_COMPACT_UI.md`.
 
+## HDMI GUI Phase 6F -- recurring right-shift investigation
+
+Phase 6F walked through the Python pipeline end-to-end to confirm
+where the LCD's reported right-shift was coming from:
+
+- `scripts/test_hdmi_render_bbox.py` (new) -- the compact-v2
+  renderer paints non-background pixels with `min_x=0, max_x=799`
+  for all 9 SELECTED FX cases. No right-shift at the renderer.
+- `scripts/test_hdmi_800x480_origin_guard.py` (expanded) -- the
+  backend's `compose_logical_frame` puts source at
+  `framebuffer_copied_region=(0,0,800,480)` and
+  `source_visible_region=(0,0,800,480)` with
+  `placement="manual"`, `offset_x=0`, `offset_y=0`. PASS on
+  workstation dry-run and on PYNQ.
+- `scripts/test_hdmi_model_selection_ui.py` on PYNQ -- 16/16
+  PASS, `DMASR=0x00011000`, `vtc_ctl=0x00000006`,
+  `placement=manual`, `offset_x=0`, `offset_y=0`.
+- `scripts/test_hdmi_vtc_hsync_sweep.py` (new) -- swept
+  `GEN_HSYNC` by 0, +50, +100, +150, +200, +300, -150 cycles
+  with a labeled calibration pattern. User confirmed `shift=0`
+  (= IP-baked default, `HSTART=1390 HEND=1430`,
+  back porch 220) is best; Phase 6G's `+150` default did not
+  improve the LCD view.
+
+`audio_lab_pynq/hdmi_backend.py` rolls
+`VTC_HSYNC_SHIFT_DEFAULT` back from `150` to `0` (Phase 6G default
+reverted). The runtime hook -- env var
+`AUDIOLAB_HDMI_HSYNC_SHIFT` and constructor kwarg
+`hsync_shift=N` -- is retained, and `backend.status()` still
+exposes `vtc_gen_hsync`, `vtc_hsync_shift`, `vtc_original_hsync`,
+`vtc_patched_hsync` for future diagnostics. The Pip-Boy compact
+UI, conditional dropdown, per-effect knob grid, AMP 8-knob
+expansion, Notebook ipywidgets / mirror / DSP control are all
+preserved from Phase 6E.
+
+The remaining LCD viewport offset, if any, is not addressable via
+software -- the renderer / backend / VTC layer is correct, and the
+LCD did not respond to HSync sweeps. No bit/hwh / Vivado / Clash
+change. Remote `audio_lab.bit` / `audio_lab.hwh` md5 still match
+local.
+
+Phase 6F full notes are in
+`docs/ai_context/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the

@@ -229,6 +229,19 @@ def main():
                 report["failures"].append(
                     "framebuffer_copied_region.{} = {!r}, expected {!r}".format(
                         name, actual, expected))
+        src = meta.get("source_visible_region") or {}
+        for name, expected in (("width", 800), ("height", 480),
+                                 ("x0", 0), ("y0", 0)):
+            actual = src.get(name)
+            ok = actual == expected
+            report["checks"].append({"name": "source_visible_region." + name,
+                                       "expected": expected,
+                                       "actual": actual,
+                                       "ok": ok})
+            if not ok:
+                report["failures"].append(
+                    "source_visible_region.{} = {!r}, expected {!r}".format(
+                        name, actual, expected))
     else:
         from audio_lab_pynq import AudioLabOverlay  # noqa: E402
         from audio_lab_pynq.hdmi_backend import AudioLabHdmiBackend  # noqa: E402
@@ -284,6 +297,19 @@ def main():
             if not ok:
                 report["failures"].append(
                     "framebuffer_copied_region.{} = {!r}, expected {!r}".format(
+                        name, actual, expected))
+        src = meta.get("source_visible_region") or {}
+        for name, expected in (("width", 800), ("height", 480),
+                                 ("x0", 0), ("y0", 0)):
+            actual = src.get(name)
+            ok = actual == expected
+            report["checks"].append({"name": "source_visible_region." + name,
+                                       "expected": expected,
+                                       "actual": actual,
+                                       "ok": ok})
+            if not ok:
+                report["failures"].append(
+                    "source_visible_region.{} = {!r}, expected {!r}".format(
                         name, actual, expected))
 
         errors = backend.errors()
