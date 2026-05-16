@@ -40,8 +40,27 @@ Phase 5A の output mapping test で 5 インチ 800x480 LCD が
 確認し、Phase 6I (`DECISIONS.md` D25) では HDMI 信号自体を VESA SVGA
 `800x600 @ 60 Hz / 40 MHz` に切り替えました。framebuffer は `800x600`
 で、compact-v2 800x480 GUI は左上 `(0,0)` に配置し、下 120 行は黒のまま
-にします。標準確認コマンドは次の通りです (Phase 6I では
-`HdmiGuiShow.ipynb` の 1 セル実行もしくは下記スクリプト):
+にします。
+
+最も簡単な動作確認は Jupyter から `HdmiGuiShow.ipynb` (Phase 6I で新設、
+1 セル実行型) を開いてセルを 1 回走らせるだけです:
+
+```text
+http://192.168.1.9:9090/notebooks/audio_lab/HdmiGuiShow.ipynb
+```
+
+- `pynq.PL.bitfile_name` を見て `audio_lab.bit` が既にロード済みなら
+  `AudioLabOverlay(download=False)` で attach し、rgb2dvi の MMCM
+  PLL (Phase 6I の `40 MHz × M=20 = 800 MHz` で valid VCO 帯の下端) を
+  揺さぶらない
+- 未ロードなら通常の `AudioLabOverlay()` (default `download=True`) で
+  fresh program
+- どちらの場合も VTC `GEN_ACTSZ (0x60) = 0x02580320` (V=600 / H=800,
+  SVGA) と VDMA error 無しを assert
+- overlay 構築前に PL アドレスへ raw MMIO を出さない (FPGA blank 時
+  に Jupyter kernel が落ちるため)
+
+スクリプトで確認したい場合は次のコマンドです:
 
 ```sh
 ssh xilinx@192.168.1.9 '
@@ -52,6 +71,10 @@ ssh xilinx@192.168.1.9 '
       --offset-x 0 --offset-y 0 --hold-seconds 60
 '
 ```
+
+ライブアニメーションと CPU/RAM/FPS/VDMA error の常時モニタが欲しい場合は
+`HdmiGui.ipynb` を使ってください (Phase 4 系から運用中、ipywidgets で
+DIST / AMP / CAB の model dropdown 付き)。
 
 現行 renderer と bridge は `GUI/` 配下にあります。旧 untracked
 `HDMI/` 実験ツリーは現行 deploy / tests / runtime scripts から使われて
@@ -271,6 +294,8 @@ make tests
 | Notebook | 内容 |
 | --- | --- |
 | `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Chain Preset dropdown (Safe Bypass / Basic Clean / Clean Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain / DS-1 Crunch / Big Muff Sustain / Vintage Fuzz) で実用音色をワンクリック適用、Distortion Pedalboard dropdown は全 7 ペダル選択可、加えて Compressor / Noise Suppressor / Overdrive / Amp / Cab IR / EQ / Reverb の個別操作 (Apply / Safe Bypass / Refresh / Show Current State) |
+| `HdmiGuiShow.ipynb` | Phase 6I 新設の HDMI GUI 動作確認用 1 セルノートブック。`pynq.PL.bitfile_name` を見て `audio_lab.bit` が既にロード済みなら `download=False` で attach し rgb2dvi PLL を保護、未ロードなら `download=True` で fresh program。VTC `GEN_ACTSZ = 0x02580320` (SVGA 800x600) と VDMA error 無しを assert し、`render_frame_800x480_compact_v2` の 1 フレームを framebuffer `(0,0)` に書き出す。ipywidgets / live loop 無しで kernel 死亡を回避 |
+| `HdmiGui.ipynb` | HDMI GUI のライブ動作ノートブック。CPU / RAM / FPS / VDMA error / current offset を毎秒モニタしつつ 5 fps で compact-v2 800x480 GUI を SVGA 800x600 framebuffer に流す。DIST / AMP / CAB の model dropdown 付き (HDMI GUI 側の MODEL 行表示のみ、DSP 側 model 切替は `GuitarPedalboardOneCell.ipynb` 側で行う)。`OFFSET_X` / `OFFSET_Y` で LCD 視認領域がずれているときの microadjust |
 | `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクションに DS-1 / Big Muff Sustain / Fuzz Face プリセット cell 追加) |
 | `DistortionModelsDebug.ipynb` | Distortion pedal-mask API のウォークスルー (pedal一覧 + bit position + 全 7 ペダル実装済の表示と排他切替) |
 | `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb を操作するメインノートブック |
@@ -501,6 +526,39 @@ PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
 到達不能な場合は、PYNQ-Z2 の電源、LAN ケーブル、ルーター DHCP 固定割当、
 予約 MAC address、IP 重複を確認してください。
 
+deploy 後、Phase 6I C2 bit が実際にロードされているか確認します。
+`scripts/deploy_to_pynq.sh` は **3 か所** の bit/hwh を更新しますが、
+`AudioLabOverlay` は実行時の `PYTHONPATH` によって最大 **5 か所** から
+1 つを選んでロードします。3 か所の md5 が一致していても、残り 2 か所が
+古いと FPGA は古い bit のままになります (`DECISIONS.md` D25, memory
+`pynq-site-packages-bit-cache`)。スクリプトが触らない 2 か所
+(`/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/` と
+`/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`) は
+deploy 後に手で同期してください:
+
+```sh
+ssh xilinx@192.168.1.9 '
+  SRC=/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams &&
+  sudo cp "$SRC"/audio_lab.bit \
+    /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit &&
+  sudo cp "$SRC"/audio_lab.hwh \
+    /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.hwh &&
+  sudo cp "$SRC"/audio_lab.bit \
+    /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit &&
+  sudo cp "$SRC"/audio_lab.hwh \
+    /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.hwh &&
+  md5sum /home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/audio_lab.bit \
+    /home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/audio_lab.bit \
+    /usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.bit \
+    /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit \
+    /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit
+'
+```
+
+md5 が 5 か所全部で一致していれば OK です。Phase 6I C2 build の md5 は
+`81f4c149fac2e5b3fc6ed4421da60cdf` (`.bit`) /
+`b42e99bec9223b06c40d25ad36583765` (`.hwh`) です。
+
 古い手動配置手順は以下に残していますが、通常運用では
 `scripts/deploy_to_pynq.sh` を使ってください。
 
@@ -583,9 +641,28 @@ axis_switch_sink   M00 = 0x0
 axis_switch_sink   M01 = 0x80000000
 ```
 
+HDMI 統合版 (Phase 6I C2 SVGA 800x600) が正しくロードされているかは、
+`v_tc_hdmi` の `GEN_ACTSZ (0x60)` を読むのが一番速いです:
+
+```python
+from pynq import MMIO
+vtc = MMIO(int(ol.ip_dict["v_tc_hdmi"]["phys_addr"]), 0x1000)
+actsz = vtc.read(0x60)
+print(hex(actsz))               # -> 0x2580320
+print("V_active =", (actsz >> 16) & 0x1FFF)  # -> 600
+print("H_active =", actsz & 0x1FFF)          # -> 800
+```
+
+`0x02580320` 以外が返るときは bit copy のどれかが古いので、上記の
+PYNQ への配置セクションの 5 か所 md5 同期コマンドを再実行してください。
+読みに行く順序は **必ず `AudioLabOverlay()` の後** にしてください
+(overlay 構築前の PL アドレス read は Jupyter kernel を kill します、
+memory `pynq-mmio-before-overlay-kills-kernel`)。
+
 ## 既知の注意点
 
 - Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (Phase 6I C2 SVGA 800x600 / 40 MHz HDMI 統合版、commit `5332b7e`) は `WNS = -8.096 ns` / `TNS = -6389.430 ns` / `WHS = +0.040 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- HDMI 統合パスの rgb2dvi v1.4 (`kClkRange=3`) は固定 MMCM 乗算器 `M=20` を使うため、Phase 6I C2 の `40 MHz` pixel clock では PLL の VCO が valid 帯 (`800..1600 MHz`) の下端 `800 MHz` ちょうどに乗ります。**PYNQ-Z2 電源 ON 後の最初の `Overlay(..., download=True)` は安定して lock しますが、同一 Python session で 2 度目の `download=True` を呼ぶと PLL が再 lock せず LCD が白画面 / no signal になることがあります** (VDMA や VTC のレジスタは正常のままで気付きにくい)。`HdmiGuiShow.ipynb` は `pynq.PL.bitfile_name` を見て既ロードなら `download=False` で attach するため、同 session 内で何度でも安全に再実行できます。それでも白画面になったら PYNQ-Z2 を電源 cycle してセルを 1 回だけ実行し直してください。詳細は `DECISIONS.md` D25、memory `rgb2dvi-pll-edge-at-40mhz`。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。
