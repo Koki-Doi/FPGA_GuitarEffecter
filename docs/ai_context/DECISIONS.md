@@ -805,9 +805,19 @@ not get removed even when superseded — they get updated.
   Phase 4G / 4I baseline: `COMPACT_V2_LAYOUT.outer=(12,12,788,468)`,
   `left=right=24`. The HDMI runtime contract (1280x720 signal,
   800x480 logical frame at framebuffer `x=0,y=0`, manual placement,
-  one `AudioLabOverlay()`, no `base.bit`) is unchanged. No bit/hwh /
-  Vivado / Clash / GPIO / block-design change. See
-  `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
+  one `AudioLabOverlay()`, no `base.bit`) was unchanged at the time
+  of this port. **Superseded by D25** for the HDMI timing only: the
+  signal is now VESA SVGA `800x600 @ 60 Hz / 40 MHz` with the same
+  800x480 compact-v2 GUI composed at framebuffer `(0,0)` of a
+  `800x600` framebuffer. The "single overlay, no `base.bit`,
+  one-`AudioLabOverlay()`" runtime contract from this entry is still
+  in force; only the on-the-wire signal width / framebuffer
+  dimensions changed. Renderer / `AppState` / `EFFECT_KNOBS` /
+  `hit_test_compact_v2()` and the canonical entry
+  `audio_lab_pynq/notebooks/HdmiGui.ipynb` are still as described
+  here; D25 adds the `HdmiGuiShow.ipynb` one-shot variant. No
+  Clash / GPIO / block-design change. See
+  `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md` and D25.
 
 ## D25 — Integrated HDMI runs VESA SVGA 800x600 @ 40 MHz, not native 800x480
 
@@ -858,11 +868,39 @@ not get removed even when superseded — they get updated.
     leaves them at `1280`, which exceeds `GEN_HFRAME_SIZE` for any
     non-720p mode and emits a "should not exceed" warning.
   - Drop `CONFIG.GEN_CHROMA_PARITY` (does not exist on `v_tc:6.1`).
-  - On deploy / rollback, sync **all three** bit/hwh copies:
-    `hw/Pynq-Z2/bitstreams/`, repo `audio_lab_pynq/bitstreams/`, and
-    `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/`.
+  - On deploy / rollback, sync **all five** bit/hwh copies on the
+    PYNQ-Z2:
+    - `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` (staging copy that
+      `deploy_to_pynq.sh` reads from)
+    - `/home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/audio_lab.{bit,hwh}`
+      (loaded when scripts run with
+      `PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ`)
+    - `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.{bit,hwh}`
+      (loaded when scripts run without `PYTHONPATH`)
+    - `/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.{bit,hwh}`
+      (the `install_notebooks()` destination; some scripts reference
+      the jupyter-side copy directly)
+    - `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.{bit,hwh}`
+      (`pynq`'s overlay registry; resolves bare
+      `Overlay("audio_lab")`)
     `AudioLabOverlay` loads whichever sits next to the
     `audio_lab_pynq` package that the current `PYTHONPATH` resolves
-    first; missing the repo or site-packages copy keeps the FPGA on
-    the previous bit silently.
+    first; missing any copy can keep the FPGA on the previous bit
+    silently. After deploy, verify each location's `md5sum` matches
+    and read `v_tc_hdmi GEN_ACTSZ (0x60)` from MMIO — it must read
+    `0x02580320` (V=600 / H=800) for SVGA 800x600.
+  - **rgb2dvi PLL is at the band edge.** `40 MHz × M=20 = 800 MHz`
+    sits at the absolute lower limit of `rgb2dvi v1.4 kClkRange=3`'s
+    valid `800..1600 MHz` VCO range. The PLL locks cleanly on a fresh
+    PYNQ-Z2 power-on, but a second `Overlay(..., download=True)` in
+    the same session can knock it out and drop the LCD to white even
+    with VDMA and VTC still reporting healthy state. User-facing
+    tooling that may be re-run in the same Jupyter session must
+    detect "bit already loaded" (read `GEN_ACTSZ`, expect
+    `0x02580320`) and attach with `AudioLabOverlay(download=False)`
+    so the running rgb2dvi MMCM is left alone.
+    `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb` implements this
+    workaround; `HdmiGui.ipynb`'s live loop also benefits from the
+    same pattern. Recovery from a stuck-PLL white screen is a
+    PYNQ-Z2 power cycle, then run the cell exactly once.
   - `block_design.tcl` is unchanged; D2 still applies.

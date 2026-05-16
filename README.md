@@ -23,8 +23,9 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
   AXI/I2S の外部 48-bit stereo I/O は維持
 - 13 種類の Chain Preset (Safe Bypass を含む) で 1 クリックでチェーン全体を切替
 - 統合 `audio_lab.bit` の HDMI framebuffer 出力。5インチ 800x480 LCD
-  では 1280x720 framebuffer の左上 `800x480` (`x=0`, `y=0`) を
-  標準 visible viewport として使用
+  では Phase 6I (`DECISIONS.md` D25) の VESA SVGA `800x600 @ 60 Hz /
+  40 MHz` 信号を使い、`800x600` framebuffer の左上 `800x480`
+  (`x=0`, `y=0`) を compact-v2 GUI 領域、下 120 行は黒帯として運用
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
 ## HDMI GUI
@@ -34,9 +35,13 @@ framebuffer 出力を使います。`AudioLabOverlay()` を 1 回だけロード
 `Overlay("base.bit")` や `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()` は
 使用しません。
 
-5インチ 800x480 LCD では Phase 5A の output mapping test により、
-1280x720 全体の縮小表示ではなく左上 `800x480` が実用上の表示領域だと
-確認しています。標準確認コマンドは次の通りです。
+Phase 5A の output mapping test で 5 インチ 800x480 LCD が
+`1280x720` 全体の縮小表示ではなく左上 `800x480` を実用領域とすることを
+確認し、Phase 6I (`DECISIONS.md` D25) では HDMI 信号自体を VESA SVGA
+`800x600 @ 60 Hz / 40 MHz` に切り替えました。framebuffer は `800x600`
+で、compact-v2 800x480 GUI は左上 `(0,0)` に配置し、下 120 行は黒のまま
+にします。標準確認コマンドは次の通りです (Phase 6I では
+`HdmiGuiShow.ipynb` の 1 セル実行もしくは下記スクリプト):
 
 ```sh
 ssh xilinx@192.168.1.9 '
@@ -580,7 +585,7 @@ axis_switch_sink   M01 = 0x80000000
 
 ## 既知の注意点
 
-- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (internal mono DSP 版) は `WNS = -8.155 ns` / `TNS = -6492.876 ns` / `WHS = +0.052 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (Phase 6I C2 SVGA 800x600 / 40 MHz HDMI 統合版、commit `5332b7e`) は `WNS = -8.096 ns` / `TNS = -6389.430 ns` / `WHS = +0.040 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
 - 出力ジャックは環境によってコーデックの経路設定が効き方に差があります。このリポジトリでは、実機で音が出た LOUT/ROUT 経路を標準にしています。

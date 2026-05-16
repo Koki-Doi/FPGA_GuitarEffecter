@@ -1,38 +1,61 @@
 # Current state
 
-Last updated: 2026-05-16 (HDMI GUI Phase 4 integrated overlay deployed,
-Phase 4C static-frame/resource profile measured, Phase 4D LCD fit modes
-added, Phase 4E 800x480 logical GUI tested, Phase 4F manual viewport
-calibration added, Phase 4G compact-v2 layout + negative-offset
-placement added, Phase 4H vertical safe margin + layout-debug overlay
-+ vertical-only offset sweep added, Phase 4I rolled the Phase 4H
-chassis push-down + positive-offset direction back to the Phase 4G
-compact-v2 baseline, Phase 4J began a horizontal-only negative-offset
-sweep but was left uncommitted and superseded by Phase 5A, and Phase 5A
-started HDMI output-side diagnosis for the 5-inch 800x480 LCD, then
-Phase 5C locked the user-confirmed `x=0,y=0,w=800,h=480` visible
-viewport as the default on the PYNQ-Z2 at `192.168.1.9`, and the
-post-Phase-5C repo cleanup kept active `GUI/` code while removing the
-unused untracked legacy `HDMI/` experiment tree, Phase 5D introduced
-the Pip-Boy-inspired phosphor-green theme + soft horizontal scanline
-overlay for the compact-v2 800x480 path, keeping `offset_x=0`,
-`offset_y=0` and the 1280x720 HDMI signal intact, Phase 6F rechecked
-the recurring right-shifted LCD report and confirmed bbox / backend /
-framebuffer all start at `(0,0)`, Phase 6G added a strong-UI-bbox
-detector and an actual-UI visual test plus an intermediate renderer
-x-tightening (later rolled back), Phase 6H (`d7ea0ab`) ported the
-compact-v2 renderer to the (1).py spec, consolidating per-effect
-knob layout into a single `EFFECT_KNOBS` dict and inlining the
-PEDAL / AMP / CAB model dropdown while restoring the Phase 4G / 4I
-baseline coordinates `outer=(12,12,788,468)` and panels at `left=24`,
-the subsequent Phase 6H native 800x480 timing pass was **rejected**
-on the LCD (white screen), and Phase 6I deployed VESA SVGA 800x600 @
-60 Hz / 40 MHz as the working HDMI timing for the 5-inch LCD with the
-compact-v2 UI in the top 480 rows of the 800x600 framebuffer.
-The later Phase 6H native-timing pass switched the integrated HDMI
-output from a 1280x720 signal carrying an 800x480 logical viewport to a
-native 800x480 signal for the 5-inch LCD, after renderer/backend/
-framebuffer origin diagnostics had already passed.
+Last updated: **2026-05-16, Phase 6I C2 deployed** (commits
+`5332b7e` / `3afd9c4` / `e2ece2e`, merged to `main` at `e2ece2e`).
+
+## Current load-bearing facts
+
+- **HDMI signal**: VESA SVGA `800x600 @ 60 Hz`, pixel clock
+  `40.000 MHz`, `H total 1056`, `V total 628`, `rgb2dvi kClkRange=3`
+  (`DECISIONS.md` D25). Not 720p, not native 800x480.
+- **Framebuffer**: `audio_lab_pynq/hdmi_backend.py` defaults to
+  `DEFAULT_WIDTH=800`, `DEFAULT_HEIGHT=600`. The 800x480 compact-v2
+  GUI composes at framebuffer `(0,0)` (top 480 rows = UI, bottom 120
+  rows = black). VDMA: `HSIZE=2400, STRIDE=2400, VSIZE=600`.
+- **GUI renderer**: `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2`
+  + the (1).py-spec `EFFECT_KNOBS` / `AppState.all_knob_values` /
+  `hit_test_compact_v2()` API from Phase 6H port (`DECISIONS.md` D24).
+- **Notebook runtime**: `audio_lab_pynq/notebooks/HdmiGui.ipynb`
+  (live loop, resource monitor, `OFFSET_X` / `OFFSET_Y` calibration)
+  and `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb` (one-shot,
+  smart-attach via `download=False` when bit already loaded —
+  protects the rgb2dvi PLL at the 800 MHz VCO lower edge from
+  re-`download=True` knock-outs in the same Jupyter session).
+- **PL timing baseline**: WNS `-8.096 ns`, TNS `-6389.430 ns`,
+  WHS `+0.040 ns`, THS `0.000 ns`; Slice LUTs `18618 (35.00%)`,
+  Slice Registers `20846 (19.59%)`. Within the historical
+  `-7..-9 ns` deploy band. See `TIMING_AND_FPGA_NOTES.md`.
+
+## Phase history (chronological)
+
+Phase 4 integrated HDMI framebuffer deployed; Phase 4C profiled the
+deployed bit; Phase 4D added LCD fit modes; Phase 4E tested the
+800x480 logical GUI; Phase 4F added manual viewport calibration;
+Phase 4G shipped compact-v2 + negative-offset placement; Phase 4H
+added vertical safe margins + a layout-debug overlay; Phase 4I rolled
+back Phase 4H's chassis push-down to the 4G baseline; Phase 4J's
+horizontal-only negative-offset sweep was left uncommitted, superseded
+by Phase 5A. Phase 5A started HDMI output-side diagnosis for the
+5-inch 800x480 LCD; Phase 5C locked the user-confirmed
+`x=0,y=0,w=800,h=480` viewport default on the PYNQ-Z2 at
+`192.168.1.9`; the post-5C cleanup kept active `GUI/` and removed the
+legacy untracked `HDMI/` tree. Phase 5D added the Pip-Boy-inspired
+phosphor-green theme + soft scanline overlay on the (then) 1280x720
+path. Phase 6F rechecked the recurring right-shift report (bbox /
+backend / framebuffer all `(0,0)`); Phase 6G added strong-UI-bbox
+diagnostics + an actual-UI visual test (intermediate renderer
+x-tightening was rolled back). Phase 6H (`d7ea0ab`) ported the
+compact-v2 renderer to the (1).py spec (single `EFFECT_KNOBS` dict,
+inline PEDAL / AMP / CAB model dropdown, Phase 4G / 4I baseline
+coordinates restored). The subsequent Phase 6H native 800x480 / 40 MHz
+timing pass was **rejected** on the LCD (white screen) and never
+committed. Phase 6I rolled back to 720p, swept candidate timings, and
+deployed **VESA SVGA 800x600 @ 60 Hz / 40 MHz** as the working HDMI
+signal — same H/V totals as the rejected Phase 6H, but with
+SVGA-standard 800x600 active that the LCD's HDMI receiver actually
+recognises. The Phase 5D / 6F references to a "1280x720 HDMI signal"
+below this paragraph describe what was true at those phases; the
+current signal is the Phase 6I SVGA 800x600 path.
 
 2026-05-16 Phase 6F recurrence check: after the GitHub-code replacement
 on `feature/hdmi-gui-model-selection-ui`, the recurring right-shifted

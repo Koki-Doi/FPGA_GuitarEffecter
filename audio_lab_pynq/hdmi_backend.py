@@ -1,13 +1,16 @@
 """Minimal HDMI framebuffer back end for the Phase 4 integrated AudioLab
-overlay.
+overlay (Phase 6I VESA SVGA 800x600 baseline — see ``DECISIONS.md`` D25).
 
 Single-purpose role: take an RGB888 ``numpy.ndarray`` from
-``GUI.pynq_multi_fx_gui.render_frame_800x480_compact_v2`` (or the native
-1280x720 path used by the diagnostic scripts) and scan it out to HDMI
-through the integrated ``axi_vdma_hdmi`` / ``v_tc_hdmi`` /
-``v_axi4s_vid_out_hdmi`` / ``rgb2dvi_hdmi`` block in ``audio_lab.bit``.
-The DDR framebuffer is 24-bit packed GBR888 because Digilent ``rgb2dvi``
-maps ``vid_pData`` as ``[23:16]=R``, ``[15:8]=B``, ``[7:0]=G``.
+``GUI.pynq_multi_fx_gui.render_frame_800x480_compact_v2`` (or any other
+RGB ndarray that fits inside the ``DEFAULT_WIDTH`` x ``DEFAULT_HEIGHT``
+framebuffer) and scan it out to HDMI through the integrated
+``axi_vdma_hdmi`` / ``v_tc_hdmi`` / ``v_axi4s_vid_out_hdmi`` /
+``rgb2dvi_hdmi`` block in ``audio_lab.bit``. The DDR framebuffer is
+24-bit packed GBR888 because Digilent ``rgb2dvi`` maps ``vid_pData`` as
+``[23:16]=R``, ``[15:8]=B``, ``[7:0]=G``. The defaults are 800x600 to
+match the Phase 6I VESA SVGA HDMI signal; the compact-v2 800x480 GUI
+composes at framebuffer (0, 0) and the bottom 120 rows stay black.
 
 The back end intentionally does NOT:
 
@@ -172,8 +175,10 @@ def fit_mode_scale(fit_mode="native", scale=None):
 def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
                       width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                       background=(0, 0, 0)):
-    """Return a 1280x720 RGB frame after optional LCD overscan fitting.
+    """Return a framebuffer-sized RGB frame after optional LCD overscan fitting.
 
+    The output is `width` x `height` (the framebuffer dimensions; defaults to
+    `DEFAULT_WIDTH` x `DEFAULT_HEIGHT` = 800x600 for the Phase 6I baseline).
     ``native`` returns the input ndarray and records zero offset. Other modes
     resize the input with Pillow's old-version-compatible constants and paste
     it onto a black RGB888 canvas. The framebuffer dimensions and VDMA
@@ -443,8 +448,9 @@ class AudioLabHdmiBackend(object):
 
     # ---- VTC bring-up ---------------------------------------------------
     def _start_vtc(self):
-        # Soft reset, then enable generator + register update. The 1280x720@60
-        # timing was baked in at IP gen time, so this just turns it on.
+        # Soft reset, then enable generator + register update. The HDMI
+        # timing (Phase 6I VESA SVGA 800x600 @ 60 Hz, 40 MHz pixel clock)
+        # was baked in at IP gen time, so this just turns it on.
         self._vtc_write(VTC_CTL, VTC_CTL_SW_RESET)
         time.sleep(0.001)
         # Clear pending interrupt latches.
@@ -526,8 +532,9 @@ class AudioLabHdmiBackend(object):
         else:
             if str(fit_mode) != "native" or scale is not None:
                 raise ValueError(
-                    "fit_mode/scale are only for native 1280x720 frames; "
-                    "logical frames use placement")
+                    "fit_mode/scale are only for native framebuffer-sized "
+                    "frames (DEFAULT_WIDTH x DEFAULT_HEIGHT = 800x600 on the "
+                    "Phase 6I baseline); logical frames use placement")
             fitted, meta = compose_logical_frame(
                 arr, width=self.width, height=self.height,
                 placement=placement, offset_x=offset_x, offset_y=offset_y,
@@ -555,7 +562,7 @@ class AudioLabHdmiBackend(object):
         # The renderer gives RGB byte order. The VDMA emits byte 0 on
         # TDATA[7:0], byte 1 on TDATA[15:8], and byte 2 on TDATA[23:16].
         # Digilent rgb2dvi expects that bus as G, B, R respectively.
-        # Three direct slice copies avoid a temporary 720p swizzle buffer.
+        # Three direct slice copies avoid a temporary swizzle buffer.
         self._framebuffer[:, :, 0] = arr[:, :, 1]  # G -> vid_pData[7:0]
         self._framebuffer[:, :, 1] = arr[:, :, 2]  # B -> vid_pData[15:8]
         self._framebuffer[:, :, 2] = arr[:, :, 0]  # R -> vid_pData[23:16]

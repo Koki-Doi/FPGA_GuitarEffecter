@@ -52,9 +52,16 @@ The current load-bearing facts:
   `audio_lab.bit`. Live HDMI uses `AudioLabOverlay()` plus
   `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`; it must not load
   `Overlay("base.bit")` or call `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()`.
-  For the 5-inch 800x480 LCD, Phase 5C adopts the fixed 1280x720 HDMI
-  signal with the compact 800x480 GUI at framebuffer `x=0,y=0`. Phase
-  5D themed it with the Pip-Boy-inspired phosphor green palette and
+  For the 5-inch 800x480 LCD, the current Phase 6I (`DECISIONS.md`
+  D25) signal is VESA SVGA `800x600 @ 60 Hz / 40 MHz` and the
+  framebuffer in `audio_lab_pynq/hdmi_backend.py` is `800x600`; the
+  compact 800x480 GUI composes at framebuffer `(0, 0)` so visible
+  rows `0..479` carry the UI and rows `480..599` stay black. The
+  earlier Phase 5C history adopted the fixed `1280x720` HDMI signal
+  with the compact 800x480 GUI at framebuffer `x=0,y=0`; that
+  baseline is now superseded by Phase 6I for the on-the-wire signal
+  while the GUI side stays at 800x480 compact-v2. Phase 5D themed
+  the GUI with the Pip-Boy-inspired phosphor green palette and
   scanline overlay. Phase 6F rechecked a recurring right-shift report,
   Phase 6G added strong-UI-bbox diagnostics plus an actual-UI visual
   test (intermediate renderer x-tightening rolled back), Phase 6H

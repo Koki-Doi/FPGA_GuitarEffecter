@@ -34,12 +34,12 @@ control effect parameters via AXI GPIO.
 | `audio_lab_pynq/AudioCodec.py` | ADAU1761 register driver and config sequence. |
 | `audio_lab_pynq/diagnostics.py` | Phase-1 input/output diagnostics. |
 | `audio_lab_pynq/hdmi_backend.py` | Direct MMIO HDMI framebuffer backend for the integrated AudioLab HDMI path; avoids PYNQ's base-overlay video driver. |
-| `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. |
+| `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. Includes the HDMI runtime entries `HdmiGui.ipynb` (live loop, resource monitor) and `HdmiGuiShow.ipynb` (one-shot single-cell renderer with `download=False` smart-attach so the rgb2dvi PLL at the Phase 6I `40 MHz` lower edge survives cell re-runs). |
 | `GUI/pynq_multi_fx_gui.py` | 800x480 compact-v2 HDMI GUI renderer (`render_frame_800x480_compact_v2`); after the Phase 6H (1).py spec port (`d7ea0ab`), `EFFECT_KNOBS` is keyed by title-case `EFFECTS` names, `AppState` uses `all_knob_values`, and PEDAL / AMP / CAB draw the model dropdown inline. The 1280x720 reference renderer / Tk desktop preview / `run_pynq_hdmi()` were removed in `DECISIONS.md` D24. |
 | `GUI/audio_lab_gui_bridge.py` | Dry-run-first bridge from GUI `AppState` to existing `AudioLabOverlay` control APIs. |
 | `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install package, install notebooks. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |
-| `scripts/test_hdmi_800x480_frame.py` | Phase 5C default 5-inch LCD check: compact 800x480 GUI at framebuffer `x=0,y=0` on the fixed 1280x720 HDMI signal. |
+| `scripts/test_hdmi_800x480_frame.py` | 5-inch LCD smoke: compact 800x480 GUI at framebuffer `x=0,y=0`. Originally written for the Phase 5C `1280x720` signal; the same script also works against the Phase 6I `800x600` SVGA framebuffer because the renderer still emits an 800x480 frame and the backend composes it at `(0,0)`. |
 | `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. |
 | `audio_lab_pynq/effect_defaults.py` | Per-effect default parameter dicts (re-exported as `AudioLabOverlay.DISTORTION_DEFAULTS` etc.). |
 | `audio_lab_pynq/effect_presets.py` | Notebook + API presets (Noise Suppressor / Distortion / Safe Bypass). |
@@ -76,11 +76,16 @@ control effect parameters via AXI GPIO.
   byte-fields is possible.
 - PYNQ-Z2 board is reachable on the lab LAN at **192.168.1.9**, user
   `xilinx`, with passwordless `sudo` and SSH key auth set up.
-- The integrated HDMI GUI path uses the deployed 1280x720 framebuffer
-  output in `audio_lab.bit`. For the 5-inch 800x480 LCD, Phase 5A/5C
-  established the top-left `x=0,y=0,w=800,h=480` framebuffer region as
-  the default visible viewport. Do not use `Overlay("base.bit")` or
-  `run_pynq_hdmi()` for live AudioLab HDMI.
+- The integrated HDMI GUI path uses VESA SVGA `800x600 @ 60 Hz /
+  40 MHz` in the deployed `audio_lab.bit` (Phase 6I, `DECISIONS.md`
+  D25). `audio_lab_pynq/hdmi_backend.py` defaults to `DEFAULT_WIDTH=800`,
+  `DEFAULT_HEIGHT=600`. The 800x480 compact-v2 GUI composes at
+  framebuffer `(0,0)` so visible rows `0..479` carry the UI and rows
+  `480..599` stay black. Earlier Phase 5A/5C established the
+  `1280x720` baseline with the same top-left `x=0,y=0,w=800,h=480`
+  visible region; Phase 6I replaced the on-the-wire signal while
+  keeping that visible-region convention. Do not use
+  `Overlay("base.bit")` or `run_pynq_hdmi()` for live AudioLab HDMI.
 - Deploy target on the board:
   - Repo / package source: `/home/xilinx/Audio-Lab-PYNQ/`
   - Notebooks (Jupyter root): `/home/xilinx/jupyter_notebooks/audio_lab/`
