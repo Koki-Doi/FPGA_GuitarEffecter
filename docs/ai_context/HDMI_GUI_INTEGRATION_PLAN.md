@@ -19,6 +19,28 @@ removed the unused untracked legacy `HDMI/` experiment tree after backup.
 Phase 6F was rechecked on 2026-05-16 after a recurring right-shifted
 LCD report: renderer bbox, backend compose metadata, and the live
 1280x720 framebuffer all prove the 800x480 GUI starts at `x=0,y=0`.
+Phase 6G then added a strong-UI-bbox detector and an actual-UI visual
+test for the more specific content-origin issue, and briefly tightened
+the renderer to outer `x=4`, header `x=8`, panels `x=12` with an
+explicit `x=0..1` phosphor rail; the renderer x-tightening was rolled
+back the same day. Phase 6H (`d7ea0ab`) ported the compact-v2
+renderer to the user-supplied (1).py spec: it consolidates the
+per-effect knob layout into a single `EFFECT_KNOBS` dict keyed by the
+title-case `EFFECTS` names with short labels, inlines the PEDAL /
+AMP / CAB model dropdown chip (with a fit-to-chip size search for
+long model labels), switches `AppState` to a single per-effect
+`all_knob_values` dict plus `state.knobs()` / `state.set_knob()` /
+`hit_test_compact_v2()` helpers, and restores the Phase 4G / 4I
+baseline coordinates (`outer=(12,12,788,468)`, panels at `left=24`).
+Phase 6G's strong-UI diagnostics still PASS at
+`strong_ui_bbox=[24,776,20,454]` (all `estimated_*_left_x=24`).
+The later Phase 6H native-timing pass moved the integrated HDMI signal
+itself to native `800x480` for the 5-inch LCD because the Python
+renderer, backend placement, and framebuffer origin had all passed while
+the real LCD still showed a left blank region under the 720p signal.
+The deployed native mode is `40.000 MHz`, H timing
+`800/40/128/88/1056`, V timing `480/13/3/132/628`, with VDMA
+HSIZE/STRIDE/VSIZE `2400/2400/480`.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -60,6 +82,9 @@ compact-v2 baseline restore, HDMI output-side diagnosis, and the
 native 800x480 timing plan. Phase 5C's adopted runtime mode is the
 existing 1280x720 HDMI signal with the 800x480 compact GUI at
 framebuffer `x=0,y=0`.
+Phase 6H supersedes that default for the 5-inch LCD by using a native
+800x480 HDMI signal and a native 800x480 framebuffer. See
+`HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
 
 ## 1. Current state
 
@@ -104,6 +129,46 @@ and `DECISIONS.md` D24):
   `outside_800x480_sum=0`. Model-selection UI and realtime pedalboard
   tests both pass on PYNQ with VDMA error bits clear. No bit/hwh,
   Vivado, Clash, GPIO, or notebook-control change was required.
+- Phase 6G content-origin fix (2026-05-16, intermediate) added the
+  strong-UI-bbox detector and the actual-UI visual test because
+  `nonzero_bbox` was not enough -- background / scanline / marker
+  pixels can touch x=0 while the real panel body is shifted right.
+  Phase 6G's renderer x-tightening (outer `x=4..796`, header
+  `x=8..792`, chain / selected-FX panels `x=12..788`, plus a left
+  phosphor rail at `x=0..1`) was rolled back by the same-day Phase 6H
+  port. The diagnostics survive: `scripts/test_hdmi_render_bbox.py`
+  still estimates strong UI border positions and
+  `scripts/test_hdmi_actual_ui_origin_visual.py` still shows the real
+  UI with `X0` / `X799` markers on HDMI.
+- Phase 6H (1).py spec port (2026-05-16, `d7ea0ab`) is the current
+  compact-v2 renderer. It restores the Phase 4G / 4I baseline
+  coordinates: `COMPACT_V2_LAYOUT.outer=(12,12,788,468)`, `left=24`,
+  `right=24`, `header_y=(20,100)`, `chain_y=(110,250)`,
+  `bottom_y=(260,454)`. PEDAL / AMP / CAB draw the model dropdown
+  inline with a fit-to-chip size search (`22 -> 20 -> 18 -> 16 -> 14`)
+  so `HIGH GAIN STACK` / `1x12 OPEN BACK` / `BRITISH CRUNCH` /
+  `TUBE SCREAMER` stay inside the chip while shorter labels render at
+  size 22. REVERB / COMPRESSOR / NOISE SUPPRESSOR / SAFE BYPASS /
+  PRESET hide the dropdown. `EFFECT_KNOBS` is a single per-effect
+  dict keyed by title-case `EFFECTS` names; `AppState` stores knob
+  values in `all_knob_values` and exposes `knobs()` / `set_knob()` /
+  `hit_test_compact_v2()`. Local strong-UI check after the port:
+  `strong_ui_bbox=[24,776,20,454]`, all `estimated_*_left_x=24`,
+  inside `<=28` / `<=40` thresholds. No bit/hwh / Vivado / Clash /
+  GPIO change. See
+  `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
+- Phase 6H native 800x480 timing (2026-05-16, after the renderer port)
+  changes the integrated HDMI signal from 1280x720 to native 800x480.
+  The final timing is pixel clock `40.000 MHz`, H
+  `800/40/128/88/1056`, V `480/13/3/132/628`, `rgb2dvi` `kClkRange=3`,
+  VDMA HSIZE/STRIDE/VSIZE `2400/2400/480`, framebuffer `1152000`
+  bytes. Vivado build passed with WNS `-8.138 ns`, TNS `-6405.865 ns`,
+  WHS `+0.040 ns`, THS `0.000 ns`; utilization LUT `18634`,
+  Registers `20846`, BRAM `9`, DSP `83`. PYNQ actual UI visual,
+  model UI, and realtime pedalboard tests pass with VDMA error bits
+  clear. Human LCD left-edge confirmation remains the final visual
+  check. See
+  `docs/ai_context/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
 
 ### AudioLabOverlay and audio_lab.bit
 
@@ -119,8 +184,9 @@ The current `audio_lab.bit` owns the real-time DSP path:
 - AXI GPIOs drive effect enable flags and parameters.
 - Audio returns to the ADAU1761 headphone / line output.
 
-The current deployed `audio_lab.bit` contains a fixed 1280x720 HDMI
-framebuffer output subsystem:
+The current deployed `audio_lab.bit` contains the integrated HDMI
+framebuffer output subsystem. As of Phase 6H native timing, this path is
+configured for a native 800x480 signal for the 5-inch LCD:
 
 - `axi_vdma_hdmi` MM2S framebuffer scanout at `0x43CE0000`
 - `v_tc_hdmi` timing generator at `0x43CF0000`
@@ -130,6 +196,15 @@ framebuffer output subsystem:
 
 The HDMI Tcl is isolated in `hw/Pynq-Z2/hdmi_integration.tcl` and is
 sourced by `create_project.tcl` after the existing audio block design.
+
+Current Phase 6H HDMI runtime values:
+
+- Pixel clock: `40.000 MHz`.
+- VTC active: `800x480`.
+- VTC total: `1056x628`.
+- VDMA HSIZE/STRIDE: `2400` bytes.
+- VDMA VSIZE: `480`.
+- Framebuffer size: `800 * 480 * 3 = 1152000` bytes.
 
 Phase 4C re-ran the static-frame test and profiled the already-deployed
 path without rebuilding or changing the bitstream. VDMA scanout started
@@ -1252,3 +1327,62 @@ Until a future implementation phase explicitly approves otherwise:
 > リソース見積り、timingリスク、address map影響、rollback案をまとめて
 > ください。既存GPIO address / `topEntity` / DSP pipeline は維持する前提です。
 > 結果は docs に記録し、実装が必要な場合はユーザ承認を待ってください。
+
+## 11. Phase 6I result — VESA SVGA 800x600 deployed
+
+Phase 6H tried `native 800x480 @ 40 MHz` (`H 1056 / V 628`). Vivado
+built clean, but the 5-inch LCD showed a fully white screen: the
+receiver did not lock onto that hybrid timing. The Phase 6H bit/hwh
+were **not committed**. Phase 6I rolled back to the 720p baseline,
+proved the FPGA-to-LCD signal path was alive (red/UI test), and swept
+candidate 800x480 timings. The originally planned `33.333 / 33.000 /
+27.000 MHz` cuts all fell below the `rgb2dvi v1.4 kClkRange=3` PLL VCO
+floor (`pixel >= 40 MHz`). The accepted candidate is **VESA SVGA
+800x600 @ 60 Hz / 40 MHz** (Candidate C2 in
+`docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`): a
+standard scaler-friendly DMT mode that keeps the panel's native 800
+pixel width.
+
+- `hw/Pynq-Z2/hdmi_integration.tcl`:
+  - `HDMI_PIXEL_CLOCK_MHZ = 40.000`,
+    `HDMI_RGB2DVI_CLK_RANGE = 3`,
+    `HDMI_ACTIVE_W/H = 800/600`,
+    `HDMI_H_FP/SYNC/BP = 40/128/88` → `H total 1056`,
+    `HDMI_V_FP/SYNC/BP = 1/4/23` → `V total 628`.
+  - First `set_property -dict { CONFIG.VIDEO_MODE {Custom}, ... }`
+    pass before the per-field `GEN_*` values (otherwise the IP keeps
+    its 1280x720p preset and silently ignores the per-field
+    overrides).
+  - `GEN_F0_VBLANK_HSTART = GEN_F0_VBLANK_HEND = HDMI_ACTIVE_W (800)`
+    explicit; `GEN_CHROMA_PARITY` dropped (does not exist on v_tc 6.1).
+- `audio_lab_pynq/hdmi_backend.py`: `DEFAULT_WIDTH = 800`,
+  `DEFAULT_HEIGHT = 600`. The 800x480 compact-v2 frame is composed at
+  `(0, 0)` with `placement="manual", offset_x=0, offset_y=0`; the
+  bottom 120 lines of the framebuffer remain black.
+- VDMA: `HSIZE = 2400, STRIDE = 2400, VSIZE = 600`,
+  framebuffer size `800 * 600 * 3 = 1_440_000 bytes`.
+- `v_tc_hdmi GEN_ACTSZ (0x60)` reads `0x02580320` (`V=600 / H=800`).
+- Vivado 2019.1 timing: WNS `-8.096 ns`, TNS `-6389.430 ns`,
+  WHS `+0.040 ns`, THS `0.000 ns`; utilization LUTs `18618` (35.00%),
+  Registers `20846` (19.59%). Within the historical `-7..-9 ns`
+  deploy band; hold remains clean.
+- LCD verdict: compact-v2 UI is visible, no longer right-shifted —
+  the SVGA mode aligns to the panel's native 800 pixel width
+  directly. ADC HPF `True`, R19 `0x23`, no VDMA error bits.
+
+Deploy procedure (because of the three-bit-copy hazard discovered
+during this phase) syncs `hw/Pynq-Z2/bitstreams/`, repo
+`audio_lab_pynq/bitstreams/`, and
+`/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/`
+explicitly. Rollback backups:
+
+- Phase 6H failed bit:
+  `/tmp/fpga_guitar_effecter_backup/phase6h_failed_white_screen/`
+- 720p baseline:
+  `/home/xilinx/Audio-Lab-PYNQ/backups/phase6h_720p/` (PYNQ) and
+  `/tmp/fpga_guitar_effecter_backup/phase6i_baseline_720p/` (local).
+
+See `docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md` for the
+candidate table, the per-candidate VCO math, and the build / deploy
+gotchas (`VIDEO_MODE Custom`, `VBLANK_HSTART/HEND`, three bit-copy
+sync) discovered during the sweep.

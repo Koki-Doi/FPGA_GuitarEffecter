@@ -35,7 +35,7 @@ control effect parameters via AXI GPIO.
 | `audio_lab_pynq/diagnostics.py` | Phase-1 input/output diagnostics. |
 | `audio_lab_pynq/hdmi_backend.py` | Direct MMIO HDMI framebuffer backend for the integrated AudioLab HDMI path; avoids PYNQ's base-overlay video driver. |
 | `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. |
-| `GUI/pynq_multi_fx_gui.py` | HDMI GUI renderer and optional desktop preview; live AudioLab output uses its frame renderers, not its old `run_pynq_hdmi()` helper. |
+| `GUI/pynq_multi_fx_gui.py` | 800x480 compact-v2 HDMI GUI renderer (`render_frame_800x480_compact_v2`); after the Phase 6H (1).py spec port (`d7ea0ab`), `EFFECT_KNOBS` is keyed by title-case `EFFECTS` names, `AppState` uses `all_knob_values`, and PEDAL / AMP / CAB draw the model dropdown inline. The 1280x720 reference renderer / Tk desktop preview / `run_pynq_hdmi()` were removed in `DECISIONS.md` D24. |
 | `GUI/audio_lab_gui_bridge.py` | Dry-run-first bridge from GUI `AppState` to existing `AudioLabOverlay` control APIs. |
 | `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install package, install notebooks. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |

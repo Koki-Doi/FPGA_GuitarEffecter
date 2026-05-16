@@ -53,9 +53,26 @@ The current load-bearing facts:
   `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`; it must not load
   `Overlay("base.bit")` or call `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()`.
   For the 5-inch 800x480 LCD, Phase 5C adopts the fixed 1280x720 HDMI
-  signal with the compact 800x480 GUI at framebuffer `x=0,y=0`. See
+  signal with the compact 800x480 GUI at framebuffer `x=0,y=0`. Phase
+  5D themed it with the Pip-Boy-inspired phosphor green palette and
+  scanline overlay. Phase 6F rechecked a recurring right-shift report,
+  Phase 6G added strong-UI-bbox diagnostics plus an actual-UI visual
+  test (intermediate renderer x-tightening rolled back), Phase 6H
+  (`d7ea0ab`) ported the compact-v2 renderer to the (1).py spec
+  (`EFFECT_KNOBS` dict, `AppState.all_knob_values`, inline PEDAL /
+  AMP / CAB dropdown), the subsequent Phase 6H native 800x480 HDMI
+  timing pass was **rejected** on the LCD (white screen), and Phase
+  6I (`DECISIONS.md` D25) settled on VESA SVGA `800x600 @ 60 Hz /
+  40 MHz` with the 800x480 compact-v2 GUI composing at framebuffer
+  `(0, 0)` of a `800x600` framebuffer. See
   `HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
-  `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, and
+  `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`,
+  `HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md`,
+  `HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`,
+  `HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`,
+  `HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`,
+  `HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected),
+  `HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`, and
   `HDMI_GUI_INTEGRATION_PLAN.md`.
 - Repo cleanup after Phase 5C confirmed `GUI/` is active code, while the
   old untracked `HDMI/` experiment tree is unused by deploy, tests, and

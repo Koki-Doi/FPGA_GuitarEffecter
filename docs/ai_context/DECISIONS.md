@@ -786,3 +786,83 @@ not get removed even when superseded — they get updated.
   `_path_created` cache occasionally left a zero-byte
   `/home/xilinx/jupyter_notebooks/audio_lab/HdmiGui.ipynb` on retry,
   which Jupyter refused to open.
+- **Phase 6H (1).py spec port (`d7ea0ab`, 2026-05-16).** Compact-v2
+  renderer was ported to the user-supplied `(1).py` spec. `EFFECT_KNOBS`
+  is now a single dict keyed by the title-case `EFFECTS` names with
+  short labels (`THRESH`, `RATIO`, `RESP`, `MAKEUP`, `MID`, `TREB`,
+  `PRES`, `RES`, `MSTR`, `CHAR`, ...). `AppState` stores knob values
+  in a single per-effect dict `all_knob_values: Dict[str, List[float]]`;
+  the flat `knob_values` field is removed. New helpers:
+  `state.knobs()`, `state.set_knob(label, value)`,
+  `hit_test_compact_v2(x, y, state)`. The PEDAL / AMP / CAB model
+  dropdown chip is drawn inline by the renderer and only for those
+  three categories; legacy helpers (`SELECTED_FX_PARAM_LAYOUT`,
+  `_should_show_selected_model_dropdown`,
+  `_selected_model_dropdown_label`, `_dropdown_short`,
+  `_pedal/amp/cab_label`, `selected_fx_param_layout`) are removed.
+  Long model labels are sized down via `draw_smooth_text` with a
+  fit-to-chip search (`22 -> 14`). Compact-v2 coordinates remain the
+  Phase 4G / 4I baseline: `COMPACT_V2_LAYOUT.outer=(12,12,788,468)`,
+  `left=right=24`. The HDMI runtime contract (1280x720 signal,
+  800x480 logical frame at framebuffer `x=0,y=0`, manual placement,
+  one `AudioLabOverlay()`, no `base.bit`) is unchanged. No bit/hwh /
+  Vivado / Clash / GPIO / block-design change. See
+  `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
+
+## D25 — Integrated HDMI runs VESA SVGA 800x600 @ 40 MHz, not native 800x480
+
+- **Rule.** The integrated HDMI output in `hw/Pynq-Z2/hdmi_integration.tcl`
+  drives the LCD at **VESA SVGA 800x600 @ 60 Hz, pixel clock 40.000 MHz**,
+  H total `1056` (`fp 40, sync 128, bp 88`), V total `628`
+  (`fp 1, sync 4, bp 23`), `rgb2dvi_hdmi.kClkRange=3`. The framebuffer
+  in `audio_lab_pynq/hdmi_backend.py` is `800x600` (`DEFAULT_WIDTH=800`,
+  `DEFAULT_HEIGHT=600`); the compact-v2 GUI composes at framebuffer
+  `(0,0)` so visible rows `0..479` carry the UI and rows `480..599`
+  stay black. Do not switch back to a 720p signal carrying an 800x480
+  viewport, and do not retry a "native 800x480" timing at 40 MHz
+  (Phase 6H attempt; the 5-inch LCD did not lock and showed a fully
+  white screen). See
+  `docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md` and
+  `docs/ai_context/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
+- **Why.** The 5-inch LCD's HDMI receiver scaler rejects the Phase 6H
+  `800x480 / 40 MHz / 1056 x 628` timing (active area sized differently
+  from the standard SVGA mode that shares those H/V totals). VESA SVGA
+  `800x600 @ 60 Hz` is a standard DMT mode the LCD's scaler does
+  recognise; the panel's panel-native 800 pixel width then maps the
+  signal directly without the right-shift seen on the previous
+  `1280x720` path. Lower-clock candidates (33.333 / 33.000 / 27.000
+  MHz) are not synthesisable with the unmodified Digilent
+  `rgb2dvi v1.4` IP because they push the internal PLLE2 VCO below
+  the `800..1600 MHz` valid band; SVGA at 40 MHz keeps the VCO at
+  `800 MHz` (band edge) and synthesises cleanly. Phase 6I C2 build
+  shows WNS `-8.096 ns` / TNS `-6389.430 ns` / WHS `+0.040 ns` /
+  THS `0.000 ns` — within the historical `-7..-9 ns` deploy band and
+  hold remains clean.
+- **Boundaries.**
+  - Do **not** flip `DEFAULT_HEIGHT` back to `480` without also
+    changing the v_tc IP, the framebuffer size, and `VDMA VSIZE`.
+  - Do **not** add an `offset_x` / `offset_y` correction in the
+    backend to "compensate" the 600-line frame; the bottom-120-line
+    black margin is intentional and the LCD's scaler maps the 800x600
+    signal correctly.
+  - When editing `hw/Pynq-Z2/hdmi_integration.tcl` for any future
+    timing change, set `CONFIG.VIDEO_MODE {Custom}` and
+    `CONFIG.GEN_VIDEO_FORMAT {RGB}` in a first `set_property` pass
+    before the per-field `CONFIG.GEN_*` values. Otherwise the
+    individual `GEN_HACTIVE_SIZE` / `GEN_VACTIVE_SIZE` /
+    `GEN_HSYNC_*` parameters are disabled and silently ignored, and
+    the bit ships with whatever preset the IP defaulted to (`1280x720p`
+    out of the box).
+  - Set `CONFIG.GEN_F0_VBLANK_HSTART` and `CONFIG.GEN_F0_VBLANK_HEND`
+    explicitly to `HDMI_ACTIVE_W` for every new timing — the preset
+    leaves them at `1280`, which exceeds `GEN_HFRAME_SIZE` for any
+    non-720p mode and emits a "should not exceed" warning.
+  - Drop `CONFIG.GEN_CHROMA_PARITY` (does not exist on `v_tc:6.1`).
+  - On deploy / rollback, sync **all three** bit/hwh copies:
+    `hw/Pynq-Z2/bitstreams/`, repo `audio_lab_pynq/bitstreams/`, and
+    `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/`.
+    `AudioLabOverlay` loads whichever sits next to the
+    `audio_lab_pynq` package that the current `PYTHONPATH` resolves
+    first; missing the repo or site-packages copy keeps the FPGA on
+    the previous bit silently.
+  - `block_design.tcl` is unchanged; D2 still applies.

@@ -84,8 +84,8 @@ VTC_CTL_DETECTION_ENABLE     = 1 << 3
 # env / constructor overrides are retained for LCD diagnostics.
 VTC_HSYNC_SHIFT_DEFAULT      = 0
 
-DEFAULT_WIDTH                = 1280
-DEFAULT_HEIGHT               = 720
+DEFAULT_WIDTH                = 800
+DEFAULT_HEIGHT               = 600
 DEFAULT_BYTES_PER_PIXEL      = 3
 DEFAULT_NUM_FSTORES          = 3
 
