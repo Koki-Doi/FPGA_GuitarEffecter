@@ -230,7 +230,8 @@ def _make_theme(*, name,
                 chain_on_fill, chain_off_fill,
                 chain_off_outline, chain_off_text, chain_badge_off,
                 bar_bg_fill, bar_outline,
-                scanline_rgba=None, scanline_step=0):
+                scanline_rgba=None, scanline_step=0,
+                vignette_size=0):
     return {
         "name": name,
         "LED": led, "LED_SOFT": led_soft, "LED_DIM": led_dim,
@@ -255,6 +256,7 @@ def _make_theme(*, name,
         "BAR_OUTLINE": bar_outline,
         "SCANLINE_RGBA": scanline_rgba,
         "SCANLINE_STEP": int(scanline_step),
+        "VIGNETTE_SIZE": int(vignette_size),
     }
 
 
@@ -291,36 +293,37 @@ CYAN_THEME = _make_theme(
 # fonts, icons, or screen text are copied.
 PIPBOY_THEME = _make_theme(
     name="pipboy-green",
-    led=(90, 220, 110),
-    led_soft=(175, 245, 185),
-    led_dim=(52, 140, 76),
+    led=(105, 235, 125),
+    led_soft=(190, 252, 200),
+    led_dim=(60, 155, 82),
     led_deep=(28, 76, 38),
     led_ghost=(12, 30, 16),
-    scr_text=(170, 240, 180),
-    scr_text_dim=(90, 160, 100),
-    scr_text_dead=(50, 90, 60),
-    scr_grid=(16, 50, 22),
-    ink_hi=(210, 245, 210),
-    ink_mid=(130, 195, 140),
-    ink_lo=(80, 130, 90),
-    warn_amber=(255, 178, 60),
-    bypass_col=(235, 165, 70),
-    bg_grad=[(0.0, (12, 28, 14)), (0.55, (6, 16, 8)), (1.0, (3, 8, 4))],
-    chassis_inner_fill=(5, 14, 7, 220),
-    panel_header_fill=(8, 22, 12, 255),
-    panel_chain_fill=(7, 18, 10, 255),
-    panel_fx_fill=(7, 20, 11, 255),
-    header_chip_fill=(6, 16, 9, 255),
-    fx_chip_fill=(4, 10, 6, 255),
-    chain_on_fill=(10, 46, 18, 255),
-    chain_off_fill=(10, 22, 14, 255),
-    chain_off_outline=(60, 100, 70, 220),
-    chain_off_text=(110, 160, 120, 255),
-    chain_badge_off=(38, 64, 44),
-    bar_bg_fill=(4, 10, 6, 255),
+    scr_text=(160, 238, 172),
+    scr_text_dim=(84, 155, 98),
+    scr_text_dead=(44, 82, 54),
+    scr_grid=(18, 54, 24),
+    ink_hi=(212, 250, 215),
+    ink_mid=(130, 195, 142),
+    ink_lo=(78, 132, 90),
+    warn_amber=(255, 178, 55),
+    bypass_col=(240, 162, 65),
+    bg_grad=[(0.0, (6, 18, 8)), (0.55, (3, 10, 5)), (1.0, (1, 5, 2))],
+    chassis_inner_fill=(4, 12, 6, 228),
+    panel_header_fill=(6, 20, 9, 255),
+    panel_chain_fill=(5, 16, 8, 255),
+    panel_fx_fill=(5, 18, 9, 255),
+    header_chip_fill=(4, 14, 7, 255),
+    fx_chip_fill=(3, 9, 5, 255),
+    chain_on_fill=(8, 46, 16, 255),
+    chain_off_fill=(8, 20, 11, 255),
+    chain_off_outline=(52, 92, 62, 220),
+    chain_off_text=(98, 150, 110, 255),
+    chain_badge_off=(32, 56, 38),
+    bar_bg_fill=(3, 9, 5, 255),
     bar_outline=(0, 0, 0, 255),
-    scanline_rgba=(0, 100, 40, 32),
-    scanline_step=3,
+    scanline_rgba=(0, 78, 26, 62),
+    scanline_step=2,
+    vignette_size=55,
 )
 
 THEMES = {
@@ -362,6 +365,28 @@ def _apply_scanlines_inplace(arr, step, rgba):
     return arr
 
 
+def _apply_vignette_inplace(arr, size):
+    """Linear-falloff edge vignette for CRT look. Pure numpy slice ops.
+
+    Darkens the outermost ``size`` pixels on all 4 borders from black to
+    full brightness. Only O(4 * size * max(H,W)) elements touched -- far
+    cheaper than a full-frame multiply. Returns ``arr`` unchanged when
+    ``size <= 0``.
+    """
+    if size <= 0:
+        return arr
+    H, W = arr.shape[:2]
+    s = min(int(size), H // 3, W // 3)
+    if s <= 0:
+        return arr
+    fade = np.linspace(0.0, 1.0, s, dtype=np.float32)
+    arr[:s] = (arr[:s].astype(np.float32) * fade[:, None, None]).clip(0, 255).astype(np.uint8)
+    arr[H - s:] = (arr[H - s:].astype(np.float32) * fade[::-1, None, None]).clip(0, 255).astype(np.uint8)
+    arr[:, :s] = (arr[:, :s].astype(np.float32) * fade[None, :, None]).clip(0, 255).astype(np.uint8)
+    arr[:, W - s:] = (arr[:, W - s:].astype(np.float32) * fade[None, ::-1, None]).clip(0, 255).astype(np.uint8)
+    return arr
+
+
 # =============================================================================
 # EFFECTS / CONSTANTS
 # =============================================================================
@@ -372,25 +397,25 @@ EFFECTS = ["Noise Sup", "Compressor", "Overdrive", "Distortion",
            "Amp Sim", "Cab IR", "EQ", "Reverb"]
 EFFECTS_SHORT = ["NS", "CMP", "OD", "DIST", "AMP", "CAB", "EQ", "RVB"]
 
-# Per-effect knob assignments (label, default 0..100). Up to 6 are shown
-# in the panel; longer sets (Amp=8, Distortion=6) are truncated to top 6.
+# Per-effect knob assignments (label, default 0..100).
+# Amp Sim has 8 params (4x2 grid); all others have ≤6.
 EFFECT_KNOBS = {
-    "Noise Sup":  [("THRESH", 35),  ("DECAY", 45),   ("DAMP", 80),
-                   ("", 0),         ("", 0),         ("", 0)],
-    "Compressor": [("THRESH", 50),  ("RATIO", 45),   ("RESPONSE", 40),
-                   ("MAKEUP", 55),  ("", 0),         ("", 0)],
-    "Overdrive":  [("DRIVE", 35),   ("TONE", 60),    ("LEVEL", 60),
-                   ("", 0),         ("", 0),         ("", 0)],
-    "Distortion": [("DRIVE", 50),   ("TONE", 55),    ("LEVEL", 35),
-                   ("BIAS", 50),    ("TIGHT", 60),   ("MIX", 100)],
-    "Amp Sim":    [("GAIN", 45),    ("BASS", 55),    ("MID", 60),
-                   ("TREBLE", 50),  ("MASTER", 70),  ("CHAR", 60)],
-    "Cab IR":     [("MIX", 100),    ("LEVEL", 70),   ("MODEL", 33),
-                   ("AIR", 35),     ("", 0),         ("", 0)],
-    "EQ":         [("LOW", 50),     ("MID", 55),     ("HIGH", 55),
-                   ("", 0),         ("", 0),         ("", 0)],
-    "Reverb":     [("DECAY", 30),   ("TONE", 65),    ("MIX", 25),
-                   ("", 0),         ("", 0),         ("", 0)],
+    "Noise Sup":  [("THRESH", 35),  ("DECAY",  45),  ("DAMP",   80)],
+    "Compressor": [("THRESH", 50),  ("RATIO",  45),  ("RESP",   40),  ("MAKEUP", 55)],
+    "Overdrive":  [("TONE",   60),  ("LEVEL",  60),  ("DRIVE",  35)],
+    "Distortion": [("TONE",   55),  ("LEVEL",  35),  ("DRIVE",  50),
+                   ("BIAS",   50),  ("TIGHT",  60),  ("MIX",   100)],
+    "Amp Sim":    [("GAIN",   45),  ("BASS",   55),  ("MID",    60),  ("TREB",  50),
+                   ("PRES",   50),  ("RES",    50),  ("MSTR",   70),  ("CHAR",  60)],
+    "Cab IR":     [("MIX",   100),  ("LEVEL",  70),  ("MODEL",  33),  ("AIR",   35)],
+    "EQ":         [("LOW",    50),  ("MID",    55),  ("HIGH",   55)],
+    "Reverb":     [("DECAY",  30),  ("TONE",   65),  ("MIX",    25)],
+}
+
+# Pre-computed default knob values for per-effect initialisation.
+_EFFECT_KNOB_DEFAULTS = {
+    name: [float(k[1]) for k in knobs]
+    for name, knobs in EFFECT_KNOBS.items()
 }
 
 # Distortion Pedalboard model names (pedal-mask bit -> name).
@@ -404,7 +429,7 @@ AMP_MODELS = [("JC CLEAN", 10), ("CLEAN COMBO", 35),
               ("BRITISH CRUNCH", 60), ("HIGH GAIN STACK", 85)]
 
 # Cabinet IR model names.
-CAB_MODELS = ["1x12 COMBO", "2x12 BLACK", "4x12 BRITISH", "4x12 V30", "DIRECT DI"]
+CAB_MODELS = ["1x12 OPEN BACK", "2x12 BRITISH", "4x12 CLOSED"]
 
 # 13 Chain Presets (1-click chain swap).
 CHAIN_PRESETS = [
@@ -433,9 +458,10 @@ class AppState:
         [True,  True, False, False, True, True, True, True])
     selected_effect: int  = 4   # Amp Sim
 
-    # parameter knobs (6 per effect, 0..100)
-    knob_values: List[float] = field(default_factory=lambda: [45, 55, 60, 50, 70, 60])
-    selected_knob: int       = 0
+    # per-effect independent knob storage (effect name → list of floats)
+    all_knob_values: dict = field(default_factory=lambda: {
+        name: list(vals) for name, vals in _EFFECT_KNOB_DEFAULTS.items()})
+    selected_knob: int = 0
 
     # model-pick indices for the three model-driven effects
     dist_model_idx: int = 1   # Tube Screamer
@@ -462,8 +488,16 @@ class AppState:
     cpu: int         = 42
 
     def knobs(self) -> List[Tuple[str, float]]:
-        labels = [k[0] for k in EFFECT_KNOBS[EFFECTS[self.selected_effect]]]
-        return list(zip(labels, self.knob_values))
+        name = EFFECTS[self.selected_effect]
+        spec = EFFECT_KNOBS[name]
+        vals = self.all_knob_values.get(name, [float(k[1]) for k in spec])
+        return [(label, val) for (label, _), val in zip(spec, vals)]
+
+    def set_knob(self, knob_idx: int, value: float) -> None:
+        name = EFFECTS[self.selected_effect]
+        vals = self.all_knob_values.get(name)
+        if vals is not None and 0 <= knob_idx < len(vals):
+            vals[knob_idx] = max(0.0, min(100.0, float(value)))
 
 
 # =============================================================================
@@ -821,7 +855,9 @@ def state_semistatic_signature(state: AppState):
         tuple(bool(v) for v in state.effect_on),
         int(state.selected_effect),
         int(state.selected_knob),
-        tuple(int(round(v)) for v in state.knob_values),
+        tuple(int(round(v))
+              for nm in EFFECTS
+              for v in state.all_knob_values.get(nm, [])),
         getattr(state, "dist_model_idx", None),
         getattr(state, "amp_model_idx", None),
         getattr(state, "cab_model_idx", None),
@@ -1160,12 +1196,13 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
     # Palette-resolved local aliases. These shadow the module-level
     # constants for the body of this function so existing call sites
     # like ``LED + (255,)`` keep working without renames.
-    LED       = palette["LED"]
-    LED_SOFT  = palette["LED_SOFT"]
-    LED_DIM   = palette["LED_DIM"]
-    SCR_TEXT_DIM = palette["SCR_TEXT_DIM"]
-    INK_HI    = palette["INK_HI"]
-    bypass_color = palette["BYPASS_COL"]
+    LED           = palette["LED"]
+    LED_SOFT      = palette["LED_SOFT"]
+    LED_DIM       = palette["LED_DIM"]
+    SCR_TEXT_DIM  = palette["SCR_TEXT_DIM"]
+    SCR_TEXT_DEAD = palette["SCR_TEXT_DEAD"]
+    INK_HI        = palette["INK_HI"]
+    bypass_color  = palette["BYPASS_COL"]
 
     global _ACTIVE_RENDER_CACHE
     prev = _ACTIVE_RENDER_CACHE
@@ -1186,32 +1223,33 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
 
         active_n = sum(1 for v in state.effect_on if v)
         bypassed = active_n == 0
-        status = "SAFE  BYPASS" if bypassed else "ACTIVE"
-        status_col = bypass_color if bypassed else LED
 
         header = boxes["header"]
         hx0, hy0, hx1, hy1 = header
         rounded_rect(d, header, 10, fill=palette["PANEL_HEADER_FILL"],
                      outline=LED + (110,), width=2)
-        draw_text(img, (hx0 + 18, hy0 + 10), "PRESET",
+        draw_text(img, (hx0 + 18, hy0 + 10), "> PRESET",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+        d.line((hx0 + 14, hy0 + 24, hx1 - 14, hy0 + 24),
+               fill=LED + (35,), width=1)
         draw_smooth_text(img, (hx0 + 18, hy0 + 28),
                          state.preset_id, size=44,
                          fill=INK_HI + (255,), letter_spacing=1)
         draw_smooth_text(img, ((hx0 + hx1) // 2, hy0 + 22),
                          state.preset_name.replace("  ", " "),
                          size=36, fill=INK_HI + (255,), anchor="mt")
-        chip_w, chip_h = 158, 34
-        chip = (hx1 - 16 - chip_w, hy0 + 12,
-                hx1 - 16, hy0 + 12 + chip_h)
-        rounded_rect(d, chip, 8, fill=palette["HEADER_CHIP_FILL"],
-                     outline=status_col + (255,), width=2)
-        draw_text(img, ((chip[0] + chip[2]) // 2,
-                        (chip[1] + chip[3]) // 2),
-                  status, fill=status_col + (255,), scale=2,
-                  anchor="mm", letter_spacing=2)
+        if bypassed:
+            chip_w, chip_h = 158, 34
+            chip = (hx1 - 16 - chip_w, hy0 + 12,
+                    hx1 - 16, hy0 + 12 + chip_h)
+            rounded_rect(d, chip, 8, fill=palette["HEADER_CHIP_FILL"],
+                         outline=bypass_color + (255,), width=2)
+            draw_text(img, ((chip[0] + chip[2]) // 2,
+                            (chip[1] + chip[3]) // 2),
+                      "BYPASS", fill=bypass_color + (255,), scale=2,
+                      anchor="mm", letter_spacing=2)
         draw_text(img, (hx1 - 16, hy0 + 54),
-                  "FX  {}/{}".format(active_n, len(EFFECTS)),
+                  "[{}/{}]  FX".format(active_n, len(EFFECTS)),
                   fill=LED + (255,), scale=2, anchor="rt",
                   letter_spacing=2)
 
@@ -1219,12 +1257,10 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         cx0, cy0, cx1, cy1 = chain
         rounded_rect(d, chain, 10, fill=palette["PANEL_CHAIN_FILL"],
                      outline=LED + (90,), width=2)
-        draw_text(img, (cx0 + 16, cy0 + 10), "SIGNAL  CHAIN",
+        draw_text(img, (cx0 + 16, cy0 + 10), "> EFFECT CHAIN",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
-        draw_text(img, (cx1 - 16, cy0 + 10),
-                  "SEL {}".format(EFFECTS_SHORT[state.selected_effect]),
-                  fill=LED + (255,), scale=1, anchor="rt",
-                  letter_spacing=2)
+        d.line((cx0 + 14, cy0 + 26, cx1 - 14, cy0 + 26),
+               fill=LED + (35,), width=1)
         n = max(1, len(EFFECTS))
         gap = 8
         inner_pad = 14
@@ -1249,13 +1285,10 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             rounded_rect(d, (bx0, row_y0, bx1, row_y1), 8,
                          fill=fill, outline=outline,
                          width=3 if selected else 2)
-            draw_text(img, ((bx0 + bx1) // 2, row_y0 + 14),
+            draw_text(img, ((bx0 + bx1) // 2, (row_y0 + row_y1) // 2),
                       EFFECTS_SHORT[eff_idx],
-                      fill=text_col, scale=2, anchor="mt",
+                      fill=text_col, scale=2, anchor="mm",
                       letter_spacing=2)
-            badge_y = row_y1 - 14
-            d.rectangle((bx0 + 10, badge_y, bx1 - 10, badge_y + 6),
-                        fill=(LED if on else palette["CHAIN_BADGE_OFF"]) + (255,))
 
         fx_box = boxes["fx"]
         fx0, fy0, fx1, fy1 = fx_box
@@ -1264,8 +1297,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         selected_name = EFFECTS[state.selected_effect]
         selected_short = EFFECTS_SHORT[state.selected_effect]
         selected_on = bool(state.effect_on[state.selected_effect])
-        # DIST / AMP / CAB carry an additional named model index; the
-        # MODEL row sits between the title and the knob grid.
         model_label = None
         if selected_short == "DIST":
             idx = max(0, min(len(DIST_MODELS) - 1,
@@ -1279,18 +1310,10 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             idx = max(0, min(len(CAB_MODELS) - 1,
                              int(getattr(state, "cab_model_idx", 0) or 0)))
             model_label = CAB_MODELS[idx]
-        title_size = 26 if model_label is not None else 30
-        title_y = fy0 + 24 if model_label is not None else fy0 + 28
-        draw_text(img, (fx0 + 16, fy0 + 10), "SELECTED  FX",
+        draw_text(img, (fx0 + 16, fy0 + 10), "> FX MODULE",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
-        draw_smooth_text(img, (fx0 + 16, title_y),
-                         selected_name.upper(), size=title_size,
-                         fill=LED + (255,))
-        if model_label is not None:
-            draw_text(img, (fx0 + 16, fy0 + 52),
-                      "MODEL  {}".format(model_label),
-                      fill=SCR_TEXT_DIM + (255,), scale=1,
-                      letter_spacing=2)
+        d.line((fx0 + 14, fy0 + 24, fx1 - 14, fy0 + 24),
+               fill=LED + (35,), width=1)
         s_chip_w, s_chip_h = 110, 30
         s_chip = (fx1 - 16 - s_chip_w, fy0 + 18,
                   fx1 - 16, fy0 + 18 + s_chip_h)
@@ -1302,6 +1325,45 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   "ON" if selected_on else "BYPASS",
                   fill=s_col + (255,), scale=2, anchor="mm",
                   letter_spacing=2)
+        draw_smooth_text(img, (fx0 + 16, fy0 + 28),
+                         selected_name.upper(), size=30,
+                         fill=LED + (255,))
+        if model_label is not None:
+            dd_y0 = fy0 + 36
+            dd_y1 = fy0 + 66
+            _full_x0 = fx0 + 250
+            _full_x1 = s_chip[0] - 8
+            _shrink = (_full_x1 - _full_x0) * 15 // 100  # 15% off each side = 30% total
+            dd_x0 = _full_x0 + _shrink
+            dd_x1 = _full_x1 - _shrink
+            arr_w = 22
+            rounded_rect(d, (dd_x0, dd_y0, dd_x1, dd_y1), 4,
+                         fill=palette["FX_CHIP_FILL"],
+                         outline=LED_DIM + (255,), width=1)
+            d.rectangle((dd_x0 + 1, dd_y0 + 1, dd_x0 + arr_w - 1, dd_y1 - 1),
+                         fill=palette["LED_DEEP"] + (255,))
+            d.rectangle((dd_x1 - arr_w + 1, dd_y0 + 1, dd_x1 - 1, dd_y1 - 1),
+                         fill=palette["LED_DEEP"] + (255,))
+            draw_text(img, (dd_x0 + arr_w // 2, (dd_y0 + dd_y1) // 2),
+                      "<", fill=LED + (255,), scale=1, anchor="mm")
+            draw_text(img, (dd_x1 - arr_w // 2, (dd_y0 + dd_y1) // 2),
+                      ">", fill=LED + (255,), scale=1, anchor="mm")
+            # Model label: use anti-aliased TTF and pick the largest size
+            # that still fits inside the chip's safe area (avoid clashing
+            # with the left/right arrow zones).
+            _model_max_w = max(8, (dd_x1 - dd_x0) - 2 * arr_w - 10)
+            _model_max_h = max(8, (dd_y1 - dd_y0) - 4)
+            _model_size = 14
+            for _trial in (22, 20, 18, 16, 14):
+                _f = _smooth_font(_trial)
+                _tw, _th = _measure(model_label, _f)
+                if _tw <= _model_max_w and _th <= _model_max_h:
+                    _model_size = _trial
+                    break
+            draw_smooth_text(img, ((dd_x0 + dd_x1) // 2,
+                                    (dd_y0 + dd_y1) // 2),
+                             model_label, size=_model_size,
+                             fill=LED + (255,), anchor="mm")
         knobs = [k for k in state.knobs() if k[0]]
         n_knobs = len(knobs)
         # Grid layout per effect (knob count -> cols, rows):
@@ -1312,14 +1374,16 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             cols, rows = max(1, n_knobs), 1
         elif n_knobs == 4:
             cols, rows = 2, 2
-        else:
+        elif n_knobs <= 6:
             cols, rows = 3, 2
+        else:
+            cols, rows = 4, 2
 
         grid_x0 = fx0 + 20
         grid_x1 = fx1 - 20
-        grid_y0 = fy0 + 64
+        grid_y0 = fy0 + 72 if model_label is not None else fy0 + 64
         grid_y1 = fy1 - 14
-        col_gap = 28
+        col_gap = 16 if cols == 4 else 28
         row_gap = 14
         col_w = (grid_x1 - grid_x0 - col_gap * (cols - 1)) // cols
         row_h = (grid_y1 - grid_y0 - row_gap * (rows - 1)) // rows
@@ -1342,11 +1406,13 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                       "{:>3}".format(int(value)),
                       fill=LED + (255,), scale=2, anchor="rt",
                       letter_spacing=1)
+            # Pip-Boy dot separator between label and value
+            dot_y = label_y + 7
+            dot_x0 = cx0 + (68 if cols == 4 else 92)
+            for dx in range(dot_x0, cx1 - 36, 4 if cols == 4 else 5):
+                d.rectangle((dx, dot_y, dx + 1, dot_y + 1),
+                             fill=SCR_TEXT_DEAD + (255,))
 
-            # `draw_text` with the bundled PIL font inserts ~8 px of top
-            # padding inside its scratch image and a scale=2 glyph is
-            # ~16 px tall, so reserve ~30 px below `label_y` before the
-            # bar starts in the 1-row layout.
             text_block_h = 30
             if rows == 1:
                 bar_y0 = label_y + text_block_h
@@ -1355,15 +1421,20 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             bar_y1 = bar_y0 + bar_h
             bar_x0 = cx0
             bar_x1 = cx1
-            rounded_rect(d, (bar_x0, bar_y0, bar_x1, bar_y1), 4,
-                         fill=palette["BAR_BG_FILL"],
-                         outline=palette["BAR_OUTLINE"], width=1)
             v_clamp = max(0.0, min(1.0, value / 100.0))
-            fill_w = int((bar_x1 - bar_x0 - 2) * v_clamp)
-            if fill_w > 0:
-                d.rectangle((bar_x0 + 1, bar_y0 + 1,
-                             bar_x0 + fill_w, bar_y1 - 1),
-                            fill=(LED if is_sel else LED_DIM) + (255,))
+            # Pip-Boy segmented progress bar
+            n_seg = 14
+            s_gap = 2
+            s_w = max(1, (bar_x1 - bar_x0 - 2 - s_gap * (n_seg - 1)) // n_seg)
+            lit_segs = int(round(v_clamp * n_seg))
+            d.rectangle((bar_x0, bar_y0, bar_x1, bar_y1),
+                        fill=palette["BAR_BG_FILL"])
+            for si in range(n_seg):
+                sx0 = bar_x0 + 1 + si * (s_w + s_gap)
+                sx1 = sx0 + s_w
+                if si < lit_segs:
+                    d.rectangle((sx0, bar_y0 + 1, sx1, bar_y1 - 1),
+                                fill=(LED if is_sel else LED_DIM) + (255,))
 
         # Corner canvas markers + variant label.
         marker = LED + (255,)
@@ -1383,9 +1454,9 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         draw_text(img, (Wv - 8, Hv - 8), "BR", fill=marker, scale=1,
                   anchor="rb", letter_spacing=1)
 
-        label_text = "v=compact-v2"
+        label_text = "DOY-FX  //  AUDIO.LAB  //  v2"
         if placement_label:
-            label_text = "v=compact-v2  " + str(placement_label)
+            label_text = "DOY-FX  //  AUDIO.LAB  //  " + str(placement_label)
         draw_text(img, (Wv // 2, Hv - 4), label_text,
                   fill=LED_SOFT + (255,), scale=1, anchor="mb",
                   letter_spacing=2)
@@ -1398,6 +1469,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         _apply_scanlines_inplace(arr,
                                  palette.get("SCANLINE_STEP", 0),
                                  palette.get("SCANLINE_RGBA"))
+        _apply_vignette_inplace(arr, palette.get("VIGNETTE_SIZE", 0))
         cache.put_frame(key, arr)
         cache.stats["frame_misses"] += 1
         return arr
@@ -1464,7 +1536,7 @@ STATE_FILE = "fx_gui_state.json"
 
 _STATE_KEYS = ("preset_id", "preset_name", "preset_idx",
                "selected_effect", "selected_knob",
-               "effect_on", "knob_values", "chain", "display_mode",
+               "effect_on", "all_knob_values", "chain", "display_mode",
                "dist_model_idx", "amp_model_idx", "cab_model_idx",
                "fs_states", "fs_selected")
 
@@ -1478,6 +1550,105 @@ def save_state_json(state: AppState, path: str = STATE_FILE) -> None:
         print(f"[state] save failed: {exc}")
 
 
+def hit_test_compact_v2(x: int, y: int, state: AppState,
+                         width: int = 800, height: int = 480):
+    """Map a pixel coordinate (logical 800x480) to a GUI action.
+
+    Returns one of:
+        ('select_effect',    eff_idx)          left-click on chain block
+        ('toggle_effect',    eff_idx)          right-click on chain block
+        ('toggle_selected_fx', None)           click on FX on/bypass chip
+        ('select_knob',      knob_idx)         click on knob label area
+        ('set_knob',         (knob_idx, val))  click / drag on knob bar
+        None                                   no hit
+    """
+    boxes = compact_v2_panel_boxes(width, height)
+
+    # Chain blocks
+    cx0, cy0, cx1, cy1 = boxes["chain"]
+    n = max(1, len(EFFECTS))
+    gap = 8
+    inner_pad = 14
+    row_y0 = cy0 + 36
+    row_y1 = cy1 - 14
+    avail_w = (cx1 - cx0) - inner_pad * 2
+    cell_w = int((avail_w - gap * (n - 1)) / n)
+    if row_y0 <= y <= row_y1:
+        for pos in range(n):
+            bx0 = cx0 + inner_pad + pos * (cell_w + gap)
+            bx1 = bx0 + cell_w
+            if bx0 <= x <= bx1:
+                eff_idx = state.chain[pos] if pos < len(state.chain) else pos
+                return ('select_effect', eff_idx)
+
+    # FX panel
+    fx0, fy0, fx1, fy1 = boxes["fx"]
+
+    # FX on/bypass chip
+    s_chip_w, s_chip_h = 110, 30
+    if (fx1 - 16 - s_chip_w <= x <= fx1 - 16 and
+            fy0 + 18 <= y <= fy0 + 18 + s_chip_h):
+        return ('toggle_selected_fx', None)
+
+    # Model dropdown (DIST, AMP, CAB only)
+    selected_short = EFFECTS_SHORT[state.selected_effect]
+    has_model = selected_short in ("DIST", "AMP", "CAB")
+    if has_model:
+        dd_y0 = fy0 + 36
+        dd_y1 = fy0 + 66
+        _full_x0 = fx0 + 250
+        _full_x1 = fx1 - 16 - 110 - 8
+        _shrink = (_full_x1 - _full_x0) * 15 // 100
+        dd_x0 = _full_x0 + _shrink
+        dd_x1 = _full_x1 - _shrink
+        arr_w = 22
+        if dd_y0 <= y <= dd_y1:
+            if dd_x0 <= x <= dd_x0 + arr_w:
+                return ('prev_model', None)
+            if dd_x1 - arr_w <= x <= dd_x1:
+                return ('next_model', None)
+
+    # Knob grid
+    knobs = state.knobs()
+    n_knobs = len(knobs)
+    if n_knobs == 0:
+        return None
+    if n_knobs <= 3:
+        cols, rows = n_knobs, 1
+    elif n_knobs == 4:
+        cols, rows = 2, 2
+    elif n_knobs <= 6:
+        cols, rows = 3, 2
+    else:
+        cols, rows = 4, 2
+    col_gap = 16 if cols == 4 else 28
+    row_gap = 14
+    grid_x0 = fx0 + 20
+    grid_x1 = fx1 - 20
+    grid_y0 = fy0 + 72 if has_model else fy0 + 64
+    grid_y1 = fy1 - 14
+    col_w = (grid_x1 - grid_x0 - col_gap * (cols - 1)) // cols
+    row_h = (grid_y1 - grid_y0 - row_gap * (rows - 1)) // rows
+    bar_h = 12
+    text_block_h = 30
+    if grid_y0 <= y <= grid_y1:
+        for i in range(n_knobs):
+            col_i = i % cols
+            row_i = i // cols
+            cxx0 = grid_x0 + col_i * (col_w + col_gap)
+            cxx1 = cxx0 + col_w
+            cyy0r = grid_y0 + row_i * (row_h + row_gap)
+            cyy1r = cyy0r + row_h
+            bar_y0 = (cyy0r + 4 + text_block_h) if rows == 1 else (cyy1r - bar_h)
+            bar_y1 = bar_y0 + bar_h
+            if cxx0 <= x <= cxx1 and cyy0r <= y <= bar_y1:
+                if bar_y0 <= y <= bar_y1:
+                    rel = max(0.0, min(1.0, (x - cxx0) / max(1, cxx1 - cxx0)))
+                    return ('set_knob', (i, rel * 100.0))
+                return ('select_knob', i)
+    return None
+
+
 def load_state_json(path: str = STATE_FILE) -> AppState:
     state = AppState()
     if not os.path.exists(path):
@@ -1488,17 +1659,24 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
         for k in _STATE_KEYS:
             if k in data:
                 setattr(state, k, data[k])
-        # sanity: list lengths
+        # sanity: list / dict lengths
         if len(state.effect_on) != len(EFFECTS):
             state.effect_on = [True] * len(EFFECTS)
-        if len(state.knob_values) != 6:
-            state.knob_values = [k[1] for k in
-                                 EFFECT_KNOBS[EFFECTS[state.selected_effect]]]
+        for _nm in EFFECTS:
+            _expected = len(EFFECT_KNOBS.get(_nm, []))
+            if (not isinstance(state.all_knob_values, dict) or
+                    _nm not in state.all_knob_values or
+                    len(state.all_knob_values[_nm]) != _expected):
+                if not isinstance(state.all_knob_values, dict):
+                    state.all_knob_values = {}
+                state.all_knob_values[_nm] = [float(k[1]) for k in EFFECT_KNOBS[_nm]]
         if len(state.chain) != len(EFFECTS):
             state.chain = list(range(len(EFFECTS)))
         state.selected_effect = max(0, min(len(EFFECTS) - 1,
                                            state.selected_effect))
-        state.selected_knob = max(0, min(5, state.selected_knob))
+        _n_knobs = len(EFFECT_KNOBS.get(EFFECTS[state.selected_effect], []))
+        state.selected_knob = max(0, min(max(0, _n_knobs - 1),
+                                         state.selected_knob))
     except Exception as exc:
         print(f"[state] load failed ({exc}); using defaults")
         state = AppState()

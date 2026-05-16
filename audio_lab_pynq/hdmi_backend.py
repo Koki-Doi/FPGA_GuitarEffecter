@@ -1,13 +1,16 @@
 """Minimal HDMI framebuffer back end for the Phase 4 integrated AudioLab
-overlay.
+overlay (Phase 6I VESA SVGA 800x600 baseline — see ``DECISIONS.md`` D25).
 
 Single-purpose role: take an RGB888 ``numpy.ndarray`` from
-``GUI.pynq_multi_fx_gui.render_frame_800x480_compact_v2`` (or the native
-1280x720 path used by the diagnostic scripts) and scan it out to HDMI
-through the integrated ``axi_vdma_hdmi`` / ``v_tc_hdmi`` /
-``v_axi4s_vid_out_hdmi`` / ``rgb2dvi_hdmi`` block in ``audio_lab.bit``.
-The DDR framebuffer is 24-bit packed GBR888 because Digilent ``rgb2dvi``
-maps ``vid_pData`` as ``[23:16]=R``, ``[15:8]=B``, ``[7:0]=G``.
+``GUI.pynq_multi_fx_gui.render_frame_800x480_compact_v2`` (or any other
+RGB ndarray that fits inside the ``DEFAULT_WIDTH`` x ``DEFAULT_HEIGHT``
+framebuffer) and scan it out to HDMI through the integrated
+``axi_vdma_hdmi`` / ``v_tc_hdmi`` / ``v_axi4s_vid_out_hdmi`` /
+``rgb2dvi_hdmi`` block in ``audio_lab.bit``. The DDR framebuffer is
+24-bit packed GBR888 because Digilent ``rgb2dvi`` maps ``vid_pData`` as
+``[23:16]=R``, ``[15:8]=B``, ``[7:0]=G``. The defaults are 800x600 to
+match the Phase 6I VESA SVGA HDMI signal; the compact-v2 800x480 GUI
+composes at framebuffer (0, 0) and the bottom 120 rows stay black.
 
 The back end intentionally does NOT:
 
@@ -18,19 +21,22 @@ The back end intentionally does NOT:
 - depend on the unused ``axi_dma_0`` audio capture path
 - write to any audio-side AXI GPIO
 
-Public API:
+Public API (Phase 6I SVGA 800x600 baseline):
 
     backend = AudioLabHdmiBackend(overlay)
-    backend.start(rgb_frame)        # one-shot static frame
-    backend.write_frame(rgb_frame)  # overwrite the framebuffer
-    backend.write_frame(rgb_frame, fit_mode="fit-90")
-    backend.write_frame(rgb_800x480, placement="center")
-    backend.write_frame(rgb_800x480, placement="manual", offset_x=0, offset_y=0)
-    backend.status()                # debug dict
+    # Compose the 800x480 compact-v2 GUI at framebuffer (0, 0); the
+    # bottom 120 rows of the 800x600 framebuffer stay black.
+    backend.start(rgb_800x480, placement="manual", offset_x=0, offset_y=0)
+    # In-place refresh with a new 800x480 frame.
+    backend.write_logical_frame(rgb_800x480, placement="manual",
+                                offset_x=0, offset_y=0)
+    backend.status()                # debug dict (VDMA / VTC state)
+    backend.errors()                # DMASR error-bit decode
     backend.stop()
 """
 from __future__ import print_function
 
+import os
 import time
 
 import numpy as np
@@ -78,19 +84,10 @@ VTC_CTL_GENERATION_ENABLE    = 1 << 2
 VTC_CTL_DETECTION_ENABLE     = 1 << 3
 # Bit 5 = FSync enable, bit 6 = SyncEnable. We do not use FSync inputs.
 
-DEFAULT_WIDTH                = 1280
-DEFAULT_HEIGHT               = 720
+DEFAULT_WIDTH                = 800
+DEFAULT_HEIGHT               = 600
 DEFAULT_BYTES_PER_PIXEL      = 3
 DEFAULT_NUM_FSTORES          = 3
-
-FIT_MODE_SCALES = {
-    "native": 1.00,
-    "fit-97": 0.97,
-    "fit-95": 0.95,
-    "fit-90": 0.90,
-    "fit-85": 0.85,
-    "fit-80": 0.80,
-}
 
 
 class HdmiNotIntegratedError(RuntimeError):
@@ -147,77 +144,35 @@ def _allocate_framebuffer(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                               cacheable=False)
 
 
-def fit_mode_scale(fit_mode="native", scale=None):
-    """Resolve a named HDMI LCD fit mode to a numeric scale."""
-    if scale is not None:
-        value = float(scale)
-    else:
-        try:
-            value = FIT_MODE_SCALES[str(fit_mode)]
-        except KeyError:
-            raise ValueError(
-                "unknown fit_mode {!r}; expected one of {}".format(
-                    fit_mode, sorted(FIT_MODE_SCALES)))
-    if value <= 0.0 or value > 1.0:
-        raise ValueError("HDMI fit scale must be > 0.0 and <= 1.0; got {}".format(value))
-    return value
+def compose_native_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+                         background=(0, 0, 0)):
+    """Return the input frame unchanged when it already matches the framebuffer.
 
-
-def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
-                      width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-                      background=(0, 0, 0)):
-    """Return a 1280x720 RGB frame after optional LCD overscan fitting.
-
-    ``native`` returns the input ndarray and records zero offset. Other modes
-    resize the input with Pillow's old-version-compatible constants and paste
-    it onto a black RGB888 canvas. The framebuffer dimensions and VDMA
-    programming stay unchanged.
+    The Phase 6I path always feeds an 800x480 compact-v2 GUI through
+    ``compose_logical_frame`` at framebuffer ``(0, 0)``. This helper exists
+    so callers that pass an exact framebuffer-sized frame
+    (``DEFAULT_WIDTH`` x ``DEFAULT_HEIGHT`` = 800x600) skip the logical
+    placement path entirely and get a zero-copy meta dict back.
     """
     arr = np.asarray(rgb_frame)
     if arr.shape != (int(height), int(width), 3) or arr.dtype != np.uint8:
         raise ValueError(
             "rgb_frame must be ({},{},3) uint8 RGB; got shape={}, dtype={}"
             .format(int(height), int(width), arr.shape, arr.dtype))
-
-    requested_mode = str(fit_mode)
-    resolved_scale = fit_mode_scale(requested_mode, scale=scale)
-    scaled_w = max(1, int(round(int(width) * resolved_scale)))
-    scaled_h = max(1, int(round(int(height) * resolved_scale)))
-    offset_x = (int(width) - scaled_w) // 2
-    offset_y = (int(height) - scaled_h) // 2
     meta = {
-        "fit_mode": requested_mode,
-        "scale": resolved_scale,
+        "fit_mode": "native",
+        "scale": 1.0,
         "input_width": int(width),
         "input_height": int(height),
-        "scaled_width": scaled_w,
-        "scaled_height": scaled_h,
-        "offset_x": offset_x,
-        "offset_y": offset_y,
+        "scaled_width": int(width),
+        "scaled_height": int(height),
+        "offset_x": 0,
+        "offset_y": 0,
         "background_rgb": tuple(int(v) for v in background),
         "resize_compose_s": 0.0,
-        "native_passthrough": bool(resolved_scale == 1.0),
+        "native_passthrough": True,
     }
-    if resolved_scale == 1.0:
-        return arr, meta
-
-    t0 = time.time()
-    try:
-        from PIL import Image
-    except Exception as exc:
-        raise RuntimeError("Pillow is required for HDMI fit modes: {}".format(exc))
-
-    canvas = np.empty((int(height), int(width), 3), dtype=np.uint8)
-    canvas[:, :, 0] = int(background[0]) & 0xFF
-    canvas[:, :, 1] = int(background[1]) & 0xFF
-    canvas[:, :, 2] = int(background[2]) & 0xFF
-
-    pil = Image.fromarray(arr, "RGB")
-    resized = pil.resize((scaled_w, scaled_h), Image.BILINEAR)
-    canvas[offset_y:offset_y + scaled_h,
-           offset_x:offset_x + scaled_w, :] = np.asarray(resized, dtype=np.uint8)
-    meta["resize_compose_s"] = time.time() - t0
-    return canvas, meta
+    return arr, meta
 
 
 def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
@@ -290,6 +245,18 @@ def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
         "scaled_height": in_h,
         "offset_x": req_x0,
         "offset_y": req_y0,
+        "dst_x0": dst_x0,
+        "dst_y0": dst_y0,
+        "dst_x1": dst_x1,
+        "dst_y1": dst_y1,
+        "dst_width": copied_w,
+        "dst_height": copied_h,
+        "src_x0": src_x0,
+        "src_y0": src_y0,
+        "src_x1": src_x1,
+        "src_y1": src_y1,
+        "src_width": copied_w,
+        "src_height": copied_h,
         "placement": placement,
         "background_rgb": tuple(int(v) for v in background),
         "resize_compose_s": compose_s,
@@ -413,8 +380,9 @@ class AudioLabHdmiBackend(object):
 
     # ---- VTC bring-up ---------------------------------------------------
     def _start_vtc(self):
-        # Soft reset, then enable generator + register update. The 1280x720@60
-        # timing was baked in at IP gen time, so this just turns it on.
+        # Soft reset, then enable generator + register update. The HDMI
+        # timing (Phase 6I VESA SVGA 800x600 @ 60 Hz, 40 MHz pixel clock)
+        # was baked in at IP gen time, so this just turns it on.
         self._vtc_write(VTC_CTL, VTC_CTL_SW_RESET)
         time.sleep(0.001)
         # Clear pending interrupt latches.
@@ -424,8 +392,7 @@ class AudioLabHdmiBackend(object):
                         VTC_CTL_GENERATION_ENABLE | VTC_CTL_REG_UPDATE)
 
     # ---- public API -----------------------------------------------------
-    def start(self, rgb_frame=None, fit_mode="native", scale=None,
-              background=(0, 0, 0), placement="center",
+    def start(self, rgb_frame=None, background=(0, 0, 0), placement="center",
               offset_x=None, offset_y=None):
         """Allocate a framebuffer, fill it from ``rgb_frame`` (or black if
         None), program VDMA and VTC, and return the framebuffer ndarray.
@@ -440,8 +407,8 @@ class AudioLabHdmiBackend(object):
         if rgb_frame is None:
             self._framebuffer[...] = 0
             self._last_frame_write = {
-                "fit_mode": str(fit_mode),
-                "scale": fit_mode_scale(fit_mode, scale=scale),
+                "fit_mode": "native",
+                "scale": 1.0,
                 "input_width": self.width,
                 "input_height": self.height,
                 "scaled_width": self.width,
@@ -457,8 +424,8 @@ class AudioLabHdmiBackend(object):
                 "logical_placement": False,
             }
         else:
-            self.write_frame(rgb_frame, fit_mode=fit_mode, scale=scale,
-                             background=background, placement=placement,
+            self.write_frame(rgb_frame, background=background,
+                             placement=placement,
                              offset_x=offset_x, offset_y=offset_y)
 
         phys = int(self._framebuffer.physical_address)
@@ -467,25 +434,31 @@ class AudioLabHdmiBackend(object):
         self._started = True
         return self._framebuffer
 
-    def write_frame(self, rgb_frame, fit_mode="native", scale=None,
-                    background=(0, 0, 0), placement="center",
+    def write_frame(self, rgb_frame, background=(0, 0, 0), placement="center",
                     offset_x=None, offset_y=None):
-        """Overwrite the framebuffer in place with a new RGB888 ndarray."""
+        """Overwrite the framebuffer in place with a new RGB888 ndarray.
+
+        Two paths:
+        - ``rgb_frame`` matches the framebuffer dimensions exactly
+          (``DEFAULT_WIDTH`` x ``DEFAULT_HEIGHT`` = 800x600 on the
+          Phase 6I baseline): zero-copy native passthrough.
+        - Otherwise: ``compose_logical_frame`` places the (smaller)
+          frame inside the framebuffer at ``placement`` / ``offset_x``
+          / ``offset_y``. The Phase 6I runtime uses
+          ``placement="manual"`` with ``offset_x=offset_y=0`` to pin
+          the 800x480 GUI to the top-left of the 800x600 framebuffer.
+        """
         if self._framebuffer is None:
             raise RuntimeError("HDMI back end has not been started yet")
         arr = np.asarray(rgb_frame)
         if arr.shape == (self.height, self.width, 3):
-            fitted, meta = compose_fit_frame(
-                arr, fit_mode=fit_mode, scale=scale, width=self.width,
-                height=self.height, background=background)
+            fitted, meta = compose_native_frame(
+                arr, width=self.width, height=self.height,
+                background=background)
             meta["placement"] = str(placement)
             meta["compose_s"] = meta.get("resize_compose_s", 0.0)
             meta["logical_placement"] = False
         else:
-            if str(fit_mode) != "native" or scale is not None:
-                raise ValueError(
-                    "fit_mode/scale are only for native 1280x720 frames; "
-                    "logical frames use placement")
             fitted, meta = compose_logical_frame(
                 arr, width=self.width, height=self.height,
                 placement=placement, offset_x=offset_x, offset_y=offset_y,
@@ -513,7 +486,7 @@ class AudioLabHdmiBackend(object):
         # The renderer gives RGB byte order. The VDMA emits byte 0 on
         # TDATA[7:0], byte 1 on TDATA[15:8], and byte 2 on TDATA[23:16].
         # Digilent rgb2dvi expects that bus as G, B, R respectively.
-        # Three direct slice copies avoid a temporary 720p swizzle buffer.
+        # Three direct slice copies avoid a temporary swizzle buffer.
         self._framebuffer[:, :, 0] = arr[:, :, 1]  # G -> vid_pData[7:0]
         self._framebuffer[:, :, 1] = arr[:, :, 2]  # B -> vid_pData[15:8]
         self._framebuffer[:, :, 2] = arr[:, :, 0]  # R -> vid_pData[23:16]
@@ -588,8 +561,6 @@ __all__ = [
     "DEFAULT_WIDTH",
     "DEFAULT_HEIGHT",
     "DEFAULT_BYTES_PER_PIXEL",
-    "FIT_MODE_SCALES",
-    "fit_mode_scale",
-    "compose_fit_frame",
+    "compose_native_frame",
     "compose_logical_frame",
 ]

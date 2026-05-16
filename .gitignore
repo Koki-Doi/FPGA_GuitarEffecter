@@ -4,8 +4,10 @@ hw/Pynq-Z2/bitstreams
 .Xil
 vivado.jou
 vivado.log
+build_logs/
 
 *.log
+*.jou
 *.htm
 
 .ipynb_checkpoints

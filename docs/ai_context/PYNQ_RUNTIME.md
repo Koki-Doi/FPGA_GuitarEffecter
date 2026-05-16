@@ -49,8 +49,14 @@ The live HDMI GUI uses the integrated AudioLab overlay. Load
 `Overlay("base.bit")`, do not call `run_pynq_hdmi()`, and do not load a
 second overlay after AudioLab.
 
-For the 5-inch 800x480 LCD, the standard Phase 5C viewport is the
-top-left `800x480` region of the fixed 1280x720 framebuffer:
+For the 5-inch 800x480 LCD, the Phase 6I (`DECISIONS.md` D25) baseline
+is VESA SVGA `800x600 @ 60 Hz / 40 MHz` and the compact-v2 800x480 GUI
+composes at framebuffer `(0,0)` (visible rows `0..479`; the bottom
+120 rows of the `800x600` framebuffer stay black). The simplest live
+check is `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb` (one cell;
+attaches with `download=False` when the bit is already loaded so the
+rgb2dvi PLL at the `800 MHz` VCO lower edge is not disturbed); the
+script equivalent is:
 
 ```sh
 ssh xilinx@192.168.1.9 '
@@ -62,9 +68,13 @@ ssh xilinx@192.168.1.9 '
 '
 ```
 
-Expected healthy status remains `DMASR=0x00011000`, VDMA error bits all
-false, VDMA HSIZE/STRIDE/VSIZE `3840/3840/720`, and
-`vtc_ctl=0x00000006`.
+Expected healthy status: VDMA error bits all false, VDMA
+`HSIZE/STRIDE/VSIZE = 2400/2400/600` (Phase 6I C2 SVGA framebuffer;
+on the older Phase 4 720p bit it was `3840/3840/720`), `vtc_ctl =
+0x00000006`, and `v_tc_hdmi GEN_ACTSZ (0x60) = 0x02580320` (V=600 /
+H=800). If `GEN_ACTSZ` reads anything else, one of the five bit
+copies on the PYNQ is stale — see `BUILD_AND_DEPLOY.md` for the full
+list and `sudo cp` recipe.
 
 ## Filesystem layout on the board
 

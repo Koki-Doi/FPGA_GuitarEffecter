@@ -110,6 +110,11 @@ else
     warn "passwordless sudo not available; will install to user site instead"
     HAS_PWLESS_SUDO=0
 fi
+if [[ "$HAS_PWLESS_SUDO" -eq 1 ]]; then
+    SUDO_PREFIX="sudo -n"
+else
+    SUDO_PREFIX=""
+fi
 
 # --- 3. Stage payload ----------------------------------------------------
 
@@ -127,13 +132,12 @@ cp "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.hwh" \
    "$STAGE_DIR/audio_lab_pynq/bitstreams/"
 
 mkdir -p "$STAGE_DIR/scripts"
-cp "$REPO_ROOT/scripts/audio_diagnostics.py" "$STAGE_DIR/scripts/"
-[[ -f "$REPO_ROOT/scripts/test_hdmi_static_frame.py" ]] && \
-    cp "$REPO_ROOT/scripts/test_hdmi_static_frame.py" "$STAGE_DIR/scripts/"
+find "$REPO_ROOT/scripts" -maxdepth 1 -type f -name '*.py' -print0 \
+    | xargs -0 -I{} cp "{}" "$STAGE_DIR/scripts/"
 
 mkdir -p "$STAGE_DIR/GUI"
-cp "$REPO_ROOT/GUI/pynq_multi_fx_gui.py" "$STAGE_DIR/GUI/"
-cp "$REPO_ROOT/GUI/audio_lab_gui_bridge.py" "$STAGE_DIR/GUI/"
+find "$REPO_ROOT/GUI" -maxdepth 1 -type f -name '*.py' -print0 \
+    | xargs -0 -I{} cp "{}" "$STAGE_DIR/GUI/"
 
 # Mirror the hw/ shape that setup.py expects for first-time pip install.
 mkdir -p "$STAGE_DIR/hw/Pynq-Z2/bitstreams"
@@ -173,6 +177,27 @@ else
     fi
 fi
 
+# --- 5.5 Mirror bit/hwh into pynq/overlays/audio_lab/ --------------------
+#
+# `AudioLabOverlay` resolves its default bitfile next to the
+# `audio_lab_pynq` package that PYTHONPATH happens to pick up, but
+# `pynq.Overlay("audio_lab")` (bare name) — and some user scripts
+# we cannot enumerate — resolve through pynq's overlays registry at
+# `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`.
+# Without this step that copy stays at whatever was loaded last and
+# users get the old `1280x720` or `Phase 6H` bit instead of the
+# current Phase 6I SVGA build. See DECISIONS.md D25 and memory
+# `pynq-site-packages-bit-cache`.
+log "mirroring bit/hwh into pynq/overlays/audio_lab/ for the overlays registry"
+ssh_remote "
+    set -e
+    OVERLAYS_DIR=\$(python3 -c 'import pynq, os; print(os.path.join(os.path.dirname(pynq.__file__), \"overlays\", \"audio_lab\"))')
+    $SUDO_PREFIX mkdir -p \"\$OVERLAYS_DIR\"
+    $SUDO_PREFIX cp '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams/audio_lab.bit' \"\$OVERLAYS_DIR/audio_lab.bit\"
+    $SUDO_PREFIX cp '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams/audio_lab.hwh' \"\$OVERLAYS_DIR/audio_lab.hwh\"
+    echo \"  overlays registry: \$OVERLAYS_DIR\"
+"
+
 # --- 6. Import sanity check ----------------------------------------------
 
 log "verifying imports on PYNQ"
@@ -207,10 +232,6 @@ PY'
 # --- 7. Install notebooks via the package's own helper -------------------
 
 log "installing notebooks under $PYNQ_NB_DIR/audio_lab"
-SUDO_PREFIX=""
-if [[ "$HAS_PWLESS_SUDO" -eq 1 ]]; then
-    SUDO_PREFIX="sudo -n"
-fi
 ssh_remote "
     set -e
     $SUDO_PREFIX mkdir -p '$PYNQ_NB_DIR'
@@ -235,9 +256,9 @@ Deploy complete.
   Notebooks dir      $PYNQ_NB_DIR/audio_lab/
   Repo on PYNQ       $PYNQ_REPO_DIR/
   Diagnostic CLI     ssh ${SSH_TARGET} \\
-                     'sudo python3 ${PYNQ_REPO_DIR}/scripts/audio_diagnostics.py --help'
-  HDMI static test   ssh ${SSH_TARGET} \\
-                     'sudo env PYTHONPATH=${PYNQ_REPO_DIR} python3 ${PYNQ_REPO_DIR}/scripts/test_hdmi_static_frame.py'
+                     'sudo env PYTHONPATH=${PYNQ_REPO_DIR} python3 ${PYNQ_REPO_DIR}/scripts/audio_diagnostics.py --help'
+  HDMI 800x480 test  ssh ${SSH_TARGET} \\
+                     'cd ${PYNQ_REPO_DIR} && sudo env PYTHONPATH=${PYNQ_REPO_DIR} python3 scripts/test_hdmi_800x480_frame.py'
 
 Quick smoke test (run on the board):
   ssh ${SSH_TARGET} 'sudo python3 -c "

@@ -52,10 +52,34 @@ The current load-bearing facts:
   `audio_lab.bit`. Live HDMI uses `AudioLabOverlay()` plus
   `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend`; it must not load
   `Overlay("base.bit")` or call `GUI/pynq_multi_fx_gui.py::run_pynq_hdmi()`.
-  For the 5-inch 800x480 LCD, Phase 5C adopts the fixed 1280x720 HDMI
-  signal with the compact 800x480 GUI at framebuffer `x=0,y=0`. See
-  `HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
-  `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, and
+  For the 5-inch 800x480 LCD, the current Phase 6I (`DECISIONS.md`
+  D25) signal is VESA SVGA `800x600 @ 60 Hz / 40 MHz` and the
+  framebuffer in `audio_lab_pynq/hdmi_backend.py` is `800x600`; the
+  compact 800x480 GUI composes at framebuffer `(0, 0)` so visible
+  rows `0..479` carry the UI and rows `480..599` stay black. The
+  earlier Phase 5C history adopted the fixed `1280x720` HDMI signal
+  with the compact 800x480 GUI at framebuffer `x=0,y=0`; that
+  baseline is now superseded by Phase 6I for the on-the-wire signal
+  while the GUI side stays at 800x480 compact-v2. Phase 5D themed
+  the GUI with the Pip-Boy-inspired phosphor green palette and
+  scanline overlay. Phase 6F rechecked a recurring right-shift report,
+  Phase 6G added strong-UI-bbox diagnostics plus an actual-UI visual
+  test (intermediate renderer x-tightening rolled back), Phase 6H
+  (`d7ea0ab`) ported the compact-v2 renderer to the (1).py spec
+  (`EFFECT_KNOBS` dict, `AppState.all_knob_values`, inline PEDAL /
+  AMP / CAB dropdown), the subsequent Phase 6H native 800x480 HDMI
+  timing pass was **rejected** on the LCD (white screen), and Phase
+  6I (`DECISIONS.md` D25) settled on VESA SVGA `800x600 @ 60 Hz /
+  40 MHz` with the 800x480 compact-v2 GUI composing at framebuffer
+  `(0, 0)` of a `800x600` framebuffer. See
+  `history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected),
+  `history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`, and
   `HDMI_GUI_INTEGRATION_PLAN.md`.
 - Repo cleanup after Phase 5C confirmed `GUI/` is active code, while the
   old untracked `HDMI/` experiment tree is unused by deploy, tests, and
@@ -88,9 +112,8 @@ Then read whatever is topical for the task at hand:
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
-| [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4/5 status. |
-| [`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`](HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md) | Output-side mapping result for the 5-inch LCD and the adopted top-left 800x480 viewport. |
-| [`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`](HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md) | Deferred native 800x480 timing trial plan and rollback conditions. |
+| [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4 through Phase 6I status (Section 11 has the Phase 6I C2 SVGA 800x600 result). |
+| [`history/hdmi_phases/README.md`](history/hdmi_phases/README.md) | Per-phase HDMI GUI history index (Phase 1 -- Phase 6I), kept for archaeology. Read individual phase files only when you need contemporaneous detail. |
 | [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |
 | [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) | Reference voicings the existing effect stages aim at. |
 | [`RESUME_PROMPTS.md`](RESUME_PROMPTS.md) | Re-entering after rate-limit or context reset. |

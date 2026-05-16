@@ -59,7 +59,12 @@ def test_knob_drag_is_throttled_to_control_rate():
     state = AppState()
     bridge.apply(state, dry_run=True, force=True, now=10.00)
 
-    state.knob_values = list(state.knob_values)
+    # (1).py port removed the flat ``knob_values`` field on AppState; the
+    # bridge still reads ``state.knob_values`` defensively via getattr, so
+    # we seed it from the currently selected effect's knob defaults and
+    # then mutate to trigger the knob-drag throttle path.
+    state.knob_values = [v for _, v in state.knobs()] \
+        if hasattr(state, "knobs") else [45, 55, 60, 50, 70, 60]
     state.knob_values[0] += 1
     throttled = bridge.apply(
         state, dry_run=True, event="knob_drag", now=10.05)

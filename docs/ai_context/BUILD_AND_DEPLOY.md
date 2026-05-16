@@ -169,9 +169,12 @@ The live HDMI GUI path is part of the integrated `audio_lab.bit`. It
 loads `AudioLabOverlay()` exactly once and must not use
 `Overlay("base.bit")`, `run_pynq_hdmi()`, or a second overlay load.
 
-For the 5-inch 800x480 LCD, the Phase 5C default is the fixed 1280x720
-HDMI signal with the compact 800x480 GUI placed in the top-left
-framebuffer viewport:
+For the 5-inch 800x480 LCD, the Phase 6I (`DECISIONS.md` D25) baseline
+is VESA SVGA `800x600 @ 60 Hz / 40 MHz` with the compact 800x480 GUI
+composed at framebuffer `(0,0)` of the `800x600` framebuffer (bottom
+120 rows black). The simplest live check is the one-shot single-cell
+notebook `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb`; the script
+equivalent is:
 
 ```sh
 ssh xilinx@192.168.1.9 '
@@ -183,10 +186,38 @@ ssh xilinx@192.168.1.9 '
 '
 ```
 
+After a fresh bit/hwh build, sync **all five** PYNQ-Z2 locations
+before re-running the smoke (`AudioLabOverlay` loads whichever sits
+next to the package on the active `PYTHONPATH`; a stale copy keeps
+the FPGA on the previous bit silently):
+
+- `/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}`
+- `/home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/audio_lab.{bit,hwh}`
+- `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.{bit,hwh}`
+- `/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.{bit,hwh}`
+- `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.{bit,hwh}`
+
+Verify with `md5sum` across all five, and read
+`v_tc_hdmi GEN_ACTSZ (0x60)` from MMIO — `0x02580320`
+(V=600 / H=800) confirms the Phase 6I C2 bit is actually programmed.
+
 If only HDMI Python scripts or docs changed and the bitstream must not be
 overwritten, use selective `scp` for the relevant `scripts/test_hdmi_*.py`
 file instead of the full deploy script. `scripts/deploy_to_pynq.sh`
-always stages the current `audio_lab.bit` / `audio_lab.hwh` as-is.
+always stages the current `audio_lab.bit` / `audio_lab.hwh` as-is, but
+does NOT sync the jupyter-notebook copy or the `pynq/overlays` copy;
+those need a separate `sudo cp` from the staged copy. Failure to sync
+all five usually shows up as VTC `GEN_ACTSZ != 0x02580320` even though
+the `hw/Pynq-Z2/bitstreams/` md5 looks right — see memory
+`pynq-site-packages-bit-cache`.
+
+After C2 deploys, also remember the rgb2dvi PLL edge gotcha
+(`DECISIONS.md` D25, memory `rgb2dvi-pll-edge-at-40mhz`): a second
+`Overlay(..., download=True)` in the same session can drop the LCD
+to white at the `40 MHz × M=20 = 800 MHz` VCO lower edge. Use
+`HdmiGuiShow.ipynb` (which attaches with `download=False` when the
+bit is already loaded), or power-cycle the PYNQ-Z2 and run the cell
+exactly once.
 
 ## What `make` from the repo root does
 

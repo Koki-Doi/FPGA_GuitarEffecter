@@ -9,12 +9,12 @@
 #   1. enables S_AXI_HP0 on the existing processing_system7_0
 #   2. extends ps7_0_axi_periph from NUM_MI=15 to NUM_MI=17
 #   3. adds new HDMI cells:
-#        clk_wiz_hdmi      - 100 MHz -> 74.25 MHz pixel clock
+#        clk_wiz_hdmi      - 100 MHz -> selected pixel clock
 #        rst_video_0       - proc_sys_reset for the pixel-clock domain
 #        axi_vdma_hdmi     - framebuffer MM2S, 32-bit memory, 24-bit stream
-#        v_tc_hdmi         - 1280x720@60 video timing generator
+#        v_tc_hdmi         - video timing generator (mode below)
 #        v_axi4s_vid_out_hdmi - AXI4-Stream video -> parallel video
-#        rgb2dvi_hdmi      - Digilent TMDS encoder (kClkRange=3 / 720p)
+#        rgb2dvi_hdmi      - Digilent TMDS encoder (kClkRange=3 for 40-80 MHz)
 #        axi_smc_hdmi      - SmartConnect from VDMA M_AXI_MM2S to PS HP0
 #   4. wires clocks, resets, AXI-Lite, AXIS video, parallel video, TMDS
 #   5. adds new top-level ports for HDMI TX (hdmi_tx_clk_p/n, data_p/n[2:0])
@@ -27,7 +27,44 @@
 current_bd_design [get_bd_designs block_design]
 current_bd_instance /
 
-puts "HDMI: starting Phase 4 integration on [current_bd_design]"
+# -----------------------------------------------------------------------------
+# Phase 6I Candidate C2: VESA SVGA 800x600 @ 60 Hz.
+#
+# Rationale: rgb2dvi v1.4 kClkRange=3 needs PLLE2 VCO >= 800 MHz (~ pixel
+# clock >= 40 MHz). The 5-inch LCD rejected the Phase 6H 40 MHz / 800x480
+# hybrid timing (white screen). VESA SVGA 800x600 @ 60 Hz is a standard
+# DMT mode that most HDMI receivers know, uses a 40 MHz pixel clock that
+# fits the rgb2dvi band, and presents a familiar H/V total to the LCD's
+# scaler. The 800x480 GUI is composed at framebuffer (0,0); the bottom
+# 120 lines remain black.
+#
+# Rollback baselines for reference:
+#   - 720p (working): active 1280x720, pixel 74.250 MHz,
+#       H fp/sync/bp/total = 110/40/220/1650,
+#       V fp/sync/bp/total =   5/ 5/ 20/ 750, rgb2dvi kClkRange=3.
+#   - Phase 6H (rejected, white screen): active 800x480, pixel 40 MHz,
+#       H fp/sync/bp/total = 40/128/ 88/1056,
+#       V fp/sync/bp/total = 13/  3/132/ 628.
+# -----------------------------------------------------------------------------
+set HDMI_PHASE_LABEL "6I-C2-svga800x600"
+set HDMI_ACTIVE_W 800
+set HDMI_ACTIVE_H 600
+set HDMI_H_FP 40
+set HDMI_H_SYNC 128
+set HDMI_H_BP 88
+set HDMI_V_FP 1
+set HDMI_V_SYNC 4
+set HDMI_V_BP 23
+set HDMI_H_TOTAL [expr {$HDMI_ACTIVE_W + $HDMI_H_FP + $HDMI_H_SYNC + $HDMI_H_BP}]
+set HDMI_V_TOTAL [expr {$HDMI_ACTIVE_H + $HDMI_V_FP + $HDMI_V_SYNC + $HDMI_V_BP}]
+set HDMI_HSYNC_START [expr {$HDMI_ACTIVE_W + $HDMI_H_FP}]
+set HDMI_HSYNC_END [expr {$HDMI_HSYNC_START + $HDMI_H_SYNC}]
+set HDMI_VSYNC_START [expr {$HDMI_ACTIVE_H + $HDMI_V_FP}]
+set HDMI_VSYNC_END [expr {$HDMI_VSYNC_START + $HDMI_V_SYNC}]
+set HDMI_PIXEL_CLOCK_MHZ 40.000
+set HDMI_RGB2DVI_CLK_RANGE 3
+
+puts "HDMI: starting Phase 6I integration ($HDMI_PHASE_LABEL) on [current_bd_design]"
 
 # -----------------------------------------------------------------------------
 # 1. Enable PS7 S_AXI_HP0 (currently off in the AudioLab design)
@@ -51,7 +88,7 @@ create_bd_port -dir O -from 2 -to 0    hdmi_tx_data_p
 create_bd_port -dir O -from 2 -to 0    hdmi_tx_data_n
 
 # -----------------------------------------------------------------------------
-# 4. clk_wiz_hdmi: 100 MHz FCLK_CLK0 -> 74.25 MHz pixel clock
+# 4. clk_wiz_hdmi: 100 MHz FCLK_CLK0 -> HDMI_PIXEL_CLOCK_MHZ pixel clock.
 #    rgb2dvi makes its own 5x serial clock internally (kGenerateSerialClk=true),
 #    so this clk_wiz only needs one output.
 # -----------------------------------------------------------------------------
@@ -60,7 +97,7 @@ set_property -dict [list \
     CONFIG.PRIMITIVE {MMCM} \
     CONFIG.PRIM_IN_FREQ {100.000} \
     CONFIG.CLKOUT1_USED {true} \
-    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {74.250} \
+    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $HDMI_PIXEL_CLOCK_MHZ \
     CONFIG.CLKOUT2_USED {false} \
     CONFIG.USE_RESET {true} \
     CONFIG.RESET_PORT {resetn} \
@@ -90,34 +127,35 @@ set_property -dict [list \
 ] $axi_vdma_hdmi
 
 # -----------------------------------------------------------------------------
-# 7. v_tc_hdmi: CEA-861 1280x720@60 progressive timing
-#    Pixel clock 74.25 MHz; Htotal 1650; Vtotal 750.
-#    Hblanking: HFP 110, HSync 40, HBP 220; HSync active high.
-#    Vblanking: VFP 5,  VSync 5,  VBP 20;  VSync active high.
+# 7. v_tc_hdmi: progressive RGB timing using HDMI_* variables above.
+#
+#   IMPORTANT: the per-field GEN_* parameters are gated by VIDEO_MODE.
+#   When VIDEO_MODE is left at a preset (e.g. 1280x720p) the individual
+#   GEN_* values become disabled and silently ignored. Switch to Custom
+#   in a separate set_property pass first so the GEN_* values stick.
 # -----------------------------------------------------------------------------
 set v_tc_hdmi [create_bd_cell -type ip -vlnv xilinx.com:ip:v_tc:6.1 v_tc_hdmi]
 set_property -dict [list \
     CONFIG.enable_generation       {true} \
     CONFIG.enable_detection        {false} \
-    CONFIG.GEN_F0_VSYNC_HSTART     {1390} \
-    CONFIG.GEN_F0_VSYNC_HEND       {1390} \
-    CONFIG.GEN_F0_VFRAME_SIZE      {750} \
-    CONFIG.GEN_F0_VSYNC_VSTART     {725} \
-    CONFIG.GEN_F0_VSYNC_VEND       {730} \
-    CONFIG.GEN_F1_VSYNC_HSTART     {1390} \
-    CONFIG.GEN_F1_VSYNC_HEND       {1390} \
-    CONFIG.GEN_F1_VFRAME_SIZE      {750} \
-    CONFIG.GEN_F1_VSYNC_VSTART     {725} \
-    CONFIG.GEN_F1_VSYNC_VEND       {730} \
-    CONFIG.GEN_HACTIVE_SIZE        {1280} \
-    CONFIG.GEN_HFRAME_SIZE         {1650} \
-    CONFIG.GEN_HSYNC_START         {1390} \
-    CONFIG.GEN_HSYNC_END           {1430} \
-    CONFIG.GEN_VACTIVE_SIZE        {720} \
-    CONFIG.GEN_CHROMA_PARITY       {0} \
+    CONFIG.VIDEO_MODE              {Custom} \
+    CONFIG.GEN_VIDEO_FORMAT        {RGB} \
+] $v_tc_hdmi
+set_property -dict [list \
+    CONFIG.GEN_F0_VSYNC_HSTART     $HDMI_HSYNC_START \
+    CONFIG.GEN_F0_VSYNC_HEND       $HDMI_HSYNC_START \
+    CONFIG.GEN_F0_VBLANK_HSTART    $HDMI_ACTIVE_W \
+    CONFIG.GEN_F0_VBLANK_HEND      $HDMI_ACTIVE_W \
+    CONFIG.GEN_F0_VFRAME_SIZE      $HDMI_V_TOTAL \
+    CONFIG.GEN_F0_VSYNC_VSTART     $HDMI_VSYNC_START \
+    CONFIG.GEN_F0_VSYNC_VEND       $HDMI_VSYNC_END \
+    CONFIG.GEN_HACTIVE_SIZE        $HDMI_ACTIVE_W \
+    CONFIG.GEN_HFRAME_SIZE         $HDMI_H_TOTAL \
+    CONFIG.GEN_HSYNC_START         $HDMI_HSYNC_START \
+    CONFIG.GEN_HSYNC_END           $HDMI_HSYNC_END \
+    CONFIG.GEN_VACTIVE_SIZE        $HDMI_ACTIVE_H \
     CONFIG.GEN_HSYNC_POLARITY      {High} \
     CONFIG.GEN_VSYNC_POLARITY      {High} \
-    CONFIG.GEN_VIDEO_FORMAT        {RGB} \
 ] $v_tc_hdmi
 
 # -----------------------------------------------------------------------------
@@ -130,11 +168,12 @@ set_property -dict [list \
 ] $v_axi4s_vid_out_hdmi
 
 # -----------------------------------------------------------------------------
-# 9. rgb2dvi_hdmi: Digilent TMDS encoder, 720p band, internal serial clock
+# 9. rgb2dvi_hdmi: Digilent TMDS encoder, kClkRange selected above,
+#    internal serial clock.
 # -----------------------------------------------------------------------------
 set rgb2dvi_hdmi [create_bd_cell -type ip -vlnv digilentinc.com:ip:rgb2dvi:1.4 rgb2dvi_hdmi]
 set_property -dict [list \
-    CONFIG.kClkRange         {3} \
+    CONFIG.kClkRange         $HDMI_RGB2DVI_CLK_RANGE \
     CONFIG.kRstActiveHigh    {false} \
     CONFIG.kGenerateSerialClk {true} \
 ] $rgb2dvi_hdmi
@@ -249,4 +288,4 @@ create_bd_addr_seg -range 0x20000000 -offset 0x00000000 \
 # -----------------------------------------------------------------------------
 validate_bd_design
 save_bd_design
-puts "HDMI: Phase 4 integration applied. validate_bd_design passed."
+puts "HDMI: Phase 6I integration ($HDMI_PHASE_LABEL) applied. validate_bd_design passed."
