@@ -119,7 +119,27 @@ class AudioLabOverlay(Overlay):
         if hasattr(self, self.COMPRESSOR_GPIO_NAME):
             self._apply_compressor_state_to_word()
         
-    def route(self, source, effect, sink):    
+    # ---- read-only aliases ---------------------------------------------
+    # The block design ships an AXI GPIO at 0x43C80000 named
+    # `axi_gpio_delay` for historical reasons. After D8 / D9 it actually
+    # carries RAT-style distortion control (gate bit 4 + RAT tone / level
+    # / drive / mix). Block-design names are locked (D2 + D12), so the
+    # underlying attribute stays `axi_gpio_delay`. This property exposes
+    # the same MMIO object under a name that matches what new readers
+    # expect; internal write paths still go through `self.axi_gpio_delay`.
+    @property
+    def axi_gpio_rat(self):
+        """Read-only alias of ``axi_gpio_delay`` (RAT control GPIO).
+
+        The HWH / block design uses ``axi_gpio_delay`` for the AXI GPIO
+        at ``0x43C80000``, which carries RAT-style distortion control
+        (`DECISIONS.md` D8 / D9). New code should prefer this alias to
+        avoid confusing the underlying register address with delay
+        functionality.
+        """
+        return self.axi_gpio_delay
+
+    def route(self, source, effect, sink):
         self.x_source.start_cfg()
         self.x_sink.start_cfg()
         
