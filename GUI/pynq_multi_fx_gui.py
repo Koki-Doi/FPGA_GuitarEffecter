@@ -373,10 +373,9 @@ EFFECTS = ["Noise Sup", "Compressor", "Overdrive", "Distortion",
 EFFECTS_SHORT = ["NS", "CMP", "OD", "DIST", "AMP", "CAB", "EQ", "RVB"]
 
 # Per-effect knob assignments (label, default 0..100). The fixed 8-slot
-# layout matches the AMP SIM expansion in Phase 6E (GAIN / BASS /
-# MIDDLE / TREBLE / PRESENCE / RESONANCE / MASTER / CHARACTER); shorter
-# effects pad the remaining slots with the empty marker ("", 0) so the
-# panel renderer can filter unused entries.
+# layout matches the HDMI effect-state mirror: AMP SIM uses all 8 for
+# GAIN / BASS / MIDDLE / TREBLE / PRESENCE / RESONANCE / MASTER /
+# CHARACTER, and shorter effects pad unused slots with ("", 0).
 EFFECT_KNOBS = {
     "Noise Sup":  [("THRESHOLD", 35), ("DECAY", 45),   ("DAMP", 80),
                    ("", 0),           ("", 0),         ("", 0),
@@ -404,18 +403,6 @@ EFFECT_KNOBS = {
                    ("", 0),           ("", 0)],
 }
 
-# Phase 6E: SELECTED-FX-driven display layout for the per-effect knob
-# grid that replaced the PEDAL / AMP / CAB slot rows. Each entry is
-# ``(label, knob_values_index)``; the mirror writes parameter values
-# into ``knob_values[index]`` so the grid stays decoupled from the
-# selected_effect's EFFECT_KNOBS order. Display order is what the user
-# requested in Phase 6E (Noise Suppressor THRESHOLD/DECAY/DAMP,
-# Compressor THRESHOLD/RATIO/RESPONSE/MAKEUP, Overdrive TONE/LEVEL/
-# DRIVE, Distortion Pedalboard TONE/LEVEL/DRIVE/BIAS/TIGHT/MIX,
-# RAT FILTER/LEVEL/DRIVE/MIX, Amp Simulator GAIN/BASS/MIDDLE/TREBLE/
-# PRESENCE/RESONANCE/MASTER/CHARACTER, Cab IR MIX/LEVEL/MODEL/AIR,
-# EQ LOW/MID/HIGH, Reverb DECAY/TONE/MIX). PEDAL sub-models (CLEAN
-# BOOST etc.) share the Distortion Pedalboard layout.
 _DISTORTION_PARAM_LAYOUT = [
     ("TONE", 1), ("LEVEL", 2), ("DRIVE", 0),
     ("BIAS", 3), ("TIGHT", 4), ("MIX", 5),
@@ -490,11 +477,9 @@ class AppState:
     effect_on: List[bool] = field(default_factory=lambda:
         [True,  True, False, False, True, True, True, True])
     selected_effect: int  = 4   # Amp Sim
-    selected_fx: Optional[str] = None  # Display override for notebook-driven mirrors
+    selected_fx: Optional[str] = None  # Notebook-driven display override
 
-    # parameter knobs (8 slots; AMP SIM uses all 8 for GAIN/BASS/MIDDLE/
-    # TREBLE/PRESENCE/RESONANCE/MASTER/CHARACTER, other effects fill only
-    # the first 3-6 slots with the rest left at 0)
+    # parameter knobs (8 slots; AMP SIM uses all 8, other effects pad unused)
     knob_values: List[float] = field(default_factory=lambda:
         [45, 55, 60, 50, 45, 35, 70, 60])
     selected_knob: int       = 0
@@ -573,9 +558,6 @@ def _compact_model_label(label: str) -> str:
     return replacements.get(label, label)
 
 
-# Phase 6C: short labels for the [model ▼] dropdown chip drawn next to
-# SELECTED FX. The chip is ~150 px wide on the compact-v2 800x480 panel,
-# so anything beyond ~12 characters runs off the right edge.
 _DROPDOWN_CHIP_SHORT = {
     "CLEAN BOOST": "CLN BOOST",
     "TUBE SCREAMER": "TUBE SCRMR",
@@ -600,9 +582,7 @@ _DROPDOWN_CHIP_SHORT = {
     "PRESET": "PRESET",
 }
 
-# SELECTED FX -> dropdown category. Mirrors
-# audio_lab_pynq.hdmi_effect_state_mirror.SELECTED_FX_CATEGORY but kept
-# here so the renderer does not need to import the mirror module.
+
 _DROPDOWN_CATEGORY = {
     "CLEAN BOOST": "PEDAL",
     "TUBE SCREAMER": "PEDAL",
@@ -635,14 +615,34 @@ def _dropdown_category(state) -> str:
     return _DROPDOWN_CATEGORY.get(label, label)
 
 
-def _dropdown_label(state) -> str:
-    """Phase 6C: text rendered inside the SELECTED FX [model ▼] chip.
+def _pedal_label(state: AppState) -> str:
+    label = getattr(state, "pedal_model_label", None)
+    if label:
+        return str(label).upper()
+    idx = max(0, min(len(DIST_MODELS) - 1,
+                     int(getattr(state, "dist_model_idx", 0) or 0)))
+    return DIST_MODELS[idx]
 
-    Mirrors the live model selection when SELECTED FX is a model-driven
-    effect (PEDAL / AMP / CAB) and otherwise echoes the effect family.
-    Prefers the explicit ``dropdown_label`` AppState field when present
-    so the mirror can override the renderer-derived choice.
-    """
+
+def _amp_label(state: AppState) -> str:
+    label = getattr(state, "amp_model_label", None)
+    if label:
+        return str(label).upper()
+    idx = max(0, min(len(AMP_MODELS) - 1,
+                     int(getattr(state, "amp_model_idx", 0) or 0)))
+    return AMP_MODELS[idx][0]
+
+
+def _cab_label(state: AppState) -> str:
+    label = getattr(state, "cab_model_label", None)
+    if label:
+        return str(label).upper()
+    idx = max(0, min(len(CAB_MODELS) - 1,
+                     int(getattr(state, "cab_model_idx", 0) or 0)))
+    return CAB_MODELS[idx]
+
+
+def _dropdown_label(state) -> str:
     explicit = getattr(state, "dropdown_label", None)
     if explicit:
         return str(explicit).upper()
@@ -671,25 +671,10 @@ def _dropdown_label(state) -> str:
 
 
 def _should_show_selected_model_dropdown(state) -> bool:
-    """Phase 6D: dropdown indicator visible only for PEDAL / AMP / CAB.
-
-    The HDMI GUI restores the compact-v2 layout from commit 0a07f2a, so
-    no extra chip is drawn for REVERB / EQ / COMPRESSOR / NOISE
-    SUPPRESSOR / SAFE BYPASS / PRESET / OVERDRIVE. The indicator is a
-    thin outline + triangle glyph painted around the matching row of
-    ACTIVE MODELS; selecting the chip is still notebook-side.
-    """
-    category = _dropdown_category(state)
-    return category in ("PEDAL", "AMP", "CAB")
+    return _dropdown_category(state) in ("PEDAL", "AMP", "CAB")
 
 
 def _selected_model_dropdown_label(state) -> str:
-    """Phase 6D: text the conditional [model ▼] marker reflects.
-
-    Returns the current pedal / amp / cab label for PEDAL / AMP / CAB
-    categories and an empty string otherwise so callers can use the
-    truthiness as a visibility flag.
-    """
     if not _should_show_selected_model_dropdown(state):
         return ""
     category = _dropdown_category(state)
@@ -703,20 +688,11 @@ def _selected_model_dropdown_label(state) -> str:
 
 
 def selected_fx_param_layout(state) -> list:
-    """Phase 6E: per-SELECTED-FX parameter list for the knob grid.
-
-    Returns a list of ``(label, knob_values_index)`` pairs ordered for
-    display. Mirrors :data:`SELECTED_FX_PARAM_LAYOUT` but resolves the
-    SELECTED FX override on ``state`` so callers do not need to do the
-    lookup themselves. Returns ``[]`` for SAFE BYPASS / PRESET / any
-    SELECTED FX that has no parameter knobs.
-    """
     label = _normalize_selected_fx_label(_selected_fx_label(state))
     return list(SELECTED_FX_PARAM_LAYOUT.get(label, []))
 
 
 def _draw_dropdown_arrow(draw, xy, color):
-    """Phase 6D: small filled triangle glyph used by the dropdown marker."""
     x0, y0, x1, y1 = (int(v) for v in xy)
     if x1 <= x0 or y1 <= y0:
         return
@@ -734,33 +710,6 @@ def _draw_dropdown_arrow(draw, xy, color):
                      outline=color + (255,))
     except TypeError:
         draw.polygon(triangle, fill=color + (255,))
-
-
-def _pedal_label(state: AppState) -> str:
-    label = getattr(state, "pedal_model_label", None)
-    if label:
-        return str(label).upper()
-    idx = max(0, min(len(DIST_MODELS) - 1,
-                     int(getattr(state, "dist_model_idx", 0) or 0)))
-    return DIST_MODELS[idx]
-
-
-def _amp_label(state: AppState) -> str:
-    label = getattr(state, "amp_model_label", None)
-    if label:
-        return str(label).upper()
-    idx = max(0, min(len(AMP_MODELS) - 1,
-                     int(getattr(state, "amp_model_idx", 0) or 0)))
-    return AMP_MODELS[idx][0]
-
-
-def _cab_label(state: AppState) -> str:
-    label = getattr(state, "cab_model_label", None)
-    if label:
-        return str(label).upper()
-    idx = max(0, min(len(CAB_MODELS) - 1,
-                     int(getattr(state, "cab_model_idx", 0) or 0)))
-    return CAB_MODELS[idx]
 
 
 # =============================================================================
@@ -1371,14 +1320,15 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
 
 
 COMPACT_V2_LAYOUT = {
-    # Phase 4G compact-v2 coordinates for 800x480, restored in Phase 6G.
-    # Phase 6F tried to compensate the LCD's right-shift at the
-    # renderer level by tightening the chassis margin to 4 px, but the
-    # actual cause was the VTC HSync timing (the LCD's HDMI receiver
-    # samples 150 source pixels later than expected). Phase 6G fixes
-    # that at the VTC layer (AudioLabHdmiBackend._start_vtc applies a
-    # +150 HSync shift), so the chassis is back to the Phase 4G
-    # baseline.
+    # Phase 4G compact-v2 coordinates for 800x480 (Phase 4I restored
+    # baseline). Phase 4H pushed everything down by ~18 px and tightened
+    # the left margin from 24 to 18 to chase a reported top-clip / unused
+    # left strip on the 5-inch LCD; on the real panel that direction
+    # produced a layout shifted down and to the right rather than fixing
+    # the symptom, so Phase 4I rolled it back to the Phase 4G values
+    # below. The dict is kept (instead of inlining literals as Phase 4G
+    # did) so diagnostic scripts can read the exact same bboxes the
+    # renderer draws.
     "outer": (12, 12, 788, 468),
     "left": 24,
     "right": 24,
@@ -1572,12 +1522,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                      outline=LED + (90,), width=2)
         selected_name = _selected_fx_label(state)
         selected_on = _selected_fx_on(state)
-        pedal_idx = max(0, min(len(DIST_MODELS) - 1,
-                               int(getattr(state, "dist_model_idx", 0) or 0)))
-        amp_idx = max(0, min(len(AMP_MODELS) - 1,
-                             int(getattr(state, "amp_model_idx", 0) or 0)))
-        cab_idx = max(0, min(len(CAB_MODELS) - 1,
-                             int(getattr(state, "cab_model_idx", 0) or 0)))
         pedal_label = _pedal_label(state)
         amp_label = _amp_label(state)
         cab_label = _cab_label(state)
@@ -1598,16 +1542,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   fill=s_col + (255,), scale=2, anchor="mm",
                   letter_spacing=2)
 
-        # Phase 6D: restore the compact-v2 layout from 0a07f2a. The
-        # standalone [model ▼] chip Phase 6C dropped between the
-        # SELECTED FX name and the ON/BYPASS chip overlapped the
-        # ACTIVE MODELS column, which hid the PEDAL / AMP rows. The
-        # dropdown marker is now a thin outline + triangle glyph drawn
-        # only around the matching ACTIVE MODELS row (PEDAL / AMP / CAB)
-        # when the SELECTED FX category warrants it. Other effects --
-        # REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR / SAFE / PRESET --
-        # get no extra marker and the row renders identically to
-        # 0a07f2a. The Notebook ipywidgets remain the actual control.
         model_x0 = fx0 + 270
         model_x1 = fx1 - 16
         draw_text(img, (model_x0, fy0 + 10), "ACTIVE  MODELS",
@@ -1622,12 +1556,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                              else "")
         category_to_row = {"PEDAL": 0, "AMP": 1, "CAB": 2}
         highlight_row = category_to_row.get(dropdown_category, -1)
-        # The ON/BYPASS chip lives at (s_chip[0], fy0+18) -- y=18..48 in
-        # FX-panel-local coordinates. The PEDAL row sits at ry=fy0+31,
-        # so its highlight rect would collide with the chip if it
-        # extended to model_x1. Cap the right edge at s_chip[0]-12 for
-        # the PEDAL row only, and let AMP/CAB rows (below the chip)
-        # extend all the way to model_x1.
         for row, (label, value) in enumerate(model_rows):
             ry = fy0 + 31 + row * 18
             if row == highlight_row:
@@ -1649,39 +1577,9 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             draw_text(img, (model_x0, ry), label,
                       fill=SCR_TEXT_DIM + (255,), scale=1,
                       letter_spacing=2)
-            value_color = LED + (255,)
             draw_text(img, (model_x0 + 72, ry), value,
-                      fill=value_color, scale=1, letter_spacing=1)
+                      fill=LED + (255,), scale=1, letter_spacing=1)
 
-        def _slot_row(labels, active_index, x0, y0, x1, h, gap=6):
-            count = max(1, len(labels))
-            cell_w = int((x1 - x0 - gap * (count - 1)) / count)
-            for i, text in enumerate(labels):
-                bx0 = x0 + i * (cell_w + gap)
-                bx1 = bx0 + cell_w
-                active = i == active_index
-                fill = (palette["CHAIN_ON_FILL"] if active
-                        else palette["CHAIN_OFF_FILL"])
-                outline = LED + ((230,) if active else (90,))
-                text_col = LED + (255,) if active else SCR_TEXT_DIM + (255,)
-                rounded_rect(d, (bx0, y0, bx1, y0 + h), 5,
-                             fill=fill, outline=outline,
-                             width=2 if active else 1)
-                draw_text(img, ((bx0 + bx1) // 2, y0 + h // 2),
-                          text, fill=text_col, scale=1, anchor="mm",
-                          letter_spacing=1)
-
-        # Phase 6E: replace the PEDAL MODEL / AMP MODEL / CAB slot rows
-        # with a per-SELECTED-FX parameter knob grid (label + value bar +
-        # numeric percent). Layout adapts to the parameter count:
-        #   3 knobs -> 3x1
-        #   4 knobs -> 2x2
-        #   6 knobs -> 3x2
-        #   8 knobs -> 4x2 (AMP SIM)
-        # The IN / OUT meters keep their original anchor on the right.
-        # Phase 6E: the ACTIVE MODELS column's CAB row ends near fy0+78,
-        # so the knob grid starts at fy0+82 to leave breathing room and
-        # not paint over the CAB live label.
         knob_y0 = fy0 + 82
         knob_y1 = fy1 - 14
         meter_x0 = fx0 + 548
@@ -1691,7 +1589,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
 
         params = selected_fx_param_layout(state)
         values = list(getattr(state, "knob_values", []) or [])
-        # Pad short value lists so we can index up to 8 without IndexError.
         while len(values) < 8:
             values.append(0)
         count = len(params)
@@ -1723,11 +1620,9 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                 rounded_rect(d, (bx0, by0, bx1, by1), 6,
                              fill=palette["FX_CHIP_FILL"],
                              outline=LED + (110,), width=1)
-                # Label on the top row of the cell.
                 draw_text(img, (bx0 + 8, by0 + 6), param_label,
                           fill=SCR_TEXT_DIM + (255,), scale=1,
                           letter_spacing=2)
-                # Numeric percent on the right of the same row.
                 try:
                     raw_value = float(values[knob_idx])
                 except (TypeError, ValueError, IndexError):
@@ -1737,7 +1632,6 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                           "{:d}".format(int(round(percent))),
                           fill=LED + (255,), scale=1, anchor="rt",
                           letter_spacing=1)
-                # Value bar across the bottom half of the cell.
                 bar_x0 = bx0 + 8
                 bar_x1 = bx1 - 8
                 bar_y0 = by1 - 14
@@ -1760,6 +1654,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         bottom_y = fy0 + 126
         draw_text(img, (meter_x0, bottom_y), "LEVELS",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=2)
+
         def _mini_meter(label, y, value):
             draw_text(img, (meter_x0, y - 1), label,
                       fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=1)
@@ -1774,6 +1669,7 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                 d.rectangle((bx0 + 1, y + 1,
                              bx0 + fill_w, y + 8),
                             fill=LED_DIM + (255,))
+
         _mini_meter("IN", bottom_y + 20, state.in_level)
         _mini_meter("OUT", bottom_y + 40, state.out_level)
 
@@ -1906,7 +1802,6 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
         if len(state.knob_values) != 8:
             defaults = [k[1] for k in
                         EFFECT_KNOBS[EFFECTS[state.selected_effect]]]
-            # pad short legacy snapshots to the Phase 6E 8-slot layout
             while len(defaults) < 8:
                 defaults.append(0)
             state.knob_values = defaults[:8]

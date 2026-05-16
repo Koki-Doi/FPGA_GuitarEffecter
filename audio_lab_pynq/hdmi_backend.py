@@ -80,20 +80,8 @@ VTC_CTL_GENERATION_ENABLE    = 1 << 2
 VTC_CTL_DETECTION_ENABLE     = 1 << 3
 # Bit 5 = FSync enable, bit 6 = SyncEnable. We do not use FSync inputs.
 
-# Phase 6F: VTC HSync shift hook. Phase 6G tried a +150 shift to
-# compensate a reported 150 px LCD right-margin, but the Phase 6F
-# sweep on the real 5-inch LCD (scripts/test_hdmi_vtc_hsync_sweep.py)
-# proved the LCD viewport does not respond meaningfully to HSync
-# position changes -- the IP-baked timing (HSync 1390..1429, back
-# porch 220) is what the LCD locks onto best, and any non-zero shift
-# either had no visible effect or made things worse. The default is
-# therefore 0 (= unmodified IP-baked timing). The hook is retained
-# so a future LCD with a different sync-recovery offset can be
-# compensated via the ``AUDIOLAB_HDMI_HSYNC_SHIFT`` env var or
-# ``hsync_shift=N`` constructor argument, and the
-# ``vtc_hsync_shift`` / ``vtc_original_hsync`` / ``vtc_patched_hsync``
-# fields in ``status()`` make the active value observable for
-# diagnostics.
+# Phase 6F: VTC HSync shift hook. Default 0 keeps the IP-baked timing;
+# env / constructor overrides are retained for LCD diagnostics.
 VTC_HSYNC_SHIFT_DEFAULT      = 0
 
 DEFAULT_WIDTH                = 1280
@@ -356,9 +344,6 @@ class AudioLabHdmiBackend(object):
         self._started = False
         self._last_vdma_start = {}
         self._last_frame_write = {}
-        # Phase 6G: VTC HSync shift compensates the LCD's 150 px right
-        # offset. Constructor arg overrides the env-var default; pass
-        # 0 to disable.
         if hsync_shift is None:
             env = os.environ.get("AUDIOLAB_HDMI_HSYNC_SHIFT")
             if env is not None:
@@ -452,9 +437,6 @@ class AudioLabHdmiBackend(object):
         time.sleep(0.001)
         # Clear pending interrupt latches.
         self._vtc_write(0x004, 0xFFFFFFFF)
-        # Phase 6G: shift HSync later in each line so the LCD viewport
-        # aligns source x=0 with LCD x=0. Capture the original value
-        # before patching so callers / diagnostics can revert.
         try:
             self._original_hsync = int(self._vtc_read(VTC_GEN_HSYNC))
         except Exception:
