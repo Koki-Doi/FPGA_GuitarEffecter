@@ -817,7 +817,7 @@ not get removed even when superseded — they get updated.
   `audio_lab_pynq/notebooks/HdmiGui.ipynb` are still as described
   here; D25 adds the `HdmiGuiShow.ipynb` one-shot variant. No
   Clash / GPIO / block-design change. See
-  `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md` and D25.
+  `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md` and D25.
 
 ## D25 — Integrated HDMI runs VESA SVGA 800x600 @ 40 MHz, not native 800x480
 
@@ -832,8 +832,8 @@ not get removed even when superseded — they get updated.
   viewport, and do not retry a "native 800x480" timing at 40 MHz
   (Phase 6H attempt; the 5-inch LCD did not lock and showed a fully
   white screen). See
-  `docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md` and
-  `docs/ai_context/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
+  `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md` and
+  `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
 - **Why.** The 5-inch LCD's HDMI receiver scaler rejects the Phase 6H
   `800x480 / 40 MHz / 1056 x 628` timing (active area sized differently
   from the standard SVGA mode that shares those H/V totals). VESA SVGA

@@ -110,6 +110,11 @@ else
     warn "passwordless sudo not available; will install to user site instead"
     HAS_PWLESS_SUDO=0
 fi
+if [[ "$HAS_PWLESS_SUDO" -eq 1 ]]; then
+    SUDO_PREFIX="sudo -n"
+else
+    SUDO_PREFIX=""
+fi
 
 # --- 3. Stage payload ----------------------------------------------------
 
@@ -172,6 +177,27 @@ else
     fi
 fi
 
+# --- 5.5 Mirror bit/hwh into pynq/overlays/audio_lab/ --------------------
+#
+# `AudioLabOverlay` resolves its default bitfile next to the
+# `audio_lab_pynq` package that PYTHONPATH happens to pick up, but
+# `pynq.Overlay("audio_lab")` (bare name) — and some user scripts
+# we cannot enumerate — resolve through pynq's overlays registry at
+# `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`.
+# Without this step that copy stays at whatever was loaded last and
+# users get the old `1280x720` or `Phase 6H` bit instead of the
+# current Phase 6I SVGA build. See DECISIONS.md D25 and memory
+# `pynq-site-packages-bit-cache`.
+log "mirroring bit/hwh into pynq/overlays/audio_lab/ for the overlays registry"
+ssh_remote "
+    set -e
+    OVERLAYS_DIR=\$(python3 -c 'import pynq, os; print(os.path.join(os.path.dirname(pynq.__file__), \"overlays\", \"audio_lab\"))')
+    $SUDO_PREFIX mkdir -p \"\$OVERLAYS_DIR\"
+    $SUDO_PREFIX cp '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams/audio_lab.bit' \"\$OVERLAYS_DIR/audio_lab.bit\"
+    $SUDO_PREFIX cp '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams/audio_lab.hwh' \"\$OVERLAYS_DIR/audio_lab.hwh\"
+    echo \"  overlays registry: \$OVERLAYS_DIR\"
+"
+
 # --- 6. Import sanity check ----------------------------------------------
 
 log "verifying imports on PYNQ"
@@ -206,10 +232,6 @@ PY'
 # --- 7. Install notebooks via the package's own helper -------------------
 
 log "installing notebooks under $PYNQ_NB_DIR/audio_lab"
-SUDO_PREFIX=""
-if [[ "$HAS_PWLESS_SUDO" -eq 1 ]]; then
-    SUDO_PREFIX="sudo -n"
-fi
 ssh_remote "
     set -e
     $SUDO_PREFIX mkdir -p '$PYNQ_NB_DIR'

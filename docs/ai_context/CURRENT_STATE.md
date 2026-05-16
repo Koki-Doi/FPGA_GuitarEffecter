@@ -108,7 +108,7 @@ plus a `hit_test_compact_v2()` entry point. The Phase 6G strong UI
 diagnostics continue to PASS at `strong_ui_bbox=[24,776,20,454]`,
 with all `estimated_*_left_x` values at `24` (well inside the `<=28`
 and `<=40` thresholds). No bit/hwh / Vivado / Clash / GPIO change.
-See `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
+See `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
 
 2026-05-16 Phase 6H native 800x480 HDMI timing (**rejected**):
 `hw/Pynq-Z2/hdmi_integration.tcl` was switched to native `800x480`
@@ -117,8 +117,8 @@ built without errors and the bit/hwh staged with timing in the
 historical band. **On the 5-inch LCD the screen rendered fully white**;
 the receiver did not lock on the timing. The Phase 6H bit/hwh were
 **not committed**. See
-`docs/ai_context/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` and
-`docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` and
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`.
 
 2026-05-16 Phase 6I HDMI timing sweep, C2 deployed:
 After Phase 6H's white-screen failure the design rolled back to the
@@ -154,7 +154,7 @@ the Phase 6H failed bit is archived under
 the 720p rollback baseline under
 `/home/xilinx/Audio-Lab-PYNQ/backups/phase6h_720p/` and
 `/tmp/fpga_guitar_effecter_backup/phase6i_baseline_720p/`. See
-`docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`.
 
 ## PYNQ-Z2 network identity
 
@@ -228,25 +228,25 @@ Current design direction:
 
 See `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` for the full plan,
 risks, prohibited actions, and phase prompts. See
-`docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` and
-`docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the current
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` and
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` for the current
 PYNQ rendering results. See
-`docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` for the bridge design
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` for the bridge design
 and dry-run verification. See
-`docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md` for the live
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md` for the live
 bridge runtime test against the real overlay. See
-`docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for the
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for the
 recommended HDMI Vivado architecture, IP list, clocking, AXI / DDR
 plan, address-map impact, resource / timing risks, and rollback. See
 `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md` for the proposed
 shape of the implemented HDMI Tcl split and
-`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md` for the
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md` for the
 build, deploy, timing, and smoke result. See
-`docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` for the
 static-frame recheck, PS runtime profile, and PL before/after summary.
-See `docs/ai_context/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md` for the small
+See `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md` for the small
 LCD overscan / safe-area fit test. See
-`docs/ai_context/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md` for the
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md` for the
 5-inch 800x480 logical GUI mode and centered framebuffer placement.
 
 ## HDMI GUI Phase 4 integrated overlay
@@ -487,7 +487,7 @@ PYNQ result:
 Phase 5A/5C later resolved the decision for the current 5-inch LCD:
 `(0,0)` is the correct practical visible viewport, which supports the
 LCD-side crop/viewport hypothesis. Full details are in
-`docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`.
 
 ## HDMI GUI Phase 4G compact-v2 + negative offsets
 
@@ -537,7 +537,7 @@ PYNQ runs (selective `scp` only, full deploy script not used):
 Phase 5A/5C later resolved the final offset as `offset_x=0`,
 `offset_y=0`; the negative-offset sweep remains diagnostic history.
 Phase 4G details are in
-`docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`.
 
 ## HDMI GUI Phase 4H vertical margin + layout-debug
 
@@ -604,7 +604,7 @@ Phase 4H's positive-`offset_y` direction was rolled back in Phase 4I.
 Phase 5A/5C later resolved the current LCD placement as top-left
 `800x480` at `offset_x=0`, `offset_y=0`.
 Phase 4H details are in
-`docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`.
 
 ## HDMI GUI Phase 4I restore compact-v2 baseline
 
@@ -655,7 +655,7 @@ explicitly deferred to a Phase 5 task because it requires a bit / hwh
 rebuild and a timing-summary review.
 
 Phase 4I details are in
-`docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`.
 
 ## HDMI GUI Phase 4J horizontal sweep (superseded)
 
@@ -795,9 +795,9 @@ EDID/DDC status:
 
 The next approved implementation candidate is Phase 5B native 800x480
 HDMI timing. The plan is documented in
-`docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`.
 Phase 5A details are in
-`docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`.
 
 ## HDMI GUI Phase 5C default visible viewport
 
@@ -995,7 +995,7 @@ What landed:
   report tag is `5D-pipboy-green-theme`. The script is not in the
   `deploy_to_pynq.sh` manifest, so manual `scp` is required when
   running it on the PYNQ.
-- `docs/ai_context/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` -- full
+- `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` -- full
   palette table, scanline parameters, and the captured PYNQ smoke
   results.
 
@@ -1062,7 +1062,7 @@ Assessment:
   `AudioLabOverlay` bridge.
 
 Full results are in
-`docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
 
 ## HDMI GUI Phase 2A PYNQ compatibility
 
@@ -1208,7 +1208,7 @@ Pre and post smoke (`/tmp/hdmi_gui_phase2d/phase2d_report.json`):
 - `has legacy axi_gpio_delay`: `True`
 
 Detailed results are recorded in
-`docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`.
 
 ## HDMI GUI Phase 3 Vivado integration design proposal
 
@@ -1260,11 +1260,11 @@ Rollback: dated bit/hwh backups + `git revert` on the future
 feature branch. Local commits only.
 
 Detailed proposal is in
-`docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`. The
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`. The
 proposed `block_design.tcl` patch shape is in
 `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`. The Phase 4
 implementation prompt draft is in
-`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`.
 
 ## Internal mono DSP pipeline (this branch, `feature/internal-mono-dsp-pipeline`)
 

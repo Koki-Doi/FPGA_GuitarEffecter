@@ -72,14 +72,14 @@ The current load-bearing facts:
   6I (`DECISIONS.md` D25) settled on VESA SVGA `800x600 @ 60 Hz /
   40 MHz` with the 800x480 compact-v2 GUI composing at framebuffer
   `(0, 0)` of a `800x600` framebuffer. See
-  `HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
-  `HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`,
-  `HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md`,
-  `HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`,
-  `HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`,
-  `HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`,
-  `HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected),
-  `HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`, and
+  `history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`,
+  `history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected),
+  `history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`, and
   `HDMI_GUI_INTEGRATION_PLAN.md`.
 - Repo cleanup after Phase 5C confirmed `GUI/` is active code, while the
   old untracked `HDMI/` experiment tree is unused by deploy, tests, and
@@ -112,9 +112,8 @@ Then read whatever is topical for the task at hand:
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
-| [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4/5 status. |
-| [`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`](HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md) | Output-side mapping result for the 5-inch LCD and the adopted top-left 800x480 viewport. |
-| [`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`](HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md) | Deferred native 800x480 timing trial plan and rollback conditions. |
+| [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4 through Phase 6I status (Section 11 has the Phase 6I C2 SVGA 800x600 result). |
+| [`history/hdmi_phases/README.md`](history/hdmi_phases/README.md) | Per-phase HDMI GUI history index (Phase 1 -- Phase 6I), kept for archaeology. Read individual phase files only when you need contemporaneous detail. |
 | [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |
 | [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) | Reference voicings the existing effect stages aim at. |
 | [`RESUME_PROMPTS.md`](RESUME_PROMPTS.md) | Re-entering after rate-limit or context reset. |

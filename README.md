@@ -526,36 +526,33 @@ PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
 到達不能な場合は、PYNQ-Z2 の電源、LAN ケーブル、ルーター DHCP 固定割当、
 予約 MAC address、IP 重複を確認してください。
 
-deploy 後、Phase 6I C2 bit が実際にロードされているか確認します。
-`scripts/deploy_to_pynq.sh` は **3 か所** の bit/hwh を更新しますが、
-`AudioLabOverlay` は実行時の `PYTHONPATH` によって最大 **5 か所** から
-1 つを選んでロードします。3 か所の md5 が一致していても、残り 2 か所が
-古いと FPGA は古い bit のままになります (`DECISIONS.md` D25, memory
-`pynq-site-packages-bit-cache`)。スクリプトが触らない 2 か所
-(`/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/` と
-`/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`) は
-deploy 後に手で同期してください:
+`scripts/deploy_to_pynq.sh` は PYNQ-Z2 上の **5 か所** すべての
+`audio_lab.bit` / `audio_lab.hwh` を同期します:
+
+1. `/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/` (staging)
+2. `/home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/`
+3. `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/`
+4. `/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/`
+   (`install_notebooks()` 経由)
+5. `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`
+   (deploy script step 5.5 で `sudo cp`)
+
+`AudioLabOverlay` は実行時の `PYTHONPATH` によって 1, 2, 3 のどれかから、
+`pynq.Overlay("audio_lab")` (bare name) は 5 からロードするので、
+1 か所でも古いと FPGA が古い bit のままになります
+(`DECISIONS.md` D25, memory `pynq-site-packages-bit-cache`)。
+deploy 後の同期確認は次で行えます:
 
 ```sh
-ssh xilinx@192.168.1.9 '
-  SRC=/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams &&
-  sudo cp "$SRC"/audio_lab.bit \
-    /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit &&
-  sudo cp "$SRC"/audio_lab.hwh \
-    /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.hwh &&
-  sudo cp "$SRC"/audio_lab.bit \
-    /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit &&
-  sudo cp "$SRC"/audio_lab.hwh \
-    /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.hwh &&
-  md5sum /home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/audio_lab.bit \
-    /home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/audio_lab.bit \
-    /usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.bit \
-    /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit \
-    /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit
-'
+ssh xilinx@192.168.1.9 'md5sum \
+  /home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/audio_lab.bit \
+  /home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/audio_lab.bit \
+  /usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.bit \
+  /home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit \
+  /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit'
 ```
 
-md5 が 5 か所全部で一致していれば OK です。Phase 6I C2 build の md5 は
+5 行とも同じ md5 が出れば OK。Phase 6I C2 build の md5 は
 `81f4c149fac2e5b3fc6ed4421da60cdf` (`.bit`) /
 `b42e99bec9223b06c40d25ad36583765` (`.hwh`) です。
 

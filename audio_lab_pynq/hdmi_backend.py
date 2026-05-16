@@ -21,15 +21,17 @@ The back end intentionally does NOT:
 - depend on the unused ``axi_dma_0`` audio capture path
 - write to any audio-side AXI GPIO
 
-Public API:
+Public API (Phase 6I SVGA 800x600 baseline):
 
     backend = AudioLabHdmiBackend(overlay)
-    backend.start(rgb_frame)        # one-shot static frame
-    backend.write_frame(rgb_frame)  # overwrite the framebuffer
-    backend.write_frame(rgb_frame, fit_mode="fit-90")
-    backend.write_frame(rgb_800x480, placement="center")
-    backend.write_frame(rgb_800x480, placement="manual", offset_x=0, offset_y=0)
-    backend.status()                # debug dict
+    # Compose the 800x480 compact-v2 GUI at framebuffer (0, 0); the
+    # bottom 120 rows of the 800x600 framebuffer stay black.
+    backend.start(rgb_800x480, placement="manual", offset_x=0, offset_y=0)
+    # In-place refresh with a new 800x480 frame.
+    backend.write_logical_frame(rgb_800x480, placement="manual",
+                                offset_x=0, offset_y=0)
+    backend.status()                # debug dict (VDMA / VTC state)
+    backend.errors()                # DMASR error-bit decode
     backend.stop()
 """
 from __future__ import print_function
@@ -73,7 +75,6 @@ VDMASR_ERR_MASK = (VDMASR_DMAINTERR | VDMASR_DMASLVERR | VDMASR_DMADECERR)
 VTC_CTL                      = 0x000
 VTC_GLOBAL_INTR_ENABLE       = 0x00C
 VTC_GEN_HACTIVE_SIZE         = 0x064  # legacy alias, see notes below
-VTC_GEN_HSYNC                = 0x078  # bits[12:0]=HSYNC_HSTART, [28:16]=HSYNC_HEND
 
 # v_tc CTL bits (PG016 v6.1 Table 2-4)
 VTC_CTL_SW_RESET             = 1 << 31
@@ -83,23 +84,10 @@ VTC_CTL_GENERATION_ENABLE    = 1 << 2
 VTC_CTL_DETECTION_ENABLE     = 1 << 3
 # Bit 5 = FSync enable, bit 6 = SyncEnable. We do not use FSync inputs.
 
-# Phase 6F: VTC HSync shift hook. Default 0 keeps the IP-baked timing;
-# env / constructor overrides are retained for LCD diagnostics.
-VTC_HSYNC_SHIFT_DEFAULT      = 0
-
 DEFAULT_WIDTH                = 800
 DEFAULT_HEIGHT               = 600
 DEFAULT_BYTES_PER_PIXEL      = 3
 DEFAULT_NUM_FSTORES          = 3
-
-FIT_MODE_SCALES = {
-    "native": 1.00,
-    "fit-97": 0.97,
-    "fit-95": 0.95,
-    "fit-90": 0.90,
-    "fit-85": 0.85,
-    "fit-80": 0.80,
-}
 
 
 class HdmiNotIntegratedError(RuntimeError):
@@ -156,79 +144,35 @@ def _allocate_framebuffer(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                               cacheable=False)
 
 
-def fit_mode_scale(fit_mode="native", scale=None):
-    """Resolve a named HDMI LCD fit mode to a numeric scale."""
-    if scale is not None:
-        value = float(scale)
-    else:
-        try:
-            value = FIT_MODE_SCALES[str(fit_mode)]
-        except KeyError:
-            raise ValueError(
-                "unknown fit_mode {!r}; expected one of {}".format(
-                    fit_mode, sorted(FIT_MODE_SCALES)))
-    if value <= 0.0 or value > 1.0:
-        raise ValueError("HDMI fit scale must be > 0.0 and <= 1.0; got {}".format(value))
-    return value
+def compose_native_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+                         background=(0, 0, 0)):
+    """Return the input frame unchanged when it already matches the framebuffer.
 
-
-def compose_fit_frame(rgb_frame, fit_mode="native", scale=None,
-                      width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-                      background=(0, 0, 0)):
-    """Return a framebuffer-sized RGB frame after optional LCD overscan fitting.
-
-    The output is `width` x `height` (the framebuffer dimensions; defaults to
-    `DEFAULT_WIDTH` x `DEFAULT_HEIGHT` = 800x600 for the Phase 6I baseline).
-    ``native`` returns the input ndarray and records zero offset. Other modes
-    resize the input with Pillow's old-version-compatible constants and paste
-    it onto a black RGB888 canvas. The framebuffer dimensions and VDMA
-    programming stay unchanged.
+    The Phase 6I path always feeds an 800x480 compact-v2 GUI through
+    ``compose_logical_frame`` at framebuffer ``(0, 0)``. This helper exists
+    so callers that pass an exact framebuffer-sized frame
+    (``DEFAULT_WIDTH`` x ``DEFAULT_HEIGHT`` = 800x600) skip the logical
+    placement path entirely and get a zero-copy meta dict back.
     """
     arr = np.asarray(rgb_frame)
     if arr.shape != (int(height), int(width), 3) or arr.dtype != np.uint8:
         raise ValueError(
             "rgb_frame must be ({},{},3) uint8 RGB; got shape={}, dtype={}"
             .format(int(height), int(width), arr.shape, arr.dtype))
-
-    requested_mode = str(fit_mode)
-    resolved_scale = fit_mode_scale(requested_mode, scale=scale)
-    scaled_w = max(1, int(round(int(width) * resolved_scale)))
-    scaled_h = max(1, int(round(int(height) * resolved_scale)))
-    offset_x = (int(width) - scaled_w) // 2
-    offset_y = (int(height) - scaled_h) // 2
     meta = {
-        "fit_mode": requested_mode,
-        "scale": resolved_scale,
+        "fit_mode": "native",
+        "scale": 1.0,
         "input_width": int(width),
         "input_height": int(height),
-        "scaled_width": scaled_w,
-        "scaled_height": scaled_h,
-        "offset_x": offset_x,
-        "offset_y": offset_y,
+        "scaled_width": int(width),
+        "scaled_height": int(height),
+        "offset_x": 0,
+        "offset_y": 0,
         "background_rgb": tuple(int(v) for v in background),
         "resize_compose_s": 0.0,
-        "native_passthrough": bool(resolved_scale == 1.0),
+        "native_passthrough": True,
     }
-    if resolved_scale == 1.0:
-        return arr, meta
-
-    t0 = time.time()
-    try:
-        from PIL import Image
-    except Exception as exc:
-        raise RuntimeError("Pillow is required for HDMI fit modes: {}".format(exc))
-
-    canvas = np.empty((int(height), int(width), 3), dtype=np.uint8)
-    canvas[:, :, 0] = int(background[0]) & 0xFF
-    canvas[:, :, 1] = int(background[1]) & 0xFF
-    canvas[:, :, 2] = int(background[2]) & 0xFF
-
-    pil = Image.fromarray(arr, "RGB")
-    resized = pil.resize((scaled_w, scaled_h), Image.BILINEAR)
-    canvas[offset_y:offset_y + scaled_h,
-           offset_x:offset_x + scaled_w, :] = np.asarray(resized, dtype=np.uint8)
-    meta["resize_compose_s"] = time.time() - t0
-    return canvas, meta
+    return arr, meta
 
 
 def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
@@ -345,7 +289,7 @@ class AudioLabHdmiBackend(object):
     REQUIRED_MMIO_IPS = ("axi_vdma_hdmi", "v_tc_hdmi")
 
     def __init__(self, overlay, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-                 num_fstores=DEFAULT_NUM_FSTORES, hsync_shift=None):
+                 num_fstores=DEFAULT_NUM_FSTORES):
         self.overlay = overlay
         self.width = int(width)
         self.height = int(height)
@@ -361,18 +305,6 @@ class AudioLabHdmiBackend(object):
         self._started = False
         self._last_vdma_start = {}
         self._last_frame_write = {}
-        if hsync_shift is None:
-            env = os.environ.get("AUDIOLAB_HDMI_HSYNC_SHIFT")
-            if env is not None:
-                try:
-                    hsync_shift = int(env)
-                except ValueError:
-                    hsync_shift = VTC_HSYNC_SHIFT_DEFAULT
-            else:
-                hsync_shift = VTC_HSYNC_SHIFT_DEFAULT
-        self.hsync_shift = int(hsync_shift)
-        self._original_hsync = None
-        self._patched_hsync = None
 
     # ---- MMIO helpers --------------------------------------------------
     def _vdma_read(self, offset):
@@ -455,25 +387,12 @@ class AudioLabHdmiBackend(object):
         time.sleep(0.001)
         # Clear pending interrupt latches.
         self._vtc_write(0x004, 0xFFFFFFFF)
-        try:
-            self._original_hsync = int(self._vtc_read(VTC_GEN_HSYNC))
-        except Exception:
-            self._original_hsync = None
-        if self.hsync_shift and self._original_hsync is not None:
-            hstart = self._original_hsync & 0x1FFF
-            hend = (self._original_hsync >> 16) & 0x1FFF
-            new_hstart = (hstart + int(self.hsync_shift)) & 0x1FFF
-            new_hend = (hend + int(self.hsync_shift)) & 0x1FFF
-            patched = ((new_hend & 0x1FFF) << 16) | (new_hstart & 0x1FFF)
-            self._vtc_write(VTC_GEN_HSYNC, patched)
-            self._patched_hsync = patched
         # Enable generator and REG_UPDATE.
         self._vtc_write(VTC_CTL,
                         VTC_CTL_GENERATION_ENABLE | VTC_CTL_REG_UPDATE)
 
     # ---- public API -----------------------------------------------------
-    def start(self, rgb_frame=None, fit_mode="native", scale=None,
-              background=(0, 0, 0), placement="center",
+    def start(self, rgb_frame=None, background=(0, 0, 0), placement="center",
               offset_x=None, offset_y=None):
         """Allocate a framebuffer, fill it from ``rgb_frame`` (or black if
         None), program VDMA and VTC, and return the framebuffer ndarray.
@@ -488,8 +407,8 @@ class AudioLabHdmiBackend(object):
         if rgb_frame is None:
             self._framebuffer[...] = 0
             self._last_frame_write = {
-                "fit_mode": str(fit_mode),
-                "scale": fit_mode_scale(fit_mode, scale=scale),
+                "fit_mode": "native",
+                "scale": 1.0,
                 "input_width": self.width,
                 "input_height": self.height,
                 "scaled_width": self.width,
@@ -505,8 +424,8 @@ class AudioLabHdmiBackend(object):
                 "logical_placement": False,
             }
         else:
-            self.write_frame(rgb_frame, fit_mode=fit_mode, scale=scale,
-                             background=background, placement=placement,
+            self.write_frame(rgb_frame, background=background,
+                             placement=placement,
                              offset_x=offset_x, offset_y=offset_y)
 
         phys = int(self._framebuffer.physical_address)
@@ -515,26 +434,31 @@ class AudioLabHdmiBackend(object):
         self._started = True
         return self._framebuffer
 
-    def write_frame(self, rgb_frame, fit_mode="native", scale=None,
-                    background=(0, 0, 0), placement="center",
+    def write_frame(self, rgb_frame, background=(0, 0, 0), placement="center",
                     offset_x=None, offset_y=None):
-        """Overwrite the framebuffer in place with a new RGB888 ndarray."""
+        """Overwrite the framebuffer in place with a new RGB888 ndarray.
+
+        Two paths:
+        - ``rgb_frame`` matches the framebuffer dimensions exactly
+          (``DEFAULT_WIDTH`` x ``DEFAULT_HEIGHT`` = 800x600 on the
+          Phase 6I baseline): zero-copy native passthrough.
+        - Otherwise: ``compose_logical_frame`` places the (smaller)
+          frame inside the framebuffer at ``placement`` / ``offset_x``
+          / ``offset_y``. The Phase 6I runtime uses
+          ``placement="manual"`` with ``offset_x=offset_y=0`` to pin
+          the 800x480 GUI to the top-left of the 800x600 framebuffer.
+        """
         if self._framebuffer is None:
             raise RuntimeError("HDMI back end has not been started yet")
         arr = np.asarray(rgb_frame)
         if arr.shape == (self.height, self.width, 3):
-            fitted, meta = compose_fit_frame(
-                arr, fit_mode=fit_mode, scale=scale, width=self.width,
-                height=self.height, background=background)
+            fitted, meta = compose_native_frame(
+                arr, width=self.width, height=self.height,
+                background=background)
             meta["placement"] = str(placement)
             meta["compose_s"] = meta.get("resize_compose_s", 0.0)
             meta["logical_placement"] = False
         else:
-            if str(fit_mode) != "native" or scale is not None:
-                raise ValueError(
-                    "fit_mode/scale are only for native framebuffer-sized "
-                    "frames (DEFAULT_WIDTH x DEFAULT_HEIGHT = 800x600 on the "
-                    "Phase 6I baseline); logical frames use placement")
             fitted, meta = compose_logical_frame(
                 arr, width=self.width, height=self.height,
                 placement=placement, offset_x=offset_x, offset_y=offset_y,
@@ -582,14 +506,6 @@ class AudioLabHdmiBackend(object):
             "vtc_ctl": self._hex32(self._vtc_read(VTC_CTL)),
             "vtc_ip_phys_addr": self._hex32(self._vtc_ip_desc["phys_addr"]),
             "vtc_ip_addr_range": int(self._vtc_ip_desc["addr_range"]),
-            "vtc_gen_hsync": self._hex32(self._vtc_read(VTC_GEN_HSYNC)),
-            "vtc_hsync_shift": int(self.hsync_shift),
-            "vtc_original_hsync": (
-                self._hex32(self._original_hsync)
-                if self._original_hsync is not None else None),
-            "vtc_patched_hsync": (
-                self._hex32(self._patched_hsync)
-                if self._patched_hsync is not None else None),
             "framebuffer_phys_address": (
                 self._hex32(int(self._framebuffer.physical_address))
                 if self._framebuffer is not None else None),
@@ -645,8 +561,6 @@ __all__ = [
     "DEFAULT_WIDTH",
     "DEFAULT_HEIGHT",
     "DEFAULT_BYTES_PER_PIXEL",
-    "FIT_MODE_SCALES",
-    "fit_mode_scale",
-    "compose_fit_frame",
+    "compose_native_frame",
     "compose_logical_frame",
 ]

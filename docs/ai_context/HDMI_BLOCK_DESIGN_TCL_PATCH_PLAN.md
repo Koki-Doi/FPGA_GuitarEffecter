@@ -9,7 +9,7 @@ separate helper `hw/Pynq-Z2/hdmi_integration.tcl`, which is sourced by
 `block_design.tcl`. The plan remains as the architectural reference and
 is now aligned with the built RGB888 / 24-bit VDMA path.
 
-Refer to `HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for context on
+Refer to `history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for context on
 why Option B (`axi_vdma` + `v_tc` + `v_axi4s_vid_out` + `rgb2dvi`) is
 the recommended target.
 

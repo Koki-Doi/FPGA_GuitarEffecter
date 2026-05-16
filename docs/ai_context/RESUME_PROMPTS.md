@@ -46,7 +46,7 @@ asking it to re-discover the project from scratch.
 ### HDMI GUI Phase 6F result -- x-origin guard refresh
 
 > HDMI GUI Phase 6F の recurring right-shift 調査は 2026-05-16 に
-> 再確認済みです。`docs/ai_context/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`
+> 再確認済みです。`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`
 > を読んでから再開してください。renderer は compact-v2
 > `pipboy-green` で bbox `(0,799,0,479)`、backend は
 > `placement="manual"`, `offset_x=0`, `offset_y=0`, `dst_x0=0`,
@@ -64,7 +64,7 @@ asking it to re-discover the project from scratch.
 ### HDMI GUI Phase 6G result -- strong UI bbox + actual UI visual diagnostics
 
 > HDMI GUI Phase 6G の診断系は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md` を読んで
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md` を読んで
 > から再開してください。Phase 6F の `nonzero_bbox=[0,799,0,479]`
 > は背景 / scanline / marker でも成立するため不十分だったので、
 > Phase 6G で `scripts/test_hdmi_render_bbox.py` を strong UI bbox
@@ -86,7 +86,7 @@ asking it to re-discover the project from scratch.
 ### HDMI GUI Phase 6H result -- (1).py spec port
 
 > HDMI GUI Phase 6H (`d7ea0ab`) は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md` を読んでから
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md` を読んでから
 > 再開してください。`GUI/pynq_multi_fx_gui.py` は (1).py 仕様に
 > 移植済みで、compact-v2 のレイアウトは Phase 4G/4I baseline
 > `COMPACT_V2_LAYOUT.outer=(12,12,788,468)`, `left=24`, `right=24`,
@@ -118,7 +118,7 @@ asking it to re-discover the project from scratch.
 ### HDMI GUI Phase 6H result -- native 800x480 HDMI timing
 
 > HDMI GUI Phase 6H native 800x480 timing は実装・build・deploy 済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` を読んで
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` を読んで
 > から再開してください。Phase 6F/6G で Python renderer /
 > HDMIBackend / framebuffer origin は正常 (`dst_x0=0`, `dst_y0=0`,
 > strong UI panel left <= 40) と確認済みなのに 5-inch LCD で左空白が
@@ -152,7 +152,7 @@ asking it to re-discover the project from scratch.
 ### HDMI GUI Phase 1 result — continue from benchmark
 
 > HDMI GUI Phase 1 の offscreen render benchmark は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md` を読んでから再開して
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE1_RENDER_BENCH.md` を読んでから再開して
 > ください。PYNQ-Z2 (`192.168.1.9`) の環境は Python 3.6.5 /
 > NumPy 1.16.0 / Pillow 5.1.0。`GUI/pynq_multi_fx_gui.py` はPYNQ上の
 > repoには未配置だったため、測定時は `/tmp/hdmi_gui_phase1/` に一時
@@ -187,7 +187,7 @@ asking it to re-discover the project from scratch.
 > 見た目の大きな崩れなし。HDMI出力、`run_pynq_hdmi()`、
 > `Overlay("base.bit")`、`AudioLabOverlay()`、Vivado変更、bitstream
 > rebuild、deploy、GPIO bridge、DSP変更はしていません。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` を読んでください。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md` を読んでください。
 
 ### HDMI GUI Phase 2B result — static/change-driven renderer optimized
 
@@ -209,7 +209,7 @@ asking it to re-discover the project from scratch.
 > p95 `276.171 ms`。PNG は
 > `/tmp/hdmi_gui_phase2b/phase2b_pynq_static.png` に保存し、1280x720 RGBで
 > 見た目の大きな崩れなし。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` を読んでください。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md` を読んでください。
 > `base.bit` ロード、`run_pynq_hdmi()`、Vivado変更、bitstream rebuild、
 > deploy、`git push` / `git pull` / `git fetch`は禁止です。
 
@@ -242,7 +242,7 @@ asking it to re-discover the project from scratch.
 > 0 operations、knob drag は 10Hz 相当で throttle、throttle後は
 > 1 operation。`render_frame_pynq_static(AppState())` は
 > `[720, 1280, 3]` / `uint8` を維持。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` を読んでください。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md` を読んでください。
 > HDMI出力、`run_pynq_hdmi()`、`Overlay("base.bit")`、
 > `AudioLabOverlay()` load、Vivado変更、bitstream rebuild、deploy、
 > Notebook変更、DSP/Clash変更、`git push` / `git pull` / `git fetch`
@@ -279,7 +279,7 @@ asking it to re-discover the project from scratch.
 > 窓の外は 1 op。pre/post smoke はどちらも `ADC HPF=True`、
 > `R19=0x23`、`has delay_line gpio=False`、
 > `has legacy axi_gpio_delay=True`。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`。
 
 ### HDMI GUI Phase 3 result — Vivado integration proposal
 
@@ -304,11 +304,11 @@ asking it to re-discover the project from scratch.
 > 両 domain は WNS >= 0。Rollback は bit/hwh 日付付きバックアップと
 > 将来 feature branch 上の `git revert`、`git push` / `pull` /
 > `fetch` は引き続き禁止。設計書は
-> `docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`、
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`、
 > `block_design.tcl` パッチ案 (未適用) は
 > `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`、Phase 4
 > 実装用プロンプト雛形は
-> `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`。
 
 ### HDMI GUI Phase 4 result — integrated overlay deployed
 
@@ -337,7 +337,7 @@ asking it to re-discover the project from scratch.
 > 作る設計です。`Overlay("base.bit")`、`run_pynq_hdmi()`、second
 > overlay load、DSP/Clash/topEntity/GPIO 変更、`git push` / `pull` /
 > `fetch` は引き続き禁止です。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`。
 
 ### HDMI GUI Phase 4C result — static frame and resource profile
 
@@ -346,7 +346,7 @@ asking it to re-discover the project from scratch.
 > `audio_lab.xdc` / `create_project.tcl` / Clash / DSP / `topEntity` /
 > GPIO変更はしていません。追加した測定スクリプトは
 > `scripts/profile_hdmi_static_frame.py`、結果docsは
-> `docs/ai_context/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` です。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md` です。
 > PYNQ-Z2 (`192.168.1.9`) で `AudioLabOverlay()` を1回だけロードし、
 > `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load は
 > 未使用です。Static frame再確認は ADC HPF=True / R19=0x23 /
@@ -391,7 +391,7 @@ asking it to re-discover the project from scratch.
 > `fit-85`、`fit-95`で全て見えるなら `fit-95` が画面面積を多く使えます。
 > Codexは物理画面を見られないため、最終fit mode、色順、文字可読性、
 > 縦横比はユーザー目視で決定してください。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`。
 > `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
 > `git push` / `pull` / `fetch` は引き続き禁止です。
 
@@ -423,7 +423,7 @@ asking it to re-discover the project from scratch.
 > ユーザーの物理目視で読みやすさ・色順・縦横比・中央配置を確認し、
 > 必要なら800x480 layout調整、部分copy最適化、Phase 5 change-driven
 > loopへ進んでください。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`。
 
 ### HDMI GUI Phase 4F result — viewport calibration and manual placement
 
@@ -452,7 +452,7 @@ asking it to re-discover the project from scratch.
 > `(0,0)` が合うなら左上crop、`(80,40)` が合うなら軽いoverscan、
 > `(120,60)` が合うなら中程度offset、どれも合わないならHDMI timing /
 > LCD controller側を疑います。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`。
 
 ### HDMI GUI Phase 4G result — compact-v2 layout and negative offsets
 
@@ -488,7 +488,7 @@ asking it to re-discover the project from scratch.
 > `negative_offset=True` / `clipped=True` / `fully_offscreen=False`。
 > post Safe Bypass smoke OK。最適offsetはユーザー目視で
 > `--seconds-per-offset 15` 等で再撮影して決定してください。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`。
 
 ### HDMI GUI Phase 4H result — vertical safe margin + layout diagnosis
 
@@ -536,7 +536,7 @@ asking it to re-discover the project from scratch.
 > OK。最終 `offset_y` と layout-debug 写真の解釈はユーザー目視で
 > `--seconds-per-offset 15 --hold-final-seconds 30` 等で再撮影して
 > 決定してください。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`。
 
 ### HDMI GUI Phase 4I result — restore compact-v2 baseline
 
@@ -582,7 +582,7 @@ asking it to re-discover the project from scratch.
 > composite する方向。HDMI timing を native 800x480 にする Vivado
 > 対応は Phase 5 (bit / hwh rebuild + timing summary review 必要)
 > として明示的に後回し。詳細は
-> `docs/ai_context/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`。
 
 ### HDMI GUI Phase 5A result — output-side diagnosis
 
@@ -639,8 +639,8 @@ asking it to re-discover the project from scratch.
 > Phase 5B は別承認、Vivado rebuild、fresh timing summary、
 > WNS baseline `-8.163 ns` との比較、rollback bit/hwh backup 前提。
 > 詳細は
-> `docs/ai_context/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md` と
-> `docs/ai_context/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`。
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md` と
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`。
 
 ### HDMI GUI Phase 5C result — default 800x480 x0 y0 viewport
 
@@ -710,7 +710,7 @@ asking it to re-discover the project from scratch.
 >
 > 触ったファイルは `GUI/pynq_multi_fx_gui.py` と
 > `scripts/test_hdmi_800x480_frame.py`、それに
-> `docs/ai_context/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` 等
+> `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` 等
 > docs のみ。`THEMES = {"cyan": CYAN_THEME, "pipboy-green": PIPBOY_THEME}`,
 > `DEFAULT_800X480_THEME = "pipboy-green"`、`render_frame_800x480(...,
 > theme="pipboy-green")` で旧 cyan も呼び出し可能。compact-v1 は

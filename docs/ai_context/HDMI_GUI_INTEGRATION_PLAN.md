@@ -56,24 +56,24 @@ Option B (`axi_vdma` + `v_tc` +
 `v_axi4s_vid_out` + Digilent `rgb2dvi`) in the AudioLab bitstream.
 No `base.bit` load is used; runtime still loads exactly one
 `AudioLabOverlay()`. See
-`HDMI_GUI_PHASE1_RENDER_BENCH.md`,
-`HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`,
-`HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`,
-`HDMI_GUI_PHASE2C_BRIDGE_PLAN.md`,
-`HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`,
-`HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE1_RENDER_BENCH.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`,
 `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`, and
-`HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
-`HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`,
-`HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`,
-`HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`,
-`HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`,
-`HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`,
-`HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`,
-`HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`,
-`HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`,
-`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, and
-`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md` for the
+`history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`, and
+`history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_RESULT.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4C_RESOURCE_PROFILE.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4D_LCD_FIT_TEST.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4E_800X480_LOGICAL_GUI.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4F_VIEWPORT_CALIBRATION.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`,
+`history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, and
+`history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md` for the
 measured results, design, build, deploy, timing, smoke logs, runtime
 resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
@@ -84,7 +84,7 @@ existing 1280x720 HDMI signal with the 800x480 compact GUI at
 framebuffer `x=0,y=0`.
 Phase 6H supersedes that default for the 5-inch LCD by using a native
 800x480 HDMI signal and a native 800x480 framebuffer. See
-`HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
+`history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
 
 ## 1. Current state
 
@@ -156,7 +156,7 @@ and `DECISIONS.md` D24):
   `strong_ui_bbox=[24,776,20,454]`, all `estimated_*_left_x=24`,
   inside `<=28` / `<=40` thresholds. No bit/hwh / Vivado / Clash /
   GPIO change. See
-  `docs/ai_context/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
+  `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
 - Phase 6H native 800x480 timing (2026-05-16, after the renderer port)
   changes the integrated HDMI signal from 1280x720 to native 800x480.
   The final timing is pixel clock `40.000 MHz`, H
@@ -168,7 +168,7 @@ and `DECISIONS.md` D24):
   model UI, and realtime pedalboard tests pass with VDMA error bits
   clear. Human LCD left-edge confirmation remains the final visual
   check. See
-  `docs/ai_context/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
+  `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
 
 ### AudioLabOverlay and audio_lab.bit
 
@@ -984,7 +984,7 @@ Phase 1 result (2026-05-14):
   display is plausible after compatibility fixes.
 
 Detailed numbers are recorded in
-`docs/ai_context/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE1_RENDER_BENCH.md`.
 
 ### Phase 2A: PYNQ offscreen compatibility without HDMI
 
@@ -1018,7 +1018,7 @@ Phase 2A result (2026-05-14):
   should be static/change-driven.
 
 Detailed numbers are recorded in
-`docs/ai_context/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2A_PYNQ_COMPAT.md`.
 
 Live HDMI mode should therefore freeze or heavily throttle the current
 animated visualizer / waveform / synthetic meters. The backend should
@@ -1060,7 +1060,7 @@ Phase 2B result (2026-05-14):
   and visually checked.
 
 Detailed numbers are recorded in
-`docs/ai_context/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2B_RENDER_OPTIMIZATION.md`.
 
 ### Phase 2C: AppState / AudioLabOverlay bridge without HDMI
 
@@ -1089,7 +1089,7 @@ Phase 2C result (2026-05-14):
   `[720, 1280, 3]` / `uint8` on the PYNQ during the bridge check.
 
 Detailed results are recorded in
-`docs/ai_context/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2C_BRIDGE_PLAN.md`.
 
 ### Phase 2D: AppState / AudioLabOverlay bridge runtime test (real overlay)
 
@@ -1117,7 +1117,7 @@ Phase 2D result (2026-05-14):
   bitstream / hwh change, no deploy, no Notebook / DSP edit.
 
 Detailed results are recorded in
-`docs/ai_context/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE2D_BRIDGE_RUNTIME_TEST.md`.
 
 ### Phase 3: integrated HDMI Vivado design proposal
 
@@ -1168,11 +1168,11 @@ Phase 3 result (2026-05-14):
   feature branch; `git push` / `pull` / `fetch` stay forbidden.
 
 The full proposal lives at
-`docs/ai_context/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`. The
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md`. The
 `block_design.tcl` patch shape (design-only, NOT applied) is at
 `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`. The Phase 4
 implementation prompt draft is at
-`docs/ai_context/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`.
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`.
 
 ### Phase 4: bit/hwh rebuild and timing check
 
@@ -1253,7 +1253,7 @@ Implementation outline (delivered):
     --offset-x 0 --offset-y 0 --hold-seconds 60
   ```
 
-See `docs/ai_context/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` for the
+See `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5D_PIPBOY_GREEN_THEME.md` for the
 full palette, scanline parameters, and the on-board VDMA / VTC status
 captured for this run.
 
@@ -1339,7 +1339,7 @@ candidate 800x480 timings. The originally planned `33.333 / 33.000 /
 27.000 MHz` cuts all fell below the `rgb2dvi v1.4 kClkRange=3` PLL VCO
 floor (`pixel >= 40 MHz`). The accepted candidate is **VESA SVGA
 800x600 @ 60 Hz / 40 MHz** (Candidate C2 in
-`docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`): a
+`docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`): a
 standard scaler-friendly DMT mode that keeps the panel's native 800
 pixel width.
 
@@ -1382,7 +1382,7 @@ explicitly. Rollback backups:
   `/home/xilinx/Audio-Lab-PYNQ/backups/phase6h_720p/` (PYNQ) and
   `/tmp/fpga_guitar_effecter_backup/phase6i_baseline_720p/` (local).
 
-See `docs/ai_context/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md` for the
+See `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md` for the
 candidate table, the per-candidate VCO math, and the build / deploy
 gotchas (`VIDEO_MODE Custom`, `VBLANK_HSTART/HEND`, three bit-copy
 sync) discovered during the sweep.
