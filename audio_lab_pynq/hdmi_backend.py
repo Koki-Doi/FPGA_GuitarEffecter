@@ -144,6 +144,30 @@ def _allocate_framebuffer(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                               cacheable=False)
 
 
+def _native_passthrough_meta(width, height, background):
+    """Build the shared meta dict for a framebuffer-sized native frame.
+
+    Used by both ``compose_native_frame`` (called from
+    ``AudioLabHdmiBackend.write_frame`` when the input ndarray already
+    matches the framebuffer) and ``AudioLabHdmiBackend.start`` with
+    ``rgb_frame=None`` (allocates a black framebuffer). Centralising it
+    keeps the key set in sync between the two call sites.
+    """
+    return {
+        "fit_mode": "native",
+        "scale": 1.0,
+        "input_width": int(width),
+        "input_height": int(height),
+        "scaled_width": int(width),
+        "scaled_height": int(height),
+        "offset_x": 0,
+        "offset_y": 0,
+        "background_rgb": tuple(int(v) for v in background),
+        "resize_compose_s": 0.0,
+        "native_passthrough": True,
+    }
+
+
 def compose_native_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
                          background=(0, 0, 0)):
     """Return the input frame unchanged when it already matches the framebuffer.
@@ -159,20 +183,7 @@ def compose_native_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
         raise ValueError(
             "rgb_frame must be ({},{},3) uint8 RGB; got shape={}, dtype={}"
             .format(int(height), int(width), arr.shape, arr.dtype))
-    meta = {
-        "fit_mode": "native",
-        "scale": 1.0,
-        "input_width": int(width),
-        "input_height": int(height),
-        "scaled_width": int(width),
-        "scaled_height": int(height),
-        "offset_x": 0,
-        "offset_y": 0,
-        "background_rgb": tuple(int(v) for v in background),
-        "resize_compose_s": 0.0,
-        "native_passthrough": True,
-    }
-    return arr, meta
+    return arr, _native_passthrough_meta(width, height, background)
 
 
 def compose_logical_frame(rgb_frame, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
@@ -406,23 +417,12 @@ class AudioLabHdmiBackend(object):
         # Fill with content
         if rgb_frame is None:
             self._framebuffer[...] = 0
-            self._last_frame_write = {
-                "fit_mode": "native",
-                "scale": 1.0,
-                "input_width": self.width,
-                "input_height": self.height,
-                "scaled_width": self.width,
-                "scaled_height": self.height,
-                "offset_x": 0,
-                "offset_y": 0,
-                "placement": str(placement),
-                "background_rgb": tuple(int(v) for v in background),
-                "resize_compose_s": 0.0,
-                "compose_s": 0.0,
-                "framebuffer_copy_s": 0.0,
-                "native_passthrough": True,
-                "logical_placement": False,
-            }
+            meta = _native_passthrough_meta(self.width, self.height, background)
+            meta["placement"] = str(placement)
+            meta["compose_s"] = 0.0
+            meta["framebuffer_copy_s"] = 0.0
+            meta["logical_placement"] = False
+            self._last_frame_write = meta
         else:
             self.write_frame(rgb_frame, background=background,
                              placement=placement,

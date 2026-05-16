@@ -114,6 +114,14 @@ not get removed even when superseded — they get updated.
   user wants a different RAT-style flavour, expose it as a new
   pedal bit (e.g. an unused reserved slot) rather than rewriting
   the existing one.
+- **Naming alias.** The underlying AXI GPIO at `0x43C80000` is
+  still named `axi_gpio_delay` in the block design and HWH — that
+  name is locked under D2 / D12 so it cannot move. New code reading
+  the overlay should prefer `AudioLabOverlay.axi_gpio_rat`, a
+  read-only `@property` that returns the same MMIO object as
+  `axi_gpio_delay`. Internal write paths in `AudioLabOverlay` and
+  the GPIO map docs still use `axi_gpio_delay` because that is
+  what `overlay.ip_dict` advertises.
 
 ## D9 — `ds1` / `big_muff` / `fuzz_face` reservation lifted; bits 3-5 are now implemented
 
@@ -263,9 +271,11 @@ not get removed even when superseded — they get updated.
     introduce a new C++ prototype.
   - Algorithm shape from GPL projects (guitarix, BYOD, etc.) is
     fair to reference (D7); their source is not.
-  - `make tests` now runs Python tests only. `make cpp_tests` /
-    `make test_cpp` are deprecated targets that print a notice
-    instead of running anything.
+  - `make tests` now runs Python tests only. The earlier
+    `make cpp_tests` / `make test_cpp` no-op stubs were kept for a
+    transition window after the prototypes were deleted; those stub
+    targets are now gone (`Makefile`). If a future agent finds
+    documentation that still references them, treat the doc as stale.
 
 ## D14 — Compressor lives on its own AXI GPIO
 

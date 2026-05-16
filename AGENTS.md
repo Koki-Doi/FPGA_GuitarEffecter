@@ -30,7 +30,7 @@ Then read the topic doc that matches the work:
 | Bitstream build / deploy | `docs/ai_context/BUILD_AND_DEPLOY.md` |
 | PYNQ-Z2 board operations | `docs/ai_context/PYNQ_RUNTIME.md` |
 | HDMI GUI / 5-inch LCD | `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` (+ `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected), `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`) |
-| Resuming after a stop | `docs/ai_context/RESUME_PROMPTS.md` |
+| Resuming after a stop | `docs/ai_context/RESUME_PROMPTS.md` (current; per-phase history in `docs/ai_context/RESUME_PROMPTS_HISTORY.md`) |
 
 ## Hard constraints
 
