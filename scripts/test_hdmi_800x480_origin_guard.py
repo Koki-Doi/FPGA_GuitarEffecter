@@ -85,6 +85,39 @@ def bbox_of_non_background(frame, background=(0, 0, 0), tol=8):
     return int(xs[0]), int(xs[-1]), int(ys[0]), int(ys[-1])
 
 
+def framebuffer_nonzero_probe(framebuffer):
+    """Measure where non-black data landed in the 1280x720 DDR framebuffer.
+
+    The framebuffer is already swizzled to GBR byte order, but the origin
+    question only needs non-zero placement. The synthetic origin frame has
+    non-black pixels throughout x=0..799, y=0..479 and black everywhere
+    outside that logical source region after compose.
+    """
+    import numpy as np
+    arr = np.asarray(framebuffer)
+    mask = arr.sum(axis=2) > 0
+    cols = mask.any(axis=0)
+    rows = mask.any(axis=1)
+    if not cols.any() or not rows.any():
+        bbox = None
+    else:
+        xs = np.where(cols)[0]
+        ys = np.where(rows)[0]
+        bbox = [int(xs[0]), int(xs[-1]), int(ys[0]), int(ys[-1])]
+    return {
+        "shape": list(arr.shape),
+        "nonzero_bbox": bbox,
+        "x0_column_sum": int(arr[:, 0, :].sum()),
+        "x10_column_sum": int(arr[:, 10, :].sum()),
+        "x20_column_sum": int(arr[:, 20, :].sum()),
+        "x240_column_sum": int(arr[:, 240, :].sum()),
+        "x799_column_sum": int(arr[:, 799, :].sum()),
+        "x800_column_sum": int(arr[:, 800, :].sum()),
+        "outside_800x480_sum": int(arr[480:, :, :].sum()
+                                   + arr[:480, 800:, :].sum()),
+    }
+
+
 def hwh_contains(instance_name):
     candidates = [
         os.path.join(os.path.dirname(__file__), "..",
@@ -206,7 +239,11 @@ def main():
         for name, expected in (
                 ("placement", "manual"),
                 ("offset_x", 0),
-                ("offset_y", 0)):
+                ("offset_y", 0),
+                ("dst_x0", 0),
+                ("dst_y0", 0),
+                ("src_width", 800),
+                ("src_height", 480)):
             actual = meta.get(name)
             ok = actual == expected
             report["checks"].append({"name": "compose_logical_frame." + name,
@@ -275,7 +312,9 @@ def main():
         report["hdmi_status"] = backend.status()
         report["hdmi_errors"] = backend.errors()
         for name, expected in (("placement", "manual"),
-                                ("offset_x", 0), ("offset_y", 0)):
+                                ("offset_x", 0), ("offset_y", 0),
+                                ("dst_x0", 0), ("dst_y0", 0),
+                                ("src_width", 800), ("src_height", 480)):
             actual = meta.get(name)
             ok = actual == expected
             report["checks"].append({"name": "backend." + name,
@@ -311,6 +350,20 @@ def main():
                 report["failures"].append(
                     "source_visible_region.{} = {!r}, expected {!r}".format(
                         name, actual, expected))
+
+        fb_probe = framebuffer_nonzero_probe(backend._framebuffer)
+        report["framebuffer_probe"] = fb_probe
+        bbox = fb_probe.get("nonzero_bbox")
+        if bbox != [0, 799, 0, 479]:
+            report["failures"].append(
+                "framebuffer nonzero bbox = {!r}, expected [0, 799, 0, 479]"
+                .format(bbox))
+        if fb_probe.get("outside_800x480_sum") != 0:
+            report["failures"].append(
+                "framebuffer outside 800x480 is not black: sum={}"
+                .format(fb_probe.get("outside_800x480_sum")))
+        if fb_probe.get("x0_column_sum", 0) <= 0:
+            report["failures"].append("framebuffer x=0 column is black")
 
         errors = backend.errors()
         if errors.get("dmainterr") or errors.get("dmaslverr") or errors.get("dmadecerr"):

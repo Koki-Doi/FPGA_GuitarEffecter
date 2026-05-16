@@ -65,6 +65,10 @@ def test_compose_logical_manual_x0_y0_places_at_origin():
     assert meta["placement"] == "manual"
     assert meta["offset_x"] == 0
     assert meta["offset_y"] == 0
+    assert meta["dst_x0"] == 0
+    assert meta["dst_y0"] == 0
+    assert meta["src_width"] == 800
+    assert meta["src_height"] == 480
     dst = meta["framebuffer_copied_region"]
     assert dst["x0"] == 0
     assert dst["y0"] == 0

@@ -42,194 +42,21 @@ asking it to re-discover the project from scratch.
 > ください。
 > `git push` / `git pull` / `git fetch` は禁止です。
 
-### HDMI GUI Phase 6A result — Notebook-driven selected FX mirror
+### HDMI GUI Phase 6F result -- x-origin guard refresh
 
-> HDMI GUI Phase 6A は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md` を読んで
-> から再開してください。Notebookからの操作を
-> `audio_lab_pynq.hdmi_effect_state_mirror.HdmiEffectStateMirror` 経由にし、
-> 既存 `AudioLabOverlay` API write、`AppState` 更新、`SELECTED FX`
-> 履歴記録、800x480 HDMI再描画を1操作にまとめました。
-> GUIはまだDSPを操作しません。`SELECTED FX` は last edited effect で、
-> Safe Bypass=`SAFE BYPASS`、preset=`PRESET`、Noise Suppressor /
-> Compressor / Overdrive / Distortion / RAT / Amp / Cab / EQ / Reverb
-> の各操作で対応する表示に切り替わります。Notebookは
-> `notebooks/HdmiEffectStatusOneCell.ipynb`、1 code cellのみ。
-> 実機CLI `scripts/test_hdmi_selected_fx_switch.py` はPYNQ-Z2
-> (`192.168.1.9`) 上で全step PASS、VDMA error bitsなし、
-> `DMASR=0x00011000`、`vtc_ctl=0x00000006`、800x480 `x=0,y=0` 維持。
-> 今後も direct `ovl.set_*` だけでは last edited effect を検出できない
-> ので、Notebook操作は `fx.*` または `mirror.*` 経由にしてください。
-> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
-> Vivado rebuild、bit/hwh再生成、`git push` / `git pull` / `git fetch`
-> は禁止です。
-
-### HDMI GUI Phase 6B result — Notebook-controlled model labels
-
-> HDMI GUI Phase 6B は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6B_MODEL_SELECTION_UI.md` を読んでから
-> 再開してください。Phase 6A の `HdmiEffectStateMirror` を拡張し、
-> Notebook の `fx.*` 操作で pedal / amp / cab model を切替え、その
-> SELECTED FX と model label を 800x480 HDMI GUI に反映します。
-> GUI は引き続き display-only で DSP を操作しません。pedal は既存
-> `axi_gpio_distortion.ctrlD` pedal mask (`clean_boost`,
-> `tube_screamer`, `rat`, `ds1`, `big_muff`, `fuzz_face`, `metal`)、
-> amp は既存 `set_amp_model()` / `amp_character`、cab は既存
-> `cab_model=0/1/2` (`1x12 OPEN`, `2x12 COMBO`, `4x12 CLOSED`) を使い、
-> bit/hwh 変更は不要です。標準表示は compact-v2 `pipboy-green`,
-> `placement=manual`, `offset_x=0`, `offset_y=0` です。
-> 実機CLI `scripts/test_hdmi_model_selection_ui.py` はPYNQ-Z2
-> (`192.168.1.9`) 上で12/12 PASS、skip/failureなし、VDMA error bits
-> なし、`DMASR=0x00011000`、`vtc_ctl=0x00000006`。
-> `Overlay("base.bit")`、`run_pynq_hdmi()`、second overlay load、
-> Vivado rebuild、bit/hwh再生成、`git push` / `git pull` / `git fetch`
-> は禁止です。
-
-### HDMI GUI Phase 6C result — Realtime notebook pedalboard + dropdown chip
-
-> HDMI GUI Phase 6C は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6C_REALTIME_NOTEBOOK_PEDALBOARD.md`
-> を読んでから再開してください。Phase 6B の `HdmiEffectStateMirror`
-> を拡張し、新規 `notebooks/HdmiRealtimePedalboardOneCell.ipynb`
-> (1 code cell only) の ipywidgets でカテゴリ / モデル dropdown,
-> ON/OFF, slider, リソースモニタを提供します。各操作は mirror 経由で
-> 既存 `AudioLabOverlay` API を呼んで実 DSP を更新し、800x480 HDMI を
-> `placement="manual"`, `offset_x=0`, `offset_y=0` で再描画します。
-> compact-v2 fx panel には SELECTED FX 名の右に `[model ▼]` chip
-> (150x30 px, 三角はpolygon) を追加し、`TUBE SCRMR` / `BRIT CRUNCH`
-> / `HI-GAIN` / `CLN BOOST` / `FUZZ` / `2x12 CMB` / `SAFE` などに
-> 短縮しています。`audio_lab_pynq/hdmi_effect_state_mirror.py` には
-> `/proc` ベース `ResourceSampler` (psutil 不要)、
-> `SELECTED_FX_CATEGORY` / `DROPDOWN_SHORT_LABELS` / 関連 helper、
-> `resource_summary()` / `selected_history()` / `summary()` を追加。
-> 新規 CLI:
-> `scripts/test_hdmi_realtime_pedalboard_controls.py` と
-> `scripts/test_hdmi_800x480_origin_guard.py` (右寄り検出 + 実 HDMI
-> 表示確認; `--dry-run` 対応)。新規 unit tests:
-> `tests/test_hdmi_origin_mapping.py` と
-> `tests/test_hdmi_resource_monitor.py`。ローカルで 30 PASS。
-> bit/hwh / Vivado / `block_design.tcl` / `audio_lab.xdc` /
-> `create_project.tcl` / Clash 変更なし、`Overlay("base.bit")` /
-> `run_pynq_hdmi()` / second overlay 禁止、`git push` / `git pull` /
-> `git fetch` 禁止。
-
-### HDMI GUI Phase 6D result — Restore compact UI + conditional dropdown
-
-> HDMI GUI Phase 6D は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6D_RESTORE_UI_AND_CONDITIONAL_DROPDOWN.md`
-> を読んでから再開してください。Phase 6C の `[model ▼]` chip が
-> ACTIVE MODELS の PEDAL / AMP 行に重なって status 表示が消えていた
-> 問題を解消し、`0a07f2a` 時点の compact-v2 800x480 レイアウトを復元
-> しました。chip 描画は廃止し、SELECTED FX のカテゴリが PEDAL / AMP
-> / CAB のときだけ、ACTIVE MODELS の対応行に細い outline + 三角形
-> マーカーを描きます。REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR /
-> SAFE BYPASS / PRESET / OVERDRIVE では追加マーカーは描きません。
-> AppState に `selected_model_dropdown_visible: bool` を追加し、
-> mirror の `dropdown_label_for(...)` は非モデルカテゴリで `""` を
-> 返すよう契約を変更しました (truthiness で表示判定可能)。
-> Notebook ipywidgets が唯一のコントロール面、HDMI は display-only
-> のまま。`scripts/test_hdmi_model_selection_ui.py` は 16/16 PASS
-> (7 PEDAL, 3 AMP, 1 CAB, REVERB, COMPRESSOR, NOISE SUPPRESSOR,
-> SAFE BYPASS, PRESET)、`render_s ~0.15-0.18 s`,
-> `framebuffer_copy_s ~0.21 s`, `DMASR=0x00011000`,
-> `vtc_ctl=0x00000006`, 800x480 `x=0,y=0` 維持、ADC HPF true、
-> R19=0x23。ローカル unit tests も 40 PASS。bit/hwh / Vivado /
-> `block_design.tcl` / `audio_lab.xdc` / `create_project.tcl` /
-> Clash 変更なし、`Overlay("base.bit")` / `run_pynq_hdmi()` /
-> second overlay 禁止、`git push` / `git pull` / `git fetch` 禁止。
-
-### HDMI GUI Phase 6E result — Per-effect knob grid + AMP presence/resonance
-
-> HDMI GUI Phase 6E は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6E_PER_EFFECT_KNOB_GRID.md` を読んで
-> から再開してください。Phase 6D の compact-v2 で残っていた
-> `PEDAL MODEL / AMP MODEL / CAB` の slot 行 (CLEAN/TS/RAT/DS1/MUFF/
-> FUZZ/METAL 等) を撤去し、SELECTED FX に連動した per-effect ノブ
-> グリッドを描画します。レイアウト: 3 ノブ→3x1, 4→2x2, 6→3x2,
-> 8→4x2 (AMP)。各セルに label / numeric percent / 値バー を表示。
-> SAFE BYPASS と PRESET は `NO PARAMETERS` 注記のみ。ACTIVE MODELS
-> 列 + 条件付き dropdown マーカー + ON/BYPASS chip + IN/OUT meters
-> は Phase 6D のまま。
-> Amp Simulator は 8 ノブに拡張 (GAIN/BASS/MIDDLE/TREBLE/PRESENCE/
-> RESONANCE/MASTER/CHARACTER)。PRESENCE / RESONANCE は既存 DSP
-> (`Amp.hs` の `fAmp.ctrlC` / `ctrlD`) と `AudioLabOverlay.
-> set_guitar_effects(amp_presence=..., amp_resonance=...)` に既に
-> 通っていたため、Clash / Vivado / bit / hwh 変更は不要でした。
-> `AppState.knob_values` は length 6 -> 8。AMP の index map は
-> gain=0 / bass=1 / middle=2 / treble=3 / presence=4 / resonance=5
-> / master=6 / character=7。
-> 新規 helper: `selected_fx_param_layout(state)`,
-> `SELECTED_FX_PARAM_LAYOUT`. `notebooks/HdmiRealtimePedalboard
-> OneCell.ipynb` Section D に presence / resonance IntSlider を
-> 追加し、`Apply Amp` と `Apply Selected Model` 両方で渡します。
-> ローカル unit tests 51 PASS、PYNQ-Z2 (`192.168.1.9`) で
-> `scripts/test_hdmi_realtime_pedalboard_controls.py` 16/16 PASS
-> (presence/resonance kwargs 含む)、`scripts/test_hdmi_model_
-> selection_ui.py` 16/16 PASS。DMASR=`0x00011000`, vtc_ctl=
-> `0x00000006`, 800x480 (0,0,800,480)、ADC HPF true、R19=0x23。
-> `Overlay("base.bit")` / `run_pynq_hdmi()` / second overlay 禁止、
-> Vivado rebuild / Clash 変更 / bit / hwh 変更 禁止、`git push` /
-> `git pull` / `git fetch` 禁止。
-
-### HDMI GUI Phase 6E result -- Pip-Boy compact UI restored + VTC HSync shift
-
-> HDMI GUI Phase 6E (Restore Pip-Boy compact UI) は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6E_RESTORE_PIPBOY_COMPACT_UI.md`
-> を読んでから再開してください。compact-v2 800x480 panel を Phase
-> 4G/5D の Pip-Boy ベースライン (phosphor green theme, scanline
-> overlay, `outer=(12,12,788,468)` chassis margins, amber
-> `BYPASS_COL`, corner markers, `v=compact-v2` ラベル) に戻し、Phase
-> 6D の条件付き dropdown マーカーと Phase 6E の per-effect ノブ
-> グリッド (NS=THRESHOLD/DECAY/DAMP, CMP=THRESHOLD/RATIO/RESPONSE/
-> MAKEUP, OD=TONE/LEVEL/DRIVE, DIST=TONE/LEVEL/DRIVE/BIAS/TIGHT/MIX,
-> RAT=FILTER/LEVEL/DRIVE/MIX, AMP=8 ノブ, CAB=MIX/LEVEL/MODEL/AIR,
-> EQ=LOW/MID/HIGH, RVB=DECAY/TONE/MIX) を維持します。SAFE BYPASS と
-> PRESET は `NO PARAMETERS` 注記。
-> LCD の 150 px 右寄り問題は VTC レイヤーで修正:
-> `AudioLabHdmiBackend._start_vtc` が `VTC_GEN_HSYNC` を IP-baked
-> `HSTART=1390, HEND=1430` から `HSTART=1540, HEND=1580` へ書き換え
-> (back porch 220 -> 70)。runtime MMIO 書き込みのみで bit / hwh /
-> Vivado / Clash 変更なし。`AUDIOLAB_HDMI_HSYNC_SHIFT=0` で無効化
-> 可能。framebuffer は `(0,0,800,480)`、placement `manual`、offset
-> `(0,0)` のまま。
-> Notebook ipywidgets が唯一のコントロール面、HDMI は display-only。
-> ローカル unit tests 51 PASS、PYNQ-Z2 (`192.168.1.9`) で
-> `scripts/test_hdmi_model_selection_ui.py` 16/16 PASS、DMASR=
-> `0x00011000`、vtc_ctl=`0x00000006`、ADC HPF true、R19=`0x23`。
-> Phase 6G の VTC 診断スクリプトは `scripts/test_hdmi_vtc_dump.py`,
-> `scripts/test_hdmi_vtc_hsync_shift.py`,
-> `scripts/test_hdmi_800x480_viewport_calibration.py` に残してあり、
-> 再測定や別シフト値の試行に使えます。
-
-### HDMI GUI Phase 6F result -- Right-shift root-cause audit + VTC default rollback
-
-> HDMI GUI Phase 6F は完了済みです。
-> `docs/ai_context/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md` を読んで
-> から再開してください。Python パイプライン全体 (renderer, backend
-> compose, mirror, notebooks, scripts) を bbox / origin guard /
-> calibration / VTC sweep の 4 段階で検査し、すべて正しい (renderer
-> `min_x=0/max_x=799`, backend `framebuffer_copied_region=(0,0,800,
-> 480)` / `source_visible_region=(0,0,800,480)` /
-> `placement="manual"` / `offset_x=0` / `offset_y=0`) ことを実証。
-> `scripts/test_hdmi_vtc_hsync_sweep.py` を 0 / +50 / +100 / +150 /
-> +200 / +300 / -150 cycles でスイープし、ユーザー実機目視で
-> `shift=0` (= IP-baked default, HSync 1390..1430, back porch 220)
-> がベストと確認。Phase 6G の `+150` デフォルトは
-> `VTC_HSYNC_SHIFT_DEFAULT = 0` にロールバック。実行時 override hook
-> (`AUDIOLAB_HDMI_HSYNC_SHIFT` env var, `hsync_shift=N` 引数) と
-> `backend.status()` の `vtc_gen_hsync` / `vtc_hsync_shift` /
-> `vtc_original_hsync` / `vtc_patched_hsync` フィールドは将来の
-> LCD 互換用に保持。LCD 残存の右寄りはソフトウェアで再現できず、
-> renderer / backend / VTC 層は正しい。bit/hwh / Vivado / Clash 変更
-> なし。ローカル unit tests 51 PASS、PYNQ-Z2 `scripts/test_hdmi_model_
-> selection_ui.py` 16/16 PASS, `DMASR=0x00011000`, `vtc_ctl=
-> 0x00000006`, ADC HPF true, R19=`0x23`。
-> 診断スクリプト: `scripts/test_hdmi_render_bbox.py`,
-> `scripts/test_hdmi_800x480_origin_guard.py`,
-> `scripts/test_hdmi_vtc_dump.py`,
-> `scripts/test_hdmi_vtc_hsync_shift.py`,
-> `scripts/test_hdmi_vtc_hsync_sweep.py`,
-> `scripts/test_hdmi_800x480_viewport_calibration.py`。
+> HDMI GUI Phase 6F の recurring right-shift 調査は 2026-05-16 に
+> 再確認済みです。`docs/ai_context/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`
+> を読んでから再開してください。renderer は compact-v2
+> `pipboy-green` で bbox `(0,799,0,479)`、backend は
+> `placement="manual"`, `offset_x=0`, `offset_y=0`, `dst_x0=0`,
+> `dst_y0=0`, `src_width=800`, `src_height=480`。PYNQ の live
+> framebuffer probe でも `nonzero_bbox=[0,799,0,479]`,
+> `outside_800x480_sum=0` で、1280x720 framebuffer の左上 800x480
+> にだけ GUI が入ることを確認済みです。PYNQ origin guard、model UI、
+> realtime pedalboard CLI は PASS、VDMA error bits なし、
+> `vtc_ctl=0x00000006`。bit/hwh / Vivado / Clash / GPIO は変更して
+> いません。Notebook 操作と実DSP制御は
+> `HdmiEffectStateMirror` -> `AudioLabOverlay` 経由を維持します。
 > `Overlay("base.bit")` / `run_pynq_hdmi()` / second overlay 禁止、
 > `git push` / `git pull` / `git fetch` 禁止。
 

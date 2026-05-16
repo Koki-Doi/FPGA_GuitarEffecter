@@ -16,10 +16,9 @@ uncommitted, Phase 5A switched diagnosis to the HDMI output side, and
 Phase 5C locks the user-confirmed top-left 800x480 visible viewport as
 the default. The post-Phase-5C repo cleanup kept active `GUI/` code and
 removed the unused untracked legacy `HDMI/` experiment tree after backup.
-Phase 5D made `pipboy-green` the compact-v2 default theme, Phase 6A
-adds a Notebook-driven effect state mirror where `SELECTED FX` follows
-the last edited effect, and Phase 6B adds Notebook-controlled pedal /
-amp / cab model labels to that HDMI state mirror.
+Phase 6F was rechecked on 2026-05-16 after a recurring right-shifted
+LCD report: renderer bbox, backend compose metadata, and the live
+1280x720 framebuffer all prove the 800x480 GUI starts at `x=0,y=0`.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -51,19 +50,16 @@ No `base.bit` load is used; runtime still loads exactly one
 `HDMI_GUI_PHASE4G_800X480_LAYOUT_CORRECTION.md`,
 `HDMI_GUI_PHASE4H_VERTICAL_MARGIN_AND_LAYOUT_DIAGNOSIS.md`,
 `HDMI_GUI_PHASE4I_RESTORE_COMPACT_V2_BASELINE.md`,
-`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`,
-`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, and
-`HDMI_GUI_PHASE6A_SELECTED_FX_STATE_MIRROR.md`, and
-`HDMI_GUI_PHASE6B_MODEL_SELECTION_UI.md` for the
+`HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, and
+`HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md` for the
 measured results, design, build, deploy, timing, smoke logs, runtime
 resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
 vertical safe margin + horizontal layout diagnosis, 800x480
 compact-v2 baseline restore, HDMI output-side diagnosis, and the
-native 800x480 timing plan, the Phase 6A selected-FX mirror result, and
-the Phase 6B model-selection UI result.
-Phase 5C's adopted runtime mode is the existing 1280x720 HDMI signal
-with the 800x480 compact GUI at framebuffer `x=0,y=0`.
+native 800x480 timing plan. Phase 5C's adopted runtime mode is the
+existing 1280x720 HDMI signal with the 800x480 compact GUI at
+framebuffer `x=0,y=0`.
 
 ## 1. Current state
 
@@ -99,84 +95,15 @@ and `DECISIONS.md` D24):
 - `audio_lab_pynq/__init__.py::install_notebooks()` is now
   `shutil`-based; the old `distutils.dir_util.copy_tree` left a zero-byte
   `HdmiGui.ipynb` after one re-deploy, which Jupyter refused to open.
-- Phase 6A adds `HdmiEffectStateMirror` and
-  `notebooks/HdmiEffectStatusOneCell.ipynb` for Notebook-driven effect
-  edits mirrored to HDMI. `SELECTED FX` shows the last edited effect
-  (`PRESET`, `SAFE BYPASS`, `NOISE SUPPRESSOR`, `COMPRESSOR`,
-  `OVERDRIVE`, `DISTORTION`, `RAT`, `AMP SIM`, `CAB`, `EQ`, `REVERB`).
-  The GUI remains display-only and does not write DSP controls.
-- Phase 6B extends the same mirror and one-cell notebook with model
-  operations. Pedal models are selected by the existing distortion pedal
-  mask (`clean_boost`, `tube_screamer`, `rat`, `ds1`, `big_muff`,
-  `fuzz_face`, `metal`), amp models use existing `set_amp_model()` /
-  `amp_character`, and cab models are the current `cab_model=0/1/2`
-  DSP set. The compact-v2 bottom panel now shows active PEDAL / AMP /
-  CAB model labels and model slot rows while keeping 800x480 x0/y0.
-- Phase 6C adds `notebooks/HdmiRealtimePedalboardOneCell.ipynb`, a
-  single-code-cell ipywidgets pedalboard with category / model
-  dropdowns, ON/OFF toggles, parameter sliders, and a PS/GUI/HDMI
-  resource monitor. Every widget call goes through
-  `HdmiEffectStateMirror` -> `AudioLabOverlay` (real DSP edit) ->
-  800x480 HDMI render at `placement="manual"`, `offset_x=0`,
-  `offset_y=0`. The mirror exposes a `/proc`-based
-  `ResourceSampler` and `resource_summary()` for the Notebook panel.
-  HDMI panel remains display-only; no event input back to the mirror.
-  No bit/hwh change. The standalone `[model ▼]` chip Phase 6C
-  initially drew between SELECTED FX and the ON/BYPASS chip was
-  removed in Phase 6D -- see below.
-- Phase 6D restores the `0a07f2a` compact-v2 fx panel layout. The
-  Phase 6C dropdown chip occluded the PEDAL / AMP rows of ACTIVE
-  MODELS; Phase 6D drops it and replaces it with a thin outline +
-  filled-triangle glyph drawn **around the matching ACTIVE MODELS
-  row only when the SELECTED FX category is PEDAL / AMP / CAB**.
-  Non-model effects (REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR /
-  SAFE BYPASS / PRESET / OVERDRIVE) render the row identically to
-  `0a07f2a` with no extra marker. `dropdown_label_for(...)` and the
-  AppState `dropdown_label` / `dropdown_short_label` fields now
-  produce `""` for non-model effects so the renderer can use
-  truthiness as a visibility flag. A new
-  `selected_model_dropdown_visible: bool` field on AppState makes
-  the gating decision explicit for tests and the mirror.
-  Notebook ipywidgets remain the only control surface; HDMI stays
-  display-only. No bit/hwh change.
-- Phase 6E replaces the bottom PEDAL MODEL / AMP MODEL / CAB slot
-  rows with a per-SELECTED-FX parameter knob grid. Each cell shows
-  the label, numeric percent, and a horizontal value bar; the grid
-  adapts to the parameter count (3 -> 3x1, 4 -> 2x2, 6 -> 3x2,
-  8 -> 4x2 for AMP). PRESENCE and RESONANCE join the AMP knob set
-  at indices 4 and 5 (master / character move to 6 / 7);
-  `AppState.knob_values` grows from 6 to 8 slots. PRESENCE /
-  RESONANCE were already in the DSP (`fAmp.ctrlC` / `fAmp.ctrlD`
-  in `Amp.hs`) and exposed via
-  `AudioLabOverlay.set_guitar_effects(amp_presence=...,
-  amp_resonance=...)`, so Phase 6E only touches AppState / mirror /
-  GUI / notebook / tests. No bit/hwh change.
-- Phase 6E (Pip-Boy restoration) consolidates Phase 6D, the
-  per-effect knob grid, the Phase 6F chassis-shift rollback, and the
-  Phase 6G VTC HSync runtime shift into the restored Pip-Boy
-  compact-v2 baseline. The chassis returns to the Phase 4G
-  `outer=(12,12,788,468)` / `left=24` / `right=24` coordinates;
-  `AudioLabHdmiBackend._start_vtc` keeps a VTC HSync patch hook
-  (env var / constructor override) for diagnostic tuning, but the
-  default is `0` (= unmodified IP-baked timing) after Phase 6F
-  empirical sweep proved non-zero shifts did not improve the LCD
-  view. The framebuffer destination, placement, and offsets are
-  untouched. No bit/hwh / Vivado / Clash change.
-- Phase 6F end-to-end audit confirmed the Python pipeline is
-  correct: renderer paints `min_x=0, max_x=799` for every SELECTED
-  FX, backend compose produces
-  `framebuffer_copied_region=(0,0,800,480)` and
-  `source_visible_region=(0,0,800,480)` with
-  `placement="manual"`, `offset_x=0`, `offset_y=0`. The LCD did
-  not respond to a VTC HSync sweep (+50/+100/+150/+200/+300/-150),
-  so the Phase 6G `+150` default was rolled back to `0`. The
-  diagnostic infrastructure -- `scripts/test_hdmi_render_bbox.py`,
-  `scripts/test_hdmi_800x480_origin_guard.py` (with explicit
-  `source_visible_region` asserts), `scripts/test_hdmi_vtc_dump.py`,
-  `scripts/test_hdmi_vtc_hsync_shift.py`,
-  `scripts/test_hdmi_vtc_hsync_sweep.py`, and the
-  `vtc_*` fields in `backend.status()` -- stays in place for
-  future LCD investigations.
+- Phase 6F recurrence check (2026-05-16) keeps the same runtime default:
+  compact-v2 `pipboy-green`, `placement="manual"`, `offset_x=0`,
+  `offset_y=0`, source `800x480`, destination `dst_x0=0`, `dst_y0=0`.
+  `scripts/test_hdmi_render_bbox.py` reports bbox `(0,799,0,479)`;
+  `scripts/test_hdmi_800x480_origin_guard.py` now probes the actual
+  PYNQ framebuffer and confirms `nonzero_bbox=[0,799,0,479]` with
+  `outside_800x480_sum=0`. Model-selection UI and realtime pedalboard
+  tests both pass on PYNQ with VDMA error bits clear. No bit/hwh,
+  Vivado, Clash, GPIO, or notebook-control change was required.
 
 ### AudioLabOverlay and audio_lab.bit
 
