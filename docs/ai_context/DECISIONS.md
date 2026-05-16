@@ -914,3 +914,86 @@ not get removed even when superseded — they get updated.
     same pattern. Recovery from a stuck-PLL white screen is a
     PYNQ-Z2 power cycle, then run the cell exactly once.
   - `block_design.tcl` is unchanged; D2 still applies.
+
+## D26 — Post-Phase-6I refactor: facade + per-effect subpackages
+
+- **Decision.** Three companion refactor passes landed on `main` after
+  Phase 6I to make per-effect work and AI-context loading cheaper.
+  None of them change the runtime DSP / FPGA / GPIO / block-design
+  contract; all preserve external Python import paths byte-for-byte.
+
+  - **`set_guitar_effects` thin facade** (`d1c4e8e`,
+    `audio_lab_pynq/AudioLabOverlay.py`).
+    The 100-line `set_guitar_effects(self, sink=..., **kwargs)`
+    method was split into a 17-line dispatch over six private
+    helpers (`_require_effect_gpios`,
+    `_merge_cached_distortion_state`,
+    `_merge_cached_noise_suppressor_state`,
+    `_write_effect_gpios`, `_refresh_cached_words`,
+    `_route_effect_chain`) plus two new class-level constants
+    (`_REQUIRED_EFFECT_GPIOS`, `_OPTIONAL_EFFECT_GPIOS`,
+    `_DIST_STATE_SCALAR_PAIRS`). The public signature, return value,
+    GPIO write order, cached-state semantics, and "missing GPIO"
+    `RuntimeError` text are unchanged.
+
+  - **`hdmi_state` subpackage** (`52c5ea4`).
+    The 1727-line `audio_lab_pynq/hdmi_effect_state_mirror.py` was
+    split: the constant tables (pedal / amp / cab model names +
+    labels + aliases), the SELECTED FX dropdown plumbing, the
+    `GUI_EFFECT_KNOBS` layout, the `/proc`-based `ResourceSampler`,
+    and the cross-effect helpers moved into
+    `audio_lab_pynq/hdmi_state/{pedals, amps, cabs, selected_fx,
+    knobs, resource_sampler, common}.py`. The mirror file
+    (`audio_lab_pynq/hdmi_effect_state_mirror.py`) is now a
+    1117-line shim that holds the `HdmiEffectStateMirror` class
+    itself and re-exports every public + private name from the
+    subpackage. Every existing import like
+    `from audio_lab_pynq.hdmi_effect_state_mirror import
+    HdmiEffectStateMirror, PEDAL_MODEL_LABELS, ResourceSampler,
+    STATIC_PL_UTILIZATION, ...` keeps working.
+
+  - **`GUI/compact_v2/` subpackage** (`5173baf`).
+    The 1685-line `GUI/pynq_multi_fx_gui.py` was split per the
+    user-requested {layout, renderer, knobs, state, hit_test}
+    themes into `GUI/compact_v2/{knobs, state, layout, renderer,
+    hit_test}.py` (+ `__init__.py`). `GUI/pynq_multi_fx_gui.py` is
+    now a 120-line re-export shim with a `try/except` block so both
+    `from pynq_multi_fx_gui import X` (`REPO_ROOT/GUI` on sys.path
+    — notebooks / scripts) and `from GUI.pynq_multi_fx_gui import
+    X` (`REPO_ROOT` on sys.path — tests / packagers) resolve all
+    exports. Render output verified byte-for-byte identical against
+    the pre-split file for three themes + two render variants +
+    `hit_test_compact_v2(400, 240)`.
+
+- **Why.** Each pre-refactor file was a merge-conflict magnet
+  whenever per-effect or per-theme work landed in parallel. The
+  splits localise each section so an AI agent reading just the
+  pedal name mapping pulls in `audio_lab_pynq/hdmi_state/pedals.py`
+  (~60 lines) instead of `hdmi_effect_state_mirror.py` (~1700
+  lines), and a contributor editing the compact-v2 palette can
+  touch `GUI/compact_v2/layout.py` (~270 lines) instead of the
+  whole `pynq_multi_fx_gui.py`.
+
+- **Boundaries.**
+  - Do not undo the splits by re-flattening the subpackages back
+    into the shim files. The shim files exist so external import
+    paths stay stable; they should not gain new top-level
+    definitions.
+  - Inside `GUI/compact_v2/` and `audio_lab_pynq/hdmi_state/`, use
+    **relative imports** (`from .knobs import X`) so the modules
+    work under both call-site conventions (top-level package vs
+    nested-under-GUI / nested-under-audio_lab_pynq).
+  - When adding a new effect that needs a model dropdown,
+    extend `audio_lab_pynq/hdmi_state/{pedals,amps,cabs}.py`
+    (or add a sibling) instead of touching the mirror file. When
+    adding a new compact-v2 panel, extend `GUI/compact_v2/layout.py`
+    (panel boxes), `GUI/compact_v2/renderer.py` (`_draw_800x480_*`),
+    and `GUI/compact_v2/hit_test.py` (input mapping) — keep each
+    in its own file.
+  - The `tests/_pynq_mock.py` shim is the canonical way to import
+    `audio_lab_pynq.hdmi_effect_state_mirror` via
+    `spec_from_file_location` on a workstation without `pynq`
+    installed. New offline tests that load the file directly should
+    `import _pynq_mock` first.
+  - No DSP / Clash / GPIO / block_design / bit / hwh / tcl change in
+    any of the three refactors; the same `audio_lab.bit` is in use.

@@ -128,6 +128,25 @@ When a previous turn stopped mid-implementation:
   fit-to-chip label size search `22 → 14`); REVERB / COMPRESSOR /
   NOISE SUPPRESSOR / SAFE BYPASS / PRESET hide it. Adding a new effect
   extends `EFFECT_KNOBS` with the real labels and the grid follows.
+- The compact-v2 renderer is split per-theme under `GUI/compact_v2/`
+  (`knobs.py` / `state.py` / `layout.py` / `renderer.py` /
+  `hit_test.py`); `GUI/pynq_multi_fx_gui.py` is now a thin
+  re-export shim (`DECISIONS.md` D26). Edit the file that owns the
+  theme you are changing (palette / panel boxes -> `layout.py`,
+  render functions -> `renderer.py`, knob layout / model tables ->
+  `knobs.py`, AppState / save-load -> `state.py`, click mapping ->
+  `hit_test.py`), not the shim. The HDMI GUI state mirror in
+  `audio_lab_pynq/hdmi_effect_state_mirror.py` is similarly split
+  per-effect under `audio_lab_pynq/hdmi_state/` (`pedals.py` /
+  `amps.py` / `cabs.py` / `selected_fx.py` / `knobs.py` /
+  `resource_sampler.py` / `common.py`); the `hdmi_effect_state_mirror`
+  file remains the home of the `HdmiEffectStateMirror` class and
+  re-exports every constant / helper. `AudioLabOverlay.set_guitar_effects`
+  is also split into six private helpers (`_require_effect_gpios`,
+  `_merge_cached_distortion_state`,
+  `_merge_cached_noise_suppressor_state`, `_write_effect_gpios`,
+  `_refresh_cached_words`, `_route_effect_chain`); behaviour and
+  return value are byte-for-byte preserved.
 - `git push`, `git pull`, `git fetch`, and other remote operations are
   forbidden. Local commits only.
 - Do not clone reference repositories into the tree. Do not paste GPL code

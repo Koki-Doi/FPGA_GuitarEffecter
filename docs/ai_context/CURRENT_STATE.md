@@ -1,7 +1,12 @@
 # Current state
 
-Last updated: **2026-05-16, Phase 6I C2 deployed** (commits
-`5332b7e` / `3afd9c4` / `e2ece2e`, merged to `main` at `e2ece2e`).
+Last updated: **2026-05-17, post-Phase-6I refactor pass** (commits
+`5332b7e` / `3afd9c4` / `e2ece2e` brought the Phase 6I C2 baseline up;
+`d1c4e8e` thinned `set_guitar_effects` into a 6-helper facade;
+`52c5ea4` extracted the 1727-line `hdmi_effect_state_mirror.py` into
+the `audio_lab_pynq/hdmi_state/` subpackage; `5173baf` extracted the
+1685-line `GUI/pynq_multi_fx_gui.py` into the `GUI/compact_v2/`
+subpackage. See `DECISIONS.md` D26).
 
 ## Current load-bearing facts
 
@@ -15,6 +20,20 @@ Last updated: **2026-05-16, Phase 6I C2 deployed** (commits
 - **GUI renderer**: `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2`
   + the (1).py-spec `EFFECT_KNOBS` / `AppState.all_knob_values` /
   `hit_test_compact_v2()` API from Phase 6H port (`DECISIONS.md` D24).
+  The renderer is split per-theme under `GUI/compact_v2/{knobs, state,
+  layout, renderer, hit_test}.py`; `GUI/pynq_multi_fx_gui.py` is a
+  120-line re-export shim. `DECISIONS.md` D26.
+- **HDMI GUI state mirror**: `audio_lab_pynq/hdmi_effect_state_mirror.py`
+  still exports `HdmiEffectStateMirror` and every public helper, but
+  the constants / normalisation helpers / `ResourceSampler` live under
+  `audio_lab_pynq/hdmi_state/{pedals, amps, cabs, selected_fx, knobs,
+  resource_sampler, common}.py`. `DECISIONS.md` D26.
+- **`set_guitar_effects()`**: thin facade over 6 private helpers
+  (`_require_effect_gpios`, `_merge_cached_distortion_state`,
+  `_merge_cached_noise_suppressor_state`, `_write_effect_gpios`,
+  `_refresh_cached_words`, `_route_effect_chain`). Behaviour and return
+  value byte-for-byte preserved from the pre-split implementation.
+  `DECISIONS.md` D26.
 - **Notebook runtime**: `audio_lab_pynq/notebooks/HdmiGui.ipynb`
   (live loop, resource monitor, `OFFSET_X` / `OFFSET_Y` calibration)
   and `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb` (one-shot,

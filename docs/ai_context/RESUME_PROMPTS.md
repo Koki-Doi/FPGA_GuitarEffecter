@@ -30,9 +30,16 @@ asking it to re-discover the project from scratch.
 > `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` を読んでください。
 > 現在の live path は `AudioLabOverlay()` を1回だけloadし、
 > `audio_lab_pynq.hdmi_backend.AudioLabHdmiBackend` で統合 HDMI
-> framebuffer を扱います。`GUI/pynq_multi_fx_gui.py` の既存
-> `run_pynq_hdmi()` は `Overlay("base.bit")` をロードする旧経路なので
-> live AudioLab では使いません。5-inch LCD の標準は Phase 6I C2 SVGA 800x600
+> framebuffer を扱います。`GUI/pynq_multi_fx_gui.py` は今は
+> `GUI/compact_v2/` への re-export shim (`DECISIONS.md` D26)。
+> renderer / palette / hit_test / AppState / 旧 `run_pynq_hdmi()` を
+> 触る場合は `GUI/compact_v2/{renderer, layout, hit_test, state}.py`
+> 側を編集してください。 `run_pynq_hdmi()` 自体は D24 で削除済みなので、
+> live AudioLab では使いません。同様に
+> `audio_lab_pynq/hdmi_effect_state_mirror.py` は
+> `audio_lab_pynq/hdmi_state/` へ分割済み (constant / helper /
+> ResourceSampler は subpackage 側、`HdmiEffectStateMirror` class は
+> shim 側)。5-inch LCD の標準は Phase 6I C2 SVGA 800x600
 > HDMI timing です (`DECISIONS.md` D25)。compact-v2 `800x480` を
 > `placement=manual`, `offset_x=0`, `offset_y=0` で `800x600`
 > framebuffer の左上に置き、下 120 行は黒のままにします。 Phase 6H の native
