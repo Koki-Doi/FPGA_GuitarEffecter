@@ -209,3 +209,64 @@ Within the historical -7..-9 ns deploy band; deployable per
   `/tmp/fpga_guitar_effecter_backup/phase6h_failed_white_screen/`
 - PYNQ working 720p backup:
   `/home/xilinx/Audio-Lab-PYNQ/backups/phase6h_720p/`
+
+## Post-deploy: rgb2dvi PLL edge at 40 MHz
+
+After landing C2 on PYNQ-Z2 we observed that the LCD reliably shows the
+compact-v2 UI on a fresh power-on but goes back to "white / no signal"
+the next time the cell is re-run (or `Overlay(..., download=True)` is
+called again in the same session). VTC `GEN_ACTSZ` still reads
+`0x02580320`, VDMA still streams without error bits, the frame is
+still in DDR — but the rgb2dvi TMDS output never reaches the LCD.
+
+Root cause: `rgb2dvi v1.4` `kClkRange=3` has a fixed internal MMCM
+multiplier `M=20`, so at the Phase 6I 40 MHz pixel clock the VCO sits
+exactly at the lower edge of the valid `800..1600 MHz` band
+(`40 * 20 = 800 MHz`). A second `download=True` re-asserts the FPGA
+configuration pipeline, disturbs the running MMCM, and at the band
+edge the PLL never re-locks until a full power cycle. The same Vivado
+build with a 50–74 MHz pixel clock would not exhibit this because the
+VCO would sit comfortably inside the band.
+
+Workarounds, in order of cost:
+
+1. **Smart-attach in user-facing tooling** (no rebuild, deployed).
+   `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb` reads
+   `v_tc_hdmi GEN_ACTSZ` *before* constructing the overlay. When it
+   already reads `0x02580320`, the notebook attaches with
+   `AudioLabOverlay(download=False)` so the running rgb2dvi MMCM is
+   left alone. This keeps the cell re-runnable in the same Jupyter
+   session without breaking the PLL. The original `HdmiGui.ipynb` is
+   unchanged for now.
+2. **Power-cycle recovery.** If the LCD ever drops to white, power
+   cycle the PYNQ-Z2, then run the notebook cell once. The first
+   `download=True` after power-on locks the PLL reliably.
+3. **Move to a higher pixel clock (future)**. Candidate A2 (50 MHz)
+   or B2 (60 MHz) would put the VCO at 1000 / 1200 MHz respectively
+   — well inside the valid band — and would not need the smart-attach
+   guard. A2/B2 would only be needed if `download=True` re-runs ever
+   become unavoidable; until then C2 + smart-attach is the cheaper
+   choice.
+
+Memory: [[rgb2dvi-pll-edge-at-40mhz]].
+
+## Bit/hwh copies on the PYNQ (final)
+
+`AudioLabOverlay` loads whichever `audio_lab.bit` sits next to the
+`audio_lab_pynq` package on the import path. Phase 6I deploy must
+keep **all five** reachable copies in sync, not just the three the
+earlier Phase 6I commit identified:
+
+- `/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  (staged; not loaded at runtime)
+- `/home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/audio_lab.bit`
+  (used when scripts run with `PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ`)
+- `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.bit`
+  (used without explicit PYTHONPATH)
+- `/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/audio_lab.bit`
+  (populated by `install_notebooks()`; some scripts reference the
+  jupyter copy directly)
+- `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit`
+  (pynq's overlays registry; resolves bare `Overlay("audio_lab")`)
+
+Memory updated: [[pynq-site-packages-bit-cache]].
