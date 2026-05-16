@@ -5,10 +5,10 @@ These tests exercise both ends of the placement contract:
 * ``hdmi_backend.compose_logical_frame`` must place an 800x480 logical
   frame at framebuffer ``x=0, y=0`` when called with
   ``placement="manual"``, ``offset_x=0``, ``offset_y=0``.
-* ``pynq_multi_fx_gui.render_frame_800x480_compact_v2`` must paint a
-  non-background bbox that reaches both the left and right edges of the
-  800-pixel canvas (so the renderer is not silently right- or
-  left-skewed).
+* ``pynq_multi_fx_gui.render_frame_800x480_compact_v2`` must draw actual
+  strong UI panel borders near the left edge. A non-background bbox alone
+  is not enough because background rails or scanlines can make x=0 look
+  occupied while the real panel body is still shifted right.
 
 The tests load the modules via ``importlib`` so they run without the
 ``pynq`` package being installed.
@@ -23,6 +23,9 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "GUI"))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+
+from test_hdmi_render_bbox import analyze_frame  # noqa: E402
 
 
 def _load(name, relpath):
@@ -113,6 +116,20 @@ def test_renderer_compact_v2_paints_across_full_x_range():
     assert min_y <= 24
     assert max_y <= 479
     assert max_y >= 440
+    analysis = analyze_frame(frame)
+    assert analysis["strong_ui_bbox"][0] <= 28
+    assert analysis["strong_ui_bbox"][1] <= 799
+    assert analysis["estimated_main_panel_left_x"] <= 40
+    assert analysis["estimated_header_left_x"] <= 40
+    assert analysis["estimated_selected_panel_left_x"] <= 40
+
+
+def test_renderer_compact_v2_actual_panel_boxes_start_near_x0():
+    boxes = _GUI.compact_v2_panel_boxes(800, 480)
+    assert boxes["outer"][0] == 12
+    assert boxes["header"][0] == 24
+    assert boxes["chain"][0] == 24
+    assert boxes["fx"][0] == 24
 
 
 def test_renderer_compact_v2_dropdown_chip_does_not_overflow():
@@ -132,82 +149,60 @@ def test_renderer_compact_v2_dropdown_chip_does_not_overflow():
     assert max_x <= 799, "dropdown chip overflowed x=799: max_x={}".format(max_x)
 
 
-def test_renderer_compact_v2_non_model_fx_has_no_extra_chip():
-    """Phase 6D: REVERB / EQ / COMPRESSOR / NOISE / SAFE / PRESET must
-    render the same compact-v2 panel as the pre-Phase-6C baseline; no
-    extra outline or triangle glyph is drawn around ACTIVE MODELS.
+def test_renderer_compact_v2_non_model_fx_renders_cleanly():
+    """REVERB / EQ / COMPRESSOR / NOISE / SAFE / PRESET render without
+    error in the new compact-v2 spec. The Phase 6D ``_should_show_*``
+    helpers were removed; the dropdown chip is drawn inline by the
+    renderer for DIST / AMP / CAB only, so this test now only smokes
+    the render path for the non-model FX list.
     """
-    import numpy as np
-    from pynq_multi_fx_gui import (
-        _should_show_selected_model_dropdown,
-        _selected_model_dropdown_label,
-    )
     for fx in ("REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
                "SAFE BYPASS", "PRESET"):
         state = AppState()
         state.selected_fx = fx
-        assert _should_show_selected_model_dropdown(state) is False, fx
-        assert _selected_model_dropdown_label(state) == "", fx
         frame = render_frame_800x480_compact_v2(
             state, theme="pipboy-green")
         assert frame.shape == (480, 800, 3), fx
 
 
-def test_selected_fx_param_layout_returns_expected_labels():
-    """Phase 6E: per-SELECTED-FX knob label list matches user spec."""
-    from pynq_multi_fx_gui import AppState, selected_fx_param_layout
-
-    def labels(fx):
-        state = AppState()
-        state.selected_fx = fx
-        return [label for label, _idx in selected_fx_param_layout(state)]
-
-    assert labels("NOISE SUPPRESSOR") == ["THRESHOLD", "DECAY", "DAMP"]
-    assert labels("COMPRESSOR") == ["THRESHOLD", "RATIO", "RESPONSE",
-                                    "MAKEUP"]
-    assert labels("OVERDRIVE") == ["TONE", "LEVEL", "DRIVE"]
-    assert labels("DISTORTION") == ["TONE", "LEVEL", "DRIVE", "BIAS",
-                                    "TIGHT", "MIX"]
-    assert labels("RAT") == ["FILTER", "LEVEL", "DRIVE", "MIX"]
-    assert labels("AMP SIM") == ["GAIN", "BASS", "MIDDLE", "TREBLE",
-                                 "PRESENCE", "RESONANCE", "MASTER",
-                                 "CHARACTER"]
-    assert labels("CAB") == ["MIX", "LEVEL", "MODEL", "AIR"]
-    assert labels("EQ") == ["LOW", "MID", "HIGH"]
-    assert labels("REVERB") == ["DECAY", "TONE", "MIX"]
-    assert labels("SAFE BYPASS") == []
-    assert labels("PRESET") == []
-    # PEDAL sub-models reuse the Distortion Pedalboard knob layout.
-    for fx in ("CLEAN BOOST", "TUBE SCREAMER", "DS-1", "BIG MUFF",
-               "FUZZ FACE", "METAL"):
-        assert labels(fx) == ["TONE", "LEVEL", "DRIVE", "BIAS",
-                              "TIGHT", "MIX"], fx
-
-
-def test_renderer_compact_v2_pedal_fx_has_dropdown_marker():
-    """Phase 6D: PEDAL / AMP / CAB selection draws the dropdown marker
-    on the matching ACTIVE MODELS row.
+def test_effect_knobs_matches_v1_spec():
+    """The (1).py port collapses per-pedal layouts into a single
+    EFFECT_KNOBS dict keyed by the EFFECTS title-case names with short
+    knob labels. This guards the new compact knob spec.
     """
-    from pynq_multi_fx_gui import (
-        _should_show_selected_model_dropdown,
-        _selected_model_dropdown_label,
-    )
+    from pynq_multi_fx_gui import EFFECT_KNOBS
+
+    def labels(name):
+        return [label for label, _default in EFFECT_KNOBS[name]]
+
+    assert labels("Noise Sup") == ["THRESH", "DECAY", "DAMP"]
+    assert labels("Compressor") == ["THRESH", "RATIO", "RESP", "MAKEUP"]
+    assert labels("Overdrive") == ["TONE", "LEVEL", "DRIVE"]
+    assert labels("Distortion") == ["TONE", "LEVEL", "DRIVE",
+                                     "BIAS", "TIGHT", "MIX"]
+    assert labels("Amp Sim") == ["GAIN", "BASS", "MID", "TREB",
+                                  "PRES", "RES", "MSTR", "CHAR"]
+    assert labels("Cab IR") == ["MIX", "LEVEL", "MODEL", "AIR"]
+    assert labels("EQ") == ["LOW", "MID", "HIGH"]
+    assert labels("Reverb") == ["DECAY", "TONE", "MIX"]
+
+
+def test_renderer_compact_v2_pedal_amp_cab_render():
+    """PEDAL / AMP / CAB selections still render without error. The
+    explicit ``_should_show_selected_model_dropdown`` helper was removed
+    in the (1).py port; the dropdown chip is now drawn inline by the
+    renderer for these categories.
+    """
     cases = [
-        ("CLEAN BOOST", "PEDAL"),
-        ("TUBE SCREAMER", "PEDAL"),
-        ("RAT", "PEDAL"),
-        ("DS-1", "PEDAL"),
-        ("BIG MUFF", "PEDAL"),
-        ("FUZZ FACE", "PEDAL"),
-        ("METAL", "PEDAL"),
-        ("AMP SIM", "AMP"),
-        ("CAB", "CAB"),
+        "CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
+        "BIG MUFF", "FUZZ FACE", "METAL", "AMP SIM", "CAB",
     ]
-    for fx, _cat in cases:
+    for fx in cases:
         state = AppState()
         state.selected_fx = fx
-        assert _should_show_selected_model_dropdown(state) is True, fx
-        assert _selected_model_dropdown_label(state) != "", fx
+        frame = render_frame_800x480_compact_v2(
+            state, theme="pipboy-green")
+        assert frame.shape == (480, 800, 3), fx
 
 
 if __name__ == "__main__":
@@ -215,10 +210,11 @@ if __name__ == "__main__":
         test_compose_logical_manual_x0_y0_places_at_origin,
         test_compose_logical_negative_offset_clips_not_indexes_offsides,
         test_renderer_compact_v2_paints_across_full_x_range,
+        test_renderer_compact_v2_actual_panel_boxes_start_near_x0,
         test_renderer_compact_v2_dropdown_chip_does_not_overflow,
-        test_renderer_compact_v2_non_model_fx_has_no_extra_chip,
-        test_selected_fx_param_layout_returns_expected_labels,
-        test_renderer_compact_v2_pedal_fx_has_dropdown_marker,
+        test_renderer_compact_v2_non_model_fx_renders_cleanly,
+        test_effect_knobs_matches_v1_spec,
+        test_renderer_compact_v2_pedal_amp_cab_render,
     ]
     for fn in tests:
         fn()
