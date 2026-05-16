@@ -1371,20 +1371,17 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
 
 
 COMPACT_V2_LAYOUT = {
-    # Phase 6F: shift the chassis ~24 px left so the LCD viewport no
-    # longer leaves an empty strip on its left edge. The Phase 4G
-    # baseline used left=24 and outer=(12,12,788,468); on the real
-    # 5-inch LCD that produced a visible right-shift with the chassis
-    # outline starting around LCD x=24. Phase 6F moves the outer
-    # chassis to (0,12,764,468) and the inner panel margin from 24 to
-    # 4, keeping symmetric 4 px panel-inside-chassis padding. The right
-    # side of the canvas (x=764..799) is canvas background and lives
-    # outside the LCD's visible region. The framebuffer destination
-    # stays at (0,0,800,480) and ``offset_x`` / ``offset_y`` remain 0;
-    # only the rendered content's horizontal placement changes.
-    "outer": (0, 12, 764, 468),
-    "left": 4,
-    "right": 40,
+    # Phase 4G compact-v2 coordinates for 800x480, restored in Phase 6G.
+    # Phase 6F tried to compensate the LCD's right-shift at the
+    # renderer level by tightening the chassis margin to 4 px, but the
+    # actual cause was the VTC HSync timing (the LCD's HDMI receiver
+    # samples 150 source pixels later than expected). Phase 6G fixes
+    # that at the VTC layer (AudioLabHdmiBackend._start_vtc applies a
+    # +150 HSync shift), so the chassis is back to the Phase 4G
+    # baseline.
+    "outer": (12, 12, 788, 468),
+    "left": 24,
+    "right": 24,
     "header_y": (20, 100),
     "chain_y": (110, 250),
     "bottom_y": (260, 454),

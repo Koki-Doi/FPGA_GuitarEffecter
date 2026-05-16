@@ -31,6 +31,7 @@ Public API:
 """
 from __future__ import print_function
 
+import os
 import time
 
 import numpy as np
@@ -69,6 +70,7 @@ VDMASR_ERR_MASK = (VDMASR_DMAINTERR | VDMASR_DMASLVERR | VDMASR_DMADECERR)
 VTC_CTL                      = 0x000
 VTC_GLOBAL_INTR_ENABLE       = 0x00C
 VTC_GEN_HACTIVE_SIZE         = 0x064  # legacy alias, see notes below
+VTC_GEN_HSYNC                = 0x078  # bits[12:0]=HSYNC_HSTART, [28:16]=HSYNC_HEND
 
 # v_tc CTL bits (PG016 v6.1 Table 2-4)
 VTC_CTL_SW_RESET             = 1 << 31
@@ -77,6 +79,19 @@ VTC_CTL_REG_UPDATE           = 1 << 1
 VTC_CTL_GENERATION_ENABLE    = 1 << 2
 VTC_CTL_DETECTION_ENABLE     = 1 << 3
 # Bit 5 = FSync enable, bit 6 = SyncEnable. We do not use FSync inputs.
+
+# Phase 6G: live-patch the VTC HSync position to compensate the 5-inch
+# LCD's 150 px right-shift. The IP-baked 1280x720@60 timing has HSync
+# at 1390..1429 (40-cycle sync, 220-cycle back porch). The LCD samples
+# active video 150 cycles later than expected, which puts source x=0
+# at LCD x=150 and cuts the right ~150 px of an 800x480 logical frame
+# off the LCD. Moving HSync 150 cycles later (1540..1579) shrinks the
+# back porch to 70 and shifts the visible source region 150 cycles
+# left, aligning source x=0 with LCD x=0. The shift can be disabled at
+# runtime by setting environment variable ``AUDIOLAB_HDMI_HSYNC_SHIFT``
+# to ``0`` or by passing ``hsync_shift=0`` to
+# ``AudioLabHdmiBackend(...)``.
+VTC_HSYNC_SHIFT_DEFAULT      = 150
 
 DEFAULT_WIDTH                = 1280
 DEFAULT_HEIGHT               = 720
@@ -322,7 +337,7 @@ class AudioLabHdmiBackend(object):
     REQUIRED_MMIO_IPS = ("axi_vdma_hdmi", "v_tc_hdmi")
 
     def __init__(self, overlay, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-                 num_fstores=DEFAULT_NUM_FSTORES):
+                 num_fstores=DEFAULT_NUM_FSTORES, hsync_shift=None):
         self.overlay = overlay
         self.width = int(width)
         self.height = int(height)
@@ -338,6 +353,21 @@ class AudioLabHdmiBackend(object):
         self._started = False
         self._last_vdma_start = {}
         self._last_frame_write = {}
+        # Phase 6G: VTC HSync shift compensates the LCD's 150 px right
+        # offset. Constructor arg overrides the env-var default; pass
+        # 0 to disable.
+        if hsync_shift is None:
+            env = os.environ.get("AUDIOLAB_HDMI_HSYNC_SHIFT")
+            if env is not None:
+                try:
+                    hsync_shift = int(env)
+                except ValueError:
+                    hsync_shift = VTC_HSYNC_SHIFT_DEFAULT
+            else:
+                hsync_shift = VTC_HSYNC_SHIFT_DEFAULT
+        self.hsync_shift = int(hsync_shift)
+        self._original_hsync = None
+        self._patched_hsync = None
 
     # ---- MMIO helpers --------------------------------------------------
     def _vdma_read(self, offset):
@@ -419,6 +449,21 @@ class AudioLabHdmiBackend(object):
         time.sleep(0.001)
         # Clear pending interrupt latches.
         self._vtc_write(0x004, 0xFFFFFFFF)
+        # Phase 6G: shift HSync later in each line so the LCD viewport
+        # aligns source x=0 with LCD x=0. Capture the original value
+        # before patching so callers / diagnostics can revert.
+        try:
+            self._original_hsync = int(self._vtc_read(VTC_GEN_HSYNC))
+        except Exception:
+            self._original_hsync = None
+        if self.hsync_shift and self._original_hsync is not None:
+            hstart = self._original_hsync & 0x1FFF
+            hend = (self._original_hsync >> 16) & 0x1FFF
+            new_hstart = (hstart + int(self.hsync_shift)) & 0x1FFF
+            new_hend = (hend + int(self.hsync_shift)) & 0x1FFF
+            patched = ((new_hend & 0x1FFF) << 16) | (new_hstart & 0x1FFF)
+            self._vtc_write(VTC_GEN_HSYNC, patched)
+            self._patched_hsync = patched
         # Enable generator and REG_UPDATE.
         self._vtc_write(VTC_CTL,
                         VTC_CTL_GENERATION_ENABLE | VTC_CTL_REG_UPDATE)
@@ -533,6 +578,14 @@ class AudioLabHdmiBackend(object):
             "vtc_ctl": self._hex32(self._vtc_read(VTC_CTL)),
             "vtc_ip_phys_addr": self._hex32(self._vtc_ip_desc["phys_addr"]),
             "vtc_ip_addr_range": int(self._vtc_ip_desc["addr_range"]),
+            "vtc_gen_hsync": self._hex32(self._vtc_read(VTC_GEN_HSYNC)),
+            "vtc_hsync_shift": int(self.hsync_shift),
+            "vtc_original_hsync": (
+                self._hex32(self._original_hsync)
+                if self._original_hsync is not None else None),
+            "vtc_patched_hsync": (
+                self._hex32(self._patched_hsync)
+                if self._patched_hsync is not None else None),
             "framebuffer_phys_address": (
                 self._hex32(int(self._framebuffer.physical_address))
                 if self._framebuffer is not None else None),

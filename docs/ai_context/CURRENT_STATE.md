@@ -1161,6 +1161,64 @@ fetch. No Vivado / Clash / bit / hwh / GPIO change.
 Phase 6E full notes are recorded in
 `docs/ai_context/HDMI_GUI_PHASE6E_PER_EFFECT_KNOB_GRID.md`.
 
+## HDMI GUI Phase 6E -- Pip-Boy compact UI restoration + Phase 6G VTC
+
+Phase 6E (this section consolidates the user's "Restore Pip-Boy
+compact HDMI UI" request) confirms the compact-v2 800x480 panel
+matches the original Phase 4G/5D Pip-Boy baseline: phosphor green
+palette (`DEFAULT_800X480_THEME = "pipboy-green"`), dark gradient
+background, scanline overlay, rounded chassis frame at the
+`outer=(12,12,788,468)` / `left=24` / `right=24` Phase 4G
+coordinates (Phase 6F's chassis tighten was rolled back to this
+baseline), corner markers, `v=compact-v2` placement label, ACTIVE
+| SAFE BYPASS status chip with amber `BYPASS_COL`. SELECTED FX +
+ACTIVE MODELS column + ON/BYPASS chip + per-effect parameter knob
+grid (Phase 6E knob grid) + IN/OUT LEVELS meters + SIGNAL CHAIN
+row all render every frame; SAFE BYPASS / PRESET show
+`NO  PARAMETERS` in the knob grid area.
+
+The conditional dropdown marker (thin outline + filled triangle
+around the matching ACTIVE MODELS row) renders only for SELECTED
+FX in PEDAL / AMP / CAB; REVERB / EQ / COMPRESSOR / NOISE
+SUPPRESSOR / SAFE BYPASS / PRESET / OVERDRIVE get no extra marker.
+The Notebook ipywidgets remain the only control surface; HDMI is
+display-only.
+
+The LCD's 150 px right-shift (source `x=0` aligned with LCD
+`x=150`) is fixed at the VTC layer:
+`AudioLabHdmiBackend._start_vtc` patches `VTC_GEN_HSYNC` from
+the IP-baked `HSTART=1390, HEND=1430` to `HSTART=1540, HEND=1580`
+(reducing back porch from 220 to 70 cycles). This is a runtime
+MMIO write; no bit / hwh / Clash / Vivado change.
+`AUDIOLAB_HDMI_HSYNC_SHIFT=0` disables the patch via env var, or
+pass `hsync_shift=N` to the backend constructor. The framebuffer
+destination stays at `(0, 0, 800, 480)`, placement `manual`,
+offsets `(0, 0)`.
+
+Diagnostic scripts:
+
+- `scripts/test_hdmi_800x480_viewport_calibration.py` --- 800x480
+  graduated grid + axis labels; reads off LCD viewport from the
+  rendered pattern.
+- `scripts/test_hdmi_vtc_dump.py` --- dense dump of VTC registers
+  0x000..0x0FC for timing inspection.
+- `scripts/test_hdmi_vtc_hsync_shift.py` --- live experiment that
+  writes a shifted `GEN_HSYNC` value, holds it for a configurable
+  duration, and restores the original (also on SIGINT/SIGTERM) so
+  a bad shift cannot leave the LCD desynced.
+
+Workstation tests: 51 PASS across selected-fx-state,
+model-state-mapping, origin-mapping, resource-monitor, gui-bridge.
+PYNQ-Z2 (192.168.1.9) `scripts/test_hdmi_model_selection_ui.py`
+16/16 PASS with VDMA `DMASR=0x00011000`, VTC ctl `0x00000006`,
+framebuffer `(0,0,800,480)`, ADC HPF true, R19 `0x23`, and the
+VTC HSync shift visible in `backend.status()`. Remote
+`audio_lab.bit` / `audio_lab.hwh` md5 still match local. No git
+push / pull / fetch.
+
+Phase 6E full notes (Pip-Boy restoration) are recorded in
+`docs/ai_context/HDMI_GUI_PHASE6E_RESTORE_PIPBOY_COMPACT_UI.md`.
+
 ## HDMI GUI Phase 1 render benchmark (docs only)
 
 Phase 1 measured `GUI/pynq_multi_fx_gui.py` offscreen rendering on the

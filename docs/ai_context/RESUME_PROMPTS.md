@@ -171,6 +171,36 @@ asking it to re-discover the project from scratch.
 > Vivado rebuild / Clash 変更 / bit / hwh 変更 禁止、`git push` /
 > `git pull` / `git fetch` 禁止。
 
+### HDMI GUI Phase 6E result -- Pip-Boy compact UI restored + VTC HSync shift
+
+> HDMI GUI Phase 6E (Restore Pip-Boy compact UI) は完了済みです。
+> `docs/ai_context/HDMI_GUI_PHASE6E_RESTORE_PIPBOY_COMPACT_UI.md`
+> を読んでから再開してください。compact-v2 800x480 panel を Phase
+> 4G/5D の Pip-Boy ベースライン (phosphor green theme, scanline
+> overlay, `outer=(12,12,788,468)` chassis margins, amber
+> `BYPASS_COL`, corner markers, `v=compact-v2` ラベル) に戻し、Phase
+> 6D の条件付き dropdown マーカーと Phase 6E の per-effect ノブ
+> グリッド (NS=THRESHOLD/DECAY/DAMP, CMP=THRESHOLD/RATIO/RESPONSE/
+> MAKEUP, OD=TONE/LEVEL/DRIVE, DIST=TONE/LEVEL/DRIVE/BIAS/TIGHT/MIX,
+> RAT=FILTER/LEVEL/DRIVE/MIX, AMP=8 ノブ, CAB=MIX/LEVEL/MODEL/AIR,
+> EQ=LOW/MID/HIGH, RVB=DECAY/TONE/MIX) を維持します。SAFE BYPASS と
+> PRESET は `NO PARAMETERS` 注記。
+> LCD の 150 px 右寄り問題は VTC レイヤーで修正:
+> `AudioLabHdmiBackend._start_vtc` が `VTC_GEN_HSYNC` を IP-baked
+> `HSTART=1390, HEND=1430` から `HSTART=1540, HEND=1580` へ書き換え
+> (back porch 220 -> 70)。runtime MMIO 書き込みのみで bit / hwh /
+> Vivado / Clash 変更なし。`AUDIOLAB_HDMI_HSYNC_SHIFT=0` で無効化
+> 可能。framebuffer は `(0,0,800,480)`、placement `manual`、offset
+> `(0,0)` のまま。
+> Notebook ipywidgets が唯一のコントロール面、HDMI は display-only。
+> ローカル unit tests 51 PASS、PYNQ-Z2 (`192.168.1.9`) で
+> `scripts/test_hdmi_model_selection_ui.py` 16/16 PASS、DMASR=
+> `0x00011000`、vtc_ctl=`0x00000006`、ADC HPF true、R19=`0x23`。
+> Phase 6G の VTC 診断スクリプトは `scripts/test_hdmi_vtc_dump.py`,
+> `scripts/test_hdmi_vtc_hsync_shift.py`,
+> `scripts/test_hdmi_800x480_viewport_calibration.py` に残してあり、
+> 再測定や別シフト値の試行に使えます。
+
 ### HDMI GUI Phase 1 prompt
 
 > HDMI GUI統合の Phase 1 を実施してください。対象は

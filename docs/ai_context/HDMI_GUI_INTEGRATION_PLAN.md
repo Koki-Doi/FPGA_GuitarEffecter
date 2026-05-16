@@ -151,6 +151,17 @@ and `DECISIONS.md` D24):
   `AudioLabOverlay.set_guitar_effects(amp_presence=...,
   amp_resonance=...)`, so Phase 6E only touches AppState / mirror /
   GUI / notebook / tests. No bit/hwh change.
+- Phase 6E (Pip-Boy restoration) consolidates Phase 6D, the
+  per-effect knob grid, the Phase 6F chassis-shift rollback, and the
+  Phase 6G VTC HSync runtime shift into the restored Pip-Boy
+  compact-v2 baseline. The chassis returns to the Phase 4G
+  `outer=(12,12,788,468)` / `left=24` / `right=24` coordinates;
+  `AudioLabHdmiBackend._start_vtc` patches `VTC_GEN_HSYNC` from
+  HSTART/HEND `1390/1430` to `1540/1580` (back porch 220 -> 70) so
+  the LCD viewport aligns source x=0 with LCD x=0. The framebuffer
+  destination, placement, and offsets are untouched. No bit/hwh /
+  Vivado / Clash change; the shift is runtime MMIO only and can be
+  disabled via `AUDIOLAB_HDMI_HSYNC_SHIFT=0`.
 
 ### AudioLabOverlay and audio_lab.bit
 
