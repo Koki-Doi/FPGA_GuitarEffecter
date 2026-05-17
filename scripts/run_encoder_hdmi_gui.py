@@ -106,8 +106,18 @@ def _build_argparser() -> argparse.ArgumentParser:
 
 def _bring_up_overlay():
     from audio_lab_pynq import AudioLabOverlay  # type: ignore
-    overlay = AudioLabOverlay()
-    print("[gui] AudioLabOverlay loaded")
+    try:
+        from pynq import PL  # type: ignore
+        loaded_path = PL.bitfile_name or ""
+    except Exception:
+        loaded_path = ""
+    if os.path.basename(loaded_path) == "audio_lab.bit":
+        overlay = AudioLabOverlay(download=False)
+        print("[gui] AudioLabOverlay attached with download=False (%s)"
+              % loaded_path)
+    else:
+        overlay = AudioLabOverlay()
+        print("[gui] AudioLabOverlay loaded")
     return overlay
 
 
