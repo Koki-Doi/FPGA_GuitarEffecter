@@ -227,13 +227,13 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
-## Phase 7F/7G — Rotary encoder PL IP + Python driver + HDMI GUI (local build done; deploy/smoke deferred)
+## Phase 7F/7G — Rotary encoder PL IP + Python driver + HDMI GUI (deployed; full physical smoke still open)
 
 > Phase 7F (PL) と Phase 7G (PS) を `feature/rotary-encoder-hdmi-gui-control`
 > branch で一括実装済み (`DECISIONS.md` D30 / D31 / D32 / D33 / D34 / D35)。
 > local `audio_lab.bit` / `audio_lab.hwh` は更新済み
-> (`hw/Pynq-Z2/bitstreams/`)。PYNQ deploy と物理 encoder smoke は
-> 未配線のため未実施。詳細は
+> (`hw/Pynq-Z2/bitstreams/`)。PYNQ-Z2 (`192.168.1.9`) への deploy と
+> overlay/IP/HDMI/codec smoke は実施済み。詳細は
 > `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md` と
 > `docs/ai_context/ENCODER_INPUT_MAP.md`。
 >
@@ -246,7 +246,16 @@ asking it to re-discover the project from scratch.
 >   `GUI/compact_v2/state.py` / `renderer.py` の focus state、
 >   standalone `scripts/run_encoder_hdmi_gui.py`、smoke
 >   `scripts/test_encoder_input.py` / `scripts/test_hdmi_encoder_gui_control.py`、
->   オフライン unit tests (29 件)。
+>   `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`、
+>   オフライン unit tests (30 件)。
+> - PYNQ Python 3.6 compatibility: `from __future__ import annotations`,
+>   `dataclasses`, `typing.Literal` を encoder runtime path から除去。
+>   `EncoderInput.from_overlay()` は PYNQ runtime key `enc_in_0/s_axi`
+>   を発見し、bare `enc_in_0` hierarchy object を MMIO と誤認しない
+>   (`DECISIONS.md` D36)。
+> - Deploy helper: `scripts/deploy_to_pynq.sh` は `GUI/compact_v2` を
+>   含めるため `GUI/` を recursive rsync する。`GUI/README.md` と
+>   `GUI/fx_gui_state.json` は除外したまま。
 > - Vivado build3:
 >   `/tmp/fpga_guitar_effecter_backup/phase7f7g_vivado_build3.log`。
 >   `write_bitstream completed successfully`。Final routed timing:
@@ -256,25 +265,29 @@ asking it to re-discover the project from scratch.
 > - HWH: `enc_in_0` / `axi_encoder_input` at `0x43D10000..0x43D1FFFF`。
 >   HDMI `axi_vdma_hdmi=0x43CE0000` / `v_tc_hdmi=0x43CF0000` and
 >   existing effect GPIO addresses are unchanged.
+> - PYNQ smoke result: `AudioLabOverlay()` loads, ADC HPF `True`,
+>   `R19=0x23`, encoder `ip_dict` key `enc_in_0/s_axi`,
+>   `VERSION=0x00070001`, `CONFIG=0x00010105`, HDMI VDMA/VTC present,
+>   VTC `GEN_ACTSZ=0x02580320`.
+> - On-board HDMI synthetic smoke passed with
+>   `scripts/test_hdmi_encoder_gui_control.py` and `vdma_dmasr=0x00011000`.
+> - On-board real GUI loop started/stopped with
+>   `scripts/run_encoder_hdmi_gui.py --fps 2 --hold-seconds 10`;
+>   VDMA/VTC stayed normal and encoder 1/2 rotate events were observed.
 >
-> 残作業 (このセッションでは未対応):
-> 1. ロータリーエンコーダー 3 個を Raspberry Pi header の
->    `F19 / V10 / V8` (`ENC0_CLK / DT / SW`)、
->    `W10 / B20 / W8` (`ENC1_*`)、`V6 / Y6 / B19` (`ENC2_*`) に
->    物理配線。`+` は必ず 3.3V (5V 禁止、`DECISIONS.md` D31)。
-> 2. 必要になった時点で `bash scripts/deploy_to_pynq.sh` で新しい bit / hwh / Python
->    パッケージを PYNQ-Z2 (`192.168.1.9`) に転送。
-> 3. ssh で `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3
->    scripts/test_encoder_input.py --duration 60` を実行し、
->    各 encoder の rotate / short / long が出ることを確認。
->    必要なら `--reverse-encN` / `--swap-encN` で方向 / 配線を補正。
->    未配線状態の VERSION / CONFIG / ip_dict 確認は物理 smoke の
->    代替として扱わない (`DECISIONS.md` D35)。
-> 4. `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3
->    scripts/run_encoder_hdmi_gui.py --fps 5` で HDMI GUI を encoder
->    から操作 (Encoder 0 = effect select / on-off / safe bypass、
->    Encoder 1 = knob select / model select、Encoder 2 = value /
->    apply / reset)。
+> 残作業:
+> 1. Low-level 60 s smoke は VERSION / CONFIG / idle read まで PASS したが、
+>    その run では rotate / SW event は 0 件だった。Jupyter
+>    `EncoderGuiSmoke.ipynb` または SSH で、ユーザが実際に 3 encoder
+>    すべてを回して `ENC0/1/2` rotate、short_press、long_press、
+>    release、チャタリングを確認する。
+> 2. 方向が逆なら `reverse_direction`、CLK/DT が物理的に逆なら
+>    `clk_dt_swap`、チャタリングが目立つなら `debounce_ms` を Notebook
+>    または script 引数で調整し、最終設定を docs に記録する。
+> 3. Full standalone operation は `DECISIONS.md` D35 の条件を満たすまで
+>    成功扱いにしない。現在確認済みなのは deploy / IP presence /
+>    register read / synthetic HDMI GUI / real HDMI loop partial
+>    (encoder 1/2 rotate observed) まで。
 >
 > 禁止: PMOD JB / PMOD JA に encoder pin を割り当てる (`DECISIONS.md`
 > D28 / D34 違反、PCM1808 / PCM5102 予約)、PS polling で raw CLK/DT/SW
@@ -283,27 +296,18 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
-## Phase 7G — Python encoder driver + GUI focus state
+## Phase 7G — Python encoder driver + GUI focus state (superseded by deployed Phase 7F/7G block above)
 
-> 前提: Phase 7F で encoder IP が deploy 済 (`audio_lab.bit` に
-> encoder IP が含まれている) こと。
+> 旧 Phase 7G prompt の実装項目は `c7a8680` と follow-up deploy smoke
+> で完了済み。現在使う実機確認 surface は
+> `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`、
+> `scripts/test_encoder_input.py`、
+> `scripts/test_hdmi_encoder_gui_control.py`、
+> `scripts/run_encoder_hdmi_gui.py`。
 >
-> Phase 7G の作業:
-> 1. `audio_lab_pynq/encoder_input.py` (low-level driver) と
->    `audio_lab_pynq/encoder_ui.py` (high-level controller) を
->    `ENCODER_GUI_CONTROL_SPEC.md` section 3 の API 案に沿って実装。
-> 2. `GUI/compact_v2/state.py` に focus state (`focus_effect_index` /
->    `focus_param_index` / `edit_mode` / `model_select_mode` /
->    `last_encoder_event` / `value_dirty` / `apply_pending` /
->    `last_control_source`) を追加。`AppState` の既存 field
->    (`all_knob_values` 等) は破壊しない。
-> 3. `GUI/compact_v2/renderer.py` に focus 表示 / dirty 表示 /
->    press feedback / `last_control_source` 表示を追加。
-> 4. `audio_lab_pynq/notebooks/HdmiGui.ipynb` を encoder 駆動でも
->    notebook 駆動でも動くように更新。1 つの loop で
->    `EncoderUiController.poll()` → `apply_to_state()` →
->    `apply_to_overlay()` を回す。
-> 5. notebook なしで全機能操作できる prototype を確認。
+> 次に必要なのは新規 driver 実装ではなく、3 encoder すべての
+> rotate / short / long / release を実操作で記録し、
+> reverse/swap/debounce の最終設定を docs に反映すること。
 >
 > 禁止: `GUI/pynq_multi_fx_gui.py` shim の巨大化 (`DECISIONS.md`
 > D26)、`audio_lab_pynq/hdmi_effect_state_mirror.py` shim の巨大化、

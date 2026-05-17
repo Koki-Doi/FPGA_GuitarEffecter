@@ -18,8 +18,6 @@ Verifies:
 Does NOT touch the audio DSP, HDMI, ADAU1761, or PMOD JB/JA.
 """
 
-from __future__ import annotations
-
 import argparse
 import time
 

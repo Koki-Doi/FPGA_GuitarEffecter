@@ -17,8 +17,6 @@ If real encoders are wired up, an optional flag (--use-real-encoder)
 substitutes a live EncoderInput poll for the synthetic events.
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import sys

@@ -118,6 +118,15 @@ class AudioLabOverlay(Overlay):
         self._cached_compressor_word = 0
         if hasattr(self, self.COMPRESSOR_GPIO_NAME):
             self._apply_compressor_state_to_word()
+
+    @property
+    def adc_hpf_enabled(self):
+        """Return the ADAU1761 ADC digital HPF state used by smoke tests."""
+        return self.codec.get_adc_hpf_state()
+
+    def read_adc_control(self):
+        """Return ADAU1761 R19_ADC_CONTROL as an integer."""
+        return int(self.codec.R19_ADC_CONTROL[0])
         
     # ---- read-only aliases ---------------------------------------------
     # The block design ships an AXI GPIO at 0x43C80000 named

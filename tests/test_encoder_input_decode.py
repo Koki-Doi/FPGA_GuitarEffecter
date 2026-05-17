@@ -106,6 +106,20 @@ def test_version_and_config_reads():
     assert enc.read_config() == CONFIG_DEFAULT
 
 
+def test_from_overlay_discovers_module_ref_bus_interface_name():
+    class FakeOverlay(object):
+        enc_in_0 = object()  # PYNQ exposes the module as a non-MMIO hierarchy.
+        ip_dict = {
+            "enc_in_0/s_axi": {
+                "phys_addr": 0x43D10000,
+                "addr_range": 0x10000,
+            }
+        }
+
+    enc = EncoderInput.from_overlay(FakeOverlay())
+    assert isinstance(enc, EncoderInput)
+
+
 def test_configure_round_trip():
     mm = FakeMmio()
     enc = EncoderInput(mm)
@@ -195,6 +209,7 @@ _TEST_FUNCTIONS = [
     test_decode_status_bits,
     test_construct_requires_real_mmio,
     test_version_and_config_reads,
+    test_from_overlay_discovers_module_ref_bus_interface_name,
     test_configure_round_trip,
     test_clear_events_write_word,
     test_poll_rotate_detents,

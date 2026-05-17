@@ -21,8 +21,6 @@ The script is read-only against PCM1808/PCM5102 plans -- it does NOT
 touch PMOD JB/JA or the external codec path.
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import signal

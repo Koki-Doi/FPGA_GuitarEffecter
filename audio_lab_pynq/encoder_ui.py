@@ -10,8 +10,6 @@ The controller never writes a raw GPIO. It updates ``AppState``, then -- when
 ``HdmiEffectStateMirror`` and ``AudioLabOverlay`` public API.
 """
 
-from __future__ import annotations
-
 from typing import Iterable, Optional
 
 try:  # noqa: SIM105 — import guard is needed to keep this file workstation-safe

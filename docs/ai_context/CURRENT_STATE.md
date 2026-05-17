@@ -1,12 +1,14 @@
 # Current state
 
-Last updated: **2026-05-17, post-Phase-6I refactor pass** (commits
+Last updated: **2026-05-17, post-Phase-7F/7G encoder deploy smoke** (commits
 `5332b7e` / `3afd9c4` / `e2ece2e` brought the Phase 6I C2 baseline up;
 `d1c4e8e` thinned `set_guitar_effects` into a 6-helper facade;
 `52c5ea4` extracted the 1727-line `hdmi_effect_state_mirror.py` into
 the `audio_lab_pynq/hdmi_state/` subpackage; `5173baf` extracted the
 1685-line `GUI/pynq_multi_fx_gui.py` into the `GUI/compact_v2/`
-subpackage. See `DECISIONS.md` D26).
+subpackage; `c7a8680` added the rotary encoder input IP and the
+follow-up deploy smoke added the encoder Notebook and PYNQ Python 3.6
+compatibility fixes. See `DECISIONS.md` D26 / D33 / D35).
 
 ## Current load-bearing facts
 
@@ -2261,7 +2263,11 @@ Python 層:
   `EncoderInput.from_overlay(overlay)` で IP を発見し、
   `poll(timestamp=)` が `EncoderEvent(kind, encoder_id, delta,
   raw_delta, timestamp)` を返す。`EDGES_PER_DETENT = 4`、edge carry
-  で 2 polls 跨ぎの 1 detent も漏らさず emit。
+  で 2 polls 跨ぎの 1 detent も漏らさず emit。PYNQ-Z2 の Python
+  3.6 image で動かすため、`EncoderEvent` は dataclass ではなく
+  plain class。PYNQ 2020.1 の module-reference HWH では encoder が
+  `ip_dict` 上 `enc_in_0/s_axi` として出るため、driver は bare
+  `enc_in_0` hierarchy を MMIO IP と誤認せず bus-interface 名を探索する。
 - `audio_lab_pynq/encoder_ui.py` — `EncoderUiController.handle_event()`
   で AppState を変更。Encoder 0 = effect select / toggle / safe-bypass、
   Encoder 1 = knob select / model-select toggle、Encoder 2 = value
@@ -2287,11 +2293,17 @@ Standalone runtime + tests:
 - `scripts/test_hdmi_encoder_gui_control.py` — 実機上の synthesized
   encoder events + HDMI frame write smoke (scripted または
   `--use-real-encoder`)。
-- `tests/test_encoder_input_decode.py` (12 tests)、
+- `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` — Jupyter から
+  overlay attach、encoder/HDMI/ADAU1761 smoke、raw register read、
+  live monitor、reverse/swap/debounce 設定、synthetic GUI event、
+  real encoder -> AppState、real encoder -> HDMI GUI loop を段階的に
+  確認する 10-cell Notebook。`AudioLabOverlay()` は 1 回だけ使い、
+  `base.bit` や二重 Overlay load はしない。
+- `tests/test_encoder_input_decode.py` (13 tests)、
   `tests/test_encoder_ui_controller.py` (13 tests)、
   `tests/test_compact_v2_encoder_state.py` (4 tests) — オフライン
   unit tests。`tests/_pynq_mock` 経由で `pynq` なしの workstation
-  でも全 29 件 PASS。既存 6 件の HDMI / overlay テストにも regression なし。
+  でも全 30 件 PASS。既存 6 件の HDMI / overlay テストにも regression なし。
 
 新規 docs:
 - `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md` — 実装メモ
@@ -2324,16 +2336,45 @@ Vivado build:
   (`axi_encoder_input`) at `0x43D10000..0x43D1FFFF`。HDMI は
   `axi_vdma_hdmi=0x43CE0000`、`v_tc_hdmi=0x43CF0000` のまま。
   既存 effect GPIO (`0x43C30000..0x43CD0000`) も unchanged。
-- PYNQ deploy は未実施。ロータリーエンコーダー 3 個がまだ物理配線
-  されていないため、manual encoder smoke は未実施であり、
-  standalone 操作成功とは記録しない (`DECISIONS.md` D35)。
+- PYNQ deploy completed to `192.168.1.9` with
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`.
+  `audio_lab.bit` / `audio_lab.hwh` were installed under the repo copy,
+  package bitstreams, `/home/xilinx/pynq/overlays/audio_lab`, and the
+  Notebook tree. The deploy script now recursively syncs `GUI/` so
+  `GUI/compact_v2` is present on the board; it still excludes
+  `GUI/README.md`, `GUI/fx_gui_state.json`, `__pycache__`, and
+  notebook checkpoints.
+- PYNQ smoke after deploy: `AudioLabOverlay()` loads, ADC HPF `True`,
+  `R19=0x23`, `ip_dict` encoder key is `enc_in_0/s_axi`,
+  `VERSION=0x00070001`, `CONFIG=0x00010105`, HDMI IPs
+  `axi_vdma_hdmi` / `v_tc_hdmi` are present, and VTC `GEN_ACTSZ`
+  reads `0x02580320` (V=600 / H=800).
+- Low-level encoder smoke was executed for 60 s with
+  `scripts/test_encoder_input.py --duration 60`; VERSION / CONFIG /
+  idle COUNT read passed but no rotate or switch events were captured
+  in that run (`COUNT0..2 = 0 / 0 / 0`, total events = 0). Therefore
+  full physical encoder smoke is still **not** claimed.
+- HDMI synthetic encoder GUI smoke passed:
+  `scripts/test_hdmi_encoder_gui_control.py` started/stopped the HDMI
+  backend, applied 10 scripted events to `AppState`, rendered frames,
+  and reported `vdma_dmasr=0x00011000`.
+- HDMI real encoder GUI loop started/stopped cleanly with
+  `scripts/run_encoder_hdmi_gui.py --fps 2 --hold-seconds 10`;
+  VDMA/VTC status stayed normal (`vdma_dmasr=0x00011000`,
+  `vtc_ctl=0x00000006`, `HSIZE=2400`, `VSIZE=600`), and encoder 1/2
+  rotate events were observed by the loop. Encoder 0 and SW short/long
+  coverage still need hands-on confirmation.
 
 未対応 (Phase 7H 以降):
-- 実機 PYNQ-Z2 への deploy + 配線 encoder smoke (ロータリーエンコーダー
-  3 個は **まだ物理配線されていない**ため、deploy / 物理 smoke は
-  hardware 配線後に user が手動で実行する)。`scripts/deploy_to_pynq.sh`
-  と `scripts/test_encoder_input.py` / `scripts/test_hdmi_encoder_gui_control.py`
-  を流すだけ。
+- Jupyter UI または SSH セッションで、ユーザが実際に 3 個すべての
+  encoder を回して `ENC0/1/2` rotate、SW short_press、SW long_press、
+  release、チャタリング有無を記録する。必要なら Notebook / script の
+  CONFIG で `reverse_direction` / `clk_dt_swap` / `debounce_ms` /
+  `sw_active_low` を調整し、その最終値を docs に反映する。
+- `EncoderGuiSmoke.ipynb` はローカルと PYNQ 上で JSON 妥当性を確認済み。
+  PYNQ Jupyter path は
+  `/home/xilinx/jupyter_notebooks/audio_lab/EncoderGuiSmoke.ipynb`。
+  各 live cell の完全な手動操作確認は次の実機操作で行う。
 - 外付け PCM1808 / PCM5102 codec 実装 (Phase 7C 以降の別作業)。
 
 ## What to do next

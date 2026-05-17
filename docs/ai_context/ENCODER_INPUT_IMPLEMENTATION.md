@@ -90,7 +90,12 @@ Verilog file with:
 * `audio_lab_pynq/encoder_input.py` — low-level. `EncoderInput`
   exposes register accessors plus a `poll()` that returns
   `EncoderEvent` instances. `EDGES_PER_DETENT = 4` and carry-on-poll
-  means typical detented encoders emit one rotate event per click.
+  means typical detented encoders emit one rotate event per click. The
+  event class is intentionally plain Python rather than a dataclass so
+  the driver runs on the PYNQ-Z2 Python 3.6 image without the
+  dataclasses backport. `EncoderInput.from_overlay()` also handles the
+  PYNQ module-reference naming used by the deployed HWH:
+  `enc_in_0/s_axi`.
 * `audio_lab_pynq/encoder_ui.py` —
   `EncoderUiController.handle_event()` maps events into AppState. It
   *never* writes a raw effect GPIO; `apply()` uses a dry-run/test mirror
@@ -136,6 +141,7 @@ to drive `CONFIG` without recompiling.
 | `tests/test_compact_v2_encoder_state.py` | New AppState fields default, JSON round-trip ignores Phase 7G fields, renderer still produces an 800×480 frame with the new flags. |
 | `scripts/test_encoder_input.py` | On-board manual smoke. |
 | `scripts/test_hdmi_encoder_gui_control.py` | On-board GUI smoke with scripted or live events. |
+| `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` | On-board Jupyter smoke: overlay/IP/codec checks, raw register reads, live monitor, CONFIG adjustment, synthetic AppState test, and real encoder HDMI loop. |
 
 Offline verification on the development host uses `python3 -m unittest`
 because `pytest` is not required in this repository:
@@ -147,7 +153,35 @@ python3 -m unittest -v \
   tests.test_compact_v2_encoder_state
 ```
 
-The current Phase 7F/7G test set has 29 tests across those three files.
+The current Phase 7F/7G test set has 30 tests across those three files.
+
+## Notebook smoke
+
+`audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` is the staged
+Jupyter-facing test surface for the wired encoders. The deploy helper
+installs it under both the repo copy and
+`/home/xilinx/jupyter_notebooks/audio_lab/EncoderGuiSmoke.ipynb`.
+
+The Notebook deliberately separates success criteria:
+
+1. `AudioLabOverlay()` attach plus `enc_in_0/s_axi`, `axi_vdma_hdmi`,
+   `v_tc_hdmi`, VTC `GEN_ACTSZ=0x02580320`, ADC HPF `True`, and
+   `R19=0x23`.
+2. Raw register reads: `VERSION=0x00070001`,
+   `CONFIG=0x00010105`, counts, button state, STATUS, and deltas.
+3. 60-second live monitor for rotate / short_press / long_press, with
+   explicit `clear_events()` confirmation.
+4. CONFIG adjustment for `debounce_ms`, `clear_on_read`,
+   `sw_active_low`, per-encoder reverse, and per-encoder CLK/DT swap.
+5. Synthetic GUI events into `AppState`.
+6. Real encoder events into `AppState`.
+7. Real encoder events driving the HDMI GUI loop at a conservative
+   3--5 fps, with `KeyboardInterrupt` / stop-flag shutdown that calls
+   `backend.stop()`.
+
+It never loads `base.bit`, never loads a second overlay after
+`AudioLabOverlay()`, and does not touch PMOD JA/JB or the external
+PCM1808 / PCM5102 plan.
 
 ## Build result
 
@@ -166,9 +200,43 @@ The accepted local build is build3:
   `0x43D10000..0x43D1FFFF`. HDMI VDMA/VTC remain at
   `0x43CE0000` / `0x43CF0000`, and existing effect GPIO addresses are
   unchanged.
-* PYNQ deploy and physical encoder smoke are deferred until the three
-  encoder modules are wired. A HWH/ip_dict presence check is not a
-  substitute for physical rotate / press smoke (`DECISIONS.md` D35).
+
+## PYNQ deploy and smoke result
+
+Phase 7F/7G was deployed to the PYNQ-Z2 at `192.168.1.9` after the
+encoder modules were wired. The deployed PYNQ image exposed the
+module-reference IP under `ip_dict` as `enc_in_0/s_axi`, not bare
+`enc_in_0`, so the Python driver was updated to discover that bus
+interface name and to ignore the non-MMIO hierarchy object.
+
+Deploy smoke:
+
+* `AudioLabOverlay()` loaded.
+* ADC HPF was `True`; `R19_ADC_CONTROL` read `0x23`.
+* Encoder key: `enc_in_0/s_axi`.
+* Encoder `VERSION` read `0x00070001`; `CONFIG` read `0x00010105`.
+* HDMI IPs `axi_vdma_hdmi` and `v_tc_hdmi` were present.
+* VTC `GEN_ACTSZ` read `0x02580320` (SVGA 800x600 active).
+
+Runtime smoke:
+
+* `scripts/test_encoder_input.py --duration 60` completed and confirmed
+  idle register access, but captured zero rotate / button events
+  (`COUNT0..2 = 0 / 0 / 0`). This is not recorded as full physical
+  encoder smoke success.
+* `scripts/test_hdmi_encoder_gui_control.py` passed with scripted
+  encoder events and no VDMA error bits (`vdma_dmasr=0x00011000`).
+* `scripts/run_encoder_hdmi_gui.py --fps 2 --hold-seconds 10` started
+  and stopped the HDMI loop cleanly. VDMA/VTC remained normal
+  (`vdma_dmasr=0x00011000`, `vtc_ctl=0x00000006`, `HSIZE=2400`,
+  `VSIZE=600`), and encoder 1/2 rotate events were observed by the
+  loop. Encoder 0 and SW short/long coverage still require hands-on
+  confirmation.
+
+Full standalone operation is still gated by `DECISIONS.md` D35:
+all three physical encoders must be rotated and pressed, direction /
+swap / debounce settings must be recorded, and switch short/long events
+must be observed before claiming the front-panel control path complete.
 
 ## Rollback
 

@@ -1292,3 +1292,30 @@ not get removed even when superseded — they get updated.
   contact bounce は実モジュール依存であり、offline test や synthetic
   HDMI event では確認できない。未配線の成功扱いは field wiring 時の
   誤診につながる。
+
+## D36 — Deployed encoder module-reference IP is addressed through `enc_in_0/s_axi`
+
+- **状況.** `c7a8680` の bit/hwh を PYNQ-Z2 (`192.168.1.9`) に deploy
+  したところ、Vivado BD instance は `enc_in_0` のままだが、PYNQ
+  2020.1 の `ip_dict` では module-reference AXI interface が
+  **`enc_in_0/s_axi`** として露出した。bare `ovl.enc_in_0` attribute は
+  MMIO `DefaultIP` ではなく hierarchy object なので、そのまま
+  `EncoderInput` に渡すと register read/write できない。
+- **決定.**
+  - Python driver は `enc_in_0/s_axi` を正式な discovery candidate に
+    含める。
+  - `EncoderInput.from_overlay()` は overlay attribute を採用する前に
+    `.mmio` または `read` / `write` を持つことを確認する。
+  - 候補名で見つからない場合は `ip_dict` 内の `encoder` または
+    `enc_in` を含む key を探索する。
+  - docs / Notebook / smoke 結果では、BD instance `enc_in_0` と
+    PYNQ runtime key `enc_in_0/s_axi` を区別して書く。
+- **境界.**
+  - RTL module name は `axi_encoder_input`、BD instance は `enc_in_0`、
+    AXI base は `0x43D10000` のまま。address / XDC / block design は
+    この決定で変更しない。
+  - `GPIO_CONTROL_MAP.md` は effect output ledger のまま変更しない。
+- **Why.** HWH / PYNQ の naming は module-reference flow 固有の
+  runtime detail であり、ここを driver 側で吸収すれば Verilog IP
+  packaging や block design rename を避けられる。HDMI / DSP / GPIO
+  契約を動かさずに deploy 済 bitstream をそのまま使える。

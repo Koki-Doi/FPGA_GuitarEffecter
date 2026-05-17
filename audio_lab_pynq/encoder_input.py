@@ -11,10 +11,7 @@ This module is import-safe on workstations without ``pynq`` installed.
 construct it without a real overlay / MMIO.
 """
 
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-from typing import Iterable, List, Literal, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 
 # ---- Register map -----------------------------------------------------------
@@ -46,6 +43,9 @@ EXPECTED_VERSION = 0x00070001
 DEFAULT_IP_NAMES: Tuple[str, ...] = (
     "axi_encoder_input_0",
     "enc_in_0",
+    # PYNQ 2020.1 exposes module-reference AXI interfaces as
+    # "<instance>/<bus-interface>" rather than just the BD instance name.
+    "enc_in_0/s_axi",
     "axi_encoder_input",
 )
 
@@ -55,18 +55,38 @@ DEFAULT_IP_NAMES: Tuple[str, ...] = (
 EDGES_PER_DETENT = 4
 
 
+def _is_ip_object(obj) -> bool:
+    return (
+        obj is not None and
+        (hasattr(obj, "mmio") or (hasattr(obj, "read") and hasattr(obj, "write")))
+    )
+
+
 # ---- Event dataclass --------------------------------------------------------
 
-EventKind = Literal["rotate", "short_press", "long_press", "release"]
+class EncoderEvent(object):
+    """Decoded encoder event.
 
+    Kept as a plain class rather than a dataclass so the driver runs on the
+    PYNQ-Z2 Python 3.6 image without the dataclasses backport.
+    """
 
-@dataclass
-class EncoderEvent:
-    kind: EventKind
-    encoder_id: int          # 0, 1, or 2
-    delta: int = 0           # signed detents (already divided by EDGES_PER_DETENT) for rotate
-    raw_delta: int = 0       # signed raw quadrature edges for rotate (unscaled)
-    timestamp: float = 0.0   # seconds (host clock); zero if caller didn't fill it in
+    __slots__ = ("kind", "encoder_id", "delta", "raw_delta", "timestamp")
+
+    def __init__(self, kind, encoder_id, delta=0, raw_delta=0, timestamp=0.0):
+        self.kind = kind
+        self.encoder_id = int(encoder_id)
+        self.delta = int(delta)
+        self.raw_delta = int(raw_delta)
+        self.timestamp = float(timestamp)
+
+    def __repr__(self):
+        return (
+            "EncoderEvent(kind={!r}, encoder_id={!r}, delta={!r}, "
+            "raw_delta={!r}, timestamp={!r})"
+        ).format(
+            self.kind, self.encoder_id, self.delta, self.raw_delta,
+            self.timestamp)
 
 
 # ---- Helpers ----------------------------------------------------------------
@@ -153,8 +173,9 @@ class EncoderInput:
 
         ip_obj = None
         for name in candidates:
-            ip_obj = getattr(overlay, name, None)
-            if ip_obj is not None:
+            candidate_obj = getattr(overlay, name, None)
+            if _is_ip_object(candidate_obj):
+                ip_obj = candidate_obj
                 break
             # PYNQ Overlay also exposes IPs in .ip_dict
             try:
@@ -169,6 +190,22 @@ class EncoderInput:
                     break
                 except Exception:
                     pass
+
+        if ip_obj is None and ip_name is None:
+            try:
+                ip_dict = overlay.ip_dict  # type: ignore[attr-defined]
+            except AttributeError:
+                ip_dict = None
+            if ip_dict:
+                for name in ip_dict:
+                    lower = name.lower()
+                    if "encoder" in lower or lower.startswith("enc_in"):
+                        try:
+                            from pynq import DefaultIP  # type: ignore
+                            ip_obj = DefaultIP(description=ip_dict[name])
+                            break
+                        except Exception:
+                            pass
 
         if ip_obj is None:
             raise RuntimeError(

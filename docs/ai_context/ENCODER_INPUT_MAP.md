@@ -76,7 +76,11 @@ pressed to released.
 `audio_lab_pynq/encoder_input.py` exposes:
 
 * `EncoderInput.from_overlay(overlay)` — discovers the IP (tries
-  `axi_encoder_input_0` then `enc_in_0` then `axi_encoder_input`).
+  `axi_encoder_input_0`, `enc_in_0`, `enc_in_0/s_axi`, then
+  `axi_encoder_input`, and finally searches `ip_dict` for
+  `encoder` / `enc_in` names). PYNQ 2020.1 exposes this Verilog
+  module reference as `enc_in_0/s_axi`; the bare `enc_in_0` overlay
+  attribute is only a hierarchy object and must not be treated as MMIO.
 * `read_status() / read_delta_packed() / read_counts() /
   read_button_state() / read_config() / read_version()` — raw
   register reads.
@@ -134,3 +138,28 @@ written from the encoder controller.
   encoder events, repaints the HDMI framebuffer, checks VDMA status).
 * Standalone runtime: `scripts/run_encoder_hdmi_gui.py` (a
   notebook-less Pip-Boy GUI loop driven by the encoders).
+* Jupyter smoke:
+  `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`, installed on the
+  board as
+  `/home/xilinx/jupyter_notebooks/audio_lab/EncoderGuiSmoke.ipynb`.
+  It checks `VERSION=0x00070001`, `CONFIG=0x00010105`, VTC
+  `GEN_ACTSZ=0x02580320`, ADC HPF / `R19=0x23`, and provides live
+  monitor plus reverse/swap/debounce controls.
+
+## Current deployed observations
+
+After deploy to `192.168.1.9`, the observed register and HWH state was:
+
+| Item | Observed |
+| --- | --- |
+| `ip_dict` encoder key | `enc_in_0/s_axi` |
+| `VERSION` | `0x00070001` |
+| `CONFIG` | `0x00010105` |
+| `COUNT0..2` idle read | `0 / 0 / 0` |
+| `BUTTON_STATE` idle read | `0b000` |
+| HDMI VTC `GEN_ACTSZ` | `0x02580320` |
+
+The 60-second low-level smoke captured no rotate / switch events in
+that SSH run, so direction, CLK/DT swap, switch polarity, and debounce
+calibration are still open until all three physical encoders are
+manually operated and recorded.
