@@ -414,6 +414,40 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 `GuitarPedalboardOneCell.ipynb` には Comp Off / Light Sustain / Funk Tight / Lead Sustain / Limiter-ish の 5 プリセットを用意しています。本格的な attack/release 独立、knee、sidechain は今回入れていません。参考にした OSS (`harveyf2801/AudioFX-Compressor`、`bdejong/musicdsp`、`DanielRudrich/SimpleCompressor`、`chipaudette/OpenAudio_ArduinoLibrary`、`p-hlp/SMPLComp`、`Ashymad/bancom`) はパラメータ命名と設計思想のみ参照しており、ソースコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D14、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Compressor 節を参照してください。
 
+### Overdrive (asym soft clip + tone blend)
+
+Compressor の後段、Distortion Pedalboard / RAT の前段に配置された軽い tube
+風オーバードライブです。`axi_gpio_overdrive` (`0x43C50000`) で制御。enable
+は **`gate_control.ctrlA` bit 1** (`overdrive_on`)。OFF 時は bit-exact
+bypass で、`axi_gpio_overdrive.ctrlD` は **Distortion Pedalboard の TIGHT**
+が共有しているため、Overdrive 単独 writer は ctrlD を触りません
+(`GPIO_CONTROL_MAP.md`)。
+
+| ctrl | bit | パラメータ | 範囲 | DSP での使われ方 |
+| --- | --- | --- | --- | --- |
+| `ctrlA` | -- | `TONE` | 0..100 | 1-pole tone blend (`overdriveToneMultiplyFrame` -> `overdriveToneBlendFrame` の `α`)。低いほど暗く |
+| `ctrlB` | -- | `LEVEL` | 0..100 | 出力 Q7 multiply (`overdriveLevelFrame`)、`softClipK 3_200_000` で safety |
+| `ctrlC` | -- | `DRIVE` | 0..100 | pre-gain `gain = 256 + DRIVE * 5` (Q8、約 1x..6x)。30..50 で `asymSoftClip 2_700_000 / 2_300_000` の knee に届く |
+| `ctrlD` | -- | (Distortion `TIGHT` 共有) | 0..100 | ※ Distortion section が所有 (`set_distortion_settings(tight=)` 経由) |
+
+信号フロー (`fxPipeline` 内):
+
+```text
+overdriveDriveMultiplyFrame  -- Q8 pre-gain (256 + DRIVE * 5)
+  -> overdriveDriveBoostFrame   -- satShift8 で Sample に戻す
+  -> overdriveDriveClipFrame    -- asymSoftClip 2_700_000 / 2_300_000 (tube 風 even-harmonic 寄り)
+  -> overdriveToneMultiplyFrame -> overdriveToneBlendFrame  -- 1-pole tone blend
+  -> overdriveLevelFrame        -- Q7 level multiply + softClipK 3_200_000 safety
+```
+
+実機ペダル風 voicing pass で対称 `softClip` → `asymSoftClip` に切替え、
+recording-analysis pass で drive mapping と clip knee を再調整しています
+(下記の voicing 節参照)。Tube Screamer / RAT / DS-1 の前段に薄く重ねる
+使い方を想定しており、`DRIVE = 30..50` で `LEVEL = 60..70` あたりが穏やかな
+クランチ。`DRIVE > 80` は Distortion 段との重ね使いで意図的に潰す用途です。
+詳細は [`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md)
+Overdrive section を参照してください。
+
 ### Distortion Pedalboard (pedal-mask 方式、全 7 ペダル deployed)
 
 `distortion_control.ctrlD[6:0]` の 7 bit pedal-enable mask で、ペダルを排他切替/スタックできます。section master は `gate_control.ctrlA` bit 2 (`distortion_on`)。各ペダルは独立 register-staged Clash ブロックで実装され、OFF 時 bit-exact bypass。bit 7 は将来 8 番目のペダル用に reserved。
@@ -442,6 +476,57 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 `set_distortion_pedal(name, exclusive=True)` / `set_distortion_pedals(**kwargs)` / `set_distortion_settings(...)` から操作します。商用ペダルの回路図 / コード / 係数表のコピーは行っていません。アルゴリズム形 (HPF -> drive -> clip -> post LPF -> level、softClip 系 helper の選択、安全 knee) のみが参照点です (`DECISIONS.md` D6 / D9)。
 
+### RAT Distortion (独立ステージ、`axi_gpio_delay` 経由)
+
+ProCo RAT 風のハードクリップ系ディストーションです。Distortion
+Pedalboard の `rat` ペダル (bit 2) からも呼べますが、RAT 自体は**独立した
+8 段ステージ** (`ratHighpass -> ratDriveMul -> ratDriveBoost ->
+ratOpAmpLowpass -> ratClip -> ratPostLowpass -> ratTone -> ratLevel ->
+ratMix`) を持っており、専用 GPIO `axi_gpio_delay` (`0x43C80000`) で制御
+します。
+
+> **GPIO 名の歴史的注意**: `axi_gpio_delay` という名前は **rename 禁止**
+> です (`DECISIONS.md` D12、`GPIO_CONTROL_MAP.md` rule 1)。元々
+> delay 用に作られたが現在の live Clash stage は RAT を駆動しており、
+> `block_design.tcl` / hwh / Python attribute が全てこの名前を参照して
+> います。rename には Vivado 再合成 (= 既定で off-limits) が必要です。
+
+enable は **`gate_control.ctrlA` bit 4** (`rat_on`)。OFF 時は bit-exact
+bypass。RAT は Distortion Pedalboard の pedal-mask に **含まれない**
+独立 enable (`Python 側で `set_distortion_pedal('rat')` を呼ぶと
+`gate_control.ctrlA` bit 4 が立ち、pedal-mask 排他切替の対象になります)。
+
+| ctrl | パラメータ | 範囲 | DSP での使われ方 |
+| --- | --- | --- | --- |
+| `ctrlA` | `FILTER` | 0..100 | RAT 入力 HPF + opamp-style LPF の cutoff (`ratHighpass`, `ratOpAmpLowpass`) |
+| `ctrlB` | `LEVEL` | 0..100 | 出力 Q7 multiply (`ratLevel`) |
+| `ctrlC` | `DRIVE` | 0..100 | pre-gain (`ratDriveMul` + `ratDriveBoost`) — Tube Screamer より深く食わせる |
+| `ctrlD` | `MIX` | 0..100 | wet/dry mix (`ratMix`) |
+
+信号フロー (`fxPipeline` 内、8 register stage):
+
+```text
+ratHighpass     -- 入力 HPF (低域カット、ピックの粒立ち)
+  -> ratDriveMul    -- pre-gain multiply
+  -> ratDriveBoost  -- satShift8 で Sample に戻す
+  -> ratOpAmpLowpass-- opamp 風 LPF (帯域制限)
+  -> ratClip        -- ハードクリップ (FILTER で knee 連動)
+  -> ratPostLowpass -- post-clip smoothing
+  -> ratTone        -- TONE 1-pole blend
+  -> ratLevel       -- Q7 level multiply
+  -> ratMix         -- wet/dry mix
+```
+
+実機ペダル風 voicing pass で hard clip floor を低く、post LPF / tone を
+全体に暗くしています。`DRIVE = 50..70` + `LEVEL = 80..100` で典型的な
+RAT サウンド。`MIX < 100` で dry を混ぜると刻みでも芯が残ります。
+
+**注意 (Phase 7G+)**: `EncoderEffectApplier` は既定で `skip_rat=True`、
+encoder runtime からは RAT を選べません。Notebook の
+`set_distortion_pedal('rat')` や `HdmiEffectStateMirror.rat()` 直接呼び出しは
+従来通り動作します ([Rotary Encoder GUI 操作](#rotary-encoder-gui-操作-phase-7f--7g--7g)
+参照)。
+
 ### 実機ペダル風 voicing pass (deployed)
 
 各エフェクトを既存 GPIO のまま「実機っぽい音」に寄せる調整パスを実施しています。新規 GPIO / `topEntity` ポート / Clash ステージは追加せず、`LowPassFir.hs` の中の既存ステージの定数とクリップ関数だけを差し替えています。狙いと変更点の一覧は [`docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md`](docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md) を参照してください。代表的な変更:
@@ -469,6 +554,51 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 - Cab model 2: 4x12 closed back style。遅延 tap 側を厚くし、Metal / Big Muff / Fuzz Face の line-direct fizz を最も強く抑えます。
 - `air` は高域の戻し量として扱いますが、direct tap の戻りは capped なので `air=100` でも raw line には戻りません。
 - Chain Presets は Basic Clean / Clean Sustain / Light Crunch に model 0 を薄く使い、Metal / Big Muff / Fuzz 系は model 2 寄りに調整しています。
+
+### Amp Simulator (8 段スタック + 2 GPIO)
+
+Distortion 群の後段に置かれた軽量 Amp 模擬で、generic guitar amp inspired
+の DSP として実装しています (商用アンプ回路 / IR / 係数のコピーは一切
+なし、`DECISIONS.md` D7 / D18)。
+
+GPIO は **2 つ並び**:
+
+| GPIO | Address | ctrlA | ctrlB | ctrlC | ctrlD |
+| --- | --- | --- | --- | --- | --- |
+| `axi_gpio_amp` | `0x43C90000` | `input_gain` | `master` | `presence` | `resonance` |
+| `axi_gpio_amp_tone` | `0x43CA0000` | `bass` | `middle` | `treble` | `character` |
+
+enable は **`gate_control.ctrlA` bit 6** (`amp_on`)。OFF 時は bit-exact
+bypass。`character` は Amp Simulator named models で 4 band に量子化されます
+(下記参照)。
+
+| パラメータ | 範囲 | 内容 |
+| --- | --- | --- |
+| `GAIN` | 0..100 | プリアンプ pre-gain (`ampDriveMultiplyFrame`、ceiling ~19x。fizz-control pass で下げ済み) |
+| `BASS` / `MIDDLE` / `TREBLE` | 0..100 | 3 band tone stack 近似 (`ampToneFilterFrame` -> `ampToneMixFrame`)。TREBLE は `ampTrebleGain character treble` で 8..16 kHz fizz を model 別に cap |
+| `PRESENCE` | 0..100 | 高域戻し量。`presence * 5/8 - 内部 trim` (model 別) で過剰戻り防止 |
+| `RESONANCE` | 0..100 | 低域戻し量。内部 cap (`resonance * 3/4`) |
+| `MASTER` | 0..100 | 最終出力 multiply (`ampMasterFrame`)、`softClipK 3_300_000` で Cab/EQ/Reverb 直前を保護 |
+| `CHARACTER` | 0..100 | post-clip pre-LPF 制御 + waveshape の歪み方。byte は Amp Simulator named models の 4 band に量子化 |
+
+信号フロー (`fxPipeline` 内、8 register stage):
+
+```text
+ampHighpassFrame           -- 入力 HPF (253/256 で従来 254/256 より少しタイト)
+  -> ampDriveMultiplyFrame    -- Q7 pre-gain (GAIN)
+  -> ampDriveBoostFrame       -- satShift8
+  -> ampWaveshapeFrame        -- CHARACTER controlled asym soft clip (knee は CHARACTER で動く)
+  -> ampPreLowpassFrame       -- 1-pole post-clip smoothing (band 別 darken)
+  -> ampSecondStageMultiplyFrame -> ampSecondStageFrame  -- 2 nd gain/clip stage
+  -> ampToneFilterFrame -> ampToneMixFrame  -- B/M/T tone stack (TREBLE は model cap 付き)
+  -> ampPowerFrame            -- power stage safety (softClipK 3_400_000)
+  -> ampResPresenceProductsFrame -> ampResPresenceMixFrame  -- RES + PRES mix + softClipK 3_400_000
+  -> ampMasterFrame           -- MASTER + softClipK 3_300_000
+```
+
+Audio-analysis / fizz-control pass で input gain ceiling、pre-LPF、treble、
+presence、master safety を高域が痛くならない方向に調整済 (下記
+Recording-analysis voicing fixes 節)。
 
 ### Amp Simulator named models (deployed)
 
@@ -499,6 +629,97 @@ print(AudioLabOverlay.amp_model_to_character("jc_clean"))  # -> 10
 ```
 
 `GuitarPedalboardOneCell.ipynb` の Amp Simulator アコーディオンに「Amp Model」ドロップダウンを追加しました。選択するとその model の中央 character 値を Character スライダーに書き込むので、Chain Preset / Safe Bypass のロジックは何も変えていません。
+
+### Cab IR (4-tap FIR + air variants)
+
+Amp Simulator の直後に置かれる軽量 cabinet 模擬で、`axi_gpio_cab`
+(`0x43CB0000`) で制御します。enable は **`gate_control.ctrlA` bit 7**
+(`cab_on`)。OFF 時は bit-exact bypass。長い IR loader や WAV IR 畳み込み
+は未実装で、4-tap FIR を 3 model × 3 air variant の係数テーブルから引いて
+runtime で選んでいます。
+
+| ctrl | パラメータ | 範囲 | 内容 |
+| --- | --- | --- | --- |
+| `ctrlA` | `MIX` | 0..100 | wet / dry mix。`0` = raw、`100` = 完全 cabinet shape |
+| `ctrlB` | `LEVEL` | 0..100 | 出力 Q7 multiply、post-Cab `softClip` で safety |
+| `ctrlC` | `MODEL` | 0/85/170 (3 step) | 3 preset IR の選択。Python は `cab_model = 0/1/2` を `* 85` で書く |
+| `ctrlD` | `AIR` | 0..100 | 高域 air の戻し量。direct tap は capped (`air=100` でも raw line には戻らない) |
+
+Model 別 voicing (recording-analysis pass で再調整、`cabCoeff` table から):
+
+| `cab_model` | 想定 | 4-tap voicing |
+| --- | --- | --- |
+| 0 | 1x12 open back inspired | 軽め、低域控えめ、中域 + AIR が残る。Clean / Crunch 向け |
+| 1 | 2x12 combo inspired | バランス型、高域少し控えめ。Tube Screamer Lead / RAT Rhythm 向け |
+| 2 | 4x12 closed back inspired | 直接 tap 弱、delayed body tap 強。Metal / Big Muff / Fuzz Face で 5 kHz 以上の line-direct fizz を最強に抑える |
+
+信号フロー (`fxPipeline` 内、4-tap FIR を 3 register stage に分割):
+
+```text
+cabProductsFrame   -- 4-tap × 4 product 計算
+  -> cabIrFrame      -- 加算 + satShift で Sample に戻す
+  -> cabLevelMixFrame -- LEVEL multiply + MIX blend + softClip
+```
+
+`cab_model` の量子化は `ctrlC = 0 / 85 / 170` で固定 (`GPIO_CONTROL_MAP.md`
+の "do not treat as a free byte" 注記)。`AIR` は `cab_model` × 3 variant の
+中で最も明るい variant を選んでも direct tap の戻りは cap されており、
+`AIR=100` でも raw line direct tone には戻りません。詳細は
+[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md)
+Cab IR section を参照してください。
+
+### EQ (3-band post-cab)
+
+Cab IR の後段、Reverb の前段に置かれた 3-band 後段 EQ です。
+`axi_gpio_eq` (`0x43C70000`) で制御。enable は **`gate_control.ctrlA`
+bit 0** ではなく **bit 3** (`eq_on`)。OFF 時は bit-exact bypass。
+
+| ctrl | パラメータ | 範囲 | 内容 |
+| --- | --- | --- | --- |
+| `ctrlA` | `LOW` | 0..200 (GUI は 0..100、50 == unity) | 低域 gain (Q7、`_level_to_q7`)。`100` で unity |
+| `ctrlB` | `MID` | 0..200 (GUI は 0..100、50 == unity) | 中域 gain |
+| `ctrlC` | `HIGH` | 0..200 (GUI は 0..100、50 == unity) | 高域 gain |
+| `ctrlD` | -- | -- | **未使用、将来予約** (planned EQ Q / mid-freq / character 等。`GPIO_CONTROL_MAP.md` で他用途への repurpose 禁止) |
+
+> **EQ knob のスケール変換**: AudioLabOverlay の `set_guitar_effects` は
+> `eq_low` / `eq_mid` / `eq_high` を **0..200 (100 = unity)** で受けますが、
+> GUI / encoder 側は 0..100 で扱っています (50 = unity)。
+> `EncoderEffectApplier` は GUI 0..100 → overlay 0..200 を automatic
+> conversion (`* 2`) します ([Rotary Encoder GUI 操作](#rotary-encoder-gui-操作-phase-7f--7g--7g)
+> の `EncoderEffectApplier の責務` 節参照)。
+
+3 band は固定の crossover で、frequency / Q は GUI からは触れません。
+実機ペダル風 voicing pass で出力 mix に `softClip` を追加し、3 band 全
+boost (`LOW=MID=HIGH=200`) でも audible distortion を起こさないように
+しています。詳細は [`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md)
+EQ section を参照してください。
+
+### Reverb (BRAM tap + tone + feedback + mix)
+
+チェーン最終段の軽量 reverb です。`axi_gpio_reverb` (`0x43C30000`) で
+制御。enable は **`axi_gpio_reverb.ctrlA` 低 byte** で、`gate_control.ctrlA`
+bit 5 にも mirror されます (`GPIO_CONTROL_MAP.md`)。OFF 時は bit-exact
+bypass。
+
+| ctrl | パラメータ | 範囲 | 内容 |
+| --- | --- | --- | --- |
+| `ctrlA` | enable (低 byte) | 0..1 | reverb 単独 enable (gate と二重管理) |
+| `ctrlB` | `DECAY` | 0..100 | tap feedback 量、~長さ感 |
+| `ctrlC` | `TONE` | 0..100 | feedback path の tone。byte は `tone - tone/8` にスケールされて TONE=100 でも高域 damping が残る (voicing pass) |
+| `ctrlD` | `MIX` | 0..100 | wet/dry mix |
+
+実装は PYNQ-Z2 BRAM を使った短めの delay tap + feedback + tone LPF + wet/dry
+mix で、長大な空間系 (plate / convolution) ではなく軽いリバーブ用途を
+想定しています (BRAM 量とタイミングの都合)。
+
+Python からは単独 API も残っています:
+
+```python
+ovl.set_reverb(enabled=True, reverb=35, tone=70, mix=25)
+```
+
+`set_guitar_effects(reverb_on=, reverb_decay=, reverb_tone=, reverb_mix=)` も
+同じ word を書きます。
 
 ### Recording-analysis voicing fixes (deployed)
 
