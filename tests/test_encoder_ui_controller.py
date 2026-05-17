@@ -210,6 +210,170 @@ def test_handle_events_dispatches_in_order():
     assert s.selected_knob == expected_knob
 
 
+# ---- Phase 7G+ live-apply tests ----------------------------------------
+
+from audio_lab_pynq.encoder_effect_apply import (  # noqa: E402
+    EncoderEffectApplier, RAT_PEDAL_INDEX)
+
+
+class _RecOverlay(object):
+    def __init__(self):
+        self.calls = []
+
+    def _rec(self, n, kw):
+        self.calls.append((n, dict(kw)))
+
+    def set_noise_suppressor_settings(self, **kw):
+        self._rec("set_noise_suppressor_settings", kw)
+        return {}
+
+    def set_compressor_settings(self, **kw):
+        self._rec("set_compressor_settings", kw)
+        return {}
+
+    def set_guitar_effects(self, **kw):
+        self._rec("set_guitar_effects", kw)
+        return {}
+
+    def clear_distortion_pedals(self):
+        self._rec("clear_distortion_pedals", {})
+        return {}
+
+
+def _make_controller(state, *, dry_run=True, apply_interval_s=10.0,
+                     skip_rat=True, live_apply=True):
+    overlay = _RecOverlay()
+    applier = EncoderEffectApplier(
+        overlay,
+        apply_interval_s=apply_interval_s,
+        dry_run=dry_run,
+        skip_rat=skip_rat,
+    )
+    ctl = EncoderUiController(
+        state, applier=applier, live_apply=live_apply, skip_rat=skip_rat)
+    return ctl, applier, overlay
+
+
+def test_skip_rat_cycle_advances_past_bit_2():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Distortion")
+    s.model_select_mode = True
+    s.dist_model_idx = 1  # tube_screamer
+    ctl, _, _ = _make_controller(s, dry_run=True, skip_rat=True)
+    # +1 from tube_screamer would land on RAT (idx 2); should jump to ds1 (3)
+    ctl.handle_event(EncoderEvent("rotate", 1, 1, 4))
+    assert s.dist_model_idx != RAT_PEDAL_INDEX
+    assert s.dist_model_idx == 3
+
+
+def test_skip_rat_cycle_backward_skips_bit_2():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Distortion")
+    s.model_select_mode = True
+    s.dist_model_idx = 3  # ds1
+    ctl, _, _ = _make_controller(s, dry_run=True, skip_rat=True)
+    ctl.handle_event(EncoderEvent("rotate", 1, -1, -4))
+    # -1 from ds1 would land on RAT (2); should jump to tube_screamer (1)
+    assert s.dist_model_idx == 1
+
+
+def test_include_rat_lands_on_bit_2():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Distortion")
+    s.model_select_mode = True
+    s.dist_model_idx = 1
+    ctl, _, _ = _make_controller(s, dry_run=True, skip_rat=False)
+    ctl.handle_event(EncoderEvent("rotate", 1, 1, 4))
+    assert s.dist_model_idx == RAT_PEDAL_INDEX
+
+
+def test_enc1_short_press_drives_applier_on_off():
+    s = _new_state()
+    idx = s.selected_effect
+    prev = bool(s.effect_on[idx])
+    ctl, applier, overlay = _make_controller(s, dry_run=False,
+                                             apply_interval_s=0.0)
+    ctl.handle_event(EncoderEvent("short_press", 0))
+    assert s.effect_on[idx] is (not prev)
+    methods = [name for name, _ in overlay.calls]
+    # The applier must have invoked at least one set_* call.
+    assert any(m.startswith("set_") for m in methods)
+
+
+def test_enc1_long_press_drives_safe_bypass():
+    s = _new_state()
+    ctl, applier, overlay = _make_controller(s, dry_run=False)
+    ctl.handle_event(EncoderEvent("long_press", 0))
+    methods = [name for name, _ in overlay.calls]
+    assert "clear_distortion_pedals" in methods
+    assert "set_guitar_effects" in methods
+    gkw = next(kw for n, kw in overlay.calls if n == "set_guitar_effects")
+    assert gkw["amp_on"] is False and gkw["distortion_on"] is False
+
+
+def test_enc3_rotate_throttle_active():
+    s = _new_state()
+    s.selected_effect = 4  # Amp Sim
+    s.selected_knob = 0
+    ctl, applier, overlay = _make_controller(
+        s, dry_run=False, apply_interval_s=10.0)
+    ctl.handle_event(EncoderEvent("rotate", 2, 1, 4))
+    n_after_first = len(overlay.calls)
+    # Second rotation within the throttle window must not trigger a new write.
+    ctl.handle_event(EncoderEvent("rotate", 2, 1, 4))
+    assert len(overlay.calls) == n_after_first
+
+
+def test_enc3_short_press_forces_apply():
+    s = _new_state()
+    s.selected_effect = 4
+    s.selected_knob = 0
+    ctl, applier, overlay = _make_controller(
+        s, dry_run=False, apply_interval_s=10.0)
+    ctl.handle_event(EncoderEvent("rotate", 2, 1, 4))
+    n_before = len(overlay.calls)
+    ctl.handle_event(EncoderEvent("short_press", 2))
+    assert len(overlay.calls) > n_before
+    assert s.apply_pending is False
+    assert s.value_dirty is False
+
+
+def test_enc3_long_press_resets_to_default_and_applies():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("EQ")
+    s.selected_knob = 0
+    name = EFFECTS[s.selected_effect]
+    s.all_knob_values[name][0] = 90.0
+    ctl, applier, overlay = _make_controller(
+        s, dry_run=False, apply_interval_s=0.0)
+    ctl.handle_event(EncoderEvent("long_press", 2))
+    # Default for EQ LOW is 50
+    assert s.all_knob_values[name][0] == 50.0
+    methods = [name for name, _ in overlay.calls]
+    assert "set_guitar_effects" in methods
+
+
+def test_live_apply_disabled_skips_apply():
+    s = _new_state()
+    s.selected_effect = 4
+    ctl, applier, overlay = _make_controller(
+        s, dry_run=False, apply_interval_s=0.0, live_apply=False)
+    ctl.handle_event(EncoderEvent("rotate", 2, 1, 4))
+    assert overlay.calls == []
+    # short press still applies
+    ctl.handle_event(EncoderEvent("short_press", 2))
+    assert len(overlay.calls) > 0
+
+
+def test_applier_status_propagates_to_state():
+    s = _new_state()
+    ctl, applier, overlay = _make_controller(s, dry_run=False)
+    ctl.handle_event(EncoderEvent("short_press", 0))
+    assert hasattr(s, "last_apply_ok")
+    assert hasattr(s, "last_apply_message")
+    assert s.last_apply_message != ""
+
+
 _TEST_FUNCTIONS = [
     test_appstate_defaults_have_encoder_fields,
     test_enc1_rotate_changes_selected_effect,
@@ -224,6 +388,17 @@ _TEST_FUNCTIONS = [
     test_enc3_short_press_calls_mirror_apply,
     test_enc3_short_press_falls_back_to_bridge_apply,
     test_handle_events_dispatches_in_order,
+    # Phase 7G+ live apply
+    test_skip_rat_cycle_advances_past_bit_2,
+    test_skip_rat_cycle_backward_skips_bit_2,
+    test_include_rat_lands_on_bit_2,
+    test_enc1_short_press_drives_applier_on_off,
+    test_enc1_long_press_drives_safe_bypass,
+    test_enc3_rotate_throttle_active,
+    test_enc3_short_press_forces_apply,
+    test_enc3_long_press_resets_to_default_and_applies,
+    test_live_apply_disabled_skips_apply,
+    test_applier_status_propagates_to_state,
 ]
 
 

@@ -128,6 +128,13 @@ class AppState:
     last_control_source: str  = "notebook"   # "notebook" | "encoder"
     last_encoder_event: object = None        # most recent dict from EncoderUiController
 
+    # ------ Phase 7G+ live-apply status (set by EncoderEffectApplier) ------
+    live_apply:              bool = True
+    apply_interval_ms:       int  = 100
+    last_apply_ok:           bool = True
+    last_apply_message:      str  = ""
+    last_unsupported_label:  str  = ""
+
     def knobs(self) -> List[Tuple[str, float]]:
         name = EFFECTS[self.selected_effect]
         spec = EFFECT_KNOBS[name]
