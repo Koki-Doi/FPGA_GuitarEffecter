@@ -1,6 +1,21 @@
 # Current state
 
-Last updated: **2026-05-17, Phase 7G+ encoder GUI-first live apply added**
+Last updated: **2026-05-17, GUI catalog / HDMI shim refactor reverted after LCD display regression**
+(reverted three commits — `ee0bc93` *Avoid encoder GUI overlay redownload*,
+`4d141a0` *Start encoder HDMI GUI with initial frame*, `bef00b2` *Refactor
+GUI catalog and HDMI shims* — because `EncoderGuiSmoke.ipynb` stopped
+showing the GUI on the LCD after the refactor landed. Baseline restored
+is `6524d1f` *Docs sweep for Phase 7G+ encoder GUI live apply (D37)*
+plus the three revert commits (`70f86df` / `93c1e0c` / `63b8cd9`).
+No bit / hwh / RTL / XDC / block-design / Vivado / DSP change; only
+Python + notebook + docs touched. The single-cell `EncoderGuiSmoke.ipynb`
+shape (Encoder1/2/3 + AudioLabOverlay + EncoderInput + ResourceSampler +
+`backend.stop`) is preserved. Next time the GUI catalog / HDMI shim
+refactor is attempted, display verification on the LCD must be a gating
+step at every commit boundary.
+
+Previous-pass header (refactor era, now reverted):
+**Phase 7G+ encoder GUI-first live apply added**
 (new module `audio_lab_pynq/encoder_effect_apply.py` translates the
 compact-v2 AppState into `AudioLabOverlay` public setters with a 100 ms
 default throttle; `EncoderUiController` gained `applier=` / `live_apply=`
