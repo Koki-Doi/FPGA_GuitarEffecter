@@ -8,9 +8,10 @@ GUI knob layout, and the ``ResourceSampler`` were extracted into the
 per-effect submodules under this package so an AI agent reading just
 the pedal mapping does not have to load the entire mirror file.
 
-The ``HdmiEffectStateMirror`` class itself still lives in
-``audio_lab_pynq/hdmi_effect_state_mirror.py`` and that module re-
-exports every public symbol from here, so external callers keep using
+The ``HdmiEffectStateMirror`` implementation now lives in
+``audio_lab_pynq.hdmi_state.mirror``. The historical
+``audio_lab_pynq.hdmi_effect_state_mirror`` module is a compatibility
+shim, so external callers keep using
 ``from audio_lab_pynq.hdmi_effect_state_mirror import X`` exactly as
 before.
 """
@@ -78,3 +79,8 @@ from audio_lab_pynq.hdmi_state.common import (
     _model_key,
     _normalize_index_or_name,
 )
+from audio_lab_pynq.hdmi_state.frame_analysis import (
+    analyze_frame,
+    non_background_bbox,
+)
+from audio_lab_pynq.hdmi_state.mirror import HdmiEffectStateMirror

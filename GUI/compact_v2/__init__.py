@@ -43,4 +43,5 @@ from .renderer import (
     _render_frame_800x480_logical, _render_frame_800x480_compact_v2,
     render_frame_800x480, render_frame_800x480_compact_v2,
 )
+from .render_compact_v2 import render_compact_v2
 from .hit_test import hit_test_compact_v2

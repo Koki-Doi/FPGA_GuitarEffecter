@@ -23,9 +23,8 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "GUI"))
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from test_hdmi_render_bbox import analyze_frame  # noqa: E402
+from audio_lab_pynq.hdmi_state.frame_analysis import analyze_frame  # noqa: E402
 
 
 def _load(name, relpath):
@@ -41,6 +40,8 @@ _HDMI_BACKEND = _load("_test_origin_hdmi_backend",
 _GUI = _load("_test_origin_gui", "GUI/pynq_multi_fx_gui.py")
 
 compose_logical_frame = _HDMI_BACKEND.compose_logical_frame
+DEFAULT_WIDTH = _HDMI_BACKEND.DEFAULT_WIDTH
+DEFAULT_HEIGHT = _HDMI_BACKEND.DEFAULT_HEIGHT
 render_frame_800x480_compact_v2 = _GUI.render_frame_800x480_compact_v2
 AppState = _GUI.AppState
 
@@ -64,7 +65,7 @@ def test_compose_logical_manual_x0_y0_places_at_origin():
     src[:, :, :] = (0, 220, 90)
     canvas, meta = compose_logical_frame(
         src, placement="manual", offset_x=0, offset_y=0)
-    assert canvas.shape == (720, 1280, 3)
+    assert canvas.shape == (DEFAULT_HEIGHT, DEFAULT_WIDTH, 3)
     assert meta["placement"] == "manual"
     assert meta["offset_x"] == 0
     assert meta["offset_y"] == 0
@@ -82,8 +83,7 @@ def test_compose_logical_manual_x0_y0_places_at_origin():
     # The first row of the destination should match the source content.
     assert (canvas[0, 0:800, :] == src[0, 0:800, :]).all()
     # Pixel outside the 800x480 region must remain background black.
-    assert int(canvas[479, 801, :].sum()) == 0
-    assert int(canvas[700, 100, :].sum()) == 0
+    assert int(canvas[500, 100, :].sum()) == 0
 
 
 def test_compose_logical_negative_offset_clips_not_indexes_offsides():

@@ -4,8 +4,7 @@ Translates the compact-v2 GUI ``AppState`` into ``AudioLabOverlay``
 public-API calls. Only the effects that the 800x480 GUI actually exposes
 are written, and every call goes through documented setters
 (``set_noise_suppressor_settings``, ``set_compressor_settings``,
-``set_distortion_settings``, ``set_guitar_effects``) -- no raw GPIO
-writes.
+``set_guitar_effects``) -- no raw GPIO writes.
 
 RAT (pedal-mask bit 2 of the Distortion pedalboard) is intentionally
 excluded from encoder-driven control. The DSP stage is not removed and
@@ -18,70 +17,25 @@ This module is import-safe on workstations without ``pynq`` installed.
 
 import time
 
-EFFECT_NOISE_SUP  = "Noise Sup"
-EFFECT_COMPRESSOR = "Compressor"
-EFFECT_OVERDRIVE  = "Overdrive"
-EFFECT_DISTORTION = "Distortion"
-EFFECT_AMP        = "Amp Sim"
-EFFECT_CAB        = "Cab IR"
-EFFECT_EQ         = "EQ"
-EFFECT_REVERB     = "Reverb"
+from audio_lab_pynq.app_state_apply_plan import (
+    RAT_PEDAL_INDEX,
+    encoder_state_plan,
+    is_rat_pedal_index as _is_rat_pedal_index,
+)
+from audio_lab_pynq.effect_catalog import (
+    EFFECT_AMP,
+    EFFECT_CAB,
+    EFFECT_COMPRESSOR,
+    EFFECT_DISTORTION,
+    EFFECT_EQ,
+    EFFECT_NOISE_SUP,
+    EFFECT_OVERDRIVE,
+    EFFECT_REVERB,
+)
 
 # Default throttle: at most one set_guitar_effects burst per 100 ms while
 # encoder 3 is being turned continuously.
 DEFAULT_APPLY_INTERVAL_S = 0.10
-
-# Pedal-mask bit index that corresponds to the RAT model. Mirrors
-# audio_lab_pynq/effect_defaults.py::DISTORTION_PEDALS.
-RAT_PEDAL_INDEX = 2
-
-# AppState all_knob_values ordering (mirrors GUI/compact_v2/knobs.py).
-#   "Noise Sup":  [THRESH, DECAY, DAMP]
-#   "Compressor": [THRESH, RATIO, RESP, MAKEUP]
-#   "Overdrive":  [TONE, LEVEL, DRIVE]
-#   "Distortion": [TONE, LEVEL, DRIVE, BIAS, TIGHT, MIX]
-#   "Amp Sim":    [GAIN, BASS, MID, TREB, PRES, RES, MSTR, CHAR]
-#   "Cab IR":     [MIX, LEVEL, MODEL, AIR]
-#   "EQ":         [LOW, MID, HIGH]   (GUI 0..100 -> overlay 0..200)
-#   "Reverb":     [DECAY, TONE, MIX]
-
-
-def _clamp_percent(value):
-    try:
-        v = float(value)
-    except Exception:
-        return 0.0
-    if v < 0.0:
-        return 0.0
-    if v > 100.0:
-        return 100.0
-    return v
-
-
-def _clamp_eq_overlay(value):
-    """GUI knob value (0..100, 50 == unity) -> overlay range (0..200)."""
-    v = _clamp_percent(value) * 2.0
-    if v < 0.0:
-        return 0.0
-    if v > 200.0:
-        return 200.0
-    return v
-
-
-def _knob_list(state, name, fallback):
-    vals = getattr(state, "all_knob_values", {}) or {}
-    cur = vals.get(name)
-    if cur is None or len(cur) < len(fallback):
-        return list(fallback)
-    return list(cur)
-
-
-def _effect_on(state, index, default=True):
-    on = list(getattr(state, "effect_on", []) or [])
-    if 0 <= index < len(on):
-        return bool(on[index])
-    return bool(default)
-
 
 class EncoderEffectApplier(object):
     """Map AppState -> AudioLabOverlay public setters with throttling.
@@ -223,91 +177,12 @@ class EncoderEffectApplier(object):
             self._record_ok("dry state-push")
             return True
         try:
-            ns  = _knob_list(state, EFFECT_NOISE_SUP,  [35, 45, 80])
-            cmp_ = _knob_list(state, EFFECT_COMPRESSOR, [50, 45, 40, 55])
-            od  = _knob_list(state, EFFECT_OVERDRIVE,  [60, 60, 35])
-            dst = _knob_list(state, EFFECT_DISTORTION, [55, 35, 50, 50, 60, 100])
-            amp = _knob_list(state, EFFECT_AMP,
-                             [45, 55, 60, 50, 50, 50, 70, 60])
-            cab = _knob_list(state, EFFECT_CAB,        [100, 70, 33, 35])
-            eq  = _knob_list(state, EFFECT_EQ,         [50, 55, 55])
-            rv  = _knob_list(state, EFFECT_REVERB,     [30, 65, 25])
-
-            # Distortion pedal-mask: from AppState.dist_model_idx, skipping
-            # RAT (bit 2) when skip_rat is True.
-            dist_idx = int(getattr(state, "dist_model_idx", 1) or 0)
-            dist_idx = max(0, min(6, dist_idx))
-            if dist_idx == RAT_PEDAL_INDEX and self.skip_rat:
-                self._mark_unsupported("Distortion:rat")
-                pedal_mask = 0
-            else:
-                pedal_mask = (1 << dist_idx) & 0x7F
-
-            cab_idx = int(getattr(state, "cab_model_idx", 1) or 1)
-            cab_idx = max(0, min(2, cab_idx))
-
-            # The dedicated noise-suppressor + compressor GPIOs each take
-            # their own setter so the cached state stays consistent.
-            self.overlay.set_noise_suppressor_settings(
-                threshold=_clamp_percent(ns[0]),
-                decay=_clamp_percent(ns[1]),
-                damp=_clamp_percent(ns[2]),
-                enabled=_effect_on(state, 0, True))
-            self.overlay.set_compressor_settings(
-                threshold=_clamp_percent(cmp_[0]),
-                ratio=_clamp_percent(cmp_[1]),
-                response=_clamp_percent(cmp_[2]),
-                makeup=_clamp_percent(cmp_[3]),
-                enabled=_effect_on(state, 1, True))
-
-            kwargs = dict(
-                noise_gate_on=_effect_on(state, 0, True),
-                overdrive_on=_effect_on(state, 2, False),
-                distortion_on=_effect_on(state, 3, False),
-                rat_on=False,
-                amp_on=_effect_on(state, 4, True),
-                cab_on=_effect_on(state, 5, True),
-                eq_on=_effect_on(state, 6, True),
-                reverb_on=_effect_on(state, 7, True),
-
-                overdrive_drive=_clamp_percent(od[2]),
-                overdrive_tone=_clamp_percent(od[0]),
-                overdrive_level=_clamp_percent(od[1]),
-
-                distortion=_clamp_percent(dst[2]),
-                distortion_tone=_clamp_percent(dst[0]),
-                distortion_level=_clamp_percent(dst[1]),
-                distortion_bias=_clamp_percent(dst[3]),
-                distortion_tight=_clamp_percent(dst[4]),
-                distortion_mix=_clamp_percent(dst[5]),
-                distortion_pedal_mask=int(pedal_mask) & 0x7F,
-
-                amp_input_gain=_clamp_percent(amp[0]),
-                amp_bass=_clamp_percent(amp[1]),
-                amp_middle=_clamp_percent(amp[2]),
-                amp_treble=_clamp_percent(amp[3]),
-                amp_presence=_clamp_percent(amp[4]),
-                amp_resonance=_clamp_percent(amp[5]),
-                amp_master=_clamp_percent(amp[6]),
-                amp_character=_clamp_percent(amp[7]),
-
-                cab_mix=_clamp_percent(cab[0]),
-                cab_level=_clamp_percent(cab[1]),
-                cab_model=int(cab_idx),
-                cab_air=_clamp_percent(cab[3]),
-
-                # EQ knobs are 0..100 in the GUI, 50 == unity.
-                # AudioLabOverlay encodes eq_* via _level_to_q7 on a 0..200
-                # range where 100 is unity gain.
-                eq_low=_clamp_eq_overlay(eq[0]),
-                eq_mid=_clamp_eq_overlay(eq[1]),
-                eq_high=_clamp_eq_overlay(eq[2]),
-
-                reverb_decay=_clamp_percent(rv[0]),
-                reverb_tone=_clamp_percent(rv[1]),
-                reverb_mix=_clamp_percent(rv[2]),
-            )
-            self.overlay.set_guitar_effects(**kwargs)
+            plan = encoder_state_plan(state, skip_rat=self.skip_rat)
+            for label in plan.unsupported:
+                self._mark_unsupported(label)
+            for op in plan.operations:
+                target = getattr(self.overlay, op.method)
+                target(**op.kwargs)
             self._record_ok("state-push")
             return True
         except Exception as exc:
@@ -335,7 +210,4 @@ class EncoderEffectApplier(object):
 
 def is_rat_pedal_index(idx):
     """Return True iff the given dist_model_idx is RAT (bit 2)."""
-    try:
-        return int(idx) == RAT_PEDAL_INDEX
-    except Exception:
-        return False
+    return _is_rat_pedal_index(idx)

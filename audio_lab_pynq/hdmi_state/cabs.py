@@ -1,27 +1,11 @@
-"""Cabinet IR model names, display labels, and notebook-side
-normalisation helpers used by ``HdmiEffectStateMirror``.
+"""Cabinet IR model names, display labels, and helpers."""
 
-The existing cab DSP exposes three numeric models through
-``cab_model`` 0/1/2; the labels and aliases here drive the SELECTED
-FX / CAB dropdown chip.
-"""
-
-from audio_lab_pynq.hdmi_state.common import _normalize_index_or_name
-
-CAB_MODELS = (
-    "1x12",
-    "2x12",
-    "4x12",
+from audio_lab_pynq.effect_catalog import (
+    CAB_MODELS,
+    CAB_MODEL_LABELS,
+    CAB_MODEL_TO_INDEX,
 )
-
-CAB_MODEL_LABELS = {
-    "1x12": "1x12 OPEN",
-    "2x12": "2x12 COMBO",
-    "4x12": "4x12 CLOSED",
-}
-
-CAB_MODEL_TO_INDEX = dict((name, index)
-                          for index, name in enumerate(CAB_MODELS))
+from audio_lab_pynq.hdmi_state.common import _normalize_index_or_name
 
 CAB_MODEL_ALIASES = {
     "0": "1x12",
