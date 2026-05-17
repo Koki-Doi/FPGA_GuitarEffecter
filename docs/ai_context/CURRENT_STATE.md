@@ -1,6 +1,28 @@
 # Current state
 
-Last updated: **2026-05-18, Phase 7C PCM5102 external DAC bring-up landed (DAC-only)**
+Last updated: **2026-05-18, Phase 7E PCM5102 now carries the existing AudioLab DSP output (parallel to ADAU1761 DAC)**
+(new RTL module `hw/ip/pcm5102_audio_out/src/pcm5102_audio_out.v` is a
+trivial 4-signal pass-through that mirrors the existing ADAU1761 I2S
+DAC interface onto the four PMOD JB pins: `JB2 BCK <- bclk` (input
+port, R18), `JB3 LCK <- lrclk` (input port, T17), `JB7 DIN <-
+i2s_to_stream_0/so` (same serial DAC data that drives ADAU `sdata_o`
+at G18), and `JB1 MCLK <- clk_wiz_audio_ext/clk_out1` (12.288 MHz from
+the Phase 7C MMCM). The Phase 7C free-running tone module
+`pcm5102_dac_tone` is **no longer instantiated** by the block design
+(file kept in repo as a known-good debug reference). PCM5102 therefore
+now receives bit-for-bit the same processed audio the ADAU1761 DAC
+receives -- both DACs stream in parallel and either can be used as
+the listening source. **PCM1808 ADC is NOT implemented (Phase 7D
+still pending).** ADAU1761 ADC path / DSP chain (`i2s_to_stream_0` /
+`axis_data_fifo_0` / `clash_lowpass_fir_0` / `axis_switch_*` /
+`axi_dma_0`) untouched. HDMI integration / encoder integration /
+GPIO_CONTROL_MAP / LowPassFir DSP untouched. bit/hwh rebuilt, deploy
+PASS, on-board smoke (`scripts/test_pcm5102_dsp_output.py`) PASS:
+ADC HPF True, all required IPs intact, no overlay regression.
+DECISIONS.md D39.
+
+Previous-pass header (Phase 7C):
+**Phase 7C PCM5102 external DAC bring-up landed (DAC-only)**
 (new RTL module `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v` is a
 free-running I2S master that emits a 1 kHz / 24-bit / quarter-scale sine
 to both stereo channels at 48 kHz fs. A new MMCM

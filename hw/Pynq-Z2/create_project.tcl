@@ -38,7 +38,12 @@ add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
 add_files -norecurse $origin_dir/../ip/encoder_input/src/axi_encoder_input.v
 # Phase 7C: add the PCM5102 DAC-only tone RTL similarly before
 # pcm5102_dac_integration.tcl references it via create_bd_cell -type module.
+# (Phase 7E retires the tone module from the block design but keeps the
+# source in the project as a known-good free-running reference.)
 add_files -norecurse $origin_dir/../ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v
+# Phase 7E: add the trivial pcm5102_audio_out pass-through that mirrors the
+# ADAU1761 I2S DAC interface onto the PMOD JB external-DAC pins.
+add_files -norecurse $origin_dir/../ip/pcm5102_audio_out/src/pcm5102_audio_out.v
 update_compile_order -fileset sources_1
 
 # Generate block design

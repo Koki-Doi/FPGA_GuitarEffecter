@@ -293,13 +293,32 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
 - sample alignment / endian / bit depth 確認
 - ADAU1761 入力と同条件で比較
 
-### Phase 7E: DSP path への組込み
+### Phase 7E: DSP path への組込み — **LANDED (output side, ADAU-mirror pass-through)**
 - block_design 上で AXIS switch / mux を入れて
   ADAU1761 path / 外付け path を切替可能にする
-  (compile-time または runtime)
-- DSP 本体は変更しない
-- timing summary 確認 (WNS 悪化に注意)
-- 実機 audio 比較
+  (compile-time または runtime) — **却下**。AXIS switch / mux は
+  入れず、ADAU1761 I2S DAC interface (`bclk` 入力 port / `lrclk`
+  入力 port / `i2s_to_stream_0/so`) を **trivial pass-through**
+  (`pcm5102_audio_out.v`) で PMOD JB の 4 pin にミラーする方式に
+  変更。PCM5102 は ADAU と完全に同じ I2S を受けるので CDC / FIFO /
+  SRC 一切なし。両 DAC parallel 出力で A/B 比較容易。
+  `DECISIONS.md` D39。
+- DSP 本体は変更しない — **済**(`LowPassFir.hs` / `topEntity` /
+  AXIS path 全て未変更)
+- timing summary 確認 (WNS 悪化に注意) — **済**。
+  WNS `-8.724 ns`(Phase 7C `-8.410 ns` から `+0.314 ns` 悪化、
+  historical `-7..-9 ns` band 内)、WHS `+0.051 ns`、THS `0.000 ns`、
+  `bclk` domain WNS `+320.751 ns` (PCM5102 が新たに tap する domain は
+  完全クリーン)。Utilization は Phase 7C と同等。
+- 実機 audio 比較 — **手作業残**(ADAU DAC line out vs PCM5102 line out
+  の聞き比べ / 計測は user 側)
+- 新規物: RTL `hw/ip/pcm5102_audio_out/src/pcm5102_audio_out.v`、
+  smoke `scripts/test_pcm5102_dsp_output.py`、integration tcl は
+  `hw/Pynq-Z2/pcm5102_dac_integration.tcl` を 7C → 7E に
+  書き換え。bit/hwh 再生成 + deploy 済 (smoke PASS、ADC HPF True、
+  全 IP 健在)。
+- 未着手: PCM1808 ADC (Phase 7D)、runtime DAC switching、XSMT 制御、
+  pop-noise suppression、AXIS-side broadcaster (現状不要)。
 
 ### Phase 7F: encoder input IP
 - ロータリーエンコーダー decode IP の Clash / HDL 実装

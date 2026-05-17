@@ -1434,3 +1434,93 @@ not get removed even when superseded — they get updated.
   - PCM1808 (ADC) goes in Phase 7D following the same DAC-only +
     free-running + smoke pattern, sharing the same `clk_wiz_audio_ext`
     12.288 MHz MCLK.
+
+## D39 — PCM5102 becomes external DAC output for AudioLab processed audio; ADAU1761 remains input codec (Phase 7E)
+
+- **Decision.** The Phase 7C free-running tone path (`pcm5102_dac_tone`)
+  is no longer instantiated by the block design. The new RTL module
+  `hw/ip/pcm5102_audio_out/src/pcm5102_audio_out.v` is a *trivial
+  4-signal pass-through* that mirrors the existing ADAU1761 I2S DAC
+  interface onto the four PMOD JB pins:
+  - `ext_audio_mclk_o`  (JB1, W14) <- `clk_wiz_audio_ext/clk_out1`
+    (12.288 MHz from the Phase 7C MMCM, kept intact)
+  - `ext_audio_bclk_o`  (JB2, Y14) <- top-level input port `bclk`
+    (R18) -- the ADAU1761 I2S BCLK
+  - `ext_audio_lrclk_o` (JB3, T11) <- top-level input port `lrclk`
+    (T17) -- the ADAU1761 I2S LRCLK
+  - `ext_dac_din_o`     (JB7, V16) <- `i2s_to_stream_0/so` -- the
+    same serial DAC bitstream that drives ADAU `sdata_o` at G18
+  PCM5102 therefore receives bit-for-bit the same processed audio
+  the ADAU1761 DAC receives. Both DACs run in parallel; the user
+  picks the listening source by where they plug the cable in. The
+  ADAU1761 ADC / DSP chain (`i2s_to_stream_0` / `axis_data_fifo_0`
+  / `clash_lowpass_fir_0` / `axis_switch_*` / `axi_dma_0`) is
+  untouched.
+- **Boundary.**
+  - **No AXIS, FIFO, or CDC was added.** PCM5102 receives the exact
+    same I2S signal ADAU receives. The 12.288 MHz MCLK to PCM5102
+    SCK is NOT bit-synchronous to ADAU's `bclk` (3.072 MHz from
+    ADAU's PLL), but the 256:1 ratio sits inside the PCM510x
+    internal-PLL lock window. If a future board reveals lock
+    issues, the fallback is to drive `ext_audio_mclk_o` constant
+    low (PCM5102 then enters internal-PLL mode and derives SYSCLK
+    from BCK alone). Currently the wizard output is kept driving
+    JB1 because the smoke (`scripts/test_pcm5102_dsp_output.py`)
+    confirms the chip locks at the user-reported wiring.
+  - **No XDC change.** The four PMOD JB pin assignments stay as
+    Phase 7C (D38). The new RTL is plumbed through the same four
+    top-level ports.
+  - **`block_design.tcl` is untouched directly.** The new module
+    instance and the three new fanout connections are added via
+    `hw/Pynq-Z2/pcm5102_dac_integration.tcl`, which now reads the
+    existing `bclk` / `lrclk` ports and `i2s_to_stream_0/so` pin
+    as additional net sinks. No existing net source or sink is
+    rewired.
+  - **No AXI-Lite slave**, **no new GPIO**, **no
+    `GPIO_CONTROL_MAP.md` change** (D12), **no `topEntity`
+    change**, **no `LowPassFir.hs` change**, **no DSP behaviour
+    change**.
+  - HDMI baseline (SVGA 800x600 @ 40 MHz, D25) and encoder
+    integration (`enc_in_0/s_axi` at `0x43D10000`, D32 / D33 / D36)
+    are untouched.
+  - The Phase 7C tone module file `pcm5102_dac_tone.v` is kept in
+    the repo as a free-running debug reference but NOT instantiated.
+    `scripts/test_pcm5102_dac_tone.py` is kept as a callable
+    historical smoke; the active smoke for Phase 7E is
+    `scripts/test_pcm5102_dsp_output.py`.
+- **Frame format.** Inherited unchanged from the existing ADAU1761
+  DAC path: I2S Philips, 32-bit slot per channel, 24-bit data MSB
+  first. PCM5102 just reads the same bits from a different physical
+  pin set.
+- **Timing.** Post-route summary (full design):
+  `WNS = -8.724 ns`, `TNS = -7029.676 ns` on `clk_fpga_0` (100 MHz,
+  same failing domain as Phase 6I C2 `-8.096 ns` and Phase 7C
+  `-8.410 ns`); regression `+0.314 ns` vs Phase 7C, still inside
+  the historical `-7..-9 ns` deploy band. `bclk` (3.072 MHz, ADAU
+  domain that now also drives PCM5102 BCK fanout):
+  `WNS = +320.751 ns`, 0 setup or hold violations. WHS `+0.051 ns`,
+  THS `0.000 ns`. Utilization after place: Slice LUTs `19102`
+  (`35.91%`), Slice Registers `21255` (`19.98%`), Block RAM Tile
+  `9` (`6.43%`), DSPs `83` (`37.73%`); essentially identical to
+  Phase 7C.
+- **Why.** Land the processed-audio path to the external DAC with
+  the smallest possible delta from the deployed-and-verified
+  ADAU1761 I2S signal. Tapping the ADAU master clocks and the
+  i2s_to_stream serial output keeps every existing register
+  stage, register count, AXIS contract, and TLAST timing
+  unchanged; no CDC, no FIFO, no rate-matching SRC. Running both
+  DACs in parallel makes A/B comparison trivial.
+- **How to apply.**
+  - For listening / measurement: connect the audio source to
+    ADAU1761 Line In; either the on-board ADAU DAC out or the
+    PMOD JB PCM5102 line out should produce the same processed
+    signal.
+  - For Phase 7D (PCM1808 ADC): add the input pin (JB4, T10) and
+    reuse the existing `clk_wiz_audio_ext` 12.288 MHz wizard for
+    PCM1808 SCKI. The output path stays as Phase 7E.
+  - For Phase 7E next iteration (runtime DAC source switching,
+    XSMT control from PL, pop-noise suppression): keep the
+    pass-through topology and add a small mute-gate ahead of
+    `ext_dac_din_o`. Do not put a second AXIS-to-I2S serializer
+    in the design unless the rate mismatch becomes a measured
+    problem.

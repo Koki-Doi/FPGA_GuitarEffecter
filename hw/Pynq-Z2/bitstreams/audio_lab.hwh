@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun May 17 23:54:20 2026" VIVADOVERSION="2019.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon May 18 00:43:28 2026" VIVADOVERSION="2019.1">
 
   <SYSTEMINFO ARCH="zynq" BOARD="tul.com.tw:pynq-z2:part0:1.0" DEVICE="7z020" NAME="block_design" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -8,6 +8,7 @@
       <CONNECTIONS>
         <CONNECTION INSTANCE="i2s_to_stream_0" PORT="bclk"/>
         <CONNECTION INSTANCE="proc_sys_reset_0" PORT="slowest_sync_clk"/>
+        <CONNECTION INSTANCE="pcm5102_out_0" PORT="adau_bclk_i"/>
       </CONNECTIONS>
     </PORT>
     <PORT DIR="O" LEFT="1" NAME="codec_address" RIGHT="0" SIGIS="undef" SIGNAME="xlconstant_0_dout">
@@ -18,6 +19,7 @@
     <PORT DIR="I" NAME="lrclk" SIGIS="undef" SIGNAME="External_Ports_lrclk">
       <CONNECTIONS>
         <CONNECTION INSTANCE="i2s_to_stream_0" PORT="lrclk"/>
+        <CONNECTION INSTANCE="pcm5102_out_0" PORT="adau_lrclk_i"/>
       </CONNECTIONS>
     </PORT>
     <PORT CLKFREQUENCY="24000000" DIR="O" NAME="mclk" SIGIS="clk" SIGNAME="clk_wiz_0_clk_out1">
@@ -235,24 +237,24 @@
         <CONNECTION INSTANCE="enc_in_0" PORT="enc2_sw_i"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_audio_mclk_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_audio_mclk_o">
+    <PORT DIR="O" NAME="ext_audio_mclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_mclk_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_dac_0" PORT="ext_audio_mclk_o"/>
+        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_audio_mclk_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_audio_bclk_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_audio_bclk_o">
+    <PORT DIR="O" NAME="ext_audio_bclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_bclk_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_dac_0" PORT="ext_audio_bclk_o"/>
+        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_audio_bclk_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_audio_lrclk_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_audio_lrclk_o">
+    <PORT DIR="O" NAME="ext_audio_lrclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_lrclk_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_dac_0" PORT="ext_audio_lrclk_o"/>
+        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_audio_lrclk_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_dac_din_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_dac_din_o">
+    <PORT DIR="O" NAME="ext_dac_din_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_dac_din_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_dac_0" PORT="ext_dac_din_o"/>
+        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_dac_din_o"/>
       </CONNECTIONS>
     </PORT>
   </EXTERNALPORTS>
@@ -11411,7 +11413,7 @@
         </PORT>
         <PORT CLKFREQUENCY="12288000" DIR="O" NAME="clk_out1" SIGIS="clk" SIGNAME="clk_wiz_audio_ext_clk_out1">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="pcm5102_dac_0" PORT="clk_12m288_i"/>
+            <CONNECTION INSTANCE="pcm5102_out_0" PORT="mclk_12m288_i"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="locked" SIGIS="undef"/>
@@ -12785,6 +12787,7 @@
         <PORT DIR="O" NAME="so" SIGIS="undef" SIGNAME="i2s_to_stream_0_so">
           <CONNECTIONS>
             <CONNECTION INSTANCE="External_Ports" PORT="sdata_o"/>
+            <CONNECTION INSTANCE="pcm5102_out_0" PORT="adau_sdata_o_i"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="axis_hp_tready" SIGIS="undef" SIGNAME="axis_switch_sink_m_axis_tready">
@@ -12852,39 +12855,49 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
-    <MODULE COREREVISION="1" FULLNAME="/pcm5102_dac_0" HWVERSION="1.0" INSTANCE="pcm5102_dac_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="pcm5102_dac_tone" VLNV="xilinx.com:module_ref:pcm5102_dac_tone:1.0">
+    <MODULE COREREVISION="1" FULLNAME="/pcm5102_out_0" HWVERSION="1.0" INSTANCE="pcm5102_out_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="pcm5102_audio_out" VLNV="xilinx.com:module_ref:pcm5102_audio_out:1.0">
       <DOCUMENTS/>
       <PARAMETERS>
-        <PARAMETER NAME="Component_Name" VALUE="block_design_pcm5102_dac_0_0"/>
+        <PARAMETER NAME="Component_Name" VALUE="block_design_pcm5102_out_0_0"/>
         <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
       </PARAMETERS>
       <PORTS>
-        <PORT DIR="I" NAME="clk_12m288_i" SIGIS="undef" SIGNAME="clk_wiz_audio_ext_clk_out1">
+        <PORT DIR="I" NAME="mclk_12m288_i" SIGIS="undef" SIGNAME="clk_wiz_audio_ext_clk_out1">
           <CONNECTIONS>
             <CONNECTION INSTANCE="clk_wiz_audio_ext" PORT="clk_out1"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="resetn_i" SIGIS="undef" SIGNAME="rst_ps7_0_100M_peripheral_aresetn">
+        <PORT DIR="I" NAME="adau_bclk_i" SIGIS="undef" SIGNAME="External_Ports_bclk">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="peripheral_aresetn"/>
+            <CONNECTION INSTANCE="External_Ports" PORT="bclk"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_audio_mclk_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_audio_mclk_o">
+        <PORT DIR="I" NAME="adau_lrclk_i" SIGIS="undef" SIGNAME="External_Ports_lrclk">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="lrclk"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="adau_sdata_o_i" SIGIS="undef" SIGNAME="i2s_to_stream_0_so">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="i2s_to_stream_0" PORT="so"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="ext_audio_mclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_mclk_o">
           <CONNECTIONS>
             <CONNECTION INSTANCE="External_Ports" PORT="ext_audio_mclk_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_audio_bclk_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_audio_bclk_o">
+        <PORT DIR="O" NAME="ext_audio_bclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_bclk_o">
           <CONNECTIONS>
             <CONNECTION INSTANCE="External_Ports" PORT="ext_audio_bclk_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_audio_lrclk_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_audio_lrclk_o">
+        <PORT DIR="O" NAME="ext_audio_lrclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_lrclk_o">
           <CONNECTIONS>
             <CONNECTION INSTANCE="External_Ports" PORT="ext_audio_lrclk_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_dac_din_o" SIGIS="undef" SIGNAME="pcm5102_dac_0_ext_dac_din_o">
+        <PORT DIR="O" NAME="ext_dac_din_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_dac_din_o">
           <CONNECTIONS>
             <CONNECTION INSTANCE="External_Ports" PORT="ext_dac_din_o"/>
           </CONNECTIONS>
@@ -18387,7 +18400,6 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M17_ARESETN"/>
             <CONNECTION INSTANCE="enc_in_0" PORT="s_axi_aresetn"/>
             <CONNECTION INSTANCE="clk_wiz_audio_ext" PORT="resetn"/>
-            <CONNECTION INSTANCE="pcm5102_dac_0" PORT="resetn_i"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
