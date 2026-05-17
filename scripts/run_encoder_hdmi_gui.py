@@ -111,7 +111,7 @@ def _bring_up_overlay():
     return overlay
 
 
-def _start_hdmi(overlay, *, initial_frame=None, width: Optional[int] = None,
+def _start_hdmi(overlay, *, width: Optional[int] = None,
                 height: Optional[int] = None):
     from audio_lab_pynq.hdmi_backend import (  # type: ignore
         AudioLabHdmiBackend, DEFAULT_WIDTH, DEFAULT_HEIGHT,
@@ -119,12 +119,8 @@ def _start_hdmi(overlay, *, initial_frame=None, width: Optional[int] = None,
     w = width or DEFAULT_WIDTH
     h = height or DEFAULT_HEIGHT
     backend = AudioLabHdmiBackend(overlay, width=w, height=h)
-    if initial_frame is None:
-        backend.start()
-    else:
-        backend.start(initial_frame, placement="manual", offset_x=0, offset_y=0)
-    print("[gui] HDMI backend started at %dx%d%s" % (
-        w, h, " with initial frame" if initial_frame is not None else ""))
+    backend.start()
+    print("[gui] HDMI backend started at %dx%d" % (w, h))
     return backend
 
 
@@ -200,22 +196,21 @@ def main(argv=None):
         cfg_overrides["clk_dt_swap"] = (
             args.swap_enc0, args.swap_enc1, args.swap_enc2)
 
+    overlay = None
+    backend = None
+    encoder = None
+    if not args.dry_run:
+        overlay = _bring_up_overlay()
+        backend = _start_hdmi(overlay)
+        encoder = _build_encoder(overlay, args.encoder_ip_name, cfg_overrides)
+        encoder.configure(clear_on_read=True)
+
     try:
         from GUI.compact_v2.renderer import (  # type: ignore
             render_frame_800x480_compact_v2)
     except Exception:
         from compact_v2.renderer import (  # type: ignore
             render_frame_800x480_compact_v2)
-
-    overlay = None
-    backend = None
-    encoder = None
-    if not args.dry_run:
-        overlay = _bring_up_overlay()
-        initial_frame = render_frame_800x480_compact_v2(state)
-        backend = _start_hdmi(overlay, initial_frame=initial_frame)
-        encoder = _build_encoder(overlay, args.encoder_ip_name, cfg_overrides)
-        encoder.configure(clear_on_read=True)
 
     from audio_lab_pynq.encoder_ui import EncoderUiController  # type: ignore
     from audio_lab_pynq.encoder_effect_apply import (  # type: ignore
