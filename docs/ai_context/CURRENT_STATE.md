@@ -55,22 +55,6 @@ fixes. See `DECISIONS.md` D26 / D33 / D35 / D38 / D39).
   and `/home/xilinx/jupyter_notebooks/audio_lab/EncoderGuiSmoke.ipynb`;
   board-side runner smoke printed `HDMI backend started at 800x600 with
   initial frame` and exited cleanly.
-- **EncoderGuiSmoke no-display diagnosis (2026-05-17)**:
-  User reported EncoderGuiSmoke printed normal status lines but the LCD
-  showed no GUI. Live register probe without reloading an overlay showed
-  VDMA/VTC healthy (`DMACR=0x00010001`, `DMASR=0x00011000`,
-  `HSIZE/STRIDE/VSIZE=2400/2400/600`, `VTC_CTL=0x00000006`,
-  `GEN_ACTSZ=0x02580320`) and direct DDR framebuffer read from VDMA
-  `START_ADDRESS1` showed non-black GUI pixels
-  (`sum=25061702`, `top480=25061702`, `bottom=0`, bbox
-  `x=2..797,y=2..477`). That points away from renderer / framebuffer /
-  VDMA and toward the Phase 6I `rgb2dvi` 40 MHz PLL gotcha after repeated
-  `download=True`. `EncoderGuiSmoke.ipynb` and
-  `scripts/run_encoder_hdmi_gui.py` now match `HdmiGui` / `HdmiGuiShow`:
-  if `pynq.PL.bitfile_name` already names `audio_lab.bit`, they attach via
-  `AudioLabOverlay(download=False)` to preserve PLL lock, then start HDMI
-  with the initial frame. Deployed notebook copies were checked for both
-  `AudioLabOverlay(download=False)` and initial-frame start.
 - **GUI renderer**: `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2`
   + the (1).py-spec `EFFECT_KNOBS` / `AppState.all_knob_values` /
   `hit_test_compact_v2()` API from Phase 6H port (`DECISIONS.md` D24).
