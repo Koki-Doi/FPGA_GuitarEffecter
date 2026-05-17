@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Phase 6F-A: renderer bbox guard.
+"""Phase 6F-A: renderer strong-UI bbox guard.
 
-Asserts that the compact-v2 800x480 renderer paints non-background
-pixels starting near the LEFT edge (min_x <= 30) and reaching close
-to the RIGHT edge (max_x >= 760, max_x <= 799). If the renderer is
-right-shifted at the canvas level, no amount of compose / VTC tuning
-will fix the LCD view -- this catches that root cause first.
+Asserts that the compact-v2 800x480 renderer paints actual bright UI
+panel strokes near the LEFT edge and reaches close to the RIGHT edge.
+The analysis intentionally lives in ``audio_lab_pynq.hdmi_state`` so
+tests do not import a ``test_*.py`` script module.
 
 Runs on workstation (no PYNQ overlay required). Does not modify
 bit/hwh, GPIO, or DSP.
@@ -13,6 +12,7 @@ bit/hwh, GPIO, or DSP.
 from __future__ import print_function
 
 import argparse
+import json
 import os
 import sys
 
@@ -26,25 +26,16 @@ def repo_paths():
     return repo_root
 
 
-def non_background_bbox(arr, bg=(3, 8, 4), tol=12):
-    import numpy as np
-    diff = np.abs(arr.astype("int16") - np.array(bg, dtype="int16"))
-    mask = (diff > tol).any(axis=-1)
-    if not mask.any():
-        return None
-    ys, xs = mask.nonzero()
-    return int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max())
-
-
 def measure(selected_fx, theme="pipboy-green"):
+    from audio_lab_pynq.hdmi_state.frame_analysis import analyze_frame
     from pynq_multi_fx_gui import AppState, render_frame_800x480
     state = AppState()
     state.selected_fx = selected_fx
     frame = render_frame_800x480(
         state, variant="compact-v2", theme=theme)
     assert frame.shape == (480, 800, 3), frame.shape
-    bbox = non_background_bbox(frame)
-    return frame.shape, bbox
+    background = (3, 8, 4) if theme == "pipboy-green" else (4, 5, 9)
+    return analyze_frame(frame, background=background)
 
 
 def main():
@@ -65,29 +56,44 @@ def main():
     ]
     failures = []
     for fx in fxs:
-        shape, bbox = measure(fx, theme=args.theme)
-        if bbox is None:
+        analysis = measure(fx, theme=args.theme)
+        bbox = analysis.get("non_background_bbox")
+        strong_bbox = analysis.get("strong_ui_bbox")
+        if strong_bbox is None:
             failures.append((fx, "no non-background pixels"))
-            print("[bbox] {:20} FAIL: empty frame".format(fx))
+            print("[bbox] {:20} FAIL: no strong UI bbox".format(fx))
             continue
-        min_x, max_x, min_y, max_y = bbox
+        min_x, max_x, min_y, max_y = strong_bbox
+        main_left = analysis.get("estimated_main_panel_left_x")
+        selected_left = analysis.get("estimated_selected_panel_left_x")
         status = "PASS"
         notes = []
         if min_x > args.min_x_max:
             status = "FAIL"
-            notes.append("min_x={} > {}".format(min_x, args.min_x_max))
+            notes.append("strong_min_x={} > {}".format(
+                min_x, args.min_x_max))
         if max_x > 799:
             status = "FAIL"
-            notes.append("max_x={} > 799".format(max_x))
+            notes.append("strong_max_x={} > 799".format(max_x))
         if max_x < args.max_x_min:
             status = "FAIL"
-            notes.append("max_x={} < {}".format(max_x, args.max_x_min))
-        print("[bbox] {:20} {} shape={} bbox=(min_x={}, max_x={}, "
-              "min_y={}, max_y={}) {}".format(
-                  fx, status, shape, min_x, max_x, min_y, max_y,
-                  ", ".join(notes)))
+            notes.append("strong_max_x={} < {}".format(
+                max_x, args.max_x_min))
+        if main_left is None or main_left > 40:
+            status = "FAIL"
+            notes.append("main_left={} > 40".format(main_left))
+        if selected_left is None or selected_left > 40:
+            status = "FAIL"
+            notes.append("selected_left={} > 40".format(selected_left))
+        print("[bbox] {:20} {} shape={} strong_ui_bbox={} "
+              "non_background_bbox={} main_left={} selected_left={} {}"
+              .format(
+                  fx, status, analysis.get("shape"), strong_bbox, bbox,
+                  main_left, selected_left, ", ".join(notes)))
         if status != "PASS":
             failures.append((fx, " / ".join(notes)))
+        if status != "PASS":
+            print(json.dumps(analysis, indent=2, sort_keys=True))
 
     if failures:
         print("[bbox] {} FAILURES".format(len(failures)))

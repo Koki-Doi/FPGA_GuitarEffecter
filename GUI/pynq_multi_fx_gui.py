@@ -16,6 +16,8 @@ Thin re-export shim over ``GUI/compact_v2/``. The actual code lives in:
                                  RenderCache / state_*_signature /
                                  render_frame_800x480 /
                                  render_frame_800x480_compact_v2
+  GUI/compact_v2/render_compact_v2.py
+                              -- large compact-v2 800x480 drawing body
   GUI/compact_v2/hit_test.py  -- hit_test_compact_v2
 
 Public API

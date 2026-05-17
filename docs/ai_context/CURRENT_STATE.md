@@ -1,22 +1,26 @@
 # Current state
 
-Last updated: **2026-05-17, Phase 7G+ encoder GUI-first live apply added**
-(new module `audio_lab_pynq/encoder_effect_apply.py` translates the
-compact-v2 AppState into `AudioLabOverlay` public setters with a 100 ms
-default throttle; `EncoderUiController` gained `applier=` / `live_apply=`
-/ `skip_rat=` kwargs; `scripts/run_encoder_hdmi_gui.py` and the
-single-cell `EncoderGuiSmoke.ipynb` were rewritten around the dirty-flag
-loop with the new applier; RAT pedal-mask bit 2 is excluded from
-encoder cycling and live apply by default — the Clash stage and the
-notebook `HdmiEffectStateMirror` API remain untouched. Earlier baseline
-commits `5332b7e` / `3afd9c4` / `e2ece2e` brought the Phase 6I C2 baseline up;
-`d1c4e8e` thinned `set_guitar_effects` into a 6-helper facade;
-`52c5ea4` extracted the 1727-line `hdmi_effect_state_mirror.py` into
-the `audio_lab_pynq/hdmi_state/` subpackage; `5173baf` extracted the
-1685-line `GUI/pynq_multi_fx_gui.py` into the `GUI/compact_v2/`
-subpackage; `c7a8680` added the rotary encoder input IP and the
-follow-up deploy smoke added the encoder Notebook and PYNQ Python 3.6
-compatibility fixes. See `DECISIONS.md` D26 / D33 / D35).
+Last updated: **2026-05-17, GUI/encoder refactor pass deployed and
+smoked on PYNQ-Z2**
+(this pass added the pure `effect_catalog.py` and
+`app_state_apply_plan.py`, thinned the GUI bridge and encoder applier
+over that planner, moved `HdmiEffectStateMirror` into
+`audio_lab_pynq/hdmi_state/mirror.py` behind the historical shim,
+split the compact-v2 drawing body into `render_compact_v2.py`, and
+moved strong-UI frame analysis out of `test_*.py` scripts so
+`unittest discover` is clean. Earlier Phase 7G+ added
+`audio_lab_pynq/encoder_effect_apply.py`, `EncoderUiController`
+`applier=` / `live_apply=` / `skip_rat=` kwargs, and the dirty-flag
+encoder GUI runtime with RAT excluded by default. Earlier baseline
+commits `5332b7e` / `3afd9c4` / `e2ece2e` brought the Phase 6I C2
+baseline up; `d1c4e8e` thinned `set_guitar_effects` into a 6-helper
+facade; `52c5ea4` extracted the 1727-line
+`hdmi_effect_state_mirror.py` into the `audio_lab_pynq/hdmi_state/`
+subpackage; `5173baf` extracted the 1685-line
+`GUI/pynq_multi_fx_gui.py` into the `GUI/compact_v2/` subpackage;
+`c7a8680` added the rotary encoder input IP and the follow-up deploy
+smoke added the encoder Notebook and PYNQ Python 3.6 compatibility
+fixes. See `DECISIONS.md` D26 / D33 / D35 / D38 / D39).
 
 ## Current load-bearing facts
 
@@ -27,17 +31,48 @@ compatibility fixes. See `DECISIONS.md` D26 / D33 / D35).
   `DEFAULT_WIDTH=800`, `DEFAULT_HEIGHT=600`. The 800x480 compact-v2
   GUI composes at framebuffer `(0,0)` (top 480 rows = UI, bottom 120
   rows = black). VDMA: `HSIZE=2400, STRIDE=2400, VSIZE=600`.
+- **Latest PYNQ deploy smoke (2026-05-17)**:
+  `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` completed
+  successfully with no bit/hwh rebuild. Board-side Python 3.6 imports
+  passed for the new pure modules and GUI render path
+  (`strong_ui_bbox=[24,776,44,454]`, `estimated_main_panel_left_x=24`).
+  Overlay smoke passed with `ADC HPF=True`, `R19_ADC_CONTROL=0x23`,
+  input volume `(0,0)`, `axi_vdma_hdmi` / `v_tc_hdmi` present, and
+  `enc_in_0/s_axi` present. HDMI smoke
+  `scripts/test_hdmi_800x480_frame.py --variant compact-v2 --placement manual --offset-x 0 --offset-y 0 --hold-seconds 0`
+  passed: frame `[480,800,3] uint8`, VDMA error bits false, copy
+  region `x=0..800,y=0..480`, and VDMA `HSIZE/STRIDE/VSIZE =
+  2400/2400/600`. Encoder GUI dry-run
+  `scripts/run_encoder_hdmi_gui.py --dry-run --no-audio-apply --hold-seconds 1`
+  also exited cleanly on the deployed Python stack.
 - **GUI renderer**: `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2`
   + the (1).py-spec `EFFECT_KNOBS` / `AppState.all_knob_values` /
   `hit_test_compact_v2()` API from Phase 6H port (`DECISIONS.md` D24).
   The renderer is split per-theme under `GUI/compact_v2/{knobs, state,
-  layout, renderer, hit_test}.py`; `GUI/pynq_multi_fx_gui.py` is a
-  120-line re-export shim. `DECISIONS.md` D26.
+  layout, renderer, render_compact_v2, hit_test}.py`; `renderer.py`
+  keeps shared NumPy / Pillow primitives, `RenderCache`, and public
+  wrappers, while `render_compact_v2.py` owns the large compact-v2
+  drawing routine. `GUI/pynq_multi_fx_gui.py` is a 120-line re-export
+  shim. `DECISIONS.md` D26 / D39.
+- **GUI catalog + apply plan**: `audio_lab_pynq/effect_catalog.py`
+  is the pure source for GUI-visible effect names, knob layouts,
+  model labels, and chain-preset display names. `GUI/compact_v2/knobs.py`
+  and `audio_lab_pynq/hdmi_state/{knobs,pedals,amps,cabs}.py` are now
+  compatibility import paths over that catalog. `audio_lab_pynq/app_state_apply_plan.py`
+  owns the AppState -> `AudioLabOverlay` call planning shared by
+  `GUI/audio_lab_gui_bridge.py` and `EncoderEffectApplier`, including
+  EQ scaling and encoder RAT-skip pedal-mask generation. `DECISIONS.md`
+  D38.
 - **HDMI GUI state mirror**: `audio_lab_pynq/hdmi_effect_state_mirror.py`
-  still exports `HdmiEffectStateMirror` and every public helper, but
-  the constants / normalisation helpers / `ResourceSampler` live under
+  still exports `HdmiEffectStateMirror` and every public helper, but it
+  is now a compatibility shim. The class lives in
+  `audio_lab_pynq/hdmi_state/mirror.py`; constants / normalisation
+  helpers / `ResourceSampler` live under
   `audio_lab_pynq/hdmi_state/{pedals, amps, cabs, selected_fx, knobs,
-  resource_sampler, common}.py`. `DECISIONS.md` D26.
+  resource_sampler, common}.py`. Offline strong-UI bbox analysis lives
+  in `audio_lab_pynq/hdmi_state/frame_analysis.py`, so tests and
+  diagnostics do not import a `test_*.py` script module. `DECISIONS.md`
+  D26 / D39.
 - **`set_guitar_effects()`**: thin facade over 6 private helpers
   (`_require_effect_gpios`, `_merge_cached_distortion_state`,
   `_merge_cached_noise_suppressor_state`, `_write_effect_gpios`,

@@ -943,11 +943,11 @@ not get removed even when superseded — they get updated.
     `GUI_EFFECT_KNOBS` layout, the `/proc`-based `ResourceSampler`,
     and the cross-effect helpers moved into
     `audio_lab_pynq/hdmi_state/{pedals, amps, cabs, selected_fx,
-    knobs, resource_sampler, common}.py`. The mirror file
-    (`audio_lab_pynq/hdmi_effect_state_mirror.py`) is now a
-    1117-line shim that holds the `HdmiEffectStateMirror` class
-    itself and re-exports every public + private name from the
-    subpackage. Every existing import like
+    knobs, resource_sampler, common}.py`. D39 later moved the
+    `HdmiEffectStateMirror` class itself into
+    `audio_lab_pynq/hdmi_state/mirror.py`, leaving
+    `audio_lab_pynq/hdmi_effect_state_mirror.py` as a compatibility
+    shim. Every existing import like
     `from audio_lab_pynq.hdmi_effect_state_mirror import
     HdmiEffectStateMirror, PEDAL_MODEL_LABELS, ResourceSampler,
     STATIC_PL_UTILIZATION, ...` keeps working.
@@ -956,7 +956,10 @@ not get removed even when superseded — they get updated.
     The 1685-line `GUI/pynq_multi_fx_gui.py` was split per the
     user-requested {layout, renderer, knobs, state, hit_test}
     themes into `GUI/compact_v2/{knobs, state, layout, renderer,
-    hit_test}.py` (+ `__init__.py`). `GUI/pynq_multi_fx_gui.py` is
+    hit_test}.py` (+ `__init__.py`). D39 later split the large
+    compact-v2 drawing routine into `render_compact_v2.py` while
+    leaving `renderer.py` as the public wrapper / primitive module.
+    `GUI/pynq_multi_fx_gui.py` is
     now a 120-line re-export shim with a `try/except` block so both
     `from pynq_multi_fx_gui import X` (`REPO_ROOT/GUI` on sys.path
     — notebooks / scripts) and `from GUI.pynq_multi_fx_gui import
@@ -987,9 +990,10 @@ not get removed even when superseded — they get updated.
     extend `audio_lab_pynq/hdmi_state/{pedals,amps,cabs}.py`
     (or add a sibling) instead of touching the mirror file. When
     adding a new compact-v2 panel, extend `GUI/compact_v2/layout.py`
-    (panel boxes), `GUI/compact_v2/renderer.py` (`_draw_800x480_*`),
-    and `GUI/compact_v2/hit_test.py` (input mapping) — keep each
-    in its own file.
+    (panel boxes), `GUI/compact_v2/render_compact_v2.py` (main drawing),
+    `GUI/compact_v2/renderer.py` (shared primitives / wrappers), and
+    `GUI/compact_v2/hit_test.py` (input mapping) — keep each in its own
+    file.
   - The `tests/_pynq_mock.py` shim is the canonical way to import
     `audio_lab_pynq.hdmi_effect_state_mirror` via
     `spec_from_file_location` on a workstation without `pynq`
@@ -1374,3 +1378,80 @@ not get removed even when superseded — they get updated.
   idle 時 CPU を低く保ちつつ操作時のみ AXI を叩ける。
   RAT は実機 voicing 検証が他 pedal より遅れているため、Clash stage は
   残しつつ encoder からの誤操作を既定で防ぐ。
+
+## D38 — GUI-visible catalog and AppState apply planning are single-source pure modules
+
+- **状況.** `GUI/audio_lab_gui_bridge.py` と
+  `audio_lab_pynq/encoder_effect_apply.py` が別々に compact-v2
+  `AppState` から overlay kwargs を作っており、EQ 0..100 →
+  overlay 0..200、Cab model、distortion pedal index、RAT skip の
+  ルールが drift しやすくなっていた。さらに GUI / HDMI mirror /
+  bridge fallback に effect / knob / model catalog のコピーが分散していた。
+- **決定.**
+  - `audio_lab_pynq/effect_catalog.py` を GUI-visible effect / knob /
+    model / preset display catalog の pure source とする。
+    `GUI/compact_v2/knobs.py` と
+    `audio_lab_pynq/hdmi_state/{knobs,pedals,amps,cabs}.py` は既存 import
+    path を維持する compatibility shim として catalog を re-export する。
+  - `audio_lab_pynq/app_state_apply_plan.py` を compact-v2 `AppState`
+    から `AudioLabOverlay` public setter call plan を作る pure module とする。
+    `GUI/audio_lab_gui_bridge.py` は dry-run / change detection / throttle
+    executor、`EncoderEffectApplier` は live-apply status / exception
+    handling executor に薄くする。
+  - Encoder runtime の D37 境界は維持する: encoder full-state push は
+    `set_noise_suppressor_settings`、`set_compressor_settings`、1 回の
+    `set_guitar_effects(**kwargs)` のみ。RAT は `skip_rat=True` なら
+    `distortion_pedal_mask=0` + `unsupported=["Distortion:rat"]`、`--include-rat`
+    なら bit 2 を立てるが `rat_on` は引き続き False。
+- **境界.**
+  - DSP / Clash / GPIO / block design / bit / hwh / Vivado timing は変更しない。
+  - Public import paths (`GUI.compact_v2.knobs`, `pynq_multi_fx_gui`,
+    `audio_lab_pynq.hdmi_effect_state_mirror`, `GUI.audio_lab_gui_bridge`,
+    `audio_lab_pynq.encoder_effect_apply`) は維持する。
+  - `audio_lab_pynq.__init__` は off-board pure module import のため、
+    missing `pynq` / `pylibi2c` だけを許容して overlay-facing exports を
+    `None` にする。その他の `ImportError` は再 raise する。
+- **Why.** 今後 effect / knob / model を追加するときに、GUI renderer、
+  HDMI mirror、notebook bridge、encoder live apply の複数箇所を同時に
+  手で合わせる必要を減らすため。特に encoder と notebook bridge で
+  audio kwargs が分岐すると実機で「GUI 表示と鳴っている設定が違う」
+  事故になりやすい。
+
+## D39 — HDMI mirror / renderer / frame-analysis refactors keep shims thin
+
+- **状況.** D26 の初回 split 後も
+  `audio_lab_pynq/hdmi_effect_state_mirror.py` が 1000 行超で
+  `HdmiEffectStateMirror` class を抱え、`GUI/compact_v2/renderer.py`
+  も shared primitives / cache / dispatch / compact-v2 drawing body を
+  同居させていた。さらに
+  `tests/test_hdmi_origin_mapping.py` が `test_hdmi_render_bbox` という
+  test-like script 名を import する形になっており、`unittest discover`
+  で `scripts/test_hdmi_render_bbox.py` と衝突しやすかった。
+- **決定.**
+  - `audio_lab_pynq/hdmi_effect_state_mirror.py` は historical import path
+    だけを守る compatibility shim とし、`HdmiEffectStateMirror` 実装は
+    `audio_lab_pynq/hdmi_state/mirror.py` に置く。shim は implementation
+    module の non-dunder globals を re-export して、古い notebook の
+    private helper import も壊さない。
+  - `GUI/compact_v2/renderer.py` は NumPy / Pillow primitives、
+    `RenderCache`、state signatures、public `render_frame_800x480_*`
+    wrappers を持つ。大きい compact-v2 drawing body は
+    `GUI/compact_v2/render_compact_v2.py` が持ち、`renderer.py` の
+    `_render_frame_800x480_compact_v2` は lazy wrapper とする。
+  - Strong-UI bbox / origin analysis は
+    `audio_lab_pynq/hdmi_state/frame_analysis.py` に置く。
+    `tests/test_hdmi_origin_mapping.py` と
+    `scripts/test_hdmi_render_bbox.py` はこの通常モジュールを import し、
+    test module 名同士の import に依存しない。
+- **境界.**
+  - Public import paths (`audio_lab_pynq.hdmi_effect_state_mirror`,
+    `pynq_multi_fx_gui`, `GUI.compact_v2.renderer`) は維持する。
+  - HDMI signal / framebuffer contract は D25 のまま:
+    SVGA `800x600 @ 40 MHz`、compact-v2 800x480 は framebuffer `(0,0)`
+    に compose、下 120 rows は black。
+  - DSP / Clash / GPIO / block design / bit / hwh / Vivado timing は
+    変更しない。
+- **Why.** Large shim files are expensive context for small per-effect or
+  per-renderer edits, and test-like script imports make offline verification
+  brittle. The implementation modules keep the same behaviour while making
+  the stable import paths intentionally boring.

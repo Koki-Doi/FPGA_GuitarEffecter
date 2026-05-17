@@ -21,7 +21,7 @@ import traceback
 
 def repo_paths():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.abspath(os.path.join(script_dir, ".."))
+    repo_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
     for path in (repo_root, os.path.join(repo_root, "GUI"),
                  "/home/xilinx/Audio-Lab-PYNQ",
                  "/home/xilinx/Audio-Lab-PYNQ/GUI"):
@@ -32,7 +32,7 @@ def repo_paths():
 
 def hwh_contains(instance_name):
     candidates = [
-        os.path.join(os.path.dirname(__file__), "..",
+        os.path.join(os.path.dirname(__file__), "..", "..",
                      "audio_lab_pynq", "bitstreams", "audio_lab.hwh"),
         "/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/audio_lab.hwh",
     ]
@@ -177,7 +177,7 @@ def main():
 
     repo_paths()
     from pynq_multi_fx_gui import render_frame_800x480  # noqa: E402
-    from test_hdmi_render_bbox import analyze_frame  # noqa: E402
+    from audio_lab_pynq.hdmi_state.frame_analysis import analyze_frame  # noqa: E402
 
     state = state_for_selected_fx(args.selected_fx)
     frame = render_frame_800x480(
