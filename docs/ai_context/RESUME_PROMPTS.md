@@ -227,36 +227,61 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
-## Phase 7F — Rotary encoder PL IP + XDC
+## Phase 7F/7G — Rotary encoder PL IP + Python driver + HDMI GUI (local build done; deploy/smoke deferred)
 
-> Phase 7F に入る前に `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`
-> を必ず読んでください (`DECISIONS.md` D30 / D31 / D32)。
+> Phase 7F (PL) と Phase 7G (PS) を `feature/rotary-encoder-hdmi-gui-control`
+> branch で一括実装済み (`DECISIONS.md` D30 / D31 / D32 / D33 / D34 / D35)。
+> local `audio_lab.bit` / `audio_lab.hwh` は更新済み
+> (`hw/Pynq-Z2/bitstreams/`)。PYNQ deploy と物理 encoder smoke は
+> 未配線のため未実施。詳細は
+> `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md` と
+> `docs/ai_context/ENCODER_INPUT_MAP.md`。
 >
-> Phase 7F の作業:
-> 1. encoder decode IP (2-stage sync + debounce + quadrature FSM +
->    delta / count / event / CONFIG / CLEAR_EVENTS、register map は
->    `ENCODER_GUI_CONTROL_SPEC.md` section 4) を Clash or HDL で実装。
->    CONFIG に `invert_clk` / `invert_dt` / `clk_dt_swap` /
->    `reverse_direction` / `sw_active_low` を含める (`DECISIONS.md` D31)。
-> 2. AXI-Lite slave で接続。**base address は TBD**
->    (`DECISIONS.md` D32)。Vivado address editor + `pynq.PL.ip_dict` +
->    HWH を確認して **`0x43CE0000` / `0x43CF0000` 以外** の空き
->    range から選ぶ。既存 `axi_gpio_*` (`0x43C30000..0x43CD0000`) と
->    HDMI (`0x43CE0000` / `0x43CF0000`) と衝突しないこと。
-> 3. `block_design.tcl` 修正 (ユーザ承認後): `NUM_MI` 増、address
->    segment 追加、encoder IP 配線。
-> 4. `audio_lab.xdc` に encoder pin 追加 (Raspberry Pi header の
->    `raspberry_pi_tri_i_6..` 系統)、`PULLUP true` 設定。
->    `IO_PIN_RESERVATION.md` section 4A.3 の候補表を参照。
-> 5. bit / hwh build。WNS が `TIMING_AND_FPGA_NOTES.md` の最新
->    deploy band (-8.731 ns 近辺) を大きく悪化させないこと。
-> 6. 簡単な debug script で raw delta / event が出るか確認。
+> やってあること:
+> - PL: `hw/ip/encoder_input/src/axi_encoder_input.v` (AXI-Lite
+>   + 3 ch quadrature + debounce + delta + event)、
+>   `hw/Pynq-Z2/encoder_integration.tcl`、`audio_lab.xdc` の 9 pin
+>   追加、`create_project.tcl` への source 追加。
+> - PS: `audio_lab_pynq/encoder_input.py`、`audio_lab_pynq/encoder_ui.py`、
+>   `GUI/compact_v2/state.py` / `renderer.py` の focus state、
+>   standalone `scripts/run_encoder_hdmi_gui.py`、smoke
+>   `scripts/test_encoder_input.py` / `scripts/test_hdmi_encoder_gui_control.py`、
+>   オフライン unit tests (29 件)。
+> - Vivado build3:
+>   `/tmp/fpga_guitar_effecter_backup/phase7f7g_vivado_build3.log`。
+>   `write_bitstream completed successfully`。Final routed timing:
+>   WNS `-8.395 ns`, TNS `-6609.224 ns`, WHS `+0.052 ns`,
+>   THS `0.000 ns`。Utilization: LUT `19095`, Registers `21259`,
+>   BRAM Tile `9`, DSP `83`。
+> - HWH: `enc_in_0` / `axi_encoder_input` at `0x43D10000..0x43D1FFFF`。
+>   HDMI `axi_vdma_hdmi=0x43CE0000` / `v_tc_hdmi=0x43CF0000` and
+>   existing effect GPIO addresses are unchanged.
 >
-> 禁止: PS polling で `CLK` / `DT` / `SW` を直接読む実装
-> (`DECISIONS.md` D30 違反)、既存 `axi_gpio_*` に encoder bit を
-> 混ぜる、encoder IP の base address を `0x43CE0000` / `0x43CF0000`
-> に置く、ADAU1761 / HDMI 経路の改変、`git push` / `git pull` /
-> `git fetch`。
+> 残作業 (このセッションでは未対応):
+> 1. ロータリーエンコーダー 3 個を Raspberry Pi header の
+>    `F19 / V10 / V8` (`ENC0_CLK / DT / SW`)、
+>    `W10 / B20 / W8` (`ENC1_*`)、`V6 / Y6 / B19` (`ENC2_*`) に
+>    物理配線。`+` は必ず 3.3V (5V 禁止、`DECISIONS.md` D31)。
+> 2. 必要になった時点で `bash scripts/deploy_to_pynq.sh` で新しい bit / hwh / Python
+>    パッケージを PYNQ-Z2 (`192.168.1.9`) に転送。
+> 3. ssh で `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3
+>    scripts/test_encoder_input.py --duration 60` を実行し、
+>    各 encoder の rotate / short / long が出ることを確認。
+>    必要なら `--reverse-encN` / `--swap-encN` で方向 / 配線を補正。
+>    未配線状態の VERSION / CONFIG / ip_dict 確認は物理 smoke の
+>    代替として扱わない (`DECISIONS.md` D35)。
+> 4. `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3
+>    scripts/run_encoder_hdmi_gui.py --fps 5` で HDMI GUI を encoder
+>    から操作 (Encoder 0 = effect select / on-off / safe bypass、
+>    Encoder 1 = knob select / model select、Encoder 2 = value /
+>    apply / reset)。
+>
+> 禁止: PMOD JB / PMOD JA に encoder pin を割り当てる (`DECISIONS.md`
+> D28 / D34 違反、PCM1808 / PCM5102 予約)、PS polling で raw CLK/DT/SW
+> を読む (`DECISIONS.md` D30 違反)、encoder bit を `axi_gpio_*` に
+> 混ぜる (`DECISIONS.md` D33 違反)、`+` を 5V に繋ぐ (`DECISIONS.md`
+> D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
+> `git push` / `git pull` / `git fetch`。
 
 ## Phase 7G — Python encoder driver + GUI focus state
 

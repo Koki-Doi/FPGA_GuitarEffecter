@@ -2232,6 +2232,110 @@ Phase 7A の docs を実モジュールのシルクと PYNQ-Z2 board file
   行に反映)
 - encoder PL IP 実装 / Python driver / GUI focus state
 
+## Phase 7F/7G — Rotary encoder PL IP + Python driver + HDMI GUI control (2026-05-17)
+
+Phase 7F (PL) + Phase 7G (PS) を一括実装 (`feature/rotary-encoder-hdmi-gui-control`
+branch)。外付け PCM1808 / PCM5102 codec パスは触らず、PMOD JB / JA も
+未配線のまま。`DECISIONS.md` D33 / D34 / D35 を追加。
+
+新規 PL IP:
+- `hw/ip/encoder_input/src/axi_encoder_input.v` — 単一 Verilog ファイル
+  (~440 行)。AXI4-Lite slave + 3 ch quadrature + debounce + signed delta
+  + s32 abs count + short/long press event latch + `invert_clk / dt`,
+  `clk_dt_swap`, `reverse_direction`, `sw_active_low`, `debounce_ms`,
+  `clear_on_read` を CONFIG レジスタで提供。`VERSION = 0x00070001`。
+- `hw/Pynq-Z2/encoder_integration.tcl` — `hdmi_integration.tcl` と同じ
+  パターン。`ps7_0_axi_periph/NUM_MI` を 17 → 18 に bump (M15=VDMA、
+  M16=VTC、**M17=encoder**)、module reference として instantiate
+  (`create_bd_cell -type module -reference axi_encoder_input enc_in_0`)、
+  AXI address segment `0x43D10000 / 0x10000` を作成。
+- `hw/Pynq-Z2/create_project.tcl` — encoder Verilog を `add_files` で
+  追加、`generate_target {synthesis}` で per-IP OOC synth を保証、
+  encoder_integration.tcl を hdmi_integration.tcl の後に source。
+- `hw/Pynq-Z2/audio_lab.xdc` — encoder 9 pin を追加 (`F19 / V10 / V8`
+  + `W10 / B20 / W8` + `V6 / Y6 / B19`、すべて `LVCMOS33`)。
+  ADAU1761 / HDMI pin は無変更。PMOD JB / JA も無変更。
+
+Python 層:
+- `audio_lab_pynq/encoder_input.py` — low-level driver。
+  `EncoderInput.from_overlay(overlay)` で IP を発見し、
+  `poll(timestamp=)` が `EncoderEvent(kind, encoder_id, delta,
+  raw_delta, timestamp)` を返す。`EDGES_PER_DETENT = 4`、edge carry
+  で 2 polls 跨ぎの 1 detent も漏らさず emit。
+- `audio_lab_pynq/encoder_ui.py` — `EncoderUiController.handle_event()`
+  で AppState を変更。Encoder 0 = effect select / toggle / safe-bypass、
+  Encoder 1 = knob select / model-select toggle、Encoder 2 = value
+  change / apply / reset。`apply()` は test/dry-run mirror があれば
+  それを使い、live overlay では `GUI/audio_lab_gui_bridge.py` 経由で
+  `AudioLabOverlay.set_*` public API に流す (raw GPIO write しない)。
+- `GUI/compact_v2/state.py` — `AppState` に 8 つの追加 field
+  (`focus_effect_index` / `focus_param_index` / `edit_mode` /
+  `model_select_mode` / `value_dirty` / `apply_pending` /
+  `last_control_source` / `last_encoder_event`)。すべて互換 default
+  で既存 renderer / notebook はそのまま動く。
+- `GUI/compact_v2/renderer.py` — 800x480 frame 右下に小さなステータス
+  ストリップ (`EDIT / MODEL / DIRTY / APPLY? / ENC`)。既存の Pip-Boy
+  レイアウト / chain highlight / knob highlight / inline model dropdown
+  rules はそのまま。
+
+Standalone runtime + tests:
+- `scripts/run_encoder_hdmi_gui.py` — notebook 不要の Pip-Boy GUI
+  loop runner (CLI: `--fps` / `--reverse-encN` / `--swap-encN` /
+  `--debounce-ms` / `--hold-seconds` / `--dry-run` / `--no-apply`)。
+- `scripts/test_encoder_input.py` — 実機上の manual rotate/press smoke
+  (VERSION / CONFIG / COUNT 表示 + 60 秒間 live event 出力)。
+- `scripts/test_hdmi_encoder_gui_control.py` — 実機上の synthesized
+  encoder events + HDMI frame write smoke (scripted または
+  `--use-real-encoder`)。
+- `tests/test_encoder_input_decode.py` (12 tests)、
+  `tests/test_encoder_ui_controller.py` (13 tests)、
+  `tests/test_compact_v2_encoder_state.py` (4 tests) — オフライン
+  unit tests。`tests/_pynq_mock` 経由で `pynq` なしの workstation
+  でも全 29 件 PASS。既存 6 件の HDMI / overlay テストにも regression なし。
+
+新規 docs:
+- `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md` — 実装メモ
+  (RTL / Tcl / Python / runtime / tests / rollback / risks)
+- `docs/ai_context/ENCODER_INPUT_MAP.md` — register / address /
+  CONFIG bit table。`GPIO_CONTROL_MAP.md` (effect output ledger) と
+  別ファイル (input path は layout が違うため混ぜない)。
+
+Vivado build:
+- 最初の build は per-IP OOC synth が triggers されず DRC INBB-3 で
+  失敗 (audio_lab.cache を `rm -rf` した直後だったため)。
+  `create_project.tcl` に `generate_target {synthesis}` + 明示的な
+  `launch_runs synth_1 -> impl_1` を入れて修正。
+- 2 回目の full `create_project.tcl` build は成功したが、その後
+  `axi_encoder_input.v` の AXI read path を最小修正したため、その
+  bitstream は採用せず。
+- 3 回目は既存 Vivado project を開いて `synth_1` / `impl_1` を
+  reset し、修正後 RTL で `write_bitstream` まで再実行。
+  log: `/tmp/fpga_guitar_effecter_backup/phase7f7g_vivado_build3.log`。
+  `write_bitstream completed successfully`、`audio_lab.bit` /
+  `audio_lab.hwh` を `hw/Pynq-Z2/bitstreams/` にコピー済み。
+- Final routed timing: WNS `-8.395 ns`, TNS `-6609.224 ns`,
+  WHS `+0.052 ns`, THS `0.000 ns`。Phase 6I C2 baseline
+  (WNS `-8.096 ns`, TNS `-6389.430 ns`) からの小幅悪化で、
+  historical `-7..-9 ns` band 内。hold は clean。
+- Utilization after place: Slice LUTs `19095 (35.89%)`, Slice
+  Registers `21259 (19.98%)`, Block RAM Tile `9 (6.43%)`,
+  DSPs `83 (37.73%)`。
+- HWH address map: encoder module reference `enc_in_0`
+  (`axi_encoder_input`) at `0x43D10000..0x43D1FFFF`。HDMI は
+  `axi_vdma_hdmi=0x43CE0000`、`v_tc_hdmi=0x43CF0000` のまま。
+  既存 effect GPIO (`0x43C30000..0x43CD0000`) も unchanged。
+- PYNQ deploy は未実施。ロータリーエンコーダー 3 個がまだ物理配線
+  されていないため、manual encoder smoke は未実施であり、
+  standalone 操作成功とは記録しない (`DECISIONS.md` D35)。
+
+未対応 (Phase 7H 以降):
+- 実機 PYNQ-Z2 への deploy + 配線 encoder smoke (ロータリーエンコーダー
+  3 個は **まだ物理配線されていない**ため、deploy / 物理 smoke は
+  hardware 配線後に user が手動で実行する)。`scripts/deploy_to_pynq.sh`
+  と `scripts/test_encoder_input.py` / `scripts/test_hdmi_encoder_gui_control.py`
+  を流すだけ。
+- 外付け PCM1808 / PCM5102 codec 実装 (Phase 7C 以降の別作業)。
+
 ## What to do next
 
 Open work, in roughly priority order:
@@ -2292,4 +2396,20 @@ Open work, in roughly priority order:
 - Do **not** connect PCM1808 analog input directly to a guitar. 必要な
   analog front-end (高 impedance buffer / AC coupling / bias / gain /
   anti-alias LPF / clamp) は Phase 7E 以降。
+- Do **not** wire the rotary encoder module `+` pin to 5V. 必ず
+  PYNQ-Z2 **3.3V** rail を使う (`DECISIONS.md` D31)。基板上 pull-up が
+  `+` 経由で `CLK / DT / SW` を 5V 化し、PL pin (3.3V LVCMOS33) を
+  破損する可能性がある。
+- Do **not** rename or move the `axi_encoder_input` IP base address.
+  `0x43D10000` は `axi_vdma_hdmi` (`0x43CE0000`) / `v_tc_hdmi`
+  (`0x43CF0000`) / `0x43D00000` (HDMI 拡張枠) を避けて選定済み
+  (`DECISIONS.md` D32)。
+- Do **not** merge encoder bits into existing `axi_gpio_*` IPs. encoder
+  は独立 AXI-Lite IP として実装 (`DECISIONS.md` D33)。
+  `GPIO_CONTROL_MAP.md` の `ctrlA..D` 4-byte 契約に encoder event /
+  delta を混ぜない。
+- Do **not** allocate encoder pins to PMOD JB / PMOD JA. これらは
+  外付け PCM1808 / PCM5102 codec 予約のまま温存 (`DECISIONS.md` D28 /
+  D34)。encoder は Raspberry Pi header の JA 非共有 pin
+  (`raspberry_pi_tri_i_6..14`) を使う。
 - Do **not** push, pull, or fetch.

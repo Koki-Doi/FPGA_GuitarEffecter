@@ -114,6 +114,20 @@ class AppState:
     out_level: float = 0.7
     cpu: int         = 42
 
+    # ------ Phase 7G encoder focus state -----------------------------------
+    # These fields mirror selected_effect / selected_knob and add edit /
+    # apply / source bookkeeping for the EncoderUiController. Defaults are
+    # chosen so existing renderers and notebooks that ignore them keep
+    # rendering identically (focus_* equal to selected_*, edit modes off).
+    focus_effect_index: int   = 4    # tracks selected_effect by default
+    focus_param_index:  int   = 0
+    edit_mode:          bool  = False
+    model_select_mode:  bool  = False
+    value_dirty:        bool  = False
+    apply_pending:      bool  = False
+    last_control_source: str  = "notebook"   # "notebook" | "encoder"
+    last_encoder_event: object = None        # most recent dict from EncoderUiController
+
     def knobs(self) -> List[Tuple[str, float]]:
         name = EFFECTS[self.selected_effect]
         spec = EFFECT_KNOBS[name]

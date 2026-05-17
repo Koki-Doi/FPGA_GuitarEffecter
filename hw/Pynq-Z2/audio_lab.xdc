@@ -116,3 +116,38 @@ set_property PACKAGE_PIN J19 [get_ports {hdmi_tx_data_n[1]}]
 
 set_property PACKAGE_PIN J18 [get_ports {hdmi_tx_data_p[2]}]
 set_property PACKAGE_PIN H18 [get_ports {hdmi_tx_data_n[2]}]
+
+###################################################
+## Phase 7F/7G: 3 rotary encoder modules on the Raspberry Pi header.
+##
+## Module silkscreen = CLK / DT / SW / + / GND. + is wired to PYNQ-Z2 3.3V
+## ONLY (5V would lift the module pull-ups onto PL pins; see DECISIONS.md D31).
+## All nine signals are LVCMOS33 inputs on RPi header pins that do not share
+## with PMOD JA (see IO_PIN_RESERVATION.md section 4.6).
+## PMOD JA and PMOD JB are intentionally NOT used here -- they stay reserved
+## for the planned external PCM1808/PCM5102 codec path (DECISIONS.md D28).
+##
+## PULLUP is left at the default. The encoder modules ship with onboard
+## pull-ups; if a specific module lacks them, add `set_property PULLUP true`
+## below per pin instead of rewiring the board.
+###################################################
+set_property PACKAGE_PIN F19 [get_ports {enc0_clk_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc0_clk_i}]
+set_property PACKAGE_PIN V10 [get_ports {enc0_dt_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc0_dt_i}]
+set_property PACKAGE_PIN V8  [get_ports {enc0_sw_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc0_sw_i}]
+
+set_property PACKAGE_PIN W10 [get_ports {enc1_clk_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc1_clk_i}]
+set_property PACKAGE_PIN B20 [get_ports {enc1_dt_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc1_dt_i}]
+set_property PACKAGE_PIN W8  [get_ports {enc1_sw_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc1_sw_i}]
+
+set_property PACKAGE_PIN V6  [get_ports {enc2_clk_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc2_clk_i}]
+set_property PACKAGE_PIN Y6  [get_ports {enc2_dt_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc2_dt_i}]
+set_property PACKAGE_PIN B19 [get_ports {enc2_sw_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {enc2_sw_i}]
