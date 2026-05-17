@@ -914,3 +914,463 @@ not get removed even when superseded — they get updated.
     same pattern. Recovery from a stuck-PLL white screen is a
     PYNQ-Z2 power cycle, then run the cell exactly once.
   - `block_design.tcl` is unchanged; D2 still applies.
+
+## D26 — Post-Phase-6I refactor: facade + per-effect subpackages
+
+- **Decision.** Three companion refactor passes landed on `main` after
+  Phase 6I to make per-effect work and AI-context loading cheaper.
+  None of them change the runtime DSP / FPGA / GPIO / block-design
+  contract; all preserve external Python import paths byte-for-byte.
+
+  - **`set_guitar_effects` thin facade** (`d1c4e8e`,
+    `audio_lab_pynq/AudioLabOverlay.py`).
+    The 100-line `set_guitar_effects(self, sink=..., **kwargs)`
+    method was split into a 17-line dispatch over six private
+    helpers (`_require_effect_gpios`,
+    `_merge_cached_distortion_state`,
+    `_merge_cached_noise_suppressor_state`,
+    `_write_effect_gpios`, `_refresh_cached_words`,
+    `_route_effect_chain`) plus two new class-level constants
+    (`_REQUIRED_EFFECT_GPIOS`, `_OPTIONAL_EFFECT_GPIOS`,
+    `_DIST_STATE_SCALAR_PAIRS`). The public signature, return value,
+    GPIO write order, cached-state semantics, and "missing GPIO"
+    `RuntimeError` text are unchanged.
+
+  - **`hdmi_state` subpackage** (`52c5ea4`).
+    The 1727-line `audio_lab_pynq/hdmi_effect_state_mirror.py` was
+    split: the constant tables (pedal / amp / cab model names +
+    labels + aliases), the SELECTED FX dropdown plumbing, the
+    `GUI_EFFECT_KNOBS` layout, the `/proc`-based `ResourceSampler`,
+    and the cross-effect helpers moved into
+    `audio_lab_pynq/hdmi_state/{pedals, amps, cabs, selected_fx,
+    knobs, resource_sampler, common}.py`. The mirror file
+    (`audio_lab_pynq/hdmi_effect_state_mirror.py`) is now a
+    1117-line shim that holds the `HdmiEffectStateMirror` class
+    itself and re-exports every public + private name from the
+    subpackage. Every existing import like
+    `from audio_lab_pynq.hdmi_effect_state_mirror import
+    HdmiEffectStateMirror, PEDAL_MODEL_LABELS, ResourceSampler,
+    STATIC_PL_UTILIZATION, ...` keeps working.
+
+  - **`GUI/compact_v2/` subpackage** (`5173baf`).
+    The 1685-line `GUI/pynq_multi_fx_gui.py` was split per the
+    user-requested {layout, renderer, knobs, state, hit_test}
+    themes into `GUI/compact_v2/{knobs, state, layout, renderer,
+    hit_test}.py` (+ `__init__.py`). `GUI/pynq_multi_fx_gui.py` is
+    now a 120-line re-export shim with a `try/except` block so both
+    `from pynq_multi_fx_gui import X` (`REPO_ROOT/GUI` on sys.path
+    — notebooks / scripts) and `from GUI.pynq_multi_fx_gui import
+    X` (`REPO_ROOT` on sys.path — tests / packagers) resolve all
+    exports. Render output verified byte-for-byte identical against
+    the pre-split file for three themes + two render variants +
+    `hit_test_compact_v2(400, 240)`.
+
+- **Why.** Each pre-refactor file was a merge-conflict magnet
+  whenever per-effect or per-theme work landed in parallel. The
+  splits localise each section so an AI agent reading just the
+  pedal name mapping pulls in `audio_lab_pynq/hdmi_state/pedals.py`
+  (~60 lines) instead of `hdmi_effect_state_mirror.py` (~1700
+  lines), and a contributor editing the compact-v2 palette can
+  touch `GUI/compact_v2/layout.py` (~270 lines) instead of the
+  whole `pynq_multi_fx_gui.py`.
+
+- **Boundaries.**
+  - Do not undo the splits by re-flattening the subpackages back
+    into the shim files. The shim files exist so external import
+    paths stay stable; they should not gain new top-level
+    definitions.
+  - Inside `GUI/compact_v2/` and `audio_lab_pynq/hdmi_state/`, use
+    **relative imports** (`from .knobs import X`) so the modules
+    work under both call-site conventions (top-level package vs
+    nested-under-GUI / nested-under-audio_lab_pynq).
+  - When adding a new effect that needs a model dropdown,
+    extend `audio_lab_pynq/hdmi_state/{pedals,amps,cabs}.py`
+    (or add a sibling) instead of touching the mirror file. When
+    adding a new compact-v2 panel, extend `GUI/compact_v2/layout.py`
+    (panel boxes), `GUI/compact_v2/renderer.py` (`_draw_800x480_*`),
+    and `GUI/compact_v2/hit_test.py` (input mapping) — keep each
+    in its own file.
+  - The `tests/_pynq_mock.py` shim is the canonical way to import
+    `audio_lab_pynq.hdmi_effect_state_mirror` via
+    `spec_from_file_location` on a workstation without `pynq`
+    installed. New offline tests that load the file directly should
+    `import _pynq_mock` first.
+  - No DSP / Clash / GPIO / block_design / bit / hwh / tcl change in
+    any of the three refactors; the same `audio_lab.bit` is in use.
+
+## D27 — Phase 7 では PCM1808 + PCM5102 を外付け codec 候補として計画する (ADAU1761 即置換禁止)
+
+- **状況.** PYNQ-Z2 onboard ADAU1761 は音は出るが、外付け codec
+  module を扱える前提を整えたい (line-level 入出力、I2S 接続、
+  将来の analog front-end 追加の余地)。
+- **決定.** 外付け codec として **Youmile PCM1808** (ADC) と
+  **PCM5102 / PCM5102A** (DAC) を採用する前提で Phase 7 を進める。
+  Phase 7A は **planning only**: ピン予約 / 信号一覧 / mode / clock
+  方針 / analog 注意 / 段階的実装計画を docs に記録するだけで、
+  XDC / block_design / bit / hwh は一切変更しない。
+- **境界.**
+  - 既存 ADAU1761 経路は **破壊しない**。Phase 7B 以降も外付け codec
+    は **別 I2S path** として追加する (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+    section 7 の選択肢 A または C)。即置換 (選択肢 B) は採用しない。
+  - PCM1808 の analog input にギターを **直結しない**。line-level
+    想定で先に動かし、analog front-end (高 impedance buffer / AC
+    coupling / bias / gain / anti-alias LPF / clamp) は Phase 7E
+    以降に分離する。
+  - PCM5102 の出力は **line out** として扱う。headphone 直接駆動を
+    前提にせず、必要なら output buffer を追加する。pop noise / GND
+    routing は実装時に確認する。
+  - 実モジュールは販売ロットによりピン名 / strap / 電源が異なる
+    可能性があるので、**Phase 7B で実物確認** してから XDC を書く。
+- **Why.** ADAU1761 を残しておけば、外付け path の動作 / 音質 /
+  ノイズフロアを直接比較でき、Phase 7B 以降の作業中に音が出なく
+  なるリスクを排除できる。analog front-end と DSP 置換を同時に
+  攻めると失敗時の原因切り分けが困難になる。
+
+## D28 — 外付け ADC / DAC pin を encoder GPIO より優先して予約する
+
+- **状況.** Phase 7 は外付け codec と rotary encoder × 3 を同時に
+  追加したい。PYNQ-Z2 上の未使用 IO ヘッダは PMOD JA / JB、
+  Raspberry Pi header、Arduino header。どれを何に割り当てるかで
+  audio が劣化したり再配線が必要になったりする可能性がある。
+- **決定.** **外付け audio (PCM1808 + PCM5102) を最優先**で
+  PMOD JB に連続配置する。追加 control / strap pin が必要なら
+  PMOD JA に分散する。**rotary encoder 用 GPIO は audio 予約 pin の
+  余りではなく** Raspberry Pi header に配置する。
+- **境界.**
+  - PMOD JB は外付け I2S audio (`EXT_AUDIO_MCLK` / `EXT_AUDIO_BCLK` /
+    `EXT_AUDIO_LRCLK` / `EXT_ADC_DOUT` / `EXT_DAC_DIN`) 用に
+    確保する。最低 5 pin (mode pin を strap 固定する場合) で
+    収まる。
+  - PMOD JA は `EXT_ADC_FMT` / `EXT_ADC_MD0` / `EXT_ADC_MD1` /
+    `EXT_DAC_XSMT` / `EXT_CODEC_RESET_N` / `EXT_AUDIO_SPARE0..3`
+    用に確保する。
+  - encoder 9 pin + spare GPIO は Raspberry Pi header 候補 (低速で
+    十分)。Arduino header は最後の予備。
+  - 実 Package Pin は Phase 7B で確定する。Phase 7A の本決定は
+    **論理予約レベル**。XDC 変更はしない。
+  - すべて 3.3V LVCMOS33 統一。5V を PL pin へ直接入れない
+    (level shifter 必須)。
+- **Why.** audio は clock skew / cross-talk に弱いため隣接 pin に
+  集約したい。encoder は kHz オーダーの低速入力なので、PMOD の
+  clean 8-pin block を潰してまで配置する必要がない。先に audio を
+  確保して余りを encoder に回すと、後で audio を増やしたいときに
+  encoder 配線をやり直す羽目になる。
+
+## D29 — FPGA を外付け I2S clock master にする (48 kHz / 24-bit / 12.288 MHz MCLK 第一候補)
+
+- **状況.** PCM1808 / PCM5102 のクロックを誰が出すか決める必要が
+  ある。ADAU1761 経路は既に `mclk` (`U5`) を FPGA から供給して
+  おり、`bclk` / `lrclk` も FPGA 主導。
+- **決定.** Phase 7 でも **FPGA / PYNQ-Z2 を I2S clock master** に
+  する。
+  - sample rate: 48 kHz
+  - word length: 24-bit (frame は stereo / 64-bit)
+  - `BCLK` = 64 × fs = **3.072 MHz**
+  - `MCLK / SCKI` 第一候補 = 256 × fs = **12.288 MHz**
+    (384 / 512 fs は将来の高 SNR option として残す)
+  - PCM1808 は **slave mode** 固定 (`MD0` / `MD1` を strap)
+  - PCM1808 `FMT` = I2S 24-bit (strap 推奨)
+  - PCM5102 は I2S 3-wire 入力 (`BCK` / `LCK` / `DIN`)、`SCK` の
+    扱いは module 仕様で決定 (内蔵 PLL 駆動 or 12.288 MHz 駆動)
+- **境界.**
+  - 既存 DSP は 48 kHz / `AudioDomain` 前提なので、外付け path も
+    48 kHz で揃える。sample rate 変更は Phase 7 範囲外。
+  - `BCLK` / `LRCLK` / `MCLK` は generated clock として XDC 宣言
+    する (Phase 7B 以降)。
+  - PCM1808 `DOUT` には input delay 制約が必要 (Phase 7B 以降)。
+- **Why.** clock master を FPGA にすることで、ADAU1761 path と
+  外付け path で同じ sample timing を持てる。比較が公平になり、
+  Python / GUI 側から sample rate を変えない契約が維持できる。
+  PCM5102 が PLL 内蔵で MCLK なしでも動く構成があるとはいえ、
+  PCM1808 は SCKI 必須なので、結局 MCLK は FPGA が出すのが
+  最もシンプル。
+
+## D30 — Rotary encoder は PL 側で debounce + quadrature decode + event 化 (Python polling 禁止)
+
+- **状況.** PYNQ-Z2 + Jupyter 環境で rotary encoder を 3 個扱う
+  と、Python polling 経路は CPU 負荷 / polling 周期 / debounce の
+  すべてで弱い。HDMI GUI を encoder で操作する以上、入力検出の
+  信頼性は必須。
+- **決定.** rotary encoder 入力 (`ENC0..2_A / B / SW`、9 pin) は
+  **PL fabric 側で**:
+  - 2-stage synchronizer
+  - debounce counter (CONFIG レジスタの `debounce_ms` で設定可能)
+  - quadrature state machine
+  - signed delta accumulator (per encoder)
+  - absolute count register (per encoder)
+  - event latch (rotate / short_press / long_press / release)
+
+  を実装し、PS 側 Python は **delta + event レジスタを polling
+  するだけ** にする。
+- **境界.**
+  - 既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) には混ぜない。
+    encoder 用は **新規 AXI IP** (または新規 AXI GPIO input)。
+    base address は **TBD** (Phase 7F で確定)。`0x43CE0000`
+    (`axi_vdma_hdmi`) と `0x43CF0000` (`v_tc_hdmi`) は **禁止**
+    (`DECISIONS.md` D32、Phase 7B 訂正)。
+  - 既存 `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` 4-byte unpacking 構造は
+    encoder には流用しない (event bit と signed delta が混在する
+    ため別 layout)。
+  - `block_design.tcl` 変更は Phase 7F でユーザ承認の上で行う。
+    `axi_gpio_noise_suppressor` (`DECISIONS.md` D11) /
+    `axi_gpio_compressor` (`DECISIONS.md` D14) と同じ "個別承認の
+    例外" 扱い。
+  - Python 側 API は `audio_lab_pynq/encoder_input.py` (低位) と
+    `audio_lab_pynq/encoder_ui.py` (高位 / AppState 反映) の 2 段。
+    encoder 経由の値変更は `apply_to_overlay` で debounce + apply
+    タイミング制御し、回転ごとに GPIO write しない。
+  - notebook 操作と encoder 操作の競合は **後勝ち**、ただし
+    `apply_pending` 中は notebook を上書きしない (`value_dirty`
+    で示す)。
+- **Why.** encoder の典型回転速度は数百 pulse/s 以上で、PS polling
+  は数十 Hz 程度しか出ない。生信号を PS で読むと **必ず取りこぼす**。
+  debounce を PS でやるとボタン応答が遅れる。PL fabric なら
+  encoder 3 個でも数百 LUT 程度で済み、現状の Vivado リソース枠
+  内に余裕で収まる。GUI 更新周期 (30 ~ 60 Hz) と入力検出周期
+  (PL clock、~ MHz) を完全分離できるのも大きい。
+
+## D31 — Rotary encoder module pins are documented as CLK / DT / SW / + / GND (not generic A / B / SW)
+
+- **状況.** Phase 7A では encoder の信号を `ENC*_A` / `ENC*_B` /
+  `ENC*_SW` と書いていたが、実モジュール (Amazon / 共立等の 5 pin
+  rotary encoder + tactile switch ボード) のシルクは
+  **`CLK` / `DT` / `SW` / `+` / `GND`** だった。配線指示と XDC 候補で
+  異なる呼び方を併用すると現場で配線ミスが起きる。
+- **決定.**
+  - **外部配線指示 / XDC 候補 / 物理表は `CLK` / `DT` / `SW` /
+    `+` / `GND` 表記** を使う。
+  - 論理信号名は **`ENC*_CLK` / `ENC*_DT` / `ENC*_SW`** に統一
+    (`*` は `0` / `1` / `2`)。
+  - 電源 / GND は **`ENC_3V3` / `ENC_GND`** という名前で記録し、
+    GPIO としてはカウントしない。
+  - **`+` は 3.3V 専用**。5V に繋がない。理由: 多くの encoder
+    module は基板上 pull-up を `+` ピンに繋いでおり、`+` を 5V に
+    すると `CLK` / `DT` / `SW` も 5V 化して PYNQ-Z2 PL pin (3.3V
+    LVCMOS33) を直撃する。最悪の場合 PL pin が壊れる。
+  - PL 内部 (Clash / HDL / register) では quadrature の慣例上
+    `A` (= CLK) / `B` (= DT) と呼んでもよい。Python / API 公開名は
+    semantic (`rotate` / `short_press` / `long_press`) を優先する。
+  - 回転方向 / 極性が期待と逆になった場合は **CONFIG レジスタの
+    `invert_clk` / `invert_dt` / `clk_dt_swap` / `reverse_direction` /
+    `sw_active_low` で補正** する。物理 rewiring は最後の手段。
+- **境界.**
+  - module 側に pull-up があるかは Phase 7B の物理確認項目
+    (`IO_PIN_RESERVATION.md` section 4.4、
+    `ENCODER_GUI_CONTROL_SPEC.md` section 7)。
+  - 3.3V で pull-up が弱い場合は外付け 10 kΩ → 3.3V または PL 側
+    `set_property PULLUP true`。
+- **Why.** シルクと docs が一致していないと、配線時に CLK / DT を
+  入れ替えたまま気付かない / `+` を 5V に繋いで PL pin が壊れる
+  / quadrature の方向が逆で GUI が変な動きをする、といった事故の
+  原因になる。シルクを source of truth にして、論理 / register /
+  driver に揃える。
+
+## D32 — Encoder PL IP の AXI base address は TBD、`0x43CE0000` / `0x43CF0000` は禁止
+
+- **状況.** Phase 7A の `DECISIONS.md` D30 と
+  `ENCODER_GUI_CONTROL_SPEC.md` で encoder IP の base address を
+  `0x43CE0000` と仮置きしていた。Phase 7B で `CURRENT_STATE.md` /
+  `HDMI_GUI_INTEGRATION_PLAN.md` / `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`
+  を確認したところ、`0x43CE0000` は **既存 `axi_vdma_hdmi`** (HDMI
+  フレームバッファ VDMA、`DECISIONS.md` D23)、`0x43CF0000` は
+  **既存 `v_tc_hdmi`** (HDMI Video Timing Controller) の address で
+  あり、encoder IP を置くと HDMI が動かなくなる。
+- **決定.**
+  - encoder IP base address は **TBD**。Phase 7F で確定する。
+  - **`0x43CE0000` 禁止** (`axi_vdma_hdmi` 占有)。
+  - **`0x43CF0000` 禁止** (`v_tc_hdmi` 占有)。
+  - 既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) とも衝突禁止。
+  - `0x43D00000` 以降 (HDMI integration plan で rgb2dvi 用 control
+    候補とされた range) も避け、念のため `0x43D10000` 以降または
+    `0x43C00000` 以下の空き range を Phase 7F で
+    `pynq.PL.ip_dict` + Vivado address editor + HWH で確認の上で
+    選ぶ。
+- **境界.**
+  - block_design.tcl 変更は Phase 7F でユーザ承認の上で行う。
+    `axi_gpio_noise_suppressor` (`DECISIONS.md` D11) /
+    `axi_gpio_compressor` (`DECISIONS.md` D14) と同じ "個別承認の
+    例外" 扱い。
+  - Phase 7A の docs / D30 にあった `0x43CE0000` 記述は Phase 7B で
+    TBD へ訂正済み (本決定の理由)。
+- **Why.** HDMI 経路は `audio_lab.bit` の中心機能であり、address を
+  踏むと VDMA / VTC が動かなくなり LCD が真っ黒になる。block_design
+  / HWH を読んで address map を確認してから encoder IP を置く。
+
+## D33 — Encoder input は独立 AXI-Lite IP (`axi_encoder_input`)、既存 `axi_gpio_*` には混ぜない
+
+- **状況.** Phase 7F でロータリーエンコーダー 3 個 (CLK / DT / SW × 3 = 9 input)
+  を PL から扱う実装フェーズに入った。既存 effect 制御は `axi_gpio_*`
+  (output-only、`ctrlA..D` 4-byte unpacking) で実装されていて、その
+  ledger は `GPIO_CONTROL_MAP.md` に固定されている。
+- **決定.** encoder は **新規 Verilog IP `axi_encoder_input`** を 1 個
+  追加し、ps7_0_axi_periph の M17 (HDMI VDMA M15 / HDMI VTC M16 の隣)
+  に AXI-Lite slave で接続する。register layout は
+  `ENCODER_INPUT_MAP.md`、base address は `0x43D10000`。
+  既存 `axi_gpio_*` の byte / bit にも、`GPIO_CONTROL_MAP.md` の
+  `ctrlA..D` 構造にも混ぜない。block design integration は
+  `hw/Pynq-Z2/encoder_integration.tcl` (HDMI と同じ pattern) として
+  切り出し、`create_project.tcl` から `hdmi_integration.tcl` の後に
+  source する。
+- **境界.**
+  - PL 内部は 2-stage synchroniser + debounce (1 ms tick × N) +
+    quadrature decoder + signed delta accumulator + event latch
+    (rotate / short_press / long_press)。raw CLK/DT/SW を PS まで
+    流さない (PS polling を不要にする)。
+  - Verilog 単一ファイル module reference として bd に instantiate
+    する (`create_bd_cell -type module -reference axi_encoder_input
+    enc_in_0`)。IP catalog 用 component.xml / package_ip は不要。
+  - 既存 effect GPIO の output-only / cache / `ctrlA..D` 契約は
+    一切変更しない。
+  - block_design.tcl 自体は `NUM_MI` の bump 以外は手を入れない
+    (`hdmi_integration.tcl` と同じく、本体は分離 tcl で完結させる)。
+    ただし NUM_MI bump は `encoder_integration.tcl` 側で
+    `set_property NUM_MI {18}` 一行のみ実行する。
+- **Why.** AXI GPIO に CLK/DT/SW を raw で配線したら結局 PS polling
+  に戻ってしまい、`DECISIONS.md` D30 で否定した方式に逆戻りする。
+  独立 IP にすれば PS は decoded delta + event だけ読めばよい
+  (debounce / quadrature / 押下計時はすべて PL fabric 内で完結)。
+  既存 `axi_gpio_*` の `ctrlA..D` レイアウトに event/delta を混ぜると
+  `GPIO_CONTROL_MAP.md` の output-only 契約が壊れ、ledger が崩れる
+  恐れがある。
+
+## D34 — PMOD JB / PMOD JA は外付け codec 予約のまま温存、encoder は RPi header (JA 非共有 pin) を使う
+
+- **状況.** Phase 7F の encoder 実装と Phase 7B 以降の外付け codec
+  (PCM1808 + PCM5102) 計画は同時並行で進める必要があり、pin の取り合いに
+  なりがち。`DECISIONS.md` D28 で「外付け audio を優先して PMOD JB に
+  集約、PMOD JA を audio control / strap 用に残す、encoder は RPi
+  header」と決めている。
+- **決定.** Phase 7F の encoder 実装でも **PMOD JB と PMOD JA は一切
+  使わない**。encoder pin は Raspberry Pi header のうち **PMOD JA と
+  物理共有しない `raspberry_pi_tri_i_6..14`** を使う:
+  - `ENC0_CLK = F19`, `ENC0_DT = V10`, `ENC0_SW = V8`
+  - `ENC1_CLK = W10`, `ENC1_DT = B20`, `ENC1_SW = W8`
+  - `ENC2_CLK = V6`, `ENC2_DT = Y6`, `ENC2_SW = B19`
+  電源は `ENC_3V3` = PYNQ-Z2 3.3V rail (5V 厳禁、`DECISIONS.md` D31)、
+  `ENC_GND` = 共通 GND。
+- **境界.**
+  - PMOD JB / PMOD JA は Phase 7C 以降の外付け codec 実装まで未配線で
+    残す。encoder 用に audio 予約 pin を消費しない。
+  - JA1..JA10 は RPi GPIO 0..5 + `respberry_sd_i` / `respberry_sc_i` と
+    物理共有している (`IO_PIN_RESERVATION.md` 4.6) ので、encoder には
+    その共有領域も使わない。
+  - 将来フットスイッチ / LED を増やしたい場合は
+    `raspberry_pi_tri_i_15..24` か Arduino header を使う
+    (`IO_PIN_RESERVATION.md` 4A.3 / 4A.5)。
+- **Why.** 外付け codec は同期 clock を `BCLK` / `LRCLK` / `MCLK` で
+  扱うので skew 最小化のために PMOD JB の連続 8 pin を確保しておきたい。
+  audio control / strap pin (PCM1808 `FMT` / `MD0` / `MD1` / PCM5102
+  `XSMT`) は PMOD JA に確保する余地が必要。encoder は kHz オーダーの
+  低速 input なので RPi header 側で十分。先に encoder で audio 用 pin
+  を潰すと Phase 7C 以降に rewiring を強いられる。
+
+## D35 — Rotary encoder standalone operation is not claimed until physical smoke passes
+
+- **状況.** Phase 7F/7G で PL IP、Python driver、HDMI GUI controller、
+  standalone runner、offline tests は追加できるが、ロータリーエンコーダー
+  3 個はまだ Raspberry Pi header に物理配線されていない。未配線のまま
+  `scripts/test_encoder_input.py` を走らせても、VERSION / CONFIG /
+  idle read までは確認できる一方、実際の CLK / DT / SW edge、押下、
+  方向、チャタリング、pull-up 強度は検証できない。
+- **決定.** 「encoder 操作で HDMI GUI が standalone 動作した」と
+  記録してよいのは、物理配線後に以下が PASS してから:
+  - `scripts/test_encoder_input.py` で 3 encoder の rotate /
+    short_press / long_press / release が出ること。
+  - 必要なら CONFIG の `reverse_direction` / `clk_dt_swap` /
+    `sw_active_low` / `debounce_ms` で方向と極性を補正し、その設定を
+    docs に記録すること。
+  - `scripts/run_encoder_hdmi_gui.py` または
+    `scripts/test_hdmi_encoder_gui_control.py --use-real-encoder` で
+    live HDMI GUI 操作が確認できること。
+- **境界.**
+  - 未配線状態で実施できるのは bit/hwh build、HWH/ip_dict に encoder
+    IP が存在すること、register idle read、synthetic event GUI smoke
+    まで。これらを physical encoder smoke の代替として扱わない。
+  - `+` は必ず 3.3V、GND は PYNQ と共通、PMOD JB / JA は使わない
+    (`DECISIONS.md` D31 / D34)。
+- **Why.** quadrature 方向、detent あたり edge 数、pull-up の有無、
+  contact bounce は実モジュール依存であり、offline test や synthetic
+  HDMI event では確認できない。未配線の成功扱いは field wiring 時の
+  誤診につながる。
+
+## D36 — Deployed encoder module-reference IP is addressed through `enc_in_0/s_axi`
+
+- **状況.** `c7a8680` の bit/hwh を PYNQ-Z2 (`192.168.1.9`) に deploy
+  したところ、Vivado BD instance は `enc_in_0` のままだが、PYNQ
+  2020.1 の `ip_dict` では module-reference AXI interface が
+  **`enc_in_0/s_axi`** として露出した。bare `ovl.enc_in_0` attribute は
+  MMIO `DefaultIP` ではなく hierarchy object なので、そのまま
+  `EncoderInput` に渡すと register read/write できない。
+- **決定.**
+  - Python driver は `enc_in_0/s_axi` を正式な discovery candidate に
+    含める。
+  - `EncoderInput.from_overlay()` は overlay attribute を採用する前に
+    `.mmio` または `read` / `write` を持つことを確認する。
+  - 候補名で見つからない場合は `ip_dict` 内の `encoder` または
+    `enc_in` を含む key を探索する。
+  - docs / Notebook / smoke 結果では、BD instance `enc_in_0` と
+    PYNQ runtime key `enc_in_0/s_axi` を区別して書く。
+- **境界.**
+  - RTL module name は `axi_encoder_input`、BD instance は `enc_in_0`、
+    AXI base は `0x43D10000` のまま。address / XDC / block design は
+    この決定で変更しない。
+  - `GPIO_CONTROL_MAP.md` は effect output ledger のまま変更しない。
+- **Why.** HWH / PYNQ の naming は module-reference flow 固有の
+  runtime detail であり、ここを driver 側で吸収すれば Verilog IP
+  packaging や block design rename を避けられる。HDMI / DSP / GPIO
+  契約を動かさずに deploy 済 bitstream をそのまま使える。
+
+## D37 — Encoder runtime は AppState を `EncoderEffectApplier` 経由でのみ AudioLabOverlay に反映 (raw GPIO 直書き禁止、RAT は既定で除外)
+
+- **状況.** Phase 7G の `EncoderUiController` は AppState を更新するだけで、
+  実際の overlay write は `AudioLabGuiBridge` 経由 (encoder 3 short
+  press でのみ apply) だった。3 個の rotary encoder で HDMI GUI を
+  notebook 無しに実操作する用途では、回転中に音色が即時に変化することと、
+  RAT pedal model のように "Clash stage は残すが encoder 操作からは外したい"
+  という選択的除外が必要になった。
+- **決定.**
+  - `audio_lab_pynq/encoder_effect_apply.py::EncoderEffectApplier` を
+    encoder runtime から AudioLabOverlay への **唯一の翻訳層** とする。
+    使う overlay public API は次の 3 つのみ:
+    `set_noise_suppressor_settings`、`set_compressor_settings`、
+    `set_guitar_effects(**kwargs)`。distortion pedal 選択は
+    `set_distortion_settings` ではなく
+    `set_guitar_effects(distortion_pedal_mask=...)` に集約する
+    (cached 状態と整合)。
+  - raw GPIO write、`set_distortion_pedal*` ショートカット、
+    `HdmiEffectStateMirror.render()` 経由の二重描画は encoder loop からは
+    呼ばない。HDMI render は dirty-flag loop が単独で所有する。
+  - throttle (`apply_interval_s`、既定 100 ms) で連続回転中の AXI flood を
+    抑える。encoder 3 short press は throttle を bypass して force apply。
+    例外は `last_apply_ok=False` / `last_apply_message=<repr>` に保存し
+    loop は落とさない。
+  - RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (既定) の時
+    `EncoderUiController._cycle_model_index` と
+    `EncoderEffectApplier.apply_appstate` の両方で除外する。Clash stage、
+    `HdmiEffectStateMirror.rat()`、notebook からの RAT 直接呼び出しは
+    手付かず。`--include-rat` で encoder からも有効化可。
+  - GUI 仕様 (`GUI/compact_v2/knobs.py::EFFECTS` / `EFFECT_KNOBS`) に存在
+    しない effect / parameter は触らない。`unsupported` ラベルとして記録
+    し GUI status strip / resource print に小さく出すだけにする。
+  - EQ knob は GUI 0..100 → overlay 0..200 (50 == unity) に変換 (overlay
+    の `_level_to_q7` 仕様)。Cab `MODEL` knob は表示専用、overlay へは
+    `AppState.cab_model_idx` (0..2) を送る。
+  - `EncoderUiController` に `applier=` / `live_apply=` / `skip_rat=`
+    kwargs を追加。`applier` 未指定時は既存 `mirror=` / `bridge=`
+    fall-through を温存。
+- **境界.**
+  - bit / hwh / XDC / RTL / `block_design.tcl` / `create_project.tcl` /
+    `hdmi_integration.tcl` / `encoder_integration.tcl` はこの決定で
+    変更しない。
+  - `GPIO_CONTROL_MAP.md` の effect output 契約は変更しない (D12)。
+  - `HdmiEffectStateMirror` (`audio_lab_pynq/hdmi_effect_state_mirror.py`)
+    は notebook-driven 用途として残存。encoder runtime は applier を
+    優先する。
+  - HDMI baseline (SVGA `800x600 @ 40 MHz`、D25) は変更しない。
+- **Why.** GUI から見える項目だけを操作対象にすることで、未対応 API
+  を encoder で叩く事故を防げる。applier を 1 箇所に閉じ込めれば、
+  対応 / 未対応 / RAT 除外 / throttle / 例外捕捉のルールを 1 ファイルで
+  読める。GUI render と overlay apply を分離 (dirty-flag loop) すれば
+  idle 時 CPU を低く保ちつつ操作時のみ AXI を叩ける。
+  RAT は実機 voicing 検証が他 pedal より遅れているため、Clash stage は
+  残しつつ encoder からの誤操作を既定で防ぐ。

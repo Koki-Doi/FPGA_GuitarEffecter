@@ -9,6 +9,14 @@ It does not make the GUI interactive, does not poll GPIOs every frame, and
 does not monkey-patch ``AudioLabOverlay``. The wrapper exists because direct
 ``ovl.set_*`` calls do not carry enough context to infer which effect the
 user last edited.
+
+The constant tables (pedal / amp / cab model names + labels + aliases,
+SELECTED FX categories, dropdown short labels), the normalisation helpers,
+the GUI knob layout, and the ``ResourceSampler`` were extracted into
+``audio_lab_pynq/hdmi_state/`` so an AI agent reading just the pedal
+mapping does not need the full mirror file. This module re-exports every
+public name from there so existing callers
+(``from audio_lab_pynq.hdmi_effect_state_mirror import X``) keep working.
 """
 from __future__ import print_function
 
@@ -17,687 +25,69 @@ import json
 import os
 import time
 
-
-GUI_EFFECTS = [
-    "Noise Sup", "Compressor", "Overdrive", "Distortion",
-    "Amp Sim", "Cab IR", "EQ", "Reverb",
-]
-
-# Phase 6E: 8-slot knob layout. AMP SIM uses all 8 indices
-# (GAIN / BASS / MIDDLE / TREBLE / PRESENCE / RESONANCE / MASTER /
-# CHARACTER); the other effects fill 3-6 slots and leave the rest as
-# the empty marker so the renderer can ignore them.
-GUI_EFFECT_KNOBS = {
-    "Noise Sup":  [("THRESHOLD", 35), ("DECAY", 45), ("DAMP", 80),
-                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
-    "Compressor": [("THRESHOLD", 50), ("RATIO", 45), ("RESPONSE", 40),
-                   ("MAKEUP", 55), ("", 0), ("", 0), ("", 0), ("", 0)],
-    "Overdrive":  [("DRIVE", 35), ("TONE", 60), ("LEVEL", 60),
-                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
-    "Distortion": [("DRIVE", 50), ("TONE", 55), ("LEVEL", 35),
-                   ("BIAS", 50), ("TIGHT", 60), ("MIX", 100),
-                   ("", 0), ("", 0)],
-    "Amp Sim":    [("GAIN", 45), ("BASS", 55), ("MIDDLE", 60),
-                   ("TREBLE", 50), ("PRESENCE", 45), ("RESONANCE", 35),
-                   ("MASTER", 70), ("CHARACTER", 60)],
-    "Cab IR":     [("MIX", 100), ("LEVEL", 70), ("MODEL", 33),
-                   ("AIR", 35), ("", 0), ("", 0), ("", 0), ("", 0)],
-    "EQ":         [("LOW", 50), ("MID", 55), ("HIGH", 55),
-                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
-    "Reverb":     [("DECAY", 30), ("TONE", 65), ("MIX", 25),
-                   ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
-}
-
-PEDAL_MODELS = (
-    "clean_boost",
-    "tube_screamer",
-    "rat",
-    "ds1",
-    "big_muff",
-    "fuzz_face",
-    "metal",
+from audio_lab_pynq.hdmi_state.knobs import (
+    GUI_EFFECTS,
+    GUI_EFFECT_KNOBS,
+    _knob_defaults_for_effect_index,
 )
-
-PEDAL_MODEL_LABELS = {
-    "clean_boost": "CLEAN BOOST",
-    "tube_screamer": "TUBE SCREAMER",
-    "rat": "RAT",
-    "ds1": "DS-1",
-    "big_muff": "BIG MUFF",
-    "fuzz_face": "FUZZ FACE",
-    "metal": "METAL",
-}
-
-PEDAL_MODEL_TO_INDEX = dict((name, index)
-                            for index, name in enumerate(PEDAL_MODELS))
-
-PEDAL_MODEL_ALIASES = {
-    "clean_boost": "clean_boost",
-    "cleanboost": "clean_boost",
-    "boost": "clean_boost",
-    "tube_screamer": "tube_screamer",
-    "tubescreamer": "tube_screamer",
-    "ts": "tube_screamer",
-    "rat": "rat",
-    "ds1": "ds1",
-    "ds_1": "ds1",
-    "big_muff": "big_muff",
-    "bigmuff": "big_muff",
-    "muff": "big_muff",
-    "fuzz_face": "fuzz_face",
-    "fuzzface": "fuzz_face",
-    "fuzz": "fuzz_face",
-    "metal": "metal",
-}
-
-AMP_MODELS = (
-    "jc_clean",
-    "clean_combo",
-    "british_crunch",
-    "high_gain_stack",
+from audio_lab_pynq.hdmi_state.pedals import (
+    PEDAL_MODELS,
+    PEDAL_MODEL_LABELS,
+    PEDAL_MODEL_TO_INDEX,
+    PEDAL_MODEL_ALIASES,
+    normalize_pedal_model,
+    pedal_model_label,
 )
-
-AMP_MODEL_LABELS = {
-    "jc_clean": "JC CLEAN",
-    "clean_combo": "CLEAN COMBO",
-    "british_crunch": "BRITISH CRUNCH",
-    "high_gain_stack": "HIGH GAIN STACK",
-}
-
-AMP_MODEL_CHARACTER = {
-    "jc_clean": 10,
-    "clean_combo": 35,
-    "british_crunch": 60,
-    "high_gain_stack": 85,
-}
-
-AMP_MODEL_TO_INDEX = dict((name, index)
-                          for index, name in enumerate(AMP_MODELS))
-
-AMP_MODEL_ALIASES = {
-    "jc_clean": "jc_clean",
-    "jcclean": "jc_clean",
-    "jc": "jc_clean",
-    "clean_combo": "clean_combo",
-    "cleancombo": "clean_combo",
-    "combo": "clean_combo",
-    "british_crunch": "british_crunch",
-    "britishcrunch": "british_crunch",
-    "brit_crunch": "british_crunch",
-    "brit": "british_crunch",
-    "crunch": "british_crunch",
-    "high_gain_stack": "high_gain_stack",
-    "highgainstack": "high_gain_stack",
-    "hi_gain_stack": "high_gain_stack",
-    "higainstack": "high_gain_stack",
-    "high_gain": "high_gain_stack",
-    "higain": "high_gain_stack",
-    "high": "high_gain_stack",
-}
-
-# Existing cab DSP exposes three numeric models through cab_model 0/1/2.
-CAB_MODELS = (
-    "1x12",
-    "2x12",
-    "4x12",
+from audio_lab_pynq.hdmi_state.amps import (
+    AMP_MODELS,
+    AMP_MODEL_LABELS,
+    AMP_MODEL_CHARACTER,
+    AMP_MODEL_TO_INDEX,
+    AMP_MODEL_ALIASES,
+    normalize_amp_model,
+    amp_model_label,
 )
-
-CAB_MODEL_LABELS = {
-    "1x12": "1x12 OPEN",
-    "2x12": "2x12 COMBO",
-    "4x12": "4x12 CLOSED",
-}
-
-CAB_MODEL_TO_INDEX = dict((name, index)
-                          for index, name in enumerate(CAB_MODELS))
-
-CAB_MODEL_ALIASES = {
-    "0": "1x12",
-    "model_0": "1x12",
-    "model0": "1x12",
-    "1x12": "1x12",
-    "1x12_open": "1x12",
-    "open_1x12": "1x12",
-    "1x12_combo": "1x12",
-    "1": "2x12",
-    "model_1": "2x12",
-    "model1": "2x12",
-    "2x12": "2x12",
-    "2x12_combo": "2x12",
-    "2x12_black": "2x12",
-    "black_2x12": "2x12",
-    "2": "4x12",
-    "model_2": "4x12",
-    "model2": "4x12",
-    "4x12": "4x12",
-    "4x12_closed": "4x12",
-    "closed_4x12": "4x12",
-    "4x12_british": "4x12",
-    "british_4x12": "4x12",
-}
-
-
-# Phase 6C: SELECTED FX -> model category. Drives the [model ▼] chip
-# rendered next to SELECTED FX on the HDMI GUI, the AppState
-# ``active_model_category`` field, and the Notebook ipywidgets
-# category dropdown.
-SELECTED_FX_CATEGORY = {
-    "CLEAN BOOST": "PEDAL",
-    "TUBE SCREAMER": "PEDAL",
-    "RAT": "PEDAL",
-    "DS-1": "PEDAL",
-    "BIG MUFF": "PEDAL",
-    "FUZZ FACE": "PEDAL",
-    "METAL": "PEDAL",
-    "DISTORTION": "PEDAL",
-    "OVERDRIVE": "OVERDRIVE",
-    "AMP SIM": "AMP",
-    "CAB": "CAB",
-    "REVERB": "REVERB",
-    "EQ": "EQ",
-    "COMPRESSOR": "COMPRESSOR",
-    "NOISE SUPPRESSOR": "NOISE SUPPRESSOR",
-    "SAFE BYPASS": "SAFE",
-    "PRESET": "PRESET",
-}
-
-# Phase 6C: short labels for the [model ▼] chip drawn inside SELECTED FX.
-# The chip space on the 800x480 LCD is tight; long model names overflow
-# the fx panel without truncation.
-DROPDOWN_SHORT_LABELS = {
-    "CLEAN BOOST": "CLN BOOST",
-    "TUBE SCREAMER": "TUBE SCRMR",
-    "RAT": "RAT",
-    "DS-1": "DS-1",
-    "BIG MUFF": "BIG MUFF",
-    "FUZZ FACE": "FUZZ",
-    "METAL": "METAL",
-    "JC CLEAN": "JC CLEAN",
-    "CLEAN COMBO": "CLN COMBO",
-    "BRITISH CRUNCH": "BRIT CRUNCH",
-    "HIGH GAIN STACK": "HI-GAIN",
-    "1X12 OPEN": "1x12 OPN",
-    "2X12 COMBO": "2x12 CMB",
-    "4X12 CLOSED": "4x12 CLS",
-    "SAFE BYPASS": "SAFE",
-    "PRESET": "PRESET",
-    "REVERB": "REVERB",
-    "EQ": "EQ",
-    "COMPRESSOR": "COMP",
-    "NOISE SUPPRESSOR": "NOISE SUP",
-    "OVERDRIVE": "OD",
-}
-
-
-CANONICAL_SELECTED_FX = {
-    "PRESET": "PRESET",
-    "SAFE BYPASS": "SAFE BYPASS",
-    "NOISE SUPPRESSOR": "NOISE SUPPRESSOR",
-    "COMPRESSOR": "COMPRESSOR",
-    "OVERDRIVE": "OVERDRIVE",
-    "DISTORTION": "DISTORTION",
-    "CLEAN BOOST": "CLEAN BOOST",
-    "TUBE SCREAMER": "TUBE SCREAMER",
-    "RAT": "RAT",
-    "DS 1": "DS-1",
-    "DS-1": "DS-1",
-    "BIG MUFF": "BIG MUFF",
-    "FUZZ FACE": "FUZZ FACE",
-    "METAL": "METAL",
-    "AMP SIM": "AMP SIM",
-    "CAB": "CAB",
-    "EQ": "EQ",
-    "REVERB": "REVERB",
-}
-
-SELECTED_FX_ALIASES = {
-    "NS": "NOISE SUPPRESSOR",
-    "NOISE SUP": "NOISE SUPPRESSOR",
-    "NOISE GATE": "NOISE SUPPRESSOR",
-    "NOISE SUPPRESSOR": "NOISE SUPPRESSOR",
-    "COMP": "COMPRESSOR",
-    "CMP": "COMPRESSOR",
-    "COMPRESSOR": "COMPRESSOR",
-    "OD": "OVERDRIVE",
-    "OVER DRIVE": "OVERDRIVE",
-    "OVERDRIVE": "OVERDRIVE",
-    "DIST": "DISTORTION",
-    "DISTORTION": "DISTORTION",
-    "CLEAN BOOST": "CLEAN BOOST",
-    "CLEANBOOST": "CLEAN BOOST",
-    "BOOST": "CLEAN BOOST",
-    "TUBE SCREAMER": "TUBE SCREAMER",
-    "TUBESCREAMER": "TUBE SCREAMER",
-    "TS": "TUBE SCREAMER",
-    "RAT": "RAT",
-    "DS 1": "DS-1",
-    "DS1": "DS-1",
-    "DS-1": "DS-1",
-    "BIG MUFF": "BIG MUFF",
-    "BIGMUFF": "BIG MUFF",
-    "MUFF": "BIG MUFF",
-    "FUZZ FACE": "FUZZ FACE",
-    "FUZZFACE": "FUZZ FACE",
-    "FUZZ": "FUZZ FACE",
-    "METAL": "METAL",
-    "AMP": "AMP SIM",
-    "AMP SIM": "AMP SIM",
-    "AMP SIMULATOR": "AMP SIM",
-    "CAB": "CAB",
-    "CAB IR": "CAB",
-    "CABINET": "CAB",
-    "EQ": "EQ",
-    "EQUALIZER": "EQ",
-    "REVERB": "REVERB",
-    "RVB": "REVERB",
-    "PRESET": "PRESET",
-    "CHAIN PRESET": "PRESET",
-    "SAFE BYPASS": "SAFE BYPASS",
-    "BYPASS": "SAFE BYPASS",
-}
-
-EFFECT_INDEX_BY_SELECTED_FX = {
-    "NOISE SUPPRESSOR": 0,
-    "COMPRESSOR": 1,
-    "OVERDRIVE": 2,
-    "DISTORTION": 3,
-    "CLEAN BOOST": 3,
-    "TUBE SCREAMER": 3,
-    "RAT": 3,
-    "DS-1": 3,
-    "BIG MUFF": 3,
-    "FUZZ FACE": 3,
-    "METAL": 3,
-    "AMP SIM": 4,
-    "CAB": 5,
-    "EQ": 6,
-    "REVERB": 7,
-}
-
-METHOD_SELECTED_FX = {
-    "safe_bypass": "SAFE BYPASS",
-    "apply_chain_preset": "PRESET",
-    "set_noise_suppressor_settings": "NOISE SUPPRESSOR",
-    "set_compressor_settings": "COMPRESSOR",
-    "set_distortion_settings": "DISTORTION",
-    "clear_distortion_pedals": "DISTORTION",
-}
-
-GUITAR_KWARG_PREFIX_TO_SELECTED_FX = (
-    ("noise_gate_", "NOISE SUPPRESSOR"),
-    ("noise_gate", "NOISE SUPPRESSOR"),
-    ("overdrive_", "OVERDRIVE"),
-    ("overdrive", "OVERDRIVE"),
-    ("distortion_", "DISTORTION"),
-    ("distortion", "DISTORTION"),
-    ("rat_", "RAT"),
-    ("rat", "RAT"),
-    ("amp_", "AMP SIM"),
-    ("amp", "AMP SIM"),
-    ("cab_", "CAB"),
-    ("cab", "CAB"),
-    ("eq_", "EQ"),
-    ("eq", "EQ"),
-    ("reverb_", "REVERB"),
-    ("reverb", "REVERB"),
+from audio_lab_pynq.hdmi_state.cabs import (
+    CAB_MODELS,
+    CAB_MODEL_LABELS,
+    CAB_MODEL_TO_INDEX,
+    CAB_MODEL_ALIASES,
+    normalize_cab_model,
+    cab_model_label,
 )
-
-GUITAR_CATEGORY_PRIORITY = (
-    "REVERB", "CAB", "AMP SIM", "EQ", "RAT", "OVERDRIVE",
-    "DISTORTION", "COMPRESSOR", "NOISE SUPPRESSOR",
+from audio_lab_pynq.hdmi_state.selected_fx import (
+    SELECTED_FX_CATEGORY,
+    DROPDOWN_SHORT_LABELS,
+    CANONICAL_SELECTED_FX,
+    SELECTED_FX_ALIASES,
+    METHOD_SELECTED_FX,
+    GUITAR_KWARG_PREFIX_TO_SELECTED_FX,
+    GUITAR_CATEGORY_PRIORITY,
+    EFFECT_INDEX_BY_SELECTED_FX,
+    normalize_selected_fx,
+    canonical_selected_fx,
+    selected_fx_category,
+    dropdown_short_label,
+    dropdown_label_for,
+    dropdown_visible_for,
+    _normalize_text,
 )
-
-
-def _normalize_text(value):
-    text = str(value or "").replace("_", " ").replace("-", " ")
-    return " ".join(text.strip().upper().split())
-
-
-def normalize_selected_fx(value):
-    """Normalize display strings for SELECTED FX comparisons."""
-    normalized = _normalize_text(value)
-    return SELECTED_FX_ALIASES.get(normalized, normalized)
-
-
-def canonical_selected_fx(value):
-    normalized = normalize_selected_fx(value)
-    return CANONICAL_SELECTED_FX.get(normalized, normalized or "")
-
-
-def _model_key(value):
-    text = str(value or "").strip().lower()
-    for ch in (" ", "-", "/", "."):
-        text = text.replace(ch, "_")
-    while "__" in text:
-        text = text.replace("__", "_")
-    return text.strip("_")
-
-
-def _normalize_index_or_name(value, names, aliases, model_type):
-    if isinstance(value, int):
-        index = value
-        if 0 <= index < len(names):
-            return names[index]
-        raise ValueError(
-            "unsupported {} model index {!r}; valid range is 0..{}"
-            .format(model_type, value, len(names) - 1))
-    key = _model_key(value)
-    if key in aliases:
-        return aliases[key]
-    if key in names:
-        return key
-    valid = ", ".join(names)
-    raise ValueError(
-        "unsupported {} model {!r}; valid models are {}"
-        .format(model_type, value, valid))
-
-
-def normalize_pedal_model(value):
-    return _normalize_index_or_name(
-        value, PEDAL_MODELS, PEDAL_MODEL_ALIASES, "pedal")
-
-
-def normalize_amp_model(value):
-    return _normalize_index_or_name(
-        value, AMP_MODELS, AMP_MODEL_ALIASES, "amp")
-
-
-def normalize_cab_model(value):
-    return _normalize_index_or_name(
-        value, CAB_MODELS, CAB_MODEL_ALIASES, "cab")
-
-
-def pedal_model_label(value):
-    return PEDAL_MODEL_LABELS[normalize_pedal_model(value)]
-
-
-def amp_model_label(value):
-    return AMP_MODEL_LABELS[normalize_amp_model(value)]
-
-
-def cab_model_label(value):
-    return CAB_MODEL_LABELS[normalize_cab_model(value)]
-
-
-def _clamp_percent(value):
-    try:
-        value = float(value)
-    except Exception:
-        value = 0.0
-    if value < 0.0:
-        value = 0.0
-    if value > 100.0:
-        value = 100.0
-    return int(round(value))
-
-
-def _eq_display_value(value):
-    try:
-        return _clamp_percent(float(value) / 2.0)
-    except Exception:
-        return 50
-
-
-def _cab_model_display_value(value):
-    try:
-        ivalue = int(value)
-    except Exception:
-        ivalue = 1
-    if ivalue < 0:
-        ivalue = 0
-    if ivalue > 2:
-        ivalue = 2
-    return ivalue * 50
-
-
-def _knob_defaults_for_effect_index(index):
-    effect_name = GUI_EFFECTS[int(index)]
-    return [default for _label, default in GUI_EFFECT_KNOBS[effect_name]]
-
-
-def _has_asserted_vdma_error(errors):
-    return bool(
-        errors
-        and (errors.get("dmainterr")
-             or errors.get("dmaslverr")
-             or errors.get("dmadecerr"))
-    )
-
-
-def selected_fx_category(value):
-    """Phase 6C: classify a SELECTED FX label by model category.
-
-    Returns one of ``"PEDAL"``, ``"AMP"``, ``"CAB"``, ``"REVERB"``,
-    ``"EQ"``, ``"COMPRESSOR"``, ``"NOISE SUPPRESSOR"``, ``"OVERDRIVE"``,
-    ``"PRESET"``, or ``"SAFE"``. Unknown labels fall back to the
-    canonical string.
-    """
-    canonical = canonical_selected_fx(value)
-    return SELECTED_FX_CATEGORY.get(canonical, canonical)
-
-
-def dropdown_short_label(value):
-    """Phase 6C: shorten a model/effect label so it fits the dropdown chip.
-
-    Falls back to the upper-cased input. The chip width is ~150 px on
-    the compact-v2 800x480 fx panel, so anything past ~12 characters
-    gets clipped.
-    """
-    text = str(value or "").strip().upper()
-    return DROPDOWN_SHORT_LABELS.get(text, text)
-
-
-def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label):
-    """Phase 6D: pick the [model ▼] marker text for the SELECTED FX panel.
-
-    The dropdown marker is only shown for model-driven effects
-    (PEDAL / AMP / CAB) and stays hidden for REVERB / EQ / COMPRESSOR /
-    NOISE SUPPRESSOR / SAFE / PRESET / OVERDRIVE. This helper returns
-    the matching model label for PEDAL / AMP / CAB and an empty string
-    otherwise so the renderer and AppState mirror can use the
-    truthiness as a visibility flag.
-    """
-    canonical = canonical_selected_fx(selected_fx)
-    category = SELECTED_FX_CATEGORY.get(canonical, canonical)
-    if category == "PEDAL":
-        return str(pedal_label or "").upper()
-    if category == "AMP":
-        return str(amp_label or "").upper()
-    if category == "CAB":
-        return str(cab_label or "").upper()
-    return ""
-
-
-def dropdown_visible_for(selected_fx):
-    """Phase 6D: True when the SELECTED FX has a PEDAL/AMP/CAB dropdown."""
-    canonical = canonical_selected_fx(selected_fx)
-    category = SELECTED_FX_CATEGORY.get(canonical, canonical)
-    return category in ("PEDAL", "AMP", "CAB")
-
-
-def _parse_proc_meminfo_text(text):
-    """Phase 6C: parse a /proc/meminfo blob into a {key: kB int} dict."""
-    info = {}
-    for raw in str(text or "").splitlines():
-        if ":" not in raw:
-            continue
-        key, _, rest = raw.partition(":")
-        parts = rest.strip().split()
-        if not parts:
-            continue
-        try:
-            info[key.strip()] = int(parts[0])
-        except (TypeError, ValueError):
-            continue
-    return info
-
-
-def _parse_proc_status_text(text):
-    """Phase 6C: parse a /proc/self/status blob into a {key: value} dict."""
-    out = {}
-    for raw in str(text or "").splitlines():
-        if ":" not in raw:
-            continue
-        key, _, rest = raw.partition(":")
-        out[key.strip()] = rest.strip()
-    return out
-
-
-def _parse_proc_stat_cpu_line(line):
-    """Phase 6C: parse the aggregate CPU line of /proc/stat.
-
-    Returns ``(total_jiffies, idle_jiffies)`` or ``None`` if the line is
-    malformed. ``idle_jiffies`` includes iowait (field 4) so the
-    derived %CPU includes both run-time-blocked and on-CPU work.
-    """
-    parts = str(line or "").split()
-    if len(parts) < 5 or parts[0] != "cpu":
-        return None
-    try:
-        nums = [int(x) for x in parts[1:]]
-    except ValueError:
-        return None
-    idle = nums[3] + (nums[4] if len(nums) > 4 else 0)
-    total = sum(nums)
-    return total, idle
-
-
-def _parse_proc_self_stat_times(text):
-    """Phase 6C: parse utime + stime jiffies out of /proc/self/stat.
-
-    The ``comm`` field is enclosed in parens and may itself contain
-    spaces, so split off the last ``)`` before tokenising. Returns
-    ``None`` when fields cannot be parsed.
-    """
-    data = str(text or "")
-    rparen = data.rfind(")")
-    if rparen < 0:
-        return None
-    rest = data[rparen + 1:].split()
-    try:
-        utime = int(rest[11])
-        stime = int(rest[12])
-    except (IndexError, ValueError):
-        return None
-    return utime + stime
-
-
-class ResourceSampler(object):
-    """Phase 6C: tiny /proc-based CPU / memory sampler.
-
-    No ``psutil`` dependency; older PYNQ images do not ship it. The
-    sampler returns ``None`` for percentages on the first call so the
-    caller can ignore the bootstrap delta. Subsequent ``sample()`` calls
-    return absolute deltas against the previous call.
-    """
-
-    def __init__(self):
-        self._prev_proc_cpu = None
-        self._prev_sys_cpu = None
-        self._prev_t = None
-        try:
-            self.ticks_per_sec = float(os.sysconf("SC_CLK_TCK"))
-        except (AttributeError, OSError, ValueError):
-            self.ticks_per_sec = 100.0
-        try:
-            self.cpu_count = int(os.sysconf("SC_NPROCESSORS_ONLN"))
-        except (AttributeError, OSError, ValueError):
-            self.cpu_count = 1
-
-    @staticmethod
-    def _read_text(path):
-        try:
-            with open(path, "r") as fp:
-                return fp.read()
-        except (IOError, OSError):
-            return ""
-
-    def _read_sys_cpu(self):
-        text = self._read_text("/proc/stat")
-        first = text.split("\n", 1)[0] if text else ""
-        return _parse_proc_stat_cpu_line(first)
-
-    def _read_proc_cpu(self):
-        return _parse_proc_self_stat_times(self._read_text("/proc/self/stat"))
-
-    def _read_meminfo(self):
-        return _parse_proc_meminfo_text(self._read_text("/proc/meminfo"))
-
-    def _read_status(self):
-        return _parse_proc_status_text(self._read_text("/proc/self/status"))
-
-    def _temperature_c(self):
-        path = "/sys/class/thermal/thermal_zone0/temp"
-        try:
-            with open(path, "r") as fp:
-                raw = fp.read().strip()
-        except (IOError, OSError):
-            return None
-        try:
-            return float(raw) / 1000.0
-        except (TypeError, ValueError):
-            return None
-
-    def sample(self):
-        """Return a snapshot dict. First call's CPU% fields are ``None``."""
-        t_now = time.time()
-        sys_cpu = self._read_sys_cpu()
-        proc_cpu = self._read_proc_cpu()
-        meminfo = self._read_meminfo()
-        status = self._read_status()
-
-        sys_cpu_pct = None
-        if sys_cpu is not None and self._prev_sys_cpu is not None:
-            total_now, idle_now = sys_cpu
-            total_prev, idle_prev = self._prev_sys_cpu
-            d_total = total_now - total_prev
-            d_idle = idle_now - idle_prev
-            if d_total > 0:
-                sys_cpu_pct = 100.0 * (1.0 - (float(d_idle) / float(d_total)))
-
-        proc_cpu_pct = None
-        if (proc_cpu is not None and self._prev_proc_cpu is not None
-                and self._prev_t is not None):
-            dt = t_now - self._prev_t
-            d_ticks = proc_cpu - self._prev_proc_cpu
-            if dt > 0 and self.ticks_per_sec > 0:
-                proc_cpu_pct = 100.0 * (
-                    (float(d_ticks) / self.ticks_per_sec) / dt)
-
-        self._prev_sys_cpu = sys_cpu
-        self._prev_proc_cpu = proc_cpu
-        self._prev_t = t_now
-
-        def _kb(field):
-            try:
-                return int(status.get(field, "0 kB").split()[0])
-            except (IndexError, ValueError):
-                return 0
-
-        return {
-            "time_s": t_now,
-            "proc_rss_kb": _kb("VmRSS"),
-            "proc_vmsize_kb": _kb("VmSize"),
-            "mem_total_kb": int(meminfo.get("MemTotal", 0)),
-            "mem_avail_kb": int(meminfo.get("MemAvailable", 0)),
-            "mem_free_kb": int(meminfo.get("MemFree", 0)),
-            "sys_cpu_pct": sys_cpu_pct,
-            "proc_cpu_pct": proc_cpu_pct,
-            "cpu_count": int(self.cpu_count),
-            "temperature_c": self._temperature_c(),
-        }
-
-
-# Phase 6C: static PL utilization snapshot. Read from the latest Vivado
-# implementation report; updated only when bit/hwh is rebuilt.
-STATIC_PL_UTILIZATION = {
-    "source": "Vivado utilization_placed (latest deployed audio_lab.bit)",
-    "lut": 18619,
-    "registers": 20846,
-    "bram_36k": 9,
-    "dsp48": 83,
-    "ioob": 60,
-}
+from audio_lab_pynq.hdmi_state.resource_sampler import (
+    ResourceSampler,
+    STATIC_PL_UTILIZATION,
+    _parse_proc_meminfo_text,
+    _parse_proc_status_text,
+    _parse_proc_stat_cpu_line,
+    _parse_proc_self_stat_times,
+)
+from audio_lab_pynq.hdmi_state.common import (
+    _clamp_percent,
+    _eq_display_value,
+    _cab_model_display_value,
+    _has_asserted_vdma_error,
+    _model_key,
+    _normalize_index_or_name,
+)
 
 
 class HdmiEffectStateMirror(object):

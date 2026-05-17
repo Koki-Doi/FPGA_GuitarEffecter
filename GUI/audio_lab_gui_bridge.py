@@ -135,8 +135,17 @@ def _selected_effect_index(state):
 
 def _knob_values_for_effect(state, effect_name, effect_index):
     defaults = [default for _label, default in EFFECT_KNOBS[effect_name]]
+    # Phase 6H+ AppState stores all effect knobs independently. Keep the
+    # legacy flat knob_values override for old tests / drag paths, but use the
+    # full per-effect table when present.
     if _selected_effect_index(state) == effect_index:
         values = list(getattr(state, "knob_values", []) or [])
+        if values:
+            defaults[:len(values)] = values[:len(defaults)]
+            return defaults
+    all_values = getattr(state, "all_knob_values", None)
+    if isinstance(all_values, dict):
+        values = list(all_values.get(effect_name, []) or [])
         if values:
             defaults[:len(values)] = values[:len(defaults)]
     return defaults
@@ -224,7 +233,7 @@ def app_state_to_audio_lab_sections(state):
             "enabled": _effect_enabled(state, 1),
             "threshold": _percent(comp.get("thresh", 50)),
             "ratio": _percent(comp.get("ratio", 45)),
-            "response": _percent(comp.get("response", 40)),
+            "response": _percent(comp.get("resp", comp.get("response", 40))),
             "makeup": _percent(comp.get("makeup", 55)),
         },
         "overdrive": {
@@ -249,10 +258,10 @@ def app_state_to_audio_lab_sections(state):
             "input_gain": _percent(amp.get("gain", 45)),
             "bass": _percent(amp.get("bass", 55)),
             "middle": _percent(amp.get("mid", 60)),
-            "treble": _percent(amp.get("treble", 50)),
-            "presence": 45,
-            "resonance": 35,
-            "master": _percent(amp.get("master", 70)),
+            "treble": _percent(amp.get("treb", amp.get("treble", 50))),
+            "presence": _percent(amp.get("pres", amp.get("presence", 45))),
+            "resonance": _percent(amp.get("res", amp.get("resonance", 35))),
+            "master": _percent(amp.get("mstr", amp.get("master", 70))),
             "character": _amp_character_from_state(state, amp),
         },
         "cab": {

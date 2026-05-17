@@ -118,6 +118,15 @@ class AudioLabOverlay(Overlay):
         self._cached_compressor_word = 0
         if hasattr(self, self.COMPRESSOR_GPIO_NAME):
             self._apply_compressor_state_to_word()
+
+    @property
+    def adc_hpf_enabled(self):
+        """Return the ADAU1761 ADC digital HPF state used by smoke tests."""
+        return self.codec.get_adc_hpf_state()
+
+    def read_adc_control(self):
+        """Return ADAU1761 R19_ADC_CONTROL as an integer."""
+        return int(self.codec.R19_ADC_CONTROL[0])
         
     # ---- read-only aliases ---------------------------------------------
     # The block design ships an AXI GPIO at 0x43C80000 named
@@ -997,102 +1006,173 @@ class AudioLabOverlay(Overlay):
             'reverb': reverb_word,
         }
 
-    def set_guitar_effects(self, sink=XbarSink.headphone, **kwargs):
-        required = [
-            'axi_gpio_gate',
-            'axi_gpio_overdrive',
-            'axi_gpio_distortion',
-            'axi_gpio_eq',
-            'axi_gpio_reverb',
-        ]
-        missing = [name for name in required if not hasattr(self, name)]
+    # ---- set_guitar_effects helpers -------------------------------------
+    # The public `set_guitar_effects` is a thin dispatch that walks each
+    # effect section in turn through the helpers below. The split keeps
+    # the wire-level behaviour (return value, exception text, GPIO write
+    # order, cached-word updates, audio routing) byte-for-byte identical
+    # to the pre-split implementation; the helpers exist to localise
+    # responsibilities (cached-state merge, write-with-presence-check,
+    # cache refresh, chain routing) and to make the per-effect setters
+    # (`set_noise_suppressor_settings`, `set_compressor_settings`,
+    # `set_distortion_settings`, `set_amp_model`, ...) easier to reason
+    # about against the same internal contract.
+
+    _REQUIRED_EFFECT_GPIOS = (
+        'axi_gpio_gate',
+        'axi_gpio_overdrive',
+        'axi_gpio_distortion',
+        'axi_gpio_eq',
+        'axi_gpio_reverb',
+    )
+
+    # (gpio_attr_name, words key, gate flag that requires this GPIO,
+    #  description used in the missing-GPIO RuntimeError).
+    _OPTIONAL_EFFECT_GPIOS = (
+        ('axi_gpio_delay',    'rat',      0x10, 'RAT-style distortion control'),
+        ('axi_gpio_amp',      'amp',      0x40, 'amp simulator control'),
+        ('axi_gpio_amp_tone', 'amp_tone', 0x40, 'amp simulator tone control'),
+        ('axi_gpio_cab',      'cab',      0x80, 'cab IR simulator control'),
+    )
+
+    _DIST_STATE_SCALAR_PAIRS = (
+        ('distortion',       'drive'),
+        ('distortion_tone',  'tone'),
+        ('distortion_level', 'level'),
+        ('distortion_bias',  'bias'),
+        ('distortion_tight', 'tight'),
+        ('distortion_mix',   'mix'),
+    )
+
+    def _require_effect_gpios(self):
+        missing = [name for name in self._REQUIRED_EFFECT_GPIOS
+                   if not hasattr(self, name)]
         if missing:
-            raise RuntimeError('missing effect control GPIO(s): ' + ', '.join(missing))
+            raise RuntimeError(
+                'missing effect control GPIO(s): ' + ', '.join(missing))
 
-        # Merge cached distortion-section state into kwargs so that callers
-        # who only flip on/off do not silently reset pedal_mask / bias /
-        # tight / mix back to the classmethod defaults.
-        if hasattr(self, '_dist_state'):
-            s = self._dist_state
-            scalar_pairs = (
-                ('distortion', 'drive'),
-                ('distortion_tone', 'tone'),
-                ('distortion_level', 'level'),
-                ('distortion_bias', 'bias'),
-                ('distortion_tight', 'tight'),
-                ('distortion_mix', 'mix'),
-            )
-            for key, state_key in scalar_pairs:
-                if key in kwargs:
-                    s[state_key] = self._clamp_percent(kwargs[key])
-                else:
-                    kwargs[key] = s[state_key]
-            if 'distortion_pedal_mask' in kwargs:
-                s['pedal_mask'] = int(kwargs['distortion_pedal_mask']) & 0x7F
-            kwargs['distortion_pedal_mask'] = s['pedal_mask']
-            # If the rat pedal bit is set, also assert the legacy
-            # rat_on flag so the existing RAT stage actually processes
-            # audio. We never force rat_on off from here.
-            if s['pedal_mask'] & (1 << self._DIST_PEDAL_BIT['rat']):
-                kwargs['rat_on'] = True
+    def _merge_cached_distortion_state(self, kwargs):
+        """Fold cached distortion-section state into ``kwargs`` in place.
 
-        # Mirror noise_gate_on / noise_gate_threshold into the dedicated
-        # noise-suppressor GPIO so the new bitstream and the legacy
-        # bitstream behave consistently. Caller-supplied values win;
-        # otherwise we fall back to the cached suppressor state.
-        if hasattr(self, '_noise_suppressor_state'):
-            ns = self._noise_suppressor_state
-            if 'noise_gate_on' in kwargs:
-                ns['enabled'] = bool(kwargs['noise_gate_on'])
-            if 'noise_gate_threshold' in kwargs:
-                ns['threshold'] = self._clamp_percent(
-                    kwargs['noise_gate_threshold'])
+        Callers that only flip section on/off must not silently reset
+        ``pedal_mask`` / bias / tight / mix back to the classmethod
+        defaults. Scalar params override the cache when supplied; the
+        cache fills in the rest. Setting the rat pedal bit also
+        asserts ``rat_on`` so the existing RAT stage actually
+        processes audio.
+        """
+        if not hasattr(self, '_dist_state'):
+            return
+        s = self._dist_state
+        for key, state_key in self._DIST_STATE_SCALAR_PAIRS:
+            if key in kwargs:
+                s[state_key] = self._clamp_percent(kwargs[key])
             else:
-                kwargs['noise_gate_threshold'] = ns['threshold']
+                kwargs[key] = s[state_key]
+        if 'distortion_pedal_mask' in kwargs:
+            s['pedal_mask'] = int(kwargs['distortion_pedal_mask']) & 0x7F
+        kwargs['distortion_pedal_mask'] = s['pedal_mask']
+        if s['pedal_mask'] & (1 << self._DIST_PEDAL_BIT['rat']):
+            kwargs['rat_on'] = True
 
-        words = self.guitar_effect_control_words(**kwargs)
+    def _merge_cached_noise_suppressor_state(self, kwargs):
+        """Mirror noise_gate_on / noise_gate_threshold into the cached
+        noise-suppressor state and back into ``kwargs``.
+
+        Caller-supplied values win; otherwise we fall back to the
+        cached suppressor state so a partial `set_guitar_effects` call
+        does not silently reset the threshold.
+        """
+        if not hasattr(self, '_noise_suppressor_state'):
+            return
+        ns = self._noise_suppressor_state
+        if 'noise_gate_on' in kwargs:
+            ns['enabled'] = bool(kwargs['noise_gate_on'])
+        if 'noise_gate_threshold' in kwargs:
+            ns['threshold'] = self._clamp_percent(
+                kwargs['noise_gate_threshold'])
+        else:
+            kwargs['noise_gate_threshold'] = ns['threshold']
+
+    def _write_effect_gpios(self, words):
+        """Write every effect-section word to its AXI GPIO.
+
+        Required GPIOs (gate / overdrive / distortion / eq / reverb)
+        were validated by ``_require_effect_gpios``. Optional GPIOs
+        (delay/rat, amp, amp_tone, cab) may be absent on minimal
+        bitstreams; absence is fine as long as the matching enable
+        bit in the gate word is clear, otherwise we raise so the
+        caller can spot the mismatch.
+        """
         self._write_gpio(self.axi_gpio_gate, words['gate'])
         self._write_gpio(self.axi_gpio_overdrive, words['overdrive'])
         self._write_gpio(self.axi_gpio_distortion, words['distortion'])
         self._write_gpio(self.axi_gpio_eq, words['eq'])
-        if hasattr(self, 'axi_gpio_delay'):
-            self._write_gpio(self.axi_gpio_delay, words['rat'])
-        elif words['gate'] & 0x10:
-            raise RuntimeError('axi_gpio_delay is required for RAT-style distortion control')
-        if hasattr(self, 'axi_gpio_amp'):
-            self._write_gpio(self.axi_gpio_amp, words['amp'])
-        elif words['gate'] & 0x40:
-            raise RuntimeError('axi_gpio_amp is required for amp simulator control')
-        if hasattr(self, 'axi_gpio_amp_tone'):
-            self._write_gpio(self.axi_gpio_amp_tone, words['amp_tone'])
-        elif words['gate'] & 0x40:
-            raise RuntimeError('axi_gpio_amp_tone is required for amp simulator tone control')
-        if hasattr(self, 'axi_gpio_cab'):
-            self._write_gpio(self.axi_gpio_cab, words['cab'])
-        elif words['gate'] & 0x80:
-            raise RuntimeError('axi_gpio_cab is required for cab IR simulator control')
+        for gpio_attr, words_key, gate_bit, description in self._OPTIONAL_EFFECT_GPIOS:
+            if hasattr(self, gpio_attr):
+                self._write_gpio(getattr(self, gpio_attr), words[words_key])
+            elif words['gate'] & gate_bit:
+                raise RuntimeError(
+                    '{} is required for {}'.format(gpio_attr, description))
         self._write_gpio(self.axi_gpio_reverb, words['reverb'])
 
-        # Refresh the cached words so subsequent set_distortion_*
-        # calls preserve the effect flags / rat / amp / cab / reverb
-        # bits that this call just wrote.
+    def _refresh_cached_words(self, words):
+        """Snapshot the just-written gate / overdrive / distortion words
+        so subsequent per-effect setters (``set_distortion_settings``,
+        ``set_distortion_pedal``, ...) preserve the on/off flags and
+        rat / amp / cab / reverb bits this call just wrote."""
         self._cached_gate_word = words['gate']
         self._cached_overdrive_word = words['overdrive']
         self._cached_distortion_word = words['distortion']
 
-        # Refresh the dedicated noise-suppressor GPIO so its threshold
-        # byte matches the byte we just wrote into the gate word. This
-        # is a no-op on overlays that lack the new GPIO; on the new
-        # bitstream it keeps the FPGA-side compare level in sync with
-        # the user's noise_gate_threshold. We pass mirror_to_gate=False
-        # because we just wrote the gate word above.
-        if hasattr(self, '_noise_suppressor_state'):
-            self._apply_noise_suppressor_state_to_word(mirror_to_gate=False)
+    def _route_effect_chain(self, sink, gate_word):
+        """Switch the AXIS source crossbar to guitar_chain when any
+        effect enable bit is set, otherwise return to passthrough.
 
-        if words['gate'] & 0xFF:
+        Phase 2: the per-bit flag layout is encoded in
+        ``guitar_effect_control_words`` (`gate_word` low byte). A
+        non-zero low byte means "at least one effect is on".
+        """
+        if gate_word & 0xFF:
             self.route(XbarSource.line_in, XbarEffect.guitar_chain, sink)
         else:
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)
+
+    def set_guitar_effects(self, sink=XbarSink.headphone, **kwargs):
+        """Apply a full effect-chain state in one call.
+
+        Thin facade over ``guitar_effect_control_words`` and the
+        ``_*_effect_gpios`` / ``_route_effect_chain`` helpers. Behaviour
+        and return value are unchanged from earlier revisions:
+
+        - Cached distortion-section and noise-suppressor state is
+          folded into ``kwargs`` so partial calls do not reset other
+          settings.
+        - Every effect GPIO is written in the historical order
+          (gate, overdrive, distortion, eq, delay/rat, amp, amp_tone,
+          cab, reverb).
+        - The AXIS source crossbar is switched to ``guitar_chain`` when
+          any effect enable bit is set; otherwise it returns to
+          ``passthrough``.
+        - Returns the same ``{section: word}`` dict
+          ``guitar_effect_control_words`` produces.
+        """
+        self._require_effect_gpios()
+        self._merge_cached_distortion_state(kwargs)
+        self._merge_cached_noise_suppressor_state(kwargs)
+
+        words = self.guitar_effect_control_words(**kwargs)
+        self._write_effect_gpios(words)
+        self._refresh_cached_words(words)
+
+        # Sync the dedicated noise-suppressor GPIO with the threshold
+        # byte we just wrote into the gate word. No-op on overlays
+        # without the new GPIO; mirror_to_gate=False because the gate
+        # word was already written by ``_write_effect_gpios``.
+        if hasattr(self, '_noise_suppressor_state'):
+            self._apply_noise_suppressor_state_to_word(mirror_to_gate=False)
+
+        self._route_effect_chain(sink, words['gate'])
         return words
 
     # ---- Phase 1 diagnostics --------------------------------------------
