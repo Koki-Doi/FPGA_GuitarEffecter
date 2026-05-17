@@ -29,6 +29,31 @@ def test_appstate_phase7g_fields_present():
     assert hasattr(s, "apply_pending")      and s.apply_pending is False
     assert s.last_control_source == "notebook"
     assert s.last_encoder_event is None
+    # Phase 7G+ live-apply status fields
+    assert s.live_apply is True
+    assert s.apply_interval_ms == 100
+    assert s.last_apply_ok is True
+    assert s.last_apply_message == ""
+    assert s.last_unsupported_label == ""
+
+
+def test_renderer_with_live_apply_flags_emits_status_text():
+    try:
+        from compact_v2.renderer import render_frame_800x480_compact_v2
+    except Exception as exc:
+        import warnings
+        warnings.warn("renderer import skipped: %r" % (exc,))
+        return
+    s = AppState()
+    s.last_control_source = "encoder"
+    s.live_apply = True
+    s.last_apply_ok = False
+    s.last_apply_message = "state-push err"
+    s.last_unsupported_label = "Distortion:rat"
+    frame = render_frame_800x480_compact_v2(s)
+    assert frame is not None
+    if hasattr(frame, "shape"):
+        assert frame.shape[0] == 480 and frame.shape[1] == 800
 
 
 def test_appstate_json_round_trip_ignores_phase7g_fields():
@@ -104,6 +129,7 @@ _TEST_FUNCTIONS = [
     test_appstate_json_round_trip_ignores_phase7g_fields,
     test_renderer_imports_and_runs_with_defaults,
     test_renderer_with_phase7g_flags_emits_status_text,
+    test_renderer_with_live_apply_flags_emits_status_text,
 ]
 
 

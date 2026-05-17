@@ -98,16 +98,36 @@ Verilog file with:
   `enc_in_0/s_axi`.
 * `audio_lab_pynq/encoder_ui.py` —
   `EncoderUiController.handle_event()` maps events into AppState. It
-  *never* writes a raw effect GPIO; `apply()` uses a dry-run/test mirror
-  when one is supplied, otherwise falls back to `GUI/audio_lab_gui_bridge.py`
-  and pushes state into `AudioLabOverlay.set_*` public APIs through the
-  existing bridge.
-* `GUI/compact_v2/state.py` — eight new `AppState` fields, all
-  defaulted; `save_state_json` deliberately does **not** persist them.
+  *never* writes a raw effect GPIO. Phase 7G+ adds the
+  `applier=` / `live_apply=` / `skip_rat=` kwargs: when an
+  `EncoderEffectApplier` is wired, encoder 1 short press flips the
+  effect via the applier, encoder 1 long press calls
+  `applier.apply_safe_bypass()`, encoder 3 rotate runs a throttled
+  `apply_appstate()` (default 100 ms), and encoder 3 short press always
+  force-applies regardless of `live_apply`. The legacy
+  `MirrorSpy` / `AudioLabGuiBridge` fall-through is preserved when no
+  applier is supplied.
+* `audio_lab_pynq/encoder_effect_apply.py` (Phase 7G+) — single
+  translation layer between the compact-v2 `AppState` and the
+  `AudioLabOverlay` public API (`set_noise_suppressor_settings`,
+  `set_compressor_settings`, `set_guitar_effects`). No raw GPIO writes.
+  Throttle (`apply_interval_s`), `dry_run`, and `skip_rat` are
+  constructor parameters; `apply_count` / `error_count` /
+  `last_apply_ok` / `last_apply_message` / `unsupported` are exposed
+  for the GUI status strip and the resource print line. RAT
+  (pedal-mask bit 2) is excluded from `distortion_pedal_mask` and
+  `rat_on` while `skip_rat=True` — the Clash stage stays intact.
+* `GUI/compact_v2/state.py` — eight Phase 7G fields plus five Phase 7G+
+  fields (`live_apply`, `apply_interval_ms`, `last_apply_ok`,
+  `last_apply_message`, `last_unsupported_label`). `save_state_json`
+  deliberately does **not** persist any of them.
 * `GUI/compact_v2/renderer.py` — small status strip in the bottom-right
-  of the 800×480 frame. The chain panel already highlights
-  `selected_effect` so encoder 1 rotation is visible; the FX panel
-  already highlights `selected_knob` so encoder 2 rotation is visible.
+  of the 800×480 frame. Phase 7G+ appends `LIVE / OK / ERR / RAT? /
+  UNSUP` markers when `last_control_source == "encoder"`. Cache
+  signature (`state_semistatic_signature`) was extended so the strip
+  refreshes the moment the live-apply state changes. The chain panel
+  highlights `selected_effect` (encoder 1) and the FX panel highlights
+  `selected_knob` (encoder 2) as before.
 
 ## Standalone runtime
 
@@ -115,22 +135,35 @@ Verilog file with:
 
 ```
 sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
-    scripts/run_encoder_hdmi_gui.py --fps 5
+    scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
 ```
 
 It loads `AudioLabOverlay`, starts the HDMI back end at 800×600,
-builds AppState, creates the bridge-backed encoder controller,
-attaches `EncoderInput`,
-and runs a tight loop:
+builds AppState, wires an `EncoderEffectApplier` (live apply enabled
+by default), creates the encoder controller, attaches `EncoderInput`,
+and runs a dirty-flag loop:
 
 ```
 encoder.poll() -> EncoderUiController.handle_events(...)
-                  -> AppState mutation
-render_frame_800x480_compact_v2(state) -> backend.write_frame(...)
+                  -> AppState mutation + throttled applier write
+if AppState signature changed AND >= 1/MAX_RENDER_FPS since last:
+    render_frame_800x480_compact_v2(state) -> backend.write_frame(...)
 ```
 
-CLI flags include `--reverse-encN` / `--swap-encN` / `--debounce-ms`
-to drive `CONFIG` without recompiling.
+CLI flags (Phase 7G+):
+
+* `--live-apply` / `--no-live-apply` — per-rotate auto apply (default on)
+* `--apply-interval-ms N` — throttle window (default 100)
+* `--value-step N` — knob percent per detent (default 5.0)
+* `--skip-rat` / `--include-rat` — RAT pedal model exclusion (default skip)
+* `--no-audio-apply` — keep the GUI but skip every overlay write
+* `--dry-run` — skip overlay/HDMI/encoder entirely (off-board smoke)
+* `--poll-hz-active N` / `--poll-hz-idle N` / `--idle-threshold-s N` —
+  dirty-flag loop pacing (defaults 10 / 4 / 1.0)
+* `--max-render-fps N` — render cap (default 5)
+* `--status-interval-s N` — resource print cadence (default 2)
+* `--reverse-encN` / `--swap-encN` / `--debounce-ms` — encoder CONFIG
+  overrides (unchanged from Phase 7G)
 
 ## Tests
 
@@ -138,10 +171,11 @@ to drive `CONFIG` without recompiling.
 | --- | --- |
 | `tests/test_encoder_input_decode.py` | s8/s32 sign-extend, DELTA unpack, STATUS decode, `configure()` round-trip, `clear_events()` word, partial-edge carry, short/long press, synthetic release. |
 | `tests/test_encoder_ui_controller.py` | enc1 rotate selects effect, enc1 short toggles `effect_on`, enc1 long safe-bypass round-trip, enc2 model-select toggle, enc3 value change + clamp, enc3 short triggers mirror or bridge apply. |
-| `tests/test_compact_v2_encoder_state.py` | New AppState fields default, JSON round-trip ignores Phase 7G fields, renderer still produces an 800×480 frame with the new flags. |
+| `tests/test_compact_v2_encoder_state.py` | New AppState fields default (Phase 7G + 7G+ live-apply), JSON round-trip ignores them, renderer still produces an 800×480 frame with the new flags. |
+| `tests/test_encoder_effect_apply.py` (Phase 7G+) | Dry-run isolation, three overlay methods invoked, throttle blocks back-to-back / force bypasses, RAT mask exclusion / `--include-rat` lands bit 2, effect on/off uses dedicated setters, unsupported records the label, safe-bypass disables every flag, exceptions do not propagate. |
 | `scripts/test_encoder_input.py` | On-board manual smoke. |
 | `scripts/test_hdmi_encoder_gui_control.py` | On-board GUI smoke with scripted or live events. |
-| `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` | On-board Jupyter smoke: overlay/IP/codec checks, raw register reads, live monitor, CONFIG adjustment, synthetic AppState test, and real encoder HDMI loop. |
+| `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` | Single-cell on-board Jupyter runtime: overlay + IP smoke (VTC `GEN_ACTSZ`, encoder VERSION/CONFIG), dirty-flag GUI loop with live-apply, resource print every 2 s, RAT excluded. Was multi-cell debug + monitor in Phase 7F/7G; rewritten in Phase 7G+. |
 
 Offline verification on the development host uses `python3 -m unittest`
 because `pytest` is not required in this repository:
@@ -150,10 +184,14 @@ because `pytest` is not required in this repository:
 python3 -m unittest -v \
   tests.test_encoder_input_decode \
   tests.test_encoder_ui_controller \
-  tests.test_compact_v2_encoder_state
+  tests.test_compact_v2_encoder_state \
+  tests.test_encoder_effect_apply
 ```
 
-The current Phase 7F/7G test set has 30 tests across those three files.
+The Phase 7G+ test set has 52 tests across those four files (13 in
+`test_encoder_input_decode`, 23 in `test_encoder_ui_controller`,
+5 in `test_compact_v2_encoder_state`, 11 in
+`test_encoder_effect_apply`).
 
 ## Notebook smoke
 

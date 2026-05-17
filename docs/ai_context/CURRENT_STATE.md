@@ -1,7 +1,15 @@
 # Current state
 
-Last updated: **2026-05-17, post-Phase-7F/7G encoder deploy smoke** (commits
-`5332b7e` / `3afd9c4` / `e2ece2e` brought the Phase 6I C2 baseline up;
+Last updated: **2026-05-17, Phase 7G+ encoder GUI-first live apply added**
+(new module `audio_lab_pynq/encoder_effect_apply.py` translates the
+compact-v2 AppState into `AudioLabOverlay` public setters with a 100 ms
+default throttle; `EncoderUiController` gained `applier=` / `live_apply=`
+/ `skip_rat=` kwargs; `scripts/run_encoder_hdmi_gui.py` and the
+single-cell `EncoderGuiSmoke.ipynb` were rewritten around the dirty-flag
+loop with the new applier; RAT pedal-mask bit 2 is excluded from
+encoder cycling and live apply by default — the Clash stage and the
+notebook `HdmiEffectStateMirror` API remain untouched. Earlier baseline
+commits `5332b7e` / `3afd9c4` / `e2ece2e` brought the Phase 6I C2 baseline up;
 `d1c4e8e` thinned `set_guitar_effects` into a 6-helper facade;
 `52c5ea4` extracted the 1727-line `hdmi_effect_state_mirror.py` into
 the `audio_lab_pynq/hdmi_state/` subpackage; `5173baf` extracted the
@@ -46,6 +54,25 @@ compatibility fixes. See `DECISIONS.md` D26 / D33 / D35).
   WHS `+0.040 ns`, THS `0.000 ns`; Slice LUTs `18618 (35.00%)`,
   Slice Registers `20846 (19.59%)`. Within the historical
   `-7..-9 ns` deploy band. See `TIMING_AND_FPGA_NOTES.md`.
+- **Encoder GUI live apply (Phase 7G+)**: `EncoderEffectApplier` is the
+  only Python object allowed to translate the compact-v2 `AppState`
+  into `AudioLabOverlay` calls from the encoder runtime. It uses
+  `set_noise_suppressor_settings`, `set_compressor_settings`, and a
+  single `set_guitar_effects(**kwargs)` per push — no raw GPIO writes.
+  Throttle defaults to 100 ms (`--apply-interval-ms`); encoder 3 short
+  press always force-applies regardless of the throttle. RAT
+  (`distortion_pedal_mask` bit 2) is suppressed when `skip_rat=True`
+  (default); pass `--include-rat` to override. EQ knob values are
+  mapped GUI 0..100 → overlay 0..200 (50 == unity). Cab `MODEL` knob
+  is overridden by `AppState.cab_model_idx` (0..2). RAT remains
+  available via `HdmiEffectStateMirror.rat()` from notebooks; only
+  the encoder loop refuses to touch it.
+- **Encoder GUI render loop**: `scripts/run_encoder_hdmi_gui.py` and
+  `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` share a dirty-flag
+  loop — poll at 10 Hz while events are arriving, drop to 4 Hz after
+  1 s of silence, render only when the AppState signature changes, cap
+  at 5 fps even under continuous rotation. Idle `proc_cpu` measured
+  at ~0–1% on the deployed PYNQ-Z2 image during the dry-run smoke.
 
 ## Phase history (chronological)
 

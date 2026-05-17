@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
-"""Standalone Phase 7F/7G HDMI GUI driven by 3 rotary encoders.
+"""Standalone Phase 7G+ HDMI GUI driven by 3 rotary encoders with live-apply.
 
 Run this on the PYNQ-Z2 (no notebook needed):
 
     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
-        scripts/run_encoder_hdmi_gui.py --fps 5
+        scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
 
 The script:
   1. Loads AudioLabOverlay (one overlay only -- no base.bit, no second
      load, see DECISIONS.md D23/D24/D25).
   2. Starts the integrated HDMI back end (SVGA 800x600 framebuffer with
      the 800x480 compact-v2 GUI pinned at (0, 0)).
-  3. Builds AppState + HdmiEffectStateMirror.
+  3. Builds AppState + EncoderEffectApplier (GUI-first live apply).
   4. Polls the encoder IP via ``EncoderInput`` and dispatches events
-     through ``EncoderUiController``.
-  5. Repaints the HDMI framebuffer at the requested FPS.
-  6. Quits cleanly on Ctrl+C, stops VTC/VDMA.
+     through ``EncoderUiController`` (renders only on dirty flag).
+  5. Repaints the HDMI framebuffer only when AppState changes, capped at
+     --max-render-fps; sleeps longer when idle for low CPU.
+  6. Periodically prints a resource snapshot (CPU / mem / temp / fps /
+     last apply message).
+  7. Quits cleanly on Ctrl+C, stops VTC/VDMA.
 
-The script is read-only against PCM1808/PCM5102 plans -- it does NOT
-touch PMOD JB/JA or the external codec path.
+The script does NOT touch PMOD JA/JB or the external PCM1808/PCM5102
+plans. RAT pedal model is skipped from encoder-driven control by
+default; pass ``--include-rat`` to override.
 """
 
 import argparse
@@ -35,23 +39,43 @@ from typing import Optional
 
 def _build_argparser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="Phase 7F/7G encoder-driven HDMI GUI runner")
-    p.add_argument("--fps", type=float, default=5.0,
-                   help="Repaint rate (frames per second). Default 5.")
+        description="Phase 7G+ encoder-driven HDMI GUI runner")
     p.add_argument("--hold-seconds", type=float, default=0.0,
                    help="If > 0, exit after this many seconds.")
     p.add_argument("--dry-run", action="store_true",
-                   help="Skip Overlay/HDMI/encoder access. Run the AppState "
-                        "loop with synthesised no-op polls. Use for "
-                        "off-board smoke.")
-    p.add_argument("--no-apply", action="store_true",
-                   help="Do not push apply() into the mirror/overlay even on "
-                        "encoder-3 short_press. Useful for first-light "
-                        "verification when no encoders are wired.")
+                   help="Skip Overlay/HDMI/encoder bring-up entirely. Use "
+                        "for off-board CLI smoke.")
+    p.add_argument("--no-audio-apply", action="store_true",
+                   help="Skip every AudioLabOverlay set_* call but keep the "
+                        "GUI / encoder loop running. AppState still updates "
+                        "and the renderer still draws.")
+    # Live apply controls
+    apply_group = p.add_mutually_exclusive_group()
+    apply_group.add_argument("--live-apply", dest="live_apply",
+                             action="store_true", default=True,
+                             help="Push every encoder change to the overlay "
+                                  "with throttle (default).")
+    apply_group.add_argument("--no-live-apply", dest="live_apply",
+                             action="store_false",
+                             help="Only apply on encoder-3 short press.")
+    p.add_argument("--apply-interval-ms", type=int, default=100,
+                   help="Throttle (ms) between live-apply pushes. Default 100.")
+    p.add_argument("--value-step", type=float, default=5.0,
+                   help="Knob value step per encoder-3 detent (0..100 scale).")
+    # RAT skip
+    rat_group = p.add_mutually_exclusive_group()
+    rat_group.add_argument("--skip-rat", dest="skip_rat",
+                           action="store_true", default=True,
+                           help="Exclude RAT (Distortion pedal-mask bit 2) "
+                                "from encoder model cycling and live apply. "
+                                "Default.")
+    rat_group.add_argument("--include-rat", dest="skip_rat",
+                           action="store_false",
+                           help="Allow encoder cycling and live apply to "
+                                "touch the RAT pedal model.")
+    # Encoder driver
     p.add_argument("--encoder-ip-name", default=None,
-                   help="Override the encoder IP name in the overlay. "
-                        "Default tries axi_encoder_input_0 / enc_in_0 / "
-                        "axi_encoder_input.")
+                   help="Override the encoder IP name in the overlay.")
     p.add_argument("--reverse-enc0", action="store_true")
     p.add_argument("--reverse-enc1", action="store_true")
     p.add_argument("--reverse-enc2", action="store_true")
@@ -60,7 +84,18 @@ def _build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--swap-enc2", action="store_true")
     p.add_argument("--debounce-ms", type=int, default=None,
                    help="Override CONFIG.debounce_ms (1..255).")
-    p.add_argument("--print-status-every", type=float, default=5.0,
+    # Loop pacing
+    p.add_argument("--poll-hz-active", type=float, default=10.0,
+                   help="Encoder poll rate while events are arriving.")
+    p.add_argument("--poll-hz-idle", type=float, default=4.0,
+                   help="Encoder poll rate after --idle-threshold-s of no "
+                        "events.")
+    p.add_argument("--idle-threshold-s", type=float, default=1.0,
+                   help="After this many seconds without events, switch to "
+                        "the idle poll rate.")
+    p.add_argument("--max-render-fps", type=float, default=5.0,
+                   help="Cap the render rate even under continuous rotation.")
+    p.add_argument("--status-interval-s", type=float, default=2.0,
                    help="Seconds between resource/status prints.")
     return p
 
@@ -73,71 +108,74 @@ def _bring_up_overlay():
     from audio_lab_pynq import AudioLabOverlay  # type: ignore
     overlay = AudioLabOverlay()
     print("[gui] AudioLabOverlay loaded")
-    # Smoke: ADC HPF + R19
-    try:
-        codec = getattr(overlay, "audio_codec", None) or getattr(overlay, "codec", None)
-        if codec is not None and hasattr(codec, "get_adc_hpf_state"):
-            hpf = codec.get_adc_hpf_state()
-            print("[gui] ADC HPF: %s" % bool(hpf))
-            try:
-                r19 = int(codec.R19_ADC_CONTROL[0])
-                print("[gui] R19_ADC_CONTROL = 0x%02X" % r19)
-            except Exception:
-                pass
-    except Exception as exc:
-        print("[gui] HPF/R19 probe failed: %r" % (exc,))
-    # Smoke: HDMI/VDMA/VTC presence
-    try:
-        ip_dict = getattr(overlay, "ip_dict", {})
-        print("[gui] axi_vdma_hdmi present:", "axi_vdma_hdmi" in ip_dict)
-        print("[gui] v_tc_hdmi    present:", "v_tc_hdmi"    in ip_dict)
-        enc_present = [k for k in ip_dict.keys() if "encoder" in k.lower() or k.startswith("enc_in")]
-        print("[gui] encoder IP entries:", enc_present)
-    except Exception as exc:
-        print("[gui] ip_dict probe failed: %r" % (exc,))
     return overlay
 
 
-def _start_hdmi(overlay, *, width: Optional[int] = None, height: Optional[int] = None):
+def _start_hdmi(overlay, *, width: Optional[int] = None,
+                height: Optional[int] = None):
     from audio_lab_pynq.hdmi_backend import (  # type: ignore
         AudioLabHdmiBackend, DEFAULT_WIDTH, DEFAULT_HEIGHT,
     )
     w = width or DEFAULT_WIDTH
     h = height or DEFAULT_HEIGHT
     backend = AudioLabHdmiBackend(overlay, width=w, height=h)
-    backend.start()  # black framebuffer first; we overwrite immediately below
+    backend.start()
     print("[gui] HDMI backend started at %dx%d" % (w, h))
     return backend
 
 
 def _build_state():
-    # Imports here so --dry-run on a workstation only needs the GUI half
     from GUI.compact_v2.state import AppState  # type: ignore
     return AppState()
 
 
-def _build_encoder(overlay, ip_name: Optional[str], cfg_overrides: dict):
+def _build_encoder(overlay, ip_name, cfg_overrides):
     from audio_lab_pynq.encoder_input import EncoderInput  # type: ignore
     enc = EncoderInput.from_overlay(overlay, ip_name=ip_name)
     if cfg_overrides:
         enc.configure(**cfg_overrides)
-    # Verify VERSION
-    try:
-        v = enc.read_version()
-        print("[gui] encoder IP VERSION = 0x%08X" % v)
-    except Exception as exc:
-        print("[gui] encoder VERSION read failed: %r" % (exc,))
     return enc
+
+
+def _render_signature(s):
+    """Tuple that changes iff something a render would visualise has changed."""
+    knobs = ()
+    akv = getattr(s, "all_knob_values", None)
+    if isinstance(akv, dict):
+        knobs = tuple((k, tuple(v)) for k, v in akv.items())
+    return (
+        getattr(s, "selected_effect", None),
+        getattr(s, "selected_knob", None),
+        bool(getattr(s, "value_dirty", False)),
+        bool(getattr(s, "apply_pending", False)),
+        bool(getattr(s, "edit_mode", False)),
+        bool(getattr(s, "model_select_mode", False)),
+        getattr(s, "dist_model_idx", None),
+        getattr(s, "amp_model_idx", None),
+        getattr(s, "cab_model_idx", None),
+        bool(getattr(s, "last_apply_ok", True)),
+        str(getattr(s, "last_apply_message", "")),
+        id(getattr(s, "last_encoder_event", None)),
+        tuple(bool(v) for v in (getattr(s, "effect_on", []) or [])),
+        knobs,
+    )
+
+
+def _fmt_pct(value):
+    return ("%5.1f%%" % value) if value is not None else "  n/a"
+
+
+def _fmt_temp(value):
+    return ("%4.1fC" % value) if value is not None else "  n/a"
 
 
 # --------------------------------------------------------------------------
 # Main loop
 # --------------------------------------------------------------------------
 
-def main(argv: Optional[list] = None) -> int:
+def main(argv=None):
     args = _build_argparser().parse_args(argv)
 
-    # Make the repo's GUI/ directory importable just like the notebooks do.
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(here, os.pardir))
     for path in (repo_root, os.path.join(repo_root, "GUI")):
@@ -145,9 +183,9 @@ def main(argv: Optional[list] = None) -> int:
             sys.path.insert(0, path)
 
     state = _build_state()
-    print("[gui] AppState constructed (selected_effect=%d)" % state.selected_effect)
+    print("[gui] AppState constructed (selected_effect=%d)"
+          % state.selected_effect)
 
-    # CLI -> encoder CONFIG overrides
     cfg_overrides = {}
     if args.debounce_ms is not None:
         cfg_overrides["debounce_ms"] = int(args.debounce_ms)
@@ -165,18 +203,37 @@ def main(argv: Optional[list] = None) -> int:
         overlay = _bring_up_overlay()
         backend = _start_hdmi(overlay)
         encoder = _build_encoder(overlay, args.encoder_ip_name, cfg_overrides)
+        encoder.configure(clear_on_read=True)
 
-    # Renderer
     try:
-        from GUI.compact_v2.renderer import render_frame_800x480_compact_v2  # type: ignore
+        from GUI.compact_v2.renderer import (  # type: ignore
+            render_frame_800x480_compact_v2)
     except Exception:
-        # Fallback for when only GUI/ is on sys.path (legacy import path)
-        from compact_v2.renderer import render_frame_800x480_compact_v2  # type: ignore
+        from compact_v2.renderer import (  # type: ignore
+            render_frame_800x480_compact_v2)
 
-    # Controller
     from audio_lab_pynq.encoder_ui import EncoderUiController  # type: ignore
+    from audio_lab_pynq.encoder_effect_apply import (  # type: ignore
+        EncoderEffectApplier)
+    from audio_lab_pynq.hdmi_state.resource_sampler import (  # type: ignore
+        ResourceSampler)
+
+    applier_overlay = None if args.no_audio_apply else overlay
+    applier = EncoderEffectApplier(
+        applier_overlay,
+        apply_interval_s=max(0.001, float(args.apply_interval_ms) / 1000.0),
+        dry_run=bool(args.dry_run or args.no_audio_apply),
+        skip_rat=bool(args.skip_rat),
+    )
+    state.live_apply = bool(args.live_apply)
+    state.apply_interval_ms = int(args.apply_interval_ms)
+
     controller = EncoderUiController(
-        state, overlay=(None if args.no_apply else overlay),
+        state,
+        applier=applier,
+        live_apply=bool(args.live_apply),
+        skip_rat=bool(args.skip_rat),
+        value_step=float(args.value_step),
         apply_on_value_change=False,
     )
 
@@ -188,68 +245,110 @@ def main(argv: Optional[list] = None) -> int:
 
     signal.signal(signal.SIGINT, _on_sigint)
 
-    period = 1.0 / max(0.5, float(args.fps))
+    poll_period_active = 1.0 / max(0.1, float(args.poll_hz_active))
+    poll_period_idle = 1.0 / max(0.1, float(args.poll_hz_idle))
+    min_render_period = 1.0 / max(0.1, float(args.max_render_fps))
+    status_interval_s = max(0.2, float(args.status_interval_s))
+
+    sampler = ResourceSampler()
+    sampler.sample()  # bootstrap
+
     t0 = time.time()
-    next_status = t0 + max(0.1, float(args.print_status_every))
-    frame_count = 0
+    last_event_t = t0
+    last_render_t = 0.0
+    last_sig = None
+    last_status_t = 0.0
+    last_status_frames = 0
+    last_status_polls = 0
+    frames = 0
+    polls = 0
+
+    print("[gui] live_apply=%s apply_interval_ms=%d skip_rat=%s "
+          "no_audio_apply=%s" % (args.live_apply, args.apply_interval_ms,
+                                  args.skip_rat, args.no_audio_apply))
+    print("[gui] Encoder1 rotate=effect select, short=on/off, long=safe-bypass")
+    print("[gui] Encoder2 rotate=param/model select, short=model/edit toggle")
+    print("[gui] Encoder3 rotate=value change, short=apply, long=reset knob")
+    print("[gui] RAT pedal model excluded from encoder control by default")
 
     try:
         while not stop_flag["stop"]:
-            loop_start = time.time()
-
-            # 1) poll encoder events
+            loop_t = time.time()
+            polls += 1
             if encoder is not None:
                 try:
-                    controller.poll_and_apply(encoder)
+                    events = encoder.poll(timestamp=loop_t - t0)
                 except Exception as exc:
                     print("[gui] encoder poll failed: %r" % (exc,))
+                    events = []
+            else:
+                events = []
+            if events:
+                controller.handle_events(events)
+                last_event_t = loop_t
 
-            # 2) render
-            state.t = loop_start - t0
-            frame = render_frame_800x480_compact_v2(state)
-
-            # 3) push to HDMI (compose at (0,0) per Phase 6I)
-            if backend is not None:
-                try:
-                    backend.write_frame(frame, placement="manual",
-                                        offset_x=0, offset_y=0)
-                except Exception as exc:
-                    print("[gui] HDMI write_frame failed: %r" % (exc,))
-
-            frame_count += 1
-
-            # 4) periodic status print
-            now = time.time()
-            if now >= next_status:
-                next_status = now + max(0.1, float(args.print_status_every))
-                msg = ("[gui] t=%.1fs frames=%d sel_fx=%d sel_knob=%d "
-                       "src=%s dirty=%s apply=%s last=%r" %
-                       (now - t0, frame_count, state.selected_effect,
-                        state.selected_knob,
-                        getattr(state, "last_control_source", "?"),
-                        getattr(state, "value_dirty", False),
-                        getattr(state, "apply_pending", False),
-                        getattr(state, "last_encoder_event", None)))
-                print(msg)
+            sig = _render_signature(state)
+            if sig != last_sig and (loop_t - last_render_t) >= min_render_period:
+                state.t = loop_t - t0
+                frame = render_frame_800x480_compact_v2(state)
                 if backend is not None:
                     try:
-                        st = backend.status()
-                        print("[gui]   vdma_dmasr=%s vtc_ctl=%s vdma_hsize=%d vdma_vsize=%d" % (
-                            st.get("vdma_dmasr"), st.get("vtc_ctl"),
-                            st.get("vdma_hsize"), st.get("vdma_vsize")))
-                    except Exception:
-                        pass
+                        backend.write_frame(frame, placement="manual",
+                                            offset_x=0, offset_y=0)
+                    except Exception as exc:
+                        print("[gui] HDMI write_frame failed: %r" % (exc,))
+                last_sig = sig
+                last_render_t = loop_t
+                frames += 1
 
-            # 5) exit on hold-seconds
-            if args.hold_seconds > 0 and (now - t0) >= float(args.hold_seconds):
+            if (loop_t - last_status_t) >= status_interval_s:
+                r = sampler.sample()
+                dt = (loop_t - last_status_t) if last_status_t > 0 \
+                    else max(1e-3, loop_t - t0)
+                render_fps = (frames - last_status_frames) / dt
+                poll_hz = (polls - last_status_polls) / dt
+                rss_mb = int(r.get("proc_rss_kb", 0)) // 1024
+                mem_total_mb = int(r.get("mem_total_kb", 0)) // 1024
+                mem_avail_mb = int(r.get("mem_avail_kb", 0)) // 1024
+                mem_used_mb = (mem_total_mb - mem_avail_mb
+                               if mem_total_mb else 0)
+                mem_used_pct = (100.0 * mem_used_mb / mem_total_mb) \
+                    if mem_total_mb else None
+                idle_for = loop_t - last_event_t
+                mode = "idle" if idle_for > args.idle_threshold_s else "active"
+                msg = applier.last_apply_message or "-"
+                if len(msg) > 28:
+                    msg = msg[:25] + "..."
+                print(
+                    "[gui] t=%6.1fs mode=%-6s poll=%4.1fHz render=%4.1ffps "
+                    "sys_cpu=%s proc_cpu=%s mem=%4d/%4dMB(%s) rss=%4dMB "
+                    "temp=%s sel_fx=%d knob=%d live=%s apply=%s last=%s"
+                    % (
+                        loop_t - t0, mode, poll_hz, render_fps,
+                        _fmt_pct(r.get("sys_cpu_pct")),
+                        _fmt_pct(r.get("proc_cpu_pct")),
+                        mem_used_mb, mem_total_mb, _fmt_pct(mem_used_pct),
+                        rss_mb, _fmt_temp(r.get("temperature_c")),
+                        state.selected_effect, state.selected_knob,
+                        "ON" if state.live_apply else "off",
+                        "OK" if applier.last_apply_ok else "ERR",
+                        msg,
+                    )
+                )
+                last_status_t = loop_t
+                last_status_frames = frames
+                last_status_polls = polls
+
+            if args.hold_seconds > 0 and (loop_t - t0) >= float(args.hold_seconds):
                 print("[gui] hold-seconds reached; exiting.")
                 break
 
-            # 6) pacing
-            elapsed = time.time() - loop_start
-            sleep_for = max(0.0, period - elapsed)
-            if sleep_for > 0:
-                time.sleep(sleep_for)
+            idle_for = loop_t - last_event_t
+            period = (poll_period_idle if idle_for > args.idle_threshold_s
+                      else poll_period_active)
+            elapsed = time.time() - loop_t
+            if elapsed < period:
+                time.sleep(period - elapsed)
     finally:
         if backend is not None:
             try:

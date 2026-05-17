@@ -296,6 +296,52 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
+## Phase 7G+ — GUI-first encoder live apply (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `feature/encoder-gui-real-effect-control` (または merge 後の main) で
+> `audio_lab_pynq/encoder_effect_apply.py` が存在することを確認してください。
+>
+> 構成 (実装済):
+> - `EncoderEffectApplier` (Phase 7G+ 新規) が AppState →
+>   `AudioLabOverlay` public API の唯一の経路。
+>   `set_noise_suppressor_settings` / `set_compressor_settings` /
+>   `set_guitar_effects(**kwargs)` のみ呼ぶ。raw GPIO 書き込みなし。
+> - `EncoderUiController` に `applier=` / `live_apply=` / `skip_rat=`
+>   を追加。encoder3 short press は throttle を bypass して force apply、
+>   encoder3 rotate は live\_apply=True のとき 100 ms throttle で
+>   `apply_appstate` を呼ぶ。
+> - RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (default) で
+>   encoder cycle / live apply の対象から除外。Clash / Notebook mirror は
+>   手付かず。
+> - `scripts/run_encoder_hdmi_gui.py` は dirty-flag loop + applier 構成。
+>   CLI に `--live-apply` / `--no-live-apply` /
+>   `--apply-interval-ms` / `--value-step` / `--skip-rat` /
+>   `--include-rat` / `--no-audio-apply` / `--dry-run` /
+>   `--poll-hz-active` / `--poll-hz-idle` / `--idle-threshold-s` /
+>   `--max-render-fps` / `--status-interval-s` を追加。
+> - `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` は 1 セル維持で、
+>   GUI 操作 + resource print + live apply に置き換え済 (raw register
+>   dump や synthetic AppState テストは削除)。
+> - GUI 表示: `AppState.live_apply` / `last_apply_ok` /
+>   `last_apply_message` / `last_unsupported_label` を追加。renderer の
+>   bottom-right status strip は `LIVE` / `OK` / `ERR` / `RAT?` /
+>   `UNSUP` を `last_control_source == "encoder"` の時に表示。
+>   `state_semistatic_signature` も拡張済 (cache がスタックしない)。
+> - Tests: `tests/test_encoder_effect_apply.py` (11)、
+>   `tests/test_encoder_ui_controller.py` (23)、
+>   `tests/test_compact_v2_encoder_state.py` (5)、
+>   `tests/test_encoder_input_decode.py` (13) = 52 件 PASS。
+>
+> やってよい変更: Python / GUI / Notebook / docs のみ。
+> 禁止: bit / hwh / XDC / RTL / block\_design / create\_project /
+> encoder\_integration / hdmi\_integration の変更、Vivado build、
+> PMOD JA/JB pin assign、raw GPIO write、`base.bit` ロード、
+> `AudioLabOverlay` 後の別 Overlay ロード、RAT を encoder 操作対象に
+> 戻すこと、`EncoderGuiSmoke.ipynb` を複数セル化すること、
+> `git push` / `git pull` / `git fetch`。
+
 ## Phase 7G — Python encoder driver + GUI focus state (superseded by deployed Phase 7F/7G block above)
 
 > 旧 Phase 7G prompt の実装項目は `c7a8680` と follow-up deploy smoke

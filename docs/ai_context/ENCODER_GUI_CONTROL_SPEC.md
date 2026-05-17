@@ -92,9 +92,29 @@ Encoder pins (CLK / DT / SW)
 
 | Encoder | Rotate | Push short | Push long |
 | --- | --- | --- | --- |
-| **Encoder 1** | `selected_fx` を変更 (8 effects 間を循環) | `selected_fx` の ON / OFF 切替 | safe bypass (全 ON/OFF) |
-| **Encoder 2** | `selected_fx` 内の parameter / model selection を変更 | model dropdown / parameter group 切替 | preset mode / model mode 切替 |
-| **Encoder 3** | selected parameter の値を変更 | 決定 / apply (`apply_pending` 反映) | preset save / reset current parameter |
+| **Encoder 1** | `selected_fx` を変更 (8 effects 間を循環) | `selected_fx` の ON / OFF 切替 + live apply | safe bypass (全 ON/OFF) + live apply |
+| **Encoder 2** | `selected_fx` 内の parameter / model selection を変更 (Distortion で skip\_rat=True の時は RAT slot を飛ばす) | PEDAL / AMP / CAB は `model_select_mode` toggle、それ以外は `edit_mode` toggle | reserved (`model_select_mode` を解除) |
+| **Encoder 3** | selected parameter の値を変更 (live\_apply=True なら 100 ms throttle で `EncoderEffectApplier` 経由 apply) | 決定 / 強制 apply (`apply_pending` 反映、live\_apply に関係なく force) | 選択中 knob を GUI default に戻す + apply |
+
+### 2.1a GUI-first live apply (Phase 7G+)
+
+- `audio_lab_pynq/encoder_effect_apply.py` の `EncoderEffectApplier` が
+  AppState → `AudioLabOverlay` public API の唯一の経路。raw GPIO は
+  書かない。
+- 使う overlay API は `set_noise_suppressor_settings`、
+  `set_compressor_settings`、`set_guitar_effects(**kwargs)` の 3 つだけ。
+  pedal 選択は `set_distortion_settings` ではなく
+  `set_guitar_effects(distortion_pedal_mask=...)` を使う (cached 状態と
+  整合)。
+- throttle は `apply_interval_s` (default 100 ms)。連続回転で flooding
+  しない。encoder 3 short press は throttle を bypass して force apply。
+- RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (default) の
+  時に encoder cycle / live apply の対象から除外。Clash stage と
+  `HdmiEffectStateMirror.rat()` は手付かず。
+- EQ knob は GUI 0..100 → overlay 0..200 (50 == unity) に変換。
+- Cab `MODEL` knob は `AppState.cab_model_idx` (0..2) で上書き。
+- 例外は `last_apply_ok=False` / `last_apply_message=...` に記録するだけ
+  で loop は落とさない。GUI status strip と resource print に反映される。
 
 ### 2.2 focus state (GUI / AppState 追加項目)
 

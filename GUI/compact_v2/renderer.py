@@ -474,6 +474,17 @@ def state_semistatic_signature(state: AppState):
         getattr(state, "amp_model_idx", None),
         getattr(state, "cab_model_idx", None),
         bool(state.save_flash > 0),
+        # Phase 7G+ live-apply status: include so the status strip refreshes
+        # when the encoder runtime updates these fields.
+        bool(getattr(state, "live_apply", True)),
+        bool(getattr(state, "last_apply_ok", True)),
+        str(getattr(state, "last_apply_message", "")),
+        str(getattr(state, "last_unsupported_label", "")),
+        bool(getattr(state, "edit_mode", False)),
+        bool(getattr(state, "model_select_mode", False)),
+        bool(getattr(state, "value_dirty", False)),
+        bool(getattr(state, "apply_pending", False)),
+        str(getattr(state, "last_control_source", "")),
     )
 
 
@@ -1026,6 +1037,8 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         # Phase 7G: tiny encoder status strip (right edge, above the BR
         # corner marker). Only appears when at least one optional encoder
         # field is set, so legacy AppState instances render identically.
+        # Phase 7G+: live_apply / OK / ERR / RAT? appended when the
+        # EncoderEffectApplier has run.
         _enc_flags = []
         if getattr(state, "edit_mode", False):
             _enc_flags.append("EDIT")
@@ -1038,10 +1051,24 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         _src = getattr(state, "last_control_source", "notebook")
         if _src == "encoder":
             _enc_flags.append("ENC")
+            if getattr(state, "live_apply", False):
+                _enc_flags.append("LIVE")
+            if not bool(getattr(state, "last_apply_ok", True)):
+                _enc_flags.append("ERR")
+            elif getattr(state, "last_apply_message", ""):
+                _enc_flags.append("OK")
+            _unsupported = getattr(state, "last_unsupported_label", "") or ""
+            if "rat" in _unsupported.lower():
+                _enc_flags.append("RAT?")
+            elif _unsupported:
+                _enc_flags.append("UNSUP")
         if _enc_flags:
             _enc_text = " ".join(_enc_flags)
+            _flag_color = (
+                bypass_color if (not bool(getattr(state, "last_apply_ok", True)))
+                else LED)
             draw_text(img, (Wv - 22, Hv - 24), _enc_text,
-                      fill=LED + (255,), scale=1, anchor="rb",
+                      fill=_flag_color + (255,), scale=1, anchor="rb",
                       letter_spacing=2)
 
         # Convert to a writable RGB ndarray *before* applying the
