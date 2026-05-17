@@ -36,6 +36,9 @@ add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
 # the block design references it via `create_bd_cell -type module -reference
 # axi_encoder_input` inside encoder_integration.tcl.
 add_files -norecurse $origin_dir/../ip/encoder_input/src/axi_encoder_input.v
+# Phase 7C: add the PCM5102 DAC-only tone RTL similarly before
+# pcm5102_dac_integration.tcl references it via create_bd_cell -type module.
+add_files -norecurse $origin_dir/../ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v
 update_compile_order -fileset sources_1
 
 # Generate block design
@@ -47,6 +50,11 @@ source ./hdmi_integration.tcl
 # The audio path, DSP block, existing GPIOs, and HDMI integration are not
 # touched. The encoder IP simply adds M17 on ps7_0_axi_periph.
 source ./encoder_integration.tcl
+# Phase 7C: extend with the PCM5102 external DAC bring-up (4 top-level
+# I2S pins on PMOD JB driven by a dedicated 12.288 MHz MMCM and a small
+# RTL tone generator). No AXI-Lite. Existing audio / HDMI / encoder /
+# GPIO untouched.
+source ./pcm5102_dac_integration.tcl
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1

@@ -1374,3 +1374,63 @@ not get removed even when superseded — they get updated.
   idle 時 CPU を低く保ちつつ操作時のみ AXI を叩ける。
   RAT は実機 voicing 検証が他 pedal より遅れているため、Clash stage は
   残しつつ encoder からの誤操作を既定で防ぐ。
+
+## D38 — PCM5102 external DAC bring-up is DAC-only and free-running (Phase 7C)
+
+- **Decision.** The external PCM5102 DAC on PMOD JB is brought up as a
+  self-contained, free-running I2S master tone generator. A new RTL
+  module `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v` drives the
+  four I2S signals out of PMOD JB and emits a 1 kHz / 24-bit /
+  quarter-scale sine to both stereo channels. A new dedicated MMCM
+  `clk_wiz_audio_ext` (`100 MHz -> 12.288 MHz exact`,
+  `DIVCLK_DIVIDE=5, MULT_F=48.0, CLKOUT0_DIVIDE_F=78.125, VCO=960 MHz`)
+  feeds the module. Integration tcl `hw/Pynq-Z2/pcm5102_dac_integration.tcl`
+  is sourced from `create_project.tcl` after `encoder_integration.tcl`.
+  The PCM1808 ADC is NOT implemented in this phase (Phase 7D).
+- **Boundary.**
+  - XDC: four new ports added under `## Phase 7C: PCM5102 ...`:
+    `ext_audio_mclk_o W14 / ext_audio_bclk_o Y14 /
+    ext_audio_lrclk_o T11 / ext_dac_din_o V16`, all `LVCMOS33`,
+    no `PULLUP`.
+  - `block_design.tcl` is untouched directly; the new clk_wiz and
+    module reference are added via the dedicated integration tcl that
+    matches the `encoder_integration.tcl` pattern.
+  - NO AXI-Lite slave is added. No new GPIO. `GPIO_CONTROL_MAP.md` is
+    unchanged (D12).
+  - ADAU1761 path (`mclk U5`, `bclk R18`, `lrclk T17`, `sdata_i F17`,
+    `sdata_o G18`, `clk_wiz_0`, `i2s_to_stream_0`, `clash_lowpass_fir_0`,
+    `axis_switch_*`, `axi_dma_0`) is untouched.
+  - HDMI integration (D25, SVGA 800x600 @ 40 MHz) is untouched.
+  - Encoder integration (D32 / D33 / D36, `axi_encoder_input` at
+    `0x43D10000` mapped as `enc_in_0/s_axi`) is untouched.
+  - LowPassFir DSP (`hw/ip/clash/src/LowPassFir.hs`) is untouched.
+  - No second overlay, no AXIS switch to route DSP output to PCM5102 —
+    the DSP path still terminates at ADAU1761 only. Routing DSP into
+    the external DAC is Phase 7E and not started.
+- **Frame format.** I2S Philips, 32-bit slot per channel, 24-bit data
+  MSB-first with 1 BCLK delay after LRCLK transition, 7 zero LSB pads
+  per slot. BCLK = MCLK / 4 = 3.072 MHz. LRCLK = BCLK / 64 = 48 kHz.
+  Tone amplitude is quarter scale (`2^21 = 2097152`) by design — small
+  enough to make accidental headphone-direct connections survivable
+  while still being clearly audible on line-in.
+- **Timing.** Post-route summary (full design):
+  `WNS = -8.410 ns`, `TNS = -7313 ns` on `clk_fpga_0` (100 MHz, same
+  failing domain as the baseline `-8.096 ns`, within historical band).
+  PCM5102 new clock domain
+  `clk_out1_block_design_clk_wiz_audio_ext_0` (12.288 MHz):
+  `WNS = +77.576 ns`, 0 violations. HDMI / bclk / clash domains
+  unchanged. Deploy approved.
+- **Why.** Land the DAC PHY and external clock generation alone, with
+  no DSP integration risk, so the wiring / module strap / line-out can
+  be verified end-to-end before Phase 7D introduces the ADC and Phase
+  7E touches the DSP routing. Free-running tone removes any software
+  step from the bring-up smoke: power on, load overlay, listen.
+- **How to apply.**
+  - Listen / scope on PMOD JB pins via the smoke script
+    `scripts/test_pcm5102_dac_tone.py`.
+  - Do NOT add an AXI register to enable / disable the tone here — the
+    module is intentionally trivial. Phase 7E will replace it with an
+    AXIS path from the DSP chain.
+  - PCM1808 (ADC) goes in Phase 7D following the same DAC-only +
+    free-running + smoke pattern, sharing the same `clk_wiz_audio_ext`
+    12.288 MHz MCLK.

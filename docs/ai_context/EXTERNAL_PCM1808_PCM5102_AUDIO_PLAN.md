@@ -275,11 +275,17 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
 - 外付け I2S interface module の Clash / VHDL 側設計初稿
 - DSP 置換はしない
 
-### Phase 7C: PCM5102 DAC 出力の loopback prototype
-- PCM5102 DAC を先に動かす
-- FPGA / PS path から sine / sweep を生成して PCM5102 へ送る
-- BCLK / LRCK / DIN をオシロ / logic analyzer で確認
-- DAC アナログ出力を計測 (line out → audio interface input)
+### Phase 7C: PCM5102 DAC 出力の loopback prototype — **LANDED (DAC-only, free-running)**
+- PCM5102 DAC を先に動かす — **済**
+- FPGA / PS path から sine / sweep を生成して PCM5102 へ送る — **PL 内で 1 kHz 正弦を free-running 生成 (`pcm5102_dac_tone`, DECISIONS.md D38)**
+- BCLK / LRCK / DIN をオシロ / logic analyzer で確認 — **手作業残**
+- DAC アナログ出力を計測 (line out → audio interface input) — **手作業残**
+- 新規物: RTL `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v`、新 MMCM
+  `clk_wiz_audio_ext` (100 MHz → 12.288 MHz exact)、tcl
+  `hw/Pynq-Z2/pcm5102_dac_integration.tcl`、XDC 4 pin、smoke
+  `scripts/test_pcm5102_dac_tone.py`。AXI-Lite なし。GPIO_CONTROL_MAP
+  契約変更なし。ADAU1761 / HDMI / encoder すべて未変更。bit/hwh 再生成 +
+  deploy 済 (smoke PASS)。
 
 ### Phase 7D: PCM1808 ADC 入力の loopback prototype
 - line-level signal を PCM1808 へ入れる

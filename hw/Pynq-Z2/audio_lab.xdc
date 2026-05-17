@@ -151,3 +151,27 @@ set_property PACKAGE_PIN Y6  [get_ports {enc2_dt_i}]
 set_property IOSTANDARD LVCMOS33 [get_ports {enc2_dt_i}]
 set_property PACKAGE_PIN B19 [get_ports {enc2_sw_i}]
 set_property IOSTANDARD LVCMOS33 [get_ports {enc2_sw_i}]
+
+###################################################
+## Phase 7C: PCM5102 (external DAC) bring-up on PMOD JB.
+##
+## Wiring (DECISIONS.md D38, IO_PIN_RESERVATION.md 4A.1):
+##   JB1 (W14)  EXT_AUDIO_MCLK  -> PCM5102 SCK   (12.288 MHz)
+##   JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM5102 BCK   ( 3.072 MHz)
+##   JB3 (T11)  EXT_AUDIO_LRCLK -> PCM5102 LCK   (48 kHz)
+##   JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN   (24-bit I2S)
+##
+## PCM1808 (ADC) pins are NOT added yet -- Phase 7D.
+## All four pins are LVCMOS33 outputs, no PULLUP. PMOD JA stays free.
+###################################################
+set_property PACKAGE_PIN W14 [get_ports {ext_audio_mclk_o}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_mclk_o}]
+
+set_property PACKAGE_PIN Y14 [get_ports {ext_audio_bclk_o}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_bclk_o}]
+
+set_property PACKAGE_PIN T11 [get_ports {ext_audio_lrclk_o}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_lrclk_o}]
+
+set_property PACKAGE_PIN V16 [get_ports {ext_dac_din_o}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_dac_din_o}]

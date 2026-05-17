@@ -1,6 +1,28 @@
 # Current state
 
-Last updated: **2026-05-17, GUI catalog / HDMI shim refactor reverted after LCD display regression**
+Last updated: **2026-05-18, Phase 7C PCM5102 external DAC bring-up landed (DAC-only)**
+(new RTL module `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v` is a
+free-running I2S master that emits a 1 kHz / 24-bit / quarter-scale sine
+to both stereo channels at 48 kHz fs. A new MMCM
+(`clk_wiz_audio_ext`, `100 MHz -> 12.288 MHz exact` via
+`DIVCLK_DIVIDE=5, MULT_F=48.0, CLKOUT0_DIVIDE_F=78.125, VCO=960 MHz`)
+drives the module. The four signals come out of PMOD JB:
+JB1 W14 MCLK / JB2 Y14 BCLK / JB3 T11 LRCLK / JB7 V16 DIN
+(LVCMOS33, no PULLUP, added to `audio_lab.xdc`). New tcl
+`hw/Pynq-Z2/pcm5102_dac_integration.tcl` sourced from
+`create_project.tcl` after `encoder_integration.tcl`. NO AXI-Lite
+slave, NO new GPIO, NO change to the ADAU1761 path, HDMI integration,
+encoder integration, GPIO_CONTROL_MAP, or LowPassFir DSP. PCM1808
+ADC is **NOT** implemented (Phase 7D). bit/hwh rebuilt and deployed.
+Smoke `scripts/test_pcm5102_dac_tone.py` PASS on PYNQ (overlay loads,
+all required existing IPs intact, encoder IP visible as
+`enc_in_0/s_axi`, no overlay regression). LCD GUI / encoder GUI not
+re-verified visually yet on this build but no Python or notebook
+changed; only Python touched is the new smoke script. `DECISIONS.md`
+D38.
+
+Previous-pass header (revert era):
+**GUI catalog / HDMI shim refactor reverted after LCD display regression**
 (reverted three commits — `ee0bc93` *Avoid encoder GUI overlay redownload*,
 `4d141a0` *Start encoder HDMI GUI with initial frame*, `bef00b2` *Refactor
 GUI catalog and HDMI shims* — because `EncoderGuiSmoke.ipynb` stopped

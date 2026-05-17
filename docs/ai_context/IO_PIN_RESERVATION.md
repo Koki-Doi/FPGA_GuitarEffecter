@@ -258,11 +258,11 @@ docs に列挙するのみで XDC 変更はしない。
 
 | Logical signal | External module pin | Direction | Connector | Board pin | Package pin | IOSTANDARD | Pull plan | Notes | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `EXT_AUDIO_MCLK`  | PCM1808 `SCKI` (+ optionally PCM5102 `SCK`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | 12.288 MHz | candidate |
-| `EXT_AUDIO_BCLK`  | PCM1808 `BCK` + PCM5102 `BCK`               | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | candidate |
-| `EXT_AUDIO_LRCLK` | PCM1808 `LRCK` + PCM5102 `LCK`              | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | candidate |
-| `EXT_ADC_DOUT`    | PCM1808 `DOUT`                              | **in**  | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | input delay は Phase 7D で確定 | candidate |
-| `EXT_DAC_DIN`     | PCM5102 `DIN`                               | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | data only | candidate |
+| `ext_audio_mclk_o`  | PCM5102 `SCK` (+ later PCM1808 `SCKI`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | 12.288 MHz exact, `clk_wiz_audio_ext` (D38) | **wired** |
+| `ext_audio_bclk_o`  | PCM5102 `BCK` (+ later PCM1808 `BCK`)  | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | **wired** |
+| `ext_audio_lrclk_o` | PCM5102 `LCK` (+ later PCM1808 `LRCK`) | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | **wired** |
+| `EXT_ADC_DOUT`      | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | input delay は Phase 7D で確定 | candidate |
+| `ext_dac_din_o`     | PCM5102 `DIN`                          | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | data only, 24-bit I2S Philips | **wired** |
 | `EXT_AUDIO_SPARE_JB8`  | (将来用 / RX / aux DAC channel 等) | -- | PMOD JB | `JB8`  | `W16` | LVCMOS33 | -- | spare | candidate |
 | `EXT_AUDIO_SPARE_JB9`  | (将来用) | -- | PMOD JB | `JB9`  | `V12` | LVCMOS33 | -- | spare | candidate |
 | `EXT_AUDIO_SPARE_JB10` | (将来用) | -- | PMOD JB | `JB10` | `W13` | LVCMOS33 | -- | spare | candidate |
