@@ -168,57 +168,95 @@ asking it to re-discover the project from scratch.
 > 触ってよいファイルは `AGENTS.md` / `CLAUDE.md` / `docs/` 配下のみ。
 > 実装ファイルや bitstream を巻き込まないでください。
 
-## Phase 7B — PCM1808 / PCM5102 module verification + XDC candidate
+## Phase 7B — PCM1808 / PCM5102 module verification + pin candidate docs
 
-> Phase 7A は planning only で終了済みです (`DECISIONS.md` D27 ~
-> D30、commit はこの prompt 時点では未定)。Phase 7B はまず以下を読んで
-> ください: `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`、
-> `docs/ai_context/IO_PIN_RESERVATION.md`、`docs/ai_context/CURRENT_STATE.md`
-> の Phase 7A 節。
+> Phase 7A / 7B は planning only。実 XDC / block_design / bit / hwh は
+> Phase 7C 以降。まず以下を読んでください:
+> `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (section 11
+> = Phase 7B チェックリスト)、`docs/ai_context/IO_PIN_RESERVATION.md`
+> (section 4 / 4A = candidate package pin 表)、
+> `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` (section 7 = encoder
+> module 物理確認)、`docs/ai_context/CURRENT_STATE.md` の Phase 7A /
+> 7B 節、`DECISIONS.md` D27 ~ D32。
 >
 > Phase 7B の作業:
-> 1. 実モジュール (Youmile PCM1808 / 汎用 PCM5102) を物理確認し、
->    silkscreen ピン名 / VCC / I/O level / `MD0` / `MD1` / `FMT` /
->    `SCKI` の有無 / `XSMT` / `FLT` / `DMP` / onboard regulator の
->    有無 / analog 結合方式を `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
->    section 3 のチェックリストで埋める。
-> 2. `IO_PIN_RESERVATION.md` の論理予約 (PMOD JB に audio 5 + spare、
->    PMOD JA に control / strap、Raspberry Pi header に encoder) を
->    PYNQ-Z2 board file (`/home/doi20/board_files/XilinxBoardStore/
->    boards/TUL/pynq-z2/1.0/`) で実 Package Pin に解決する。
-> 3. XDC 候補を作成 (まだ commit しない)。ADAU1761 既存 pin
->    (`U5 / M17 / M18 / U9 / T9 / F17 / G18 / R18 / T17`) と HDMI
->    pin (`L16 / L17 / K17 / K18 / K19 / J19 / J18 / H18`) に衝突
->    しないこと。
-> 4. 外付け I2S interface module (Clash or HDL) の初稿設計。DSP
->    本体 (`LowPassFir.hs`) は変更しない。
+> 1. **実モジュール物理確認** (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+>    section 11.1 / 11.2 と `ENCODER_GUI_CONTROL_SPEC.md` section 7):
+>    PCM1808 / PCM5102 / rotary encoder の silkscreen、VCC、I/O
+>    level、strap、pull-up を実物 / テスター / 商品ページで埋める。
+> 2. **候補 package pin の docs 化** — 既に `IO_PIN_RESERVATION.md`
+>    section 4A に PMOD JB (audio 必須) / PMOD JA (audio control) /
+>    Raspberry Pi header (encoder + spare、JA と共有しない pin 群) /
+>    Arduino header (将来予備) の候補表を作成済み。実モジュール
+>    結果で `Status` を更新する。
+> 3. 重要: PYNQ-Z2 上で **PMOD JA pin は RPi header GPIO の一部と
+>    物理共有** (`IO_PIN_RESERVATION.md` 4.6)。encoder には
+>    `raspberry_pi_tri_i_6..24` (= `F19, V10, V8, W10, B20, W8, V6,
+>    Y6, B19, U7, C20, Y8, A20, Y9, U8, W6, Y7, F20, W9`) を使う。
+> 4. encoder module の `+` ピンを **3.3V に繋ぐ**。5V 禁止
+>    (`DECISIONS.md` D31)。pull-up が `+` 経由なら 5V 化で PL pin
+>    破損のリスク。
+> 5. encoder IP の AXI base address は **TBD** (`DECISIONS.md` D32)。
+>    `0x43CE0000` (`axi_vdma_hdmi`) と `0x43CF0000` (`v_tc_hdmi`) は
+>    禁止。Phase 7F で確定。
 >
-> 禁止: ADAU1761 即置換、ギター直結を前提にした analog front-end
-> 省略、`block_design.tcl` 変更 (Phase 7B 時点では未承認)、bit / hwh
-> 再生成、`git push` / `git pull` / `git fetch`。
+> 禁止: `hw/Pynq-Z2/audio_lab.xdc` 変更、`block_design.tcl` 変更、
+> `hdmi_integration.tcl` 変更、bit / hwh 再生成、Vivado build、
+> ADAU1761 即置換、`git push` / `git pull` / `git fetch`。
+
+## Phase 7C — PCM5102 DAC 出力 prototype (XDC 反映の最初の段階)
+
+> 前提: Phase 7B のモジュール確認 (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+> section 11.1 / 11.2) が埋まっていること。
+>
+> Phase 7C の作業:
+> 1. `hw/Pynq-Z2/audio_lab.xdc` に PMOD JB の audio 5 pin を追加
+>    (`IO_PIN_RESERVATION.md` section 4A.1 の `W14 / Y14 / T11 /
+>    T10 / V16`)。`LVCMOS33`、`create_generated_clock` 含む。
+> 2. PS 側または既存 DSP path 経由で I2S sine / sweep を PCM5102 へ送る
+>    HDL / Clash プロトタイプ。DSP 本体は変更しない。
+> 3. オシロ / ロジアナで `JB2 (BCK = 3.072 MHz)` / `JB3 (LRCK = 48 kHz)` /
+>    `JB7 (DIN)` を観測。
+> 4. PCM5102 line out を別 audio interface input に取り込んで波形 / SNR
+>    測定。
+> 5. ADAU1761 path は維持 (`DECISIONS.md` D27)。`audio_lab.bit` の
+>    HDMI / DSP / GPIO map は変更しない。
+> 6. bit / hwh rebuild + timing summary を確認、deploy band を逸脱しない
+>    こと。
+>
+> 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
+> DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
 ## Phase 7F — Rotary encoder PL IP + XDC
 
 > Phase 7F に入る前に `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`
-> を必ず読んでください (`DECISIONS.md` D30)。
+> を必ず読んでください (`DECISIONS.md` D30 / D31 / D32)。
 >
 > Phase 7F の作業:
 > 1. encoder decode IP (2-stage sync + debounce + quadrature FSM +
 >    delta / count / event / CONFIG / CLEAR_EVENTS、register map は
 >    `ENCODER_GUI_CONTROL_SPEC.md` section 4) を Clash or HDL で実装。
-> 2. AXI-Lite slave で接続。base 候補 `0x43CE0000` (既存
->    `axi_gpio_*` `0x43C30000..0x43CD0000` と衝突しないこと)。
+>    CONFIG に `invert_clk` / `invert_dt` / `clk_dt_swap` /
+>    `reverse_direction` / `sw_active_low` を含める (`DECISIONS.md` D31)。
+> 2. AXI-Lite slave で接続。**base address は TBD**
+>    (`DECISIONS.md` D32)。Vivado address editor + `pynq.PL.ip_dict` +
+>    HWH を確認して **`0x43CE0000` / `0x43CF0000` 以外** の空き
+>    range から選ぶ。既存 `axi_gpio_*` (`0x43C30000..0x43CD0000`) と
+>    HDMI (`0x43CE0000` / `0x43CF0000`) と衝突しないこと。
 > 3. `block_design.tcl` 修正 (ユーザ承認後): `NUM_MI` 増、address
 >    segment 追加、encoder IP 配線。
-> 4. `audio_lab.xdc` に encoder pin 追加 (Raspberry Pi header 候補)、
->    `PULLUP true` 設定。
+> 4. `audio_lab.xdc` に encoder pin 追加 (Raspberry Pi header の
+>    `raspberry_pi_tri_i_6..` 系統)、`PULLUP true` 設定。
+>    `IO_PIN_RESERVATION.md` section 4A.3 の候補表を参照。
 > 5. bit / hwh build。WNS が `TIMING_AND_FPGA_NOTES.md` の最新
 >    deploy band (-8.731 ns 近辺) を大きく悪化させないこと。
 > 6. 簡単な debug script で raw delta / event が出るか確認。
 >
-> 禁止: PS polling で A / B / SW を直接読む実装 (`DECISIONS.md` D30
-> 違反)、既存 `axi_gpio_*` に encoder bit を混ぜる、ADAU1761 / HDMI
-> 経路の改変、`git push` / `git pull` / `git fetch`。
+> 禁止: PS polling で `CLK` / `DT` / `SW` を直接読む実装
+> (`DECISIONS.md` D30 違反)、既存 `axi_gpio_*` に encoder bit を
+> 混ぜる、encoder IP の base address を `0x43CE0000` / `0x43CF0000`
+> に置く、ADAU1761 / HDMI 経路の改変、`git push` / `git pull` /
+> `git fetch`。
 
 ## Phase 7G — Python encoder driver + GUI focus state
 

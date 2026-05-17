@@ -2163,6 +2163,75 @@ Phase 7A は **planning only**。実装 / XDC / block_design / bit / hwh
 詳細は新規 3 docs (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` /
 `IO_PIN_RESERVATION.md` / `ENCODER_GUI_CONTROL_SPEC.md`) を参照。
 
+## Phase 7B — module verification + candidate package pin docs (2026-05-17)
+
+Phase 7B も **planning only**。XDC / block_design / bit / hwh は無変更。
+Phase 7A の docs を実モジュールのシルクと PYNQ-Z2 board file
+(`/home/doi20/board_files/XilinxBoardStore/boards/TUL/pynq-z2/1.0/part0_pins.xml`)
+に基づいて訂正 + 具体化 (`DECISIONS.md` D31 / D32)。
+
+成果物 (docs のみ):
+- `docs/ai_context/IO_PIN_RESERVATION.md` 更新:
+  - encoder 信号を `ENC*_CLK` / `ENC*_DT` / `ENC*_SW` に rename
+    (元 `ENC*_A` / `ENC*_B` / `ENC*_SW`)
+  - 物理シルク `CLK` / `DT` / `SW` / `+` / `GND` に揃え、`+` は
+    3.3V 専用とすること明記
+  - 新規 section 4A "Candidate package pins, Phase 7B draft":
+    PMOD JB / PMOD JA / Raspberry Pi header / Arduino header の
+    候補 package pin 表 (`LVCMOS33`、`Status` 付)
+  - 新規 section 4.6 "PMOD JA ⇄ Raspberry Pi 共有ピン警告":
+    PYNQ-Z2 上で `JA1..JA10` は `raspberry_pi_tri_i_{0..5}` および
+    `respberry_sd_i` / `respberry_sc_i` と物理共有しており、
+    PMOD JA を使うと該当 RPi GPIO は同時に使えない。encoder は
+    `raspberry_pi_tri_i_6..24` (= JA と共有しない 19 pin) を選ぶ。
+- `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` 更新:
+  - 新規 section 11 "Phase 7B 実モジュール確認チェックリスト"
+    (PCM1808 / PCM5102 verification、Phase 7B pin candidate plan、
+    PMOD JB / JA 接続案、Phase 7C / 7D / 7E 検証計画)
+  - 禁止事項に `encoder IP の base address を HDMI VDMA range に
+    置く (0x43CE0000 / 0x43CF0000 禁止)` を追加
+- `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` 更新:
+  - タイトル / 全文を `CLK` / `DT` / `SW` 表記に統一
+  - module pin labels セクションを冒頭に追加 (`+` 3.3V 専用警告含む)
+  - encoder IP base address を **TBD** に戻し、`0x43CE0000` /
+    `0x43CF0000` 禁止を明記 (`DECISIONS.md` D32)
+  - CONFIG レジスタに `invert_clk` / `invert_dt` / `clk_dt_swap` /
+    `reverse_direction` / `sw_active_low` を追加
+  - 新規 section 7 "Phase 7B encoder module 物理確認チェックリスト"
+- `docs/ai_context/DECISIONS.md` 更新:
+  - D30 内の `0x43CE0000` 仮置きを TBD + `D32 で禁止` に訂正
+  - 新規 D31 "Rotary encoder module pins are CLK / DT / SW / + / GND"
+    (`+` は 3.3V 専用、5V で PL pin 破損リスク、方向はレジスタ補正)
+  - 新規 D32 "Encoder PL IP の AXI base address は TBD、
+    `0x43CE0000` (`axi_vdma_hdmi`) / `0x43CF0000` (`v_tc_hdmi`)
+    禁止"
+- `docs/ai_context/RESUME_PROMPTS.md` 更新:
+  - Phase 7B prompt を物理確認 + candidate pin docs フェーズに更新
+  - Phase 7C prompt (PCM5102 DAC 出力 prototype、XDC 最初の追加) を新設
+  - Phase 7F prompt の `base 候補 0x43CE0000` を **TBD + 禁止 list** に訂正
+
+確定事項 (Phase 7B):
+- encoder module シルクは `CLK` / `DT` / `SW` / `+` / `GND`、論理名は
+  `ENC*_CLK` / `ENC*_DT` / `ENC*_SW`、power は `ENC_3V3` / `ENC_GND`
+- `ENC_3V3` は **3.3V のみ** (5V 禁止、`DECISIONS.md` D31)
+- encoder IP base address は **TBD**。`0x43CE0000` (HDMI VDMA) と
+  `0x43CF0000` (HDMI VTC) は禁止 (`DECISIONS.md` D32)
+- candidate package pin: PMOD JB に audio (`W14 / Y14 / T11 / T10 /
+  V16` + spare `W16 / V12 / W13`)、PMOD JA に audio control 候補
+  (`Y18 / Y19 / Y16 / Y17 / U18 / U19 / W18 / W19`、ただし RPi と
+  共有なので strap で固定するのが望ましい)、Raspberry Pi header の
+  JA 非共有 pin (`F19, V10, V8, W10, B20, W8, V6, Y6, B19, U7, C20,
+  Y8, A20, Y9, U8, W6, Y7, F20, W9`) を encoder + spare に割当
+- 実 package pin 確定 / `audio_lab.xdc` 書込みは Phase 7C 以降
+
+未実装 (Phase 7B 時点):
+- `hw/Pynq-Z2/audio_lab.xdc` への外付け codec / encoder pin 追加
+- `hw/Pynq-Z2/block_design.tcl` の encoder IP 追加
+- 実モジュールでの物理確認結果反映 (チェックリストは作成済み、
+  module 入手後に結果を `Status: needs physical verification` の
+  行に反映)
+- encoder PL IP 実装 / Python driver / GUI focus state
+
 ## What to do next
 
 Open work, in roughly priority order:
@@ -2185,10 +2254,13 @@ Open work, in roughly priority order:
 4. **Diagnostic capture for distortion stages.** Re-use
    `diagnostics.capture_input` to log a clip waveform per pedal so
    we can compare voicings without ear fatigue.
-5. **Phase 7B (external PCM1808 / PCM5102 verification).** 実モジュール
-   の silkscreen / strap / 電源 / I/O level を実物で確認し、候補ピン番号
-   を確定。XDC 候補を作るが、まだ commit はしない。`IO_PIN_RESERVATION.md`
-   と `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` のチェックリストに沿う。
+5. **Phase 7C (PCM5102 DAC output prototype).** Phase 7B で
+   candidate package pin は docs 化済み。Phase 7C で実モジュールを
+   入手して `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` section 11.1 /
+   11.2 と `ENCODER_GUI_CONTROL_SPEC.md` section 7 のチェックリストを
+   埋めたら、`audio_lab.xdc` に PMOD JB の audio 5 pin を追加し、
+   PCM5102 DAC 出力 (BCLK / LRCK / DIN) を実機で観測する。
+   ADAU1761 path は維持 (`DECISIONS.md` D27)。
 
 ## Things to be careful about
 

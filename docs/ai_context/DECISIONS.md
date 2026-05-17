@@ -1105,7 +1105,9 @@ not get removed even when superseded — they get updated.
 - **境界.**
   - 既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) には混ぜない。
     encoder 用は **新規 AXI IP** (または新規 AXI GPIO input)。
-    base 候補は `0x43CE0000` (Phase 7F で確定)。
+    base address は **TBD** (Phase 7F で確定)。`0x43CE0000`
+    (`axi_vdma_hdmi`) と `0x43CF0000` (`v_tc_hdmi`) は **禁止**
+    (`DECISIONS.md` D32、Phase 7B 訂正)。
   - 既存 `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` 4-byte unpacking 構造は
     encoder には流用しない (event bit と signed delta が混在する
     ため別 layout)。
@@ -1126,3 +1128,70 @@ not get removed even when superseded — they get updated.
   encoder 3 個でも数百 LUT 程度で済み、現状の Vivado リソース枠
   内に余裕で収まる。GUI 更新周期 (30 ~ 60 Hz) と入力検出周期
   (PL clock、~ MHz) を完全分離できるのも大きい。
+
+## D31 — Rotary encoder module pins are documented as CLK / DT / SW / + / GND (not generic A / B / SW)
+
+- **状況.** Phase 7A では encoder の信号を `ENC*_A` / `ENC*_B` /
+  `ENC*_SW` と書いていたが、実モジュール (Amazon / 共立等の 5 pin
+  rotary encoder + tactile switch ボード) のシルクは
+  **`CLK` / `DT` / `SW` / `+` / `GND`** だった。配線指示と XDC 候補で
+  異なる呼び方を併用すると現場で配線ミスが起きる。
+- **決定.**
+  - **外部配線指示 / XDC 候補 / 物理表は `CLK` / `DT` / `SW` /
+    `+` / `GND` 表記** を使う。
+  - 論理信号名は **`ENC*_CLK` / `ENC*_DT` / `ENC*_SW`** に統一
+    (`*` は `0` / `1` / `2`)。
+  - 電源 / GND は **`ENC_3V3` / `ENC_GND`** という名前で記録し、
+    GPIO としてはカウントしない。
+  - **`+` は 3.3V 専用**。5V に繋がない。理由: 多くの encoder
+    module は基板上 pull-up を `+` ピンに繋いでおり、`+` を 5V に
+    すると `CLK` / `DT` / `SW` も 5V 化して PYNQ-Z2 PL pin (3.3V
+    LVCMOS33) を直撃する。最悪の場合 PL pin が壊れる。
+  - PL 内部 (Clash / HDL / register) では quadrature の慣例上
+    `A` (= CLK) / `B` (= DT) と呼んでもよい。Python / API 公開名は
+    semantic (`rotate` / `short_press` / `long_press`) を優先する。
+  - 回転方向 / 極性が期待と逆になった場合は **CONFIG レジスタの
+    `invert_clk` / `invert_dt` / `clk_dt_swap` / `reverse_direction` /
+    `sw_active_low` で補正** する。物理 rewiring は最後の手段。
+- **境界.**
+  - module 側に pull-up があるかは Phase 7B の物理確認項目
+    (`IO_PIN_RESERVATION.md` section 4.4、
+    `ENCODER_GUI_CONTROL_SPEC.md` section 7)。
+  - 3.3V で pull-up が弱い場合は外付け 10 kΩ → 3.3V または PL 側
+    `set_property PULLUP true`。
+- **Why.** シルクと docs が一致していないと、配線時に CLK / DT を
+  入れ替えたまま気付かない / `+` を 5V に繋いで PL pin が壊れる
+  / quadrature の方向が逆で GUI が変な動きをする、といった事故の
+  原因になる。シルクを source of truth にして、論理 / register /
+  driver に揃える。
+
+## D32 — Encoder PL IP の AXI base address は TBD、`0x43CE0000` / `0x43CF0000` は禁止
+
+- **状況.** Phase 7A の `DECISIONS.md` D30 と
+  `ENCODER_GUI_CONTROL_SPEC.md` で encoder IP の base address を
+  `0x43CE0000` と仮置きしていた。Phase 7B で `CURRENT_STATE.md` /
+  `HDMI_GUI_INTEGRATION_PLAN.md` / `HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`
+  を確認したところ、`0x43CE0000` は **既存 `axi_vdma_hdmi`** (HDMI
+  フレームバッファ VDMA、`DECISIONS.md` D23)、`0x43CF0000` は
+  **既存 `v_tc_hdmi`** (HDMI Video Timing Controller) の address で
+  あり、encoder IP を置くと HDMI が動かなくなる。
+- **決定.**
+  - encoder IP base address は **TBD**。Phase 7F で確定する。
+  - **`0x43CE0000` 禁止** (`axi_vdma_hdmi` 占有)。
+  - **`0x43CF0000` 禁止** (`v_tc_hdmi` 占有)。
+  - 既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) とも衝突禁止。
+  - `0x43D00000` 以降 (HDMI integration plan で rgb2dvi 用 control
+    候補とされた range) も避け、念のため `0x43D10000` 以降または
+    `0x43C00000` 以下の空き range を Phase 7F で
+    `pynq.PL.ip_dict` + Vivado address editor + HWH で確認の上で
+    選ぶ。
+- **境界.**
+  - block_design.tcl 変更は Phase 7F でユーザ承認の上で行う。
+    `axi_gpio_noise_suppressor` (`DECISIONS.md` D11) /
+    `axi_gpio_compressor` (`DECISIONS.md` D14) と同じ "個別承認の
+    例外" 扱い。
+  - Phase 7A の docs / D30 にあった `0x43CE0000` 記述は Phase 7B で
+    TBD へ訂正済み (本決定の理由)。
+- **Why.** HDMI 経路は `audio_lab.bit` の中心機能であり、address を
+  踏むと VDMA / VTC が動かなくなり LCD が真っ黒になる。block_design
+  / HWH を読んで address map を確認してから encoder IP を置く。

@@ -315,7 +315,7 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
 
 ---
 
-## 10. 禁止事項 (Phase 7A の間)
+## 10. 禁止事項 (Phase 7A / 7B の間)
 
 - XDC 変更 (`hw/Pynq-Z2/audio_lab.xdc`)
 - block_design 変更 (`hw/Pynq-Z2/block_design.tcl`)
@@ -327,4 +327,140 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
 - ADAU1761 経路の即置換
 - `GUI/pynq_multi_fx_gui.py` / `audio_lab_pynq/hdmi_effect_state_mirror.py`
   shim の巨大化 (実装本体は `GUI/compact_v2/` / `audio_lab_pynq/hdmi_state/`)
+- encoder 用 AXI IP の base address を **HDMI VDMA range** に置く
+  (`0x43CE0000` / `0x43CF0000` 禁止、`DECISIONS.md` D32)
 - `git push` / `git pull` / `git fetch`
+
+---
+
+## 11. Phase 7B 実モジュール確認チェックリスト
+
+実モジュール (Amazon / 共立 / aitendo 等で購入する PCM1808 / PCM5102
+基板) を入手した時点で、Phase 7C (DAC 出力 prototype) 開始前に必ず
+以下を埋める。
+
+### 11.1 PCM1808 module verification
+
+電源 / レベル:
+- [ ] 基板シルク上の `VCC` ピン名と許容電圧
+- [ ] 同じく `GND`
+- [ ] `VCC = 3.3V` で動作するか (Youmile module は典型 3.3V or 5V 両対応)
+- [ ] `VCC = 5V` の場合、デジタル `DOUT` / 入力 `SCKI` / `BCK` / `LRCK` /
+  `FMT` / `MD0` / `MD1` の I/O level (3.3V tolerant か / 5V のままか)
+- [ ] onboard regulator の有無 (3.3V LDO が module に載っているか)
+
+I2S / control:
+- [ ] `SCK` / `SCKI` / `MCK` / `MCLK` 表記揺れの実シルク確認
+- [ ] `SCKI` 接続が必須か (PCM1808 は典型 `SCKI` 必須、内蔵 PLL なし)
+- [ ] `BCK` / `BCLK` シルク
+- [ ] `LRCK` / `LCK` / `WS` シルク
+- [ ] `DOUT` シルクと出力 level
+- [ ] `FMT` の基板上 strap / jumper (LOW=I2S 推奨)
+- [ ] `MD0` / `MD1` の基板上 strap / jumper (slave-mode 固定推奨)
+- [ ] FPGA から `FMT` / `MD0` / `MD1` を制御する必要があるか
+      (strap で固定できれば PMOD JA を空けられる)
+
+アナログ入力:
+- [ ] analog input が AC coupling 済み (DC blocking cap onboard) か
+- [ ] analog input impedance (典型 数十 kΩ)
+- [ ] line-level 専用であること再確認
+- [ ] **ギター直結は不可** (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+      section 5、analog front-end は Phase 7E 以降)
+
+### 11.2 PCM5102 module verification
+
+電源 / レベル:
+- [ ] 基板シルク上の `VCC` / `GND`
+- [ ] 許容電圧 (PCM5102A 系は典型 3.3V、module by module で 5V 入力可も
+      あり)
+- [ ] デジタル I/O level (3.3V tolerant か)
+- [ ] onboard regulator の有無
+
+I2S / control:
+- [ ] `DIN` / `BCK` / `LCK` (`LRCK` / `WS`) のシルク
+- [ ] `SCK` / `MCLK` ピンの実存と既定 (GND 落とし内蔵 PLL or 外部 MCLK)
+- [ ] 3-wire I2S (`BCK` / `LCK` / `DIN` のみ) で動く構成か
+- [ ] `XSMT` の露出有無、既定状態 (pull-up unmute or pull-down mute)
+- [ ] `FLT` / `DMP` / `FMT` の露出有無と既定 strap
+
+アナログ出力:
+- [ ] output が AC coupled (output cap onboard) か
+- [ ] output レベル (line out 想定) / impedance
+- [ ] **headphone 直接駆動を前提にしない** (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+      section 6、必要なら output buffer / headphone amp 追加)
+- [ ] pop noise 対策 (XSMT デジタル制御 / mute シーケンス)
+
+### 11.3 Phase 7B pin candidate plan (cross-reference)
+
+候補 package pin は `IO_PIN_RESERVATION.md` section 4A の表に集約済み。
+Phase 7B 時点では:
+- PMOD JB に audio 必須 5 pin + spare 3 pin を割当 (`candidate`)
+- PMOD JA は audio 追加 control / strap (`candidate`、可能なら module
+  strap で固定して PMOD JA を空ける方を優先)
+- Raspberry Pi header の **JA と共有しない pin 群**
+  (`raspberry_pi_tri_i_6..24` = `F19, V10, V8, W10, B20, W8, V6, Y6,
+  B19, U7, C20, Y8, A20, Y9, U8, W6, Y7, F20, W9`) を encoder + spare に
+  割当 (`candidate / needs physical verification`)
+- 実 module 確認後、Phase 7C で `audio_lab.xdc` に DAC 用 pin から順に
+  実装。Phase 7B の本ドキュメントでは XDC を **書かない**。
+
+### 11.4 Phase 7B 接続案 (PMOD JB ↔ external module)
+
+最小構成 (mode pin はすべて module strap、XSMT pull-up):
+
+```
+PYNQ-Z2 PMOD JB                            External module
+================                           =============================
+JB1  (W14)  EXT_AUDIO_MCLK   ──────────►   PCM1808 SCKI
+                              ──────────►  (optional) PCM5102 SCK
+JB2  (Y14)  EXT_AUDIO_BCLK   ──────────►   PCM1808 BCK + PCM5102 BCK
+JB3  (T11)  EXT_AUDIO_LRCLK  ──────────►   PCM1808 LRCK + PCM5102 LCK
+JB4  (T10)  EXT_ADC_DOUT     ◄──────────   PCM1808 DOUT
+JB7  (V16)  EXT_DAC_DIN      ──────────►   PCM5102 DIN
+JB11 (GND)                   ───────────   PCM1808 GND + PCM5102 GND
+JB12 (3V3)  *only if module accepts 3.3V on VCC*
+                             ───────────   (else use external 5V supply, common GND)
+```
+
+PCM1808 strap (基板上で固定):
+- `FMT = LOW`   (I2S 24-bit)
+- `MD0 / MD1 = slave mode`
+
+PCM5102 strap:
+- `XSMT = HIGH` (unmute, pull-up to 3.3V)
+- `FLT` / `DMP` / `FMT` は工場既定で問題なければ未接続
+- `SCK` は module 仕様に従う (GND 落とし内蔵 PLL or `EXT_AUDIO_MCLK` 共通)
+
+PMOD JA を使う場合 (module strap が無いとき):
+- `JA1` (Y18): `EXT_ADC_FMT`
+- `JA2` (Y19): `EXT_ADC_MD0`
+- `JA3` (Y16): `EXT_ADC_MD1`
+- `JA4` (Y17): `EXT_DAC_XSMT` (これを使うときは pull-up より優先)
+- `JA7` (U18): `EXT_CODEC_RESET_N` (module 露出している場合)
+- 注意: 上記 5 pin は RPi header の `raspberry_pi_tri_i_0..5` /
+  `respberry_sd_i` / `respberry_sc_i` と物理共有 (`IO_PIN_RESERVATION.md`
+  section 4.6)。encoder には別 RPi pin (`raspberry_pi_tri_i_6..`) を使う。
+
+### 11.5 Phase 7C / 7D / 7E 検証計画 (再掲、precise)
+
+- **Phase 7C (DAC 先)**:
+  1. `audio_lab.xdc` に PMOD JB の 5 pin を追加 (Phase 7C の冒頭)
+  2. PS 側または既存 DSP path 経由で I2S sine / sweep を PCM5102 へ送る
+  3. オシロ / ロジアナで `JB2 (BCK)` / `JB3 (LRCK)` / `JB7 (DIN)` を観測
+  4. PCM5102 line out を別 audio interface input に入れて測定
+  5. ADAU1761 path は維持 (Phase 7E まで触らない)
+
+- **Phase 7D (ADC 次)**:
+  1. line-level 信号 (function generator / 別 audio I/F line out) を
+     PCM1808 analog input に入れる
+  2. `JB4 (DOUT)` を FPGA に取り込み、PS にバッファする
+  3. sample alignment / endian / bit depth を確認
+  4. ADAU1761 入力と同じ条件で比較 (S/N、レベル)
+
+- **Phase 7E (DSP path 組込み)**:
+  1. block_design で AXIS switch / mux を入れ、ADAU1761 / 外付け path を
+     切替可能にする (compile-time または runtime)
+  2. DSP 本体 (`LowPassFir.hs`) は変更しない
+  3. WNS が `TIMING_AND_FPGA_NOTES.md` の最新 deploy band を大きく
+     悪化させないこと
+  4. 実機 audio 比較 (ADAU1761 vs 外付け)

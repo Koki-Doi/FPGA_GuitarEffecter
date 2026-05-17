@@ -1,15 +1,37 @@
-# Encoder + GUI control spec (Phase 7A planning)
+# Encoder + GUI control spec (Phase 7A / 7B planning)
 
-3 個のロータリーエンコーダー (各 A / B / SW、押しスイッチ付) で
+3 個のロータリーエンコーダー (各 `CLK` / `DT` / `SW`、押しスイッチ付) で
 HDMI GUI 全機能を notebook なしに操作するための仕様。
 
-**Phase 7A の時点では実装しない**。アーキテクチャ / 操作仕様 /
+**Phase 7A / 7B の時点では実装しない**。アーキテクチャ / 操作仕様 /
 Python driver 案 / 将来の AXI IP register map 案を記録するのみ。
 
+## Module pin labels (Phase 7B 確定)
+
+実モジュールのシルクは 5 pin: **`CLK` / `DT` / `SW` / `+` / `GND`**
+(`DECISIONS.md` D31)。
+
+| シルク | 役割 | 内部 quadrature 表記 |
+| --- | --- | --- |
+| `CLK` | quadrature **A 相** (回転で `GND` open/close) | `A` |
+| `DT`  | quadrature **B 相** (`CLK` と 90 度位相差) | `B` |
+| `SW`  | push switch (押下で `GND` 短絡、active-low) | -- |
+| `+`   | 電源 (**3.3V 専用**、`5V` 禁止) | power |
+| `GND` | グランド | ground |
+
+- 外部配線指示 / XDC 候補 / 物理表は **`CLK` / `DT` / `SW` 表記** を使う
+- PL 内部 (Clash / HDL / register layout) では `A` (= CLK) / `B` (= DT) と
+  呼んでもよい
+- Python / API 公開名は **semantic** (`rotate` / `short_press` /
+  `long_press`) を優先する
+- `+` を 5V に繋がない (モジュール基板上の pull-up が `+` 経由で `CLK` /
+  `DT` / `SW` を 5V 化し、PL pin を直撃して壊す可能性あり、
+  `DECISIONS.md` D31)
+
 関連:
-- `docs/ai_context/IO_PIN_RESERVATION.md` (encoder ピン予約)
+- `docs/ai_context/IO_PIN_RESERVATION.md` (encoder ピン予約 + candidate package pin)
 - `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (外付け audio 設計)
-- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D30)
+- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D30 / D31 / D32)
 - 既存 GUI: `GUI/compact_v2/` (renderer / state / hit_test)
 - 既存 state mirror: `audio_lab_pynq/hdmi_state/`
 
@@ -18,17 +40,17 @@ Python driver 案 / 将来の AXI IP register map 案を記録するのみ。
 ## 1. 推奨入力アーキテクチャ
 
 ```
-Encoder pins (A / B / SW)
+Encoder pins (CLK / DT / SW)
   ↓
 [2-stage synchronizer]        ← PL fabric
   ↓
 [debounce counter]            ← PL fabric
   ↓
-[quadrature decoder FSM]      ← PL fabric
+[quadrature decoder FSM (CLK=A, DT=B)] ← PL fabric
   ↓
 [delta accumulator + event latch] ← PL fabric
   ↓
-[AXI-Lite or AXI GPIO input register]
+[AXI-Lite custom IP register]
   ↓
 [Python driver: encoder_ui.py]   ← PS side
   ↓
@@ -41,8 +63,8 @@ Encoder pins (A / B / SW)
 
 | 案 | 概要 | 評価 |
 | --- | --- | --- |
-| **A.** Python polling で A / B / SW を直接読む | PS から GPIO 読みでチャタリング / quadrature 判定 | **NG**. polling 周期が遅すぎて取りこぼし。debounce も不安定。CPU 負荷も増える。 |
-| **B.** AXI GPIO input で A / B / SW 生値を読む | A / B / SW を AXI GPIO input にして PS で raw 読み | A よりはマシだが、debounce / quadrature 判定が PS 側のままで、依然取りこぼしと CPU 負荷の問題。 |
+| **A.** Python polling で `CLK` / `DT` / `SW` を直接読む | PS から GPIO 読みでチャタリング / quadrature 判定 | **NG**. polling 周期が遅すぎて取りこぼし。debounce も不安定。CPU 負荷も増える。 |
+| **B.** AXI GPIO input で `CLK` / `DT` / `SW` 生値を読む | AXI GPIO input にして PS で raw 読み | A よりはマシだが、debounce / quadrature 判定が PS 側のままで、依然取りこぼしと CPU 負荷の問題。 |
 | **C.** PL 側で debounce + quadrature decode + delta / event 化 | PS は delta + event のみ読む | **推奨**. PL fabric が小さくて済み、PS は安定した delta を見るだけ。 |
 
 ### 結論: **C を採用** (`DECISIONS.md` D30)
@@ -145,7 +167,9 @@ encoder UI は上記表示条件を尊重する。model dropdown 非表示の ef
 ```python
 # audio_lab_pynq/encoder_input.py
 class EncoderInput:
-    """Low-level driver over the encoder PL IP at 0x43CE0000 (TBD)."""
+    """Low-level driver over the encoder PL IP. Base address is TBD
+    (assigned in Phase 7F). 0x43CE0000 / 0x43CF0000 are forbidden
+    (HDMI VDMA / VTC, DECISIONS.md D32)."""
 
     def __init__(self, overlay):
         self._mmio = overlay.encoder_ip.mmio  # or AXI GPIO input
@@ -226,10 +250,21 @@ class EncoderEvent:
 
 ## 4. 将来の encoder PL IP register map 案
 
-新規 AXI IP の base address は GPIO map と衝突しないよう、現状の
-`axi_gpio_*` 群 (0x43C30000 ~ 0x43CD0000) の **次** に置く:
+新規 AXI IP の base address は **TBD** (`DECISIONS.md` D32)。
 
-候補 base: **`0x43CE0000`** (Phase 7F で確定)
+**禁止 base address**:
+- `0x43CE0000` — 既存 `axi_vdma_hdmi` (HDMI フレームバッファ VDMA、
+  `DECISIONS.md` D23 / `HDMI_GUI_INTEGRATION_PLAN.md`)
+- `0x43CF0000` — 既存 `v_tc_hdmi` (HDMI Video Timing Controller)
+
+選定方針:
+- Phase 7F で Vivado address editor + HWH + `pynq.PL.ip_dict` を確認し、
+  既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) と HDMI IP
+  (`0x43CE0000` / `0x43CF0000`) 以外の未使用 range から選ぶ
+- `0x43D00000` 以降 (HDMI integration plan で rgb2dvi 用 control 候補と
+  された range) も避け、念のため `0x43D10000` 以降または既存 GPIO の
+  下 (`0x43C00000` 以下) で空いている range を確認する
+- block_design.tcl 変更時にユーザ承認の上で確定
 
 | Offset | Name | Bits | Meaning |
 | --- | --- | --- | --- |
@@ -239,8 +274,24 @@ class EncoderEvent:
 | `0x0C` | `COUNT1` | [31:0] (s32 absolute counter, encoder 1) | |
 | `0x10` | `COUNT2` | [31:0] (s32 absolute counter, encoder 2) | |
 | `0x14` | `BUTTON_STATE` | [2:0] debounced raw switch level (1 = pressed) | polling 用 |
-| `0x18` | `CONFIG` | [7:0] debounce_ms (1..255), [8] accel_enable, [9] invert_a, [10] invert_b, [11] invert_sw, [12] clear_on_read_enable, [13] long_press_enable | |
+| `0x18` | `CONFIG` | [7:0] debounce_ms (1..255), [8] accel_enable, [9] invert_clk (invert A), [10] invert_dt (invert B), [11] invert_sw (active-high mode), [12] clear_on_read_enable, [13] long_press_enable, [14] sw_active_low (1 = active-low, default), [15] clk_dt_swap, [16] reverse_direction | per-encoder bits は将来拡張 |
 | `0x1C` | `CLEAR_EVENTS` | write [2:0] / [10:8] / [18:16] / [26:24] = 1 to clear corresponding bit in `STATUS` | clear_on_read 無効時に使う |
+
+**CONFIG bit 詳細** (Phase 7B 追加):
+- `invert_clk` (旧 `invert_a`): `CLK` ピンの極性反転。pull-up が無い
+  / モジュール挙動が逆の場合に補正
+- `invert_dt` (旧 `invert_b`): `DT` ピンの極性反転
+- `invert_sw`: `SW` を active-high モードに切替 (デフォルトは active-low
+  = `sw_active_low=1`)
+- `sw_active_low`: default 1。`SW` が押下で `GND` 短絡する典型構成
+- `clk_dt_swap`: `CLK` と `DT` を **PL 内部で入れ替え**。物理配線で
+  AB が逆になった場合に rewiring せず補正
+- `reverse_direction`: quadrature decoder 出力の符号を反転。CW / CCW
+  方向が GUI の期待方向と逆になった場合に補正
+
+これらは **実モジュールごとに方向や極性が異なる可能性** がある
+ため、PCB / 配線を物理的に直すよりレジスタで補正する方が早い
+(`DECISIONS.md` D31 / D32)。
 
 ### 4.1 PL 側仕様
 
@@ -303,7 +354,7 @@ class EncoderEvent:
 
 ---
 
-## 6. Phase 7A での状態 (本フェーズの成果物)
+## 6. Phase 7A / 7B での状態 (本フェーズの成果物)
 
 - 仕様・設計のみ
 - 実装 (HDL / Python / GUI) は **行わない**
@@ -312,3 +363,35 @@ class EncoderEvent:
 - HDMI baseline (SVGA 800x600 @ 40 MHz) は **維持**
 - DSP / Clash は **未変更**
 - 本ドキュメント + `IO_PIN_RESERVATION.md` + `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` の 3 本 + `CURRENT_STATE.md` / `DECISIONS.md` / `RESUME_PROMPTS.md` の追記のみ
+- Phase 7B: 信号名を `CLK` / `DT` / `SW` 表記に正し、encoder IP base
+  address を TBD に戻し (`0x43CE0000` / `0x43CF0000` 禁止)、CONFIG に
+  `invert_clk` / `invert_dt` / `clk_dt_swap` / `reverse_direction` /
+  `sw_active_low` を追加 (`DECISIONS.md` D31 / D32)
+
+---
+
+## 7. Phase 7B encoder module 物理確認チェックリスト
+
+実モジュール (CLK / DT / SW / + / GND の 5 pin タイプ) を入手したら、
+以下を確認した上で Phase 7F の XDC / IP 実装に進む。
+
+電源 / 信号レベル:
+- [ ] `+` の許容電圧範囲 (商品ページ / 仕様表)
+- [ ] **`+` を 3.3V に繋いだ場合に動作するか** (5V に繋がない)
+- [ ] `CLK` / `DT` / `SW` 出力レベル (3.3V tolerant か)
+- [ ] 基板上 pull-up 抵抗の有無と抵抗値 R (`+` → `CLK` / `DT` / `SW`)
+- [ ] pull-up が `+` ピン経由か独立 (5V 化リスクの最終確認)
+- [ ] 3.3V で pull-up が弱い場合の外付け強化 (10 kΩ → 3.3V)
+
+メカニカル動作:
+- [ ] 回転時に `CLK` が `GND` に open/close するか (open contact)
+- [ ] 回転時に `DT` が `GND` に open/close するか (90 度位相差)
+- [ ] 押下時に `SW` が `GND` に短絡するか (active-low)
+- [ ] 1 回転あたり detent 数
+- [ ] 1 detent あたり quadrature edge 数 (典型 4 edge)
+- [ ] mechanical bounce の継続時間 (debounce_ms 設定値の根拠)
+
+方向:
+- [ ] CW 回転で `CLK` / `DT` の位相関係 (期待: CW で COUNT 増加)
+- [ ] 期待と逆なら CONFIG `reverse_direction` または `clk_dt_swap` を set
+- [ ] 物理 rewiring は最後の手段
