@@ -26,6 +26,9 @@ PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音
   では Phase 6I (`DECISIONS.md` D25) の VESA SVGA `800x600 @ 60 Hz /
   40 MHz` 信号を使い、`800x600` framebuffer の左上 `800x480`
   (`x=0`, `y=0`) を compact-v2 GUI 領域、下 120 行は黒帯として運用
+- Raspberry Pi header 上の 3 個の rotary encoder 入力 IP
+  (`axi_encoder_input` / `enc_in_0`, AXI base `0x43D10000`) と
+  HDMI GUI 操作 smoke 用 Notebook (`EncoderGuiSmoke.ipynb`)
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
 ## HDMI GUI
@@ -294,6 +297,7 @@ make tests
 | Notebook | 内容 |
 | --- | --- |
 | `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Chain Preset dropdown (Safe Bypass / Basic Clean / Clean Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain / DS-1 Crunch / Big Muff Sustain / Vintage Fuzz) で実用音色をワンクリック適用、Distortion Pedalboard dropdown は全 7 ペダル選択可、加えて Compressor / Noise Suppressor / Overdrive / Amp / Cab IR / EQ / Reverb の個別操作 (Apply / Safe Bypass / Refresh / Show Current State) |
+| `EncoderGuiSmoke.ipynb` | Rotary encoder 3 個の段階的な実機確認用 Notebook。`AudioLabOverlay()` を 1 回だけ attach し、`enc_in_0/s_axi` / HDMI VDMA/VTC / ADC HPF を確認、raw register read、60秒 live monitor、reverse/swap/debounce 設定、synthetic GUI event、real encoder -> AppState、real encoder -> HDMI GUI loop を分けて実行する |
 | `HdmiGuiShow.ipynb` | Phase 6I 新設の HDMI GUI 動作確認用 1 セルノートブック。`pynq.PL.bitfile_name` を見て `audio_lab.bit` が既にロード済みなら `download=False` で attach し rgb2dvi PLL を保護、未ロードなら `download=True` で fresh program。VTC `GEN_ACTSZ = 0x02580320` (SVGA 800x600) と VDMA error 無しを assert し、`render_frame_800x480_compact_v2` の 1 フレームを framebuffer `(0,0)` に書き出す。ipywidgets / live loop 無しで kernel 死亡を回避 |
 | `HdmiGui.ipynb` | HDMI GUI のライブ動作ノートブック。CPU / RAM / FPS / VDMA error / current offset を毎秒モニタしつつ 5 fps で compact-v2 800x480 GUI を SVGA 800x600 framebuffer に流す。DIST / AMP / CAB の model dropdown 付き (HDMI GUI 側の MODEL 行表示のみ、DSP 側 model 切替は `GuitarPedalboardOneCell.ipynb` 側で行う)。`OFFSET_X` / `OFFSET_Y` で LCD 視認領域がずれているときの microadjust |
 | `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクションに DS-1 / Big Muff Sustain / Fuzz Face プリセット cell 追加) |

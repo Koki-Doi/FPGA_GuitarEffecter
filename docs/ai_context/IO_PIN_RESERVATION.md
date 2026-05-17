@@ -421,3 +421,21 @@ SPARE_GPIO0..3 (将来のフットスイッチ / LED)
 - encoder 用 AXI IP の base address は **TBD** (Phase 7F で確定)。
   `0x43CE0000` (`axi_vdma_hdmi`) と `0x43CF0000` (`v_tc_hdmi`) は
   **禁止** (`DECISIONS.md` D32)
+
+## 8. Phase 7F/7G での状態 (encoder 実装)
+
+- `hw/Pynq-Z2/audio_lab.xdc` に encoder 9 pin を追加済み:
+  `F19 / V10 / V8` (`ENC0_CLK / DT / SW`),
+  `W10 / B20 / W8` (`ENC1_*`),
+  `V6 / Y6 / B19` (`ENC2_*`)。すべて `LVCMOS33`。
+  `PULLUP` は付けていない (典型 module は基板上 pull-up あり、必要なら
+  `set_property PULLUP true` または外付け 10 kΩ で補強)。
+- PMOD JB / PMOD JA は **依然として未配線**。外付け PCM1808 / PCM5102
+  予約 (`DECISIONS.md` D28 / D34) を温存。
+- encoder PL IP `axi_encoder_input` は base address **`0x43D10000`** に
+  確定 (`DECISIONS.md` D32 の禁止リスト = `0x43CE0000` / `0x43CF0000` /
+  `0x43D00000` を回避)。
+- block_design.tcl は変更なし。`hw/Pynq-Z2/encoder_integration.tcl` を
+  追加し、`hdmi_integration.tcl` と同じパターンで `create_project.tcl`
+  から source する。
+- 実モジュール (PCM1808 / PCM5102) 物理配線は **未着手** (Phase 7C 以降)。

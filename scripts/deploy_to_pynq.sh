@@ -136,8 +136,9 @@ find "$REPO_ROOT/scripts" -maxdepth 1 -type f -name '*.py' -print0 \
     | xargs -0 -I{} cp "{}" "$STAGE_DIR/scripts/"
 
 mkdir -p "$STAGE_DIR/GUI"
-find "$REPO_ROOT/GUI" -maxdepth 1 -type f -name '*.py' -print0 \
-    | xargs -0 -I{} cp "{}" "$STAGE_DIR/GUI/"
+rsync -a --exclude='__pycache__' --exclude='.ipynb_checkpoints' \
+    --exclude='README.md' --exclude='fx_gui_state.json' \
+    "$REPO_ROOT/GUI/" "$STAGE_DIR/GUI/"
 
 # Mirror the hw/ shape that setup.py expects for first-time pip install.
 mkdir -p "$STAGE_DIR/hw/Pynq-Z2/bitstreams"

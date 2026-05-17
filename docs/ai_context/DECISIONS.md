@@ -1195,3 +1195,127 @@ not get removed even when superseded — they get updated.
 - **Why.** HDMI 経路は `audio_lab.bit` の中心機能であり、address を
   踏むと VDMA / VTC が動かなくなり LCD が真っ黒になる。block_design
   / HWH を読んで address map を確認してから encoder IP を置く。
+
+## D33 — Encoder input は独立 AXI-Lite IP (`axi_encoder_input`)、既存 `axi_gpio_*` には混ぜない
+
+- **状況.** Phase 7F でロータリーエンコーダー 3 個 (CLK / DT / SW × 3 = 9 input)
+  を PL から扱う実装フェーズに入った。既存 effect 制御は `axi_gpio_*`
+  (output-only、`ctrlA..D` 4-byte unpacking) で実装されていて、その
+  ledger は `GPIO_CONTROL_MAP.md` に固定されている。
+- **決定.** encoder は **新規 Verilog IP `axi_encoder_input`** を 1 個
+  追加し、ps7_0_axi_periph の M17 (HDMI VDMA M15 / HDMI VTC M16 の隣)
+  に AXI-Lite slave で接続する。register layout は
+  `ENCODER_INPUT_MAP.md`、base address は `0x43D10000`。
+  既存 `axi_gpio_*` の byte / bit にも、`GPIO_CONTROL_MAP.md` の
+  `ctrlA..D` 構造にも混ぜない。block design integration は
+  `hw/Pynq-Z2/encoder_integration.tcl` (HDMI と同じ pattern) として
+  切り出し、`create_project.tcl` から `hdmi_integration.tcl` の後に
+  source する。
+- **境界.**
+  - PL 内部は 2-stage synchroniser + debounce (1 ms tick × N) +
+    quadrature decoder + signed delta accumulator + event latch
+    (rotate / short_press / long_press)。raw CLK/DT/SW を PS まで
+    流さない (PS polling を不要にする)。
+  - Verilog 単一ファイル module reference として bd に instantiate
+    する (`create_bd_cell -type module -reference axi_encoder_input
+    enc_in_0`)。IP catalog 用 component.xml / package_ip は不要。
+  - 既存 effect GPIO の output-only / cache / `ctrlA..D` 契約は
+    一切変更しない。
+  - block_design.tcl 自体は `NUM_MI` の bump 以外は手を入れない
+    (`hdmi_integration.tcl` と同じく、本体は分離 tcl で完結させる)。
+    ただし NUM_MI bump は `encoder_integration.tcl` 側で
+    `set_property NUM_MI {18}` 一行のみ実行する。
+- **Why.** AXI GPIO に CLK/DT/SW を raw で配線したら結局 PS polling
+  に戻ってしまい、`DECISIONS.md` D30 で否定した方式に逆戻りする。
+  独立 IP にすれば PS は decoded delta + event だけ読めばよい
+  (debounce / quadrature / 押下計時はすべて PL fabric 内で完結)。
+  既存 `axi_gpio_*` の `ctrlA..D` レイアウトに event/delta を混ぜると
+  `GPIO_CONTROL_MAP.md` の output-only 契約が壊れ、ledger が崩れる
+  恐れがある。
+
+## D34 — PMOD JB / PMOD JA は外付け codec 予約のまま温存、encoder は RPi header (JA 非共有 pin) を使う
+
+- **状況.** Phase 7F の encoder 実装と Phase 7B 以降の外付け codec
+  (PCM1808 + PCM5102) 計画は同時並行で進める必要があり、pin の取り合いに
+  なりがち。`DECISIONS.md` D28 で「外付け audio を優先して PMOD JB に
+  集約、PMOD JA を audio control / strap 用に残す、encoder は RPi
+  header」と決めている。
+- **決定.** Phase 7F の encoder 実装でも **PMOD JB と PMOD JA は一切
+  使わない**。encoder pin は Raspberry Pi header のうち **PMOD JA と
+  物理共有しない `raspberry_pi_tri_i_6..14`** を使う:
+  - `ENC0_CLK = F19`, `ENC0_DT = V10`, `ENC0_SW = V8`
+  - `ENC1_CLK = W10`, `ENC1_DT = B20`, `ENC1_SW = W8`
+  - `ENC2_CLK = V6`, `ENC2_DT = Y6`, `ENC2_SW = B19`
+  電源は `ENC_3V3` = PYNQ-Z2 3.3V rail (5V 厳禁、`DECISIONS.md` D31)、
+  `ENC_GND` = 共通 GND。
+- **境界.**
+  - PMOD JB / PMOD JA は Phase 7C 以降の外付け codec 実装まで未配線で
+    残す。encoder 用に audio 予約 pin を消費しない。
+  - JA1..JA10 は RPi GPIO 0..5 + `respberry_sd_i` / `respberry_sc_i` と
+    物理共有している (`IO_PIN_RESERVATION.md` 4.6) ので、encoder には
+    その共有領域も使わない。
+  - 将来フットスイッチ / LED を増やしたい場合は
+    `raspberry_pi_tri_i_15..24` か Arduino header を使う
+    (`IO_PIN_RESERVATION.md` 4A.3 / 4A.5)。
+- **Why.** 外付け codec は同期 clock を `BCLK` / `LRCLK` / `MCLK` で
+  扱うので skew 最小化のために PMOD JB の連続 8 pin を確保しておきたい。
+  audio control / strap pin (PCM1808 `FMT` / `MD0` / `MD1` / PCM5102
+  `XSMT`) は PMOD JA に確保する余地が必要。encoder は kHz オーダーの
+  低速 input なので RPi header 側で十分。先に encoder で audio 用 pin
+  を潰すと Phase 7C 以降に rewiring を強いられる。
+
+## D35 — Rotary encoder standalone operation is not claimed until physical smoke passes
+
+- **状況.** Phase 7F/7G で PL IP、Python driver、HDMI GUI controller、
+  standalone runner、offline tests は追加できるが、ロータリーエンコーダー
+  3 個はまだ Raspberry Pi header に物理配線されていない。未配線のまま
+  `scripts/test_encoder_input.py` を走らせても、VERSION / CONFIG /
+  idle read までは確認できる一方、実際の CLK / DT / SW edge、押下、
+  方向、チャタリング、pull-up 強度は検証できない。
+- **決定.** 「encoder 操作で HDMI GUI が standalone 動作した」と
+  記録してよいのは、物理配線後に以下が PASS してから:
+  - `scripts/test_encoder_input.py` で 3 encoder の rotate /
+    short_press / long_press / release が出ること。
+  - 必要なら CONFIG の `reverse_direction` / `clk_dt_swap` /
+    `sw_active_low` / `debounce_ms` で方向と極性を補正し、その設定を
+    docs に記録すること。
+  - `scripts/run_encoder_hdmi_gui.py` または
+    `scripts/test_hdmi_encoder_gui_control.py --use-real-encoder` で
+    live HDMI GUI 操作が確認できること。
+- **境界.**
+  - 未配線状態で実施できるのは bit/hwh build、HWH/ip_dict に encoder
+    IP が存在すること、register idle read、synthetic event GUI smoke
+    まで。これらを physical encoder smoke の代替として扱わない。
+  - `+` は必ず 3.3V、GND は PYNQ と共通、PMOD JB / JA は使わない
+    (`DECISIONS.md` D31 / D34)。
+- **Why.** quadrature 方向、detent あたり edge 数、pull-up の有無、
+  contact bounce は実モジュール依存であり、offline test や synthetic
+  HDMI event では確認できない。未配線の成功扱いは field wiring 時の
+  誤診につながる。
+
+## D36 — Deployed encoder module-reference IP is addressed through `enc_in_0/s_axi`
+
+- **状況.** `c7a8680` の bit/hwh を PYNQ-Z2 (`192.168.1.9`) に deploy
+  したところ、Vivado BD instance は `enc_in_0` のままだが、PYNQ
+  2020.1 の `ip_dict` では module-reference AXI interface が
+  **`enc_in_0/s_axi`** として露出した。bare `ovl.enc_in_0` attribute は
+  MMIO `DefaultIP` ではなく hierarchy object なので、そのまま
+  `EncoderInput` に渡すと register read/write できない。
+- **決定.**
+  - Python driver は `enc_in_0/s_axi` を正式な discovery candidate に
+    含める。
+  - `EncoderInput.from_overlay()` は overlay attribute を採用する前に
+    `.mmio` または `read` / `write` を持つことを確認する。
+  - 候補名で見つからない場合は `ip_dict` 内の `encoder` または
+    `enc_in` を含む key を探索する。
+  - docs / Notebook / smoke 結果では、BD instance `enc_in_0` と
+    PYNQ runtime key `enc_in_0/s_axi` を区別して書く。
+- **境界.**
+  - RTL module name は `axi_encoder_input`、BD instance は `enc_in_0`、
+    AXI base は `0x43D10000` のまま。address / XDC / block design は
+    この決定で変更しない。
+  - `GPIO_CONTROL_MAP.md` は effect output ledger のまま変更しない。
+- **Why.** HWH / PYNQ の naming は module-reference flow 固有の
+  runtime detail であり、ここを driver 側で吸収すれば Verilog IP
+  packaging や block design rename を避けられる。HDMI / DSP / GPIO
+  契約を動かさずに deploy 済 bitstream をそのまま使える。

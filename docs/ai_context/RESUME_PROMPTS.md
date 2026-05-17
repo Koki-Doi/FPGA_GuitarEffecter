@@ -227,58 +227,87 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
-## Phase 7F — Rotary encoder PL IP + XDC
+## Phase 7F/7G — Rotary encoder PL IP + Python driver + HDMI GUI (deployed; full physical smoke still open)
 
-> Phase 7F に入る前に `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`
-> を必ず読んでください (`DECISIONS.md` D30 / D31 / D32)。
+> Phase 7F (PL) と Phase 7G (PS) を `feature/rotary-encoder-hdmi-gui-control`
+> branch で一括実装済み (`DECISIONS.md` D30 / D31 / D32 / D33 / D34 / D35)。
+> local `audio_lab.bit` / `audio_lab.hwh` は更新済み
+> (`hw/Pynq-Z2/bitstreams/`)。PYNQ-Z2 (`192.168.1.9`) への deploy と
+> overlay/IP/HDMI/codec smoke は実施済み。詳細は
+> `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md` と
+> `docs/ai_context/ENCODER_INPUT_MAP.md`。
 >
-> Phase 7F の作業:
-> 1. encoder decode IP (2-stage sync + debounce + quadrature FSM +
->    delta / count / event / CONFIG / CLEAR_EVENTS、register map は
->    `ENCODER_GUI_CONTROL_SPEC.md` section 4) を Clash or HDL で実装。
->    CONFIG に `invert_clk` / `invert_dt` / `clk_dt_swap` /
->    `reverse_direction` / `sw_active_low` を含める (`DECISIONS.md` D31)。
-> 2. AXI-Lite slave で接続。**base address は TBD**
->    (`DECISIONS.md` D32)。Vivado address editor + `pynq.PL.ip_dict` +
->    HWH を確認して **`0x43CE0000` / `0x43CF0000` 以外** の空き
->    range から選ぶ。既存 `axi_gpio_*` (`0x43C30000..0x43CD0000`) と
->    HDMI (`0x43CE0000` / `0x43CF0000`) と衝突しないこと。
-> 3. `block_design.tcl` 修正 (ユーザ承認後): `NUM_MI` 増、address
->    segment 追加、encoder IP 配線。
-> 4. `audio_lab.xdc` に encoder pin 追加 (Raspberry Pi header の
->    `raspberry_pi_tri_i_6..` 系統)、`PULLUP true` 設定。
->    `IO_PIN_RESERVATION.md` section 4A.3 の候補表を参照。
-> 5. bit / hwh build。WNS が `TIMING_AND_FPGA_NOTES.md` の最新
->    deploy band (-8.731 ns 近辺) を大きく悪化させないこと。
-> 6. 簡単な debug script で raw delta / event が出るか確認。
+> やってあること:
+> - PL: `hw/ip/encoder_input/src/axi_encoder_input.v` (AXI-Lite
+>   + 3 ch quadrature + debounce + delta + event)、
+>   `hw/Pynq-Z2/encoder_integration.tcl`、`audio_lab.xdc` の 9 pin
+>   追加、`create_project.tcl` への source 追加。
+> - PS: `audio_lab_pynq/encoder_input.py`、`audio_lab_pynq/encoder_ui.py`、
+>   `GUI/compact_v2/state.py` / `renderer.py` の focus state、
+>   standalone `scripts/run_encoder_hdmi_gui.py`、smoke
+>   `scripts/test_encoder_input.py` / `scripts/test_hdmi_encoder_gui_control.py`、
+>   `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`、
+>   オフライン unit tests (30 件)。
+> - PYNQ Python 3.6 compatibility: `from __future__ import annotations`,
+>   `dataclasses`, `typing.Literal` を encoder runtime path から除去。
+>   `EncoderInput.from_overlay()` は PYNQ runtime key `enc_in_0/s_axi`
+>   を発見し、bare `enc_in_0` hierarchy object を MMIO と誤認しない
+>   (`DECISIONS.md` D36)。
+> - Deploy helper: `scripts/deploy_to_pynq.sh` は `GUI/compact_v2` を
+>   含めるため `GUI/` を recursive rsync する。`GUI/README.md` と
+>   `GUI/fx_gui_state.json` は除外したまま。
+> - Vivado build3:
+>   `/tmp/fpga_guitar_effecter_backup/phase7f7g_vivado_build3.log`。
+>   `write_bitstream completed successfully`。Final routed timing:
+>   WNS `-8.395 ns`, TNS `-6609.224 ns`, WHS `+0.052 ns`,
+>   THS `0.000 ns`。Utilization: LUT `19095`, Registers `21259`,
+>   BRAM Tile `9`, DSP `83`。
+> - HWH: `enc_in_0` / `axi_encoder_input` at `0x43D10000..0x43D1FFFF`。
+>   HDMI `axi_vdma_hdmi=0x43CE0000` / `v_tc_hdmi=0x43CF0000` and
+>   existing effect GPIO addresses are unchanged.
+> - PYNQ smoke result: `AudioLabOverlay()` loads, ADC HPF `True`,
+>   `R19=0x23`, encoder `ip_dict` key `enc_in_0/s_axi`,
+>   `VERSION=0x00070001`, `CONFIG=0x00010105`, HDMI VDMA/VTC present,
+>   VTC `GEN_ACTSZ=0x02580320`.
+> - On-board HDMI synthetic smoke passed with
+>   `scripts/test_hdmi_encoder_gui_control.py` and `vdma_dmasr=0x00011000`.
+> - On-board real GUI loop started/stopped with
+>   `scripts/run_encoder_hdmi_gui.py --fps 2 --hold-seconds 10`;
+>   VDMA/VTC stayed normal and encoder 1/2 rotate events were observed.
 >
-> 禁止: PS polling で `CLK` / `DT` / `SW` を直接読む実装
-> (`DECISIONS.md` D30 違反)、既存 `axi_gpio_*` に encoder bit を
-> 混ぜる、encoder IP の base address を `0x43CE0000` / `0x43CF0000`
-> に置く、ADAU1761 / HDMI 経路の改変、`git push` / `git pull` /
-> `git fetch`。
+> 残作業:
+> 1. Low-level 60 s smoke は VERSION / CONFIG / idle read まで PASS したが、
+>    その run では rotate / SW event は 0 件だった。Jupyter
+>    `EncoderGuiSmoke.ipynb` または SSH で、ユーザが実際に 3 encoder
+>    すべてを回して `ENC0/1/2` rotate、short_press、long_press、
+>    release、チャタリングを確認する。
+> 2. 方向が逆なら `reverse_direction`、CLK/DT が物理的に逆なら
+>    `clk_dt_swap`、チャタリングが目立つなら `debounce_ms` を Notebook
+>    または script 引数で調整し、最終設定を docs に記録する。
+> 3. Full standalone operation は `DECISIONS.md` D35 の条件を満たすまで
+>    成功扱いにしない。現在確認済みなのは deploy / IP presence /
+>    register read / synthetic HDMI GUI / real HDMI loop partial
+>    (encoder 1/2 rotate observed) まで。
+>
+> 禁止: PMOD JB / PMOD JA に encoder pin を割り当てる (`DECISIONS.md`
+> D28 / D34 違反、PCM1808 / PCM5102 予約)、PS polling で raw CLK/DT/SW
+> を読む (`DECISIONS.md` D30 違反)、encoder bit を `axi_gpio_*` に
+> 混ぜる (`DECISIONS.md` D33 違反)、`+` を 5V に繋ぐ (`DECISIONS.md`
+> D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
+> `git push` / `git pull` / `git fetch`。
 
-## Phase 7G — Python encoder driver + GUI focus state
+## Phase 7G — Python encoder driver + GUI focus state (superseded by deployed Phase 7F/7G block above)
 
-> 前提: Phase 7F で encoder IP が deploy 済 (`audio_lab.bit` に
-> encoder IP が含まれている) こと。
+> 旧 Phase 7G prompt の実装項目は `c7a8680` と follow-up deploy smoke
+> で完了済み。現在使う実機確認 surface は
+> `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`、
+> `scripts/test_encoder_input.py`、
+> `scripts/test_hdmi_encoder_gui_control.py`、
+> `scripts/run_encoder_hdmi_gui.py`。
 >
-> Phase 7G の作業:
-> 1. `audio_lab_pynq/encoder_input.py` (low-level driver) と
->    `audio_lab_pynq/encoder_ui.py` (high-level controller) を
->    `ENCODER_GUI_CONTROL_SPEC.md` section 3 の API 案に沿って実装。
-> 2. `GUI/compact_v2/state.py` に focus state (`focus_effect_index` /
->    `focus_param_index` / `edit_mode` / `model_select_mode` /
->    `last_encoder_event` / `value_dirty` / `apply_pending` /
->    `last_control_source`) を追加。`AppState` の既存 field
->    (`all_knob_values` 等) は破壊しない。
-> 3. `GUI/compact_v2/renderer.py` に focus 表示 / dirty 表示 /
->    press feedback / `last_control_source` 表示を追加。
-> 4. `audio_lab_pynq/notebooks/HdmiGui.ipynb` を encoder 駆動でも
->    notebook 駆動でも動くように更新。1 つの loop で
->    `EncoderUiController.poll()` → `apply_to_state()` →
->    `apply_to_overlay()` を回す。
-> 5. notebook なしで全機能操作できる prototype を確認。
+> 次に必要なのは新規 driver 実装ではなく、3 encoder すべての
+> rotate / short / long / release を実操作で記録し、
+> reverse/swap/debounce の最終設定を docs に反映すること。
 >
 > 禁止: `GUI/pynq_multi_fx_gui.py` shim の巨大化 (`DECISIONS.md`
 > D26)、`audio_lab_pynq/hdmi_effect_state_mirror.py` shim の巨大化、

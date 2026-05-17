@@ -1,10 +1,13 @@
-# Encoder + GUI control spec (Phase 7A / 7B planning)
+# Encoder + GUI control spec (Phase 7A / 7B planning, Phase 7F/7G implementation)
 
 3 個のロータリーエンコーダー (各 `CLK` / `DT` / `SW`、押しスイッチ付) で
 HDMI GUI 全機能を notebook なしに操作するための仕様。
 
-**Phase 7A / 7B の時点では実装しない**。アーキテクチャ / 操作仕様 /
-Python driver 案 / 将来の AXI IP register map 案を記録するのみ。
+Phase 7A / 7B ではアーキテクチャ / 操作仕様 / Python driver 案 /
+AXI IP register map 案を記録した。Phase 7F / 7G でこの方針に沿って
+`axi_encoder_input`、Python driver、compact-v2 GUI control を実装済み。
+確定 register map は `ENCODER_INPUT_MAP.md`、実装結果は
+`ENCODER_INPUT_IMPLEMENTATION.md` を参照。
 
 ## Module pin labels (Phase 7B 確定)
 
@@ -31,7 +34,8 @@ Python driver 案 / 将来の AXI IP register map 案を記録するのみ。
 関連:
 - `docs/ai_context/IO_PIN_RESERVATION.md` (encoder ピン予約 + candidate package pin)
 - `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (外付け audio 設計)
-- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D30 / D31 / D32)
+- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D30 / D31 / D32 /
+  D33 / D34 / D35)
 - 既存 GUI: `GUI/compact_v2/` (renderer / state / hit_test)
 - 既存 state mirror: `audio_lab_pynq/hdmi_state/`
 
@@ -52,9 +56,9 @@ Encoder pins (CLK / DT / SW)
   ↓
 [AXI-Lite custom IP register]
   ↓
-[Python driver: encoder_ui.py]   ← PS side
+[Python driver: encoder_input.py / encoder_ui.py] ← PS side
   ↓
-[AppState / HdmiEffectStateMirror]
+[AppState / AudioLabGuiBridge or test mirror]
   ↓
 [HDMI GUI update + DSP / overlay control]
 ```
@@ -156,9 +160,9 @@ encoder UI は上記表示条件を尊重する。model dropdown 非表示の ef
 
 ---
 
-## 3. Python driver 仕様 (将来追加)
+## 3. Python driver 仕様 (Phase 7F/7G 実装)
 
-候補ファイル (Phase 7G で実装):
+実装済みファイル:
 - `audio_lab_pynq/encoder_ui.py` (高位 API、AppState 反映)
 - `audio_lab_pynq/encoder_input.py` (低位 driver、AXI register アクセス)
 
@@ -167,8 +171,8 @@ encoder UI は上記表示条件を尊重する。model dropdown 非表示の ef
 ```python
 # audio_lab_pynq/encoder_input.py
 class EncoderInput:
-    """Low-level driver over the encoder PL IP. Base address is TBD
-    (assigned in Phase 7F). 0x43CE0000 / 0x43CF0000 are forbidden
+    """Low-level driver over the encoder PL IP.
+    Base address is 0x43D10000. 0x43CE0000 / 0x43CF0000 are forbidden
     (HDMI VDMA / VTC, DECISIONS.md D32)."""
 
     def __init__(self, overlay):
@@ -232,7 +236,9 @@ class EncoderEvent:
 - `AppState.selected_model_category`
 - `AppState.all_knob_values[effect_name][param_index]`
 - `AppState.last_control_source`
-- `HdmiEffectStateMirror.update_from_appstate(...)` (既存 path)
+- `GUI/audio_lab_gui_bridge.py` (live overlay path)
+- `HdmiEffectStateMirror.update_from_appstate(...)` or `update(...)`
+  (dry-run / test path)
 - `AudioLabOverlay.set_*` API (確定値のみ)
 
 ### 3.4 注意 / 設計原則
@@ -240,49 +246,47 @@ class EncoderEvent:
 - **encoder 回転ごとに GPIO write しない**。
   encoder の典型は 1 detent = 4 quadrature edge = ~ 24 detent/turn。
   `apply_pending` を立て、apply timing (短押し / 一定周期) で DSP に反映する。
-- UI 表示と DSP 反映のズレを避けるため、値変更は **mirror を唯一の経路** にする
-- `apply_to_overlay` は **debounce** (例: 連続変更時は 50 ms 間隔で OR レート制限)
+- UI 表示と DSP 反映のズレを避けるため、live 反映は
+  `AudioLabGuiBridge` 経由で `AudioLabOverlay.set_*` public API に流す
+- `apply()` は短押し / apply 操作でのみ反映し、回転イベントごとの raw GPIO
+  write はしない
 - `last_control_source` を必ず記録し、HDMI GUI / debug log で見えるようにする
 - thread 安全性: poll は GUI loop thread から呼ぶか、PL の event 用 IRQ を将来 hook するか、Phase 7G で確定する
 - Phase 7A で API シグネチャを確定する義務はない (実装時に整える)
 
 ---
 
-## 4. 将来の encoder PL IP register map 案
+## 4. Encoder PL IP register map (Phase 7F/7G 確定)
 
-新規 AXI IP の base address は **TBD** (`DECISIONS.md` D32)。
+確定版の詳細は `ENCODER_INPUT_MAP.md`。新規 AXI IP の base address は
+**`0x43D10000`** (`DECISIONS.md` D32 / D33)。
 
 **禁止 base address**:
 - `0x43CE0000` — 既存 `axi_vdma_hdmi` (HDMI フレームバッファ VDMA、
   `DECISIONS.md` D23 / `HDMI_GUI_INTEGRATION_PLAN.md`)
 - `0x43CF0000` — 既存 `v_tc_hdmi` (HDMI Video Timing Controller)
+- `0x43D00000` — future HDMI / rgb2dvi control surface reserved range
 
-選定方針:
-- Phase 7F で Vivado address editor + HWH + `pynq.PL.ip_dict` を確認し、
-  既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) と HDMI IP
-  (`0x43CE0000` / `0x43CF0000`) 以外の未使用 range から選ぶ
-- `0x43D00000` 以降 (HDMI integration plan で rgb2dvi 用 control 候補と
-  された range) も避け、念のため `0x43D10000` 以降または既存 GPIO の
-  下 (`0x43C00000` 以下) で空いている range を確認する
-- block_design.tcl 変更時にユーザ承認の上で確定
+選定結果:
+- HWH で `enc_in_0` / `axi_encoder_input` が
+  `0x43D10000..0x43D1FFFF` に出ることを確認済み
+- HDMI VDMA/VTC と既存 effect GPIO addresses は unchanged
+- `GPIO_CONTROL_MAP.md` には混ぜず、input IP 専用 ledger
+  (`ENCODER_INPUT_MAP.md`) として管理する
 
 | Offset | Name | Bits | Meaning |
 | --- | --- | --- | --- |
-| `0x00` | `STATUS` | [2:0] event flags (enc0/1/2_event), [10:8] sw_short events, [18:16] sw_long events, [26:24] sw_release events | clear-on-read or explicit clear via `CLEAR_EVENTS` |
+| `0x00` | `STATUS` | [2:0] rotate_event, [10:8] sw_short, [18:16] sw_long, [26:24] sw_level | clear-on-read or explicit clear via `CLEAR_EVENTS` |
 | `0x04` | `DELTA_PACKED` | [7:0] enc0_delta (s8), [15:8] enc1_delta (s8), [23:16] enc2_delta (s8) | 直近 polling 期間内の累積回転。read で 0 リセット |
 | `0x08` | `COUNT0` | [31:0] (s32 absolute counter, encoder 0) | 累積 detent (overflow wrap) |
 | `0x0C` | `COUNT1` | [31:0] (s32 absolute counter, encoder 1) | |
 | `0x10` | `COUNT2` | [31:0] (s32 absolute counter, encoder 2) | |
 | `0x14` | `BUTTON_STATE` | [2:0] debounced raw switch level (1 = pressed) | polling 用 |
-| `0x18` | `CONFIG` | [7:0] debounce_ms (1..255), [8] accel_enable, [9] invert_clk (invert A), [10] invert_dt (invert B), [11] invert_sw (active-high mode), [12] clear_on_read_enable, [13] long_press_enable, [14] sw_active_low (1 = active-low, default), [15] clk_dt_swap, [16] reverse_direction | per-encoder bits は将来拡張 |
-| `0x1C` | `CLEAR_EVENTS` | write [2:0] / [10:8] / [18:16] / [26:24] = 1 to clear corresponding bit in `STATUS` | clear_on_read 無効時に使う |
+| `0x18` | `CONFIG` | [7:0] debounce_ms, [8] clear_on_read_enable, [9] acceleration_enable (reserved), [12:10] encN_reverse_direction, [15:13] encN_clk_dt_swap, [16] sw_active_low | default `0x00010105` |
+| `0x1C` | `CLEAR_EVENTS` | write [2:0] / [10:8] / [18:16] = 1 to clear corresponding event bit | clear_on_read 無効時に使う |
+| `0x20` | `VERSION` | `0x00070001` | RTL version |
 
-**CONFIG bit 詳細** (Phase 7B 追加):
-- `invert_clk` (旧 `invert_a`): `CLK` ピンの極性反転。pull-up が無い
-  / モジュール挙動が逆の場合に補正
-- `invert_dt` (旧 `invert_b`): `DT` ピンの極性反転
-- `invert_sw`: `SW` を active-high モードに切替 (デフォルトは active-low
-  = `sw_active_low=1`)
+**CONFIG bit 詳細**:
 - `sw_active_low`: default 1。`SW` が押下で `GND` 短絡する典型構成
 - `clk_dt_swap`: `CLK` と `DT` を **PL 内部で入れ替え**。物理配線で
   AB が逆になった場合に rewiring せず補正
@@ -300,9 +304,9 @@ class EncoderEvent:
 - quadrature state machine (Gray code FSM、A/B の遷移で +1 / -1)
 - signed delta accumulator (per encoder)
 - absolute count register (per encoder)
-- event latch (rotate / short / long / release)
+- event latch (rotate / short / long) + debounced button state
 - clear-on-read **または** explicit clear via `CLEAR_EVENTS`
-- optional interrupt 出力 (Phase 7G 以降で検討、最初は polling で良い)
+- optional interrupt 出力は未実装。最初は polling。
 - short_press / long_press 判定:
   - press detected → start timer
   - release before `long_press_ms` → short_press event
@@ -311,16 +315,18 @@ class EncoderEvent:
 ### 4.2 既存 GPIO 設計との分離原則 (重要)
 
 - 既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) には **混ぜない**
-- encoder は **新規 AXI IP** または **新規 AXI GPIO input** を使う
+- encoder は **新規 AXI IP** (`axi_encoder_input`) を使う
 - 既存 `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` 構造 (4 byte unpacking) は encoder には流用しない (event bit / signed delta が混在するため)
-- `block_design.tcl` 変更は Phase 7F (encoder IP 追加時) でユーザ承認の上で行う
-- これは `axi_gpio_noise_suppressor` (`0x43CC0000`, `DECISIONS.md` D11) / `axi_gpio_compressor` (`0x43CD0000`, `DECISIONS.md` D14) と同じ "個別承認の例外" 扱いになる
+- `block_design.tcl` 本体は変更せず、`encoder_integration.tcl` を
+  `create_project.tcl` から source する (HDMI integration と同じ増分方式)
 
-### 4.3 リソース見積 (粗い見積、Phase 7F で実測)
+### 4.3 リソース実測
 
-- encoder 1 個あたり: 2-sync (~6 FF) + debounce counter (~16 FF) + FSM (~10 LUT) + delta/count (~40 FF)
-- 3 個合計: ~150 LUT、~200 FF オーダー (現状空き枠で問題ない)
-- AXI-Lite slave: 別途 ~ 100 LUT
+- Phase 7F/7G local build after place: Slice LUTs `19095 (35.89%)`,
+  Slice Registers `21259 (19.98%)`, Block RAM Tile `9 (6.43%)`,
+  DSPs `83 (37.73%)`
+- Timing: WNS `-8.395 ns`, TNS `-6609.224 ns`, WHS `+0.052 ns`,
+  THS `0.000 ns`
 
 ---
 
@@ -328,22 +334,22 @@ class EncoderEvent:
 
 ### Phase 7F (PL 側)
 
-- ロータリーエンコーダー decode HDL / Clash モジュール実装
-- AXI-Lite slave (or AXI GPIO input) 接続
-- `block_design.tcl` 修正 (encoder IP 追加、address segment 設定)
-- XDC 更新 (encoder ピン定義、`PULLUP` 設定)
-- bit / hwh build + timing summary check (WNS 悪化に注意)
-- 簡単な debug script で raw delta が出るか確認
+- ロータリーエンコーダー decode Verilog module 実装済み
+- AXI-Lite slave 接続済み (`enc_in_0`, M17, `0x43D10000`)
+- `encoder_integration.tcl` 追加済み (`block_design.tcl` 本体は未変更)
+- XDC 更新済み (encoder 9 pin、`PULLUP` は未設定)
+- bit / hwh local build + timing summary check 済み
+- 物理 encoder smoke は未配線のため未実施
 
 ### Phase 7G (PS 側)
 
-- `audio_lab_pynq/encoder_input.py` 実装 (low-level driver)
-- `audio_lab_pynq/encoder_ui.py` 実装 (high-level controller)
-- `GUI/compact_v2/state.py` に focus state 追加
-- `GUI/compact_v2/renderer.py` に focus / dirty / press feedback 描画追加
-- `HdmiGui.ipynb` を encoder 駆動でも動くように更新 (notebook と encoder 両対応)
-- 1 つの notebook cell で `EncoderUiController.poll()` + `apply_to_state()` + `apply_to_overlay()` を呼ぶ loop
-- notebook-less control loop prototype (encoder のみで全機能操作)
+- `audio_lab_pynq/encoder_input.py` 実装済み (low-level driver)
+- `audio_lab_pynq/encoder_ui.py` 実装済み (high-level controller)
+- `GUI/compact_v2/state.py` に focus state 追加済み
+- `GUI/compact_v2/renderer.py` に status strip 追加済み
+- `scripts/run_encoder_hdmi_gui.py` を追加済み (notebook-less loop)
+- `scripts/test_encoder_input.py` /
+  `scripts/test_hdmi_encoder_gui_control.py` を追加済み
 
 ### Phase 7H (筐体)
 
@@ -354,7 +360,9 @@ class EncoderEvent:
 
 ---
 
-## 6. Phase 7A / 7B での状態 (本フェーズの成果物)
+## 6. Phase 状態
+
+### Phase 7A / 7B
 
 - 仕様・設計のみ
 - 実装 (HDL / Python / GUI) は **行わない**
@@ -367,6 +375,15 @@ class EncoderEvent:
   address を TBD に戻し (`0x43CE0000` / `0x43CF0000` 禁止)、CONFIG に
   `invert_clk` / `invert_dt` / `clk_dt_swap` / `reverse_direction` /
   `sw_active_low` を追加 (`DECISIONS.md` D31 / D32)
+
+### Phase 7F / 7G
+
+- 実装済み: PL IP / XDC / Tcl integration / Python low-level driver /
+  high-level GUI controller / compact-v2 state + renderer strip /
+  standalone runner / smoke scripts / offline unit tests
+- local bit/hwh build 済み、PYNQ deploy は未実施
+- 物理 encoder smoke は未配線のため未実施。未配線状態の ip_dict 確認や
+  scripted events は standalone 操作成功の代替にしない (`DECISIONS.md` D35)
 
 ---
 

@@ -1023,6 +1023,27 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                   fill=LED_SOFT + (255,), scale=1, anchor="mb",
                   letter_spacing=2)
 
+        # Phase 7G: tiny encoder status strip (right edge, above the BR
+        # corner marker). Only appears when at least one optional encoder
+        # field is set, so legacy AppState instances render identically.
+        _enc_flags = []
+        if getattr(state, "edit_mode", False):
+            _enc_flags.append("EDIT")
+        if getattr(state, "model_select_mode", False):
+            _enc_flags.append("MODEL")
+        if getattr(state, "value_dirty", False):
+            _enc_flags.append("DIRTY")
+        if getattr(state, "apply_pending", False):
+            _enc_flags.append("APPLY?")
+        _src = getattr(state, "last_control_source", "notebook")
+        if _src == "encoder":
+            _enc_flags.append("ENC")
+        if _enc_flags:
+            _enc_text = " ".join(_enc_flags)
+            draw_text(img, (Wv - 22, Hv - 24), _enc_text,
+                      fill=LED + (255,), scale=1, anchor="rb",
+                      letter_spacing=2)
+
         # Convert to a writable RGB ndarray *before* applying the
         # Pip-Boy-style scanline overlay so the blend is a single
         # vectorised numpy slice (much cheaper than PIL
