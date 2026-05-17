@@ -1,6 +1,31 @@
 # Current state
 
-Last updated: **2026-05-18 (later), Phase 7E follow-up: PCM5102 SCK tied LOW to fix MCLK/BCK async jitter**
+Last updated: **2026-05-18 (Phase 7D bring-up): PCM1808 external ADC inserted as default input source via a build-time wire mux**
+(new RTL `hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v` is a 2:1
+combinational mux between the existing ADAU1761 `sdata_i` port and the
+new PCM1808 DOUT input port `ext_adc_dout_i` (JB4 / T10). The mux
+output drives the existing `i2s_to_stream_0/si` pin, so the AXIS DSP
+chain is bit-for-bit unchanged regardless of which ADC source is
+selected. `sel_external_i` is tied to `1'b1` by an `xlconstant` in
+`hw/Pynq-Z2/pcm1808_adc_integration.tcl` -- Phase 7D bring-up default
+is PCM1808; flipping the constant to 0 and rebuilding falls back to
+ADAU1761. The Phase 7E SCK-low compensation in `pcm5102_audio_out.v`
+is reverted: `ext_audio_mclk_o` again carries the 12.288 MHz from
+`clk_wiz_audio_ext`, but JB1 now drives **PCM1808 SCKI** -- PCM5102
+SCK is physically hard-tied to GND on the module per the new Phase 7D
+board rewiring, so the wizard output no longer affects PCM5102.
+Output side untouched: ADAU1761 DAC and PCM5102 DAC still receive
+the same `i2s_to_stream_0/so` bitstream in parallel. HDMI / encoder
+integration / GPIO_CONTROL_MAP / LowPassFir DSP all untouched. bit/
+hwh rebuilt, deploy PASS, on-board smoke
+(`scripts/test_pcm1808_adc_to_pcm5102.py`) PASS. Known caveat
+(DECISIONS.md D41): PCM1808 SCKI is NOT bit-true synchronous to BCK
+(same async-clocks risk that hit PCM5102 in Phase 7E); PCM1808 lacks
+a PCM510x-style internal-PLL fallback, so if the bench shows audible
+graininess the next step is to make the FPGA the I2S master.
+
+Previous-pass header (Phase 7E follow-up):
+**PCM5102 SCK tied LOW to fix MCLK/BCK async jitter**
 (initial Phase 7E `9f21546` mirrored ADAU1761 I2S onto PMOD JB while keeping
 the Phase 7C 12.288 MHz `clk_wiz_audio_ext` driving PCM5102 SCK. On the
 real board the resulting audio had audible graininess / periodic jitter

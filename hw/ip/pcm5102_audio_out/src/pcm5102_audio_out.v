@@ -11,22 +11,26 @@
 // the ADAU1761 DAC receives, so the two outputs run in parallel and either
 // can be used as the listening source.
 //
-// Master clock for PCM5102 (SCK pin) is intentionally TIED LOW. The Phase
-// 7C MMCM clk_wiz_audio_ext still runs and its 12.288 MHz output is still
-// wired into this module's mclk_12m288_i port (so the integration tcl does
-// not need to be rewritten), but the output assignment ignores it and
-// drives constant 1'b0 instead. This puts PCM510x into BCK-derived
-// internal-SYSCLK mode and avoids the audible jitter / graininess Phase 7E
-// initial bring-up exhibited when an external 12.288 MHz MCLK from the
-// 100 MHz FCLK_CLK0 PLL was driven against an ADAU1761-PLL-sourced ~3.072
-// MHz BCLK -- the two PLLs are not bit-true synchronous and the chip's
-// external-SCK locking went in and out of phase. With SCK low the chip
-// derives SYSCLK from BCK alone and the output is clean.
+// Master clock output on JB1 (W14) was TIED LOW in the Phase 7E follow-up
+// because that pin was physically wired to the PCM5102 SCK input, and
+// driving an unsynchronised 12.288 MHz external MCLK against the
+// ADAU-PLL-sourced BCK caused PCM510x external-SCK lock to drift in and
+// out (audible graininess; DECISIONS.md D40). Phase 7D rewires the
+// physical board so PCM5102 SCK is now hard-tied to GND on the module
+// side and JB1 instead feeds PCM1808 SCKI. With that wiring change in
+// place, this module restores the passthrough of the Phase 7C 12.288
+// MHz `clk_wiz_audio_ext` output onto `ext_audio_mclk_o`. PCM5102 is
+// unaffected (its SCK is GND on the board, not JB1) and PCM1808 gets
+// the SCKI it requires for slave-mode operation (DECISIONS.md D41).
 //
-// If a future revision needs to drive an external MCLK again (e.g. to feed
-// PCM1808 SCKI in Phase 7D), uncomment the original passthrough assignment
-// AND ensure the MCLK source is genuinely synchronous to BCK; the wizard
-// alone is not sufficient (DECISIONS.md D40).
+// The 12.288 MHz wizard is NOT bit-true synchronous to ADAU's
+// PLL-sourced BCK -- the same async-clocks caveat that hit PCM5102 in
+// Phase 7E may bite PCM1808. PCM1808 does not have a PCM510x-style
+// "SCKI absent -> internal PLL from BCK" fallback, so if the chip
+// produces noisy / unlocked output on the bench the next step is to
+// either (a) make the FPGA the I2S master and generate BCK/LRCK/SCKI
+// from a single source, or (b) phase-lock the wizard to ADAU's BCK
+// via a deliberate clock-recovery path. Both are deferred.
 //
 // Free-running tone generator (pcm5102_dac_tone.v) is intentionally not
 // instantiated by the integration tcl any more; the file stays in the repo
@@ -45,15 +49,12 @@ module pcm5102_audio_out (
     output wire ext_dac_din_o      // PMOD JB7 (V16) -> PCM5102 DIN
 );
 
-    // SCK = 0 -> PCM5102 internal PLL mode (sysclk from BCK alone).
-    // mclk_12m288_i is intentionally unused; see header comment above.
-    assign ext_audio_mclk_o  = 1'b0;
+    // JB1 now drives PCM1808 SCKI (12.288 MHz) per the Phase 7D board
+    // rewiring. PCM5102 SCK is hard-tied to GND on the module side and
+    // is not connected to JB1 any more.
+    assign ext_audio_mclk_o  = mclk_12m288_i;
     assign ext_audio_bclk_o  = adau_bclk_i;
     assign ext_audio_lrclk_o = adau_lrclk_i;
     assign ext_dac_din_o     = adau_sdata_o_i;
-
-    // Suppress synth "unused input" warning while keeping the integration
-    // tcl untouched.
-    wire _unused_mclk = mclk_12m288_i;
 
 endmodule

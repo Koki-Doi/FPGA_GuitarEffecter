@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon May 18 01:37:48 2026" VIVADOVERSION="2019.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon May 18 07:56:09 2026" VIVADOVERSION="2019.1">
 
   <SYSTEMINFO ARCH="zynq" BOARD="tul.com.tw:pynq-z2:part0:1.0" DEVICE="7z020" NAME="block_design" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -29,7 +29,7 @@
     </PORT>
     <PORT DIR="I" NAME="sdata_i" SIGIS="undef" SIGNAME="External_Ports_sdata_i">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="i2s_to_stream_0" PORT="si"/>
+        <CONNECTION INSTANCE="adc_sel_0" PORT="adau_sdata_i"/>
       </CONNECTIONS>
     </PORT>
     <PORT DIR="O" NAME="sdata_o" SIGIS="undef" SIGNAME="i2s_to_stream_0_so">
@@ -257,6 +257,11 @@
         <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_dac_din_o"/>
       </CONNECTIONS>
     </PORT>
+    <PORT DIR="I" NAME="ext_adc_dout_i" SIGIS="undef" SIGNAME="External_Ports_ext_adc_dout_i">
+      <CONNECTIONS>
+        <CONNECTION INSTANCE="adc_sel_0" PORT="pcm1808_dout_i"/>
+      </CONNECTIONS>
+    </PORT>
   </EXTERNALPORTS>
 
   <EXTERNALINTERFACES>
@@ -317,6 +322,53 @@
   </EXTERNALINTERFACES>
 
   <MODULES>
+    <MODULE COREREVISION="1" FULLNAME="/adc_sel_0" HWVERSION="1.0" INSTANCE="adc_sel_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="pcm1808_input_select" VLNV="xilinx.com:module_ref:pcm1808_input_select:1.0">
+      <DOCUMENTS/>
+      <PARAMETERS>
+        <PARAMETER NAME="Component_Name" VALUE="block_design_adc_sel_0_0"/>
+        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
+      </PARAMETERS>
+      <PORTS>
+        <PORT DIR="I" NAME="adau_sdata_i" SIGIS="undef" SIGNAME="External_Ports_sdata_i">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="sdata_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="pcm1808_dout_i" SIGIS="undef" SIGNAME="External_Ports_ext_adc_dout_i">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_adc_dout_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="sel_external_i" SIGIS="undef" SIGNAME="adc_sel_const_dout">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="adc_sel_const" PORT="dout"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="sdata_to_dsp_o" SIGIS="undef" SIGNAME="adc_sel_0_sdata_to_dsp_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="i2s_to_stream_0" PORT="si"/>
+          </CONNECTIONS>
+        </PORT>
+      </PORTS>
+      <BUSINTERFACES/>
+    </MODULE>
+    <MODULE COREREVISION="6" FULLNAME="/adc_sel_const" HWVERSION="1.1" INSTANCE="adc_sel_const" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="xlconstant" VLNV="xilinx.com:ip:xlconstant:1.1">
+      <DOCUMENTS/>
+      <PARAMETERS>
+        <PARAMETER NAME="CONST_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="CONST_VAL" VALUE="0x1"/>
+        <PARAMETER NAME="Component_Name" VALUE="block_design_adc_sel_const_0"/>
+        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
+      </PARAMETERS>
+      <PORTS>
+        <PORT DIR="O" LEFT="0" NAME="dout" RIGHT="0" SIGIS="undef" SIGNAME="adc_sel_const_dout">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="adc_sel_0" PORT="sel_external_i"/>
+          </CONNECTIONS>
+        </PORT>
+      </PORTS>
+      <BUSINTERFACES/>
+    </MODULE>
     <MODULE COREREVISION="20" FULLNAME="/axi_dma_0" HWVERSION="7.1" INSTANCE="axi_dma_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="axi_dma" VLNV="xilinx.com:ip:axi_dma:7.1">
       <DOCUMENTS>
         <DOCUMENT SOURCE="http://www.xilinx.com/cgi-bin/docs/ipdoc?c=axi_dma;v=v7_1;d=pg021_axi_dma.pdf"/>
@@ -12764,9 +12816,9 @@
             <CONNECTION INSTANCE="External_Ports" PORT="lrclk"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="si" SIGIS="undef" SIGNAME="External_Ports_sdata_i">
+        <PORT DIR="I" NAME="si" SIGIS="undef" SIGNAME="adc_sel_0_sdata_to_dsp_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="sdata_i"/>
+            <CONNECTION INSTANCE="adc_sel_0" PORT="sdata_to_dsp_o"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="47" NAME="axis_hp_tdata" RIGHT="0" SIGIS="undef" SIGNAME="axis_switch_sink_m_axis_tdata">

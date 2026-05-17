@@ -175,3 +175,23 @@ set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_lrclk_o}]
 
 set_property PACKAGE_PIN V16 [get_ports {ext_dac_din_o}]
 set_property IOSTANDARD LVCMOS33 [get_ports {ext_dac_din_o}]
+
+###################################################
+## Phase 7D: PCM1808 (external ADC) bring-up on PMOD JB4.
+##
+## Wiring (DECISIONS.md D41, IO_PIN_RESERVATION.md 4A.1):
+##   JB1 (W14)  EXT_AUDIO_MCLK  -> PCM1808 SCKI  (12.288 MHz)   *physically
+##                                                               disconnected
+##                                                               from PCM5102 SCK*
+##   JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM1808 BCK + PCM5102 BCK    (= ADAU BCLK)
+##   JB3 (T11)  EXT_AUDIO_LRCLK -> PCM1808 LRCK + PCM5102 LCK   (= ADAU LRCLK)
+##   JB4 (T10)  EXT_ADC_DOUT    <- PCM1808 DOUT                 (new input pin)
+##   JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN                  (unchanged)
+##
+## PCM1808 mode pins (FMT / MD0 / MD1) are NOT wired -- the module is
+## strapped to I2S slave mode on the board. LVCMOS33 input, no pull.
+## *Do not* drive 5V on this pin -- PCM1808 module VCC must be at the
+## level its onboard regulator expects to feed a 3.3V DOUT.
+###################################################
+set_property PACKAGE_PIN T10 [get_ports {ext_adc_dout_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_adc_dout_i}]

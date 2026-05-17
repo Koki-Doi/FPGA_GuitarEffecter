@@ -261,7 +261,7 @@ docs に列挙するのみで XDC 変更はしない。
 | `ext_audio_mclk_o`  | PCM5102 `SCK` (+ later PCM1808 `SCKI`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | 12.288 MHz exact, `clk_wiz_audio_ext` (D38) | **wired** |
 | `ext_audio_bclk_o`  | PCM5102 `BCK` (+ later PCM1808 `BCK`)  | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | **wired** |
 | `ext_audio_lrclk_o` | PCM5102 `LCK` (+ later PCM1808 `LRCK`) | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | **wired** |
-| `EXT_ADC_DOUT`      | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | input delay は Phase 7D で確定 | candidate |
+| `ext_adc_dout_i`    | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | Phase 7D wired; sampled in `bclk` domain by `i2s_to_stream_0/si` via `pcm1808_input_select` mux (D41) | **wired** |
 | `ext_dac_din_o`     | PCM5102 `DIN`                          | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | data only, 24-bit I2S Philips | **wired** |
 | `EXT_AUDIO_SPARE_JB8`  | (将来用 / RX / aux DAC channel 等) | -- | PMOD JB | `JB8`  | `W16` | LVCMOS33 | -- | spare | candidate |
 | `EXT_AUDIO_SPARE_JB9`  | (将来用) | -- | PMOD JB | `JB9`  | `V12` | LVCMOS33 | -- | spare | candidate |

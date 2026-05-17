@@ -44,6 +44,10 @@ add_files -norecurse $origin_dir/../ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v
 # Phase 7E: add the trivial pcm5102_audio_out pass-through that mirrors the
 # ADAU1761 I2S DAC interface onto the PMOD JB external-DAC pins.
 add_files -norecurse $origin_dir/../ip/pcm5102_audio_out/src/pcm5102_audio_out.v
+# Phase 7D: add the tiny pcm1808_input_select 2:1 wire mux that picks
+# between ADAU1761 sdata_i and the new external PCM1808 DOUT as the feed
+# to i2s_to_stream_0/si.
+add_files -norecurse $origin_dir/../ip/pcm1808_adc_input/src/pcm1808_input_select.v
 update_compile_order -fileset sources_1
 
 # Generate block design
@@ -60,6 +64,12 @@ source ./encoder_integration.tcl
 # RTL tone generator). No AXI-Lite. Existing audio / HDMI / encoder /
 # GPIO untouched.
 source ./pcm5102_dac_integration.tcl
+# Phase 7D: extend with the PCM1808 external ADC bring-up. Inserts a 2:1
+# wire mux on the i2s_to_stream_0/si input so the existing AXIS DSP chain
+# can be fed from either the ADAU1761 ADC (sdata_i) or the new PCM1808
+# DOUT (ext_adc_dout_i on JB4 / T10). Build-time default picks PCM1808.
+# No AXI-Lite, no GPIO, no block_design.tcl direct edit.
+source ./pcm1808_adc_integration.tcl
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1

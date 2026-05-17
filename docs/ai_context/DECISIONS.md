@@ -1587,3 +1587,101 @@ not get removed even when superseded — they get updated.
   - For Phase 7D (PCM1808 ADC SCKI), re-attach the 12.288 MHz
     wizard output to a *separate* top-level port dedicated to
     PCM1808; do NOT route it back into PCM5102 SCK.
+
+## D41 — PCM1808 becomes external ADC source via a build-time input mux; PCM5102 DAC output preserved (Phase 7D)
+
+- **Decision.** The new RTL
+  `hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v` is a 2:1
+  combinational wire mux inserted between the existing top-level
+  `sdata_i` port (ADAU1761 ADC I2S serial input, F17) and the new
+  top-level `ext_adc_dout_i` port (PCM1808 DOUT, JB4 / T10). The mux
+  output drives the existing `i2s_to_stream_0/si` pin. The mux
+  `sel_external_i` is tied by a single-bit `xlconstant` in
+  `hw/Pynq-Z2/pcm1808_adc_integration.tcl`:
+    - `CONST_VAL = 1` -> Phase 7D default, **PCM1808** is the active ADC
+    - `CONST_VAL = 0` -> rebuilds back to **ADAU1761** ADC fallback
+  Runtime / AXI control of the select line is deferred. The existing
+  `i2s_to_stream_0` IP, its `bclk` / `lrclk` inputs, all AXIS
+  downstream (data fifo / Clash LowPassFir / axis_switch_* /
+  axi_dma_0), the GPIO contract, and the output side
+  (`i2s_to_stream_0/so` -> ADAU `sdata_o` G18 + PMOD JB7 PCM5102 DIN)
+  are untouched. PCM1808 BCK / LRCK share the same physical PMOD JB
+  pins (JB2 / JB3) that PCM5102 already uses, so both external chips
+  see the same ADAU-PLL-sourced I2S clocks.
+- **PCM1808 SCKI clocking.** PCM1808 requires SCKI in slave mode (no
+  PCM510x-style "SCKI absent -> internal PLL from BCK" fallback). For
+  this bring-up the SCKI source is the 12.288 MHz output of the
+  `clk_wiz_audio_ext` MMCM that Phase 7C added (FCLK_CLK0 100 MHz ->
+  exact 12.288 MHz). `pcm5102_audio_out.v` was simultaneously reverted
+  from the D40 SCK-low fix back to the original 12.288 MHz
+  passthrough; the same wizard output is therefore now wired to JB1,
+  which feeds PCM1808 SCKI. PCM5102 SCK is intentionally NOT on JB1
+  any more -- the user's Phase 7D physical board rewiring hard-ties
+  PCM5102 SCK to GND on the module side so PCM5102 stays in internal-
+  SYSCLK mode (D40 preserved at the wiring layer instead of the RTL
+  layer).
+- **Async-clocks caveat (deliberately accepted for this bring-up).**
+  The 12.288 MHz SCKI from `clk_wiz_audio_ext` is sourced from the PS
+  FCLK_CLK0 100 MHz PLL, while BCK / LRCK on the same physical PMOD
+  JB pins are sourced from the ADAU1761 PLL. The two are NOT bit-true
+  synchronous and drift at the ppm level. PCM1808 in slave mode
+  expects SCKI to be synchronous to BCK at a valid 256/384/512 fs
+  ratio. Phase 7E showed PCM5102 producing audible graininess under
+  this same async-clocks condition; PCM5102 was rescued by tying SCK
+  low (D40), but PCM1808 has no equivalent rescue path. The decision
+  is to ship Phase 7D and listen on the bench:
+    - If PCM1808 -> PCM5102 sounds clean, async clocks are tolerated.
+    - If PCM1808 produces noisy / unlocked output, the next phase
+      (deferred) is to make the FPGA the I2S master, generate BCK /
+      LRCK / SCKI from a single clean source, and reconfigure the
+      ADAU1761 over I2C as I2S slave -- significant change to the
+      existing audio path, intentionally not attempted here.
+- **Boundary.**
+  - XDC adds **one** new pin (`ext_adc_dout_i` on T10 / JB4,
+    LVCMOS33, no pull). Other PMOD JB pin assignments stay as
+    Phase 7C / 7E.
+  - `block_design.tcl` is untouched directly. The integration tcl
+    deletes the existing `sdata_i_1` net, inserts the mux + an
+    `xlconstant`, and re-routes the ADAU port and the new PCM1808
+    port through the mux.
+  - No AXI-Lite slave, no new GPIO, no `GPIO_CONTROL_MAP.md`
+    change (D12), no `topEntity` / `LowPassFir.hs` / DSP behaviour
+    change. HDMI / encoder integration untouched. PCM5102 DSP
+    output path (D39) untouched.
+  - PCM1808 mode pins (FMT / MD0 / MD1) are **strapped on the
+    module** to I2S slave mode; the FPGA does not drive them.
+    PCM1808 module VCC is whatever the onboard regulator expects
+    in order to keep DOUT at 3.3V (do NOT inject 5V on a PL pin).
+- **Timing.** Post-route summary (full design) on the Phase 7D bit:
+  `WNS = -8.158 ns`, `TNS = -6474.516 ns` on `clk_fpga_0` (between
+  the Phase 7E pre-fix `-8.724 ns` and the D40 SCK-low post-fix
+  `-8.004 ns`, all inside the historical `-7..-9 ns` deploy band).
+  Hold remains clean (`WHS = +0.051 ns`, `THS = 0.000 ns`). The
+  12.288 MHz domain (`clk_out1_block_design_clk_wiz_audio_ext_0`)
+  is back in the design (was pruned in D40 because nothing
+  consumed it; now consumed by `ext_audio_mclk_o`) and reports 0
+  setup/hold violations. `bclk` domain (now driving PCM1808 BCK
+  fanout in addition to ADAU `i2s_to_stream_0/bclk` and PCM5102
+  BCK): `WNS = +321.256 ns`, 0 violations. Utilization after
+  place: Slice LUTs `19099` (`35.90%`), Slice Registers `21253`
+  (`19.97%`), Block RAM Tile `9` (`6.43%`), DSPs `83` (`37.73%`)
+  -- essentially identical to Phase 7E.
+- **Why.** Land the input side of the external-codec path with the
+  smallest possible delta from the deployed Phase 7E PCM5102 output
+  bit. Build-time mux preserves ADAU1761 fallback without committing
+  to runtime switching infrastructure. Keeping i2s_to_stream_0 / AXIS
+  / DSP / output side untouched isolates the change to a single new
+  RTL file + a single new top-level input port + a single new
+  integration tcl + a single XDC line, which makes regression
+  bisection trivial.
+- **How to apply.**
+  - For listening / measurement: feed a line-level source into
+    PCM1808's analog input (NOT a guitar -- PCM1808 is line-level
+    Hi-Z incompatible; analog front-end is deferred to Phase 7E
+    follow-up / Phase 7H). Listen on PCM5102 line out.
+  - To fall back to ADAU1761 ADC: edit
+    `hw/Pynq-Z2/pcm1808_adc_integration.tcl` and change
+    `CONFIG.CONST_VAL {1}` to `{0}`, then rebuild bit / hwh + deploy.
+  - If PCM1808 audio is grainy / noisy: see the async-clocks caveat
+    above; the next escalation is FPGA-as-I2S-master, not another
+    RTL tweak.
