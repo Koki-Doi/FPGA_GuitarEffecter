@@ -1524,3 +1524,66 @@ not get removed even when superseded — they get updated.
     `ext_dac_din_o`. Do not put a second AXIS-to-I2S serializer
     in the design unless the rate mismatch becomes a measured
     problem.
+
+## D40 — PCM5102 SCK is tied LOW (internal-SYSCLK mode), not driven by clk_wiz_audio_ext
+
+- **Decision.** `pcm5102_audio_out.v` drives `ext_audio_mclk_o` (PMOD JB1
+  / PCM5102 SCK pin) to **constant `1'b0`**, ignoring its
+  `mclk_12m288_i` input. The PCM510x therefore enters its internal-PLL
+  / internal-SYSCLK mode and re-derives sysclk from BCK alone. The
+  `clk_wiz_audio_ext` 12.288 MHz MMCM is *kept* in
+  `hw/Pynq-Z2/pcm5102_dac_integration.tcl` (and its `clk_out1` is still
+  wired into the module's input port to preserve the integration tcl
+  shape) but the wizard's downstream consumer is now a no-op and
+  synthesis prunes the 12.288 MHz domain entirely. The module keeps
+  the `mclk_12m288_i` input plus a one-line `wire _unused_mclk` hook
+  so synth does not warn about a missing port; the integration tcl
+  does not need to be rewritten.
+- **Why.** Phase 7E initial bring-up (`9f21546`) drove
+  `ext_audio_mclk_o` from `clk_wiz_audio_ext/clk_out1` while BCK on
+  PMOD JB came from the ADAU1761 PLL via the existing top-level
+  `bclk` input port. The two are sourced from independent PLLs (PS
+  FCLK_CLK0 100 MHz vs ADAU's own analog PLL) and are not bit-true
+  synchronous. PCM510x's external-SCK mode requires the SCK/BCK
+  ratio to stay at an exact 64/128/192/256/384/512 fs; with the two
+  PLLs drifting at the ppm level, the chip's internal phase
+  estimator went in and out of lock and produced an audible
+  graininess / periodic jitter on the output (user-reported on the
+  bench, `9f21546` deploy). Switching to internal-SYSCLK mode (SCK
+  low) takes the external MCLK out of the locking equation
+  entirely; the chip uses BCK transitions to drive its own sysclk
+  and the audible artifacts disappear. This is the configuration
+  most PCM5102 breakout boards ship with SCK tied to GND on the
+  PCB for exactly this reason.
+- **Boundary.**
+  - **No XDC change.** The four PMOD JB pin assignments stay as Phase
+    7C (D38). JB1 is now driven at static 0 instead of toggling at
+    12.288 MHz.
+  - **No `block_design.tcl` direct edit.** The wizard stays in the
+    integration tcl; only the RTL one-line assignment changed.
+  - **No new GPIO, no AXI-Lite, no `GPIO_CONTROL_MAP.md` change.**
+  - **No `topEntity` / `LowPassFir.hs` / DSP behaviour change.**
+    HDMI / encoder integration untouched.
+  - **Phase 7C tone module `pcm5102_dac_tone` stays in the repo as a
+    debug reference**, not instantiated. The Phase 7C smoke
+    `scripts/test_pcm5102_dac_tone.py` would now produce zero
+    instead of a 1 kHz tone if anyone re-instantiated the module
+    because its MCLK input is also constant low under this bit;
+    that is fine for the deferred reference role.
+- **Timing.** Post-route summary (full design) on the SCK-low bit:
+  `WNS = -8.004 ns`, `TNS = -6767.334 ns` on `clk_fpga_0`. WNS
+  *improves* by `+0.720 ns` vs the initial Phase 7E `-8.724 ns`
+  because the unused 12.288 MHz domain was pruned and the critical
+  path no longer competes with the wizard's clock buffer / network.
+  Hold remains clean (`WHS = +0.052 ns`, `THS = 0.000 ns`).
+- **How to apply.**
+  - If a future bit needs to drive an external MCLK to PCM5102 (e.g.
+    a different DAC module that requires it), un-tie the SCK output
+    AND make sure the source is bit-true synchronous to BCK. A
+    second MMCM fed by FCLK_CLK0 is not enough; the only clean way
+    is to derive MCLK from the ADAU BCK net via a PLL whose input
+    can accept 3.072 MHz (PLLE2_BASE input minimum is 19 MHz, so
+    that path is not directly available -- prefer keeping SCK low).
+  - For Phase 7D (PCM1808 ADC SCKI), re-attach the 12.288 MHz
+    wizard output to a *separate* top-level port dedicated to
+    PCM1808; do NOT route it back into PCM5102 SCK.

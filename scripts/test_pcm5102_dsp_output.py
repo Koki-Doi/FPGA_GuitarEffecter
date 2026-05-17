@@ -53,7 +53,7 @@ import time
 
 
 JB_WIRING = (
-    "  JB1 (W14)  EXT_AUDIO_MCLK  -> PCM5102 SCK   12.288 MHz (Phase 7C MMCM)\n"
+    "  JB1 (W14)  EXT_AUDIO_MCLK  -> PCM5102 SCK   = CONSTANT 0 (internal-PLL mode, DECISIONS.md D40)\n"
     "  JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM5102 BCK   = ADAU1761 BCLK  (~3.072 MHz)\n"
     "  JB3 (T11)  EXT_AUDIO_LRCLK -> PCM5102 LCK   = ADAU1761 LRCLK (~48 kHz)\n"
     "  JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN   = i2s_to_stream_0/so\n"

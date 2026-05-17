@@ -1,6 +1,23 @@
 # Current state
 
-Last updated: **2026-05-18, Phase 7E PCM5102 now carries the existing AudioLab DSP output (parallel to ADAU1761 DAC)**
+Last updated: **2026-05-18 (later), Phase 7E follow-up: PCM5102 SCK tied LOW to fix MCLK/BCK async jitter**
+(initial Phase 7E `9f21546` mirrored ADAU1761 I2S onto PMOD JB while keeping
+the Phase 7C 12.288 MHz `clk_wiz_audio_ext` driving PCM5102 SCK. On the
+real board the resulting audio had audible graininess / periodic jitter
+because the 12.288 MHz MCLK comes from the PS 100 MHz PLL and BCK comes
+from the ADAU1761 PLL -- the two are not bit-true synchronous and
+PCM510x external-SCK locking drifted in and out. `pcm5102_audio_out.v`
+now drives `ext_audio_mclk_o = 1'b0`; PCM510x therefore enters its
+internal-SYSCLK mode and derives sysclk from BCK alone. The
+`clk_wiz_audio_ext` instance is left in `pcm5102_dac_integration.tcl`
+for future PCM1808 SCKI use, but its output has no consumer in this bit
+and gets optimised away during synth. Timing improved (WNS -8.004 ns
+vs the earlier -8.724 ns) because the unused 12.288 MHz domain was
+pruned. ADAU1761 ADC / DSP chain / HDMI / encoder all still untouched.
+`DECISIONS.md` D40.
+
+Previous-pass header (Phase 7E initial bring-up, jitter known):
+**Phase 7E PCM5102 now carries the existing AudioLab DSP output (parallel to ADAU1761 DAC)**
 (new RTL module `hw/ip/pcm5102_audio_out/src/pcm5102_audio_out.v` is a
 trivial 4-signal pass-through that mirrors the existing ADAU1761 I2S
 DAC interface onto the four PMOD JB pins: `JB2 BCK <- bclk` (input
