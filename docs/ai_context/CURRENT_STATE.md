@@ -45,6 +45,16 @@ fixes. See `DECISIONS.md` D26 / D33 / D35 / D38 / D39).
   2400/2400/600`. Encoder GUI dry-run
   `scripts/run_encoder_hdmi_gui.py --dry-run --no-audio-apply --hold-seconds 1`
   also exited cleanly on the deployed Python stack.
+- **EncoderGuiSmoke initial display fix (2026-05-17)**:
+  `EncoderGuiSmoke.ipynb` and `scripts/run_encoder_hdmi_gui.py` now render
+  the first compact-v2 frame before starting HDMI and pass that frame to
+  `AudioLabHdmiBackend.start(..., placement="manual", offset_x=0, offset_y=0)`.
+  This avoids starting the VDMA on a black framebuffer and relying on the
+  first dirty-loop write to make the GUI visible. Deployed to both
+  `/home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`
+  and `/home/xilinx/jupyter_notebooks/audio_lab/EncoderGuiSmoke.ipynb`;
+  board-side runner smoke printed `HDMI backend started at 800x600 with
+  initial frame` and exited cleanly.
 - **GUI renderer**: `GUI/pynq_multi_fx_gui.py::render_frame_800x480_compact_v2`
   + the (1).py-spec `EFFECT_KNOBS` / `AppState.all_knob_values` /
   `hit_test_compact_v2()` API from Phase 6H port (`DECISIONS.md` D24).
