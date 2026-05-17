@@ -8,6 +8,14 @@ unpacking used everywhere else. Keeping it on its own page avoids
 confusion and protects the existing effect map from accidental drift
 (`DECISIONS.md` D12 / D33).
 
+Phase 7G+ (`DECISIONS.md` D37) adds a Python-only translation layer
+(`audio_lab_pynq/encoder_effect_apply.py::EncoderEffectApplier`) that
+converts decoded `EncoderEvent` instances into `AudioLabOverlay` public
+setters. This file (register map) is unchanged by Phase 7G+; the
+PS-side flow + GUI behaviour are documented in
+[`ENCODER_INPUT_IMPLEMENTATION.md`](ENCODER_INPUT_IMPLEMENTATION.md)
+and [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md).
+
 ## IP basics
 
 | Item | Value |

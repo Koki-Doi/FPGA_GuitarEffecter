@@ -1,7 +1,9 @@
-# Encoder input implementation (Phase 7F/7G)
+# Encoder input implementation (Phase 7F / 7G / 7G+)
 
 Concrete notes for the rotary-encoder PL IP + Python control layer
-implemented for Phase 7F (PL) and Phase 7G (PS) of FPGA_GuitarEffecter.
+implemented for Phase 7F (PL), Phase 7G (PS), and Phase 7G+
+(GUI-first live apply via `EncoderEffectApplier`, see
+[`DECISIONS.md`](DECISIONS.md) D37) of FPGA_GuitarEffecter.
 Register-level details are in
 [`ENCODER_INPUT_MAP.md`](ENCODER_INPUT_MAP.md); pin choices are in
 [`IO_PIN_RESERVATION.md`](IO_PIN_RESERVATION.md).

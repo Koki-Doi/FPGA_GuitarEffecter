@@ -1319,3 +1319,58 @@ not get removed even when superseded — they get updated.
   runtime detail であり、ここを driver 側で吸収すれば Verilog IP
   packaging や block design rename を避けられる。HDMI / DSP / GPIO
   契約を動かさずに deploy 済 bitstream をそのまま使える。
+
+## D37 — Encoder runtime は AppState を `EncoderEffectApplier` 経由でのみ AudioLabOverlay に反映 (raw GPIO 直書き禁止、RAT は既定で除外)
+
+- **状況.** Phase 7G の `EncoderUiController` は AppState を更新するだけで、
+  実際の overlay write は `AudioLabGuiBridge` 経由 (encoder 3 short
+  press でのみ apply) だった。3 個の rotary encoder で HDMI GUI を
+  notebook 無しに実操作する用途では、回転中に音色が即時に変化することと、
+  RAT pedal model のように "Clash stage は残すが encoder 操作からは外したい"
+  という選択的除外が必要になった。
+- **決定.**
+  - `audio_lab_pynq/encoder_effect_apply.py::EncoderEffectApplier` を
+    encoder runtime から AudioLabOverlay への **唯一の翻訳層** とする。
+    使う overlay public API は次の 3 つのみ:
+    `set_noise_suppressor_settings`、`set_compressor_settings`、
+    `set_guitar_effects(**kwargs)`。distortion pedal 選択は
+    `set_distortion_settings` ではなく
+    `set_guitar_effects(distortion_pedal_mask=...)` に集約する
+    (cached 状態と整合)。
+  - raw GPIO write、`set_distortion_pedal*` ショートカット、
+    `HdmiEffectStateMirror.render()` 経由の二重描画は encoder loop からは
+    呼ばない。HDMI render は dirty-flag loop が単独で所有する。
+  - throttle (`apply_interval_s`、既定 100 ms) で連続回転中の AXI flood を
+    抑える。encoder 3 short press は throttle を bypass して force apply。
+    例外は `last_apply_ok=False` / `last_apply_message=<repr>` に保存し
+    loop は落とさない。
+  - RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (既定) の時
+    `EncoderUiController._cycle_model_index` と
+    `EncoderEffectApplier.apply_appstate` の両方で除外する。Clash stage、
+    `HdmiEffectStateMirror.rat()`、notebook からの RAT 直接呼び出しは
+    手付かず。`--include-rat` で encoder からも有効化可。
+  - GUI 仕様 (`GUI/compact_v2/knobs.py::EFFECTS` / `EFFECT_KNOBS`) に存在
+    しない effect / parameter は触らない。`unsupported` ラベルとして記録
+    し GUI status strip / resource print に小さく出すだけにする。
+  - EQ knob は GUI 0..100 → overlay 0..200 (50 == unity) に変換 (overlay
+    の `_level_to_q7` 仕様)。Cab `MODEL` knob は表示専用、overlay へは
+    `AppState.cab_model_idx` (0..2) を送る。
+  - `EncoderUiController` に `applier=` / `live_apply=` / `skip_rat=`
+    kwargs を追加。`applier` 未指定時は既存 `mirror=` / `bridge=`
+    fall-through を温存。
+- **境界.**
+  - bit / hwh / XDC / RTL / `block_design.tcl` / `create_project.tcl` /
+    `hdmi_integration.tcl` / `encoder_integration.tcl` はこの決定で
+    変更しない。
+  - `GPIO_CONTROL_MAP.md` の effect output 契約は変更しない (D12)。
+  - `HdmiEffectStateMirror` (`audio_lab_pynq/hdmi_effect_state_mirror.py`)
+    は notebook-driven 用途として残存。encoder runtime は applier を
+    優先する。
+  - HDMI baseline (SVGA `800x600 @ 40 MHz`、D25) は変更しない。
+- **Why.** GUI から見える項目だけを操作対象にすることで、未対応 API
+  を encoder で叩く事故を防げる。applier を 1 箇所に閉じ込めれば、
+  対応 / 未対応 / RAT 除外 / throttle / 例外捕捉のルールを 1 ファイルで
+  読める。GUI render と overlay apply を分離 (dirty-flag loop) すれば
+  idle 時 CPU を低く保ちつつ操作時のみ AXI を叩ける。
+  RAT は実機 voicing 検証が他 pedal より遅れているため、Clash stage は
+  残しつつ encoder からの誤操作を既定で防ぐ。

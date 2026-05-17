@@ -96,7 +96,7 @@ Encoder pins (CLK / DT / SW)
 | **Encoder 2** | `selected_fx` 内の parameter / model selection を変更 (Distortion で skip\_rat=True の時は RAT slot を飛ばす) | PEDAL / AMP / CAB は `model_select_mode` toggle、それ以外は `edit_mode` toggle | reserved (`model_select_mode` を解除) |
 | **Encoder 3** | selected parameter の値を変更 (live\_apply=True なら 100 ms throttle で `EncoderEffectApplier` 経由 apply) | 決定 / 強制 apply (`apply_pending` 反映、live\_apply に関係なく force) | 選択中 knob を GUI default に戻す + apply |
 
-### 2.1a GUI-first live apply (Phase 7G+)
+### 2.1a GUI-first live apply (Phase 7G+, `DECISIONS.md` D37)
 
 - `audio_lab_pynq/encoder_effect_apply.py` の `EncoderEffectApplier` が
   AppState → `AudioLabOverlay` public API の唯一の経路。raw GPIO は

@@ -28,6 +28,7 @@ Then the topic file that matches the task:
 | Bitstream build / deploy | `docs/ai_context/BUILD_AND_DEPLOY.md` |
 | PYNQ-Z2 board operations | `docs/ai_context/PYNQ_RUNTIME.md` |
 | HDMI GUI / 5-inch LCD | `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` (+ `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected), `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`); runtime entry is `audio_lab_pynq/notebooks/HdmiGui.ipynb` (single cell, resource monitor, `OFFSET_X` / `OFFSET_Y` calibration). |
+| Rotary encoder runtime / GUI live apply | `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`, `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md`, `docs/ai_context/ENCODER_INPUT_MAP.md`; runtime entry is `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell, dirty-flag loop with live apply + resource monitor) and `scripts/run_encoder_hdmi_gui.py` (`--live-apply` / `--skip-rat` defaults). |
 | Resuming after a stop | `docs/ai_context/RESUME_PROMPTS.md` (current prompts only; per-phase history in `docs/ai_context/RESUME_PROMPTS_HISTORY.md`) |
 
 ## Resuming after a rate-limit / context reset
@@ -128,6 +129,26 @@ When a previous turn stopped mid-implementation:
   fit-to-chip label size search `22 → 14`); REVERB / COMPRESSOR /
   NOISE SUPPRESSOR / SAFE BYPASS / PRESET hide it. Adding a new effect
   extends `EFFECT_KNOBS` with the real labels and the grid follows.
+- Rotary-encoder runtime (Phase 7G+, `DECISIONS.md` D37) routes every
+  encoder-driven overlay write through
+  `audio_lab_pynq/encoder_effect_apply.py::EncoderEffectApplier`. It is
+  the only Python object allowed to translate the compact-v2 `AppState`
+  into `AudioLabOverlay` writes from the encoder loop; it calls only
+  `set_noise_suppressor_settings`, `set_compressor_settings`, and
+  `set_guitar_effects(**kwargs)` — **no raw GPIO writes**, no
+  `set_distortion_pedal*` shortcut. Default throttle is 100 ms; encoder
+  3 short press always force-applies. RAT (`distortion_pedal_mask` bit
+  2) is excluded from encoder cycling and live apply while
+  `skip_rat=True` (default); the Clash stage and
+  `HdmiEffectStateMirror.rat()` are untouched and notebooks can still
+  drive RAT. EQ knobs are mapped GUI `0..100` -> overlay `0..200`
+  (`50` is unity); the Cab IR `MODEL` knob is overridden by
+  `AppState.cab_model_idx`. `scripts/run_encoder_hdmi_gui.py` and
+  `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell) share
+  a dirty-flag loop with poll 10 Hz active / 4 Hz idle and a render
+  cap of 5 fps. Do not re-introduce per-loop render or per-loop
+  overlay write, do not add a second translation layer beside the
+  applier, and do not silently flip `skip_rat=False`.
 - The compact-v2 renderer is split per-theme under `GUI/compact_v2/`
   (`knobs.py` / `state.py` / `layout.py` / `renderer.py` /
   `hit_test.py`); `GUI/pynq_multi_fx_gui.py` is now a thin
