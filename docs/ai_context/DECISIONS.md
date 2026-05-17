@@ -997,3 +997,132 @@ not get removed even when superseded — they get updated.
     `import _pynq_mock` first.
   - No DSP / Clash / GPIO / block_design / bit / hwh / tcl change in
     any of the three refactors; the same `audio_lab.bit` is in use.
+
+## D27 — Phase 7 では PCM1808 + PCM5102 を外付け codec 候補として計画する (ADAU1761 即置換禁止)
+
+- **状況.** PYNQ-Z2 onboard ADAU1761 は音は出るが、外付け codec
+  module を扱える前提を整えたい (line-level 入出力、I2S 接続、
+  将来の analog front-end 追加の余地)。
+- **決定.** 外付け codec として **Youmile PCM1808** (ADC) と
+  **PCM5102 / PCM5102A** (DAC) を採用する前提で Phase 7 を進める。
+  Phase 7A は **planning only**: ピン予約 / 信号一覧 / mode / clock
+  方針 / analog 注意 / 段階的実装計画を docs に記録するだけで、
+  XDC / block_design / bit / hwh は一切変更しない。
+- **境界.**
+  - 既存 ADAU1761 経路は **破壊しない**。Phase 7B 以降も外付け codec
+    は **別 I2S path** として追加する (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+    section 7 の選択肢 A または C)。即置換 (選択肢 B) は採用しない。
+  - PCM1808 の analog input にギターを **直結しない**。line-level
+    想定で先に動かし、analog front-end (高 impedance buffer / AC
+    coupling / bias / gain / anti-alias LPF / clamp) は Phase 7E
+    以降に分離する。
+  - PCM5102 の出力は **line out** として扱う。headphone 直接駆動を
+    前提にせず、必要なら output buffer を追加する。pop noise / GND
+    routing は実装時に確認する。
+  - 実モジュールは販売ロットによりピン名 / strap / 電源が異なる
+    可能性があるので、**Phase 7B で実物確認** してから XDC を書く。
+- **Why.** ADAU1761 を残しておけば、外付け path の動作 / 音質 /
+  ノイズフロアを直接比較でき、Phase 7B 以降の作業中に音が出なく
+  なるリスクを排除できる。analog front-end と DSP 置換を同時に
+  攻めると失敗時の原因切り分けが困難になる。
+
+## D28 — 外付け ADC / DAC pin を encoder GPIO より優先して予約する
+
+- **状況.** Phase 7 は外付け codec と rotary encoder × 3 を同時に
+  追加したい。PYNQ-Z2 上の未使用 IO ヘッダは PMOD JA / JB、
+  Raspberry Pi header、Arduino header。どれを何に割り当てるかで
+  audio が劣化したり再配線が必要になったりする可能性がある。
+- **決定.** **外付け audio (PCM1808 + PCM5102) を最優先**で
+  PMOD JB に連続配置する。追加 control / strap pin が必要なら
+  PMOD JA に分散する。**rotary encoder 用 GPIO は audio 予約 pin の
+  余りではなく** Raspberry Pi header に配置する。
+- **境界.**
+  - PMOD JB は外付け I2S audio (`EXT_AUDIO_MCLK` / `EXT_AUDIO_BCLK` /
+    `EXT_AUDIO_LRCLK` / `EXT_ADC_DOUT` / `EXT_DAC_DIN`) 用に
+    確保する。最低 5 pin (mode pin を strap 固定する場合) で
+    収まる。
+  - PMOD JA は `EXT_ADC_FMT` / `EXT_ADC_MD0` / `EXT_ADC_MD1` /
+    `EXT_DAC_XSMT` / `EXT_CODEC_RESET_N` / `EXT_AUDIO_SPARE0..3`
+    用に確保する。
+  - encoder 9 pin + spare GPIO は Raspberry Pi header 候補 (低速で
+    十分)。Arduino header は最後の予備。
+  - 実 Package Pin は Phase 7B で確定する。Phase 7A の本決定は
+    **論理予約レベル**。XDC 変更はしない。
+  - すべて 3.3V LVCMOS33 統一。5V を PL pin へ直接入れない
+    (level shifter 必須)。
+- **Why.** audio は clock skew / cross-talk に弱いため隣接 pin に
+  集約したい。encoder は kHz オーダーの低速入力なので、PMOD の
+  clean 8-pin block を潰してまで配置する必要がない。先に audio を
+  確保して余りを encoder に回すと、後で audio を増やしたいときに
+  encoder 配線をやり直す羽目になる。
+
+## D29 — FPGA を外付け I2S clock master にする (48 kHz / 24-bit / 12.288 MHz MCLK 第一候補)
+
+- **状況.** PCM1808 / PCM5102 のクロックを誰が出すか決める必要が
+  ある。ADAU1761 経路は既に `mclk` (`U5`) を FPGA から供給して
+  おり、`bclk` / `lrclk` も FPGA 主導。
+- **決定.** Phase 7 でも **FPGA / PYNQ-Z2 を I2S clock master** に
+  する。
+  - sample rate: 48 kHz
+  - word length: 24-bit (frame は stereo / 64-bit)
+  - `BCLK` = 64 × fs = **3.072 MHz**
+  - `MCLK / SCKI` 第一候補 = 256 × fs = **12.288 MHz**
+    (384 / 512 fs は将来の高 SNR option として残す)
+  - PCM1808 は **slave mode** 固定 (`MD0` / `MD1` を strap)
+  - PCM1808 `FMT` = I2S 24-bit (strap 推奨)
+  - PCM5102 は I2S 3-wire 入力 (`BCK` / `LCK` / `DIN`)、`SCK` の
+    扱いは module 仕様で決定 (内蔵 PLL 駆動 or 12.288 MHz 駆動)
+- **境界.**
+  - 既存 DSP は 48 kHz / `AudioDomain` 前提なので、外付け path も
+    48 kHz で揃える。sample rate 変更は Phase 7 範囲外。
+  - `BCLK` / `LRCLK` / `MCLK` は generated clock として XDC 宣言
+    する (Phase 7B 以降)。
+  - PCM1808 `DOUT` には input delay 制約が必要 (Phase 7B 以降)。
+- **Why.** clock master を FPGA にすることで、ADAU1761 path と
+  外付け path で同じ sample timing を持てる。比較が公平になり、
+  Python / GUI 側から sample rate を変えない契約が維持できる。
+  PCM5102 が PLL 内蔵で MCLK なしでも動く構成があるとはいえ、
+  PCM1808 は SCKI 必須なので、結局 MCLK は FPGA が出すのが
+  最もシンプル。
+
+## D30 — Rotary encoder は PL 側で debounce + quadrature decode + event 化 (Python polling 禁止)
+
+- **状況.** PYNQ-Z2 + Jupyter 環境で rotary encoder を 3 個扱う
+  と、Python polling 経路は CPU 負荷 / polling 周期 / debounce の
+  すべてで弱い。HDMI GUI を encoder で操作する以上、入力検出の
+  信頼性は必須。
+- **決定.** rotary encoder 入力 (`ENC0..2_A / B / SW`、9 pin) は
+  **PL fabric 側で**:
+  - 2-stage synchronizer
+  - debounce counter (CONFIG レジスタの `debounce_ms` で設定可能)
+  - quadrature state machine
+  - signed delta accumulator (per encoder)
+  - absolute count register (per encoder)
+  - event latch (rotate / short_press / long_press / release)
+
+  を実装し、PS 側 Python は **delta + event レジスタを polling
+  するだけ** にする。
+- **境界.**
+  - 既存 `axi_gpio_*` (`0x43C30000` ~ `0x43CD0000`) には混ぜない。
+    encoder 用は **新規 AXI IP** (または新規 AXI GPIO input)。
+    base 候補は `0x43CE0000` (Phase 7F で確定)。
+  - 既存 `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` 4-byte unpacking 構造は
+    encoder には流用しない (event bit と signed delta が混在する
+    ため別 layout)。
+  - `block_design.tcl` 変更は Phase 7F でユーザ承認の上で行う。
+    `axi_gpio_noise_suppressor` (`DECISIONS.md` D11) /
+    `axi_gpio_compressor` (`DECISIONS.md` D14) と同じ "個別承認の
+    例外" 扱い。
+  - Python 側 API は `audio_lab_pynq/encoder_input.py` (低位) と
+    `audio_lab_pynq/encoder_ui.py` (高位 / AppState 反映) の 2 段。
+    encoder 経由の値変更は `apply_to_overlay` で debounce + apply
+    タイミング制御し、回転ごとに GPIO write しない。
+  - notebook 操作と encoder 操作の競合は **後勝ち**、ただし
+    `apply_pending` 中は notebook を上書きしない (`value_dirty`
+    で示す)。
+- **Why.** encoder の典型回転速度は数百 pulse/s 以上で、PS polling
+  は数十 Hz 程度しか出ない。生信号を PS で読むと **必ず取りこぼす**。
+  debounce を PS でやるとボタン応答が遅れる。PL fabric なら
+  encoder 3 個でも数百 LUT 程度で済み、現状の Vivado リソース枠
+  内に余裕で収まる。GUI 更新周期 (30 ~ 60 Hz) と入力検出周期
+  (PL clock、~ MHz) を完全分離できるのも大きい。

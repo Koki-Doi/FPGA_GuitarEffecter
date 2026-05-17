@@ -694,6 +694,11 @@ D12)。新しいエフェクトを追加するときは、まず
 [`docs/ai_context/EFFECT_STAGE_TEMPLATE.md`](docs/ai_context/EFFECT_STAGE_TEMPLATE.md)
 にあります。
 
+## Future Work
+
+- 外付け **PCM1808** (24-bit stereo ADC) と **PCM5102 / PCM5102A** (I2S DAC) を別 I2S path として追加し、ADAU1761 と切替可能にする計画 (Phase 7、planning 段階)。詳細は [`docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) / [`docs/ai_context/IO_PIN_RESERVATION.md`](docs/ai_context/IO_PIN_RESERVATION.md)、`DECISIONS.md` D27 ~ D29。Phase 7A 時点では XDC / block_design / bit / hwh は **未変更**。
+- 押し込みスイッチ付き **rotary encoder 3 個** で HDMI GUI 全機能を notebook なしに操作する計画 (Phase 7F / 7G)。PL 側で 2-stage sync + debounce + quadrature decode + delta/event 化し、Python は delta / event レジスタを polling するだけ。詳細は [`docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`](docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md)、`DECISIONS.md` D30。
+
 ## AI development context
 
 Claude Code / Codex 向けの作業コンテキストは

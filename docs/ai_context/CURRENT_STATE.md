@@ -2124,6 +2124,45 @@ notes) is in
 All five notebooks are deployed under
 `/home/xilinx/jupyter_notebooks/audio_lab/` on the board.
 
+## Phase 7A — external PCM1808 ADC / PCM5102 DAC and rotary encoder planning (2026-05-17)
+
+Phase 7A は **planning only**。実装 / XDC / block_design / bit / hwh
+変更は一切なし (`DECISIONS.md` D27 / D28 / D29 / D30)。
+
+成果物 (docs のみ):
+- `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (新規)
+- `docs/ai_context/IO_PIN_RESERVATION.md` (新規)
+- `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` (新規)
+
+確定事項:
+- 外付け ADC は **Youmile PCM1808** (24-bit stereo, single-ended)
+- 外付け DAC は **PCM5102 / PCM5102A** (I2S input, 内蔵 PLL)
+- FPGA を **I2S clock master** にする (`48 kHz / 24-bit / BCLK=3.072 MHz / MCLK=12.288 MHz` 第一候補)
+- 外付け audio pin を **PMOD JB** にまとめる候補 (clock skew 最小化)、追加 control / mode strap は **PMOD JA** に分散
+- ロータリーエンコーダー 3 個 (各 A / B / SW, 9 pin) は **Raspberry Pi header** 候補 (audio 用 PMOD を潰さない)
+- encoder は **PL 側で debounce + quadrature decode + delta/event 化** (Python polling は不採用)
+- 外付け codec は ADAU1761 の **即置換ではなく** 別 I2S path として追加 (Phase 7B では選択肢 A または C)
+- PCM1808 の analog input は **line-level** 想定。ギター直結は不可 (analog front-end は Phase 7E 以降)
+
+実装は Phase 7B 以降:
+- Phase 7B: 実モジュール検証 + XDC 候補
+- Phase 7C: PCM5102 DAC 出力 prototype
+- Phase 7D: PCM1808 ADC 入力 prototype
+- Phase 7E: 外付け / ADAU1761 path 切替 + DSP 組込み
+- Phase 7F: encoder PL IP + XDC + bit/hwh
+- Phase 7G: Python encoder driver + GUI focus state
+- Phase 7H: 筐体 / front panel
+
+未実装 (Phase 7A 時点):
+- `hw/Pynq-Z2/audio_lab.xdc` の外付け codec / encoder pin 追加
+- `hw/Pynq-Z2/block_design.tcl` の encoder IP 追加
+- `audio_lab_pynq/encoder_input.py` / `encoder_ui.py`
+- `GUI/compact_v2/state.py` の focus state 拡張
+- `GUI/compact_v2/renderer.py` の focus 表示
+
+詳細は新規 3 docs (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` /
+`IO_PIN_RESERVATION.md` / `ENCODER_GUI_CONTROL_SPEC.md`) を参照。
+
 ## What to do next
 
 Open work, in roughly priority order:
@@ -2146,6 +2185,10 @@ Open work, in roughly priority order:
 4. **Diagnostic capture for distortion stages.** Re-use
    `diagnostics.capture_input` to log a clip waveform per pedal so
    we can compare voicings without ear fatigue.
+5. **Phase 7B (external PCM1808 / PCM5102 verification).** 実モジュール
+   の silkscreen / strap / 電源 / I/O level を実物で確認し、候補ピン番号
+   を確定。XDC 候補を作るが、まだ commit はしない。`IO_PIN_RESERVATION.md`
+   と `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` のチェックリストに沿う。
 
 ## Things to be careful about
 
@@ -2165,4 +2208,16 @@ Open work, in roughly priority order:
 - Do **not** drop the legacy `gate_control.ctrlB` write from
   `set_guitar_effects` -- older bitstreams without
   `axi_gpio_noise_suppressor` still rely on it.
+- Do **not** silently replace the ADAU1761 path with PCM1808 / PCM5102.
+  Phase 7 では外付け codec は別 I2S path として追加する (`DECISIONS.md`
+  D27). 既存 ADAU1761 経路 / `audio_lab.bit` / DSP / GPIO map を破壊しない。
+- Do **not** allocate rotary encoder GPIO into the PMOD reserved for
+  external audio. Audio が優先で、encoder は Raspberry Pi header 側へ
+  逃がす (`DECISIONS.md` D28、`IO_PIN_RESERVATION.md`)。
+- Do **not** poll encoder A / B / SW from Python directly. PL 側で
+  debounce + quadrature decode + event 化する (`DECISIONS.md` D30、
+  `ENCODER_GUI_CONTROL_SPEC.md`)。
+- Do **not** connect PCM1808 analog input directly to a guitar. 必要な
+  analog front-end (高 impedance buffer / AC coupling / bias / gain /
+  anti-alias LPF / clamp) は Phase 7E 以降。
 - Do **not** push, pull, or fetch.

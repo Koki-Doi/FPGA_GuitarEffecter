@@ -168,6 +168,85 @@ asking it to re-discover the project from scratch.
 > 触ってよいファイルは `AGENTS.md` / `CLAUDE.md` / `docs/` 配下のみ。
 > 実装ファイルや bitstream を巻き込まないでください。
 
+## Phase 7B — PCM1808 / PCM5102 module verification + XDC candidate
+
+> Phase 7A は planning only で終了済みです (`DECISIONS.md` D27 ~
+> D30、commit はこの prompt 時点では未定)。Phase 7B はまず以下を読んで
+> ください: `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`、
+> `docs/ai_context/IO_PIN_RESERVATION.md`、`docs/ai_context/CURRENT_STATE.md`
+> の Phase 7A 節。
+>
+> Phase 7B の作業:
+> 1. 実モジュール (Youmile PCM1808 / 汎用 PCM5102) を物理確認し、
+>    silkscreen ピン名 / VCC / I/O level / `MD0` / `MD1` / `FMT` /
+>    `SCKI` の有無 / `XSMT` / `FLT` / `DMP` / onboard regulator の
+>    有無 / analog 結合方式を `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+>    section 3 のチェックリストで埋める。
+> 2. `IO_PIN_RESERVATION.md` の論理予約 (PMOD JB に audio 5 + spare、
+>    PMOD JA に control / strap、Raspberry Pi header に encoder) を
+>    PYNQ-Z2 board file (`/home/doi20/board_files/XilinxBoardStore/
+>    boards/TUL/pynq-z2/1.0/`) で実 Package Pin に解決する。
+> 3. XDC 候補を作成 (まだ commit しない)。ADAU1761 既存 pin
+>    (`U5 / M17 / M18 / U9 / T9 / F17 / G18 / R18 / T17`) と HDMI
+>    pin (`L16 / L17 / K17 / K18 / K19 / J19 / J18 / H18`) に衝突
+>    しないこと。
+> 4. 外付け I2S interface module (Clash or HDL) の初稿設計。DSP
+>    本体 (`LowPassFir.hs`) は変更しない。
+>
+> 禁止: ADAU1761 即置換、ギター直結を前提にした analog front-end
+> 省略、`block_design.tcl` 変更 (Phase 7B 時点では未承認)、bit / hwh
+> 再生成、`git push` / `git pull` / `git fetch`。
+
+## Phase 7F — Rotary encoder PL IP + XDC
+
+> Phase 7F に入る前に `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`
+> を必ず読んでください (`DECISIONS.md` D30)。
+>
+> Phase 7F の作業:
+> 1. encoder decode IP (2-stage sync + debounce + quadrature FSM +
+>    delta / count / event / CONFIG / CLEAR_EVENTS、register map は
+>    `ENCODER_GUI_CONTROL_SPEC.md` section 4) を Clash or HDL で実装。
+> 2. AXI-Lite slave で接続。base 候補 `0x43CE0000` (既存
+>    `axi_gpio_*` `0x43C30000..0x43CD0000` と衝突しないこと)。
+> 3. `block_design.tcl` 修正 (ユーザ承認後): `NUM_MI` 増、address
+>    segment 追加、encoder IP 配線。
+> 4. `audio_lab.xdc` に encoder pin 追加 (Raspberry Pi header 候補)、
+>    `PULLUP true` 設定。
+> 5. bit / hwh build。WNS が `TIMING_AND_FPGA_NOTES.md` の最新
+>    deploy band (-8.731 ns 近辺) を大きく悪化させないこと。
+> 6. 簡単な debug script で raw delta / event が出るか確認。
+>
+> 禁止: PS polling で A / B / SW を直接読む実装 (`DECISIONS.md` D30
+> 違反)、既存 `axi_gpio_*` に encoder bit を混ぜる、ADAU1761 / HDMI
+> 経路の改変、`git push` / `git pull` / `git fetch`。
+
+## Phase 7G — Python encoder driver + GUI focus state
+
+> 前提: Phase 7F で encoder IP が deploy 済 (`audio_lab.bit` に
+> encoder IP が含まれている) こと。
+>
+> Phase 7G の作業:
+> 1. `audio_lab_pynq/encoder_input.py` (low-level driver) と
+>    `audio_lab_pynq/encoder_ui.py` (high-level controller) を
+>    `ENCODER_GUI_CONTROL_SPEC.md` section 3 の API 案に沿って実装。
+> 2. `GUI/compact_v2/state.py` に focus state (`focus_effect_index` /
+>    `focus_param_index` / `edit_mode` / `model_select_mode` /
+>    `last_encoder_event` / `value_dirty` / `apply_pending` /
+>    `last_control_source`) を追加。`AppState` の既存 field
+>    (`all_knob_values` 等) は破壊しない。
+> 3. `GUI/compact_v2/renderer.py` に focus 表示 / dirty 表示 /
+>    press feedback / `last_control_source` 表示を追加。
+> 4. `audio_lab_pynq/notebooks/HdmiGui.ipynb` を encoder 駆動でも
+>    notebook 駆動でも動くように更新。1 つの loop で
+>    `EncoderUiController.poll()` → `apply_to_state()` →
+>    `apply_to_overlay()` を回す。
+> 5. notebook なしで全機能操作できる prototype を確認。
+>
+> 禁止: `GUI/pynq_multi_fx_gui.py` shim の巨大化 (`DECISIONS.md`
+> D26)、`audio_lab_pynq/hdmi_effect_state_mirror.py` shim の巨大化、
+> HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、ADAU1761 経路の改変、
+> `git push` / `git pull` / `git fetch`。
+
 ## Older phase prompts (history)
 
 Per-phase resume prompts for the HDMI GUI Phase 1 -- Phase 6H arc
