@@ -298,19 +298,24 @@ def test_appstate_overdrive_model_idx_persists_through_save_load():
 
 
 def test_encoder_overdrive_model_cycle_uses_dedicated_index():
-    """Encoder 2 rotate while OVERDRIVE is selected and model_select_mode
-    is on must cycle ``overdrive_model_idx``, NOT ``dist_model_idx``."""
+    """Encoder 1 hold+rotate while Overdrive is selected must cycle
+    ``overdrive_model_idx``, NOT ``dist_model_idx`` (D47).
+
+    The previous ``model_select_mode`` persistent toggle is removed; the
+    controller consults its live Encoder 1 button state instead.
+    """
     from compact_v2.state import AppState
     from audio_lab_pynq.encoder_ui import EncoderUiController
 
     state = AppState()
     state.selected_effect = 2          # Overdrive
-    state.model_select_mode = True
 
     initial_dist = state.dist_model_idx
     initial_od = state.overdrive_model_idx
 
     controller = EncoderUiController(state)
+    # Encoder 1 held down -> hold+rotate semantics.
+    controller.set_button_state([False, True, False])
 
     class _Ev(object):
         def __init__(self, eid, kind, delta=0):
