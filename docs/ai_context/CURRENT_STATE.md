@@ -160,11 +160,17 @@ Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC on one
 PMOD board) has been ordered and will be evaluated as a stable external
 I2S I/O reference before any further PCM1808 work. The full design /
 phase / pin / test plan lives in
-`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`. No RTL / XDC / Tcl /
-Vivado / bit/hwh / Python / Notebook change has been made for this;
-deployed bit is still the Phase 7D close-out `f502373` series. PCM5102
-SCK = GND (D40 / D42), PCM1808 mux = ADAU (D43), Phase 7D close-out
-WNS `-7.931 ns`. See `DECISIONS.md` D45.
+`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`. The **PMOD JB pin
+mapping is now confirmed (2026-05-18)** against the Digilent Pmod I2S2
+reference manual: Pin 1..4 = D/A MCLK / LRCK / SCLK / SDIN on
+JB1..JB4, Pin 7..10 = A/D MCLK / LRCK / SCLK / SDOUT on JB7..JB10,
+Pin 5/11 = GND, Pin 6/12 = VCC 3.3V. FPGA 側は 1 系統の MCLK / LRCK
+/ BCLK を生成して D/A 側と A/D 側に fanout する方針 (async-clocks
+を構造的に排除)。No RTL / XDC / Tcl / Vivado / bit/hwh / Python /
+Notebook change has been made for this; deployed bit is still the
+Phase 7D close-out `f502373` series. PCM5102 SCK = GND (D40 / D42),
+PCM1808 mux = ADAU (D43), Phase 7D close-out WNS `-7.931 ns`. See
+`DECISIONS.md` D45.
 
 ## Current load-bearing facts
 

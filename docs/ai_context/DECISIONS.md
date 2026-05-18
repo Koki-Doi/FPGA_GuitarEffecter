@@ -1923,7 +1923,15 @@ not get removed even when superseded — they get updated.
     commits to.
 - **Phase plan summary** (full detail in
   `PMOD_I2S2_INTEGRATION_PLAN.md` section 11):
-  - Phase Pmod-0 — this docs-only commit.
+  - Phase Pmod-0 — initial docs-only commit + a follow-up docs-only
+    commit (2026-05-18) confirming the PMOD JB pin mapping against
+    the Digilent Pmod I2S2 reference manual. Pin 1..4 = D/A MCLK /
+    LRCK / SCLK / SDIN on JB1/JB2/JB3/JB4 (`W14 / Y14 / T11 / T10`),
+    Pin 7..10 = A/D MCLK / LRCK / SCLK / SDOUT on JB7/JB8/JB9/JB10
+    (`V16 / W16 / V12 / W13`), Pin 5/11 = GND, Pin 6/12 = VCC 3.3V.
+    D/A 側と A/D 側は別 pin だが FPGA 内部で 1 系統の MCLK / LRCK /
+    BCLK を生成して両側に fanout する方針 (D40 / D41 で経験した
+    async-clocks 問題を構造的に排除)。
   - Phase Pmod-1 — Pmod I2S2 DAC-only 1 kHz tone bring-up (after the
     user removes the existing PCM5102 / PCM1808 jumpers from PMOD JB).
   - Phase Pmod-2 — Pmod I2S2 ADC-to-DAC physical loopback (no DSP).

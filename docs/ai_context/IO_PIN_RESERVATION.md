@@ -242,36 +242,42 @@ PYNQ-Z2 の board file (`part0_pins.xml`、TUL board v1.0) を確認した結果
 
 ---
 
-## 3A. Pmod I2S2 evaluation reservation (Phase Pmod-0 planning only)
+## 3A. Pmod I2S2 evaluation reservation (Phase Pmod-0, official pinout confirmed 2026-05-18)
 
 Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC) を
 PMOD JB に直挿しで評価する計画が
 `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` + `DECISIONS.md` D45
 に記録されている。Phase Pmod-0 では **XDC を変更しない**。
 section 4A.1 の PMOD JB 行 (現状の `wired`) を維持したまま、Pmod I2S2
-評価フェーズに入ったときに上書きされる pin の **予定** をここに残す。
+評価フェーズに入ったときに上書きされる pin を以下に記載。Pmod I2S2 の
+PMOD pin 配置は公式 reference manual で **2026-05-18 に確定** 済。
 
-| PMOD JB pin | Package pin | 既存使用 (Phase 7D deploy) | Pmod I2S2 評価時の予定 | Confirmation |
-| --- | --- | --- | --- | --- |
-| JB1 | W14 | `ext_audio_mclk_o = 1'b0` (PCM5102 SCK 構造的 GND、D40/D42) | TX MCLK out (12.288 MHz) — Pmod I2S2 評価では JB1 を 12.288 MHz に **戻す** 想定。`pcm5102_audio_out` を build から外す。 | tentative |
-| JB2 | Y14 | `ext_audio_bclk_o = ADAU bclk` | TX BCLK out (3.072 MHz、FPGA-master 生成) | tentative |
-| JB3 | T11 | `ext_audio_lrclk_o = ADAU lrclk` | TX LRCLK out (48 kHz、FPGA-master 生成) | tentative |
-| JB4 | T10 | `ext_adc_dout_i` (PCM1808 DOUT 入力、D41) | TX SDIN out (DAC data) — 既存方向 in → out に変わる、PCM1808 wiring を物理的に外す前提 | tentative |
-| JB7 | V16 | `ext_dac_din_o` (PCM5102 DIN 出力、D39) | RX MCLK out (12.288 MHz、TX MCLK と共有 or 別) | tentative |
-| JB8 | W16 | `ext_pcm1808_sckie_o` (PCM1808 SCKI 出力、D42) | RX BCLK out (3.072 MHz) | tentative |
-| JB9 | V12 | spare | RX LRCLK out (48 kHz) | tentative |
-| JB10 | W13 | spare | **RX SDOUT in (ADC data)** — 唯一の input | tentative |
-| JB11 | (PMOD JB GND) | GND | GND (共通) | confirmed |
-| JB12 | (PMOD JB VCC) | 3.3V | 3.3V (Pmod I2S2 module 電源) | confirmed |
+| Pmod I2S2 Pin | Pmod I2S2 signal | PMOD JB pin | Package pin | 既存使用 (Phase 7D deploy) | Pmod I2S2 評価時の役割 | Confirmation |
+| --- | --- | --- | --- | --- | --- | --- |
+| Pin 1 | **D/A MCLK** | JB1 | W14 | `ext_audio_mclk_o = 1'b0` (PCM5102 SCK 構造的 GND、D40/D42) | DAC MCLK 12.288 MHz out — JB1 を 12.288 MHz に **戻す**、`pcm5102_audio_out` を build から外す前提 | **confirmed** |
+| Pin 2 | **D/A LRCK** | JB2 | Y14 | `ext_audio_bclk_o = ADAU bclk` | DAC LRCK 48 kHz out (FPGA-master 生成、internal LRCK fanout) | **confirmed** |
+| Pin 3 | **D/A SCLK / BCLK** | JB3 | T11 | `ext_audio_lrclk_o = ADAU lrclk` | DAC BCLK 3.072 MHz out (FPGA-master 生成、internal BCLK fanout) | **confirmed** |
+| Pin 4 | **D/A SDIN** | JB4 | T10 | `ext_adc_dout_i` (PCM1808 DOUT 入力、D41) | DAC data 24-bit I2S Philips out — 既存方向 in → out に変わる | **confirmed** |
+| Pin 5 | GND | (PMOD JB GND) | (PMOD JB GND) | GND | GND (共通) | **confirmed** |
+| Pin 6 | VCC | (PMOD JB VCC) | (PMOD JB VCC) | 3.3V | 3.3V (Pmod I2S2 module 電源) | **confirmed** |
+| Pin 7 | **A/D MCLK** | JB7 | V16 | `ext_dac_din_o` (PCM5102 DIN 出力、D39) | ADC MCLK 12.288 MHz out (internal MCLK fanout、D/A MCLK と同位相 / 同周波数) | **confirmed** |
+| Pin 8 | **A/D LRCK** | JB8 | W16 | `ext_pcm1808_sckie_o` (PCM1808 SCKI 出力、D42) | ADC LRCK 48 kHz out (internal LRCK fanout) — 既存 SCKI 12.288 MHz から意味が変わる | **confirmed** |
+| Pin 9 | **A/D SCLK / BCLK** | JB9 | V12 | spare | ADC BCLK 3.072 MHz out (internal BCLK fanout) | **confirmed** |
+| Pin 10 | **A/D SDOUT** | JB10 | W13 | spare | ADC data 24-bit I2S Philips **in** — Pmod I2S2 経由の唯一の input | **confirmed** |
+| Pin 11 | GND | (PMOD JB GND) | (PMOD JB GND) | GND | GND (Pin 5 と共有) | **confirmed** |
+| Pin 12 | VCC | (PMOD JB VCC) | (PMOD JB VCC) | 3.3V | 3.3V (Pin 6 と共有) | **confirmed** |
 
 前提:
 - Pmod I2S2 評価時には既存 PCM5102 / PCM1808 のジャンパ配線を物理的
   に **外す**。PMOD JB を Pmod I2S2 module 1 個だけに専有させる。
-- 公式 Pmod I2S2 pin 配置は
-  `PMOD_I2S2_INTEGRATION_PLAN.md` section 6 / section 15 で **納品後に
-  実機 + 公式 reference manual で確定** する。本表は `tentative`。
-- Pmod I2S2 が TX / RX で MCLK / BCLK / LRCLK を共有する構成だった
-  場合は使用 pin 数が減る (5 pin + GND + 3V3) ので、上の表は再確定する。
+- D/A 側 (Pin 1..4) と A/D 側 (Pin 7..10) は **物理的に別 pin** だが、
+  FPGA 内部では 1 系統の `mclk_int` / `lrck_int` / `bclk_int` を fanout
+  して D/A 側 (JB1/JB2/JB3) と A/D 側 (JB7/JB8/JB9) に並列出力する
+  方針 (`PMOD_I2S2_INTEGRATION_PLAN.md` section 10 内部クロック木)。
+  bit-true 同期になり、PCM5102 / PCM1808 で発生した async-clocks
+  問題 (D40 / D41) は構造的に発生しない。
+- Phase Pmod-1 では 48 kHz / 24-bit / 32-bit slot / stereo I2S Philips
+  で開始する。96 kHz は Phase Pmod-5 (別 branch、後回し)。
 - 本予約は **Phase Pmod-0 docs のみ**。`hw/Pynq-Z2/audio_lab.xdc` /
   `block_design.tcl` / bit / hwh は未変更。
 

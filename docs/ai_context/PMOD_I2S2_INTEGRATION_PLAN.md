@@ -146,29 +146,30 @@ ADAU1761 経路と Phase 7E PCM5102 ADAU-mirror 経路は維持し、Pmod I2S2
 
 ---
 
-## 6. Official specification — items to confirm
+## 6. Official specification — confirmation status
 
-実モジュール納品時、Phase Pmod-1 開始前に以下を **実機 + 公式マニュアル**
-で埋めること。`要公式確認` のまま実装フェーズに入らない。
+Pmod I2S2 公式 reference manual を 2026-05-18 に確認済。PMOD pin 配置
+は section 10 で確定。残り項目は実機納品後 / Phase Pmod-1 開始前に
+公式 reference manual + CS4344 / CS5343 datasheet で埋める。
 
-| 項目 | 期待値 (仮置) | 確認方法 |
-| --- | --- | --- |
-| Pmod I2S2 PMOD pin 配置 (DAC TX side: MCLK / BCLK / LRCLK / SDIN) | Pmod I2S2 reference manual figure | Digilent reference manual / schematic |
-| Pmod I2S2 PMOD pin 配置 (ADC RX side: MCLK / BCLK / LRCLK / SDOUT) | Pmod I2S2 reference manual figure | 同上 |
-| MCLK の TX / RX 共有 or 独立 | 共通 (1 系統で OK) | 同上 |
-| MCLK 周波数 (最小 / 最大) | 256fs = 12.288 MHz at 48 kHz、384fs / 512fs 対応も多い | CS4344 / CS5343 datasheet |
-| BCLK / LRCLK polarity, I2S Philips vs left-justified | I2S Philips, MSB delayed by 1 BCLK | datasheet + Digilent サンプル設計 |
-| supply voltage | 3.3V single | reference manual |
-| supply current | < 100 mA 想定 | reference manual / datasheet |
-| GND scheme (single point / star) | single GND on PMOD JB11 | 実機 silkscreen |
-| line-in input impedance | ~10..50 kΩ (CS5343 typ) | CS5343 datasheet |
-| line-in input level | typ 1 Vrms line level | CS5343 datasheet |
-| line-out output level | typ 1 Vrms line level | CS4344 datasheet |
-| pull-up / strap | unknown, requires inspection | 実機 silkscreen + reference manual |
-| analog coupling | AC coupling onboard 想定 | reference manual |
+| 項目 | 期待値 / 確定値 | 確認方法 | Status |
+| --- | --- | --- | --- |
+| Pmod I2S2 PMOD pin 配置 (D/A side: Pin 1=MCLK, Pin 2=LRCK, Pin 3=SCLK/BCLK, Pin 4=SDIN) | section 10 表参照 | Digilent Pmod I2S2 reference manual | **confirmed (2026-05-18)** |
+| Pmod I2S2 PMOD pin 配置 (A/D side: Pin 7=MCLK, Pin 8=LRCK, Pin 9=SCLK/BCLK, Pin 10=SDOUT) | section 10 表参照 | 同上 | **confirmed (2026-05-18)** |
+| MCLK の D/A side / A/D side 別 pin 提供 | D/A と A/D は別 pin、FPGA 内部で同 source から fanout する | 同上 | **confirmed (2026-05-18)** |
+| 電源 / GND pin (Pin 5/11 = GND, Pin 6/12 = VCC = 3.3V) | section 10 表参照 | 同上 + PYNQ-Z2 board file | **confirmed (2026-05-18)** |
+| MCLK 周波数 (最小 / 最大) | 256fs = 12.288 MHz at 48 kHz が標準 | CS4344 / CS5343 datasheet | 要確認 (datasheet) |
+| BCLK / LRCLK polarity, I2S Philips vs left-justified | I2S Philips, MSB delayed by 1 BCLK | datasheet + Digilent サンプル設計 | 要確認 (datasheet) |
+| supply voltage | 3.3V single | reference manual | **confirmed (2026-05-18)** |
+| supply current | < 100 mA 想定 | datasheet | 要確認 (実測 + datasheet typ/max) |
+| line-in input impedance | ~10..50 kΩ (CS5343 typ) | CS5343 datasheet | 要確認 (datasheet) |
+| line-in input level | typ 1 Vrms line level | CS5343 datasheet | 要確認 (datasheet) |
+| line-out output level | typ 1 Vrms line level | CS4344 datasheet | 要確認 (datasheet) |
+| pull-up / strap | unknown, requires inspection | 実機 silkscreen + reference manual | 要確認 (実機納品後) |
+| analog coupling | AC coupling onboard 想定 | reference manual | 要確認 (reference manual) |
 
-PMOD I2S2 の **詳細な pinout はここでは確定させない**。section 10
-mapping 表は信号レベルで仮置きする。
+`confirmed` 項目は section 10 の mapping 表に反映済。`要確認` 項目は
+納品後の実機 + datasheet で section 15 open questions と合わせて埋める。
 
 ---
 
@@ -269,37 +270,50 @@ DSP 本体 (`hw/ip/clash/src/LowPassFir.hs` の `fxPipeline` 以下) は
 
 ---
 
-## 10. Proposed PMOD JB mapping
+## 10. Confirmed PMOD JB mapping
 
-Pmod I2S2 を PMOD JB に挿す前提の **仮 mapping**。実 pin は Pmod I2S2
-の公式 reference manual を **納品後に実物 + マニュアルで確定** すること
-(section 6 「要公式確認」項目)。表の `Status` 列で確定済 / 未確定を
-区別する。
+Pmod I2S2 公式 reference manual で確認済み (2026-05-18)。Pmod 12-pin
+の D/A 側 (Pin 1..4) と A/D 側 (Pin 7..10) は **物理的に別 pin**
+として PMOD コネクタ上に出ており、それぞれ独立した MCLK / LRCK /
+SCLK / SDIN(or SDOUT) を持つ。FPGA 側ではこれを **1 系統の 12.288 MHz
+MCLK + 48 kHz LRCK + 3.072 MHz BCLK を内部で生成して 2 系統に
+fanout (複製) 出力**する。SDIN (DAC data, FPGA → Pmod) と SDOUT
+(ADC data, Pmod → FPGA) は **唯一の独立 / 反対方向 data 信号**。
 
 凡例:
 - `wired-pcm` = 既存 PCM5102 / PCM1808 構成 (現行 deploy bit) で物理的に
   配線済の機能。Pmod I2S2 評価時には外す。
-- `proposed-i2s2` = Pmod I2S2 評価時にこの信号で使う候補。
-- `tentative` = Pmod I2S2 公式 pinout 未確認、仮置き。
-- `confirmed` = 公式マニュアルで確定済 (Phase Pmod-1 開始前に埋める)。
+- `confirmed` = 公式 Pmod I2S2 reference manual で確定済。
+- `confirmed (board file)` = PYNQ-Z2 TUL board file 由来。
 
-| Pmod I2S2 signal (tentative) | Direction (FPGA view) | PYNQ PMOD JB pin | Package pin | Existing usage (Phase 7D deploy) | Notes | Confirmation status |
-| --- | --- | --- | --- | --- | --- | --- |
-| TX MCLK -> DAC MCLK | out | JB1 | W14 | `ext_audio_mclk_o = 1'b0` (PCM5102 SCK 構造的 GND、D40/D42) | Pmod I2S2 評価時は **PCM5102 を外して** JB1 を 12.288 MHz に戻す。pcm5102_audio_out を build から外し、新規 pmod_i2s2 module に置き換える前提。 | tentative |
-| TX BCLK -> DAC BCLK | out | JB2 | Y14 | `ext_audio_bclk_o = ADAU bclk` | FPGA-master 構成では新規生成 3.072 MHz を出す | tentative |
-| TX LRCLK -> DAC LRCLK | out | JB3 | T11 | `ext_audio_lrclk_o = ADAU lrclk` | FPGA-master 構成では新規生成 48 kHz を出す | tentative |
-| TX SDIN -> DAC data | out | JB4 | T10 | `ext_adc_dout_i` (PCM1808 DOUT 入力、D41) | Pmod I2S2 評価時は方向が変わる (in → out)、既存 PCM1808 配線を外した上で TX SDIN を割り当て | tentative |
-| RX MCLK -> ADC MCLK | out | JB7 | V16 | `ext_dac_din_o` (PCM5102 DIN 出力、D39) | Pmod I2S2 評価時は方向が変わる (out → out) だが信号意味は別 | tentative |
-| RX BCLK -> ADC BCLK | out | JB8 | W16 | `ext_pcm1808_sckie_o` (PCM1808 SCKI 出力、D42) | Pmod I2S2 評価時は意味が変わる (PCM1808 SCKI → ADC BCLK) | tentative |
-| RX LRCLK -> ADC LRCLK | out | JB9 | V12 | spare | 現状空き、Pmod I2S2 評価で初使用 | tentative |
-| RX SDOUT <- ADC data | **in** | JB10 | W13 | spare | 現状空き、Pmod I2S2 評価で初使用、唯一の input | tentative |
-| GND | gnd | JB11 | (PMOD JB GND) | GND | 共通 GND | confirmed (PYNQ-Z2 board file) |
-| 3.3V | power | JB12 | (PMOD JB VCC) | 3.3V supply | Pmod I2S2 module 電源 | confirmed (PYNQ-Z2 board file) |
+| Pmod I2S2 Pin | Pmod I2S2 signal | Direction (FPGA view) | PYNQ PMOD JB pin | Package pin | Existing usage (Phase 7D deploy) | Notes | Confirmation status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Pin 1 | **D/A MCLK** | out | JB1 | W14 | `ext_audio_mclk_o = 1'b0` (PCM5102 SCK 構造的 GND、D40/D42) | 12.288 MHz (256 fs at 48 kHz)、Pmod I2S2 評価では JB1 を 12.288 MHz に **戻す**。`pcm5102_audio_out` を build から外す前提。 | confirmed |
+| Pin 2 | **D/A LRCK** | out | JB2 | Y14 | `ext_audio_bclk_o = ADAU bclk` | 48 kHz (FPGA-master 生成)、internal LRCK net の fanout #1 | confirmed |
+| Pin 3 | **D/A SCLK / BCLK** | out | JB3 | T11 | `ext_audio_lrclk_o = ADAU lrclk` | 3.072 MHz (FPGA-master 生成)、internal BCLK net の fanout #1 | confirmed |
+| Pin 4 | **D/A SDIN** | out | JB4 | T10 | `ext_adc_dout_i` (PCM1808 DOUT 入力、D41) | DAC へ流す 24-bit I2S Philips data。既存方向 in → out に変わる、PCM1808 wiring を物理的に外す前提。 | confirmed |
+| Pin 5 | GND | gnd | JB11 | (PMOD JB GND) | GND | 共通 GND | confirmed (board file) |
+| Pin 6 | VCC | power | JB12 | (PMOD JB VCC) | 3.3V supply | Pmod I2S2 module 電源 | confirmed (board file) |
+| Pin 7 | **A/D MCLK** | out | JB7 | V16 | `ext_dac_din_o` (PCM5102 DIN 出力、D39) | 12.288 MHz、internal MCLK net の fanout #2 (D/A MCLK と同位相 / 同周波数)、既存方向 out → out (意味だけ変わる) | confirmed |
+| Pin 8 | **A/D LRCK** | out | JB8 | W16 | `ext_pcm1808_sckie_o` (PCM1808 SCKI 出力、D42) | 48 kHz、internal LRCK net の fanout #2、既存 SCKI 12.288 MHz から **意味が変わる** | confirmed |
+| Pin 9 | **A/D SCLK / BCLK** | out | JB9 | V12 | spare | 3.072 MHz、internal BCLK net の fanout #2、現状空き | confirmed |
+| Pin 10 | **A/D SDOUT** | **in** | JB10 | W13 | spare | ADC から FPGA への 24-bit I2S Philips data。Pmod I2S2 経由の **唯一の input**、現状空き | confirmed |
+| Pin 11 | GND | gnd | (PMOD JB GND) | (PMOD JB GND) | GND | 共通 GND (Pin 5 と共有) | confirmed (board file) |
+| Pin 12 | VCC | power | (PMOD JB VCC) | (PMOD JB VCC) | 3.3V supply | Pmod I2S2 module 電源 (Pin 6 と共有) | confirmed (board file) |
 
-代替案: もし Pmod I2S2 が TX / RX で MCLK / BCLK / LRCLK を **共有する**
-構成 (1 系統 MCLK + 1 系統 BCLK + 1 系統 LRCLK + TX SDIN + RX SDOUT =
-5 信号) なら、PMOD JB の使用 pin 数が減る。section 6 で公式確認後に
-mapping を再確定する。
+**FPGA 内部クロック木 (Phase Pmod-1 RTL 実装方針)**:
+- MCLK ソース: 既存 `clk_wiz_audio_ext` (100 MHz → 12.288 MHz exact、
+  Phase 7C で投入済)。新規 MMCM 追加なし。
+- internal `mclk_int` (12.288 MHz) → JB1 と JB7 へ fanout (D/A MCLK と
+  A/D MCLK は同位相同周波数で並列駆動)。
+- internal `bclk_int` (3.072 MHz, `mclk_int / 4`) → JB3 と JB9 へ fanout。
+- internal `lrck_int` (48 kHz, `bclk_int / 64`) → JB2 と JB8 へ fanout。
+- `dac_sdin` (FPGA out, 24-bit I2S Philips MSB-first / 32-bit slot) → JB4 のみ。
+- `adc_sdout` (FPGA in, 同 frame format) → JB10 のみ。
+
+これにより D/A 側と A/D 側が **bit-true 同期** で動くことが保証される
+(独立 PLL のような async-clocks 問題は構造的に発生しない、`DECISIONS.md`
+D40 / D41 の教訓を継承)。
 
 **重要 (Phase Pmod-1 開始前にやること)**:
 - Pmod I2S2 module を PMOD JB に挿す前に、既存 PCM5102 / PCM1808
@@ -539,29 +553,38 @@ Pmod-5 は別 branch でしか着手しない。
 
 ## 15. Open questions
 
-Phase Pmod-1 開始前に **公式マニュアル / 実機で埋める** 質問:
+公式 reference manual で 2026-05-18 に確定済の項目:
+- **(resolved)** Pmod I2S2 の正確な PMOD pin 配置 (D/A side Pin 1..4、
+  A/D side Pin 7..10) — section 10 表に反映。
+- **(resolved)** D/A side と A/D side は **物理的に別 pin** で MCLK /
+  LRCK / SCLK / data を提供する。FPGA 側は同 source から fanout 出力。
+- **(resolved)** Pin 5/11 = GND、Pin 6/12 = VCC (3.3V single supply)。
 
-1. Pmod I2S2 の **正確な PMOD pin 配置** (TX MCLK / BCLK / LRCLK / SDIN
-   と RX MCLK / BCLK / LRCLK / SDOUT の物理 pin 番号)。
-2. TX / RX で MCLK / BCLK / LRCLK を **共有** するか **独立** に持つか。
-3. supply current の typ / max (PMOD JB12 3.3V rail で賄えるか、別電源
+Phase Pmod-1 開始前に **CS4344 / CS5343 datasheet + 実機** で埋める
+残質問:
+
+1. supply current の typ / max (PMOD JB12 3.3V rail で賄えるか、別電源
    が要るか)。
-4. line in / line out の AC coupling / DC coupling、impedance、level。
-5. CS4344 / CS5343 の動作 mode (master / slave、I2S / left-justified、
+2. line in / line out の AC coupling / DC coupling、impedance、level
+   (CS4344 / CS5343 datasheet)。
+3. CS4344 / CS5343 の動作 mode (master / slave、I2S / left-justified、
    bit depth 16/24)。Pmod I2S2 module 上 strap で固定されているか、
-   FPGA から制御するか。
-6. 96 kHz / 192 kHz 動作可否 (datasheet 上で OK でも Pmod I2S2 onboard
-   の strap / LDO が制限している可能性)。
-7. line out が headphone を直接駆動できるか、line out -> guitar amp 入力
+   FPGA から制御するか。**前提**: FPGA-master / codec-slave / I2S Philips
+   / 24-bit MSB-first / 32-bit slot (`hw/ip/clash/src/I2S.hs` と互換)。
+4. 96 kHz / 192 kHz 動作可否 (datasheet 上で OK でも Pmod I2S2 onboard
+   の strap / LDO が制限している可能性)。Phase Pmod-5 で確認。
+5. line out が headphone を直接駆動できるか、line out -> guitar amp 入力
    想定で安全か。
-8. 既存 `clk_wiz_audio_ext` (12.288 MHz exact) を Pmod I2S2 MCLK に
-   そのまま使えるか (公式は 256fs / 384fs / 512fs を許容するはず、要
-   datasheet 確認)。
-9. Pmod I2S2 module を PMOD JB に挿した時の **電源シーケンス**: FPGA
+6. 既存 `clk_wiz_audio_ext` (12.288 MHz exact) を Pmod I2S2 MCLK に
+   そのまま使えるか (CS4344 / CS5343 は 256fs / 384fs / 512fs を許容する
+   想定、要 datasheet 確認)。
+7. Pmod I2S2 module を PMOD JB に挿した時の **電源シーケンス**: FPGA
    configuration 完了前に 3.3V が立ち上がっても codec が壊れないか。
-10. Pmod I2S2 が DAC と ADC で独立 mute / reset pin を露出しているか、
-    XSMT 相当 (`DECISIONS.md` D38 PCM5102 で議論された pop-noise 対策)
-    が必要か。
+8. Pmod I2S2 が DAC と ADC で独立 mute / reset pin を露出しているか、
+   XSMT 相当 (`DECISIONS.md` D38 PCM5102 で議論された pop-noise 対策)
+   が必要か。Pmod I2S2 reference manual では 12-pin 全部が clock / data
+   / power / GND で占められているので **module 上 strap で固定** されて
+   いる可能性が高い (要 reference manual 再確認)。
 
 ---
 
@@ -584,19 +607,24 @@ Phase Pmod-1 開始前に **公式マニュアル / 実機で埋める** 質問:
 > - PMOD JA / Raspberry Pi header / Arduino header には触らない。
 >
 > やること:
-> 1. `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` の section 6 と
->    section 15 が **公式マニュアル / 実機で確定済** であることを冒頭で
->    確認する。`要公式確認` が残っているなら作業を中断して報告。
+> 1. `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` section 6 の `要確認`
+>    残項目 (supply current / line in/out impedance & level / CS4344 /
+>    CS5343 strap mode / pop-noise 対策) を CS4344 / CS5343 datasheet と
+>    実機で埋めたことを冒頭で確認する。**section 10 (PMOD JB mapping)
+>    は公式 reference manual で確定済 (2026-05-18) なので変更しない**。
 > 2. 新規 `hw/Pynq-Z2/pmod_i2s2_integration.tcl` を Phase 7C
 >    `pcm5102_dac_integration.tcl` の構造で作る。`create_project.tcl`
 >    から source。新規 MMCM は追加せず、既存 `clk_wiz_audio_ext`
 >    (12.288 MHz exact) を再利用。
 > 3. 新規 `hw/ip/pmod_i2s2_dac_tone/src/pmod_i2s2_dac_tone.v` を Phase 7C
 >    `pcm5102_dac_tone.v` の構造で作る。24-bit / 32-bit slot /
->    1 kHz quarter-scale sine、I2S Philips。BCLK = MCLK / 4、LRCLK =
->    BCLK / 64。
-> 4. `hw/Pynq-Z2/audio_lab.xdc` に Pmod I2S2 用 pin を追加 (section 10
->    の確定 mapping)。`LVCMOS33`、no PULLUP。
+>    1 kHz quarter-scale sine、I2S Philips。BCLK = MCLK / 4、LRCK =
+>    BCLK / 64。FPGA 内部で 1 系統の MCLK / LRCK / BCLK を生成し、
+>    JB1+JB7 (MCLK)、JB2+JB8 (LRCK)、JB3+JB9 (BCLK) に **fanout** して
+>    出力する (section 10 内部クロック木参照)。
+> 4. `hw/Pynq-Z2/audio_lab.xdc` に Pmod I2S2 用 8 pin (JB1/JB2/JB3/JB4 +
+>    JB7/JB8/JB9/JB10) を追加 (section 10 の確定 mapping)。`LVCMOS33`、
+>    no PULLUP。JB10 のみ input。
 > 5. `create_project.tcl` から既存 `pcm5102_dac_integration.tcl` /
 >    `pcm1808_adc_integration.tcl` を **source から外す** (build variant
 >    切替)。これらの tcl 自体は削除しない (rollback / variant 戻し

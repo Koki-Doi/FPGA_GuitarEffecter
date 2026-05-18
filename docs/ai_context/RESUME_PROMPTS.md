@@ -238,7 +238,12 @@ asking it to re-discover the project from scratch.
 > - docs (上記 plan + CURRENT_STATE / EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN
 >   / IO_PIN_RESERVATION / DECISIONS / RESUME_PROMPTS) の修正のみ。
 > - Pmod I2S2 公式 reference manual / CS4344 / CS5343 datasheet を
->   参照して section 6 / section 15 の `要公式確認` 項目を埋めること。
+>   参照して section 6 / section 15 の `要確認` 残項目を埋めること。
+>   **PMOD JB pin mapping は 2026-05-18 に公式 reference manual で
+>   確定済**: Pin 1..4 = D/A MCLK/LRCK/SCLK/SDIN on JB1/JB2/JB3/JB4
+>   (`W14 / Y14 / T11 / T10`)、Pin 7..10 = A/D MCLK/LRCK/SCLK/SDOUT
+>   on JB7/JB8/JB9/JB10 (`V16 / W16 / V12 / W13`)、Pin 5/11 = GND、
+>   Pin 6/12 = VCC 3.3V。再変更しない。
 >
 > 触ってはいけないこと (Phase Pmod-0 範囲):
 > - RTL / XDC / Tcl / Vivado build / bit / hwh / deploy。
@@ -254,9 +259,11 @@ asking it to re-discover the project from scratch.
 >
 > Phase Pmod-1 開始トリガー (納品 + checklist):
 > 1. Pmod I2S2 module が物理的に手元にある。
-> 2. `PMOD_I2S2_INTEGRATION_PLAN.md` section 6 / section 15 の
->    `要公式確認` 項目を Digilent reference manual + CS4344 / CS5343
->    datasheet で全部埋めた。
+> 2. `PMOD_I2S2_INTEGRATION_PLAN.md` section 6 / section 15 の `要確認`
+>    残項目 (supply current / line in/out impedance & level / CS4344 /
+>    CS5343 strap mode / pop-noise 対策) を CS4344 / CS5343 datasheet
+>    + 実機で埋めた。PMOD JB pin mapping (section 10) は 2026-05-18
+>    に公式 reference manual で確定済なので再変更不要。
 > 3. 既存 PCM5102 / PCM1808 のジャンパ配線を PMOD JB から **物理的に
 >    外した**。
 > 4. PYNQ-Z2 が boot して `AudioLabOverlay()` が ADC HPF True を返す
