@@ -184,6 +184,14 @@ Audio-Lab-PYNQ/
   GUI-first live apply。詳細は
   [Rotary Encoder GUI 操作](#rotary-encoder-gui-操作-phase-7f--7g--7g)
   セクション
+- 外付け **PCM5102 DAC** (PMOD JB1..JB7) を AudioLab DSP 出力の
+  並列ライン (`i2s_to_stream_0/so` と同じビットストリーム) としてデプロイ
+  済 (`DECISIONS.md` D39)。SCK=GND (内蔵 SYSCLK) で外部 MCLK ジッタを
+  回避 (D40 / D42)。外付け **PCM1808 ADC** は PMOD JB4 入力 + JB8 SCKI
+  まで配線 + build-time 2:1 wire mux で実装済 (`DECISIONS.md` D41 /
+  D42)。現行 deploy bit は mux=ADAU フォールバック (`CONFIG.CONST_VAL
+  {0}`, `DECISIONS.md` D43) — PCM1808 module の analog 前段ハードウェア
+  診断待ち。
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
 ## HDMI GUI
@@ -1260,7 +1268,7 @@ D12)。新しいエフェクトを追加するときは、まず
 | --- | --- |
 | [`PROJECT_CONTEXT.md`](docs/ai_context/PROJECT_CONTEXT.md) | プロジェクトの目的、toolchain、top-level layout、operational facts、key principles |
 | [`CURRENT_STATE.md`](docs/ai_context/CURRENT_STATE.md) | 直近の load-bearing facts と phase 履歴 (chronological) |
-| [`DECISIONS.md`](docs/ai_context/DECISIONS.md) | 重要決定の付番ログ (D1..D37、その時々の状況 / 決定 / 境界 / why を記録) |
+| [`DECISIONS.md`](docs/ai_context/DECISIONS.md) | 重要決定の付番ログ (D1..D44、その時々の状況 / 決定 / 境界 / why を記録) |
 | [`RESUME_PROMPTS.md`](docs/ai_context/RESUME_PROMPTS.md) / [`RESUME_PROMPTS_HISTORY.md`](docs/ai_context/RESUME_PROMPTS_HISTORY.md) | 作業中断後の再開プロンプト (current / 過去 phase) |
 | [`EFFECT_ADDING_GUIDE.md`](docs/ai_context/EFFECT_ADDING_GUIDE.md) / [`EFFECT_STAGE_TEMPLATE.md`](docs/ai_context/EFFECT_STAGE_TEMPLATE.md) | 新エフェクト追加の判断フローと spec テンプレ |
 | [`DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) | Clash 側エフェクトチェーンの実装メモ |
@@ -1277,33 +1285,73 @@ D12)。新しいエフェクトを追加するときは、まず
 | [`ENCODER_GUI_CONTROL_SPEC.md`](docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md) | encoder + GUI 操作仕様 (Phase 7A / 7B planning から 7G+ live apply まで) |
 | [`ENCODER_INPUT_IMPLEMENTATION.md`](docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md) | encoder PL IP + Python driver + standalone runtime + tests + risks |
 | [`ENCODER_INPUT_MAP.md`](docs/ai_context/ENCODER_INPUT_MAP.md) | encoder PL IP の AXI register / address / CONFIG bit 表 |
-| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) | 外付け codec 計画 (Phase 7、planning 段階) |
+| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) | 外付け codec 計画 + Phase 7C/7E/7D close-out (PCM5102 並列 DAC 動作中、PCM1808 mux は ADAU フォールバック) |
 | [`IO_PIN_RESERVATION.md`](docs/ai_context/IO_PIN_RESERVATION.md) | PMOD / RPi header / Arduino header の pin 予約 |
 
 ## Future Work
 
-- 外付け **PCM1808** (24-bit stereo ADC) と **PCM5102 / PCM5102A**
-  (I2S DAC) を別 I2S path として追加し、ADAU1761 と切替可能にする計画
-  (Phase 7、planning 段階)。詳細は
-  [`docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md)
-  / [`docs/ai_context/IO_PIN_RESERVATION.md`](docs/ai_context/IO_PIN_RESERVATION.md)、
-  `DECISIONS.md` D27 ~ D29。Phase 7A 時点では XDC / `block_design.tcl`
-  / bit / hwh は **未変更**。
-- 物理 rotary encoder での 3 ch すべての rotate / short / long の対面
-  smoke。`scripts/run_encoder_hdmi_gui.py` と `EncoderGuiSmoke.ipynb` で
-  音色変化を確認し、必要なら `--reverse-encN` / `--swap-encN` /
+- **PCM1808 ハードウェア診断と再投入** (`DECISIONS.md` D41 / D43)。
+  Phase 7D で 2:1 build-time mux
+  (`hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v`) と PMOD JB4
+  入力 / JB8 SCKI 配線は landing 済だが、bench 実験で PCM1808
+  `--capture-adc` が pure 0 のまま (chip は I2S frame を刻むが
+  analog-to-digital が機能しない)。最有力仮説は以前の `3.3V on VCC` 誤
+  接続による analog front-end damage。デプロイ bit は `CONFIG.CONST_VAL
+  {0}` (mux=ADAU フォールバック) で出荷中。新規 module に差し替えたら
+  `hw/Pynq-Z2/pcm1808_adc_integration.tcl` の `{0}` を `{1}` に戻して
+  rebuild、`scripts/test_pcm1808_adc_to_pcm5102.py --capture-adc` で
+  再評価。
+- **外付け codec の async-clocks 解消 (FPGA を I2S master 化)**
+  (`DECISIONS.md` D40 / D41 / D42)。PCM5102 は SCK=GND (内蔵 SYSCLK
+  モード) で運用中なので動作上は問題ないが、PCM1808 を再投入したときに
+  もし PCM510x と同じ async-clocks 由来のグレイン感が出たら、ADAU1761
+  を I2S slave に再設定して FPGA から BCK / LRCK / SCKI を供給する道に
+  進む。LowPassFir DSP には影響なし、ADAU 経路自体に手を入れる重い
+  改修なので別 phase で扱う。
+- **PCM5102 line out のクロストーク低減 / アナログ磨き** (Phase 7D
+  close-out で user が言及)。JB8 (12.288 MHz SCKI) が JB7 (PCM5102 DIN)
+  と隣接して PMOD ribbon を走るため微小なノイズが乗る疑い。配線
+  短縮、twisted-pair ground return、SCKI ピンを JB の遠い側へ動かす
+  といった対策を検討。bit/hwh 変更は不要 (XDC の pin reassign のみ)。
+- **PCM1808未使用時のJB8 SCKI停止** (`DECISIONS.md` D44)。現行deploy
+  bitはmux=ADAUでもJB8 / W16に12.288 MHzを出し続けるため、PCM5102-only
+  品質改善の最小RTL/Tcl候補は「PCM1808 inactive buildでは
+  `ext_pcm1808_sckie_o` を0固定」です。Vivado rebuild + timing reviewが
+  必要。
+- **PCM5102 debug output mode** (`DECISIONS.md` D44)。processed audio /
+  digital silence / `-18 dBFS` 1 kHz tone / rampを切替できるようにし、
+  DSP・I2S・アナログ出力/後段のどこで音質が崩れるかを測れるようにする。
+- **PCM1808 アナログ front-end (ギター Hi-Z buffer)**。PCM1808 は
+  line-level 入力なので passive pickup を直結すると impedance / level
+  不一致。再投入が成立してから JFET / op-amp buffer + AC coupling +
+  bias + 安全 clamp + anti-alias LPF を別基板で追加する想定 (Phase 7H
+  enclosure と一緒に)。
+- **物理 rotary encoder での 3 ch すべての rotate / short / long の対面
+  smoke**。`scripts/run_encoder_hdmi_gui.py` と `EncoderGuiSmoke.ipynb`
+  で音色変化を確認し、必要なら `--reverse-encN` / `--swap-encN` /
   `--debounce-ms` の最終設定を docs に記録する (`DECISIONS.md` D35)。
-- HDMI GUI と encoder runtime をまたいだ更新では、GUI 表示 / live apply /
-  resource monitor が全て同期しているかを 1 ファイルで read-modify-write
-  できるよう、`EncoderEffectApplier` と `HdmiEffectStateMirror` の状態
-  集約 helper を検討 (現在は applier の `status_snapshot()` と mirror の
-  `summary()` が別々)。
+- **HDMI GUI と encoder runtime をまたいだ更新では、GUI 表示 / live
+  apply / resource monitor が全て同期しているかを 1 ファイルで
+  read-modify-write できるよう、`EncoderEffectApplier` と
+  `HdmiEffectStateMirror` の状態集約 helper を検討** (現在は applier の
+  `status_snapshot()` と mirror の `summary()` が別々)。
 
 なお Phase 7F (PL encoder IP) / Phase 7G (Python + GUI focus state) /
 Phase 7G+ (GUI-first live apply、`EncoderEffectApplier` 経由) は
 **実装・deploy 済**で、Future Work からは外しています。詳細は
 [Rotary Encoder GUI 操作](#rotary-encoder-gui-操作-phase-7f--7g--7g)
 セクションと `DECISIONS.md` D30 ~ D37 を参照してください。
+
+外付け codec 関連も Phase 7C (`DECISIONS.md` D38、PCM5102 DAC-only
+bring-up) / Phase 7E (D39 / D40、PCM5102 を AudioLab DSP の並列出力に
+昇格 + PCM5102 SCK=GND で MCLK/BCK async-clocks ジッタを解消) / Phase
+7D (D41 / D42 / D43、PCM1808 mux + JB8 SCKI、ただしハードウェア診断
+不能で deploy bit は mux=ADAU フォールバック) で landing 済です。XDC
+は `JB1..JB4 / JB7 / JB8` (W14, Y14, T11, T10, V16, W16) を audio
+専用に確保しており、JB1 は構造的に常時 0 駆動 (D40 / D42)。PCM1808
+を物理的に再投入するときの手順は上記 Future Work と
+[`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md)
+section 9 を参照してください。
 
 ## AI development context
 

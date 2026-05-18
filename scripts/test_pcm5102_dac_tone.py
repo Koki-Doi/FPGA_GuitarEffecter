@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 7C on-board smoke for the external PCM5102 DAC bring-up.
+"""Phase 7C historical on-board smoke for the external PCM5102 DAC bring-up.
 
 Usage on the PYNQ-Z2:
 
@@ -25,6 +25,11 @@ What it does NOT do:
 
 PYNQ Python 3.6 compatibility: no dataclass, no `from __future__ import
 annotations`, no typing.Literal.
+
+Note: this describes the Phase 7C DAC-only bit. The current deployed
+Phase 7D close-out bit no longer instantiates pcm5102_dac_tone; PCM5102
+receives processed AudioLab output through pcm5102_audio_out, and JB1 is
+constant 0 so PCM5102 SCK stays in internal-SYSCLK mode.
 """
 
 import argparse
@@ -32,7 +37,7 @@ import time
 
 
 JB_WIRING = (
-    "  JB1 (W14)  EXT_AUDIO_MCLK  -> PCM5102 SCK   expected 12.288 MHz\n"
+    "  JB1 (W14)  EXT_AUDIO_MCLK  -> PCM5102 SCK   expected 12.288 MHz (Phase 7C bit only)\n"
     "  JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM5102 BCK   expected  3.072 MHz\n"
     "  JB3 (T11)  EXT_AUDIO_LRCLK -> PCM5102 LCK   expected 48.000 kHz\n"
     "  JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN   expected 1 kHz sine\n"

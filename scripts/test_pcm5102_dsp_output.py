@@ -15,7 +15,8 @@ What changed vs Phase 7C (`scripts/test_pcm5102_dac_tone.py`):
         PMOD JB3 LCK  <- ADAU1761 I2S LRCLK  (top-level input port lrclk, T17)
         PMOD JB7 DIN  <- i2s_to_stream_0/so  (same serial DAC data the ADAU
                                               sdata_o pin G18 receives)
-        PMOD JB1 SCK  <- 12.288 MHz from clk_wiz_audio_ext (Phase 7C MMCM)
+        PMOD JB1 SCK  <- constant 0 (PCM5102 SCK stays GND / internal-SYSCLK;
+                                      PCM1808 SCKI, if used, is JB8 / W16)
   * The input chain is unchanged: line in / guitar at the ADAU1761
     ADC -> i2s_to_stream_0 -> axis_data_fifo -> clash_lowpass_fir_0
     -> axis_switch_sink -> ... -> axis_switch_source ->

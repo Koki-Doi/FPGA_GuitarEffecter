@@ -19,11 +19,10 @@
 #     `i2s_to_stream_0/si` from it directly is broken and re-routed via
 #     the new mux.
 #   - PCM5102 DAC output path (pcm5102_out_0 / clk_wiz_audio_ext / the
-#     four PMOD JB output ports). `pcm5102_audio_out.v` was updated in
-#     this commit to re-pass the 12.288 MHz wizard output to JB1 -- the
-#     user's Phase 7D board rewiring physically grounds PCM5102 SCK on
-#     the module, so JB1 driving 12.288 MHz no longer affects PCM5102
-#     and is reused as PCM1808 SCKI instead (DECISIONS.md D40 / D41).
+#     four PMOD JB output ports). `pcm5102_audio_out.v` keeps JB1
+#     constant 0 so PCM5102 SCK stays in internal-SYSCLK mode. This script
+#     creates the separate JB8 / W16 SCKI output for PCM1808 instead
+#     (DECISIONS.md D40 / D42).
 #   - HDMI integration, encoder integration, GPIO_CONTROL_MAP, ps7_0
 #     AXI peripheral count (no NUM_MI bump -- the mux is wire-only).
 #

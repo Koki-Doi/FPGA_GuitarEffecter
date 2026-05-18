@@ -37,10 +37,10 @@ What this bit does (DECISIONS.md D41):
     re-selected by flipping the constant to 0 and rebuilding.
   * BCK (JB2 / Y14) and LRCK (JB3 / T11) are shared with PCM5102 -- both
     chips slave off the ADAU1761 PLL via the existing ADAU I2S clocks.
-  * SCKI (JB1 / W14) is the 12.288 MHz output of `clk_wiz_audio_ext`
-    that Phase 7C added (no longer driven to GND; PCM5102 SCK is now
-    physically tied to GND on the module so re-driving JB1 only feeds
-    PCM1808 SCKI).
+  * SCKI (JB8 / W16) is the 12.288 MHz output of `clk_wiz_audio_ext`
+    that Phase 7C added and Phase 7D follow-up moved off JB1. JB1 is
+    constant 0, and PCM5102 SCK remains physically tied to GND on the
+    module so the DAC stays in internal-SYSCLK mode.
   * Output side is unchanged: i2s_to_stream_0/so still drives the ADAU
     DAC pin and is mirrored to PMOD JB7 (PCM5102 DIN) via the Phase 7E
     pcm5102_audio_out pass-through.
@@ -263,7 +263,7 @@ def main():
     print("[pcm1808] notebook or encoder GUI should change the PCM5102 sound.")
     print("[pcm1808] If silent: check PCM1808 VCC / GND, mode strap (I2S")
     print("[pcm1808] slave), JB4 DOUT wire, and that BCK / LRCK / SCKI are")
-    print("[pcm1808] reaching the module on JB2 / JB3 / JB1.")
+    print("[pcm1808] reaching the module on JB2 / JB3 / JB8.")
     print("[pcm1808] If noisy / grainy: see DECISIONS.md D41 -- the SCKI is")
     print("[pcm1808] not bit-true synchronous to BCK; the next step is to")
     print("[pcm1808] make the FPGA the I2S master.")

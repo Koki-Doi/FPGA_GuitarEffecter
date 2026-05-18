@@ -149,6 +149,52 @@ When a previous turn stopped mid-implementation:
   cap of 5 fps. Do not re-introduce per-loop render or per-loop
   overlay write, do not add a second translation layer beside the
   applier, and do not silently flip `skip_rat=False`.
+- External PCM5102 DAC + PCM1808 ADC path (Phase 7C / 7E / 7D,
+  `DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43). PMOD JB carries
+  the entire external audio path; the integration tcls
+  `hw/Pynq-Z2/pcm5102_dac_integration.tcl` and
+  `hw/Pynq-Z2/pcm1808_adc_integration.tcl` are sourced from
+  `create_project.tcl` and the new RTL lives under
+  `hw/ip/pcm5102_audio_out/` (DAC mirror, formerly
+  `pcm5102_dac_tone/` from Phase 7C, kept as a debug reference but no
+  longer instantiated) and `hw/ip/pcm1808_adc_input/` (2:1 build-time
+  wire mux between ADAU `sdata_i` F17 and PCM1808 `ext_adc_dout_i`
+  T10). Hard rules:
+  - **`pcm5102_audio_out.v` must keep `assign ext_audio_mclk_o = 1'b0;`.**
+    JB1 (W14) is the structural SCK-low guarantee for PCM5102's
+    internal-SYSCLK mode (D40). Driving JB1 with the 12.288 MHz wizard
+    output reintroduces the async-clocks graininess (the Phase 7D first
+    attempt re-broke this and had to be reverted, D42).
+  - **PCM1808 SCKI lives on a dedicated `ext_pcm1808_sckie_o` port on
+    PMOD JB8 / W16** (`pcm1808_adc_integration.tcl`,
+    `clk_wiz_audio_ext/clk_out1` direct); never route the wizard back
+    into JB1.
+  - **`pcm5102_dac_integration.tcl` must NOT re-instantiate the Phase
+    7C `pcm5102_dac_tone` module.** Phase 7E replaced it with
+    `pcm5102_audio_out` as a 4-signal pass-through; the tone module is
+    kept in the repo as a free-running debug reference only (D39).
+  - **`pcm1808_adc_integration.tcl` ships with `CONFIG.CONST_VAL {0}`
+    (mux=ADAU fallback, D43).** PCM1808 hardware diagnosis is deferred;
+    flipping back to PCM1808 is a one-character edit (`{1}`) + rebuild.
+    Until the physical module is replaced / repaired, do not flip the
+    default — the bench shows `--capture-adc` returning pure zeros.
+  - `clk_wiz_audio_ext` MMCM (`100 MHz -> 12.288 MHz exact`,
+    `DIVCLK_DIVIDE=5, MULT_F=48.0, CLKOUT0_DIVIDE_F=78.125, VCO=960
+    MHz`) is the only external-audio clock source; do not add a second
+    MMCM. It drives JB8 SCKI and nothing else on the deployed bit.
+  - No AXI-Lite slave for the external codec path. No new AXI GPIO. No
+    `GPIO_CONTROL_MAP.md` change. No `topEntity` / `LowPassFir.hs`
+    change. No `block_design.tcl` direct edit (everything goes via the
+    two integration tcls).
+  - Smoke scripts: `scripts/test_pcm5102_dsp_output.py` (PCM5102 ADAU
+    mirror), `scripts/test_pcm1808_adc_to_pcm5102.py --inject-sine` /
+    `--capture-adc` (PCM1808 input + PCM5102 output loopback), and the
+    notebook `audio_lab_pynq/notebooks/Pcm5102DspOutputCheck.ipynb`.
+  - PCM1808 module needs `VCC = 5V` (Arduino POWER 5V) + `VDD = 3.3V`
+    (PMOD JB12); putting 3.3V on `VCC` brown-outs the PMOD rail and
+    can damage the chip's analog front-end (memory
+    `pcm1808-dual-supply-and-pmod-brownout`; the user's current
+    diagnosis hypothesis for D43).
 - The compact-v2 renderer is split per-theme under `GUI/compact_v2/`
   (`knobs.py` / `state.py` / `layout.py` / `renderer.py` /
   `hit_test.py`); `GUI/pynq_multi_fx_gui.py` is now a thin

@@ -1,14 +1,21 @@
-# External PCM1808 / PCM5102 audio path plan (Phase 7A)
+# External PCM1808 / PCM5102 audio path plan + Phase 7C/7E/7D close-out
 
-このドキュメントは **設計フェーズ専用**。Phase 7A の時点では
-実装 / XDC / block_design / bit/hwh 変更は一切行わない。
-ピン予約 / 信号一覧 / モード仕様 / アナログ前段の注意 / 既存
-ADAU1761 経路との関係 / 段階的実装計画のみを記録する。
+このドキュメントは元々 **Phase 7A 設計フェーズ**として書かれた
+(セクション 1 〜 8 がその名残)。Phase 7C / 7E / 7D を経て **PCM5102
+DAC 並列出力は deployed**、**PCM1808 ADC mux は build-time 実装済 + JB
+配線済だが deploy bit は ADAU フォールバック**まで進んでいる。最新
+状況の要約はセクション 9 (実装計画兼進捗ログ) と
+`docs/ai_context/CURRENT_STATE.md` 冒頭、決定事項は
+`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44 を参照する。
 
 関連:
-- `docs/ai_context/IO_PIN_RESERVATION.md` (ピン予約台帳)
+- `docs/ai_context/IO_PIN_RESERVATION.md` (ピン予約台帳、`Status` =
+  `wired` の行が Phase 7C / 7D 反映済)
 - `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` (ロータリーエンコーダー仕様)
-- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D27 / D28 / D29 / D30)
+- `docs/ai_context/AUDIO_SIGNAL_PATH.md` (PCM5102 並列出力 + PCM1808
+  build-time mux 入力の信号経路図)
+- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D27 / D28 / D29 /
+  D30、Phase 7C/7E/7D ぶんは D38 / D39 / D40 / D41 / D42 / D43 / D44)
 
 ---
 
@@ -324,6 +331,16 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
   JB8 / W16 に専用ピンとして分離し、JB1 は RTL レベルで constant 0
   を維持。
 - 未対応:
+  - **PCM1808未使用時のJB8 SCKI停止**。現行 deploy bit は
+    `CONFIG.CONST_VAL=0` でADAU入力を選んでいるが、`ext_pcm1808_sckie_o`
+    はPCM1808再投入用に12.288 MHzを出し続ける。JB8 / W16 はPCM5102
+    DINのJB7 / V16と隣接するため、PCM5102音質改善の次段階では
+    mux=ADAU buildのときだけJB8を0固定するvariant / optionを追加する
+    (D44)。Vivado rebuild + timing reviewが必要。
+  - **PCM5102 debug output mode**。processed audio / digital silence /
+    `-18 dBFS` 1 kHz tone / rampを切替できる診断モードを追加し、
+    DSP起因、I2S/serializer起因、アナログ出力・後段起因を分ける
+    (D44)。実装は次段階で、今回のdocs更新では行わない。
   - PCM1808 module 交換 or hardware 修理 / 再診断
   - 交換後 `CONFIG.CONST_VAL {1}` rebuild で PCM1808 路復活
   - runtime ADC source switching (AXI GPIO 化、後回し)
@@ -469,19 +486,23 @@ Phase 7B 時点では:
 - 実 module 確認後、Phase 7C で `audio_lab.xdc` に DAC 用 pin から順に
   実装。Phase 7B の本ドキュメントでは XDC を **書かない**。
 
-### 11.4 Phase 7B 接続案 (PMOD JB ↔ external module)
+### 11.4 Phase 7B 接続案 / 現行配線 (PMOD JB ↔ external module)
 
-最小構成 (mode pin はすべて module strap、XSMT pull-up):
+Phase 7B当初案ではJB1を外付けMCLK候補としていたが、Phase 7D follow-up
+(D42)で現行配線は下記に更新済み。PCM5102 SCKは必ずGND / Lowで使い、
+JB1は外部SCK用途に戻さない。
+
+現行最小構成 (mode pin はすべて module strap、XSMT pull-up):
 
 ```
 PYNQ-Z2 PMOD JB                            External module
 ================                           =============================
-JB1  (W14)  EXT_AUDIO_MCLK   ──────────►   PCM1808 SCKI
-                              ──────────►  (optional) PCM5102 SCK
+JB1  (W14)  EXT_AUDIO_MCLK   = constant 0  (unused; do not wire to PCM5102 SCK)
 JB2  (Y14)  EXT_AUDIO_BCLK   ──────────►   PCM1808 BCK + PCM5102 BCK
 JB3  (T11)  EXT_AUDIO_LRCLK  ──────────►   PCM1808 LRCK + PCM5102 LCK
 JB4  (T10)  EXT_ADC_DOUT     ◄──────────   PCM1808 DOUT
 JB7  (V16)  EXT_DAC_DIN      ──────────►   PCM5102 DIN
+JB8  (W16)  EXT_PCM1808_SCKI ──────────►   PCM1808 SCKI (12.288 MHz when enabled)
 JB11 (GND)                   ───────────   PCM1808 GND + PCM5102 GND
 JB12 (3V3)  *only if module accepts 3.3V on VCC*
                              ───────────   (else use external 5V supply, common GND)
@@ -494,7 +515,8 @@ PCM1808 strap (基板上で固定):
 PCM5102 strap:
 - `XSMT = HIGH` (unmute, pull-up to 3.3V)
 - `FLT` / `DMP` / `FMT` は工場既定で問題なければ未接続
-- `SCK` は module 仕様に従う (GND 落とし内蔵 PLL or `EXT_AUDIO_MCLK` 共通)
+- `SCK` は **GND / Low固定**。`EXT_AUDIO_MCLK` / JB1 / JB8へ戻さない
+  (D40 / D42)。PCM5102はinternal-SYSCLK modeで使う。
 
 PMOD JA を使う場合 (module strap が無いとき):
 - `JA1` (Y18): `EXT_ADC_FMT`

@@ -236,7 +236,7 @@ See [`DECISIONS.md`](DECISIONS.md) D15.
 ## 8. C++ DSP prototypes are not the path
 
 The earlier reference C++ implementations under `src/effects/` were
-removed (`DECISIONS.md` D12). The single source of truth for DSP
+removed (`DECISIONS.md` D13). The single source of truth for DSP
 behaviour is `hw/ip/clash/src/LowPassFir.hs`. **Do not** write a new
 C++ prototype as a stepping stone. New effect work goes:
 

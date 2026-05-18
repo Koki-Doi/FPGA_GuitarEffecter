@@ -7,8 +7,10 @@
 # onto the four PMOD JB pins. PCM5102 therefore receives bit-for-bit the
 # same processed audio the ADAU1761 DAC receives (parallel output;
 # DECISIONS.md D39). The Phase 7C clk_wiz_audio_ext (100 MHz -> 12.288 MHz
-# exact) is kept and still drives PMOD JB1 (PCM5102 SCK) so the same MCLK
-# can later feed PCM1808 SCKI in Phase 7D.
+# exact) is kept for the deferred PCM1808 SCKI path, but PCM5102 no longer
+# consumes it: pcm5102_audio_out drives PMOD JB1 constant 0 so PCM5102 SCK
+# stays in internal-SYSCLK mode (D40 / D42). PCM1808 SCKI, when enabled, is
+# a separate PMOD JB8 output created by pcm1808_adc_integration.tcl.
 #
 # Untouched by this script (same as Phase 7C):
 #   - ADAU1761 audio path (mclk / bclk / lrclk / sdata_i / sdata_o /
@@ -27,14 +29,12 @@
 #   D      = 5        (DIVCLK_DIVIDE)
 #   VCO    = 100 * 48 / 5         = 960 MHz       (in xc7z020-1 600-1200 MHz)
 #   CLKOUT0 divider = 78.125 (1/8 step)
-#   CLKOUT0 = 960 / 78.125         = 12.288 MHz   <-- EXACT MCLK to PCM5102 SCK
+#   CLKOUT0 = 960 / 78.125         = 12.288 MHz   <-- exact PCM1808 SCKI source
 #
-# PCM5102 BCK/LCK actually come from the ADAU1761 I2S BCLK (~3.072 MHz from
-# ADAU's PLL) and LRCLK (~48 kHz). The 12.288 MHz MCLK is therefore not
-# bit-true synchronous to ADAU BCLK, but the 256:1 ratio sits inside the
-# PCM510x internal-PLL lock window. If the chip ever fails to lock, the
-# fallback is to drop ext_audio_mclk_o to a constant low (PCM5102 then
-# switches to its internal PLL).
+# PCM5102 BCK/LCK come from the ADAU1761 I2S BCLK (~3.072 MHz from ADAU's
+# PLL) and LRCLK (~48 kHz). Earlier builds also drove PCM5102 SCK from this
+# independent 12.288 MHz wizard and produced audible async-clock graininess;
+# the deployed design therefore keeps ext_audio_mclk_o constant low.
 
 current_bd_design [get_bd_designs block_design]
 current_bd_instance /
@@ -84,7 +84,9 @@ create_bd_port -dir O ext_dac_din_o
 # -----------------------------------------------------------------------------
 set pcm5102_out_0 [create_bd_cell -type module -reference pcm5102_audio_out pcm5102_out_0]
 
-# MCLK: 12.288 MHz from the dedicated wizard.
+# Keep the 12.288 MHz wizard connected to the module input for interface
+# stability. The module intentionally ignores it and drives ext_audio_mclk_o
+# low; pcm1808_adc_integration.tcl uses the same wizard for JB8 SCKI.
 connect_bd_net [get_bd_pins clk_wiz_audio_ext/clk_out1] \
                [get_bd_pins $pcm5102_out_0/mclk_12m288_i]
 

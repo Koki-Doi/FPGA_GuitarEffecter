@@ -155,8 +155,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports {enc2_sw_i}]
 ###################################################
 ## Phase 7C: PCM5102 (external DAC) bring-up on PMOD JB.
 ##
-## Wiring (DECISIONS.md D38, IO_PIN_RESERVATION.md 4A.1):
-##   JB1 (W14)  EXT_AUDIO_MCLK  -> PCM5102 SCK   (12.288 MHz)
+## Wiring (DECISIONS.md D38 / D40 / D42, IO_PIN_RESERVATION.md 4A.1):
+##   JB1 (W14)  EXT_AUDIO_MCLK  = constant 0     (PCM5102 SCK stays GND / Low)
 ##   JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM5102 BCK   ( 3.072 MHz)
 ##   JB3 (T11)  EXT_AUDIO_LRCLK -> PCM5102 LCK   (48 kHz)
 ##   JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN   (24-bit I2S)
@@ -179,14 +179,13 @@ set_property IOSTANDARD LVCMOS33 [get_ports {ext_dac_din_o}]
 ###################################################
 ## Phase 7D: PCM1808 (external ADC) bring-up on PMOD JB4.
 ##
-## Wiring (DECISIONS.md D41, IO_PIN_RESERVATION.md 4A.1):
-##   JB1 (W14)  EXT_AUDIO_MCLK  -> PCM1808 SCKI  (12.288 MHz)   *physically
-##                                                               disconnected
-##                                                               from PCM5102 SCK*
+## Wiring (DECISIONS.md D41 / D42, IO_PIN_RESERVATION.md 4A.1):
+##   JB1 (W14)  EXT_AUDIO_MCLK  = constant 0                    (unused)
 ##   JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM1808 BCK + PCM5102 BCK    (= ADAU BCLK)
 ##   JB3 (T11)  EXT_AUDIO_LRCLK -> PCM1808 LRCK + PCM5102 LCK   (= ADAU LRCLK)
 ##   JB4 (T10)  EXT_ADC_DOUT    <- PCM1808 DOUT                 (new input pin)
 ##   JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN                  (unchanged)
+##   JB8 (W16)  EXT_PCM1808_SCKI -> PCM1808 SCKI                (12.288 MHz)
 ##
 ## PCM1808 mode pins (FMT / MD0 / MD1) are NOT wired -- the module is
 ## strapped to I2S slave mode on the board. LVCMOS33 input, no pull.

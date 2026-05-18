@@ -53,6 +53,83 @@ In `numpy`, capture buffers are read back as `numpy.int32` of shape
 `guitar_chain` (the Clash effect block), or alternative paths. See
 `AudioLabOverlay.route()`.
 
+## External PCM1808 / PCM5102 paths (Phase 7C / 7E / 7D)
+
+Two additional physical paths on PMOD JB share the same internal AXIS
+plumbing. They were added by Phase 7C / 7E / 7D
+(`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43) without any change
+to `LowPassFir.hs`, `i2s_to_stream_0`, `axis_switch_*`, or the GPIO
+control map.
+
+### Output side (parallel to the ADAU1761 DAC)
+
+`hw/ip/pcm5102_audio_out/src/pcm5102_audio_out.v` is a trivial
+4-signal pass-through that fans out the existing ADAU1761 I2S DAC
+interface to the PMOD JB pins driving the external PCM5102. The serial
+data stream is *bit-for-bit identical* to what the ADAU `sdata_o` pin
+sees; both DACs play in parallel.
+
+```
+i2s_to_stream_0/so  ──┬──► ADAU sdata_o (G18) ──► ADAU1761 DAC ──► onboard line/headphone out
+                      └──► JB7 (V16) ext_dac_din_o ──► PCM5102 DIN ──► PCM5102 line out
+
+bclk (R18)  ──┬──► ADAU1761 BCLK input
+              └──► JB2 (Y14) ext_audio_bclk_o ──► PCM5102 BCK
+
+lrclk (T17) ──┬──► ADAU1761 LRCLK input
+              └──► JB3 (T11) ext_audio_lrclk_o ──► PCM5102 LCK
+
+JB1 (W14) ext_audio_mclk_o = 1'b0  (PCM5102 SCK stays GND-driven
+                                    structurally; PCM5102 enters its
+                                    internal-SYSCLK mode, D40 / D42)
+```
+
+If PCM5102 sounds clean but the on-board ADAU DAC sounds wrong (or vice
+versa), the problem is in the analog output stage of the misbehaving
+DAC, not in the DSP — both sinks see the same bits.
+
+### Input side (build-time selectable ADC source)
+
+`hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v` is a 2:1
+combinational wire mux. The deployed bit ships with the build-time
+`xlconstant` in `hw/Pynq-Z2/pcm1808_adc_integration.tcl` set to
+`CONFIG.CONST_VAL {0}` (mux=ADAU fallback, `DECISIONS.md` D43);
+flipping to `{1}` and rebuilding selects PCM1808.
+
+```
+ADAU1761 ADC ──► sdata_i (F17) ──┐
+                                 ├──► pcm1808_input_select ──► i2s_to_stream_0/si
+PCM1808 DOUT ──► JB4 (T10)    ──┘                                  (existing AXIS chain
+                                                                    is unchanged downstream)
+
+JB8 (W16) ext_pcm1808_sckie_o ──► PCM1808 SCKI   (12.288 MHz from clk_wiz_audio_ext, D42)
+JB2 (Y14) ext_audio_bclk_o    ──► PCM1808 BCK    (shared with PCM5102 BCK)
+JB3 (T11) ext_audio_lrclk_o   ──► PCM1808 LRCK   (shared with PCM5102 LCK)
+```
+
+Caveats baked into Phase 7D:
+
+- `CONFIG.CONST_VAL` is a **build-time** select. There is no runtime
+  AXI control over the mux; switching sources requires a rebuild and a
+  redeploy.
+- PCM1808 SCKI (12.288 MHz from the PS PLL via `clk_wiz_audio_ext`) is
+  NOT bit-true synchronous to BCK (ADAU PLL). PCM1808 has no
+  PCM510x-style internal-PLL fallback; if the bench shows
+  graininess, the next escalation is to make the FPGA the I2S master
+  rather than another RTL tweak (deferred).
+- While `CONFIG.CONST_VAL {0}` keeps PCM1808 out of the active input
+  path, the current bit still drives `ext_pcm1808_sckie_o` on JB8 at
+  12.288 MHz. For PCM5102-only quality work, D44 records the next
+  non-physical improvement: gate or tie this output low when PCM1808 is
+  unused, then add a PCM5102 debug output mode (processed audio /
+  digital silence / `-18 dBFS` tone / ramp) for repeatable diagnosis.
+- The current PCM1808 module on the user's bench returns pure zeros on
+  `--capture-adc` even with line-in from a smartphone; the most
+  plausible hypothesis is analog-front-end damage from an earlier
+  `3.3V on VCC` brown-out (memory
+  `pcm1808-dual-supply-and-pmod-brownout`). Until the module is
+  replaced, keep `CONST_VAL = 0`.
+
 ## Triage rules of thumb
 
 - If the **bypass route** (`passthrough`, no Clash) is noisy, look at the

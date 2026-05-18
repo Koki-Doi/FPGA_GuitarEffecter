@@ -1,6 +1,6 @@
 # Current state
 
-Last updated: **2026-05-18 (Phase 7D close-out): PCM1808 mux flipped back to ADAU pending hardware diagnosis; SCKI moved off JB1 onto JB8**
+Last updated: **2026-05-18 (Phase 7D close-out + PCM5102 quality follow-up plan): PCM1808 mux flipped back to ADAU pending hardware diagnosis; SCKI moved off JB1 onto JB8**
 (Phase 7D first attempt picked PCM1808 as the build-time ADC source via
 the `pcm1808_input_select` mux and put PCM1808 SCKI back on JB1
 12.288 MHz. On the bench this re-broke PCM5102 (audible graininess
@@ -24,8 +24,16 @@ PCM1808 needs only `CONFIG.CONST_VAL {1}` in
 `pcm1808_adc_integration.tcl` and a rebuild. User confirmed:
 ADAU Line In -> AudioLab DSP -> PCM5102 line out works on the bench
 (minor audio-quality nits remain, deferred). PCM5102 SCK still GND
-(D40 / D42 preserved). HDMI / encoder / GPIO_CONTROL_MAP /
-LowPassFir untouched. DECISIONS.md D41 / D42 / D43.
+(D40 / D42 preserved). Follow-up diagnosis concluded that the first
+non-physical improvement should be a build variant / option that drives
+`ext_pcm1808_sckie_o` low when PCM1808 is not the active ADC source,
+because the deployed mux=ADAU bit still emits 12.288 MHz on JB8 and
+that pin sits adjacent to PCM5102 DIN on JB7. The second follow-up is a
+PCM5102 debug output mode (`processed audio` / digital silence /
+`-18 dBFS` 1 kHz tone / ramp) to separate DSP, I2S, and analog-output
+faults before any further audio-path edits. HDMI / encoder /
+GPIO_CONTROL_MAP / LowPassFir untouched in this planning pass.
+DECISIONS.md D41 / D42 / D43 / D44.
 
 Previous-pass header (Phase 7D first attempt):
 **PCM1808 external ADC inserted as default input source via a build-time wire mux**

@@ -1815,3 +1815,58 @@ not get removed even when superseded — they get updated.
     the PMOD ribbon. Mitigations to try later: shorter wires,
     twisted-pair ground returns for JB7/8, or moving SCKI further
     from DIN on the PMOD.
+
+## D44 — PCM5102 quality follow-up starts with unused-SCKI gating and output diagnostics
+
+- **Decision.** Do not start with a DSP / Clash change for the
+  remaining "PCM5102 sounds worse than desired" report. The current
+  output path is still the ADAU DAC serial bitstream mirrored to
+  PCM5102 (`i2s_to_stream_0/so`), PCM5102 SCK is correctly tied low
+  for internal-SYSCLK mode, and the deployed mux selects ADAU input.
+  The first non-physical improvement to implement next is therefore:
+  **when PCM1808 is not the active ADC source, stop the unused
+  `ext_pcm1808_sckie_o` 12.288 MHz output on JB8 / W16**. The second
+  improvement is a PCM5102-oriented debug output mode that can select
+  processed audio, digital silence, a `-18 dBFS` 1 kHz tone, and a
+  ramp on the PCM5102 output path.
+- **Why.**
+  - The deployed Phase 7D close-out bit has `CONFIG.CONST_VAL {0}`
+    (ADAU input), but `clk_wiz_audio_ext/clk_out1` still drives JB8
+    at 12.288 MHz for the deferred PCM1808. JB8 is adjacent to JB7,
+    which carries PCM5102 DIN, so an unused high-speed clock remains
+    the most plausible RTL-side contributor to residual external-DAC
+    artifacts.
+  - Physical checks (shorter wires, PMOD GND return, decoupling,
+    line-level loading) still matter, but this build option removes a
+    known unnecessary aggressor without changing the DSP chain.
+  - A debug output mode makes future reports concrete: if digital
+    silence is noisy, the fault is downstream of the serializer; if
+    `-18 dBFS` tone is clean but processed audio is poor, the fault is
+    input / DSP / gain staging; if the ramp or tone shows bit slips,
+    inspect the I2S serializer / external wiring.
+- **Boundary.**
+  - This is a follow-up plan only in this docs/comment pass. No RTL,
+    XDC, Vivado build, bit/hwh regeneration, deploy, `LowPassFir.hs`,
+    HDMI timing, encoder pin, GPIO map, or block design change is made
+    by this decision record.
+  - The eventual SCKI-gating implementation should not remove the
+    PCM1808 path. It should preserve the ability to rebuild with
+    PCM1808 active later, at which point JB8 must again provide the
+    required 12.288 MHz SCKI unless a larger FPGA-as-I2S-master phase
+    replaces the clocking scheme.
+  - PCM5102 SCK stays tied to GND / low. Do not reconnect it to MCLK
+    and do not drive it high.
+- **Likely implementation shape.**
+  - Minimal variant: in `pcm1808_adc_integration.tcl`, condition the
+    JB8 output source on the same build-time ADC-source choice so
+    mux=ADAU drives `ext_pcm1808_sckie_o` low and mux=PCM1808 drives
+    `clk_wiz_audio_ext/clk_out1`. This requires a Vivado rebuild and
+    timing review.
+  - Debug mode: add a small PCM5102 output selector near
+    `pcm5102_audio_out` with modes for processed audio, silence,
+    `-18 dBFS` 1 kHz tone, and ramp. Prefer a simple build-time or
+    low-risk control path first; do not introduce a wide DSP mux or
+    touch `LowPassFir.hs` unless measurement proves it is needed.
+  - Documentation/comments that still describe JB1 as a live 12.288 MHz
+    SCK/SCKI pin should be corrected to the D42 reality: JB1 is
+    constant 0 / unused, PCM5102 SCK is GND, and PCM1808 SCKI is JB8.

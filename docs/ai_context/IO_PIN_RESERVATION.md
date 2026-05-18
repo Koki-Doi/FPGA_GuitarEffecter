@@ -258,7 +258,7 @@ docs に列挙するのみで XDC 変更はしない。
 
 | Logical signal | External module pin | Direction | Connector | Board pin | Package pin | IOSTANDARD | Pull plan | Notes | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `ext_audio_mclk_o`  | PCM5102 `SCK` (+ later PCM1808 `SCKI`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | 12.288 MHz exact, `clk_wiz_audio_ext` (D38) | **wired** |
+| `ext_audio_mclk_o`  | none (historical PCM5102 `SCK`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | **constant 0** in current bit; PCM5102 `SCK` stays tied to GND / Low (D40 / D42) | **wired** |
 | `ext_audio_bclk_o`  | PCM5102 `BCK` (+ later PCM1808 `BCK`)  | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | **wired** |
 | `ext_audio_lrclk_o` | PCM5102 `LCK` (+ later PCM1808 `LRCK`) | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | **wired** |
 | `ext_adc_dout_i`    | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | Phase 7D wired; sampled in `bclk` domain by `i2s_to_stream_0/si` via `pcm1808_input_select` mux (D41) | **wired** |
@@ -377,11 +377,12 @@ PYNQ-Z2 の RPi header のうち、**JA と共有しない 19 pin** を encoder 
 ### 6.1 外付け audio (Phase 7B ~ 7E で実装)
 
 ```
-EXT_AUDIO_MCLK    (out, PCM1808 SCKI)
+EXT_AUDIO_MCLK    (out, constant 0 on JB1; do not wire to PCM5102 SCK)
 EXT_AUDIO_BCLK    (out, PCM1808 BCK + PCM5102 BCK)
 EXT_AUDIO_LRCLK   (out, PCM1808 LRCK + PCM5102 LCK)
 EXT_ADC_DOUT      (in,  PCM1808 DOUT)
 EXT_DAC_DIN       (out, PCM5102 DIN)
+EXT_PCM1808_SCKI  (out, PCM1808 SCKI on JB8 when PCM1808 clock is enabled)
 EXT_ADC_FMT       (optional out / strap)
 EXT_ADC_MD0       (optional out / strap)
 EXT_ADC_MD1       (optional out / strap)
