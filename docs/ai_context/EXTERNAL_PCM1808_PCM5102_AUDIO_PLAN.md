@@ -1,14 +1,33 @@
-# External PCM1808 / PCM5102 audio path plan (Phase 7A)
+# External PCM1808 / PCM5102 audio path plan + Phase 7C/7E/7D close-out
 
-このドキュメントは **設計フェーズ専用**。Phase 7A の時点では
-実装 / XDC / block_design / bit/hwh 変更は一切行わない。
-ピン予約 / 信号一覧 / モード仕様 / アナログ前段の注意 / 既存
-ADAU1761 経路との関係 / 段階的実装計画のみを記録する。
+このドキュメントは元々 **Phase 7A 設計フェーズ**として書かれた
+(セクション 1 〜 8 がその名残)。Phase 7C / 7E / 7D を経て **PCM5102
+DAC 並列出力は deployed**、**PCM1808 ADC mux は build-time 実装済 + JB
+配線済だが deploy bit は ADAU フォールバック**まで進んでいる。最新
+状況の要約はセクション 9 (実装計画兼進捗ログ) と
+`docs/ai_context/CURRENT_STATE.md` 冒頭、決定事項は
+`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44 を参照する。
+
+**Pmod I2S2 への発展計画 (Phase Pmod-0, planning only)**:
+PCM1808 module は analog 前段 damage 仮説 (`DECISIONS.md` D43) で
+事実上 retire 状態、PCM5102 line out は JB7 / JB8 隣接クロストーク
+疑い (`DECISIONS.md` D44)。次の評価ステップは **Digilent Pmod I2S2**
+(CS4344 stereo DAC + CS5343 stereo ADC on 1 PMOD board) を PMOD JB
+に直挿しして外付け I2S I/O のリファレンスにする案で、`DECISIONS.md`
+D45 にプランのみ記録、詳細は
+`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`。本ドキュメント (PCM5102
+/ PCM1808 計画) と Pmod I2S2 plan は **共存**: Pmod I2S2 評価時には
+PMOD JB を Pmod I2S2 専用にして既存 PCM5102 / PCM1808 ジャンパを物理
+的に外す build variant 方針。
 
 関連:
-- `docs/ai_context/IO_PIN_RESERVATION.md` (ピン予約台帳)
+- `docs/ai_context/IO_PIN_RESERVATION.md` (ピン予約台帳、`Status` =
+  `wired` の行が Phase 7C / 7D 反映済)
 - `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` (ロータリーエンコーダー仕様)
-- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D27 / D28 / D29 / D30)
+- `docs/ai_context/AUDIO_SIGNAL_PATH.md` (PCM5102 並列出力 + PCM1808
+  build-time mux 入力の信号経路図)
+- `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D27 / D28 / D29 /
+  D30、Phase 7C/7E/7D ぶんは D38 / D39 / D40 / D41 / D42 / D43 / D44)
 
 ---
 
@@ -275,25 +294,100 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
 - 外付け I2S interface module の Clash / VHDL 側設計初稿
 - DSP 置換はしない
 
-### Phase 7C: PCM5102 DAC 出力の loopback prototype
-- PCM5102 DAC を先に動かす
-- FPGA / PS path から sine / sweep を生成して PCM5102 へ送る
-- BCLK / LRCK / DIN をオシロ / logic analyzer で確認
-- DAC アナログ出力を計測 (line out → audio interface input)
+### Phase 7C: PCM5102 DAC 出力の loopback prototype — **LANDED (DAC-only, free-running)**
+- PCM5102 DAC を先に動かす — **済**
+- FPGA / PS path から sine / sweep を生成して PCM5102 へ送る — **PL 内で 1 kHz 正弦を free-running 生成 (`pcm5102_dac_tone`, DECISIONS.md D38)**
+- BCLK / LRCK / DIN をオシロ / logic analyzer で確認 — **手作業残**
+- DAC アナログ出力を計測 (line out → audio interface input) — **手作業残**
+- 新規物: RTL `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v`、新 MMCM
+  `clk_wiz_audio_ext` (100 MHz → 12.288 MHz exact)、tcl
+  `hw/Pynq-Z2/pcm5102_dac_integration.tcl`、XDC 4 pin、smoke
+  `scripts/test_pcm5102_dac_tone.py`。AXI-Lite なし。GPIO_CONTROL_MAP
+  契約変更なし。ADAU1761 / HDMI / encoder すべて未変更。bit/hwh 再生成 +
+  deploy 済 (smoke PASS)。
 
-### Phase 7D: PCM1808 ADC 入力の loopback prototype
-- line-level signal を PCM1808 へ入れる
-- I2S DOUT を FPGA で取り込み、PS へ転送
-- sample alignment / endian / bit depth 確認
-- ADAU1761 入力と同条件で比較
+### Phase 7D: PCM1808 ADC 入力の loopback prototype — **LANDED w/ mux=ADAU fallback; PCM1808 hardware diagnosis pending**
+- line-level signal を PCM1808 へ入れる — 試した。スマホ line out 接続
+  でも PCM1808 `capture-adc` は pure 0 (DECISIONS.md D43)。
+- I2S DOUT を FPGA で取り込み、PS へ転送 — **済**。新規 2:1 wire mux
+  `hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v` を ADAU `sdata_i`
+  port と新規 `ext_adc_dout_i` port (JB4/T10) の間に挿入し、出力を既存
+  `i2s_to_stream_0/si` へ接続。AXIS / DSP / 出力側 (`i2s_to_stream_0/so`
+  -> ADAU `sdata_o` / PMOD JB7 PCM5102 DIN) は完全未変更。
+  build-time `CONFIG.CONST_VAL` で source 切替: 1=PCM1808, 0=ADAU。
+  `DECISIONS.md` D41。
+- sample alignment / endian / bit depth 確認 — strap は I2S Philips
+  24-bit slave (MD0=MD1=GND, FMT=GND) に統一済み。PCM1808 が pure 0
+  しか吐かないので alignment 検証は実機 ADC が動いてから。
+- ADAU1761 入力と同条件で比較 — **可能**(`CONFIG.CONST_VAL {0}` rebuild
+  で Phase 7E ADAU-mirror 状態に瞬時に戻れる)。
+- 新規物 (Phase 7D series):
+  - RTL `pcm1808_input_select.v`(2:1 mux)
+  - RTL change: `pcm5102_audio_out.v` の `ext_audio_mclk_o = 1'b0` を維持
+    (D40 SCK-low を構造的に守る、D42)
+  - 新規 top-level port `ext_pcm1808_sckie_o` on **JB8 / W16**
+    (`clk_wiz_audio_ext/clk_out1` 直結、D42)
+  - integration tcl `hw/Pynq-Z2/pcm1808_adc_integration.tcl`
+  - XDC `ext_adc_dout_i T10` + `ext_pcm1808_sckie_o W16`
+  - smoke `scripts/test_pcm1808_adc_to_pcm5102.py`、`--inject-sine` /
+    `--capture-adc` diagnostic flags を追加(D43)
+- **デプロイ状態 (Phase 7D close-out)**: `CONST_VAL=0` (mux=ADAU)。
+  ADAU Line In -> AudioLab DSP -> PCM5102 line out 動作確認済。HDMI
+  / encoder GUI 健在。PCM1808 module 自体は alive (clock 受信、I2S
+  frame 刻んでいる) だが analog-to-digital が機能していない。最有力
+  仮説は以前の 3.3V VCC 誤接続による chip / analog 前段 damage
+  (D43)。
+- **JB1 12.288 MHz クロストーク問題 (D42)**: Phase 7D 初回試行で
+  JB1 を 12.288 MHz 駆動した結果、PCM5102 SCK との物理クロストーク
+  で D40 async-clocks ノイズが再発。対策として PCM1808 SCKI を
+  JB8 / W16 に専用ピンとして分離し、JB1 は RTL レベルで constant 0
+  を維持。
+- 未対応:
+  - **PCM1808未使用時のJB8 SCKI停止**。現行 deploy bit は
+    `CONFIG.CONST_VAL=0` でADAU入力を選んでいるが、`ext_pcm1808_sckie_o`
+    はPCM1808再投入用に12.288 MHzを出し続ける。JB8 / W16 はPCM5102
+    DINのJB7 / V16と隣接するため、PCM5102音質改善の次段階では
+    mux=ADAU buildのときだけJB8を0固定するvariant / optionを追加する
+    (D44)。Vivado rebuild + timing reviewが必要。
+  - **PCM5102 debug output mode**。processed audio / digital silence /
+    `-18 dBFS` 1 kHz tone / rampを切替できる診断モードを追加し、
+    DSP起因、I2S/serializer起因、アナログ出力・後段起因を分ける
+    (D44)。実装は次段階で、今回のdocs更新では行わない。
+  - PCM1808 module 交換 or hardware 修理 / 再診断
+  - 交換後 `CONFIG.CONST_VAL {1}` rebuild で PCM1808 路復活
+  - runtime ADC source switching (AXI GPIO 化、後回し)
+  - PCM1808 用の Hi-Z guitar buffer / analog front-end
+  - FPGA-as-I2S-master 構成 (PCM1808 SCKI/BCK/LRCK 同期問題が
+    後で出た場合)
+  - ADAU -> PCM5102 経路に残る軽微なノイズ (Phase 7D close-out で
+    user が言及、JB7/JB8 隣接配線のクロストーク疑い、別途調査)
 
-### Phase 7E: DSP path への組込み
+### Phase 7E: DSP path への組込み — **LANDED (output side, ADAU-mirror pass-through)**
 - block_design 上で AXIS switch / mux を入れて
   ADAU1761 path / 外付け path を切替可能にする
-  (compile-time または runtime)
-- DSP 本体は変更しない
-- timing summary 確認 (WNS 悪化に注意)
-- 実機 audio 比較
+  (compile-time または runtime) — **却下**。AXIS switch / mux は
+  入れず、ADAU1761 I2S DAC interface (`bclk` 入力 port / `lrclk`
+  入力 port / `i2s_to_stream_0/so`) を **trivial pass-through**
+  (`pcm5102_audio_out.v`) で PMOD JB の 4 pin にミラーする方式に
+  変更。PCM5102 は ADAU と完全に同じ I2S を受けるので CDC / FIFO /
+  SRC 一切なし。両 DAC parallel 出力で A/B 比較容易。
+  `DECISIONS.md` D39。
+- DSP 本体は変更しない — **済**(`LowPassFir.hs` / `topEntity` /
+  AXIS path 全て未変更)
+- timing summary 確認 (WNS 悪化に注意) — **済**。
+  WNS `-8.724 ns`(Phase 7C `-8.410 ns` から `+0.314 ns` 悪化、
+  historical `-7..-9 ns` band 内)、WHS `+0.051 ns`、THS `0.000 ns`、
+  `bclk` domain WNS `+320.751 ns` (PCM5102 が新たに tap する domain は
+  完全クリーン)。Utilization は Phase 7C と同等。
+- 実機 audio 比較 — **手作業残**(ADAU DAC line out vs PCM5102 line out
+  の聞き比べ / 計測は user 側)
+- 新規物: RTL `hw/ip/pcm5102_audio_out/src/pcm5102_audio_out.v`、
+  smoke `scripts/test_pcm5102_dsp_output.py`、integration tcl は
+  `hw/Pynq-Z2/pcm5102_dac_integration.tcl` を 7C → 7E に
+  書き換え。bit/hwh 再生成 + deploy 済 (smoke PASS、ADC HPF True、
+  全 IP 健在)。
+- 未着手: PCM1808 ADC (Phase 7D)、runtime DAC switching、XSMT 制御、
+  pop-noise suppression、AXIS-side broadcaster (現状不要)。
 
 ### Phase 7F: encoder input IP
 - ロータリーエンコーダー decode IP の Clash / HDL 実装
@@ -404,19 +498,23 @@ Phase 7B 時点では:
 - 実 module 確認後、Phase 7C で `audio_lab.xdc` に DAC 用 pin から順に
   実装。Phase 7B の本ドキュメントでは XDC を **書かない**。
 
-### 11.4 Phase 7B 接続案 (PMOD JB ↔ external module)
+### 11.4 Phase 7B 接続案 / 現行配線 (PMOD JB ↔ external module)
 
-最小構成 (mode pin はすべて module strap、XSMT pull-up):
+Phase 7B当初案ではJB1を外付けMCLK候補としていたが、Phase 7D follow-up
+(D42)で現行配線は下記に更新済み。PCM5102 SCKは必ずGND / Lowで使い、
+JB1は外部SCK用途に戻さない。
+
+現行最小構成 (mode pin はすべて module strap、XSMT pull-up):
 
 ```
 PYNQ-Z2 PMOD JB                            External module
 ================                           =============================
-JB1  (W14)  EXT_AUDIO_MCLK   ──────────►   PCM1808 SCKI
-                              ──────────►  (optional) PCM5102 SCK
+JB1  (W14)  EXT_AUDIO_MCLK   = constant 0  (unused; do not wire to PCM5102 SCK)
 JB2  (Y14)  EXT_AUDIO_BCLK   ──────────►   PCM1808 BCK + PCM5102 BCK
 JB3  (T11)  EXT_AUDIO_LRCLK  ──────────►   PCM1808 LRCK + PCM5102 LCK
 JB4  (T10)  EXT_ADC_DOUT     ◄──────────   PCM1808 DOUT
 JB7  (V16)  EXT_DAC_DIN      ──────────►   PCM5102 DIN
+JB8  (W16)  EXT_PCM1808_SCKI ──────────►   PCM1808 SCKI (12.288 MHz when enabled)
 JB11 (GND)                   ───────────   PCM1808 GND + PCM5102 GND
 JB12 (3V3)  *only if module accepts 3.3V on VCC*
                              ───────────   (else use external 5V supply, common GND)
@@ -429,7 +527,8 @@ PCM1808 strap (基板上で固定):
 PCM5102 strap:
 - `XSMT = HIGH` (unmute, pull-up to 3.3V)
 - `FLT` / `DMP` / `FMT` は工場既定で問題なければ未接続
-- `SCK` は module 仕様に従う (GND 落とし内蔵 PLL or `EXT_AUDIO_MCLK` 共通)
+- `SCK` は **GND / Low固定**。`EXT_AUDIO_MCLK` / JB1 / JB8へ戻さない
+  (D40 / D42)。PCM5102はinternal-SYSCLK modeで使う。
 
 PMOD JA を使う場合 (module strap が無いとき):
 - `JA1` (Y18): `EXT_ADC_FMT`

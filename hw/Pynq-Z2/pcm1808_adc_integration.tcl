@@ -1,0 +1,109 @@
+# Phase 7D PCM1808 external-ADC bring-up integration for the AudioLab block
+# design.
+#
+# Sourced from create_project.tcl AFTER pcm5102_dac_integration.tcl. Inserts
+# a tiny 2:1 wire mux (`pcm1808_input_select`) between the existing
+# top-level `sdata_i` port (ADAU1761 ADC I2S serial-data input on F17) and
+# a new top-level `ext_adc_dout_i` port (PCM1808 DOUT on JB4 / T10). The
+# mux output drives the existing `i2s_to_stream_0/si` pin so the downstream
+# AXIS DSP chain is bit-for-bit unchanged regardless of which ADC source
+# is selected. Phase 7D bring-up ties `sel_external_i = 1` (PCM1808) via
+# a single-bit `xlconstant`; flipping the constant value to 0 falls back
+# to the ADAU1761 ADC path (build-time-only switch, runtime AXI control
+# is deferred).
+#
+# Untouched by this script:
+#   - ADAU1761 audio path (mclk / bclk / lrclk / sdata_o /
+#     i2s_to_stream_0 / clash_lowpass_fir_0 / axis_switch_* / axi_dma_0).
+#     The top-level `sdata_i` port stays as-is; only the net that drove
+#     `i2s_to_stream_0/si` from it directly is broken and re-routed via
+#     the new mux.
+#   - PCM5102 DAC output path (pcm5102_out_0 / clk_wiz_audio_ext / the
+#     four PMOD JB output ports). `pcm5102_audio_out.v` keeps JB1
+#     constant 0 so PCM5102 SCK stays in internal-SYSCLK mode. This script
+#     creates the separate JB8 / W16 SCKI output for PCM1808 instead
+#     (DECISIONS.md D40 / D42).
+#   - HDMI integration, encoder integration, GPIO_CONTROL_MAP, ps7_0
+#     AXI peripheral count (no NUM_MI bump -- the mux is wire-only).
+#
+# Known caveat (deliberately accepted for the Phase 7D bring-up; see
+# DECISIONS.md D41): the 12.288 MHz `clk_wiz_audio_ext` MCLK feeding
+# PCM1808 SCKI is NOT bit-true synchronous to ADAU's PLL-sourced BCK.
+# PCM1808 lacks a PCM510x-style "SCKI absent -> internal PLL from BCK"
+# fallback, so async clocks may produce noisy / unlocked output. The
+# decision is to ship and listen; if the bench shows the same kind of
+# graininess Phase 7E PCM5102 had, the next step is to make the FPGA
+# the I2S master and drive all three clocks from one source.
+
+current_bd_design [get_bd_designs block_design]
+current_bd_instance /
+
+puts "PCM1808: starting Phase 7D ADC bring-up on [current_bd_design]"
+
+# -----------------------------------------------------------------------------
+# 1. New top-level input port for PCM1808 DOUT (LVCMOS33 in audio_lab.xdc).
+# -----------------------------------------------------------------------------
+create_bd_port -dir I ext_adc_dout_i
+
+# -----------------------------------------------------------------------------
+# 2. pcm1808_input_select as a module reference (raw Verilog source added by
+#    create_project.tcl before this script runs). Drives `i2s_to_stream_0/si`.
+# -----------------------------------------------------------------------------
+set adc_sel_0 [create_bd_cell -type module -reference pcm1808_input_select adc_sel_0]
+
+# -----------------------------------------------------------------------------
+# 3. Break the existing direct `sdata_i -> i2s_to_stream_0/si` net so we can
+#    re-route via the mux. The original net was created by block_design.tcl
+#    as `sdata_i_1`.
+# -----------------------------------------------------------------------------
+delete_bd_objs [get_bd_nets sdata_i_1]
+
+# ADAU sdata_i top-level port -> mux/adau_sdata_i
+connect_bd_net -net sdata_i_1 [get_bd_ports sdata_i] \
+                              [get_bd_pins $adc_sel_0/adau_sdata_i]
+
+# PCM1808 DOUT top-level port -> mux/pcm1808_dout_i
+connect_bd_net [get_bd_ports ext_adc_dout_i] \
+               [get_bd_pins $adc_sel_0/pcm1808_dout_i]
+
+# mux output -> i2s_to_stream_0/si (the AXIS serializer input)
+connect_bd_net [get_bd_pins $adc_sel_0/sdata_to_dsp_o] \
+               [get_bd_pins i2s_to_stream_0/si]
+
+# -----------------------------------------------------------------------------
+# 4. Build-time select. xlconstant width=1.
+#    value=0 -> ADAU1761 ADC (fallback / Phase 7D follow-up diagnostic)
+#    value=1 -> external PCM1808 ADC (Phase 7D bring-up default)
+#
+# Phase 7D follow-up (after PCM1808 hardware-side debugging): flipped to 0
+# so the bit selects the known-good ADAU1761 ADC path while the PCM1808
+# module's analog front-end / chip damage hypothesis is being investigated
+# off-line. Output side (i2s_to_stream_0/so -> PCM5102 DIN via D40 SCK-low
+# + D42 SCKI-on-JB8 routing) is unchanged.
+# -----------------------------------------------------------------------------
+set adc_sel_const [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 adc_sel_const]
+set_property -dict [list \
+    CONFIG.CONST_VAL   {0} \
+    CONFIG.CONST_WIDTH {1} \
+] $adc_sel_const
+connect_bd_net [get_bd_pins $adc_sel_const/dout] \
+               [get_bd_pins $adc_sel_0/sel_external_i]
+
+# -----------------------------------------------------------------------------
+# 5. Dedicated PCM1808 SCKI output on PMOD JB8 (W16). The Phase 7D follow-up
+#    (DECISIONS.md D42) moves SCKI off JB1 onto a separate pin so the D40
+#    SCK-low compensation on PCM5102 stays in place at the RTL level
+#    regardless of any physical wiring assumption around JB1. PCM1808
+#    SCKI = 12.288 MHz from the existing clk_wiz_audio_ext (the same
+#    wizard pcm5102_audio_out used to ignore).
+# -----------------------------------------------------------------------------
+create_bd_port -dir O ext_pcm1808_sckie_o
+connect_bd_net [get_bd_pins clk_wiz_audio_ext/clk_out1] \
+               [get_bd_ports ext_pcm1808_sckie_o]
+
+# -----------------------------------------------------------------------------
+# 6. Validate + save
+# -----------------------------------------------------------------------------
+validate_bd_design
+save_bd_design
+puts "PCM1808: pcm1808_input_select inserted (sel=PCM1808 by default). SCKI -> JB8 (W16). validate_bd_design passed."

@@ -36,6 +36,18 @@ add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
 # the block design references it via `create_bd_cell -type module -reference
 # axi_encoder_input` inside encoder_integration.tcl.
 add_files -norecurse $origin_dir/../ip/encoder_input/src/axi_encoder_input.v
+# Phase 7C: add the PCM5102 DAC-only tone RTL similarly before
+# pcm5102_dac_integration.tcl references it via create_bd_cell -type module.
+# (Phase 7E retires the tone module from the block design but keeps the
+# source in the project as a known-good free-running reference.)
+add_files -norecurse $origin_dir/../ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v
+# Phase 7E: add the trivial pcm5102_audio_out pass-through that mirrors the
+# ADAU1761 I2S DAC interface onto the PMOD JB external-DAC pins.
+add_files -norecurse $origin_dir/../ip/pcm5102_audio_out/src/pcm5102_audio_out.v
+# Phase 7D: add the tiny pcm1808_input_select 2:1 wire mux that picks
+# between ADAU1761 sdata_i and the new external PCM1808 DOUT as the feed
+# to i2s_to_stream_0/si.
+add_files -norecurse $origin_dir/../ip/pcm1808_adc_input/src/pcm1808_input_select.v
 update_compile_order -fileset sources_1
 
 # Generate block design
@@ -47,6 +59,17 @@ source ./hdmi_integration.tcl
 # The audio path, DSP block, existing GPIOs, and HDMI integration are not
 # touched. The encoder IP simply adds M17 on ps7_0_axi_periph.
 source ./encoder_integration.tcl
+# Phase 7C: extend with the PCM5102 external DAC bring-up (4 top-level
+# I2S pins on PMOD JB driven by a dedicated 12.288 MHz MMCM and a small
+# RTL tone generator). No AXI-Lite. Existing audio / HDMI / encoder /
+# GPIO untouched.
+source ./pcm5102_dac_integration.tcl
+# Phase 7D: extend with the PCM1808 external ADC bring-up. Inserts a 2:1
+# wire mux on the i2s_to_stream_0/si input so the existing AXIS DSP chain
+# can be fed from either the ADAU1761 ADC (sdata_i) or the new PCM1808
+# DOUT (ext_adc_dout_i on JB4 / T10). Build-time default picks PCM1808.
+# No AXI-Lite, no GPIO, no block_design.tcl direct edit.
+source ./pcm1808_adc_integration.tcl
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1

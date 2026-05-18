@@ -129,10 +129,19 @@ in the bottom-right of the 800×480 frame that lights up the matching
 flags. The Pip-Boy compact layout and PEDAL / AMP / CAB inline model
 dropdown rules (`DECISIONS.md` D24) are unchanged.
 
-Live apply uses `GUI/audio_lab_gui_bridge.py` when an `AudioLabOverlay`
-is available. Dry-run tests can still inject a mirror object with
-`update_from_appstate(state)` / `update(state)`; no raw effect GPIO is
-written from the encoder controller.
+Live apply uses `audio_lab_pynq/encoder_effect_apply.py::EncoderEffectApplier`
+(Phase 7G+, `DECISIONS.md` D37) when an `AudioLabOverlay` is available.
+The applier translates the compact-v2 `AppState` through
+`set_noise_suppressor_settings`, `set_compressor_settings`, and
+`set_guitar_effects(**kwargs)` only — no raw GPIO writes, no
+`set_distortion_pedal*` shortcuts. Default throttle is 100 ms;
+encoder 3 short press force-applies regardless. RAT
+(`distortion_pedal_mask` bit 2) is excluded from cycling / live apply
+while `skip_rat=True` (default). The legacy
+`GUI/audio_lab_gui_bridge.py` dry-run / mirror fall-through is
+preserved when no applier is supplied; dry-run tests can still inject
+a mirror object with `update_from_appstate(state)` / `update(state)`.
+No raw effect GPIO is written from the encoder controller.
 
 ## Test surfaces
 

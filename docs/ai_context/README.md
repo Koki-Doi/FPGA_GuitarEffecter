@@ -86,6 +86,35 @@ The current load-bearing facts:
   runtime scripts. `HDMI/` was backed up under `/tmp/fpga_guitar_effecter_backup/`
   and removed from the working tree; active GUI documentation now lives
   in `GUI/README.md`.
+- The **rotary encoder GUI-control stack shipped** through Phase 7F/7G/7G+
+  (`DECISIONS.md` D30 — D37). The PL IP `axi_encoder_input` at
+  `0x43D10000` decodes three rotary encoders on the Raspberry Pi
+  header (CLK/DT/SW on `F19/V10/V8`, `W10/B20/W8`, `V6/Y6/B19`); the
+  Python side (`audio_lab_pynq/encoder_input.py`, `encoder_ui.py`,
+  `encoder_effect_apply.py`) and the standalone runtime
+  (`scripts/run_encoder_hdmi_gui.py`, `EncoderGuiSmoke.ipynb`) route
+  every encoder-driven write through `EncoderEffectApplier` with a
+  100 ms throttle, `skip_rat=True` by default. No `block_design.tcl`
+  change; PMOD JA / JB are left reserved for the external codec
+  path. See `ENCODER_GUI_CONTROL_SPEC.md`, `ENCODER_INPUT_IMPLEMENTATION.md`,
+  `ENCODER_INPUT_MAP.md`.
+- The **external PCM5102 DAC + PCM1808 ADC path shipped** through
+  Phase 7C / 7E / 7D on PMOD JB (`DECISIONS.md` D38 — D44). Phase 7C
+  brought up PCM5102 as a free-running tone generator, Phase 7E
+  replaced it with `pcm5102_audio_out.v` (4-signal pass-through that
+  mirrors the ADAU1761 I2S DAC interface so PCM5102 plays the same
+  processed audio in parallel), Phase 7E follow-up tied PCM5102 SCK
+  to GND structurally to remove MCLK/BCK async-clocks jitter (D40),
+  Phase 7D added a build-time 2:1 wire mux between ADAU `sdata_i`
+  and PCM1808 `ext_adc_dout_i` plus a dedicated PMOD JB8 SCKI port
+  for PCM1808 (D41 / D42), and Phase 7D close-out shipped the bit
+  with `CONFIG.CONST_VAL {0}` (mux=ADAU fallback) because PCM1808
+  `--capture-adc` returned pure zeros on the bench — suspected
+  analog-front-end damage from an earlier `3.3V on VCC` brown-out
+  (D43). D44 records the next PCM5102 quality follow-ups: stop JB8
+  SCKI when PCM1808 is unused, and add a PCM5102 debug output mode.
+  No new AXI GPIO, no `topEntity` change, no `LowPassFir.hs` change;
+  see `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` section 9.
 
 See `CURRENT_STATE.md` for the post-deploy snapshot.
 
@@ -113,7 +142,11 @@ Then read whatever is topical for the task at hand:
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
 | [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4 through Phase 6I status (Section 11 has the Phase 6I C2 SVGA 800x600 result). |
+| [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md) / [`ENCODER_INPUT_IMPLEMENTATION.md`](ENCODER_INPUT_IMPLEMENTATION.md) / [`ENCODER_INPUT_MAP.md`](ENCODER_INPUT_MAP.md) | Rotary encoder PL IP + Python driver + GUI live-apply (Phase 7F / 7G / 7G+). |
+| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) / [`IO_PIN_RESERVATION.md`](IO_PIN_RESERVATION.md) | External PCM1808 ADC + PCM5102 DAC plan, deployed Phase 7C / 7E / 7D status, and PMOD JB / JA pin reservations. |
+| [`PMOD_I2S2_INTEGRATION_PLAN.md`](PMOD_I2S2_INTEGRATION_PLAN.md) | Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) integration plan — Phase Pmod-0 (planning only, no RTL/XDC/Tcl change). Tracks the next external-codec evaluation before any further PCM1808 work (`DECISIONS.md` D45). |
 | [`history/hdmi_phases/README.md`](history/hdmi_phases/README.md) | Per-phase HDMI GUI history index (Phase 1 -- Phase 6I), kept for archaeology. Read individual phase files only when you need contemporaneous detail. |
+| [`history/current_state/`](history/current_state/) | CURRENT_STATE-flavoured snapshots that were trimmed out of the live `CURRENT_STATE.md` (HDMI Phase 4/5 + Phase 1-3 prose, DSP / voicing arc, Phase 7A/7B/7F/7G planning, Phase 6F-6I dated detail). Read only when an old phase block is the load-bearing reference. |
 | [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |
 | [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) | Reference voicings the existing effect stages aim at. |
 | [`RESUME_PROMPTS.md`](RESUME_PROMPTS.md) | Re-entering after rate-limit or context reset (current prompts only). Per-phase history in [`RESUME_PROMPTS_HISTORY.md`](RESUME_PROMPTS_HISTORY.md). |

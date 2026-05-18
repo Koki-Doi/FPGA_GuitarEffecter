@@ -242,6 +242,47 @@ PYNQ-Z2 の board file (`part0_pins.xml`、TUL board v1.0) を確認した結果
 
 ---
 
+## 3A. Pmod I2S2 evaluation reservation (Phase Pmod-0, official pinout confirmed 2026-05-18)
+
+Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC) を
+PMOD JB に直挿しで評価する計画が
+`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` + `DECISIONS.md` D45
+に記録されている。Phase Pmod-0 では **XDC を変更しない**。
+section 4A.1 の PMOD JB 行 (現状の `wired`) を維持したまま、Pmod I2S2
+評価フェーズに入ったときに上書きされる pin を以下に記載。Pmod I2S2 の
+PMOD pin 配置は公式 reference manual で **2026-05-18 に確定** 済。
+
+| Pmod I2S2 Pin | Pmod I2S2 signal | PMOD JB pin | Package pin | 既存使用 (Phase 7D deploy) | Pmod I2S2 評価時の役割 | Confirmation |
+| --- | --- | --- | --- | --- | --- | --- |
+| Pin 1 | **D/A MCLK** | JB1 | W14 | `ext_audio_mclk_o = 1'b0` (PCM5102 SCK 構造的 GND、D40/D42) | DAC MCLK 12.288 MHz out — JB1 を 12.288 MHz に **戻す**、`pcm5102_audio_out` を build から外す前提 | **confirmed** |
+| Pin 2 | **D/A LRCK** | JB2 | Y14 | `ext_audio_bclk_o = ADAU bclk` | DAC LRCK 48 kHz out (FPGA-master 生成、internal LRCK fanout) | **confirmed** |
+| Pin 3 | **D/A SCLK / BCLK** | JB3 | T11 | `ext_audio_lrclk_o = ADAU lrclk` | DAC BCLK 3.072 MHz out (FPGA-master 生成、internal BCLK fanout) | **confirmed** |
+| Pin 4 | **D/A SDIN** | JB4 | T10 | `ext_adc_dout_i` (PCM1808 DOUT 入力、D41) | DAC data 24-bit I2S Philips out — 既存方向 in → out に変わる | **confirmed** |
+| Pin 5 | GND | (PMOD JB GND) | (PMOD JB GND) | GND | GND (共通) | **confirmed** |
+| Pin 6 | VCC | (PMOD JB VCC) | (PMOD JB VCC) | 3.3V | 3.3V (Pmod I2S2 module 電源) | **confirmed** |
+| Pin 7 | **A/D MCLK** | JB7 | V16 | `ext_dac_din_o` (PCM5102 DIN 出力、D39) | ADC MCLK 12.288 MHz out (internal MCLK fanout、D/A MCLK と同位相 / 同周波数) | **confirmed** |
+| Pin 8 | **A/D LRCK** | JB8 | W16 | `ext_pcm1808_sckie_o` (PCM1808 SCKI 出力、D42) | ADC LRCK 48 kHz out (internal LRCK fanout) — 既存 SCKI 12.288 MHz から意味が変わる | **confirmed** |
+| Pin 9 | **A/D SCLK / BCLK** | JB9 | V12 | spare | ADC BCLK 3.072 MHz out (internal BCLK fanout) | **confirmed** |
+| Pin 10 | **A/D SDOUT** | JB10 | W13 | spare | ADC data 24-bit I2S Philips **in** — Pmod I2S2 経由の唯一の input | **confirmed** |
+| Pin 11 | GND | (PMOD JB GND) | (PMOD JB GND) | GND | GND (Pin 5 と共有) | **confirmed** |
+| Pin 12 | VCC | (PMOD JB VCC) | (PMOD JB VCC) | 3.3V | 3.3V (Pin 6 と共有) | **confirmed** |
+
+前提:
+- Pmod I2S2 評価時には既存 PCM5102 / PCM1808 のジャンパ配線を物理的
+  に **外す**。PMOD JB を Pmod I2S2 module 1 個だけに専有させる。
+- D/A 側 (Pin 1..4) と A/D 側 (Pin 7..10) は **物理的に別 pin** だが、
+  FPGA 内部では 1 系統の `mclk_int` / `lrck_int` / `bclk_int` を fanout
+  して D/A 側 (JB1/JB2/JB3) と A/D 側 (JB7/JB8/JB9) に並列出力する
+  方針 (`PMOD_I2S2_INTEGRATION_PLAN.md` section 10 内部クロック木)。
+  bit-true 同期になり、PCM5102 / PCM1808 で発生した async-clocks
+  問題 (D40 / D41) は構造的に発生しない。
+- Phase Pmod-1 では 48 kHz / 24-bit / 32-bit slot / stereo I2S Philips
+  で開始する。96 kHz は Phase Pmod-5 (別 branch、後回し)。
+- 本予約は **Phase Pmod-0 docs のみ**。`hw/Pynq-Z2/audio_lab.xdc` /
+  `block_design.tcl` / bit / hwh は未変更。
+
+---
+
 ## 4A. Candidate package pins, Phase 7B draft
 
 下記の表は **候補** (`candidate`) であり、`audio_lab.xdc` への書込みは
@@ -258,12 +299,12 @@ docs に列挙するのみで XDC 変更はしない。
 
 | Logical signal | External module pin | Direction | Connector | Board pin | Package pin | IOSTANDARD | Pull plan | Notes | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `EXT_AUDIO_MCLK`  | PCM1808 `SCKI` (+ optionally PCM5102 `SCK`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | 12.288 MHz | candidate |
-| `EXT_AUDIO_BCLK`  | PCM1808 `BCK` + PCM5102 `BCK`               | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | candidate |
-| `EXT_AUDIO_LRCLK` | PCM1808 `LRCK` + PCM5102 `LCK`              | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | candidate |
-| `EXT_ADC_DOUT`    | PCM1808 `DOUT`                              | **in**  | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | input delay は Phase 7D で確定 | candidate |
-| `EXT_DAC_DIN`     | PCM5102 `DIN`                               | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | data only | candidate |
-| `EXT_AUDIO_SPARE_JB8`  | (将来用 / RX / aux DAC channel 等) | -- | PMOD JB | `JB8`  | `W16` | LVCMOS33 | -- | spare | candidate |
+| `ext_audio_mclk_o`  | none (historical PCM5102 `SCK`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | **constant 0** in current bit; PCM5102 `SCK` stays tied to GND / Low (D40 / D42) | **wired** |
+| `ext_audio_bclk_o`  | PCM5102 `BCK` (+ later PCM1808 `BCK`)  | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | **wired** |
+| `ext_audio_lrclk_o` | PCM5102 `LCK` (+ later PCM1808 `LRCK`) | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | **wired** |
+| `ext_adc_dout_i`    | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | Phase 7D wired; sampled in `bclk` domain by `i2s_to_stream_0/si` via `pcm1808_input_select` mux (D41) | **wired** |
+| `ext_dac_din_o`     | PCM5102 `DIN`                          | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | data only, 24-bit I2S Philips | **wired** |
+| `ext_pcm1808_sckie_o` | PCM1808 `SCKI` | out | PMOD JB | `JB8`  | `W16` | LVCMOS33 | none | Phase 7D follow-up wired (D42); 12.288 MHz from `clk_wiz_audio_ext` so JB1 can stay constant 0 and PCM5102 SCK stays GND | **wired** |
 | `EXT_AUDIO_SPARE_JB9`  | (将来用) | -- | PMOD JB | `JB9`  | `V12` | LVCMOS33 | -- | spare | candidate |
 | `EXT_AUDIO_SPARE_JB10` | (将来用) | -- | PMOD JB | `JB10` | `W13` | LVCMOS33 | -- | spare | candidate |
 | (PMOD JB VCC) | `+3.3V` (PMOD power) | power | PMOD JB | `JB12` (PMOD VCC) | -- | -- | -- | module 側 VCC が 3.3V 受けの場合のみ | needs physical verification |
@@ -377,11 +418,12 @@ PYNQ-Z2 の RPi header のうち、**JA と共有しない 19 pin** を encoder 
 ### 6.1 外付け audio (Phase 7B ~ 7E で実装)
 
 ```
-EXT_AUDIO_MCLK    (out, PCM1808 SCKI)
+EXT_AUDIO_MCLK    (out, constant 0 on JB1; do not wire to PCM5102 SCK)
 EXT_AUDIO_BCLK    (out, PCM1808 BCK + PCM5102 BCK)
 EXT_AUDIO_LRCLK   (out, PCM1808 LRCK + PCM5102 LCK)
 EXT_ADC_DOUT      (in,  PCM1808 DOUT)
 EXT_DAC_DIN       (out, PCM5102 DIN)
+EXT_PCM1808_SCKI  (out, PCM1808 SCKI on JB8 when PCM1808 clock is enabled)
 EXT_ADC_FMT       (optional out / strap)
 EXT_ADC_MD0       (optional out / strap)
 EXT_ADC_MD1       (optional out / strap)

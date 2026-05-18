@@ -1,22 +1,9 @@
 import os
 import shutil
 
-try:
-    from .AxisSwitch import AxisSwitch
-    from .AudioLabOverlay import XbarSource, XbarEffect, XbarSink, AudioLabOverlay
-    from .AudioCodec import ADAU1761
-except ImportError as exc:
-    if getattr(exc, "name", "") not in ("pynq", "pylibi2c"):
-        raise
-    # Pure helper modules such as effect_catalog/app_state_apply_plan must be
-    # importable on workstations without PYNQ installed. Board-side imports
-    # still resolve these names normally.
-    AxisSwitch = None
-    XbarSource = None
-    XbarEffect = None
-    XbarSink = None
-    AudioLabOverlay = None
-    ADAU1761 = None
+from .AxisSwitch import AxisSwitch
+from .AudioLabOverlay import XbarSource, XbarEffect, XbarSink, AudioLabOverlay
+from .AudioCodec import ADAU1761
 
 def install_notebooks(notebook_dir=None):
     """Copy notebooks to the filesystem
