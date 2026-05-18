@@ -195,3 +195,14 @@ set_property IOSTANDARD LVCMOS33 [get_ports {ext_dac_din_o}]
 ###################################################
 set_property PACKAGE_PIN T10 [get_ports {ext_adc_dout_i}]
 set_property IOSTANDARD LVCMOS33 [get_ports {ext_adc_dout_i}]
+
+###################################################
+## Phase 7D follow-up (DECISIONS.md D42): PCM1808 SCKI on dedicated JB8.
+##
+## JB1 stays at constant 0 (D40 SCK-low fix preserved structurally).
+## PCM1808 SCKI = 12.288 MHz from clk_wiz_audio_ext, routed to JB8 / W16
+## so the FPGA-side guarantee no longer depends on the user's physical
+## isolation of PCM5102 SCK from JB1.
+###################################################
+set_property PACKAGE_PIN W16 [get_ports {ext_pcm1808_sckie_o}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_pcm1808_sckie_o}]

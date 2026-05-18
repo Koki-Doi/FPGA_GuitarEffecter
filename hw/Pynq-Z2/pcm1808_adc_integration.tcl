@@ -72,20 +72,39 @@ connect_bd_net [get_bd_pins $adc_sel_0/sdata_to_dsp_o] \
                [get_bd_pins i2s_to_stream_0/si]
 
 # -----------------------------------------------------------------------------
-# 4. Build-time select. xlconstant width=1, value=1 -> Phase 7D bring-up
-#    picks PCM1808. Flip CONST_VAL to {0} to fall back to ADAU1761.
+# 4. Build-time select. xlconstant width=1.
+#    value=0 -> ADAU1761 ADC (fallback / Phase 7D follow-up diagnostic)
+#    value=1 -> external PCM1808 ADC (Phase 7D bring-up default)
+#
+# Phase 7D follow-up (after PCM1808 hardware-side debugging): flipped to 0
+# so the bit selects the known-good ADAU1761 ADC path while the PCM1808
+# module's analog front-end / chip damage hypothesis is being investigated
+# off-line. Output side (i2s_to_stream_0/so -> PCM5102 DIN via D40 SCK-low
+# + D42 SCKI-on-JB8 routing) is unchanged.
 # -----------------------------------------------------------------------------
 set adc_sel_const [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 adc_sel_const]
 set_property -dict [list \
-    CONFIG.CONST_VAL   {1} \
+    CONFIG.CONST_VAL   {0} \
     CONFIG.CONST_WIDTH {1} \
 ] $adc_sel_const
 connect_bd_net [get_bd_pins $adc_sel_const/dout] \
                [get_bd_pins $adc_sel_0/sel_external_i]
 
 # -----------------------------------------------------------------------------
-# 5. Validate + save
+# 5. Dedicated PCM1808 SCKI output on PMOD JB8 (W16). The Phase 7D follow-up
+#    (DECISIONS.md D42) moves SCKI off JB1 onto a separate pin so the D40
+#    SCK-low compensation on PCM5102 stays in place at the RTL level
+#    regardless of any physical wiring assumption around JB1. PCM1808
+#    SCKI = 12.288 MHz from the existing clk_wiz_audio_ext (the same
+#    wizard pcm5102_audio_out used to ignore).
+# -----------------------------------------------------------------------------
+create_bd_port -dir O ext_pcm1808_sckie_o
+connect_bd_net [get_bd_pins clk_wiz_audio_ext/clk_out1] \
+               [get_bd_ports ext_pcm1808_sckie_o]
+
+# -----------------------------------------------------------------------------
+# 6. Validate + save
 # -----------------------------------------------------------------------------
 validate_bd_design
 save_bd_design
-puts "PCM1808: pcm1808_input_select inserted (sel=PCM1808 by default). validate_bd_design passed."
+puts "PCM1808: pcm1808_input_select inserted (sel=PCM1808 by default). SCKI -> JB8 (W16). validate_bd_design passed."

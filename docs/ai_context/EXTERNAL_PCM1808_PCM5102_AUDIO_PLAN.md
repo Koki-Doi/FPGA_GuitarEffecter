@@ -287,31 +287,51 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
   契約変更なし。ADAU1761 / HDMI / encoder すべて未変更。bit/hwh 再生成 +
   deploy 済 (smoke PASS)。
 
-### Phase 7D: PCM1808 ADC 入力の loopback prototype — **LANDED (input-side mux, build-time PCM1808 default)**
-- line-level signal を PCM1808 へ入れる — **手作業残**(scripts/test_pcm1808_adc_to_pcm5102.py で hold)
+### Phase 7D: PCM1808 ADC 入力の loopback prototype — **LANDED w/ mux=ADAU fallback; PCM1808 hardware diagnosis pending**
+- line-level signal を PCM1808 へ入れる — 試した。スマホ line out 接続
+  でも PCM1808 `capture-adc` は pure 0 (DECISIONS.md D43)。
 - I2S DOUT を FPGA で取り込み、PS へ転送 — **済**。新規 2:1 wire mux
   `hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v` を ADAU `sdata_i`
   port と新規 `ext_adc_dout_i` port (JB4/T10) の間に挿入し、出力を既存
   `i2s_to_stream_0/si` へ接続。AXIS / DSP / 出力側 (`i2s_to_stream_0/so`
   -> ADAU `sdata_o` / PMOD JB7 PCM5102 DIN) は完全未変更。
-  `xlconstant=1` で PCM1808 を build-time default に。
+  build-time `CONFIG.CONST_VAL` で source 切替: 1=PCM1808, 0=ADAU。
   `DECISIONS.md` D41。
-- sample alignment / endian / bit depth 確認 — **手作業残**(PCM1808 を
-  module strap で I2S Philips 24-bit slave に設定済み前提)
-- ADAU1761 入力と同条件で比較 — **手作業残**(integration tcl の
-  `CONFIG.CONST_VAL` を 1 -> 0 にして rebuild すれば ADAU fallback)
-- 新規物: RTL `pcm1808_input_select.v`、integration tcl
-  `hw/Pynq-Z2/pcm1808_adc_integration.tcl`、XDC `ext_adc_dout_i T10`、
-  smoke `scripts/test_pcm1808_adc_to_pcm5102.py`。`pcm5102_audio_out.v`
-  は D40 SCK-low fix を revert(JB1 は今や PCM1808 SCKI を駆動、
-  PCM5102 SCK は board 上で GND に固定)。bit/hwh 再生成 + deploy 済
-  (smoke PASS、全 IP 健在)。
-- 既知 caveat (D41): PCM1808 SCKI 12.288 MHz は ADAU PLL 由来 BCK と
-  bit-true 同期しない。Phase 7E PCM5102 と同じ async-clocks リスク。
-  PCM5102 (D40) のような internal-PLL fallback が PCM1808 には無いため、
-  実機で grainy / unlocked なら次は FPGA を I2S master 化する。
-- 未着手: PCM1808 のための Hi-Z guitar buffer、analog front-end、runtime
-  ADC source switching、FPGA-as-I2S-master 構成 (上記 escalation 時)。
+- sample alignment / endian / bit depth 確認 — strap は I2S Philips
+  24-bit slave (MD0=MD1=GND, FMT=GND) に統一済み。PCM1808 が pure 0
+  しか吐かないので alignment 検証は実機 ADC が動いてから。
+- ADAU1761 入力と同条件で比較 — **可能**(`CONFIG.CONST_VAL {0}` rebuild
+  で Phase 7E ADAU-mirror 状態に瞬時に戻れる)。
+- 新規物 (Phase 7D series):
+  - RTL `pcm1808_input_select.v`(2:1 mux)
+  - RTL change: `pcm5102_audio_out.v` の `ext_audio_mclk_o = 1'b0` を維持
+    (D40 SCK-low を構造的に守る、D42)
+  - 新規 top-level port `ext_pcm1808_sckie_o` on **JB8 / W16**
+    (`clk_wiz_audio_ext/clk_out1` 直結、D42)
+  - integration tcl `hw/Pynq-Z2/pcm1808_adc_integration.tcl`
+  - XDC `ext_adc_dout_i T10` + `ext_pcm1808_sckie_o W16`
+  - smoke `scripts/test_pcm1808_adc_to_pcm5102.py`、`--inject-sine` /
+    `--capture-adc` diagnostic flags を追加(D43)
+- **デプロイ状態 (Phase 7D close-out)**: `CONST_VAL=0` (mux=ADAU)。
+  ADAU Line In -> AudioLab DSP -> PCM5102 line out 動作確認済。HDMI
+  / encoder GUI 健在。PCM1808 module 自体は alive (clock 受信、I2S
+  frame 刻んでいる) だが analog-to-digital が機能していない。最有力
+  仮説は以前の 3.3V VCC 誤接続による chip / analog 前段 damage
+  (D43)。
+- **JB1 12.288 MHz クロストーク問題 (D42)**: Phase 7D 初回試行で
+  JB1 を 12.288 MHz 駆動した結果、PCM5102 SCK との物理クロストーク
+  で D40 async-clocks ノイズが再発。対策として PCM1808 SCKI を
+  JB8 / W16 に専用ピンとして分離し、JB1 は RTL レベルで constant 0
+  を維持。
+- 未対応:
+  - PCM1808 module 交換 or hardware 修理 / 再診断
+  - 交換後 `CONFIG.CONST_VAL {1}` rebuild で PCM1808 路復活
+  - runtime ADC source switching (AXI GPIO 化、後回し)
+  - PCM1808 用の Hi-Z guitar buffer / analog front-end
+  - FPGA-as-I2S-master 構成 (PCM1808 SCKI/BCK/LRCK 同期問題が
+    後で出た場合)
+  - ADAU -> PCM5102 経路に残る軽微なノイズ (Phase 7D close-out で
+    user が言及、JB7/JB8 隣接配線のクロストーク疑い、別途調査)
 
 ### Phase 7E: DSP path への組込み — **LANDED (output side, ADAU-mirror pass-through)**
 - block_design 上で AXIS switch / mux を入れて

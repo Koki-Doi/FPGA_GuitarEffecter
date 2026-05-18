@@ -1685,3 +1685,133 @@ not get removed even when superseded — they get updated.
   - If PCM1808 audio is grainy / noisy: see the async-clocks caveat
     above; the next escalation is FPGA-as-I2S-master, not another
     RTL tweak.
+
+## D42 — PCM1808 SCKI is on dedicated PMOD JB8 / W16; JB1 stays constant low (Phase 7D follow-up)
+
+- **Decision.** The Phase 7D first attempt drove the 12.288 MHz
+  `clk_wiz_audio_ext/clk_out1` onto JB1 (`ext_audio_mclk_o`) so the
+  same wire could feed PCM1808 SCKI. The user's board has PCM5102
+  SCK hard-tied to GND on the module, so in theory JB1 toggling
+  should not have affected PCM5102. In practice it did -- the
+  12.288 MHz signal cross-coupled onto PCM5102 SCK closely enough
+  that the async-clocks jitter that D40 fixed came back as audible
+  graininess on PCM5102 line out. The Phase 7D follow-up:
+  - `pcm5102_audio_out.v` keeps `assign ext_audio_mclk_o = 1'b0;`
+    (D40 preserved structurally inside the RTL). `mclk_12m288_i`
+    input port stays for ABI compatibility, ignored via
+    `wire _unused_mclk = mclk_12m288_i;`.
+  - A new top-level output port `ext_pcm1808_sckie_o` is added
+    in `pcm1808_adc_integration.tcl` and is driven directly from
+    `clk_wiz_audio_ext/clk_out1`. The PMOD JB pin assignment in
+    `hw/Pynq-Z2/audio_lab.xdc` is **JB8 / W16, LVCMOS33, no pull**.
+  - Physical wire change required by the user: PCM1808 SCKI moves
+    from JB1 to JB8 / W16. JB1 has no consumer any more.
+- **Boundary.**
+  - XDC: adds one new `set_property PACKAGE_PIN W16 ...` block
+    under "Phase 7D follow-up". JB1 / JB2 / JB3 / JB4 / JB7
+    assignments are unchanged.
+  - `block_design.tcl` is untouched directly. The new top-level
+    port + the `clk_wiz_audio_ext/clk_out1 -> ext_pcm1808_sckie_o`
+    connection are added in `pcm1808_adc_integration.tcl`.
+  - No AXI-Lite slave, no new GPIO, no `GPIO_CONTROL_MAP.md`
+    change, no `topEntity` / `LowPassFir.hs` / DSP change. HDMI /
+    encoder integration untouched. PCM5102 DSP-output path (D39)
+    is preserved bit-for-bit.
+  - PCM5102 SCK stays tied to GND on the module side. With JB1 now
+    constant 0 from the RTL and JB8 carrying the wizard output, the
+    constant-low guarantee on the PCM5102 SCK net is independent of
+    any further physical wiring around JB1.
+- **Why.** Preserving D40's SCK-low guarantee on PCM5102 requires
+  JB1 to stay quiescent. Any future need for an external MCLK on
+  PMOD JB therefore has to land on a *different* pin. JB8 / W16 is
+  the next free PMOD JB pin and was already reserved as
+  `EXT_AUDIO_SPARE_JB8` in `IO_PIN_RESERVATION.md` 4A.1, so the
+  move costs one new XDC line and one new `create_bd_port` /
+  `connect_bd_net` pair.
+- **How to apply.**
+  - PCM5102 SCK -> hard-tied to GND on the module. Never to JB1.
+  - PCM1808 SCKI -> JB8 / W16 (driven by `clk_wiz_audio_ext`,
+    12.288 MHz). Never to JB1.
+  - PCM5102 BCK / LCK -> JB2 / JB3 (shared with PCM1808 BCK /
+    LRCK on the same physical nets).
+  - PCM5102 DIN -> JB7 (driven by `i2s_to_stream_0/so`).
+  - PCM1808 DOUT -> JB4 (read by the mux into
+    `i2s_to_stream_0/si`).
+  - JB1 -> nothing. If a future revision needs to expose another
+    audio clock externally, add yet another dedicated PMOD JB pin
+    rather than re-purposing JB1.
+
+## D43 — Phase 7D ships with mux=ADAU (CONST_VAL=0); PCM1808 hardware diagnosis deferred
+
+- **Decision.** The Phase 7D bring-up bit was built first with the
+  build-time mux constant at `CONST_VAL=1` (PCM1808 as the active
+  ADC source). On the bench:
+  - `--inject-sine` confirmed the output path (DMA -> i2s_to_stream_0
+    -> ADAU sdata_o / PCM5102 DIN) plays a clean 1 kHz tone after
+    the D42 SCKI move.
+  - `--capture-adc` returned **pure zeros** on both L and R from
+    PCM1808 regardless of analog input: silent loopback, finger
+    touch (which lowered the values to 0, showing the chip is at
+    least clocking out I2S frames), and a smartphone line-out
+    signal fed directly into PCM1808 `L_IN/R_IN` with the
+    loopback temporarily disconnected.
+  - Hardware checklist was exhausted: VCC=5V from Arduino POWER,
+    VDD=3.3V from PMOD JB12 (the dual-supply fix from
+    [[pcm1808-dual-supply-and-pmod-brownout]]), GND common,
+    BCK/LRCK arriving from ADAU PLL, SCKI on JB8, DOUT on JB4,
+    mode straps verified at GND (`MD0=MD1=GND` slave 256fs,
+    `FMT=GND` I2S Philips -- the "FMY" silk on the user's module
+    is a poor rendering of `FMT`).
+  - Most plausible remaining hypothesis: PCM1808 chip or analog
+    front-end (`VINL/VINR/VREF/VCOM`) was damaged earlier when
+    the user connected PMOD 3.3V to `VCC` (which expects 5V) and
+    the chip pulled the rail down hard enough to brown-out
+    PCM5102 -- the chip survived enough to keep clocking out I2S,
+    but its analog-to-digital path does not encode input.
+  - Decision: ship Phase 7D with **`CONFIG.CONST_VAL {0}` in
+    `pcm1808_adc_integration.tcl`** so the deployed mux selects
+    ADAU1761 ADC. The Phase 7E ADAU-mirror DSP-output path stays
+    fully functional and the user can keep working / iterating
+    on the audio chain while the PCM1808 module is replaced or
+    deeper hardware diagnosis is done in a future session.
+  - User confirmed on the bench: ADAU Line In -> AudioLab DSP ->
+    PCM5102 line out works (minor audio-quality nits noted,
+    deferred -- separate from the PCM1808 bring-up).
+- **Boundary.**
+  - Only `CONFIG.CONST_VAL` in `pcm1808_adc_integration.tcl`
+    differs from the Phase 7D first attempt; everything else
+    (RTL, XDC, smoke script with diagnostic flags, integration
+    structure) is preserved.
+  - To flip back to PCM1808 for a future bring-up retry, change
+    the value to `{1}` and rebuild. No other change needed.
+- **Smoke diagnostic additions** (kept in
+  `scripts/test_pcm1808_adc_to_pcm5102.py`):
+  - `--inject-sine`: DMA -> i2s_to_stream_0 -> PCM5102 (bypasses
+    the input mux entirely). Confirms output side independently.
+  - `--capture-adc`: forces route `line_in -> passthrough -> DMA`
+    and prints `min / max / mean / RMS / peak_dBFS / top16 range
+    / low16 range` so the caller can tell silence / DC bias /
+    bit-shift / real signal apart on the input.
+- **Timing.** Post-route summary (full design) on the deployed
+  mux=ADAU bit: `WNS = -7.931 ns`, `TNS = -6359.881 ns` on
+  `clk_fpga_0` (best in the Phase 7E/7D series; the mux's PCM1808
+  fanout pruned because the constant=0 makes the PCM1808 branch
+  unused, freeing some routing). `WHS = +0.051 ns`, `THS = 0 ns`
+  (hold clean). 12.288 MHz domain stays (driving JB8 SCKI),
+  reports 0 violations. `bclk` domain `WNS = +321 ns`-class as
+  in earlier Phase 7E/7D builds. Inside the historical
+  `-7..-9 ns` deploy band.
+- **How to apply.**
+  - On a fresh PCM1808 module: change `CONST_VAL {0}` to `{1}`,
+    rebuild bit/hwh, deploy, re-run `--capture-adc` to see if
+    PCM1808 produces non-zero samples for a known input. If yes,
+    keep PCM1808 as the default source; if no, leave it at 0 and
+    investigate further (multimeter on `VREF` / `VCOM`, scope on
+    `DOUT`, etc.).
+  - The audio-quality nits the user mentioned at Phase 7D close-out
+    (minor noise / artefacts in the ADAU -> PCM5102 path) are not
+    in scope of D43; they will be triaged separately and may relate
+    to the JB8 12.288 MHz crosstalk into JB7 (PCM5102 DIN) along
+    the PMOD ribbon. Mitigations to try later: shorter wires,
+    twisted-pair ground returns for JB7/8, or moving SCKI further
+    from DIN on the PMOD.

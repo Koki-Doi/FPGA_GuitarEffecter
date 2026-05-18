@@ -1,6 +1,34 @@
 # Current state
 
-Last updated: **2026-05-18 (Phase 7D bring-up): PCM1808 external ADC inserted as default input source via a build-time wire mux**
+Last updated: **2026-05-18 (Phase 7D close-out): PCM1808 mux flipped back to ADAU pending hardware diagnosis; SCKI moved off JB1 onto JB8**
+(Phase 7D first attempt picked PCM1808 as the build-time ADC source via
+the `pcm1808_input_select` mux and put PCM1808 SCKI back on JB1
+12.288 MHz. On the bench this re-broke PCM5102 (audible graininess
+from JB1's MCLK cross-coupling to PCM5102 SCK that was nominally
+tied to GND on the module, DECISIONS.md D40 / D42). The fix: PCM1808
+SCKI moved to a dedicated `ext_pcm1808_sckie_o` port on PMOD JB8 /
+W16 (driven directly from `clk_wiz_audio_ext/clk_out1` in
+`pcm1808_adc_integration.tcl`), and `pcm5102_audio_out.v` keeps
+`ext_audio_mclk_o = 1'b0` so JB1 stays low structurally regardless
+of any physical SCK wiring. PCM5102 now plays inject-sine cleanly.
+PCM1808's `capture-adc` returns pure zeros even with smartphone
+line-in connected and mode straps confirmed at I2S Philips slave
+(MD0=MD1=FMT=GND); the chip is alive enough to clock out I2S
+frames (finger-touch test grounds EMI to 0) but does not encode
+analog input -- suspect chip / analog-front-end damage from the
+earlier 3.3V-on-VCC misconnection that brown-out'd the PMOD rail.
+The deployed Phase 7D bit therefore flips the build-time mux
+constant back to **CONST_VAL=0 (ADAU)** so the input path is the
+known-good Phase 7E ADAU-mirror configuration; flipping back to
+PCM1808 needs only `CONFIG.CONST_VAL {1}` in
+`pcm1808_adc_integration.tcl` and a rebuild. User confirmed:
+ADAU Line In -> AudioLab DSP -> PCM5102 line out works on the bench
+(minor audio-quality nits remain, deferred). PCM5102 SCK still GND
+(D40 / D42 preserved). HDMI / encoder / GPIO_CONTROL_MAP /
+LowPassFir untouched. DECISIONS.md D41 / D42 / D43.
+
+Previous-pass header (Phase 7D first attempt):
+**PCM1808 external ADC inserted as default input source via a build-time wire mux**
 (new RTL `hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v` is a 2:1
 combinational mux between the existing ADAU1761 `sdata_i` port and the
 new PCM1808 DOUT input port `ext_adc_dout_i` (JB4 / T10). The mux
