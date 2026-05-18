@@ -11,6 +11,9 @@ from .effect_defaults import (
     NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
     COMPRESSOR_DEFAULTS as _COMPRESSOR_DEFAULTS,
     AMP_MODELS as _AMP_MODELS,
+    OVERDRIVE_DEFAULTS as _OVERDRIVE_DEFAULTS,
+    OVERDRIVE_MODELS as _OVERDRIVE_MODELS,
+    OVERDRIVE_MODEL_LABELS as _OVERDRIVE_MODEL_LABELS,
 )
 
 class XbarSource(Enum):
@@ -81,6 +84,23 @@ class AudioLabOverlay(Overlay):
     # ``amp_character`` knob still works directly.
     AMP_MODELS = _AMP_MODELS
 
+    # Selectable Overdrive models (D45). The single generic Overdrive
+    # is retired; every load picks one of these six voicings. The
+    # 3-bit model_select field lives in overdrive_control.ctrlD[2:0]
+    # (= word bits 26..24) -- it shares the byte with `distTight`, but
+    # every distortion-section consumer of distTight uses a >>3 or
+    # >>4 shift in Clash so the low 3 bits are already discarded and
+    # tight semantics are preserved bit-for-bit.
+    #
+    # OVERDRIVE_MODELS = internal enum names (snake_case, stable for
+    # state JSON / API). OVERDRIVE_MODEL_LABELS = UI display strings.
+    # Both lists are in the same order; OVERDRIVE_MODELS[i] is the
+    # value written to the GPIO when model index ``i`` is selected.
+    OVERDRIVE_DEFAULTS = _OVERDRIVE_DEFAULTS
+    OVERDRIVE_MODELS = _OVERDRIVE_MODELS
+    OVERDRIVE_MODEL_LABELS = _OVERDRIVE_MODEL_LABELS
+    OVERDRIVE_MODEL_COUNT = len(_OVERDRIVE_MODELS)
+
     def __init__(self, bitfile_name=None, **kwargs):
         # Generate default bitfile name
         if bitfile_name is None:
@@ -98,6 +118,11 @@ class AudioLabOverlay(Overlay):
         # whole 32-bit word on each change. set_guitar_effects keeps
         # this cache in sync.
         self._dist_state = dict(self.DISTORTION_DEFAULTS)
+        # Overdrive section state (D45). model is an int 0..5; the
+        # generic single-character OD was retired so every load picks
+        # one of OVERDRIVE_MODELS. Cached so partial writes
+        # (set_distortion_tight) preserve it.
+        self._od_state = dict(self.OVERDRIVE_DEFAULTS)
         self._cached_gate_word = 0
         self._cached_overdrive_word = 0
         self._cached_distortion_word = 0
@@ -197,6 +222,52 @@ class AudioLabOverlay(Overlay):
         gpio.write(0x00, int(word) & 0xFFFFFFFF)
 
     @classmethod
+    def _normalize_overdrive_model(cls, model):
+        """Resolve an overdrive-model spec to an integer in 0..5.
+
+        Accepts a string (enum name or display label, case-insensitive)
+        or an int. Values outside the documented 0..5 range fall back
+        to 0 (TS9) -- this mirrors the Clash side, where the 6/7 slots
+        of the 3-bit model select fall through to model 0 in the
+        coefficient case lookup.
+        """
+        if isinstance(model, str):
+            key = model.strip().lower().replace("-", "_").replace(" ", "_")
+            for i, name in enumerate(cls.OVERDRIVE_MODELS):
+                if key == name:
+                    return i
+            # Also accept display labels (case-insensitive) for
+            # convenience. e.g. "Ibanez / TS9" -> 0.
+            for i, label in enumerate(cls.OVERDRIVE_MODEL_LABELS):
+                if model.strip().lower() == label.strip().lower():
+                    return i
+            # Bare model number embedded in a string, e.g. "3".
+            try:
+                idx = int(model)
+            except ValueError:
+                raise ValueError(
+                    'unknown overdrive model: {!r}; valid names are {}'.format(
+                        model, ', '.join(cls.OVERDRIVE_MODELS)))
+        else:
+            try:
+                idx = int(model)
+            except (TypeError, ValueError):
+                return 0
+        if idx < 0 or idx >= cls.OVERDRIVE_MODEL_COUNT:
+            return 0
+        return idx
+
+    @classmethod
+    def get_overdrive_model_names(cls):
+        """Return the ordered list of overdrive-model enum names."""
+        return list(cls.OVERDRIVE_MODELS)
+
+    @classmethod
+    def get_overdrive_model_labels(cls):
+        """Return the ordered list of overdrive-model display labels."""
+        return list(cls.OVERDRIVE_MODEL_LABELS)
+
+    @classmethod
     def _normalize_pedal_name(cls, name):
         """Resolve a pedal name (string) to its bit position.
 
@@ -268,9 +339,15 @@ class AudioLabOverlay(Overlay):
         self._cached_gate_word = gate
 
         # overdrive: keep ctrlA-C (existing OD params); overwrite ctrlD
-        # (tight).
+        # with the composed tight (upper 5 bits) + OD model (lower 3
+        # bits). The low 3 bits of `tight_byte` are masked off because
+        # every Clash consumer of distTight uses `>> 3` or `>> 4`, so
+        # the bottom 3 bits are already discarded and become free
+        # storage for the OD model select (D45).
+        od_model = self._normalize_overdrive_model(self._od_state['model'])
+        od_ctrlD = (tight_byte & 0xF8) | (od_model & 0x07)
         od = self._cached_overdrive_word & 0x00FFFFFF
-        od |= (tight_byte & 0xFF) << 24
+        od |= (od_ctrlD & 0xFF) << 24
         self._cached_overdrive_word = od
 
         # distortion: tone / level / drive plus pedal mask in ctrlD.
@@ -427,6 +504,124 @@ class AudioLabOverlay(Overlay):
             'bias': s['bias'],
             'tight': s['tight'],
             'mix': s['mix'],
+        }
+
+    # ---- Overdrive public API ------------------------------------------
+    #
+    # Overdrive is selectable-model only (D45). The single generic OD
+    # was retired; every load picks one of OVERDRIVE_MODELS. The model
+    # select rides on overdrive_control.ctrlD[2:0] (= word bits
+    # 26..24) -- a 3-bit field shared with the upper 5 bits of
+    # `distTight`. The Python writer keeps the two cleanly separated
+    # via masking; Clash discards the same low 3 bits via the existing
+    # `distTight >> 3` / `>> 4` shifts so tight semantics survive.
+
+    def set_overdrive_model(self, model):
+        """Select one of the six Overdrive models.
+
+        ``model`` accepts an int (0..5) or an enum-name string. Values
+        outside the documented range fall back to 0 (TS9). Returns
+        ``get_overdrive_settings()``.
+        """
+        return self.set_overdrive_settings(model=model)
+
+    def get_overdrive_model(self):
+        """Return ``(model_idx, enum_name, display_label)``.
+
+        ``model_idx`` is the cached integer 0..5; ``enum_name`` is the
+        snake_case identifier; ``display_label`` is the GUI string
+        (e.g. ``"Ibanez / TS9"``).
+        """
+        idx = self._normalize_overdrive_model(self._od_state['model'])
+        return (idx,
+                self.OVERDRIVE_MODELS[idx],
+                self.OVERDRIVE_MODEL_LABELS[idx])
+
+    def set_overdrive_settings(self, enabled=None, drive=None, tone=None,
+                                level=None, model=None,
+                                sink=XbarSink.headphone):
+        """Update any subset of the overdrive parameters in one call.
+
+        Numeric parameters (``drive`` / ``tone`` / ``level``) are 0..100
+        (level allows the legacy 0..200 boost convention as a passthrough).
+        ``model`` accepts an int or enum-name string and falls back to
+        0 (TS9) when invalid. ``enabled`` is the section on/off flag
+        (gate_control bit 1). Unspecified parameters keep their cached
+        values; the cache lives on the overlay alongside the
+        distortion-section cache.
+
+        Returns the dict produced by ``get_overdrive_settings()``.
+
+        Unlike ``set_guitar_effects``, this method does **not** touch
+        other effect sections: it only rebuilds the overdrive word
+        (ctrlA-C from the OD cache, ctrlD composed with the cached
+        tight byte) and -- when ``enabled`` is supplied -- the gate
+        flag bit 1. Distortion / amp / cab / etc. state is preserved.
+        """
+        if drive is not None:
+            self._od_state['drive'] = self._clamp_percent(drive)
+        if tone is not None:
+            self._od_state['tone'] = self._clamp_percent(tone)
+        if level is not None:
+            # level allows up to 200 historically; clamp like other level
+            # knobs (level_to_q7 clamps to 0..200 internally).
+            self._od_state['level'] = self._clamp_range(level, 0, 200)
+        if model is not None:
+            self._od_state['model'] = self._normalize_overdrive_model(model)
+        if enabled is not None:
+            self._od_state['enabled'] = bool(enabled)
+        self._apply_overdrive_state_to_words(touch_gate=enabled is not None,
+                                              sink=sink)
+        return self.get_overdrive_settings()
+
+    def _apply_overdrive_state_to_words(self, touch_gate=False,
+                                         sink=XbarSink.headphone):
+        """Rebuild the overdrive_control word from ``_od_state`` and write
+        it to the GPIO. Optionally also update gate_control bit 1 and
+        re-route the AXIS source crossbar (only when ``touch_gate`` is
+        True).
+        """
+        s = self._od_state
+        od_model = self._normalize_overdrive_model(s['model'])
+        # ctrlA-C from cached OD knobs (same encoding as
+        # guitar_effect_control_words).
+        tone_byte = self._percent_to_u8(s['tone'], 255)
+        level_byte = self._level_to_q7(s['level'])
+        drive_byte = self._percent_to_u8(s['drive'], 255)
+        # ctrlD: top 5 bits = distTight from the distortion cache;
+        # bottom 3 bits = OD model select. Both bytes share the same
+        # AXI GPIO byte but never collide in hardware (the Clash
+        # distTight consumers all use `>> 3` or `>> 4`).
+        tight_byte = self._percent_to_u8(
+            self._dist_state['tight'] if hasattr(self, '_dist_state') else 0,
+            255)
+        ctrlD = (tight_byte & 0xF8) | (od_model & 0x07)
+        od_word = self._pack4(tone_byte, level_byte, drive_byte, ctrlD)
+        self._cached_overdrive_word = od_word
+        if hasattr(self, 'axi_gpio_overdrive'):
+            self._write_gpio(self.axi_gpio_overdrive, od_word)
+        if touch_gate and hasattr(self, 'axi_gpio_gate'):
+            gate = self._cached_gate_word & ~0x02
+            if s['enabled']:
+                gate |= 0x02
+            self._cached_gate_word = gate
+            self._write_gpio(self.axi_gpio_gate, gate)
+            # Re-route the AXIS source crossbar based on the updated
+            # flag byte: at least one effect bit set -> guitar_chain.
+            self._route_effect_chain(sink, gate)
+
+    def get_overdrive_settings(self):
+        """Return the cached overdrive-section state (model + knobs)."""
+        s = self._od_state
+        idx = self._normalize_overdrive_model(s['model'])
+        return {
+            'enabled': bool(s['enabled']),
+            'drive': s['drive'],
+            'tone': s['tone'],
+            'level': s['level'],
+            'model_idx': idx,
+            'model': self.OVERDRIVE_MODELS[idx],
+            'model_label': self.OVERDRIVE_MODEL_LABELS[idx],
         }
 
     # ---- Noise Suppressor public API ------------------------------------
@@ -788,6 +983,7 @@ class AudioLabOverlay(Overlay):
             overdrive_drive=od.get("drive", 0),
             overdrive_tone=od.get("tone", 50),
             overdrive_level=od.get("level", 100),
+            overdrive_model=od.get("model", 0),
             distortion_on=bool(dist.get("enabled", False)),
             amp_on=bool(amp.get("enabled", False)),
             amp_input_gain=amp.get("input_gain", 35),
@@ -838,6 +1034,11 @@ class AudioLabOverlay(Overlay):
                 state["distortion"] = self.get_distortion_settings()
             except Exception:
                 pass
+        if hasattr(self, "_od_state"):
+            try:
+                state["overdrive"] = self.get_overdrive_settings()
+            except Exception:
+                pass
         # Cached words for the en-masse-written sections (overdrive,
         # amp, cab, eq, reverb, gate flags). These are not full
         # round-trip dicts -- the overlay does not cache every per-knob
@@ -884,6 +1085,7 @@ class AudioLabOverlay(Overlay):
         overdrive_tone=65,
         overdrive_level=100,
         overdrive_drive=30,
+        overdrive_model=0,
         distortion_on=False,
         distortion_tone=65,
         distortion_level=100,
@@ -942,13 +1144,22 @@ class AudioLabOverlay(Overlay):
             | (bias_byte << 16)
             | (mix_byte << 24)
         )
+        # overdrive_control.ctrlD packs distTight (upper 5 bits) and the
+        # 3-bit OD model select (lower 3 bits). Every Clash consumer of
+        # distTight uses `>> 3` or `>> 4`, so the low 3 bits are
+        # already discarded and become free storage for the model
+        # select (D45). Values outside 0..5 fall through to 0 (TS9).
+        od_model = cls._clamp_range(overdrive_model, 0, 7) & 0x07
+        if od_model >= cls.OVERDRIVE_MODEL_COUNT:
+            od_model = 0
+        od_ctrlD = ((tight_byte & 0xF8) | (od_model & 0x07)) & 0xFF
         overdrive_word = (
             cls._pack3(
                 cls._percent_to_u8(overdrive_tone, 255),
                 cls._level_to_q7(overdrive_level),
                 cls._percent_to_u8(overdrive_drive, 255),
             )
-            | (tight_byte << 24)
+            | (od_ctrlD << 24)
         )
         distortion_word = (
             cls._pack3(
@@ -1060,6 +1271,13 @@ class AudioLabOverlay(Overlay):
         cache fills in the rest. Setting the rat pedal bit also
         asserts ``rat_on`` so the existing RAT stage actually
         processes audio.
+
+        The Overdrive model select (D45) shares overdrive_control.ctrlD
+        with `distTight`, so it is merged here too: caller-supplied
+        ``overdrive_model`` overrides the cache; otherwise the cached
+        OD model fills it in. This keeps a partial
+        ``set_guitar_effects(overdrive_tone=...)`` call from silently
+        resetting the model select to 0.
         """
         if not hasattr(self, '_dist_state'):
             return
@@ -1074,6 +1292,28 @@ class AudioLabOverlay(Overlay):
         kwargs['distortion_pedal_mask'] = s['pedal_mask']
         if s['pedal_mask'] & (1 << self._DIST_PEDAL_BIT['rat']):
             kwargs['rat_on'] = True
+        # Overdrive cache state. ``model`` shares overdrive_control.ctrlD
+        # with `distTight`; the OD knobs share the rest of the word but
+        # land via their own kwargs. Keep ``_od_state`` in sync with
+        # every ``set_guitar_effects`` call so a follow-up
+        # ``set_overdrive_model`` rebuilds the OD word from fresh knob
+        # values rather than stale defaults.
+        if hasattr(self, '_od_state'):
+            od = self._od_state
+            if 'overdrive_model' in kwargs:
+                od['model'] = self._normalize_overdrive_model(
+                    kwargs['overdrive_model'])
+            kwargs['overdrive_model'] = self._normalize_overdrive_model(
+                od['model'])
+            if 'overdrive_on' in kwargs:
+                od['enabled'] = bool(kwargs['overdrive_on'])
+            if 'overdrive_drive' in kwargs:
+                od['drive'] = self._clamp_percent(kwargs['overdrive_drive'])
+            if 'overdrive_tone' in kwargs:
+                od['tone'] = self._clamp_percent(kwargs['overdrive_tone'])
+            if 'overdrive_level' in kwargs:
+                od['level'] = self._clamp_range(
+                    kwargs['overdrive_level'], 0, 200)
 
     def _merge_cached_noise_suppressor_state(self, kwargs):
         """Mirror noise_gate_on / noise_gate_threshold into the cached

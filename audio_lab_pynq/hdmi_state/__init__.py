@@ -45,6 +45,14 @@ from audio_lab_pynq.hdmi_state.cabs import (
     normalize_cab_model,
     cab_model_label,
 )
+from audio_lab_pynq.hdmi_state.overdrives import (
+    OVERDRIVE_MODELS as HDMI_OVERDRIVE_MODELS,
+    OVERDRIVE_MODEL_LABELS as HDMI_OVERDRIVE_MODEL_LABELS,
+    OVERDRIVE_MODEL_TO_INDEX as HDMI_OVERDRIVE_MODEL_TO_INDEX,
+    OVERDRIVE_MODEL_ALIASES as HDMI_OVERDRIVE_MODEL_ALIASES,
+    normalize_overdrive_model,
+    overdrive_model_label,
+)
 from audio_lab_pynq.hdmi_state.selected_fx import (
     SELECTED_FX_CATEGORY,
     DROPDOWN_SHORT_LABELS,

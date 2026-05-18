@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from .knobs import (
     EFFECTS, EFFECTS_SHORT, EFFECT_KNOBS, _EFFECT_KNOB_DEFAULTS,
     DIST_MODELS, DISTORTION_PEDALS, AMP_MODELS, CAB_MODELS, CHAIN_PRESETS,
+    OVERDRIVE_MODELS,
 )
 from .state import AppState
 from .layout import (
@@ -473,6 +474,7 @@ def state_semistatic_signature(state: AppState):
         getattr(state, "dist_model_idx", None),
         getattr(state, "amp_model_idx", None),
         getattr(state, "cab_model_idx", None),
+        getattr(state, "overdrive_model_idx", None),
         bool(state.save_flash > 0),
         # Phase 7G+ live-apply status: include so the status strip refreshes
         # when the encoder runtime updates these fields.
@@ -875,6 +877,12 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             idx = max(0, min(len(DIST_MODELS) - 1,
                              int(getattr(state, "dist_model_idx", 0) or 0)))
             model_label = DIST_MODELS[idx]
+        elif selected_short == "OD":
+            # D45: the single generic Overdrive was retired; the OD
+            # chip now always shows one of the six selectable models.
+            idx = max(0, min(len(OVERDRIVE_MODELS) - 1,
+                             int(getattr(state, "overdrive_model_idx", 0) or 0)))
+            model_label = OVERDRIVE_MODELS[idx]
         elif selected_short == "AMP":
             idx = max(0, min(len(AMP_MODELS) - 1,
                              int(getattr(state, "amp_model_idx", 0) or 0)))

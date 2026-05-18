@@ -39,7 +39,7 @@ read-back from hardware.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `axi_gpio_reverb` | `0x43C30000` | reverb | reverb enable (low byte) | decay | tone | mix | active / active / active / active | Enable bit lives in this GPIO, not in `gate_control.ctrlA` bit 5; the gate flag is mirrored separately. |
 | `axi_gpio_gate` | `0x43C40000` | gate + master flags | effect ON/OFF flags (8 bits) | noise gate threshold (legacy mirror) | distortion bias | distortion mix | active / legacy mirror / active / active | `ctrlB` is the legacy hard-gate threshold byte; the live noise stage reads from `axi_gpio_noise_suppressor.ctrlA`. We keep mirroring threshold + the noise_gate_on flag here so old bitstreams keep working. Do not repurpose `ctrlB` even though the live bitstream ignores it. |
-| `axi_gpio_overdrive` | `0x43C50000` | overdrive (+ distortion `tight`) | overdrive tone | overdrive level | overdrive drive | distortion `tight` | active / active / active / active | `ctrlD` is shared with the distortion section: the distortion writers (`set_distortion_settings`, `_apply_distortion_state_to_words`) own that one byte. Overdrive-only writers must not touch `ctrlD`. |
+| `axi_gpio_overdrive` | `0x43C50000` | overdrive (+ distortion `tight` + OD model) | overdrive tone | overdrive level | overdrive drive | distortion `tight` (bits[7:3]) + OD model select (bits[2:0]) | active / active / active / active | `ctrlD` is split between two effects after D45. **bits[7:3]** carry `distTight` (5-bit effective resolution), which is what every distortion-section consumer reads via `distTight >> 3` or `>> 4`. **bits[2:0]** carry the 3-bit Overdrive model select (`overdriveModel`); values 0..5 are valid, 6/7 fall back to model 0 (TS9) in Clash. The Python writer composes the byte as `(tight & 0xF8) | (od_model & 0x07)`; overdrive setters touch only the low 3 bits and distortion writers touch only the high 5 bits. |
 | `axi_gpio_distortion` | `0x43C60000` | distortion | distortion tone | distortion level | distortion drive | pedal mask (`[6:0]`); bit 7 reserved | active / active / active / active (mask: bits 0..6 active, bit 7 reserved) | `clean_boost` (bit 0), `tube_screamer` (bit 1), `ds1` (bit 3), `big_muff` (bit 4), `fuzz_face` (bit 5), `metal` (bit 6) are implemented Clash stages. `rat` (bit 2) maps onto the existing RAT stage and forces `gate_control.ctrlA` bit 4 high in Python. Bit 7 is reserved for a future 8th pedal slot. |
 | `axi_gpio_eq` | `0x43C70000` | EQ | low | mid | high | unused (must write 0) | active / active / active / unused | `ctrlD` has no Clash consumer. Reserved for a future EQ Q / character byte; do not assume it is free for unrelated effects. |
 | `axi_gpio_delay` | `0x43C80000` | RAT distortion (historical name) | RAT filter | RAT level | RAT drive | RAT mix | active / active / active / active | **Name and use diverge.** The IP was originally created for a delay; the live Clash stage drives the RAT. Do not rename this GPIO — the Python attribute, the block design, and the `.hwh` all reference `axi_gpio_delay` and renaming requires a `block_design.tcl` change (forbidden by default). |
@@ -58,6 +58,8 @@ read-back from hardware.
 | `axi_gpio_distortion.ctrlD[3]` (ds1) | active | Implemented Clash stage (BOSS DS-1 style). |
 | `axi_gpio_distortion.ctrlD[4]` (big_muff) | active | Implemented Clash stage (Big Muff Pi style). |
 | `axi_gpio_distortion.ctrlD[5]` (fuzz_face) | active | Implemented Clash stage (Fuzz Face style). |
+| `axi_gpio_overdrive.ctrlD[2:0]` | active (D45) | Overdrive model select (3-bit, 0..5 valid, 6/7 -> TS9). Shared byte with `distTight` (top 5 bits); the Python writer composes them together. Do not repurpose. |
+| `axi_gpio_overdrive.ctrlD[7:3]` | active | `distTight` byte, top 5 bits. Every Clash consumer of `distTight` uses `>> 3` or `>> 4`, so only these 5 bits carry information. |
 | `axi_gpio_noise_suppressor.ctrlD` | reserved | Future NS mode / attack / hold byte. Bytes 0..255 already pass through Python. |
 | `axi_gpio_compressor.ctrlD[6:0]` | active | Compressor `MAKEUP` (u7). Bit 7 of `ctrlD` is the compressor enable flag. Do not repurpose. |
 | `axi_gpio_gate.ctrlB` | legacy mirror (dead in live bitstream) | Do **not** reuse for a new feature; older bitstreams still depend on it. |
@@ -185,6 +187,51 @@ Every byte the pedal-mask scheme touches was already spare in the
 existing bitstream layout, so **no `block_design.tcl` change was
 needed** — and none should be needed when adding the reserved
 pedals either.
+
+## Overdrive model select (deployed, D45)
+
+The generic Overdrive stage was retired and replaced by six
+selectable models. The 3-bit model select rides on
+`axi_gpio_overdrive.ctrlD[2:0]` (== 32-bit word bits 26..24); the
+existing `distTight` byte keeps its top 5 bits (`ctrlD[7:3]`). The
+two coexist on the same AXI GPIO byte because every Clash consumer of
+`distTight` (`tubeScreamerHpfFrame`, `ds1HpfFrame`, `metalHpfFrame`)
+uses `>> 3` or `>> 4` and naturally discards the low 3 bits. The
+Python writer composes the byte as `(tight & 0xF8) | (od_model & 0x07)`
+so neither side corrupts the other.
+
+| `overdriveModel` value | Model | Status |
+| --- | --- | --- |
+| 0 | `ts9`     (Ibanez / TS9)       | active (default) |
+| 1 | `od1`     (BOSS / OD-1)        | active |
+| 2 | `bd2`     (BOSS / BD-2)        | active |
+| 3 | `jan_ray` (Vemuram / Jan Ray)  | active |
+| 4 | `ocd`     (Fulltone / OCD)     | active |
+| 5 | `centaur` (CENTAUR)            | active |
+| 6 | reserved (falls back to TS9 in Clash) | reserved |
+| 7 | reserved (falls back to TS9 in Clash) | reserved |
+
+Per-model behaviour comes from constant lookup tables in the Clash
+Overdrive module (`odDriveK / odKneeP / odKneeN / odSafetyKnee`).
+Each lookup is a 6-way constant-table `case` that feeds the input of
+**one** existing arithmetic op (a multiplier input or a clip-helper
+threshold), so the model select never crosses a deep combinational
+path. This is the cheap counterpart to the rejected May 4
+`distModelClipFrame` shape that put eight parallel non-linear
+computations behind one mux and pushed WNS from -7.7 ns to -15.1 ns;
+see `TIMING_AND_FPGA_NOTES.md`.
+
+No new GPIO, no new `topEntity` port, no `block_design.tcl` change
+were needed.
+
+Model labels are inspired-by, not commercial circuit copies. The
+Python API exposes the model via:
+
+- `AudioLabOverlay.set_overdrive_model(name_or_int)`
+- `AudioLabOverlay.set_overdrive_settings(model=...)` (alongside
+  drive / tone / level / enabled)
+- `AudioLabOverlay.guitar_effect_control_words(..., overdrive_model=...)`
+- `AudioLabOverlay.set_guitar_effects(..., overdrive_model=...)`
 
 ## Cache discipline (Python side)
 

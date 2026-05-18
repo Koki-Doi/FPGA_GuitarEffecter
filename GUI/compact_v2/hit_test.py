@@ -50,9 +50,11 @@ def hit_test_compact_v2(x: int, y: int, state: AppState,
             fy0 + 18 <= y <= fy0 + 18 + s_chip_h):
         return ('toggle_selected_fx', None)
 
-    # Model dropdown (DIST, AMP, CAB only)
+    # Model dropdown (DIST, OD, AMP, CAB). The OD slot was added in
+    # DECISIONS.md D45 when the generic Overdrive was retired in favour
+    # of six selectable models.
     selected_short = EFFECTS_SHORT[state.selected_effect]
-    has_model = selected_short in ("DIST", "AMP", "CAB")
+    has_model = selected_short in ("DIST", "OD", "AMP", "CAB")
     if has_model:
         dd_y0 = fy0 + 36
         dd_y1 = fy0 + 66

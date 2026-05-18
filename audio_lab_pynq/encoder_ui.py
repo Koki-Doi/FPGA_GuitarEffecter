@@ -273,7 +273,10 @@ class EncoderUiController:
         # drive RAT via the mirror).
         spec = {
             "Distortion": ("dist_model_idx", 7),
-            "Overdrive":  ("dist_model_idx", 7),
+            # Overdrive previously aliased to dist_model_idx; D45 gives
+            # it its own 6-model index so the encoder no longer cycles
+            # the distortion-pedal mask while the user is editing OD.
+            "Overdrive":  ("overdrive_model_idx", 6),
             "Amp Sim":    ("amp_model_idx",  6),
             "Cab IR":     ("cab_model_idx",  3),
         }.get(effect_name)
@@ -285,7 +288,8 @@ class EncoderUiController:
         if step == 0:
             return
         new_idx = (cur + step) % n
-        # Skip RAT when cycling distortion-pedal models.
+        # Skip RAT when cycling distortion-pedal models (RAT is bit 2
+        # of distortion_pedal_mask, not an overdrive model).
         if attr == "dist_model_idx" and self.skip_rat:
             guard = 0
             direction = 1 if step > 0 else -1
