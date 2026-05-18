@@ -84,6 +84,20 @@ def _build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--swap-enc2", action="store_true")
     p.add_argument("--debounce-ms", type=int, default=None,
                    help="Override CONFIG.debounce_ms (1..255).")
+    sw_group = p.add_mutually_exclusive_group()
+    # The bench encoder modules used on this rig report SW HIGH when
+    # pressed (the IP's RTL default of sw_active_low=1 gave inverted
+    # hold semantics on Encoder 1 / inverted toggle edge on Encoder 0,
+    # see DECISIONS.md D47). The runner defaults to SW-active-high so a
+    # fresh launch matches the documented spec without an extra flag.
+    sw_group.add_argument("--sw-active-low", dest="sw_active_low",
+                          action="store_true", default=False,
+                          help="Treat SW=LOW as pressed. Use if the IP's "
+                               "RTL default polarity matches your module "
+                               "(uncommon for the bench modules).")
+    sw_group.add_argument("--sw-active-high", dest="sw_active_low",
+                          action="store_false",
+                          help="Treat SW=HIGH as pressed (default for this rig).")
     # Loop pacing
     p.add_argument("--poll-hz-active", type=float, default=10.0,
                    help="Encoder poll rate while events are arriving.")
@@ -195,6 +209,7 @@ def main(argv=None):
     if args.swap_enc0 or args.swap_enc1 or args.swap_enc2:
         cfg_overrides["clk_dt_swap"] = (
             args.swap_enc0, args.swap_enc1, args.swap_enc2)
+    cfg_overrides["sw_active_low"] = bool(args.sw_active_low)
 
     overlay = None
     backend = None
@@ -266,9 +281,9 @@ def main(argv=None):
     print("[gui] live_apply=%s apply_interval_ms=%d skip_rat=%s "
           "no_audio_apply=%s" % (args.live_apply, args.apply_interval_ms,
                                   args.skip_rat, args.no_audio_apply))
-    print("[gui] Encoder1 rotate=effect select, short=on/off, long=safe-bypass")
-    print("[gui] Encoder2 rotate=param/model select, short=model/edit toggle")
-    print("[gui] Encoder3 rotate=value change, short=apply, long=reset knob")
+    print("[gui] Encoder0 rotate=effect select, button-down edge=current effect ON/OFF")
+    print("[gui] Encoder1 rotate=knob select; hold+rotate=model select (OD/DIST/AMP/CAB)")
+    print("[gui] Encoder2 rotate=value change; standalone button is no-op")
     print("[gui] RAT pedal model excluded from encoder control by default")
 
     try:
@@ -277,14 +292,13 @@ def main(argv=None):
             polls += 1
             if encoder is not None:
                 try:
-                    events = encoder.poll(timestamp=loop_t - t0)
+                    n_events = controller.tick(encoder, timestamp=loop_t - t0)
                 except Exception as exc:
-                    print("[gui] encoder poll failed: %r" % (exc,))
-                    events = []
+                    print("[gui] encoder tick failed: %r" % (exc,))
+                    n_events = 0
             else:
-                events = []
-            if events:
-                controller.handle_events(events)
+                n_events = 0
+            if n_events:
                 last_event_t = loop_t
 
             sig = _render_signature(state)

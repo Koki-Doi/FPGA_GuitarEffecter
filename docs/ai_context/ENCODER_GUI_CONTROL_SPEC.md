@@ -88,13 +88,36 @@ Encoder pins (CLK / DT / SW)
 
 ## 2. GUI 操作仕様 (encoder マッピング)
 
-### 2.1 ペダルボード的役割割当
+### 2.1 ペダルボード的役割割当 (D47 確定版)
+
+`short_press` / `long_press` / `click` 分類は **command source として使用しない**
+(PL IP は引き続き latch するが、`EncoderUiController` で破棄)。
+Encoder 0 ON/OFF だけは `BUTTON_STATE` の **rising edge** (前回未押下 → 今回押下)
+で処理する。hold で連続 toggle しない、release で toggle しない。
+
+| Encoder (0-based) | Rotate | Button |
+| --- | --- | --- |
+| **Encoder 0** | `selected_effect` を ±delta で循環 (8 effects) | button-down rising edge で `effect_on[selected_effect]` を toggle + `apply_effect_on_off` 1 回。PRESET-like slot (= `EFFECTS` に居るが `EFFECT_KNOBS` に居ない / 名前に "preset" / "safe bypass" を含む) は **no-op**。 |
+| **Encoder 1** | 非押下: `selected_knob` を ±delta で循環。押下中: 現在選択中エフェクトの **model index** を ±delta で循環 (Overdrive→`overdrive_model_idx`、Distortion→`dist_model_idx` (skip_rat=True で RAT bit2 をスキップ)、Amp Sim→`amp_model_idx`、Cab IR→`cab_model_idx`)。非 model effect (Noise Sup / Compressor / EQ / Reverb) は押下中 rotate を **no-op**。 | standalone press は **no-op**。 |
+| **Encoder 2** | 選択中 knob の値を ±`value_step` (default 5) で増減、0..100 clamp。throttled live apply。 | standalone press は **no-op**。 |
+
+**Encoder 1 の hold 判定には Encoder 1 自身の `BUTTON_STATE` だけを使う**
+(Encoder 0 / Encoder 2 の press は Encoder 1 dispatch に影響しない)。
+
+実装ファイル: `audio_lab_pynq/encoder_ui.py`
+(`process_button_state(current)` / `tick(encoder_input)` / `set_button_state(pressed)`)。
+runner: `scripts/run_encoder_hdmi_gui.py` が `controller.tick(encoder)` を呼ぶ。
+
+### 2.1-pre D47 (履歴) ペダルボード的役割割当 (廃止)
 
 | Encoder | Rotate | Push short | Push long |
 | --- | --- | --- | --- |
 | **Encoder 1** | `selected_fx` を変更 (8 effects 間を循環) | `selected_fx` の ON / OFF 切替 + live apply | safe bypass (全 ON/OFF) + live apply |
 | **Encoder 2** | `selected_fx` 内の parameter / model selection を変更 (Distortion で skip\_rat=True の時は RAT slot を飛ばす) | PEDAL / AMP / CAB は `model_select_mode` toggle、それ以外は `edit_mode` toggle | reserved (`model_select_mode` を解除) |
 | **Encoder 3** | selected parameter の値を変更 (live\_apply=True なら 100 ms throttle で `EncoderEffectApplier` 経由 apply) | 決定 / 強制 apply (`apply_pending` 反映、live\_apply に関係なく force) | 選択中 knob を GUI default に戻す + apply |
+
+廃止理由: PL IP の short/long 判定がフィールド動作で不安定だった。
+詳細は `DECISIONS.md` D47。
 
 ### 2.1a GUI-first live apply (Phase 7G+, `DECISIONS.md` D37)
 
