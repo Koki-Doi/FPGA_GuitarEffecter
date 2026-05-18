@@ -100,17 +100,13 @@ Verilog file with:
   `enc_in_0/s_axi`.
 * `audio_lab_pynq/encoder_ui.py` —
   `EncoderUiController.handle_event()` maps events into AppState. It
-  *never* writes a raw effect GPIO. D47 mapping is: Encoder0 rotate
-  selects the effect, Encoder0 short toggles that effect; Encoder1
-  rotate selects the knob, while Encoder1 hold+rotate cycles model
-  index only for Distortion / Overdrive / Amp Sim / Cab IR; Encoder2
-  rotate changes the selected knob value. Encoder1 click is no-op, and
-  Encoder1's model branch uses only Encoder1's own switch state carried
-  on the rotate event. Phase 7G+ `applier=` / `live_apply=` /
-  `skip_rat=` still route writes through `EncoderEffectApplier`;
-  Encoder2 rotate runs a throttled `apply_appstate()` (default
-  100 ms), and the existing Encoder2 short-press helper force-applies
-  regardless of `live_apply`. The legacy
+  *never* writes a raw effect GPIO. Phase 7G+ adds the
+  `applier=` / `live_apply=` / `skip_rat=` kwargs: when an
+  `EncoderEffectApplier` is wired, encoder 1 short press flips the
+  effect via the applier, encoder 1 long press calls
+  `applier.apply_safe_bypass()`, encoder 3 rotate runs a throttled
+  `apply_appstate()` (default 100 ms), and encoder 3 short press always
+  force-applies regardless of `live_apply`. The legacy
   `MirrorSpy` / `AudioLabGuiBridge` fall-through is preserved when no
   applier is supplied.
 * `audio_lab_pynq/encoder_effect_apply.py` (Phase 7G+) — single
@@ -175,8 +171,8 @@ CLI flags (Phase 7G+):
 
 | File | Scope |
 | --- | --- |
-| `tests/test_encoder_input_decode.py` | s8/s32 sign-extend, DELTA unpack, STATUS decode, pressed-state carry on rotate events, `configure()` round-trip, `clear_events()` word, partial-edge carry, short/long press, synthetic release. |
-| `tests/test_encoder_ui_controller.py` | D47 dispatch contract: Encoder0 rotate/select + short toggle, Encoder1 non-pressed knob selection, Encoder1 pressed model selection for Distortion / Overdrive / Amp / Cab, Encoder1 click no-op, Encoder2 value-only rotation, non-model hold+rotate no-op, model index wrap, and existing Encoder2 apply/reset helpers. |
+| `tests/test_encoder_input_decode.py` | s8/s32 sign-extend, DELTA unpack, STATUS decode, `configure()` round-trip, `clear_events()` word, partial-edge carry, short/long press, synthetic release. |
+| `tests/test_encoder_ui_controller.py` | enc1 rotate selects effect, enc1 short toggles `effect_on`, enc1 long safe-bypass round-trip, enc2 model-select toggle, enc3 value change + clamp, enc3 short triggers mirror or bridge apply. |
 | `tests/test_compact_v2_encoder_state.py` | New AppState fields default (Phase 7G + 7G+ live-apply), JSON round-trip ignores them, renderer still produces an 800×480 frame with the new flags. |
 | `tests/test_encoder_effect_apply.py` (Phase 7G+) | Dry-run isolation, three overlay methods invoked, throttle blocks back-to-back / force bypasses, RAT mask exclusion / `--include-rat` lands bit 2, effect on/off uses dedicated setters, unsupported records the label, safe-bypass disables every flag, exceptions do not propagate. |
 | `scripts/test_encoder_input.py` | On-board manual smoke. |

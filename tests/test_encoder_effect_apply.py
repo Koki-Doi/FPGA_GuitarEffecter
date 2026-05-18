@@ -129,28 +129,6 @@ def test_include_rat_sets_bit_2():
     assert kw.get("rat_on") is False
 
 
-def test_apply_appstate_forwards_overdrive_model():
-    ov = FakeOverlay()
-    ap = EncoderEffectApplier(ov)
-    state = AppState()
-    state.overdrive_model_idx = 5
-    ap.apply_appstate(state, force=True)
-    kw = _kwargs_of(ov, "set_guitar_effects")
-    assert kw is not None
-    assert kw.get("overdrive_model") == 5
-
-
-def test_apply_appstate_clamps_overdrive_model():
-    ov = FakeOverlay()
-    ap = EncoderEffectApplier(ov)
-    state = AppState()
-    state.overdrive_model_idx = 99
-    ap.apply_appstate(state, force=True)
-    kw = _kwargs_of(ov, "set_guitar_effects")
-    assert kw is not None
-    assert kw.get("overdrive_model") == 5
-
-
 def test_is_rat_pedal_index_helper():
     assert is_rat_pedal_index(2) is True
     assert is_rat_pedal_index(0) is False
@@ -223,8 +201,6 @@ _TEST_FUNCTIONS = [
     test_force_bypasses_throttle,
     test_skip_rat_excludes_pedal_mask_bit,
     test_include_rat_sets_bit_2,
-    test_apply_appstate_forwards_overdrive_model,
-    test_apply_appstate_clamps_overdrive_model,
     test_is_rat_pedal_index_helper,
     test_effect_on_off_uses_dedicated_setters,
     test_effect_on_off_unsupported_records_label,

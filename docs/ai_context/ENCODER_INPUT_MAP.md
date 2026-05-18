@@ -111,24 +111,15 @@ rotation that straddles two polls still produces one detent event.
 
 | Encoder | rotate | short_press | long_press |
 | --- | --- | --- | --- |
-| 0 (left)   | `selected_effect` += delta | toggle `effect_on[selected_effect]` | no-op |
-| 1 (centre) | SW not pressed: `selected_knob` += delta. Encoder1 SW pressed: cycle model index for Distortion / Overdrive / Amp Sim / Cab IR only | no-op | no-op |
-| 2 (right)  | `all_knob_values[name][selected_knob] += delta * value_step` | existing apply-pending helper via applier / bridge / mirror | existing reset-focused-knob helper |
-
-Encoder1's branch uses Encoder1's own `pressed_state[1]` carried on the
-rotate event. Encoder0 / Encoder2 switch state must not affect the
-knob-vs-model split. Model indices map as:
-`Distortion -> dist_model_idx`, `Overdrive -> overdrive_model_idx`,
-`Amp Sim -> amp_model_idx`, `Cab IR -> cab_model_idx`. Non-model
-effects no-op on Encoder1 hold+rotate.
+| 0 (left)   | `selected_effect` += delta | toggle `effect_on[selected_effect]` | safe-bypass round-trip (save→all off, again→restore) |
+| 1 (centre) | `selected_knob` += delta, or model index when `model_select_mode` | toggle `model_select_mode` (only for PEDAL / AMP / CAB) | clear `model_select_mode` (reserved future) |
+| 2 (right)  | `all_knob_values[name][selected_knob] += delta * value_step` | apply pending changes via bridge/mirror | reset focused knob to default |
 
 `AppState` gains eight optional fields, all defaulted to make legacy
 notebooks render identically:
 
 * `focus_effect_index`, `focus_param_index`
-* `edit_mode`, `model_select_mode` (`model_select_mode` is now a
-  transient display hint for Encoder1 hold+rotate, not a click-toggled
-  dispatch mode)
+* `edit_mode`, `model_select_mode`
 * `value_dirty`, `apply_pending`
 * `last_control_source` (`"notebook"` | `"encoder"`)
 * `last_encoder_event`
@@ -144,7 +135,7 @@ The applier translates the compact-v2 `AppState` through
 `set_noise_suppressor_settings`, `set_compressor_settings`, and
 `set_guitar_effects(**kwargs)` only — no raw GPIO writes, no
 `set_distortion_pedal*` shortcuts. Default throttle is 100 ms;
-the existing Encoder2 short-press helper force-applies regardless. RAT
+encoder 3 short press force-applies regardless. RAT
 (`distortion_pedal_mask` bit 2) is excluded from cycling / live apply
 while `skip_rat=True` (default). The legacy
 `GUI/audio_lab_gui_bridge.py` dry-run / mirror fall-through is

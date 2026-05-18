@@ -1,8 +1,8 @@
 """High-level mapping from encoder events to AppState / overlay mutations.
 
-Encoder0: select effect; short_press toggles the selected effect.
-Encoder1: select knob, or select model while Encoder1's switch is held.
-Encoder2: change the value of the focused knob; short_press applies pending
+Encoder 1: focus / select effect.
+Encoder 2: focus / select knob (or model when in model_select_mode).
+Encoder 3: change the value of the focused knob; short_press applies pending
            changes to the overlay via the HDMI state mirror.
 
 The controller never writes a raw GPIO. It updates ``AppState``, then -- when
@@ -20,29 +20,20 @@ via the regular mirror calls.
 from typing import Iterable, Optional
 
 try:  # noqa: SIM105 — import guard is needed to keep this file workstation-safe
-    from GUI.compact_v2.knobs import (  # type: ignore
-        EFFECTS, EFFECT_KNOBS, DIST_MODELS, OVERDRIVE_MODELS,
-        AMP_MODELS, CAB_MODELS,
-    )
+    from GUI.compact_v2.knobs import EFFECTS, EFFECT_KNOBS  # type: ignore
 except Exception:  # pragma: no cover — fallback when run from inside /GUI
     try:
-        from compact_v2.knobs import (  # type: ignore
-            EFFECTS, EFFECT_KNOBS, DIST_MODELS, OVERDRIVE_MODELS,
-            AMP_MODELS, CAB_MODELS,
-        )
+        from compact_v2.knobs import EFFECTS, EFFECT_KNOBS  # type: ignore
     except Exception:
         EFFECTS = []  # type: ignore
         EFFECT_KNOBS = {}  # type: ignore
-        DIST_MODELS = []  # type: ignore
-        OVERDRIVE_MODELS = []  # type: ignore
-        AMP_MODELS = []  # type: ignore
-        CAB_MODELS = []  # type: ignore
 
 from audio_lab_pynq.encoder_effect_apply import RAT_PEDAL_INDEX
 
 
-# Effects whose top chip shows a model dropdown (per Phase 6H spec,
-# DECISIONS D24). Encoder1 hold+rotate cycles only these model indices.
+# Effects whose top chip shows a model dropdown (per Phase 6H spec, DECISIONS D24).
+# The encoder UI uses this to decide whether "encoder 2 short press" should
+# enter model-select mode or fall back to a parameter-group toggle.
 MODEL_EFFECTS = {"Overdrive", "Distortion", "Amp Sim", "Cab IR"}
 
 # Per-rotate step size on a value knob (0..100 scale). Encoders typically
@@ -116,19 +107,6 @@ class EncoderUiController:
             return 0
         return len(EFFECT_KNOBS[name])
 
-    def _event_pressed_state(self, event):
-        pressed_state = getattr(event, "pressed_state", None)
-        if pressed_state is None:
-            return (False, False, False)
-        if isinstance(pressed_state, int):
-            return tuple(bool((pressed_state >> i) & 1) for i in range(3))
-        try:
-            vals = list(pressed_state)
-        except Exception:
-            vals = [False, False, False]
-        vals = (vals + [False, False, False])[:3]
-        return tuple(bool(v) for v in vals)
-
     def _propagate_applier_status(self):
         if self.applier is None:
             return
@@ -153,11 +131,9 @@ class EncoderUiController:
 
     def handle_event(self, event) -> None:
         self._ensure_focus_fields()
-        pressed_state = self._event_pressed_state(event)
         self.state.last_encoder_event = {
             "kind": event.kind, "encoder_id": event.encoder_id,
             "delta": getattr(event, "delta", 0),
-            "pressed_state": pressed_state,
         }
         self.state.last_control_source = "encoder"
         self.state.live_apply = self.live_apply
@@ -167,7 +143,7 @@ class EncoderUiController:
             if eid == 0:
                 self._enc0_rotate(event.delta)
             elif eid == 1:
-                self._enc1_rotate(event.delta, pressed=pressed_state[1])
+                self._enc1_rotate(event.delta)
             elif eid == 2:
                 self._enc2_rotate(event.delta)
         elif event.kind == "short_press":
@@ -184,9 +160,7 @@ class EncoderUiController:
                 self._enc1_long_press()
             elif eid == 2:
                 self._enc2_long_press()
-        elif event.kind == "release":
-            if eid == 1:
-                self.state.model_select_mode = False
+        # 'release' is informational only
 
     def handle_events(self, events: Iterable) -> None:
         for ev in events:
@@ -200,7 +174,7 @@ class EncoderUiController:
             self.apply()
         return len(events)
 
-    # -- Encoder0: focus / select effect ---------------------------------------
+    # -- encoder 1: focus / select effect --------------------------------------
 
     def _enc0_rotate(self, delta: int) -> None:
         if not EFFECTS:
@@ -209,11 +183,10 @@ class EncoderUiController:
         new_idx = (int(self.state.selected_effect) + int(delta)) % n
         self.state.selected_effect = new_idx
         self.state.focus_effect_index = new_idx
-        # Re-clamp the selected knob to the new effect's knob count.
+        # Re-clamp the selected knob to the new effect's knob count
         kc = self._knob_count()
-        if kc:
-            self.state.selected_knob = max(
-                0, min(int(self.state.selected_knob), kc - 1))
+        if kc and int(self.state.selected_knob) >= kc:
+            self.state.selected_knob = kc - 1
         if hasattr(self.state, "focus_param_index"):
             self.state.focus_param_index = self.state.selected_knob
         # Leaving model-select mode when the effect changes keeps the UI from
@@ -239,22 +212,36 @@ class EncoderUiController:
                 self._maybe_live_apply(force=True)
 
     def _enc0_long_press(self) -> None:
-        # D47 restores the encoder contract: Encoder0 switch toggles only the
-        # selected effect on short_press. Long press is intentionally no-op.
-        return
-
-    # -- Encoder1: focus / select knob or model --------------------------------
-
-    def _enc1_rotate(self, delta: int, *, pressed: bool = False) -> None:
-        name = self._effect_name()
-        if pressed:
-            if name in MODEL_EFFECTS:
-                self.state.model_select_mode = True
-                self._cycle_model_index(name, delta)
+        # Safe-bypass intent: store the previous on/off pattern (round-trip
+        # toggle) so a second long_press un-bypasses. Stash the saved pattern
+        # on AppState so persistence survives renderer cycles.
+        prev = getattr(self.state, "_pre_bypass_effect_on", None)
+        if prev is None:
+            self.state._pre_bypass_effect_on = list(self.state.effect_on)  # type: ignore[attr-defined]
+            self.state.effect_on = [False] * len(self.state.effect_on)
+        else:
+            self.state.effect_on = list(prev)
+            self.state._pre_bypass_effect_on = None  # type: ignore[attr-defined]
+        self.state.value_dirty = True
+        self.state.apply_pending = True
+        # Live apply: call safe_bypass when bypassing, full state push when
+        # un-bypassing so the previous ON/OFF pattern lands on the overlay.
+        if self.applier is not None and self.live_apply:
+            if all(not v for v in self.state.effect_on):
+                self.applier.apply_safe_bypass()
+                self._propagate_applier_status()
+                self.state.value_dirty = False
+                self.state.apply_pending = False
             else:
-                self.state.model_select_mode = False
+                self._maybe_live_apply(force=True)
+
+    # -- encoder 2: focus / select knob or model --------------------------------
+
+    def _enc1_rotate(self, delta: int) -> None:
+        name = self._effect_name()
+        if self.state.model_select_mode and name in MODEL_EFFECTS:
+            self._cycle_model_index(name, delta)
             return
-        self.state.model_select_mode = False
         kc = self._knob_count()
         if kc <= 0:
             return
@@ -263,12 +250,20 @@ class EncoderUiController:
         self.state.focus_param_index = new_idx
 
     def _enc1_short_press(self) -> None:
-        # Encoder1 click is no-op. Hold state is read from rotate events, so
-        # this button no longer toggles a persistent model-select mode.
-        return
+        # Toggle model_select_mode if the current effect actually has a model
+        # dropdown; otherwise no-op (parameter-group toggle is not used by the
+        # 800x480 compact UI today).
+        name = self._effect_name()
+        if name in MODEL_EFFECTS:
+            self.state.model_select_mode = not self.state.model_select_mode
+        else:
+            # Non-model effects: encoder 2 short press toggles edit_mode so
+            # the user gets visual feedback that the short press registered.
+            self.state.edit_mode = not bool(getattr(self.state, "edit_mode", False))
 
     def _enc1_long_press(self) -> None:
-        return
+        # Reserved for preset / model mode toggle. For now: leave model_select_mode.
+        self.state.model_select_mode = False
 
     def _cycle_model_index(self, effect_name: str, delta: int) -> None:
         # Per Phase 6H spec, the three model-driven effects keep their indices
@@ -277,13 +272,13 @@ class EncoderUiController:
         # ``skip_rat`` is True (Clash stage stays intact, notebook can still
         # drive RAT via the mirror).
         spec = {
-            "Distortion": ("dist_model_idx", len(DIST_MODELS) or 7),
-            # Overdrive previously aliased to dist_model_idx; D46 gives
+            "Distortion": ("dist_model_idx", 7),
+            # Overdrive previously aliased to dist_model_idx; D45 gives
             # it its own 6-model index so the encoder no longer cycles
             # the distortion-pedal mask while the user is editing OD.
-            "Overdrive":  ("overdrive_model_idx", len(OVERDRIVE_MODELS) or 6),
-            "Amp Sim":    ("amp_model_idx", len(AMP_MODELS) or 4),
-            "Cab IR":     ("cab_model_idx", len(CAB_MODELS) or 3),
+            "Overdrive":  ("overdrive_model_idx", 6),
+            "Amp Sim":    ("amp_model_idx",  6),
+            "Cab IR":     ("cab_model_idx",  3),
         }.get(effect_name)
         if spec is None:
             return
@@ -310,7 +305,7 @@ class EncoderUiController:
         # Live apply the new model immediately when an applier is wired.
         self._maybe_live_apply(force=True)
 
-    # -- Encoder2: change value / apply ----------------------------------------
+    # -- encoder 3: change value / apply ---------------------------------------
 
     def _enc2_rotate(self, delta: int) -> None:
         kc = self._knob_count()

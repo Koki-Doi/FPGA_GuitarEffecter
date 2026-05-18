@@ -298,27 +298,31 @@ def test_appstate_overdrive_model_idx_persists_through_save_load():
 
 
 def test_encoder_overdrive_model_cycle_uses_dedicated_index():
-    """Encoder1 hold+rotate while OVERDRIVE is selected must cycle
-    ``overdrive_model_idx``, NOT ``dist_model_idx``."""
+    """Encoder 2 rotate while OVERDRIVE is selected and model_select_mode
+    is on must cycle ``overdrive_model_idx``, NOT ``dist_model_idx``."""
     from compact_v2.state import AppState
-    from audio_lab_pynq.encoder_input import EncoderEvent
     from audio_lab_pynq.encoder_ui import EncoderUiController
 
     state = AppState()
     state.selected_effect = 2          # Overdrive
+    state.model_select_mode = True
 
     initial_dist = state.dist_model_idx
     initial_od = state.overdrive_model_idx
 
     controller = EncoderUiController(state)
 
-    controller.handle_event(EncoderEvent(
-        "rotate", 1, delta=1, pressed_state=(False, True, False)))
+    class _Ev(object):
+        def __init__(self, eid, kind, delta=0):
+            self.encoder_id = eid
+            self.kind = kind
+            self.delta = delta
+
+    controller.handle_event(_Ev(1, "rotate", 1))
     assert state.overdrive_model_idx == (initial_od + 1) % 6
     assert state.dist_model_idx == initial_dist  # unchanged
 
-    controller.handle_event(EncoderEvent(
-        "rotate", 1, delta=5, pressed_state=(False, True, False)))  # wrap
+    controller.handle_event(_Ev(1, "rotate", 5))  # back around
     assert state.overdrive_model_idx == initial_od
     assert state.dist_model_idx == initial_dist
 

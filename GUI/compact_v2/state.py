@@ -94,7 +94,7 @@ class AppState:
     dist_model_idx: int = 1   # Tube Screamer
     amp_model_idx:  int = 2   # British Crunch
     cab_model_idx:  int = 2   # 4x12 British
-    # Overdrive model select (DECISIONS.md D46). 0..5 maps to
+    # Overdrive model select (DECISIONS.md D45). 0..5 maps to
     # OVERDRIVE_MODELS in GUI/compact_v2/knobs.py; default = TS9.
     overdrive_model_idx: int = 0
 

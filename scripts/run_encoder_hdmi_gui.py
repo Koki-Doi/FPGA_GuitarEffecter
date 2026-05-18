@@ -151,7 +151,6 @@ def _render_signature(s):
         bool(getattr(s, "edit_mode", False)),
         bool(getattr(s, "model_select_mode", False)),
         getattr(s, "dist_model_idx", None),
-        getattr(s, "overdrive_model_idx", None),
         getattr(s, "amp_model_idx", None),
         getattr(s, "cab_model_idx", None),
         bool(getattr(s, "last_apply_ok", True)),
@@ -267,9 +266,9 @@ def main(argv=None):
     print("[gui] live_apply=%s apply_interval_ms=%d skip_rat=%s "
           "no_audio_apply=%s" % (args.live_apply, args.apply_interval_ms,
                                   args.skip_rat, args.no_audio_apply))
-    print("[gui] Encoder0 rotate=effect select, short=on/off")
-    print("[gui] Encoder1 rotate=knob select, hold+rotate=model select")
-    print("[gui] Encoder2 rotate=value change, short=apply, long=reset knob")
+    print("[gui] Encoder1 rotate=effect select, short=on/off, long=safe-bypass")
+    print("[gui] Encoder2 rotate=param/model select, short=model/edit toggle")
+    print("[gui] Encoder3 rotate=value change, short=apply, long=reset knob")
     print("[gui] RAT pedal model excluded from encoder control by default")
 
     try:

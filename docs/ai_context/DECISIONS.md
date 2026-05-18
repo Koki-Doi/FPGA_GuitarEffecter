@@ -1323,8 +1323,8 @@ not get removed even when superseded — they get updated.
 ## D37 — Encoder runtime は AppState を `EncoderEffectApplier` 経由でのみ AudioLabOverlay に反映 (raw GPIO 直書き禁止、RAT は既定で除外)
 
 - **状況.** Phase 7G の `EncoderUiController` は AppState を更新するだけで、
-  実際の overlay write は `AudioLabGuiBridge` 経由 (当時の右端
-  encoder short press でのみ apply) だった。3 個の rotary encoder で HDMI GUI を
+  実際の overlay write は `AudioLabGuiBridge` 経由 (encoder 3 short
+  press でのみ apply) だった。3 個の rotary encoder で HDMI GUI を
   notebook 無しに実操作する用途では、回転中に音色が即時に変化することと、
   RAT pedal model のように "Clash stage は残すが encoder 操作からは外したい"
   という選択的除外が必要になった。
@@ -1341,8 +1341,7 @@ not get removed even when superseded — they get updated.
     `HdmiEffectStateMirror.render()` 経由の二重描画は encoder loop からは
     呼ばない。HDMI render は dirty-flag loop が単独で所有する。
   - throttle (`apply_interval_s`、既定 100 ms) で連続回転中の AXI flood を
-  抑える。D47 後も既存 Encoder2 short-press helper は throttle を
-  bypass して force apply。
+    抑える。encoder 3 short press は throttle を bypass して force apply。
     例外は `last_apply_ok=False` / `last_apply_message=<repr>` に保存し
     loop は落とさない。
   - RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (既定) の時
@@ -2042,10 +2041,9 @@ not get removed even when superseded — they get updated.
     `encoder_effect_apply.py`):
     - `EncoderUiController._cycle_model_index` now maps
       `"Overdrive" -> ("overdrive_model_idx", 6)`; it previously
-      aliased to `dist_model_idx`. D47 later restores the physical
-      dispatch contract so Encoder1 hold+rotate cycles the new
-      `overdrive_model_idx` directly; Encoder1 short press does not
-      enter a persistent model-select mode.
+      aliased to `dist_model_idx`. Encoder 2 short press still
+      enters model-select mode, encoder 2 rotate cycles the new
+      `overdrive_model_idx`.
     - `EncoderEffectApplier.apply_appstate` now reads
       `state.overdrive_model_idx` (clamp 0..5) and forwards it as
       `overdrive_model=` to `AudioLabOverlay.set_guitar_effects`.
@@ -2126,55 +2124,3 @@ not get removed even when superseded — they get updated.
     voicing while `gain` / `tone` / `level` continue to behave;
     every other section (Distortion / Amp / Cab / Reverb) must keep
     working unchanged.
-
-## D47 — Restore rotary encoder GUI control contract
-
-- **Decision.** The Python encoder runtime now follows the physical
-  Encoder0 / Encoder1 / Encoder2 contract directly instead of relying
-  on a click-toggled `model_select_mode`.
-  - Encoder0 rotate changes `AppState.selected_effect`; Encoder0
-    short-press toggles only the selected effect's ON/OFF state and
-    live-applies through `EncoderEffectApplier` when present.
-  - Encoder1 rotate without its own switch pressed changes
-    `AppState.selected_knob`.
-  - Encoder1 hold+rotate uses **Encoder1's own pressed state** carried
-    on the rotate event and cycles model index only for:
-    `Distortion -> dist_model_idx`, `Overdrive -> overdrive_model_idx`,
-    `Amp Sim -> amp_model_idx`, and `Cab IR -> cab_model_idx`.
-  - Encoder1 short / long press are no-op for control state. Encoder0
-    / Encoder2 switch states do not affect Encoder1's knob/model
-    branch.
-  - Encoder2 rotate changes only the selected knob value and clamps it
-    to the existing 0..100 GUI range. Existing Encoder2 switch helpers
-    (short force-apply, long reset focused knob) remain explicit
-    legacy actions because they do not change effect/model/knob
-    selection.
-  - Effects without model lists no-op on Encoder1 hold+rotate and must
-    not crash or move `selected_knob` / knob values.
-
-- **Why.** The previous GUI controller treated Encoder1 short press as
-  a persistent `model_select_mode` toggle. That made later Encoder1
-  rotations depend on old mode state rather than the actual switch hold,
-  so knob selection and model selection could bleed into each other.
-  D47 makes the dispatch stateless with respect to mode toggles: the
-  current rotate event's `pressed_state[1]` is the only branch key.
-
-- **Boundary.**
-  - Overdrive model selection uses `AppState.overdrive_model_idx`, not
-    `dist_model_idx`; Distortion still uses `dist_model_idx`.
-  - No FPGA / RTL / XDC / Vivado / bit/hwh / HDMI timing / codec path
-    change. `hw/Pynq-Z2/block_design.tcl`,
-    `hw/Pynq-Z2/create_project.tcl`, `hw/Pynq-Z2/encoder_integration.tcl`,
-    and `hw/ip/clash/src/LowPassFir.hs` are untouched.
-  - `EncoderEffectApplier` remains the only encoder-runtime path from
-    `AppState` to `AudioLabOverlay` public setters; no raw GPIO writes.
-
-- **Verification.**
-  `tests/test_encoder_input_decode.py`,
-  `tests/test_encoder_ui_controller.py`,
-  `tests/test_compact_v2_encoder_state.py`,
-  `tests/test_encoder_effect_apply.py`,
-  `tests/test_overdrive_model_select.py`, and
-  `tests/test_hdmi_selected_fx_state.py` cover the D47 dispatch,
-  pressed-state carry, model-index isolation / wrap, and Overdrive's
-  dedicated `overdrive_model_idx`.

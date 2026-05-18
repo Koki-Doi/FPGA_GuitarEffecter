@@ -158,21 +158,6 @@ def test_poll_rotate_detents():
     assert rotates[0].encoder_id == 0
     assert rotates[0].delta == 1
     assert rotates[0].raw_delta == 4
-    assert rotates[0].pressed_state == (False, False, False)
-
-
-def test_poll_rotate_carries_pressed_state():
-    """Rotate events carry the debounced switch state from STATUS."""
-    mm = FakeMmio({
-        REG_DELTA_PACKED: 0x0400,      # enc1 = +4 edges = +1 detent
-        REG_STATUS: (1 << 1) | (1 << 25),  # enc1 rotate + enc1 pressed
-    })
-    enc = EncoderInput(mm)
-    events = enc.poll()
-    rotates = [e for e in events if e.kind == "rotate"]
-    assert len(rotates) == 1
-    assert rotates[0].encoder_id == 1
-    assert rotates[0].pressed_state == (False, True, False)
 
 
 def test_poll_partial_delta_carry():
@@ -228,7 +213,6 @@ _TEST_FUNCTIONS = [
     test_configure_round_trip,
     test_clear_events_write_word,
     test_poll_rotate_detents,
-    test_poll_rotate_carries_pressed_state,
     test_poll_partial_delta_carry,
     test_poll_short_long_press_emit,
     test_poll_synthetic_release_edge,
