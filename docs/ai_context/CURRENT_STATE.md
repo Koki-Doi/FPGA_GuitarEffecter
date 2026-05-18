@@ -1,6 +1,22 @@
 # Current state
 
-Last updated: **2026-05-18 (D46 Overdrive model select): generic Overdrive retired; six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR) ride on overdrive_control.ctrlD[2:0] alongside the existing distTight high 5 bits**
+Last updated: **2026-05-18 (D47 Encoder control contract): Encoder0 selects/toggles effects, Encoder1 selects knobs or hold-cycles models, Encoder2 changes values; no FPGA/bitstream change**
+(The rotary encoder GUI dispatch has been restored to the physical
+contract. Encoder0 rotate changes `selected_effect`; Encoder0
+short-press toggles only the selected effect. Encoder1 rotate without
+its own switch pressed changes `selected_knob`; Encoder1 hold+rotate
+cycles the model only for Distortion / Overdrive / Amp Sim / Cab IR,
+using `dist_model_idx` / `overdrive_model_idx` / `amp_model_idx` /
+`cab_model_idx` respectively. Encoder1 click is no-op. Encoder2 rotate
+changes only the current knob value. The controller now reads the
+debounced switch state carried on each rotate event, so Encoder0/2
+switch states cannot affect Encoder1's knob/model split. Existing
+Encoder2 switch actions remain explicit legacy apply/reset helpers and
+do not change effect/model/knob selection. No RTL / XDC / Vivado /
+bit/hwh / HDMI timing / codec path changed. `DECISIONS.md` D47.)
+
+Previous-pass header (D46 Overdrive model select):
+**Generic Overdrive retired; six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR) ride on overdrive_control.ctrlD[2:0] alongside the existing distTight high 5 bits**
 (The single-character Overdrive stage was retired in favour of six
 inspired-by models. The 3-bit `overdriveModel` field lives in
 `axi_gpio_overdrive.ctrlD[2:0]` (= word bits 26..24); the existing
@@ -243,13 +259,18 @@ PCM1808 mux = ADAU (D43), Phase 7D close-out WNS `-7.931 ns`. See
   WHS `+0.040 ns`, THS `0.000 ns`; Slice LUTs `18618 (35.00%)`,
   Slice Registers `20846 (19.59%)`. Within the historical
   `-7..-9 ns` deploy band. See `TIMING_AND_FPGA_NOTES.md`.
-- **Encoder GUI live apply (Phase 7G+)**: `EncoderEffectApplier` is the
+- **Encoder GUI live apply (Phase 7G+ / D47 mapping)**: `EncoderEffectApplier` is the
   only Python object allowed to translate the compact-v2 `AppState`
   into `AudioLabOverlay` calls from the encoder runtime. It uses
   `set_noise_suppressor_settings`, `set_compressor_settings`, and a
   single `set_guitar_effects(**kwargs)` per push — no raw GPIO writes.
-  Throttle defaults to 100 ms (`--apply-interval-ms`); encoder 3 short
-  press always force-applies regardless of the throttle. RAT
+  The physical mapping is: Encoder0 rotate selects effect, Encoder0
+  short-press toggles the selected effect, Encoder1 rotate selects knob,
+  Encoder1 hold+rotate selects model for Distortion / Overdrive /
+  Amp Sim / Cab IR, and Encoder2 rotate changes the selected knob value.
+  Throttle defaults to 100 ms (`--apply-interval-ms`); the existing
+  Encoder2 short-press force-apply helper remains outside the main D47
+  rotate contract. RAT
   (`distortion_pedal_mask` bit 2) is suppressed when `skip_rat=True`
   (default); pass `--include-rat` to override. EQ knob values are
   mapped GUI 0..100 → overlay 0..200 (50 == unity). Cab `MODEL` knob

@@ -71,22 +71,29 @@ class EncoderEvent(object):
     PYNQ-Z2 Python 3.6 image without the dataclasses backport.
     """
 
-    __slots__ = ("kind", "encoder_id", "delta", "raw_delta", "timestamp")
+    __slots__ = (
+        "kind", "encoder_id", "delta", "raw_delta", "timestamp",
+        "pressed_state",
+    )
 
-    def __init__(self, kind, encoder_id, delta=0, raw_delta=0, timestamp=0.0):
+    def __init__(
+        self, kind, encoder_id, delta=0, raw_delta=0, timestamp=0.0,
+        pressed_state=None,
+    ):
         self.kind = kind
         self.encoder_id = int(encoder_id)
         self.delta = int(delta)
         self.raw_delta = int(raw_delta)
         self.timestamp = float(timestamp)
+        self.pressed_state = _normalize_pressed_state(pressed_state)
 
     def __repr__(self):
         return (
             "EncoderEvent(kind={!r}, encoder_id={!r}, delta={!r}, "
-            "raw_delta={!r}, timestamp={!r})"
+            "raw_delta={!r}, timestamp={!r}, pressed_state={!r})"
         ).format(
             self.kind, self.encoder_id, self.delta, self.raw_delta,
-            self.timestamp)
+            self.timestamp, self.pressed_state)
 
 
 # ---- Helpers ----------------------------------------------------------------
@@ -116,6 +123,20 @@ def decode_status(status: int) -> dict:
         "long_press":   [(status >> (16 + i)) & 1 for i in range(3)],
         "sw_level":     [(status >> (24 + i)) & 1 for i in range(3)],
     }
+
+
+def _normalize_pressed_state(pressed_state):
+    """Return a 3-tuple of booleans for encoder switch pressed state."""
+    if pressed_state is None:
+        return (False, False, False)
+    if isinstance(pressed_state, int):
+        return tuple(bool((pressed_state >> i) & 1) for i in range(3))
+    try:
+        vals = list(pressed_state)
+    except Exception:
+        vals = [False, False, False]
+    vals = (vals + [False, False, False])[:3]
+    return tuple(bool(v) for v in vals)
 
 
 # ---- Driver -----------------------------------------------------------------
@@ -312,6 +333,7 @@ class EncoderInput:
         status = self.read_status()
         decoded = decode_status(status)
         deltas = unpack_delta(packed)
+        pressed_state = tuple(bool(v) for v in decoded["sw_level"])
 
         for i in range(3):
             # rotate
@@ -332,24 +354,26 @@ class EncoderInput:
                     events.append(EncoderEvent(
                         kind="rotate", encoder_id=i,
                         delta=detents, raw_delta=raw - remainder,
-                        timestamp=timestamp,
+                        timestamp=timestamp, pressed_state=pressed_state,
                     ))
             elif raw != 0:
                 self._raw_carry[i] = 0
                 events.append(EncoderEvent(
                     kind="rotate", encoder_id=i,
                     delta=raw, raw_delta=raw,
-                    timestamp=timestamp,
+                    timestamp=timestamp, pressed_state=pressed_state,
                 ))
 
             # short / long press
             if decoded["short_press"][i]:
                 events.append(EncoderEvent(
                     kind="short_press", encoder_id=i, timestamp=timestamp,
+                    pressed_state=pressed_state,
                 ))
             if decoded["long_press"][i]:
                 events.append(EncoderEvent(
                     kind="long_press", encoder_id=i, timestamp=timestamp,
+                    pressed_state=pressed_state,
                 ))
 
             # release edge (synthetic; the IP doesn't latch release)
@@ -357,6 +381,7 @@ class EncoderInput:
             if self._sw_level_prev[i] == 1 and sw_level == 0:
                 events.append(EncoderEvent(
                     kind="release", encoder_id=i, timestamp=timestamp,
+                    pressed_state=pressed_state,
                 ))
             self._sw_level_prev[i] = sw_level
 

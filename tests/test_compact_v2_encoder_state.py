@@ -124,12 +124,37 @@ def test_renderer_with_phase7g_flags_emits_status_text():
     assert frame is not None
 
 
+def test_runtime_render_signature_tracks_overdrive_model():
+    from scripts.run_encoder_hdmi_gui import _render_signature
+
+    s = AppState()
+    sig0 = _render_signature(s)
+    s.overdrive_model_idx = (s.overdrive_model_idx + 1) % 6
+    sig1 = _render_signature(s)
+    assert sig1 != sig0
+
+
+def test_encoder_gui_smoke_notebook_stays_single_cell_and_d47():
+    nb_path = REPO_ROOT / "audio_lab_pynq" / "notebooks" / "EncoderGuiSmoke.ipynb"
+    with open(str(nb_path), "r", encoding="utf-8") as f:
+        nb = json.load(f)
+    assert len(nb["cells"]) == 1
+    source = "".join(nb["cells"][0].get("source", []))
+    assert "Encoder0 rotate" in source
+    assert "Encoder1 hold+rotate" in source
+    assert "overdrive_model_idx" in source
+    assert "_install_single_cell_guard" in source
+    assert "cleanAudioLabEncoderNotebook" in source
+
+
 _TEST_FUNCTIONS = [
     test_appstate_phase7g_fields_present,
     test_appstate_json_round_trip_ignores_phase7g_fields,
     test_renderer_imports_and_runs_with_defaults,
     test_renderer_with_phase7g_flags_emits_status_text,
     test_renderer_with_live_apply_flags_emits_status_text,
+    test_runtime_render_signature_tracks_overdrive_model,
+    test_encoder_gui_smoke_notebook_stays_single_cell_and_d47,
 ]
 
 

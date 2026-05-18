@@ -28,7 +28,7 @@ EFFECT_EQ         = "EQ"
 EFFECT_REVERB     = "Reverb"
 
 # Default throttle: at most one set_guitar_effects burst per 100 ms while
-# encoder 3 is being turned continuously.
+# Encoder2 is being turned continuously.
 DEFAULT_APPLY_INTERVAL_S = 0.10
 
 # Pedal-mask bit index that corresponds to the RAT model. Mirrors
@@ -89,11 +89,11 @@ class EncoderEffectApplier(object):
     The encoder runtime instantiates one of these per session and calls:
 
     * ``apply_effect_on_off(name, enabled)`` when the user toggles the
-      currently selected effect (encoder 1 short press).
-    * ``apply_safe_bypass()`` when the user requests Safe Bypass
-      (encoder 1 long press).
+      currently selected effect (Encoder0 short press).
+    * ``apply_safe_bypass()`` for legacy callers that still expose a
+      Safe Bypass command outside the D47 Encoder0/1/2 runtime mapping.
     * ``apply_appstate(state)`` when the user changes a parameter
-      (encoder 3 rotate / short / long). The throttle keeps continuous
+      (Encoder2 rotate / short / long). The throttle keeps continuous
       rotation from flooding the AXI bus.
 
     ``dry_run=True`` skips every overlay call but still updates
@@ -145,7 +145,7 @@ class EncoderEffectApplier(object):
             self.unsupported.append(label)
 
     # ------------------------------------------------------------------
-    # effect on/off (encoder 1 short press)
+    # effect on/off (Encoder0 short press)
     # ------------------------------------------------------------------
     def apply_effect_on_off(self, effect_name, enabled):
         enabled = bool(enabled)
@@ -182,7 +182,7 @@ class EncoderEffectApplier(object):
             return False
 
     # ------------------------------------------------------------------
-    # safe bypass (encoder 1 long press)
+    # safe bypass (legacy explicit command)
     # ------------------------------------------------------------------
     def apply_safe_bypass(self):
         if self.dry_run or self.overlay is None:
@@ -208,7 +208,7 @@ class EncoderEffectApplier(object):
             return False
 
     # ------------------------------------------------------------------
-    # full state push (encoder 2/3, or after on/off)
+    # full state push (Encoder1/2, or after on/off)
     # ------------------------------------------------------------------
     def apply_appstate(self, state, *, force=False):
         """Push every supported section based on the AppState snapshot.
@@ -246,7 +246,7 @@ class EncoderEffectApplier(object):
             cab_idx = int(getattr(state, "cab_model_idx", 1) or 1)
             cab_idx = max(0, min(2, cab_idx))
 
-            # Overdrive model select (D45). The single generic OD was
+            # Overdrive model select (D46). The single generic OD was
             # retired; every encoder push picks one of six models. The
             # 3-bit field is wire-packed into overdrive_control.ctrlD
             # by AudioLabOverlay so the encoder applier just forwards

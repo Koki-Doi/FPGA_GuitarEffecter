@@ -92,9 +92,16 @@ Encoder pins (CLK / DT / SW)
 
 | Encoder | Rotate | Push short | Push long |
 | --- | --- | --- | --- |
-| **Encoder 1** | `selected_fx` を変更 (8 effects 間を循環) | `selected_fx` の ON / OFF 切替 + live apply | safe bypass (全 ON/OFF) + live apply |
-| **Encoder 2** | `selected_fx` 内の parameter / model selection を変更 (Distortion で skip\_rat=True の時は RAT slot を飛ばす) | PEDAL / AMP / CAB は `model_select_mode` toggle、それ以外は `edit_mode` toggle | reserved (`model_select_mode` を解除) |
-| **Encoder 3** | selected parameter の値を変更 (live\_apply=True なら 100 ms throttle で `EncoderEffectApplier` 経由 apply) | 決定 / 強制 apply (`apply_pending` 反映、live\_apply に関係なく force) | 選択中 knob を GUI default に戻す + apply |
+| **Encoder0** | `selected_effect` を変更 (8 effects 間を循環) | 現在選択中 effect の ON / OFF 切替 + live apply | no-op |
+| **Encoder1** | SW 非押下なら `selected_knob` を変更。Encoder1 自身の SW 押下中だけ model index を変更 | no-op | no-op |
+| **Encoder2** | selected knob の値を変更 (live\_apply=True なら 100 ms throttle で `EncoderEffectApplier` 経由 apply) | 既存の強制 apply helper (`apply_pending` 反映、live\_apply に関係なく force) | 既存の選択中 knob reset helper |
+
+Encoder1 hold+rotate で model index を変更できる effect は
+`Distortion` / `Overdrive` / `Amp Sim` / `Cab IR` のみ。対応する
+`AppState` field は `dist_model_idx` / `overdrive_model_idx` /
+`amp_model_idx` / `cab_model_idx`。Overdrive は必ず
+`overdrive_model_idx` を使い、`dist_model_idx` へ alias しない。
+model を持たない effect で Encoder1 hold+rotate した場合は no-op。
 
 ### 2.1a GUI-first live apply (Phase 7G+, `DECISIONS.md` D37)
 
@@ -107,7 +114,8 @@ Encoder pins (CLK / DT / SW)
   `set_guitar_effects(distortion_pedal_mask=...)` を使う (cached 状態と
   整合)。
 - throttle は `apply_interval_s` (default 100 ms)。連続回転で flooding
-  しない。encoder 3 short press は throttle を bypass して force apply。
+  しない。既存の Encoder2 short press は throttle を bypass して force
+  apply する。
 - RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (default) の
   時に encoder cycle / live apply の対象から除外。Clash stage と
   `HdmiEffectStateMirror.rat()` は手付かず。
@@ -125,7 +133,7 @@ Encoder pins (CLK / DT / SW)
 focus_effect_index: int        # 0..7 (EFFECTS index)
 focus_param_index: int         # 選択中エフェクト内の parameter index (0..N-1)
 edit_mode: bool                # True なら encoder3 で値変更中
-model_select_mode: bool        # True なら encoder2 で model dropdown 操作中
+model_select_mode: bool        # Encoder1 hold+rotate 中の表示 hint
 last_encoder_event: dict | None  # 直近イベント (描画 hint 用)
 value_dirty: bool              # 未 apply の変更あり
 apply_pending: bool            # apply 待ち
@@ -156,8 +164,9 @@ Phase 6H 仕様 (`DECISIONS.md` D24) のまま維持:
 | `Reverb` / `EQ` / `Compressor` / `Noise Sup` / preset / safe bypass | **非表示** |
 
 encoder UI は上記表示条件を尊重する。model dropdown 非表示の effect
-では encoder2 短押しの `model_select_mode` トグルは無効化する
-(あるいは `parameter group` 切替のみに使う)。
+では Encoder1 hold+rotate は no-op とし、knob selection / value /
+effect selection を動かさない。Encoder1 short press は model-select
+mode をトグルしない。
 
 ### 2.5 既存 GUI への変更方針 (Phase 7G で実装)
 
