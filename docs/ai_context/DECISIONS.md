@@ -2124,3 +2124,87 @@ not get removed even when superseded — they get updated.
     voicing while `gain` / `tone` / `level` continue to behave;
     every other section (Distortion / Amp / Cab / Reverb) must keep
     working unchanged.
+
+## D47 — Replace short/long-press encoder actions with button-state edge controls
+
+- **Why.** Field testing of Phase 7G+ on PYNQ-Z2 showed that the PL
+  `axi_encoder_input` IP latches `short_press` / `long_press` /
+  `click` reliably enough on the bench but inconsistently in the
+  rack: certain detent + push combinations would either swallow the
+  short press (rotate fired, latch never set) or echo it as a long
+  press, which made encoder 0 ON/OFF and encoder 1 model-select
+  feel unpredictable. The previous spec (`ENCODER_GUI_CONTROL_SPEC.md`
+  Phase 7G mapping) leaned on those press classifications for safe
+  bypass, model-select toggle, edit toggle, forced apply, and knob
+  reset; any one of them mis-firing required a notebook intervention.
+- **What changed.** `EncoderUiController` (audio_lab_pynq/encoder_ui.py)
+  no longer treats `short_press` / `long_press` / `click` as command
+  sources. The controller drops those event kinds. The only press-driven
+  action is **Encoder 0 button-down rising edge** — detected by
+  comparing the current debounced `BUTTON_STATE` against the previous
+  poll's value. Hold does not auto-repeat, release does not toggle,
+  and the first observation after construction seeds without emitting
+  any edge. The runner reads `BUTTON_STATE` alongside each
+  `EncoderInput.poll()` via the new `EncoderUiController.tick()`
+  helper.
+- **Per-encoder semantics (final).**
+  - Encoder 0 rotate -> `selected_effect` += delta (wraps over EFFECTS).
+  - Encoder 0 button-down edge -> toggle `effect_on[selected_effect]`
+    and emit one `apply_effect_on_off` call. PRESET-like slots (any
+    `EFFECTS` entry not present in `EFFECT_KNOBS`, or whose name
+    contains "preset" / "safe bypass") are no-op.
+  - Encoder 1 rotate, button released -> `selected_knob` += delta.
+  - Encoder 1 rotate, button held -> cycle the model index for the
+    selected effect (`overdrive_model_idx` / `dist_model_idx` /
+    `amp_model_idx` / `cab_model_idx`). Non-model effects (Noise Sup
+    / Compressor / EQ / Reverb) hold+rotate is a no-op.
+  - Encoder 2 rotate -> selected knob value ±5 (clamped 0..100),
+    throttled live apply.
+  - Encoder 1 / Encoder 2 standalone button: no-op.
+  - Encoder 0 / Encoder 2 button state does NOT influence Encoder 1
+    dispatch (gating uses only `_current_pressed[1]`).
+- **Removed actions.**
+  - Encoder 0 long press safe-bypass round-trip.
+  - Encoder 1 short press model_select_mode toggle.
+  - Encoder 1 short press edit_mode toggle.
+  - Encoder 1 long press model_select_mode clear.
+  - Encoder 2 short press forced apply.
+  - Encoder 2 long press knob reset.
+  - `model_select_mode` as a persistent toggle. The field stays on
+    `AppState` for the renderer hint and is set to the live
+    `Encoder 1` button state on every poll so MODEL only lights up
+    while the user is actively holding it.
+- **Overdrive model select.** `overdrive_model_idx` stays the sole
+  source for Overdrive model selection (D45 / D46). Hold+rotate on
+  Overdrive must NOT touch `dist_model_idx`, and hold+rotate on
+  Distortion must NOT touch `overdrive_model_idx`.
+- **PRESET.** PRESET is not an effect and is intentionally not
+  bypassable from the encoder. No new PRESET ON/OFF, no entry in
+  `effect_on` / `fs_states`. The renderer's PRESET chip is mouse-only.
+- **Surface.** Pure Python / docs change. No bit/hwh rebuild, no
+  RTL/XDC change, no `block_design.tcl` edit, no Clash regenerate,
+  no notebook touch (the user's notebook smoke path was unstable in
+  the previous session and is intentionally left alone).
+- **Smoke / verification.**
+  - `tests/test_encoder_ui_controller.py` rewritten to the new spec
+    (button-down edge, hold+rotate model select, short/long press
+    no-op, PRESET guard, per-encoder isolation).
+  - `tests.test_overdrive_model_select.test_encoder_overdrive_model_cycle_uses_dedicated_index`
+    rewritten to drive hold+rotate via `set_button_state([F,T,F])`
+    instead of `state.model_select_mode = True`.
+  - On-board: `scripts/run_encoder_hdmi_gui.py` (direct script
+    launch; notebook intentionally untouched).
+- **SW polarity (bench rig).** The bench encoder modules on this rig
+  report `SW=HIGH` when pressed, not low — opposite to the
+  `ENCODER_GUI_CONTROL_SPEC.md` Phase 7B assumption and to the IP's
+  RTL default (`sw_active_low=1`). With the RTL default, Encoder 1's
+  `_current_pressed[1]` reads True at rest and False when held,
+  inverting hold+rotate semantics. The runner now defaults to
+  `sw_active_low=False` (CONFIG bit 16 cleared) so the live press
+  state matches the physical button. The `--sw-active-low` /
+  `--sw-active-high` CLI options remain for any future module with
+  the opposite polarity; the default is active-high. Cold-start the
+  PYNQ-Z2 after a deploy if the LCD shows white / black even with
+  VTC + VDMA healthy (rgb2dvi PLL at the lower kClkRange=3 VCO edge
+  fails to re-lock on a same-session `download=True` re-load —
+  memory `rgb2dvi-pll-edge-at-40mhz`).

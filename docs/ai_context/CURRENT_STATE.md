@@ -1,6 +1,24 @@
 # Current state
 
-Last updated: **2026-05-18 (D46 Overdrive model select): generic Overdrive retired; six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR) ride on overdrive_control.ctrlD[2:0] alongside the existing distTight high 5 bits**
+Last updated: **2026-05-19 (D47 encoder button-state controls): short/long-press classifications dropped from `EncoderUiController`; Encoder 0 button-down rising edge is the only press-driven action**
+(Encoder 0 rotate = effect select, Encoder 0 button-down edge =
+`effect_on[selected_effect]` toggle (PRESET-like slots are no-op).
+Encoder 1 rotate without hold = knob select, with hold = model-index
+cycle (Overdrive→`overdrive_model_idx`, Distortion→`dist_model_idx`
+(skip RAT bit2), Amp→`amp_model_idx`, Cab→`cab_model_idx`); non-model
+effects ignore hold+rotate. Encoder 2 rotate = knob value;
+standalone press on Encoder 1 / Encoder 2 = no-op. `model_select_mode`
+is no longer a persistent toggle — it mirrors the live Encoder 1
+press state for the renderer hint. The runner calls
+`controller.tick(encoder)` which reads `BUTTON_STATE` + events each
+loop. `scripts/run_encoder_hdmi_gui.py` updated; notebook
+intentionally untouched (the Phase 7G notebook smoke was unstable in
+the previous session). Pure Python / docs change — no bit/hwh, no
+RTL/XDC, no Clash regenerate, no `block_design.tcl` edit.
+`DECISIONS.md` D47.)
+
+Previous-pass header (D46 Overdrive model select, 2026-05-18):
+**generic Overdrive retired; six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR) ride on overdrive_control.ctrlD[2:0] alongside the existing distTight high 5 bits**
 (The single-character Overdrive stage was retired in favour of six
 inspired-by models. The 3-bit `overdriveModel` field lives in
 `axi_gpio_overdrive.ctrlD[2:0]` (= word bits 26..24); the existing
