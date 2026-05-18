@@ -8,6 +8,18 @@ DAC 並列出力は deployed**、**PCM1808 ADC mux は build-time 実装済 + JB
 `docs/ai_context/CURRENT_STATE.md` 冒頭、決定事項は
 `DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44 を参照する。
 
+**Pmod I2S2 への発展計画 (Phase Pmod-0, planning only)**:
+PCM1808 module は analog 前段 damage 仮説 (`DECISIONS.md` D43) で
+事実上 retire 状態、PCM5102 line out は JB7 / JB8 隣接クロストーク
+疑い (`DECISIONS.md` D44)。次の評価ステップは **Digilent Pmod I2S2**
+(CS4344 stereo DAC + CS5343 stereo ADC on 1 PMOD board) を PMOD JB
+に直挿しして外付け I2S I/O のリファレンスにする案で、`DECISIONS.md`
+D45 にプランのみ記録、詳細は
+`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`。本ドキュメント (PCM5102
+/ PCM1808 計画) と Pmod I2S2 plan は **共存**: Pmod I2S2 評価時には
+PMOD JB を Pmod I2S2 専用にして既存 PCM5102 / PCM1808 ジャンパを物理
+的に外す build variant 方針。
+
 関連:
 - `docs/ai_context/IO_PIN_RESERVATION.md` (ピン予約台帳、`Status` =
   `wired` の行が Phase 7C / 7D 反映済)

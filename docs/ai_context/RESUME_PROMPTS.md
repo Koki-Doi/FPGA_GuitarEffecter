@@ -227,6 +227,44 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
+## Phase Pmod-0 — Pmod I2S2 integration planning (docs only, module not yet delivered)
+
+> Digilent Pmod I2S2 (CS4344 stereo DAC + CS5343 stereo ADC) を購入済、
+> 納品前の **設計フェーズ専用** プラン docs が
+> `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` (Phase Pmod-0 commit)
+> 全文 + `DECISIONS.md` D45 にまとまっている。
+>
+> やってよいこと:
+> - docs (上記 plan + CURRENT_STATE / EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN
+>   / IO_PIN_RESERVATION / DECISIONS / RESUME_PROMPTS) の修正のみ。
+> - Pmod I2S2 公式 reference manual / CS4344 / CS5343 datasheet を
+>   参照して section 6 / section 15 の `要公式確認` 項目を埋めること。
+>
+> 触ってはいけないこと (Phase Pmod-0 範囲):
+> - RTL / XDC / Tcl / Vivado build / bit / hwh / deploy。
+> - Python runtime / Notebook / GUI / encoder runtime。
+> - HDMI timing (`DECISIONS.md` D25)、encoder pin (`DECISIONS.md` D32 /
+>   D34)、PMOD JA、Raspberry Pi header、Arduino header。
+> - PCM1808 再有効化 (`CONFIG.CONST_VAL {0}` → `{1}` 凍結維持、
+>   `DECISIONS.md` D43)。
+> - PCM5102 SCK を MCLK に戻す (`DECISIONS.md` D40 / D42)。
+> - ADAU1761 即置換 (`DECISIONS.md` D27)。
+> - 96 kHz 化、stereo DSP 化。
+> - `git push` / `git pull` / `git fetch`。
+>
+> Phase Pmod-1 開始トリガー (納品 + checklist):
+> 1. Pmod I2S2 module が物理的に手元にある。
+> 2. `PMOD_I2S2_INTEGRATION_PLAN.md` section 6 / section 15 の
+>    `要公式確認` 項目を Digilent reference manual + CS4344 / CS5343
+>    datasheet で全部埋めた。
+> 3. 既存 PCM5102 / PCM1808 のジャンパ配線を PMOD JB から **物理的に
+>    外した**。
+> 4. PYNQ-Z2 が boot して `AudioLabOverlay()` が ADC HPF True を返す
+>    (Phase 7D close-out bit の健全性確認)。
+>
+> 全部揃ったら Phase Pmod-1 を別セッションで開始する。Phase Pmod-1 用の
+> プロンプトは `PMOD_I2S2_INTEGRATION_PLAN.md` section 16 にある。
+
 ## Phase 7C / 7E / 7D — External PCM5102 / PCM1808 audio path (deployed; D44 follow-up plan only)
 
 > 外付け PCM5102 DAC + PCM1808 ADC は **Phase 7C / 7E / 7D で実装・

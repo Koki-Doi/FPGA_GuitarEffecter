@@ -155,6 +155,17 @@ subpackage; `c7a8680` added the rotary encoder input IP and the
 follow-up deploy smoke added the encoder Notebook and PYNQ Python 3.6
 compatibility fixes. See `DECISIONS.md` D26 / D33 / D35).
 
+**Planning-only addition (2026-05-18, post Phase 7D close-out)**:
+Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC on one
+PMOD board) has been ordered and will be evaluated as a stable external
+I2S I/O reference before any further PCM1808 work. The full design /
+phase / pin / test plan lives in
+`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`. No RTL / XDC / Tcl /
+Vivado / bit/hwh / Python / Notebook change has been made for this;
+deployed bit is still the Phase 7D close-out `f502373` series. PCM5102
+SCK = GND (D40 / D42), PCM1808 mux = ADAU (D43), Phase 7D close-out
+WNS `-7.931 ns`. See `DECISIONS.md` D45.
+
 ## Current load-bearing facts
 
 - **HDMI signal**: VESA SVGA `800x600 @ 60 Hz`, pixel clock

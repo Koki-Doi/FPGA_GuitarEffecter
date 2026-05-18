@@ -1870,3 +1870,75 @@ not get removed even when superseded — they get updated.
   - Documentation/comments that still describe JB1 as a live 12.288 MHz
     SCK/SCKI pin should be corrected to the D42 reality: JB1 is
     constant 0 / unused, PCM5102 SCK is GND, and PCM1808 SCKI is JB8.
+
+## D45 — Evaluate Digilent Pmod I2S2 as a stable external I2S I/O reference before further PCM1808 work
+
+- **Decision (plan only).** Add Digilent **Pmod I2S2** (CS4344 24-bit
+  stereo DAC + CS5343 24-bit stereo ADC on a single PMOD board) as an
+  evaluation reference for external I2S I/O before the next PCM1808
+  bring-up attempt. The plan is staged in
+  `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`. **This decision
+  records the planning step only — no RTL / XDC / Tcl / Vivado /
+  bit / hwh / Python / Notebook change is made by this commit.**
+- **Why.**
+  - PCM1808 hardware is suspected damaged (`DECISIONS.md` D43,
+    `--capture-adc` returns pure 0 even with line-in present). Going
+    back to the same PCM1808 module is not a healthy starting point
+    for the next audio-quality pass.
+  - PCM5102 line out and PCM1808 line in currently live on two
+    separate breakout boards with hand-routed jumper wires on PMOD JB;
+    JB7 (PCM5102 DIN) / JB8 (PCM1808 SCKI) crosstalk is one suspected
+    contributor to the residual PCM5102 audio-quality nits the user
+    reported at Phase 7D close-out (`DECISIONS.md` D42 / D44).
+  - Pmod I2S2 places DAC and ADC on the same board sharing a single
+    MCLK / BCLK / LRCLK tree, behind a single PMOD 12-pin connector
+    that mates directly to PMOD JB. Long jumper ribbons disappear.
+  - The Pmod I2S2 MCLK target (256 fs = 12.288 MHz at 48 kHz) lines
+    up exactly with the existing `clk_wiz_audio_ext` MMCM
+    (`100 MHz -> 12.288 MHz exact`, `DECISIONS.md` D38), so no new
+    clock infrastructure is required for the 48 kHz initial spec.
+  - The existing Clash `I2S.hs` (`vecFromSamples`) emits exactly the
+    24-bit MSB-first / 32-bit slot / I2S Philips frame that CS4344 /
+    CS5343 want, so no SRC, CDC, or AXIS rework is needed to feed
+    Pmod I2S2 from the existing DSP path.
+- **Boundary.**
+  - This decision changes **only docs** (the integration plan plus
+    minimal cross-references in CURRENT_STATE / EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN
+    / IO_PIN_RESERVATION / RESUME_PROMPTS). No `hw/` / `audio_lab_pynq/`
+    / `GUI/` / `scripts/` / `tests/` / `bitstreams/` change.
+  - ADAU1761 input / DSP / ADAU DAC output (D27) stay untouched.
+  - PCM5102 ADAU-mirror output path (D39) stays untouched. PCM5102
+    SCK stays GND-tied / internal-SYSCLK mode (D40 / D42). JB1 stays
+    constant 0 at the RTL layer.
+  - PCM1808 build-time mux ships with `CONFIG.CONST_VAL {0}` (D43).
+    This is **not** the lever to reactivate PCM1808; the PCM1808
+    module is still suspected damaged and the freeze stays in place.
+  - HDMI baseline (D25 SVGA 800x600 @ 40 MHz) is untouched.
+  - Encoder PL IP (D32 / D33 / D34 / D36 / D37, `enc_in_0/s_axi` at
+    `0x43D10000`) is untouched.
+  - GPIO_CONTROL_MAP (D12) is untouched. No new AXI GPIO is planned
+    for the Pmod I2S2 path; build-time mux + XDC pin map only.
+  - 96 kHz operation is a Phase Pmod-5 future option on a separate
+    branch; the initial 48 kHz spec is the only one this decision
+    commits to.
+- **Phase plan summary** (full detail in
+  `PMOD_I2S2_INTEGRATION_PLAN.md` section 11):
+  - Phase Pmod-0 — this docs-only commit.
+  - Phase Pmod-1 — Pmod I2S2 DAC-only 1 kHz tone bring-up (after the
+    user removes the existing PCM5102 / PCM1808 jumpers from PMOD JB).
+  - Phase Pmod-2 — Pmod I2S2 ADC-to-DAC physical loopback (no DSP).
+  - Phase Pmod-3 — Pmod I2S2 ADC -> existing mono DSP -> Pmod I2S2 DAC.
+  - Phase Pmod-4 — A/B comparison ADAU vs PCM5102 vs Pmod I2S2.
+  - Phase Pmod-5 (optional) — 96 kHz experiment on a separate branch.
+- **How to apply.**
+  - Do not start Phase Pmod-1 until the user has the Pmod I2S2 module
+    in hand, has filled in the `要公式確認` items in
+    `PMOD_I2S2_INTEGRATION_PLAN.md` section 6 / section 15 from the
+    Digilent Pmod I2S2 reference manual + CS4344 / CS5343 datasheets,
+    and has physically removed the existing PCM5102 / PCM1808 jumper
+    wires from PMOD JB.
+  - When implementation starts, follow the Phase Pmod-1 prompt in
+    `PMOD_I2S2_INTEGRATION_PLAN.md` section 16. Each subsequent phase
+    must keep ADAU1761 / DSP / HDMI / encoder integration tcls
+    untouched and treat Pmod I2S2 as a separate build variant rather
+    than a runtime mux until A/B comparison proves it is the reference.
