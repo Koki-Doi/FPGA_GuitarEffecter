@@ -1950,3 +1950,177 @@ not get removed even when superseded — they get updated.
     must keep ADAU1761 / DSP / HDMI / encoder integration tcls
     untouched and treat Pmod I2S2 as a separate build variant rather
     than a runtime mux until A/B comparison proves it is the reference.
+
+## D46 — Replace generic Overdrive with six selectable inspired-by models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR)
+
+- **Decision.** The single-character Overdrive stage was retired and
+  replaced by **six selectable models** chosen at runtime via a 3-bit
+  `overdriveModel` field. Every overlay load picks one of these
+  voicings; there is no "generic OD" fallback. The Python API stays
+  source-compatible (`set_guitar_effects(overdrive_on=True, ...)`
+  still works) and a new `model=` kwarg / `set_overdrive_model()` API
+  exposes the model select.
+
+  Model labels are **inspired-by**, not commercial circuit /
+  schematic copies (same rule as `DECISIONS.md` D7 / D17 for the
+  distortion pedals and amp models):
+
+  | `overdriveModel` | Internal enum | UI label |
+  | --- | --- | --- |
+  | 0 | `ts9`     | Ibanez / TS9       |
+  | 1 | `od1`     | BOSS / OD-1        |
+  | 2 | `bd2`     | BOSS / BD-2        |
+  | 3 | `jan_ray` | Vemuram / Jan Ray  |
+  | 4 | `ocd`     | Fulltone / OCD     |
+  | 5 | `centaur` | CENTAUR            |
+
+  Values 6 / 7 are reserved and fall back to model 0 (TS9) in the
+  Clash coefficient case lookup.
+
+- **Why.**
+  - Parity with the distortion-section pedal-mask refactor
+    (`DECISIONS.md` D6 / D9 / D17 / D20 / D21). The distortion side
+    already shipped six selectable pedals plus reserved-pedal slots;
+    the overdrive section was the last stage carrying only a
+    generic voicing.
+  - The user spec calls for six named overdrive voicings so a single
+    DSP build can switch between TS-style, BD-style, OCD-style etc.
+    without a Vivado rebuild.
+  - "model-based always" simplifies the Python / GUI / encoder API
+    relative to "generic + optional model layer", which is the
+    pattern that already worked for `AMP_MODELS` (named voicings
+    over one numeric character knob, `DECISIONS.md` D17).
+
+- **What changes in this decision.**
+  - **Clash side** (`hw/ip/clash/src/AudioLab/Effects/Overdrive.hs` +
+    `Control.hs`):
+    - New `overdriveModel :: Ctrl -> Unsigned 3` accessor on
+      `overdrive_control.ctrlD[2:0]` (= word bits 26..24).
+    - Four small per-model coefficient lookups:
+      `odDriveK / odKneeP / odKneeN / odSafetyKnee`. Each is a 6-way
+      constant `case` whose output feeds the input of one existing
+      arithmetic op.
+    - Same 6-stage register pipeline (mul -> boost -> clip ->
+      toneMul -> toneBlend -> level). No new register stage, no new
+      multiplier, no new `topEntity` port.
+  - **GPIO map** (`GPIO_CONTROL_MAP.md`): the 3-bit `overdriveModel`
+    field shares `axi_gpio_overdrive.ctrlD` with the existing
+    `distTight` byte. `ctrlD[7:3]` keeps `distTight` (the only bits
+    that ever survived the `>> 3` / `>> 4` shifts in the
+    distortion-section Clash code); `ctrlD[2:0]` carries the model.
+    No new AXI GPIO, no `block_design.tcl` change.
+  - **Python API** (`audio_lab_pynq/AudioLabOverlay.py` +
+    `effect_defaults.py`):
+    - New `OVERDRIVE_MODELS` / `OVERDRIVE_MODEL_LABELS` tables (six
+      entries each).
+    - New `set_overdrive_model(model)` / `get_overdrive_model()` /
+      `set_overdrive_settings(model=...)` methods.
+    - New `overdrive_model=` kwarg in
+      `guitar_effect_control_words(...)` and
+      `set_guitar_effects(...)`. Default = 0 (TS9). Invalid values
+      clamp to 0.
+    - `_apply_distortion_state_to_words` composes `ctrlD` as
+      `(tight & 0xF8) | (od_model & 0x07)` so a partial tight write
+      cannot corrupt the model select and vice versa.
+    - The OD cache (`_od_state`) tracks `enabled / drive / tone /
+      level / model`; `_merge_cached_distortion_state` keeps it in
+      sync with `set_guitar_effects` so the cache and GPIO never
+      drift apart.
+  - **Compact-v2 GUI** (`GUI/compact_v2/{knobs, state, renderer,
+    hit_test}.py`):
+    - `OVERDRIVE_MODELS` model-label table added next to the
+      existing `DIST_MODELS / AMP_MODELS / CAB_MODELS`.
+    - `AppState.overdrive_model_idx` added; persisted to / loaded
+      from `fx_gui_state.json` via `_STATE_KEYS`.
+    - The renderer's [model ▼] dropdown chip now draws for
+      `selected_short in ("DIST", "OD", "AMP", "CAB")`; the OD
+      branch resolves through `OVERDRIVE_MODELS`.
+    - `hit_test_compact_v2()` treats OD the same as DIST / AMP / CAB
+      so left-arrow / right-arrow clicks cycle `overdrive_model_idx`.
+  - **Encoder runtime** (`audio_lab_pynq/encoder_ui.py` +
+    `encoder_effect_apply.py`):
+    - `EncoderUiController._cycle_model_index` now maps
+      `"Overdrive" -> ("overdrive_model_idx", 6)`; it previously
+      aliased to `dist_model_idx`. Encoder 2 short press still
+      enters model-select mode, encoder 2 rotate cycles the new
+      `overdrive_model_idx`.
+    - `EncoderEffectApplier.apply_appstate` now reads
+      `state.overdrive_model_idx` (clamp 0..5) and forwards it as
+      `overdrive_model=` to `AudioLabOverlay.set_guitar_effects`.
+  - **HDMI state mirror** (`audio_lab_pynq/hdmi_effect_state_mirror.py`
+    + new `audio_lab_pynq/hdmi_state/overdrives.py`):
+    - New `OVERDRIVE_MODELS / OVERDRIVE_MODEL_LABELS` tables in the
+      `hdmi_state` subpackage.
+    - `current_overdrive_model` / `current_overdrive_label` tracked
+      next to the existing pedal / amp / cab pair; sync helpers
+      mirror them onto `AppState.overdrive_model{,_idx,_label}`.
+    - `dropdown_label_for(...)` accepts a new keyword
+      `overdrive_label=` and `dropdown_visible_for(...)` now
+      returns True for OVERDRIVE too. PEDAL / AMP / CAB callers
+      keep working byte-for-byte.
+
+- **Constraint (timing).**
+  - The May 4 `model_select` attempt put eight parallel non-linear
+    computations behind one `case modelSelect` mux and regressed WNS
+    from -7.7 ns to -15.1 ns (rejected, never deployed, see
+    `TIMING_AND_FPGA_NOTES.md`).
+  - This decision is explicitly the cheap counterpart: the 6-way
+    case appears **only** at the inputs of existing arithmetic ops
+    (one multiplier input, one clip-helper knee, one safety-knee
+    constant). The audio sample's combinational path is unchanged.
+  - The new design adds no extra pipeline register stage and no
+    extra multiplier. The expected WNS impact is sub-1 ns and must
+    stay inside the historical `-7..-9 ns` deploy band; the deploy
+    gate rule from `TIMING_AND_FPGA_NOTES.md` still applies (any
+    -10 ns-class regression is a hard reject; -15 ns-class is
+    unconditional reject).
+
+- **Boundary.**
+  - **No** `hw/Pynq-Z2/block_design.tcl` change. No new AXI GPIO.
+    No new `topEntity` port. No new HDMI / encoder / PCM5102 /
+    PCM1808 / ADAU1761 path. No XDC change.
+  - The legacy `distTight` semantics are preserved bit-for-bit: every
+    Clash consumer already discards the low 3 bits via `>> 3` /
+    `>> 4`, and the Python writer masks tight to the top 5 bits
+    before ORing in the model select.
+  - Existing `set_guitar_effects(overdrive_on=True, overdrive_drive=,
+    overdrive_tone=, overdrive_level=, ...)` notebooks keep working;
+    `overdrive_model=` defaults to 0 (TS9).
+  - HDMI baseline (D25 SVGA 800x600 @ 40 MHz) untouched.
+  - Encoder PL IP (D32 / D33 / D34 / D36 / D37, `enc_in_0/s_axi` at
+    `0x43D10000`) untouched.
+  - PCM5102 ADAU-mirror output (D39) and SCK-tied-low rule
+    (D40 / D42) untouched. PCM1808 mux=ADAU fallback (D43)
+    untouched.
+
+- **Per-model voicing intent (character knobs, not measurements).**
+  - **TS9** (driveK=5, kneeP=2.7M, kneeN=2.3M, safety=3.2M) — the
+    prior generic OD baseline; mid-focused soft clip with TS-style
+    asymmetry.
+  - **OD-1** (driveK=4, kneeP=2.6M, kneeN=2.1M, safety=3.0M) — a
+    touch earlier asymmetric clip, tighter ceiling so the section
+    sounds simpler / cruder than TS9.
+  - **BD-2** (driveK=6, kneeP=3.0M, kneeN=2.7M, safety=3.4M) — late
+    knees with more headroom for a wider, picky, broader-band response.
+  - **Jan Ray** (driveK=3, kneeP=3.2M, kneeN=3.0M, safety=3.4M) —
+    transparent low-gain voicing: small driveK ceiling, near-symmetric
+    soft clip, high headroom.
+  - **OCD** (driveK=7, kneeP=2.3M, kneeN=1.9M, safety=3.5M) — highest
+    driveK with the lowest knees so the clip stage saturates
+    aggressively; the higher safety knee keeps the output dynamics.
+  - **CENTAUR** (driveK=5, kneeP=2.8M, kneeN=2.6M, safety=3.4M) —
+    smooth, gently asymmetric, midway between TS9 and BD-2; the high
+    safety knee preserves the "dynamic clean blend" character without
+    needing a separate dry-path stage.
+
+- **Smoke / verification.**
+  - `tests/test_overdrive_model_select.py` (new) covers byte-layout
+    contracts (model ends up in `ctrlD[2:0]`, tight in `ctrlD[7:3]`,
+    invalid model -> 0) and Python defaults / AppState round-trip.
+  - `scripts/test_overdrive_models.py` (new) cycles each model on
+    PYNQ with the PCM5102 output so the user can audibly compare.
+  - Live verification on board: ADAU Line In -> AudioLab DSP ->
+    PCM5102 line out; each model must produce an audibly distinct
+    voicing while `gain` / `tone` / `level` continue to behave;
+    every other section (Distortion / Amp / Cab / Reverb) must keep
+    working unchanged.

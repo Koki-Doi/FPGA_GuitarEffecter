@@ -90,10 +90,13 @@ class AppState:
         name: list(vals) for name, vals in _EFFECT_KNOB_DEFAULTS.items()})
     selected_knob: int = 0
 
-    # model-pick indices for the three model-driven effects
+    # model-pick indices for the model-driven effects
     dist_model_idx: int = 1   # Tube Screamer
     amp_model_idx:  int = 2   # British Crunch
     cab_model_idx:  int = 2   # 4x12 British
+    # Overdrive model select (DECISIONS.md D45). 0..5 maps to
+    # OVERDRIVE_MODELS in GUI/compact_v2/knobs.py; default = TS9.
+    overdrive_model_idx: int = 0
 
     # footswitches
     fs_states: List[bool] = field(default_factory=lambda:
@@ -154,6 +157,7 @@ _STATE_KEYS = ("preset_id", "preset_name", "preset_idx",
                "selected_effect", "selected_knob",
                "effect_on", "all_knob_values", "chain", "display_mode",
                "dist_model_idx", "amp_model_idx", "cab_model_idx",
+               "overdrive_model_idx",
                "fs_states", "fs_selected")
 
 def save_state_json(state: AppState, path: str = STATE_FILE) -> None:

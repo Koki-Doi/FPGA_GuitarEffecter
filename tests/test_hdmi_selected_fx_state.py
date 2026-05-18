@@ -226,24 +226,35 @@ def test_set_guitar_effects_last_kwarg_category_wins():
     assert mirror.get_selected_fx_actual() == "AMP SIM"
 
 
-def test_dropdown_visible_only_for_pedal_amp_cab():
+def test_dropdown_visible_only_for_pedal_overdrive_amp_cab():
+    # D46: OVERDRIVE joined the model-dropdown categories.
     visible = ["CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
-               "BIG MUFF", "FUZZ FACE", "METAL", "AMP SIM", "CAB"]
+               "BIG MUFF", "FUZZ FACE", "METAL", "OVERDRIVE",
+               "AMP SIM", "CAB"]
     hidden = ["REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
-              "SAFE BYPASS", "PRESET", "OVERDRIVE"]
+              "SAFE BYPASS", "PRESET"]
     for fx in visible:
         assert dropdown_visible_for(fx) is True, fx
     for fx in hidden:
         assert dropdown_visible_for(fx) is False, fx
 
 
-def test_dropdown_label_for_pedal_amp_cab():
+def test_dropdown_label_for_pedal_overdrive_amp_cab():
     assert dropdown_label_for("CLEAN BOOST", "TUBE SCREAMER",
                               "BRITISH CRUNCH", "4x12 CLOSED") == "TUBE SCREAMER"
     assert dropdown_label_for("AMP SIM", "TUBE SCREAMER",
                               "BRITISH CRUNCH", "4x12 CLOSED") == "BRITISH CRUNCH"
     assert dropdown_label_for("CAB", "TUBE SCREAMER",
                               "BRITISH CRUNCH", "4x12 CLOSED") == "4X12 CLOSED"
+    # D46: OVERDRIVE consumes the new ``overdrive_label=`` kwarg.
+    assert dropdown_label_for(
+        "OVERDRIVE", "TUBE SCREAMER", "BRITISH CRUNCH", "4x12 CLOSED",
+        overdrive_label="Ibanez / TS9") == "IBANEZ / TS9"
+    # Backward-compat: OVERDRIVE callers that don't pass overdrive_label
+    # (i.e. pre-D46 callers) keep getting an empty string and the chip
+    # stays hidden.
+    assert dropdown_label_for("OVERDRIVE", "TUBE SCREAMER",
+                              "BRITISH CRUNCH", "4x12 CLOSED") == ""
     for fx in ("REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
                "SAFE BYPASS", "PRESET"):
         assert dropdown_label_for(fx, "TUBE SCREAMER",
@@ -279,8 +290,8 @@ if __name__ == "__main__":
         test_mark_selected_fx_and_assertion_failure,
         test_render_validates_expected_selected_fx,
         test_set_guitar_effects_last_kwarg_category_wins,
-        test_dropdown_visible_only_for_pedal_amp_cab,
-        test_dropdown_label_for_pedal_amp_cab,
+        test_dropdown_visible_only_for_pedal_overdrive_amp_cab,
+        test_dropdown_label_for_pedal_overdrive_amp_cab,
         test_mirror_sets_dropdown_visibility_on_app_state,
     ]
     for test in tests:

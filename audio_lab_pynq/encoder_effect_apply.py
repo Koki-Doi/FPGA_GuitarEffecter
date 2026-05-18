@@ -246,6 +246,14 @@ class EncoderEffectApplier(object):
             cab_idx = int(getattr(state, "cab_model_idx", 1) or 1)
             cab_idx = max(0, min(2, cab_idx))
 
+            # Overdrive model select (D45). The single generic OD was
+            # retired; every encoder push picks one of six models. The
+            # 3-bit field is wire-packed into overdrive_control.ctrlD
+            # by AudioLabOverlay so the encoder applier just forwards
+            # the integer.
+            od_model = int(getattr(state, "overdrive_model_idx", 0) or 0)
+            od_model = max(0, min(5, od_model))
+
             # The dedicated noise-suppressor + compressor GPIOs each take
             # their own setter so the cached state stays consistent.
             self.overlay.set_noise_suppressor_settings(
@@ -273,6 +281,7 @@ class EncoderEffectApplier(object):
                 overdrive_drive=_clamp_percent(od[2]),
                 overdrive_tone=_clamp_percent(od[0]),
                 overdrive_level=_clamp_percent(od[1]),
+                overdrive_model=int(od_model),
 
                 distortion=_clamp_percent(dst[2]),
                 distortion_tone=_clamp_percent(dst[0]),

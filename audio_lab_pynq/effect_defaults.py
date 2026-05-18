@@ -74,13 +74,42 @@ COMPRESSOR_DEFAULTS = {
     "makeup": 50,
 }
 
-# Overdrive section.
+# Overdrive section. ``model`` is one of OVERDRIVE_MODELS (0..5);
+# the generic single-character overdrive was retired in D45 and every
+# load now picks one of the six selectable models. Default = TS9.
 OVERDRIVE_DEFAULTS = {
     "enabled": False,
     "tone": 65,
     "level": 100,
     "drive": 30,
+    "model": 0,
 }
+
+# Selectable Overdrive models. Order matches the model_select integer
+# carried in overdrive_control.ctrlD[2:0] (= word bits 26..24); values
+# 0..5 are valid, 6/7 fall back to TS9 in Clash.
+#
+# Model labels are inspired-by, not commercial circuit reproductions
+# (DECISIONS.md D45). The UI display labels live alongside the internal
+# enum names so AudioLabOverlay and the compact-v2 GUI can share one
+# source of truth.
+OVERDRIVE_MODELS = (
+    "ts9",
+    "od1",
+    "bd2",
+    "jan_ray",
+    "ocd",
+    "centaur",
+)
+
+OVERDRIVE_MODEL_LABELS = (
+    "Ibanez / TS9",
+    "BOSS / OD-1",
+    "BOSS / BD-2",
+    "Vemuram / Jan Ray",
+    "Fulltone / OCD",
+    "CENTAUR",
+)
 
 # RAT distortion (axi_gpio_delay).
 RAT_DEFAULTS = {
@@ -159,6 +188,7 @@ SAFE_BYPASS_DEFAULTS = {
     "overdrive_tone": 50,
     "overdrive_level": 100,
     "overdrive_drive": 0,
+    "overdrive_model": 0,
     "distortion_on": False,
     "distortion_pedal_mask": 0,
     "distortion_tone": 50,
@@ -209,6 +239,8 @@ __all__ = [
     "NOISE_SUPPRESSOR_DEFAULTS",
     "COMPRESSOR_DEFAULTS",
     "OVERDRIVE_DEFAULTS",
+    "OVERDRIVE_MODELS",
+    "OVERDRIVE_MODEL_LABELS",
     "RAT_DEFAULTS",
     "AMP_DEFAULTS",
     "AMP_MODELS",

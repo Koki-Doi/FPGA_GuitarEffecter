@@ -58,6 +58,13 @@ DROPDOWN_SHORT_LABELS = {
     "COMPRESSOR": "COMP",
     "NOISE SUPPRESSOR": "NOISE SUP",
     "OVERDRIVE": "OD",
+    # D45: Overdrive model display labels -> compact chip strings.
+    "IBANEZ / TS9": "TS9",
+    "BOSS / OD-1": "OD-1",
+    "BOSS / BD-2": "BD-2",
+    "VEMURAM / JAN RAY": "JAN RAY",
+    "FULLTONE / OCD": "OCD",
+    "CENTAUR": "CENTAUR",
 }
 
 
@@ -219,20 +226,29 @@ def dropdown_short_label(value):
     return DROPDOWN_SHORT_LABELS.get(text, text)
 
 
-def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label):
-    """Phase 6D: pick the [model ▼] marker text for the SELECTED FX panel.
+def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label,
+                        overdrive_label=None):
+    """Phase 6D / D45: pick the [model ▼] marker text for the SELECTED FX panel.
 
-    The dropdown marker is only shown for model-driven effects
-    (PEDAL / AMP / CAB) and stays hidden for REVERB / EQ / COMPRESSOR /
-    NOISE SUPPRESSOR / SAFE / PRESET / OVERDRIVE. This helper returns
-    the matching model label for PEDAL / AMP / CAB and an empty string
+    The dropdown marker is shown for model-driven effects
+    (PEDAL / OVERDRIVE / AMP / CAB) and stays hidden for REVERB / EQ /
+    COMPRESSOR / NOISE SUPPRESSOR / SAFE / PRESET. This helper returns
+    the matching model label for those categories and an empty string
     otherwise so the renderer and AppState mirror can use the
     truthiness as a visibility flag.
+
+    ``overdrive_label`` was added in D45 when the generic Overdrive was
+    replaced by six selectable models. Older callers that pass only
+    pedal/amp/cab labels keep working: ``overdrive_label`` defaults
+    to ``None`` and the OVERDRIVE chip falls back to an empty string
+    (i.e. hidden) in that case.
     """
     canonical = canonical_selected_fx(selected_fx)
     category = SELECTED_FX_CATEGORY.get(canonical, canonical)
     if category == "PEDAL":
         return str(pedal_label or "").upper()
+    if category == "OVERDRIVE":
+        return str(overdrive_label or "").upper()
     if category == "AMP":
         return str(amp_label or "").upper()
     if category == "CAB":
@@ -241,7 +257,12 @@ def dropdown_label_for(selected_fx, pedal_label, amp_label, cab_label):
 
 
 def dropdown_visible_for(selected_fx):
-    """Phase 6D: True when the SELECTED FX has a PEDAL/AMP/CAB dropdown."""
+    """Phase 6D / D45: True when the SELECTED FX has a model dropdown.
+
+    PEDAL / OVERDRIVE / AMP / CAB own a [model ▼] chip; everything else
+    (REVERB / EQ / COMPRESSOR / NOISE SUPPRESSOR / SAFE / PRESET) hides
+    it. The OVERDRIVE entry was added in D45.
+    """
     canonical = canonical_selected_fx(selected_fx)
     category = SELECTED_FX_CATEGORY.get(canonical, canonical)
-    return category in ("PEDAL", "AMP", "CAB")
+    return category in ("PEDAL", "OVERDRIVE", "AMP", "CAB")

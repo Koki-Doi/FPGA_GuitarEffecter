@@ -55,6 +55,14 @@ from audio_lab_pynq.hdmi_state.cabs import (
     normalize_cab_model,
     cab_model_label,
 )
+from audio_lab_pynq.hdmi_state.overdrives import (
+    OVERDRIVE_MODELS as OVERDRIVE_HDMI_MODELS,
+    OVERDRIVE_MODEL_LABELS as OVERDRIVE_HDMI_MODEL_LABELS,
+    OVERDRIVE_MODEL_TO_INDEX as OVERDRIVE_HDMI_MODEL_TO_INDEX,
+    OVERDRIVE_MODEL_ALIASES as OVERDRIVE_HDMI_MODEL_ALIASES,
+    normalize_overdrive_model,
+    overdrive_model_label,
+)
 from audio_lab_pynq.hdmi_state.selected_fx import (
     SELECTED_FX_CATEGORY,
     DROPDOWN_SHORT_LABELS,
@@ -122,15 +130,20 @@ class HdmiEffectStateMirror(object):
         dist_idx = int(getattr(self.app_state, "dist_model_idx", 1) or 0)
         amp_idx = int(getattr(self.app_state, "amp_model_idx", 2) or 0)
         cab_idx = int(getattr(self.app_state, "cab_model_idx", 2) or 0)
+        od_idx = int(getattr(self.app_state, "overdrive_model_idx", 0) or 0)
         self.current_pedal_model = PEDAL_MODELS[
             max(0, min(len(PEDAL_MODELS) - 1, dist_idx))]
         self.current_amp_model = AMP_MODELS[
             max(0, min(len(AMP_MODELS) - 1, amp_idx))]
         self.current_cab_model = CAB_MODELS[
             max(0, min(len(CAB_MODELS) - 1, cab_idx))]
+        self.current_overdrive_model = OVERDRIVE_HDMI_MODELS[
+            max(0, min(len(OVERDRIVE_HDMI_MODELS) - 1, od_idx))]
         self.current_pedal_label = PEDAL_MODEL_LABELS[self.current_pedal_model]
         self.current_amp_label = AMP_MODEL_LABELS[self.current_amp_model]
         self.current_cab_label = CAB_MODEL_LABELS[self.current_cab_model]
+        self.current_overdrive_label = OVERDRIVE_HDMI_MODEL_LABELS[
+            self.current_overdrive_model]
         self.active_pedals = []
         self.resource_sampler = ResourceSampler()
         self.last_resource_sample = self.resource_sampler.sample()
@@ -185,16 +198,23 @@ class HdmiEffectStateMirror(object):
         self.current_pedal_label = PEDAL_MODEL_LABELS[self.current_pedal_model]
         self.current_amp_label = AMP_MODEL_LABELS[self.current_amp_model]
         self.current_cab_label = CAB_MODEL_LABELS[self.current_cab_model]
+        self.current_overdrive_label = OVERDRIVE_HDMI_MODEL_LABELS[
+            self.current_overdrive_model]
 
         self.app_state.dist_model_idx = PEDAL_MODEL_TO_INDEX[self.current_pedal_model]
         self.app_state.amp_model_idx = AMP_MODEL_TO_INDEX[self.current_amp_model]
         self.app_state.cab_model_idx = CAB_MODEL_TO_INDEX[self.current_cab_model]
+        self.app_state.overdrive_model_idx = OVERDRIVE_HDMI_MODEL_TO_INDEX[
+            self.current_overdrive_model]
         setattr(self.app_state, "pedal_model", self.current_pedal_model)
         setattr(self.app_state, "amp_model", self.current_amp_model)
         setattr(self.app_state, "cab_model", self.current_cab_model)
+        setattr(self.app_state, "overdrive_model", self.current_overdrive_model)
         setattr(self.app_state, "pedal_model_label", self.current_pedal_label)
         setattr(self.app_state, "amp_model_label", self.current_amp_label)
         setattr(self.app_state, "cab_model_label", self.current_cab_label)
+        setattr(self.app_state, "overdrive_model_label",
+                self.current_overdrive_label)
         setattr(self.app_state, "active_pedals", list(self.active_pedals))
         if active_model_category is not None:
             setattr(self.app_state, "active_model_category",
@@ -247,7 +267,8 @@ class HdmiEffectStateMirror(object):
             canonical,
             self.current_pedal_label,
             self.current_amp_label,
-            self.current_cab_label)
+            self.current_cab_label,
+            overdrive_label=self.current_overdrive_label)
         short = dropdown_short_label(label) if label else ""
         visible = dropdown_visible_for(canonical)
         setattr(self.app_state, "selected_model_category", category)
@@ -271,6 +292,12 @@ class HdmiEffectStateMirror(object):
     def _set_current_cab_model(self, model):
         self.current_cab_model = normalize_cab_model(model)
         self._sync_model_state_to_app_state("CAB")
+
+    def _set_current_overdrive_model(self, model):
+        """D45: track the currently selected Overdrive model so the
+        SELECTED FX dropdown chip can render it on the HDMI panel."""
+        self.current_overdrive_model = normalize_overdrive_model(model)
+        self._sync_model_state_to_app_state("OVERDRIVE")
 
     def _amp_model_from_character(self, value):
         try:
@@ -491,6 +518,14 @@ class HdmiEffectStateMirror(object):
                                  int(values["cab_model"])))
             self.current_cab_model = CAB_MODELS[cab_idx]
             self._sync_model_state_to_app_state("CAB")
+        if "overdrive_model" in values:
+            try:
+                od_idx = int(values["overdrive_model"])
+            except (TypeError, ValueError):
+                od_idx = 0
+            od_idx = max(0, min(len(OVERDRIVE_HDMI_MODELS) - 1, od_idx))
+            self.current_overdrive_model = OVERDRIVE_HDMI_MODELS[od_idx]
+            self._sync_model_state_to_app_state("OVERDRIVE")
 
         if selected_fx is None:
             return
