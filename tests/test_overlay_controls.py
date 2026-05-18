@@ -177,6 +177,7 @@ def test_set_guitar_effects_writes_amp_cab_gpio():
 def make_overlay_with_distortion_state():
     overlay = make_overlay()
     overlay._dist_state = dict(AudioLabOverlay.DISTORTION_DEFAULTS)
+    overlay._od_state = dict(AudioLabOverlay.OVERDRIVE_DEFAULTS)
     overlay._cached_gate_word = 0
     overlay._cached_overdrive_word = 0
     overlay._cached_distortion_word = 0
@@ -224,8 +225,12 @@ def test_distortion_bit_layout_in_control_words():
     assert words["distortion"] & 0xFF == tone_byte
     assert (words["distortion"] >> 24) & 0x7F == ((1 << 1) | (1 << 6))
     assert (words["distortion"] >> 24) & 0x80 == 0  # reserved high bit
-    # overdrive ctrlA-C preserved; ctrlD is tight.
-    assert (words["overdrive"] >> 24) & 0xFF == tight_byte
+    # overdrive ctrlA-C preserved; ctrlD packs tight (top 5 bits) and
+    # the 3-bit OD model select (bottom 3 bits) after D46. The Clash
+    # distTight consumers all shift the byte right by 3 or more, so
+    # the top 5 bits are the only bits that ever survive the shift.
+    assert (words["overdrive"] >> 24) & 0xF8 == tight_byte & 0xF8
+    assert (words["overdrive"] >> 24) & 0x07 == 0   # default OD model = 0
     assert words["overdrive"] & 0xFF == tone_byte
 
 
@@ -402,7 +407,10 @@ def test_set_distortion_settings_updates_cache_and_writes():
     assert last_gate[0] == 0x00 and last_dist[0] == 0x00 and last_od[0] == 0x00
     assert (last_dist[1] >> 24) & 0x7F == (1 << 1)
     assert (last_dist[1] >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(80, 255)
-    assert (last_od[1] >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(70, 255)
+    # D46: overdrive_control.ctrlD packs the OD model select in bits[2:0]
+    # alongside distTight in bits[7:3]. Compare only the tight bits.
+    assert (last_od[1] >> 24) & 0xF8 == AudioLabOverlay._percent_to_u8(70, 255) & 0xF8
+    assert (last_od[1] >> 24) & 0x07 == 0   # default OD model
     assert (last_gate[1] >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
     assert (last_gate[1] >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(100, 255)
 
@@ -439,9 +447,11 @@ def test_set_distortion_settings_preserves_overdrive_params():
     od_before = overlay._cached_overdrive_word
     overlay.set_distortion_settings(tight=10)
     od_after = overlay._cached_overdrive_word
-    # ctrlA/B/C preserved, only ctrlD (tight) changed.
+    # ctrlA/B/C preserved, only ctrlD (tight + OD model) changed.
+    # D46: tight occupies bits[7:3], OD model occupies bits[2:0].
     assert od_after & 0x00FFFFFF == od_before & 0x00FFFFFF
-    assert (od_after >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(10, 255)
+    assert (od_after >> 24) & 0xF8 == AudioLabOverlay._percent_to_u8(10, 255) & 0xF8
+    assert (od_after >> 24) & 0x07 == 0   # OD model untouched (default = 0)
 
 
 def test_set_guitar_effects_uses_cached_distortion_state_when_unset():
@@ -456,7 +466,10 @@ def test_set_guitar_effects_uses_cached_distortion_state_when_unset():
     last_od = overlay.axi_gpio_overdrive.writes[-1][1]
     last_gate = overlay.axi_gpio_gate.writes[-1][1]
     assert (last_dist >> 24) & 0x7F == (1 << 0)  # clean_boost
-    assert (last_od >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(85, 255)
+    # D46: overdrive_control.ctrlD packs tight (top 5 bits) and OD model
+    # select (bottom 3 bits). Compare tight against the masked value.
+    assert (last_od >> 24) & 0xF8 == AudioLabOverlay._percent_to_u8(85, 255) & 0xF8
+    assert (last_od >> 24) & 0x07 == 0   # default OD model
     assert (last_gate >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(40, 255)
     assert (last_gate >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(70, 255)
 
@@ -776,7 +789,11 @@ SCENARIO_SNAPSHOTS = {
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "tube_screamer_crunch": {
-        "gate": 0xff800204, "overdrive": 0x994c80a6, "distortion": 0x02732d8c,
+        # tight=60 -> _percent_to_u8(60,255)=153 (0x99); D46 masks the
+        # low 3 bits off so ctrlD = 0x99 & 0xF8 = 0x98 (+ OD model 0).
+        # The Clash distortion-section consumers all shift the byte
+        # right by 3 or 4, so this masking does not change behaviour.
+        "gate": 0xff800204, "overdrive": 0x984c80a6, "distortion": 0x02732d8c,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
@@ -786,7 +803,8 @@ SCENARIO_SNAPSHOTS = {
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "metal_tight": {
-        "gate": 0xff800204, "overdrive": 0xbf4c80a6, "distortion": 0x408c268c,
+        # tight=75 -> 0xBF; D46 masks low 3 bits -> 0xB8.
+        "gate": 0xff800204, "overdrive": 0xb84c80a6, "distortion": 0x408c268c,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },

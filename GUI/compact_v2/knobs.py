@@ -39,6 +39,19 @@ DIST_MODELS = ["CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
 # Legacy alias.
 DISTORTION_PEDALS = [m.lower().replace(" ", "_").replace("-", "") for m in DIST_MODELS]
 
+# Overdrive model names. Order matches the 3-bit OD_MODEL field carried
+# in axi_gpio_overdrive.ctrlD[2:0] (DECISIONS.md D45). Values 0..5 are
+# valid; the Clash side falls back to 0 (TS9) for 6/7. The single
+# generic Overdrive was retired -- every load picks one of these six.
+OVERDRIVE_MODELS = [
+    "Ibanez / TS9",
+    "BOSS / OD-1",
+    "BOSS / BD-2",
+    "Vemuram / Jan Ray",
+    "Fulltone / OCD",
+    "CENTAUR",
+]
+
 # Amp Simulator named voicings (label, character byte center value).
 AMP_MODELS = [("JC CLEAN", 10), ("CLEAN COMBO", 35),
               ("BRITISH CRUNCH", 60), ("HIGH GAIN STACK", 85)]

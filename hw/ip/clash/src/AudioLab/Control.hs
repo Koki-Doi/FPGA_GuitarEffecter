@@ -44,8 +44,32 @@ distMix = ctrlD
 -- | Tight (low-cut amount) lives in overdrive_control bits[31:24]
 -- (ctrlD). Higher values raise the input HPF corner, tightening the
 -- low end ahead of clip-style pedals.
+--
+-- Note: the low 3 bits of this byte (overdrive_control ctrlD[2:0],
+-- i.e. word bits 26..24) carry the Overdrive model select (D45).
+-- Every consumer of distTight in the distortion section uses a right
+-- shift of 3 or more bits, so the low 3 bits are already discarded and
+-- the tight semantics are preserved bit-for-bit.
 distTight :: Ctrl -> Unsigned 8
 distTight = ctrlD
+
+-- | Overdrive model select lives in overdrive_control bits[26:24]
+-- (low 3 bits of ctrlD; word bits 24..26). Valid range is 0..5;
+-- 6 and 7 are reserved and fall through to model 0 (TS9) in the
+-- per-model coefficient tables.
+--
+--   0 : Ibanez / TS9
+--   1 : BOSS / OD-1
+--   2 : BOSS / BD-2
+--   3 : Vemuram / Jan Ray
+--   4 : Fulltone / OCD
+--   5 : CENTAUR
+--
+-- This byte is shared with `distTight` (the upper 5 bits). The Python
+-- writer masks them together so a tight write does not corrupt the
+-- model select and vice versa.
+overdriveModel :: Ctrl -> Unsigned 3
+overdriveModel c = unpack (slice d26 d24 c)
 
 -- | Distortion-section pedal enable mask lives in
 -- distortion_control bits[31:24] (ctrlD).

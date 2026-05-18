@@ -1,6 +1,41 @@
 # Current state
 
-Last updated: **2026-05-18 (Phase 7D close-out + PCM5102 quality follow-up plan): PCM1808 mux flipped back to ADAU pending hardware diagnosis; SCKI moved off JB1 onto JB8**
+Last updated: **2026-05-18 (D46 Overdrive model select): generic Overdrive retired; six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR) ride on overdrive_control.ctrlD[2:0] alongside the existing distTight high 5 bits**
+(The single-character Overdrive stage was retired in favour of six
+inspired-by models. The 3-bit `overdriveModel` field lives in
+`axi_gpio_overdrive.ctrlD[2:0]` (= word bits 26..24); the existing
+`distTight` byte keeps its top 5 bits and the two coexist on the same
+GPIO byte because every Clash consumer of `distTight` already uses
+`>> 3` or `>> 4` and discards the low 3 bits. The Clash side
+(`AudioLab/Effects/Overdrive.hs`) keeps the same 6-stage register
+pipeline — only the constants per stage become per-model lookups
+(`odDriveK / odKneeP / odKneeN / odSafetyKnee`), each a 6-way case
+mux of constants fed into one existing arithmetic op. No new register
+stage, no new multiplier, no `topEntity` port change,
+`block_design.tcl` untouched, no new GPIO. Python: new
+`set_overdrive_model` / `set_overdrive_settings(model=...)` API plus
+an `overdrive_model=` kwarg on `set_guitar_effects`; default = 0
+(TS9), invalid values clamp to 0. Compact-v2 GUI:
+`OVERDRIVE_MODELS` table added, `AppState.overdrive_model_idx`
+persisted, the [model ▼] dropdown chip now draws for OVERDRIVE too,
+`hit_test_compact_v2` recognises OD prev/next. Encoder runtime:
+`EncoderUiController` cycles `overdrive_model_idx` instead of
+aliasing onto `dist_model_idx`; `EncoderEffectApplier` forwards the
+new field as `overdrive_model=` so encoder edits land on the GPIO.
+HDMI state mirror: new
+`audio_lab_pynq/hdmi_state/overdrives.py` model table, the mirror
+tracks `current_overdrive_model`, and `dropdown_label_for(...)`
+accepts an `overdrive_label=` kwarg so notebook-driven HDMI renders
+also show the model name. `DECISIONS.md` D46.
+
+Previous-pass header (D45 Pmod I2S2 planning, 2026-05-18):
+**Digilent Pmod I2S2 ordered as a stable external I2S I/O reference; design / phase / pin plan committed**
+(no RTL / XDC / Tcl / Vivado / bit / hwh / Python / Notebook change;
+deployed bit is still the Phase 7D close-out `f502373` series. See
+`PMOD_I2S2_INTEGRATION_PLAN.md` and `DECISIONS.md` D45.)
+
+Previous-pass header (Phase 7D close-out):
+**Phase 7D close-out: PCM1808 mux flipped back to ADAU pending hardware diagnosis; SCKI moved off JB1 onto JB8**
 (Phase 7D first attempt picked PCM1808 as the build-time ADC source via
 the `pcm1808_input_select` mux and put PCM1808 SCKI back on JB1
 12.288 MHz. On the bench this re-broke PCM5102 (audible graininess
