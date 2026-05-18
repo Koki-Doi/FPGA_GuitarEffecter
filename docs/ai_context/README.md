@@ -145,6 +145,7 @@ Then read whatever is topical for the task at hand:
 | [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md) / [`ENCODER_INPUT_IMPLEMENTATION.md`](ENCODER_INPUT_IMPLEMENTATION.md) / [`ENCODER_INPUT_MAP.md`](ENCODER_INPUT_MAP.md) | Rotary encoder PL IP + Python driver + GUI live-apply (Phase 7F / 7G / 7G+). |
 | [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) / [`IO_PIN_RESERVATION.md`](IO_PIN_RESERVATION.md) | External PCM1808 ADC + PCM5102 DAC plan, deployed Phase 7C / 7E / 7D status, and PMOD JB / JA pin reservations. |
 | [`history/hdmi_phases/README.md`](history/hdmi_phases/README.md) | Per-phase HDMI GUI history index (Phase 1 -- Phase 6I), kept for archaeology. Read individual phase files only when you need contemporaneous detail. |
+| [`history/current_state/`](history/current_state/) | CURRENT_STATE-flavoured snapshots that were trimmed out of the live `CURRENT_STATE.md` (HDMI Phase 4/5 + Phase 1-3 prose, DSP / voicing arc, Phase 7A/7B/7F/7G planning, Phase 6F-6I dated detail). Read only when an old phase block is the load-bearing reference. |
 | [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |
 | [`REAL_PEDAL_VOICING_TARGETS.md`](REAL_PEDAL_VOICING_TARGETS.md) | Reference voicings the existing effect stages aim at. |
 | [`RESUME_PROMPTS.md`](RESUME_PROMPTS.md) | Re-entering after rate-limit or context reset (current prompts only). Per-phase history in [`RESUME_PROMPTS_HISTORY.md`](RESUME_PROMPTS_HISTORY.md). |
