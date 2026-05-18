@@ -227,6 +227,52 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
+## Phase 7C / 7E / 7D — External PCM5102 / PCM1808 audio path (deployed; D44 follow-up plan only)
+
+> 外付け PCM5102 DAC + PCM1808 ADC は **Phase 7C / 7E / 7D で実装・
+> deploy 済**。PCM5102 は AudioLab DSP 出力の並列ライン
+> (`i2s_to_stream_0/so` をそのままミラー) として動作中、PCM1808 は
+> build-time 2:1 wire mux + JB8 SCKI まで実装済だが deploy bit は
+> `CONFIG.CONST_VAL {0}` (mux=ADAU フォールバック) で出荷中。詳細は
+> `docs/ai_context/AUDIO_SIGNAL_PATH.md` の "External PCM1808 /
+> PCM5102 paths" 節、`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+> section 9、`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44。
+>
+> 触ってはいけないこと:
+> - `pcm5102_audio_out.v` の `assign ext_audio_mclk_o = 1'b0;` を外す
+>   (D40 / D42、PCM5102 SCK を低位レベル固定する RTL 側保証)。
+> - `pcm5102_dac_tone` を再 instantiate する (D39、Phase 7E で
+>   `pcm5102_audio_out` に置換済、tone module はデバッグ用に repo に
+>   残しているだけ)。
+> - `CONFIG.CONST_VAL {0}` を勝手に `{1}` に戻す (D43、PCM1808 ハードウェア
+>   診断が完了するまで mux=ADAU 固定)。
+> - PCM1808 SCKI を JB1 に戻す (D42、JB1 は構造的に常時 0)。
+> - 外付け codec 関連で AXI-Lite slave 追加 / 新 GPIO / `GPIO_CONTROL_MAP`
+>   更新 / `topEntity` / `LowPassFir.hs` を触る。
+>
+> D44 follow-up plan (まだ実装なし):
+> 1. mux=ADAU build の時 `ext_pcm1808_sckie_o` を 0 固定にする
+>    (`pcm1808_adc_integration.tcl` で build-time `CONST_VAL` に応じて
+>    `clk_wiz_audio_ext/clk_out1` か `xlconstant 0` を選ぶ)。Vivado
+>    rebuild + timing review が必要。PCM1808 復活時は SCKI 復元を
+>    忘れない。
+> 2. PCM5102 output に debug mode (`processed audio` / digital silence /
+>    `-18 dBFS` 1 kHz tone / ramp) を追加 (`pcm5102_audio_out.v` 付近に
+>    小規模 selector を入れる)。LowPassFir には触らない。
+> 3. JB1 を "live 12.288 MHz" として説明している残り documents / comments
+>    を D42 の現実 (JB1 = 0 固定 / PCM5102 SCK = GND / PCM1808 SCKI = JB8)
+>    に揃える。
+>
+> PCM1808 module 入手 / 修理して再投入する場合は
+> `hw/Pynq-Z2/pcm1808_adc_integration.tcl` の `CONFIG.CONST_VAL {0}` を
+> `{1}` に戻し、bit/hwh rebuild + deploy、
+> `scripts/test_pcm1808_adc_to_pcm5102.py --capture-adc` で `min/max/
+> mean/RMS/peak_dBFS` を確認。pure 0 が続く場合は chip / analog 前段の
+> 故障 (D43 仮説)。
+>
+> 禁止: `git push` / `git pull` / `git fetch`、HDMI baseline 変更、
+> encoder PL IP 変更、ADAU1761 即置換。
+
 ## Phase 7F/7G — Rotary encoder PL IP + Python driver + HDMI GUI (deployed; full physical smoke still open)
 
 > Phase 7F (PL) と Phase 7G (PS) を `feature/rotary-encoder-hdmi-gui-control`

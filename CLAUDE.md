@@ -149,8 +149,9 @@ When a previous turn stopped mid-implementation:
   cap of 5 fps. Do not re-introduce per-loop render or per-loop
   overlay write, do not add a second translation layer beside the
   applier, and do not silently flip `skip_rat=False`.
-- External PCM5102 DAC + PCM1808 ADC path (Phase 7C / 7E / 7D,
-  `DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43). PMOD JB carries
+- External PCM5102 DAC + PCM1808 ADC path (Phase 7C / 7E / 7D + D44
+  follow-up plan, `DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 /
+  D44). PMOD JB carries
   the entire external audio path; the integration tcls
   `hw/Pynq-Z2/pcm5102_dac_integration.tcl` and
   `hw/Pynq-Z2/pcm1808_adc_integration.tcl` are sourced from
@@ -195,6 +196,18 @@ When a previous turn stopped mid-implementation:
     can damage the chip's analog front-end (memory
     `pcm1808-dual-supply-and-pmod-brownout`; the user's current
     diagnosis hypothesis for D43).
+  - Open PCM5102 quality follow-ups (D44, **plan only — no RTL / bit /
+    deploy yet**): (1) when the build-time mux is set to ADAU
+    (`CONFIG.CONST_VAL {0}`), `ext_pcm1808_sckie_o` on JB8 / W16
+    should be tied low rather than carrying an unused 12.288 MHz that
+    couples into JB7 (PCM5102 DIN). (2) Add a PCM5102 output debug
+    mode that selects `processed audio` / digital silence /
+    `-18 dBFS` 1 kHz tone / ramp to separate DSP / I2S / analog-output
+    faults before further audio-path edits. Do not start by changing
+    `LowPassFir.hs`; this is a tcl / `pcm5102_audio_out.v` change at
+    most. When the PCM1808 path is reactivated (`CONST_VAL {1}`), JB8
+    SCKI must come back. Do not unconditionally remove the SCKI
+    output.
 - The compact-v2 renderer is split per-theme under `GUI/compact_v2/`
   (`knobs.py` / `state.py` / `layout.py` / `renderer.py` /
   `hit_test.py`); `GUI/pynq_multi_fx_gui.py` is now a thin

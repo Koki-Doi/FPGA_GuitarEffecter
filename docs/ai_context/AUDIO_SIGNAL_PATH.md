@@ -57,7 +57,7 @@ In `numpy`, capture buffers are read back as `numpy.int32` of shape
 
 Two additional physical paths on PMOD JB share the same internal AXIS
 plumbing. They were added by Phase 7C / 7E / 7D
-(`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43) without any change
+(`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44) without any change
 to `LowPassFir.hs`, `i2s_to_stream_0`, `axis_switch_*`, or the GPIO
 control map.
 

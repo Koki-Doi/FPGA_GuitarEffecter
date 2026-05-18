@@ -191,7 +191,9 @@ Audio-Lab-PYNQ/
   まで配線 + build-time 2:1 wire mux で実装済 (`DECISIONS.md` D41 /
   D42)。現行 deploy bit は mux=ADAU フォールバック (`CONFIG.CONST_VAL
   {0}`, `DECISIONS.md` D43) — PCM1808 module の analog 前段ハードウェア
-  診断待ち。
+  診断待ち。PCM5102 残品質改善の最小 RTL/Tcl 候補 (mux=ADAU 時の JB8
+  SCKI 停止 + PCM5102 debug output mode) は `DECISIONS.md` D44 に
+  プランのみ記録、実装はまだ。
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
 ## HDMI GUI
@@ -1348,8 +1350,10 @@ bring-up) / Phase 7E (D39 / D40、PCM5102 を AudioLab DSP の並列出力に
 7D (D41 / D42 / D43、PCM1808 mux + JB8 SCKI、ただしハードウェア診断
 不能で deploy bit は mux=ADAU フォールバック) で landing 済です。XDC
 は `JB1..JB4 / JB7 / JB8` (W14, Y14, T11, T10, V16, W16) を audio
-専用に確保しており、JB1 は構造的に常時 0 駆動 (D40 / D42)。PCM1808
-を物理的に再投入するときの手順は上記 Future Work と
+専用に確保しており、JB1 は構造的に常時 0 駆動 (D40 / D42)。PCM5102
+残品質改善 (mux=ADAU 時の JB8 SCKI 停止 + PCM5102 debug output mode) は
+D44 にプランのみ記録、実装はまだです (Vivado rebuild + timing review が
+必要)。PCM1808 を物理的に再投入するときの手順は上記 Future Work と
 [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md)
 section 9 を参照してください。
 
