@@ -167,15 +167,24 @@ clk_wiz_audio_ext.clk_out1 (12.288 MHz)
 ```
 
 Mode select (AXI register at `0x43D20000 + 0x28`):
-- `cfg_mode = 0` (default): DAC SDIN gets the internal 1 kHz tone;
-  ADC SDOUT is captured but only feeds the status counters (no
-  audio sink). Used by `scripts/test_pmod_i2s2.py` to verify clocks
-  + ADC line-in via the on-module Line Out → Line In physical
-  loopback.
-- `cfg_mode = 1`: DAC SDIN echoes the just-received ADC sample (24-bit
-  L → L, 24-bit R → R, no DSP). With Line Out tied to Line In this
-  feedback-loops; use external audio source on Line In and listen
-  on a separate Line Out destination.
+- `cfg_mode = 0` (default, mode name `tone`): DAC SDIN gets the
+  internal 1 kHz quarter-scale sine; ADC SDOUT is captured but only
+  feeds the status counters (no audio sink). Used by
+  `scripts/test_pmod_i2s2.py --mode tone` to verify clocks + ADC
+  line-in via the on-module Line Out → Line In physical loopback.
+- `cfg_mode = 1` (mode name `loopback`): DAC SDIN echoes the
+  just-received ADC sample (24-bit L → L, 24-bit R → R, no DSP, no
+  attenuation). With the on-module Line Out ↔ Line In jumper
+  installed the analog loop has gain ~ 1 and can feed back, so
+  `scripts/test_pmod_i2s2.py --mode loopback` REQUIRES
+  `--confirm-loopback` to engage; without it the script falls back
+  to mode 0 with a safety warning. Recommended workflow: disconnect
+  the on-module jumper, put a real audio source on Line In at low
+  volume, and listen on Line Out via a separate audio interface.
+- `cfg_mode = 2` / `3`: reserved. The Pmod I2S2 ADC is **NOT** wired
+  into the AudioLab DSP chain (`i2s_to_stream_0` /
+  `stream_to_i2s_0`); a "mode 2 = ADC → DSP → DAC" path is
+  intentionally NOT implemented in the current branch.
 
 Triage tips specific to the Pmod I2S2 variant:
 - If `frame_count` (`0x43D20000 + 0x08`) is stuck at 0, the BCLK /

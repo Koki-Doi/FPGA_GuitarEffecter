@@ -2358,3 +2358,48 @@ not get removed even when superseded — they get updated.
     the RTL, `source` for the two tcls, `add_files` for
     `audio_lab_pcm.xdc`) AND dropping the Pmod I2S2 references
     since they share PMOD JB pins.
+
+### D48 follow-up (2026-05-20, branch `feature/pmod-i2s2-mode1-loopback`)
+
+- **Mode 1 verified.** `pmod_i2s2_master.v` already implemented the
+  ADC → DAC direct loopback at `cfg_mode == 2'd1` (echoes the
+  just-captured `rx_left_captured` / `rx_right_captured` 24-bit
+  sample straight back into the TX serializer, no DSP, no
+  attenuation). The Python smoke
+  (`scripts/test_pmod_i2s2.py --mode loopback --confirm-loopback`)
+  flips the AXI-Lite MODE register, the master 2-FF-syncs it into
+  the MCLK domain, and the next stereo frame already comes out of
+  JB4 SDIN as a copy of JB10 SDOUT. The on-module Line Out ↔ Line
+  In jumper plus the full-scale echo means the analog loop can
+  feed back, so the script refuses `--mode loopback` unless
+  `--confirm-loopback` is also passed.
+- **Pmod I2S2 ADC is NOT wired into the AudioLab DSP chain.** The
+  user requested NOT to implement a "mode 2 = ADC → DSP → DAC"
+  path in this branch. `i2s_to_stream_0` / `stream_to_i2s_0` and
+  the AXIS DSP loop continue to be fed by ADAU1761 ADC only, as in
+  Phase 7D close-out.
+- **AXI write FSM bug fix.** The original `axi_pmod_i2s2_status.v`
+  write path used `axi_awaddr_q[5:2]` in the same `always @(posedge
+  s_axi_aclk)` cycle that the assignment to `axi_awaddr_q`
+  happened. Non-blocking semantics meant the WREADY case statement
+  picked up the *previous* address, so back-to-back MMIO writes
+  (e.g. `mmio.write(MODE, 0)` immediately followed by
+  `mmio.write(CLEAR, 1)`) committed the CLEAR write at the MODE
+  address and silently flipped `cfg_mode_o`. The fix is a proper
+  AW-then-W FSM with a `write_in_progress` flag and an explicit
+  `write_addr_lat` register, mirroring the `axi_encoder_input.v`
+  pattern (which has been deployed on-board since D32 with no
+  similar symptom). Bit / hwh were rebuilt (`audio_lab.bit`
+  re-issued at md5 different from the previous Pmod I2S2 build);
+  WNS / utilization deltas are negligible.
+- **Smoke results (post-fix).** `scripts/test_pmod_i2s2.py
+  --mode tone --clear --duration 5` reports MODE=0 after the
+  CLEAR pulse (was incorrectly MODE=1 in the pre-fix build);
+  frame_count rises at 48 kHz, peak_abs_left/right ~250k.
+  `scripts/test_pmod_i2s2.py --mode loopback --confirm-loopback
+  --clear --duration 3` reports MODE=1 and CLIP_COUNT=0 with the
+  ADC seeing the just-emitted DAC sample.
+- **Boundary (still untouched).** `block_design.tcl`,
+  `GPIO_CONTROL_MAP`, `LowPassFir.hs`, `topEntity`, HDMI
+  integration, encoder PL IP, compact-v2 GUI, notebooks, encoder
+  runtime, and ADAU1761 codec init.
