@@ -278,6 +278,20 @@ asking it to re-discover the project from scratch.
 >       --confirm-loopback --clear
 > '
 >
+> # mode 2: ADC -> AudioLab DSP -> DAC (D49). The --confirm-dsp flag is
+> # REQUIRED; without it the script falls back to mode 0. The DSP chain
+> # (Overdrive / Distortion / Compressor / Amp / Cab / Reverb / EQ) is
+> # in the audio loop -- disconnect the on-module Line Out <-> Line In
+> # jumper before engaging mode 2 and put a real audio source on Line In.
+> ssh xilinx@192.168.1.9 '
+>   cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>       scripts/test_pmod_i2s2.py --duration 3 --mode dsp \
+>       --confirm-dsp --clear
+> '
+>
+> # mode 3: mute -- writes 0 to DAC SDIN. Useful while debugging.
+>
 > # Optional: rolling status counter view
 > ssh xilinx@192.168.1.9 '
 >   cd /home/xilinx/Audio-Lab-PYNQ &&
@@ -306,11 +320,14 @@ asking it to re-discover the project from scratch.
 > - 96 kHz 化、stereo DSP 化、PMOD JA / Raspberry Pi header /
 >   Arduino header の追加割当。
 > - PCM5102 / PCM1808 path の再 enable (D48 で retire 済)。
-> - Pmod I2S2 ADC を AudioLab DSP chain (`i2s_to_stream_0` /
->   `stream_to_i2s_0`) に接続すること。これは「mode 2 = ADC -> DSP
->   -> DAC」相当で、user は今回 branch で明確に NOT 実装と指示。
->   `pmod_i2s2_master.v` だけで完結させ、AXIS chain は触らない。
 > - `git push` / `git pull` / `git fetch`。
+>
+> mode 2 = ADC → DSP → DAC は D49 (branch
+> `feature/pmod-i2s2-dsp-path`) で実装済。`pmod_i2s2_integration.tcl`
+> が `bclk_1` / `lrclk_1` / `sdata_i_1` を retarget し、
+> `i2s_to_stream_0` を Pmod クロックドメインで動かす。AXIS chain と
+> 既存 effect GPIO は触っていない。Overdrive ON で peak_abs が ~14k
+> から ~46k に上がるのを bench で確認済。
 >
 > Rollback: `git checkout main` で Phase 7D close-out 構成に戻す。
 > 過去 bit を物理 PYNQ に戻したい場合は `git show

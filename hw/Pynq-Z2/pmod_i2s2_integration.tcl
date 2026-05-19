@@ -148,6 +148,63 @@ connect_bd_net [get_bd_pins $pmod_status_0/cfg_mode_o]               [get_bd_pin
 connect_bd_net [get_bd_pins $pmod_status_0/cfg_clear_toggle_o]       [get_bd_pins $pmod_master_0/cfg_clear_toggle_i]
 
 # -----------------------------------------------------------------------------
+# 4b. Reroute the AudioLab DSP I2S converter (`i2s_to_stream_0`) onto the
+#     Pmod-generated BCLK / LRCK / SDATA clock tree. This makes the existing
+#     AXIS DSP chain process Pmod ADC samples and emit a Pmod-DAC-compatible
+#     bit-serial stream, enabling `cfg_mode == 2'd2` (ADC -> DSP -> DAC).
+#
+# Original block_design.tcl wiring (kept in repo as the baseline):
+#   bclk_1   : top-level `bclk`  (R18, ADAU PLL) -> i2s_to_stream_0/bclk
+#                                                + proc_sys_reset_0/slowest_sync_clk
+#   lrclk_1  : top-level `lrclk` (T17, ADAU PLL) -> i2s_to_stream_0/lrclk
+#   sdata_i_1: top-level `sdata_i` (F17, ADAU)   -> i2s_to_stream_0/si
+#
+# After rewiring (this script):
+#   pmod_master_0/dsp_bclk_o (= bclk_int, 3.072 MHz from clk_wiz_audio_ext / 4)
+#                                              -> i2s_to_stream_0/bclk
+#                                              + proc_sys_reset_0/slowest_sync_clk
+#   pmod_master_0/dsp_lrck_o (= lrck_int, 48 kHz from bclk_int / 64)
+#                                              -> i2s_to_stream_0/lrclk
+#   top-level `ext_pmod_i2s2_ad_sdout_i` (W13, Pmod ADC SDOUT)
+#                                              -> i2s_to_stream_0/si
+#   i2s_to_stream_0/so (already wired to top-level `sdata_o` on G18 for the
+#                       ADAU DAC backward-visibility) gets one extra sink:
+#                                              -> pmod_master_0/dsp_dac_sdin_i
+#
+# The ADAU1761 top-level ports (`bclk`, `lrclk`, `sdata_i`, `sdata_o`) stay
+# in `audio_lab.xdc` but `bclk` / `lrclk` / `sdata_i` are no longer loaded
+# by anything inside the design. `sdata_o` keeps receiving the
+# i2s_to_stream_0/so bit-serial output for visibility (ADAU DAC will play a
+# Pmod-clocked stream; not a usable audio path any more). ADAU1761 I2C
+# config stays intact via the codec_address / IIC_1 ports, so the codec is
+# still alive and `ADC HPF True` smoke continues to work.
+# -----------------------------------------------------------------------------
+delete_bd_objs [get_bd_nets bclk_1]
+delete_bd_objs [get_bd_nets lrclk_1]
+delete_bd_objs [get_bd_nets sdata_i_1]
+
+# Pmod BCLK -> i2s_to_stream_0/bclk + proc_sys_reset_0/slowest_sync_clk
+connect_bd_net [get_bd_pins $pmod_master_0/dsp_bclk_o] \
+               [get_bd_pins i2s_to_stream_0/bclk] \
+               [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
+
+# Pmod LRCK -> i2s_to_stream_0/lrclk
+connect_bd_net [get_bd_pins $pmod_master_0/dsp_lrck_o] \
+               [get_bd_pins i2s_to_stream_0/lrclk]
+
+# Pmod ADC SDOUT (top-level input port) -> i2s_to_stream_0/si.
+# Same top-level port still goes to pmod_master_0/ext_pmod_i2s2_ad_sdout_i
+# (driven above), this just adds a second sink to the existing net.
+connect_bd_net [get_bd_ports ext_pmod_i2s2_ad_sdout_i] \
+               [get_bd_pins i2s_to_stream_0/si]
+
+# DSP DAC bit-serial output -> pmod_master_0/dsp_dac_sdin_i. The existing
+# net `i2s_to_stream_0_so` already drives the ADAU sdata_o top-level port;
+# we just append the new sink.
+connect_bd_net [get_bd_pins i2s_to_stream_0/so] \
+               [get_bd_pins $pmod_master_0/dsp_dac_sdin_i]
+
+# -----------------------------------------------------------------------------
 # 5. AXI-Lite from ps7_0_axi_periph/M18 to the status slave (clock + reset
 #    from the 100 MHz peripheral domain, same as every other AXI peripheral).
 # -----------------------------------------------------------------------------

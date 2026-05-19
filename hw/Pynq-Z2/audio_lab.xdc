@@ -1,5 +1,13 @@
-# Setup bclk
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets bclk_IBUF]
+# Setup bclk. After DECISIONS.md D49, the ADAU1761 bclk (R18) is no
+# longer loaded internally (the DSP I2S converter `i2s_to_stream_0`
+# runs on Pmod-generated bclk_int via `pmod_i2s2_integration.tcl`),
+# so `bclk_IBUF` may not exist any more. The -quiet wrappers prevent
+# the otherwise spurious "set_property expects at least one object"
+# critical warning. The `create_clock` and `set_false_path` lines stay
+# because Vivado tolerates dangling clock definitions and the
+# constraints still document the intent for any future rebuild that
+# loads the ADAU bclk path again.
+set_property -quiet CLOCK_DEDICATED_ROUTE FALSE [get_nets -quiet bclk_IBUF]
 create_clock -add -name bclk -period 325 -waveform {0 162.5} [get_ports bclk]
 
 ## Ignore inter clock paths in timing analysis

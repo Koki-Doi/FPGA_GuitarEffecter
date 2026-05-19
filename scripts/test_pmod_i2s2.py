@@ -90,10 +90,12 @@ EXPECTED_VERSION = 0x00480001
 # Symbolic mode names that map onto `cfg_mode_i` in `pmod_i2s2_master.v`.
 MODE_TONE_PROBE              = 0  # internal 1 kHz tone on DAC, ADC reads it back
 MODE_ADC_TO_DAC_DIRECT_LOOP  = 1  # ADC sample -> DAC sample, no DSP
+MODE_ADC_DSP_DAC             = 2  # ADC -> AudioLab DSP chain -> DAC (D49)
+MODE_MUTE                    = 3  # DAC SDIN tied to 0
 
 
 def _parse_mode(value):
-    """Accept --mode tone | loopback | 0 | 1. Return integer cfg_mode."""
+    """Accept --mode tone | loopback | dsp | mute | 0 | 1 | 2 | 3."""
     if value is None:
         return None
     s = str(value).strip().lower()
@@ -101,8 +103,12 @@ def _parse_mode(value):
         return MODE_TONE_PROBE
     if s in ("loopback", "adc_to_dac_loopback", "loop", "1"):
         return MODE_ADC_TO_DAC_DIRECT_LOOP
+    if s in ("dsp", "adc_dsp_dac", "audiolab", "2"):
+        return MODE_ADC_DSP_DAC
+    if s in ("mute", "silent", "off", "3"):
+        return MODE_MUTE
     raise argparse.ArgumentTypeError(
-        "--mode must be one of: tone, loopback, 0, 1; got %r" % value)
+        "--mode must be one of: tone, loopback, dsp, mute, 0, 1, 2, 3; got %r" % value)
 
 
 LOOPBACK_WARNING = """\
@@ -128,6 +134,29 @@ the status counters, set the audio source level to its MINIMUM
 before engaging mode 1.
 
 To engage mode 1, pass `--confirm-loopback` on the command line.
+================================================================
+"""
+
+DSP_WARNING = """\
+================================================================
+WARNING: Pmod I2S2 mode 2 = ADC -> AudioLab DSP -> DAC
+================================================================
+The DSP chain (Overdrive / Distortion / Compressor / Noise
+Suppressor / Amp / Cab / EQ / Reverb) is in the loop. Sustained
+high-gain pedals + the on-module Line Out <-> Line In jumper can
+FEED BACK at any gain stage on the chain.
+
+Recommended workflow:
+  1. PHYSICALLY DISCONNECT the on-module Line Out <-> Line In
+     3.5 mm jumper before engaging mode 2.
+  2. Put a real audio source on Line In at LOW volume.
+  3. Listen on Line Out via a separate audio interface or
+     headphone -- NOT plugged back into Line In.
+  4. Start with the effect chain on Safe Bypass / all effects off
+     and confirm clean passthrough before enabling Overdrive /
+     Distortion / Amp.
+
+To engage mode 2, pass `--confirm-dsp` on the command line.
 ================================================================
 """
 
@@ -223,6 +252,12 @@ def main():
                    help="Required when --mode loopback is selected. Without it "
                         "the script prints a safety warning and refuses to "
                         "engage mode 1 (falls back to mode 0).")
+    p.add_argument("--confirm-dsp", action="store_true",
+                   help="Required when --mode dsp is selected. Without it "
+                        "the script prints a safety warning and refuses to "
+                        "engage mode 2 (falls back to mode 0). The AudioLab "
+                        "DSP chain is in the loop and can feed back if the "
+                        "on-module Line Out <-> Line In jumper is still on.")
     p.add_argument("--clear", action="store_true",
                    help="Issue a CLEAR write (zeroes peak / nonzero counters) "
                         "before sampling. frame_count keeps running.")
@@ -237,6 +272,11 @@ def main():
     if requested_mode == MODE_ADC_TO_DAC_DIRECT_LOOP and not args.confirm_loopback:
         print(LOOPBACK_WARNING)
         print("[pmod_i2s2] --confirm-loopback NOT set -- refusing mode 1; "
+              "falling back to mode 0 (tone + probe).")
+        effective_mode = MODE_TONE_PROBE
+    elif requested_mode == MODE_ADC_DSP_DAC and not args.confirm_dsp:
+        print(DSP_WARNING)
+        print("[pmod_i2s2] --confirm-dsp NOT set -- refusing mode 2; "
               "falling back to mode 0 (tone + probe).")
         effective_mode = MODE_TONE_PROBE
 
@@ -259,12 +299,23 @@ def main():
         print("[pmod_i2s2] WARN: VERSION 0x%08X != expected 0x%08X"
               % (ver, EXPECTED_VERSION))
 
+    _MODE_NAMES = {
+        MODE_TONE_PROBE:             "tone",
+        MODE_ADC_TO_DAC_DIRECT_LOOP: "loopback",
+        MODE_ADC_DSP_DAC:            "dsp",
+        MODE_MUTE:                   "mute",
+    }
     if effective_mode is not None:
-        mode_name = "tone" if effective_mode == MODE_TONE_PROBE else "loopback"
+        mode_name = _MODE_NAMES.get(effective_mode, "?")
         print("[pmod_i2s2] writing MODE = %d (%s)" % (effective_mode, mode_name))
         if effective_mode == MODE_ADC_TO_DAC_DIRECT_LOOP:
             print("[pmod_i2s2] *** ADC -> DAC direct loopback engaged ***")
             print("[pmod_i2s2] Stop the run if you hear squealing / feedback.")
+        elif effective_mode == MODE_ADC_DSP_DAC:
+            print("[pmod_i2s2] *** ADC -> AudioLab DSP -> DAC engaged ***")
+            print("[pmod_i2s2] Disconnect the on-module Line Out <-> Line In")
+            print("[pmod_i2s2] jumper; the DSP chain (Overdrive / Distortion /")
+            print("[pmod_i2s2] Amp / Cab / Reverb) is in the audio path.")
         mmio.write(REG["MODE"], effective_mode & 0x3)
 
     if args.clear:

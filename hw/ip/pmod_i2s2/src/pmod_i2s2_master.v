@@ -21,14 +21,22 @@
 //   ext_pmod_i2s2_ad_sdout_i  = JB10 W13   24-bit I2S Philips MSB-first  (in)
 //
 // Build-time MODE values (`cfg_mode_i`):
-//   0 = TX_TONE + ADC_PROBE  (default at reset; what tone module emits +
-//                             what ADC SDOUT reports go to two separate paths.
-//                             SDIN gets the internal sine tone; ADC status
-//                             counters track SDOUT for the probe smoke.)
-//   1 = ADC_TO_DAC_LOOPBACK  (SDIN echoes the last received ADC sample, mono
-//                             or stereo. The ADC status counters still update.
-//                             Use cautiously while LINE OUT / LINE IN are
+//   0 = TX_TONE + ADC_PROBE  (default at reset; SDIN gets the internal sine
+//                             tone; ADC status counters track SDOUT for the
+//                             probe smoke.)
+//   1 = ADC_TO_DAC_LOOPBACK  (SDIN echoes the last received ADC sample, no
+//                             DSP. ADC status counters still update.
+//                             Use cautiously while Line Out / Line In are
 //                             physically tied -- feedback risk.)
+//   2 = ADC_DSP_DAC          (SDIN forwards `dsp_dac_sdin_i`, the bit-serial
+//                             output of the existing AudioLab DSP chain
+//                             clocked by the Pmod-generated BCLK / LRCK
+//                             tree. The DSP chain receives the Pmod ADC
+//                             SDOUT through `i2s_to_stream_0/si` (rewired
+//                             by `pmod_i2s2_integration.tcl`). Feedback
+//                             risk if Line Out <-> Line In jumper is on.)
+//   3 = MUTE                 (SDIN = 0. Default-safe state, useful for
+//                             silencing the DAC while reading status.)
 //
 // Status outputs are read by `axi_pmod_i2s2_status` over a small AXI-Lite
 // slave (see `axi_pmod_i2s2_status.v`). They live in the MCLK / BCLK domain
@@ -55,6 +63,8 @@ module pmod_i2s2_master (
     // domain; this module synchronizes it internally with a 2-FF chain.
     //   0 = TX tone + ADC probe
     //   1 = ADC -> DAC loopback (SDIN echoes SDOUT)
+    //   2 = ADC -> DSP -> DAC (SDIN = dsp_dac_sdin_i)
+    //   3 = mute (SDIN = 0)
     input  wire [1:0]  cfg_mode_i,
     // CLEAR toggle from the AXI-Lite slave (also async). Every flip means
     // "zero the counters / peak registers." Edge-detected after a 2-FF sync.
@@ -71,6 +81,17 @@ module pmod_i2s2_master (
     output wire        ext_pmod_i2s2_ad_lrck_o,
     output wire        ext_pmod_i2s2_ad_sclk_o,
     input  wire        ext_pmod_i2s2_ad_sdout_i,
+
+    // Internal clock fanout for the AudioLab DSP I2S converter
+    // (i2s_to_stream_0). Drive these into `bclk` / `lrclk` on the converter
+    // so the DSP chain runs in the Pmod-generated I2S clock domain.
+    output wire        dsp_bclk_o,
+    output wire        dsp_lrck_o,
+    // Bit-serial DSP DAC stream coming back from i2s_to_stream_0/so. The
+    // converter samples on `dsp_bclk_o` rising edges and outputs MSB-first
+    // 24-bit-in-32-slot I2S Philips, identical framing to the internal
+    // tone serializer. In `cfg_mode == 2'd2` this wire drives the DAC pin.
+    input  wire        dsp_dac_sdin_i,
 
     // Status outputs (read by axi_pmod_i2s2_status). All in MCLK domain.
     output reg  [31:0] frame_count_o,
@@ -136,6 +157,11 @@ module pmod_i2s2_master (
     wire bclk_int   = ~mclk_phase[1];
     assign ext_pmod_i2s2_da_sclk_o = bclk_int;
     assign ext_pmod_i2s2_ad_sclk_o = bclk_int;
+    // Internal BCLK / LRCK fanout for the AudioLab DSP I2S converter. Driven
+    // from the same divider that produces the JB pins so the DSP chain runs
+    // in the same clock domain as the Pmod ADC sampling and the DAC SDIN
+    // serializer. No CDC needed between i2s_to_stream_0 and pmod_master_0.
+    assign dsp_bclk_o = bclk_int;
 
     // Single-MCLK pre-pulses for BCLK edge handling.
     //   bclk_fall_pre: next posedge of clk_12m288 will land on a BCLK falling
@@ -163,6 +189,7 @@ module pmod_i2s2_master (
     wire lrck_int = bit_idx[5];
     assign ext_pmod_i2s2_da_lrck_o = lrck_int;
     assign ext_pmod_i2s2_ad_lrck_o = lrck_int;
+    assign dsp_lrck_o = lrck_int;
 
     // slot_idx 0..31 inside one channel slot. I2S Philips uses
     //   slot_idx 0       -> 1 BCLK delay (DIN = 0)
@@ -302,15 +329,35 @@ module pmod_i2s2_master (
         end
     end
 
-    // I2S Philips DIN: slot_idx 1..24 = data MSB-first, else 0.
-    reg din_r;
+    // Internal serializer for mode 0 / 1: slot_idx 1..24 = MSB-first data,
+    // else 0. tx_cur_sample is a latched 24-bit (tone or ADC echo).
+    reg din_internal_r;
     always @(*) begin
         if (slot_idx >= 5'd1 && slot_idx <= 5'd24)
-            din_r = tx_cur_sample[24 - slot_idx];
+            din_internal_r = tx_cur_sample[24 - slot_idx];
         else
-            din_r = 1'b0;
+            din_internal_r = 1'b0;
     end
-    assign ext_pmod_i2s2_da_sdin_o = din_r;
+
+    // Final DAC SDIN mux. cfg_mode is 2-FF-synchronized into the MCLK domain
+    // above, so this is a clean combinational select.
+    //   2'd0 -> internal serializer (tone)
+    //   2'd1 -> internal serializer (ADC echo via cfg_mode==1 in tx_sample_*)
+    //   2'd2 -> bit-serial DSP DAC output from i2s_to_stream_0/so
+    //   2'd3 -> mute
+    // The mode 0 / mode 1 distinction is already encoded inside
+    // `tx_sample_left` / `tx_sample_right` (they pick tone vs ADC echo based
+    // on cfg_mode == 2'd1); the internal serializer is shared.
+    reg din_mux_r;
+    always @(*) begin
+        case (cfg_mode)
+            2'd0:    din_mux_r = din_internal_r;
+            2'd1:    din_mux_r = din_internal_r;
+            2'd2:    din_mux_r = dsp_dac_sdin_i;
+            default: din_mux_r = 1'b0;
+        endcase
+    end
+    assign ext_pmod_i2s2_da_sdin_o = din_mux_r;
 
     // -------------------------------------------------------------------------
     // Status counters (MCLK domain). Read via axi_pmod_i2s2_status.
