@@ -227,6 +227,77 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
+## Phase Pmod-1/2/3 — Pmod I2S2 bring-up (branch `feature/pmod-i2s2-bringup`, `DECISIONS.md` D48)
+
+> Pmod I2S2 module は手元にあり、PMOD JB へ直挿し済。Pmod I2S2 の Line
+> Out ↔ Line In は 3.5 mm ステレオケーブルで物理的に loopback 接続済。
+> 既存 PCM5102 / PCM1808 のジャンパ配線は外してある前提。
+>
+> 実装は branch `feature/pmod-i2s2-bringup` にあり、PMOD JB は **Pmod
+> I2S2 専用**。PCM5102 / PCM1808 path は retire 済 (`DECISIONS.md` D48):
+> - RTL: `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` (FPGA-master I2S engine、
+>   1 kHz sine TX + ADC RX、cfg_mode=0 で TX tone+ADC probe、cfg_mode=1
+>   で ADC→DAC loopback)、`hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v`
+>   (AXI-Lite slave at `0x43D20000`)。
+> - 統合: `hw/Pynq-Z2/pmod_i2s2_integration.tcl` を
+>   `hw/Pynq-Z2/create_project.tcl` から **無条件に** source。
+>   `pcm5102_dac_integration.tcl` / `pcm1808_adc_integration.tcl` は
+>   source しない (ファイルは repo に archival で残るが build に
+>   投入しない)。
+> - XDC: `hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` (新規) が Pmod I2S2 の
+>   8 pin (JB1..JB4 + JB7..JB10) LVCMOS33 制約。`audio_lab.xdc` は
+>   ADAU + HDMI + encoder の universal 制約のみ。`audio_lab_pcm.xdc`
+>   は archival で load しない。
+> - smoke: `scripts/test_pmod_i2s2.py` + `scripts/pmod_i2s2_capture_probe.py`。
+>   `pynq.MMIO(phys_addr, 0x10000)` で `pmod_status` を直接開く。
+>
+> Build + deploy + smoke 手順 (env var は不要):
+> ```
+> cd hw/Pynq-Z2
+> source /home/doi20/vivado/Vivado/2019.1/settings64.sh
+> vivado -mode batch -notrace -nojournal \
+>     -log vivado.log -source create_project.tcl
+> cd ../..
+> PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
+> ssh xilinx@192.168.1.9 '
+>   cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>       scripts/test_pmod_i2s2.py --duration 5
+> '
+> ssh xilinx@192.168.1.9 '
+>   cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>       scripts/pmod_i2s2_capture_probe.py --duration 10 --interval 0.5
+> '
+> ```
+>
+> 合格判定:
+> - Vivado bit/hwh 生成完了 + WNS が `-9.5 ns` を超えない
+>   (`TIMING_AND_FPGA_NOTES.md` deploy gate)。
+> - PYNQ で `AudioLabOverlay()` load PASS、ADC HPF True、HDMI VTC
+>   `GEN_ACTSZ=0x02580320` 維持、encoder VERSION 0x00070001 維持、
+>   `pmod_status` VERSION 0x00480001。
+> - `test_pmod_i2s2.py` で frame_count 増加 + Line Out → Line In
+>   loopback 接続中なら peak_abs_left/right > 0。
+> - 任意: `--mode 1` で ADC → DAC 直 loopback (外部音源推奨、自己
+>   フィードバック注意)。
+>
+> 触ってはいけないこと:
+> - `hw/Pynq-Z2/block_design.tcl` 直接編集、GPIO_CONTROL_MAP 変更、
+>   LowPassFir.hs / topEntity / Clash DSP pipeline 変更。
+> - HDMI integration (`hdmi_integration.tcl`)、encoder PL IP
+>   (`encoder_integration.tcl`)、compact-v2 GUI、Notebook、
+>   encoder runtime、ADAU1761 codec init。
+> - 96 kHz 化、stereo DSP 化、PMOD JA / Raspberry Pi header /
+>   Arduino header の追加割当。
+> - PCM5102 / PCM1808 path の再 enable (D48 で retire 済)。
+> - `git push` / `git pull` / `git fetch`。
+>
+> Rollback: `git checkout main` で Phase 7D close-out 構成に戻す。
+> 過去 bit を物理 PYNQ に戻したい場合は `git show
+> 78ef562:hw/Pynq-Z2/bitstreams/audio_lab.bit > /tmp/old.bit` で
+> 取り出して 5 か所に sync。
+
 ## Phase Pmod-0 — Pmod I2S2 integration planning (docs only, module not yet delivered)
 
 > Digilent Pmod I2S2 (CS4344 stereo DAC + CS5343 stereo ADC) を購入済、

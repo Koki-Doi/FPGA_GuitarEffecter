@@ -29,25 +29,27 @@ set_property ip_repo_paths [list $iprepo_dir $digilent_ip_repo] [current_project
 set_property target_language VHDL [current_project]
 update_ip_catalog
 
-# Add constraints file
+# Add constraints. PMOD JB belongs to the Digilent Pmod I2S2 module
+# (DECISIONS.md D48); the PCM5102 / PCM1808 PMOD JB constraints are
+# intentionally NOT loaded -- their source XDC (audio_lab_pcm.xdc) is
+# kept in the repo as archival reference only. Vivado 2019.1 does not
+# accept `if` in `.xdc`, hence the two-file split.
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
+add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_pmod_i2s2.xdc
 
 # Phase 7F/7G: add the rotary-encoder input RTL as a regular source before
 # the block design references it via `create_bd_cell -type module -reference
 # axi_encoder_input` inside encoder_integration.tcl.
 add_files -norecurse $origin_dir/../ip/encoder_input/src/axi_encoder_input.v
-# Phase 7C: add the PCM5102 DAC-only tone RTL similarly before
-# pcm5102_dac_integration.tcl references it via create_bd_cell -type module.
-# (Phase 7E retires the tone module from the block design but keeps the
-# source in the project as a known-good free-running reference.)
-add_files -norecurse $origin_dir/../ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v
-# Phase 7E: add the trivial pcm5102_audio_out pass-through that mirrors the
-# ADAU1761 I2S DAC interface onto the PMOD JB external-DAC pins.
-add_files -norecurse $origin_dir/../ip/pcm5102_audio_out/src/pcm5102_audio_out.v
-# Phase 7D: add the tiny pcm1808_input_select 2:1 wire mux that picks
-# between ADAU1761 sdata_i and the new external PCM1808 DOUT as the feed
-# to i2s_to_stream_0/si.
-add_files -norecurse $origin_dir/../ip/pcm1808_adc_input/src/pcm1808_input_select.v
+# Phase Pmod-1/2/3 (D48): the Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC)
+# is the active external audio module on PMOD JB. Its FPGA-master engine
+# and AXI-Lite status slave are added here ahead of
+# pmod_i2s2_integration.tcl. PCM5102 / PCM1808 RTL (pcm5102_dac_tone.v,
+# pcm5102_audio_out.v, pcm1808_input_select.v) is intentionally NOT
+# loaded into sources_1 -- the files stay in hw/ip/ as historical
+# reference but are not part of the deployed build any more.
+add_files -norecurse $origin_dir/../ip/pmod_i2s2/src/pmod_i2s2_master.v
+add_files -norecurse $origin_dir/../ip/pmod_i2s2/src/axi_pmod_i2s2_status.v
 update_compile_order -fileset sources_1
 
 # Generate block design
@@ -59,17 +61,14 @@ source ./hdmi_integration.tcl
 # The audio path, DSP block, existing GPIOs, and HDMI integration are not
 # touched. The encoder IP simply adds M17 on ps7_0_axi_periph.
 source ./encoder_integration.tcl
-# Phase 7C: extend with the PCM5102 external DAC bring-up (4 top-level
-# I2S pins on PMOD JB driven by a dedicated 12.288 MHz MMCM and a small
-# RTL tone generator). No AXI-Lite. Existing audio / HDMI / encoder /
-# GPIO untouched.
-source ./pcm5102_dac_integration.tcl
-# Phase 7D: extend with the PCM1808 external ADC bring-up. Inserts a 2:1
-# wire mux on the i2s_to_stream_0/si input so the existing AXIS DSP chain
-# can be fed from either the ADAU1761 ADC (sdata_i) or the new PCM1808
-# DOUT (ext_adc_dout_i on JB4 / T10). Build-time default picks PCM1808.
-# No AXI-Lite, no GPIO, no block_design.tcl direct edit.
-source ./pcm1808_adc_integration.tcl
+# Phase Pmod-1/2/3 (DECISIONS.md D48): the Digilent Pmod I2S2 is the
+# active external audio module on PMOD JB. The PCM5102 / PCM1808 bring-up
+# tcls (pcm5102_dac_integration.tcl, pcm1808_adc_integration.tcl) are
+# intentionally NOT sourced; their files stay in the repo as archival
+# reference for the Phase 7D close-out path, but the deployed build no
+# longer touches them. PCM5102 / PCM1808 jumper wiring is removed from
+# PMOD JB on the bench and Pmod I2S2 is plugged in directly.
+source ./pmod_i2s2_integration.tcl
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1
