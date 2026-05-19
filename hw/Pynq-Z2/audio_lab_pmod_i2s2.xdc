@@ -1,8 +1,10 @@
 ###################################################
 ## Phase Pmod-1/2/3 Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC)
-## pin constraints on PMOD JB. Added to constrs_1 only when
-## create_project.tcl is invoked with PMOD_I2S2_ENABLE=1. The eight
-## top-level ports are created by pmod_i2s2_integration.tcl.
+## pin constraints on PMOD JB. This is the active PMOD JB external
+## audio path (DECISIONS.md D48); `create_project.tcl` always loads
+## this file. The PCM5102 / PCM1808 alternative (`audio_lab_pcm.xdc`)
+## is archival only and is NOT loaded. The eight top-level ports
+## are created by `pmod_i2s2_integration.tcl`.
 ##
 ## Wiring (PMOD_I2S2_INTEGRATION_PLAN.md section 10,
 ## DECISIONS.md D45 / D48):
@@ -16,9 +18,10 @@
 ##   JB10 (W13)  ext_pmod_i2s2_ad_sdout_i  <- Pmod I2S2 J1 Pin 10  A/D SDOUT
 ##
 ## JB11 = GND (Pin 5/11), JB12 = 3.3V (Pin 6/12) -- supplied by the
-## PYNQ-Z2 board. ALL eight signals are LVCMOS33, no PULLUP. Existing
-## PCM5102 / PCM1808 jumper wiring MUST be physically removed before
-## powering on this variant.
+## PYNQ-Z2 board. ALL eight signals are LVCMOS33, no PULLUP. Any
+## previously-attached PCM5102 / PCM1808 jumper wiring must be
+## physically removed before powering on; PMOD JB is dedicated to
+## the Pmod I2S2 module.
 ###################################################
 set_property PACKAGE_PIN W14 [get_ports {ext_pmod_i2s2_da_mclk_o}]
 set_property IOSTANDARD LVCMOS33 [get_ports {ext_pmod_i2s2_da_mclk_o}]

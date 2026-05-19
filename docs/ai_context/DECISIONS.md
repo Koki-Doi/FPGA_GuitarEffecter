@@ -2209,31 +2209,38 @@ not get removed even when superseded — they get updated.
   fails to re-lock on a same-session `download=True` re-load —
   memory `rgb2dvi-pll-edge-at-40mhz`).
 
-## D48 — Bring up Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) on PMOD JB as an independent external audio variant
+## D48 — Use Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) as the PMOD JB external audio module; retire the PCM5102 / PCM1808 path
 
-- **Why.** D45 (2026-05-18) committed the Pmod I2S2 paper plan; the
-  module arrived. The user wants to (1) emit a 1 kHz test tone on
-  the Pmod I2S2 DAC (CS4344) to confirm the I2S master clocks and
-  serial-data path on PMOD JB, (2) verify the ADC (CS5343) side by
-  physically tying the on-module **Line Out → Line In** with the
-  3.5 mm cable already in place and watching FPGA-side status
-  counters move, and (3) optionally route ADC SDOUT straight back
-  into DAC SDIN as a no-DSP echo. The ADAU1761 DSP path and the
-  PCM5102 / PCM1808 wiring stay untouched as separate variants.
-- **Build variant.** `create_project.tcl` now branches on
-  `PMOD_I2S2_ENABLE` env var:
-  - `PMOD_I2S2_ENABLE=1` → source the new
-    `hw/Pynq-Z2/pmod_i2s2_integration.tcl` and **skip**
-    `pcm5102_dac_integration.tcl` + `pcm1808_adc_integration.tcl`.
-    PMOD JB belongs entirely to the Pmod I2S2 module.
-  - Unset / 0 → keep the Phase 7D close-out behaviour
-    (PCM5102 ADAU-mirror + PCM1808 mux fallback to ADAU,
-    `DECISIONS.md` D39 / D40 / D42 / D43).
-  The two variants share `audio_lab.xdc`; each pin constraint is
-  wrapped in
-  `if {[llength [get_ports -quiet <port>]] > 0} { ... }`
-  so the constraints that have no matching top-level port silently
-  no-op.
+- **Why.** D45 (2026-05-18) committed the Pmod I2S2 paper plan and
+  D48 (first attempt, 2026-05-19) added it as an opt-in build variant
+  alongside the Phase 7D close-out PCM5102 / PCM1808 path. The
+  variant-with-fallback structure proved fragile in practice: the
+  shared `audio_lab.xdc` could not carry conditional pin
+  constraints (Vivado 2019.1's XDC parser silently drops `if`
+  blocks → `Designutils 20-1307` → IO placement infeasible), and
+  the env-var switch added a class of "wrong bit on the wrong
+  board" mistakes the user did not want. On the bench Pmod I2S2 is
+  now the **only** external audio module attached to PMOD JB: the
+  CS4344 DAC and CS5343 ADC share one PMOD with a common clock
+  tree, the Line Out ↔ Line In analog jumper is in place for ADC
+  validation, and PCM5102 / PCM1808 jumper wiring has been removed.
+  This decision retires the PCM5102 / PCM1808 PMOD JB path and
+  makes Pmod I2S2 the unconditional build choice.
+- **Build flow.** `create_project.tcl` always
+  - adds `audio_lab.xdc` (ADAU1761 + HDMI + encoder) +
+    `audio_lab_pmod_i2s2.xdc` (the eight Pmod I2S2 ports) to
+    `constrs_1`,
+  - adds `hw/ip/encoder_input/src/axi_encoder_input.v` and
+    `hw/ip/pmod_i2s2/src/{pmod_i2s2_master,axi_pmod_i2s2_status}.v`
+    to `sources_1`,
+  - sources `block_design.tcl` → `hdmi_integration.tcl` →
+    `encoder_integration.tcl` → `pmod_i2s2_integration.tcl`.
+  The Phase 7D close-out integration tcls
+  (`pcm5102_dac_integration.tcl`, `pcm1808_adc_integration.tcl`)
+  and the PCM5102 / PCM1808 RTL under `hw/ip/pcm5102_*` /
+  `hw/ip/pcm1808_*` stay in the repo as **archival only**; they are
+  no longer added to `sources_1` or sourced. `audio_lab_pcm.xdc`
+  also stays as archival reference. No env var is needed any more.
 - **RTL.** Two new self-contained Verilog modules under
   `hw/ip/pmod_i2s2/src/`:
   - `pmod_i2s2_master.v` — FPGA-master I2S engine. Takes 12.288 MHz
@@ -2270,7 +2277,7 @@ not get removed even when superseded — they get updated.
     (W bit0 toggles the clear bit). The slave 2-FF-synchronizes every
     MCLK-domain status input before exposing it on AXI.
 - **Block-design integration.** `hw/Pynq-Z2/pmod_i2s2_integration.tcl`
-  (sourced only when `PMOD_I2S2_ENABLE=1`):
+  (sourced unconditionally by `create_project.tcl`):
   - Instantiates `clk_wiz_audio_ext` with the exact same config
     (100 MHz → 12.288 MHz, MMCM, M_F=48, D=5, VCO=960 MHz,
     CLKOUT0_DIVIDE_F=78.125) that Phase 7C built; PCM5102 /
@@ -2291,12 +2298,11 @@ not get removed even when superseded — they get updated.
     D32) and below any future reservation. HDMI VDMA
     (`0x43CE0000`, D25) / VTC (`0x43CF0000`) and the reserved
     `0x43D00000` are not touched.
-- **XDC.** `audio_lab.xdc` adds eight LVCMOS33 entries for the
-  Pmod I2S2 ports under `if {[llength [get_ports -quiet ...]] > 0}`
-  guards so the constraint file is a no-op in the PCM5102 /
-  PCM1808 variant. Pin map matches the official Digilent Pmod I2S2
-  PMOD pinout confirmed by D45 (PMOD_I2S2_INTEGRATION_PLAN.md
-  section 10):
+- **XDC.** `audio_lab_pmod_i2s2.xdc` carries the eight LVCMOS33
+  entries for the Pmod I2S2 ports. `audio_lab.xdc` keeps only the
+  universal constraints (ADAU1761 codec, HDMI TX, encoder pins).
+  Pin map matches the official Digilent Pmod I2S2 PMOD pinout
+  confirmed by D45 (PMOD_I2S2_INTEGRATION_PLAN.md section 10):
   - JB1 W14 → D/A MCLK (12.288 MHz)
   - JB2 Y14 → D/A LRCK (48 kHz)
   - JB3 T11 → D/A SCLK (3.072 MHz)
@@ -2333,14 +2339,22 @@ not get removed even when superseded — they get updated.
     Pi header / Arduino header / sample rate (still 48 kHz) /
     mono DSP policy (D22) all unchanged.
 - **Rollback.**
-  - Build-level: omit `PMOD_I2S2_ENABLE` (or set it to 0) and
-    re-run Vivado — `create_project.tcl` falls back to the Phase
-    7D close-out path automatically.
-  - Bit-level: the deploy script overwrites the on-board bit; the
-    repo keeps `hw/Pynq-Z2/bitstreams/audio_lab.baseline.bit` /
-    `.hwh` as the Phase 7D close-out reference. To roll back on
-    PYNQ, copy the baseline pair over `audio_lab.bit` /
-    `audio_lab.hwh` in the five sync locations and reboot.
   - Branch-level: `git checkout main` returns to the Phase 7D
-    close-out state. The new branch keeps its commits for
-    forward references.
+    close-out state (PCM5102 ADAU-mirror + PCM1808 mux fallback to
+    ADAU). The `feature/pmod-i2s2-bringup` branch keeps the Pmod
+    I2S2 commits for forward reference.
+  - Bit-level: copy `hw/Pynq-Z2/bitstreams/audio_lab.bit` / `.hwh`
+    from any earlier commit (e.g. `git show
+    78ef562:hw/Pynq-Z2/bitstreams/audio_lab.bit > /tmp/old.bit`)
+    or from the working-tree `audio_lab.baseline.bit` /
+    `.baseline.hwh` if still present, then sync to the five PYNQ
+    locations. Physical wiring also has to be reverted: remove
+    Pmod I2S2 from PMOD JB and re-attach the PCM5102 / PCM1808
+    jumpers.
+  - File-level: the PCM5102 / PCM1808 integration tcls + RTL +
+    `audio_lab_pcm.xdc` are intentionally left in the repo as
+    archival reference. Re-enabling the Phase 7D path requires
+    putting them back into `create_project.tcl` (`add_files` for
+    the RTL, `source` for the two tcls, `add_files` for
+    `audio_lab_pcm.xdc`) AND dropping the Pmod I2S2 references
+    since they share PMOD JB pins.

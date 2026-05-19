@@ -656,28 +656,37 @@ Phase Pmod-1 開始前に **CS4344 / CS5343 datasheet + 実機** で埋める
 
 ## 17. Phase Pmod-1 / Pmod-2 / Pmod-3 implementation status (2026-05-19, branch `feature/pmod-i2s2-bringup`, `DECISIONS.md` D48)
 
-Pmod I2S2 module 到着済。Pmod-0 設計の通りに以下を実装した
-**(まだ実機 deploy / smoke 結果は埋まっていない。Vivado build と
-PYNQ-Z2 deploy 後にこの節を更新する。)**
+Pmod I2S2 module 到着済 + PMOD JB に直挿し済 + Line Out ↔ Line In
+ループバック済。**PMOD JB は Pmod I2S2 専用**、PCM5102 / PCM1808
+bring-up path は retired (D48)。`create_project.tcl` は env var なしで
+常に Pmod I2S2 build を行う:
+- `add_files audio_lab.xdc` + `audio_lab_pmod_i2s2.xdc`
+- `add_files` pmod_i2s2 RTL (`pmod_i2s2_master.v`,
+  `axi_pmod_i2s2_status.v`)
+- `source pmod_i2s2_integration.tcl`
+- PCM5102 / PCM1808 の RTL / tcl / `audio_lab_pcm.xdc` は repo に
+  archival として残すが build に投入しない。
 
 ### 17.1 実装したファイル
 
 - **RTL**: `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v`
   + `hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v`
   (両方 `default_nettype none`、self-contained、Xilinx IP 依存なし)。
-- **Tcl 統合**: `hw/Pynq-Z2/pmod_i2s2_integration.tcl`
-  + `hw/Pynq-Z2/create_project.tcl` に `PMOD_I2S2_ENABLE` env var
-  での variant 切替を追加。
-- **XDC**: `hw/Pynq-Z2/audio_lab.xdc` に Pmod I2S2 用 8 pin
-  (JB1/JB2/JB3/JB4/JB7/JB8/JB9/JB10) を追加。既存 PCM5102 / PCM1808
-  pin と同居させるため、すべての pin 制約を
-  `if {[llength [get_ports -quiet <port>]] > 0} { ... }` で
-  guard した。
+- **Tcl 統合**: `hw/Pynq-Z2/pmod_i2s2_integration.tcl` を新規追加し、
+  `hw/Pynq-Z2/create_project.tcl` から **無条件に** source する。
+  PCM5102 / PCM1808 integration tcl は `create_project.tcl` から
+  外した (ファイル自体は repo に残す)。
+- **XDC**: `hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` (新規) に Pmod I2S2
+  用 8 pin (JB1/JB2/JB3/JB4/JB7/JB8/JB9/JB10) の LVCMOS33 制約を
+  まとめた。`hw/Pynq-Z2/audio_lab.xdc` は ADAU1761 + HDMI + encoder
+  だけを残し、PMOD JB 行は archival の `audio_lab_pcm.xdc` (新規、
+  loaded しない) に移した (D48 first attempt で試した `if` guard 方式は
+  Vivado 2019.1 で silent drop されるため不採用、memory
+  `vivado-xdc-if-not-supported`)。
 - **Python smoke**: `scripts/test_pmod_i2s2.py`
-  + `scripts/pmod_i2s2_capture_probe.py`。
-- **Baseline preserve**:
-  `hw/Pynq-Z2/bitstreams/audio_lab.baseline.bit` /
-  `.hwh` (Phase 7D close-out bit、rollback 用)。
+  + `scripts/pmod_i2s2_capture_probe.py`。両方 `pmod_status` を
+  `pynq.MMIO(phys_addr, 0x10000)` で開く (DefaultHierarchy 経由は
+  `.read()` が dispatch しないため不採用)。
 
 ### 17.2 確定 pin map (section 10 と同一、再掲)
 
@@ -736,15 +745,17 @@ D/A 側 と A/D 側は同じ source からの fanout なので **bit-true 同期
   でも 2-FF 同期する。`cfg_clear` は toggle bit + edge-detect で
   clock-period mismatch に robust。
 
-### 17.6 Build variant 切替
+### 17.6 Build flow (no variant)
 
-- Default (env `PMOD_I2S2_ENABLE` 未設定 or `0`):
-  Phase 7D close-out 構成 (PCM5102 ADAU-mirror + PCM1808 mux=ADAU
-  fallback、`DECISIONS.md` D39 / D42 / D43)。
-- `PMOD_I2S2_ENABLE=1`:
-  Pmod I2S2 variant。`pmod_i2s2_integration.tcl` を source し、
-  `pcm5102_dac_integration.tcl` + `pcm1808_adc_integration.tcl` を
-  **skip** する。PMOD JB は Pmod I2S2 module 専用。
+- `create_project.tcl` は **無条件に** Pmod I2S2 build を行う:
+  - `add_files audio_lab.xdc` + `audio_lab_pmod_i2s2.xdc`
+  - `add_files` pmod_i2s2 RTL
+  - `source pmod_i2s2_integration.tcl`
+- PCM5102 / PCM1808 path は retire 済。再導入したい場合は
+  `create_project.tcl` を編集して `add_files` `audio_lab_pcm.xdc` +
+  PCM RTL、`source pcm5102_dac_integration.tcl` +
+  `pcm1808_adc_integration.tcl` を戻し、同時に Pmod I2S2 部を
+  外す (PMOD JB pin が衝突するため)。
 
 ### 17.7 実機手順 (Pmod-1 + Pmod-2 同時)
 
@@ -756,11 +767,11 @@ D/A 側 と A/D 側は同じ source からの fanout なので **bit-true 同期
    3.5 mm ジャックを Line In 3.5 mm ジャックに stereo ケーブルで
    ループバック接続済 (user 前提)。これは Phase Pmod-2 の ADC probe
    smoke を 1 回の deploy で済ませるための物理 loopback。
-3. **Vivado build**:
+3. **Vivado build** (env var なし、Pmod I2S2 が build default):
    ```
    cd hw/Pynq-Z2
    source /home/doi20/vivado/Vivado/2019.1/settings64.sh
-   PMOD_I2S2_ENABLE=1 vivado -mode batch -notrace -nojournal \
+   vivado -mode batch -notrace -nojournal \
        -log vivado.log -source create_project.tcl
    ```
 4. **timing review**: `audio_lab/audio_lab.runs/impl_1/block_design_wrapper_timing_summary_routed.rpt`
@@ -820,5 +831,5 @@ D/A 側 と A/D 側は同じ source からの fanout なので **bit-true 同期
 | --- | --- |
 | Vivado build PASS、timing NG (WNS < -9.5 ns) | 新しい bit を deploy しない。`audio_lab.baseline.bit/.hwh` をそのまま使う。 |
 | Vivado build PASS、deploy 成功、smoke FAIL | `audio_lab.baseline.bit/.hwh` を 5 か所に書き戻し、reboot。`git checkout main` で source code も Phase 7D close-out に戻す。 |
-| Vivado build NG | `PMOD_I2S2_ENABLE=0` (= default) で再 build、Phase 7D close-out で動くことを確認。失敗箇所を `git log` で trace。 |
+| Vivado build NG | `git checkout main` で Phase 7D close-out source に戻し再 build。失敗箇所を `git log` で trace。 |
 | Pmod I2S2 module 故障疑い | branch を main へ戻し、PCM5102 / PCM1808 ジャンパを物理的に挿し直し、Phase 7D close-out bit を deploy。 |

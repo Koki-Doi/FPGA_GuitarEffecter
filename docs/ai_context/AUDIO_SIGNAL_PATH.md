@@ -130,16 +130,22 @@ Caveats baked into Phase 7D:
   `pcm1808-dual-supply-and-pmod-brownout`). Until the module is
   replaced, keep `CONST_VAL = 0`.
 
-## Pmod I2S2 build variant (Phase Pmod-1, `DECISIONS.md` D48, branch `feature/pmod-i2s2-bringup`)
+## Pmod I2S2 PMOD JB audio path (Phase Pmod-1, `DECISIONS.md` D48, branch `feature/pmod-i2s2-bringup`)
 
-When `PMOD_I2S2_ENABLE=1` is set at Vivado build time,
-`hw/Pynq-Z2/create_project.tcl` sources
-`hw/Pynq-Z2/pmod_i2s2_integration.tcl` and **skips**
-`pcm5102_dac_integration.tcl` + `pcm1808_adc_integration.tcl`.
-PMOD JB is dedicated to the Digilent Pmod I2S2 module (CS4344 stereo
-DAC + CS5343 stereo ADC). The ADAU1761 → AXIS → ADAU1761 DSP loop
-above is **unchanged**; the Pmod I2S2 path is **a completely separate
-bringup-only path** that does not feed the AXIS DSP chain.
+The Digilent Pmod I2S2 module (CS4344 stereo DAC + CS5343 stereo
+ADC) is the **sole** external audio device on PMOD JB.
+`hw/Pynq-Z2/create_project.tcl` unconditionally sources
+`hw/Pynq-Z2/pmod_i2s2_integration.tcl`; the PCM5102 / PCM1808
+integration tcls, RTL, and `audio_lab_pcm.xdc` stay in the repo as
+archival reference only and are not part of the deployed build
+(see the section above for the historical PCM5102 / PCM1808 path,
+kept for triage of older bitstreams from `git log` history).
+
+The ADAU1761 → AXIS → ADAU1761 DSP loop documented at the top of
+this file is **unchanged**. The Pmod I2S2 path is a completely
+separate bringup-only path that does not feed the AXIS DSP chain —
+ADAU Line In / Line Out on the on-board codec keeps working
+exactly as before for users who do not need Pmod I2S2.
 
 ```
 clk_wiz_audio_ext.clk_out1 (12.288 MHz)

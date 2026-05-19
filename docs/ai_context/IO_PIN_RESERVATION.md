@@ -280,12 +280,16 @@ PMOD pin 配置は公式 reference manual で **2026-05-18 に確定** 済。
   で開始する。96 kHz は Phase Pmod-5 (別 branch、後回し)。
 - 本予約は **Phase Pmod-0 docs のみ**だったが、Phase Pmod-1 (2026-05-19、
   branch `feature/pmod-i2s2-bringup`、`DECISIONS.md` D48) で
-  実装が入った: `hw/Pynq-Z2/audio_lab.xdc` に Pmod I2S2 用の 8 pin
-  制約が追加され (`if {[llength [get_ports -quiet ...]] > 0}` guard
-  で variant 切替)、`hw/Pynq-Z2/pmod_i2s2_integration.tcl` が新規
-  追加された。`hw/Pynq-Z2/block_design.tcl` は依然として未編集。
-  bit / hwh は `PMOD_I2S2_ENABLE=1` 環境変数を伴う Vivado build で
-  生成される。
+  実装が入った。**Pmod I2S2 は PMOD JB の唯一の外付け audio
+  module**。`hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` に Pmod I2S2 用の
+  8 pin 制約 (LVCMOS33) を置き、`hw/Pynq-Z2/audio_lab.xdc` は ADAU +
+  HDMI + encoder の universal 制約のみを残す。Pmod I2S2 の
+  `pmod_i2s2_integration.tcl` は `create_project.tcl` から無条件に
+  source される (env var 切替なし)。PCM5102 / PCM1808 用の
+  `audio_lab_pcm.xdc` / `pcm5102_dac_integration.tcl` /
+  `pcm1808_adc_integration.tcl` / PCM5102 / PCM1808 RTL は repo に
+  archival で残るが build に入らない。
+  `hw/Pynq-Z2/block_design.tcl` は依然として未編集。
 
 ---
 

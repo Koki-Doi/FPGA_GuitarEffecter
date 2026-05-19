@@ -1,17 +1,16 @@
-# Phase Pmod-1/2/3 Pmod I2S2 bring-up integration for the AudioLab block design.
+# Pmod I2S2 bring-up integration for the AudioLab block design
+# (DECISIONS.md D48).
 #
-# Sourced from create_project.tcl in the `pmod-i2s2-bringup` build variant
-# AFTER encoder_integration.tcl. This variant intentionally does NOT source
-# pcm5102_dac_integration.tcl or pcm1808_adc_integration.tcl -- PMOD JB is
-# dedicated to Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) and the existing
-# PCM5102 / PCM1808 jumper wiring must be physically removed before
-# powering the board.
+# Sourced from create_project.tcl AFTER encoder_integration.tcl.
+# PMOD JB is dedicated to the Digilent Pmod I2S2 module (CS4344 DAC +
+# CS5343 ADC); the legacy PCM5102 / PCM1808 integration tcls are NOT
+# sourced in the deployed build (their source files stay in the repo
+# under hw/Pynq-Z2/ and hw/ip/ as archival reference only).
 #
 # What this script does:
-#   1. Builds the clk_wiz_audio_ext MMCM (100 MHz -> 12.288 MHz exact) -- same
-#      math the Phase 7C pcm5102_dac_integration.tcl uses. This variant
-#      cannot rely on pcm5102_dac_integration.tcl to create the MMCM because
-#      that script is not sourced in this build.
+#   1. Builds the clk_wiz_audio_ext MMCM (100 MHz -> 12.288 MHz exact) --
+#      same math the retired Phase 7C pcm5102_dac_integration.tcl used.
+#      The MMCM lives entirely in this script; nothing else creates it.
 #   2. Bumps ps7_0_axi_periph from NUM_MI=18 to NUM_MI=19 (adds M18) so the
 #      pmod_i2s2 status register block can sit on AXI-Lite. M17 stays the
 #      encoder. The HDMI VDMA (0x43CE0000) / VTC (0x43CF0000) / reserved

@@ -153,17 +153,16 @@ set_property PACKAGE_PIN B19 [get_ports {enc2_sw_i}]
 set_property IOSTANDARD LVCMOS33 [get_ports {enc2_sw_i}]
 
 ###################################################
-## PMOD JB pin constraints live in a per-variant XDC file because
-## Vivado 2019.1 does not support `if` in .xdc (the parser would
-## silently drop pin assignments and the placer would then fail
-## with "IO placement infeasible"). create_project.tcl picks the
-## right variant constraint file:
-##   PMOD_I2S2_ENABLE != 1 (default)  -> add_files audio_lab_pcm.xdc
-##   PMOD_I2S2_ENABLE == 1            -> add_files audio_lab_pmod_i2s2.xdc
+## PMOD JB pin constraints live in `audio_lab_pmod_i2s2.xdc`. The
+## Digilent Pmod I2S2 module (CS4344 DAC + CS5343 ADC) is the active
+## external audio path on PMOD JB (`DECISIONS.md` D48); the legacy
+## PCM5102 / PCM1808 constraint file (`audio_lab_pcm.xdc`) is kept in
+## the repo as archival reference only and is NOT loaded by
+## `create_project.tcl` any more.
 ##
-## See:
-##   - hw/Pynq-Z2/audio_lab_pcm.xdc        (Phase 7C/7D PCM5102+PCM1808)
-##   - hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc  (Phase Pmod-1/2/3 Pmod I2S2)
-##   - DECISIONS.md D38 / D40 / D41 / D42 (PCM5102/PCM1808 variant)
-##   - DECISIONS.md D48                   (Pmod I2S2 variant)
+## The split exists because Vivado 2019.1 does not support `if` in
+## `.xdc` (the parser silently drops guarded pin assignments and the
+## placer then fails with "IO placement infeasible"), so the simplest
+## robust pattern is one file per variant + `add_files` selecting
+## the right one in `create_project.tcl`.
 ###################################################

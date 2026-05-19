@@ -233,28 +233,29 @@ asking it to re-discover the project from scratch.
 > Out ↔ Line In は 3.5 mm ステレオケーブルで物理的に loopback 接続済。
 > 既存 PCM5102 / PCM1808 のジャンパ配線は外してある前提。
 >
-> 実装は branch `feature/pmod-i2s2-bringup` に入っている:
+> 実装は branch `feature/pmod-i2s2-bringup` にあり、PMOD JB は **Pmod
+> I2S2 専用**。PCM5102 / PCM1808 path は retire 済 (`DECISIONS.md` D48):
 > - RTL: `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` (FPGA-master I2S engine、
 >   1 kHz sine TX + ADC RX、cfg_mode=0 で TX tone+ADC probe、cfg_mode=1
 >   で ADC→DAC loopback)、`hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v`
 >   (AXI-Lite slave at `0x43D20000`)。
-> - 統合: `hw/Pynq-Z2/pmod_i2s2_integration.tcl`。
->   `hw/Pynq-Z2/create_project.tcl` は env var `PMOD_I2S2_ENABLE=1` で
->   この tcl を source し、`pcm5102_dac_integration.tcl` /
->   `pcm1808_adc_integration.tcl` を **skip** する。
-> - XDC: `hw/Pynq-Z2/audio_lab.xdc` に Pmod I2S2 用 8 pin
->   (JB1/JB2/JB3/JB4 + JB7/JB8/JB9/JB10) を追加。既存 PCM5102/PCM1808
->   pin と共存させるため `if {[llength [get_ports -quiet ...]]>0}` で
->   variant guard。
+> - 統合: `hw/Pynq-Z2/pmod_i2s2_integration.tcl` を
+>   `hw/Pynq-Z2/create_project.tcl` から **無条件に** source。
+>   `pcm5102_dac_integration.tcl` / `pcm1808_adc_integration.tcl` は
+>   source しない (ファイルは repo に archival で残るが build に
+>   投入しない)。
+> - XDC: `hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` (新規) が Pmod I2S2 の
+>   8 pin (JB1..JB4 + JB7..JB10) LVCMOS33 制約。`audio_lab.xdc` は
+>   ADAU + HDMI + encoder の universal 制約のみ。`audio_lab_pcm.xdc`
+>   は archival で load しない。
 > - smoke: `scripts/test_pmod_i2s2.py` + `scripts/pmod_i2s2_capture_probe.py`。
-> - baseline preserve: `hw/Pynq-Z2/bitstreams/audio_lab.baseline.bit/.hwh`
->   (Phase 7D close-out bit、rollback 用)。
+>   `pynq.MMIO(phys_addr, 0x10000)` で `pmod_status` を直接開く。
 >
-> Build + deploy + smoke 手順:
+> Build + deploy + smoke 手順 (env var は不要):
 > ```
 > cd hw/Pynq-Z2
 > source /home/doi20/vivado/Vivado/2019.1/settings64.sh
-> PMOD_I2S2_ENABLE=1 vivado -mode batch -notrace -nojournal \
+> vivado -mode batch -notrace -nojournal \
 >     -log vivado.log -source create_project.tcl
 > cd ../..
 > PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
@@ -289,11 +290,13 @@ asking it to re-discover the project from scratch.
 >   encoder runtime、ADAU1761 codec init。
 > - 96 kHz 化、stereo DSP 化、PMOD JA / Raspberry Pi header /
 >   Arduino header の追加割当。
+> - PCM5102 / PCM1808 path の再 enable (D48 で retire 済)。
 > - `git push` / `git pull` / `git fetch`。
 >
-> Rollback: `PMOD_I2S2_ENABLE` を unset (default 0) して Vivado
-> 再 build、または `audio_lab.baseline.bit/.hwh` を 5 か所に書き戻し、
-> または `git checkout main`。
+> Rollback: `git checkout main` で Phase 7D close-out 構成に戻す。
+> 過去 bit を物理 PYNQ に戻したい場合は `git show
+> 78ef562:hw/Pynq-Z2/bitstreams/audio_lab.bit > /tmp/old.bit` で
+> 取り出して 5 か所に sync。
 
 ## Phase Pmod-0 — Pmod I2S2 integration planning (docs only, module not yet delivered)
 
