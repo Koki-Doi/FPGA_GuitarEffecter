@@ -3,30 +3,53 @@
 
 Usage on the PYNQ-Z2:
 
+    # mode 0 -- internal 1 kHz tone + ADC probe (Line Out -> Line In)
     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \\
-        scripts/test_pmod_i2s2.py --duration 5
+        scripts/test_pmod_i2s2.py --duration 5 --mode tone
+
+    # mode 1 -- ADC -> DAC direct loopback (DSP NOT involved)
+    sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \\
+        scripts/test_pmod_i2s2.py --duration 5 --mode loopback \\
+        --confirm-loopback
+
+Mode names map onto the `axi_pmod_i2s2_status` MODE register:
+  - `tone`      => cfg_mode = 0 (default)
+  - `loopback`  => cfg_mode = 1 (ADC -> DAC; NO DSP, NO effects)
+The numeric values `0` / `1` are still accepted as aliases.
 
 What this script does:
-  * Loads AudioLabOverlay (the Pmod I2S2 variant bit instantiates
-    pmod_i2s2_master driving JB1..JB4 + JB7..JB10, and exposes the runtime
-    status registers via axi_pmod_i2s2_status at 0x43D20000).
+  * Loads AudioLabOverlay (the Pmod I2S2 bit instantiates
+    `pmod_i2s2_master` driving JB1..JB4 + JB7..JB10 and exposes the
+    runtime status registers via `axi_pmod_i2s2_status` at 0x43D20000).
   * Verifies the required IPs are still present (ADAU1761 DSP path,
-    encoder, HDMI VDMA/VTC) and the new Pmod I2S2 status block is mapped.
-  * Reads VERSION + STATUS once, then samples the status counters over
-    the requested duration and prints a PASS / FAIL summary:
+    encoder, HDMI VDMA/VTC) and the Pmod I2S2 status block is mapped.
+  * Optionally writes `cfg_mode` and issues a CLEAR pulse, then samples
+    the status counters over `--duration` seconds and prints a PASS /
+    WARN / FAIL summary:
       - frame_count    : must rise (LRCK frame engine alive)
-      - sdout_xcount   : must rise IF Pmod I2S2 ADC SDOUT is wired and
-                         the analog line-in is non-silent
-      - nonzero_count  : ditto
-      - peak_abs       : must be > 0 if a tone is on line in
-  * Optionally toggles into ADC->DAC loopback mode (cfg_mode=1) so the
-    user can verify the live loopback path.
+      - sdout_xcount   : must rise if SDOUT carries activity
+      - nonzero_count  : ditto, and indicates non-zero captured samples
+      - peak_abs_*     : must be > 0 if the Pmod I2S2 ADC sees signal
+
+Mode 1 safety:
+  * The internal Pmod I2S2 module routes the captured ADC sample
+    straight back to the DAC at full scale. With the on-module Line
+    Out <-> Line In 3.5 mm jumper installed the loop has gain ~1
+    and can FEED BACK / OSCILLATE.
+  * Recommended: disconnect the Line Out <-> Line In jumper, then put
+    a real audio source on Line In and listen on Line Out.
+  * If you keep the jumper installed (e.g. you only want to look at
+    the status counters), use a LOW audio source level on Line In;
+    do NOT crank the source.
+  * To prevent accidental engagement, this script REQUIRES
+    `--confirm-loopback` to be passed when `--mode loopback` is
+    selected. Otherwise it falls back to mode 0 with an error.
 
 What this script does NOT do:
   * Does not change ADAU1761 codec config.
-  * Does not touch HDMI / encoder / GPIO_CONTROL_MAP.
-  * Does not require any Pmod I2S2 *capture* via DMA. Status counters are
-    enough for the bring-up smoke.
+  * Does not touch HDMI / encoder / GPIO_CONTROL_MAP / DSP chain.
+  * Does not route Pmod I2S2 ADC into the AudioLab DSP path (that
+    is a separate decision and not implemented here).
 
 PYNQ Python 3.6 compatibility: no dataclass, no f-string `=` syntax.
 """
@@ -63,6 +86,50 @@ REG = dict(
     CLEAR           = 0x2C,
 )
 EXPECTED_VERSION = 0x00480001
+
+# Symbolic mode names that map onto `cfg_mode_i` in `pmod_i2s2_master.v`.
+MODE_TONE_PROBE              = 0  # internal 1 kHz tone on DAC, ADC reads it back
+MODE_ADC_TO_DAC_DIRECT_LOOP  = 1  # ADC sample -> DAC sample, no DSP
+
+
+def _parse_mode(value):
+    """Accept --mode tone | loopback | 0 | 1. Return integer cfg_mode."""
+    if value is None:
+        return None
+    s = str(value).strip().lower()
+    if s in ("tone", "tone_probe", "probe", "0"):
+        return MODE_TONE_PROBE
+    if s in ("loopback", "adc_to_dac_loopback", "loop", "1"):
+        return MODE_ADC_TO_DAC_DIRECT_LOOP
+    raise argparse.ArgumentTypeError(
+        "--mode must be one of: tone, loopback, 0, 1; got %r" % value)
+
+
+LOOPBACK_WARNING = """\
+================================================================
+WARNING: Pmod I2S2 mode 1 = ADC -> DAC DIRECT LOOPBACK
+================================================================
+The PL routes the just-captured ADC sample straight to the DAC
+at full scale. With the on-module Line Out <-> Line In 3.5 mm
+jumper installed, the loop has gain ~ 1 and can FEED BACK or
+OSCILLATE.
+
+Recommended workflow:
+  1. Disconnect the Line Out <-> Line In jumper (or unplug one
+     end of the 3.5 mm cable).
+  2. Put a REAL audio source on Line In at LOW volume.
+  3. Listen on Line Out via a separate audio interface or
+     headphone (NOT plugged back into Line In).
+  4. Keep this run short (a few seconds) and stop if you hear
+     squealing.
+
+If you must keep the on-module jumper installed while you watch
+the status counters, set the audio source level to its MINIMUM
+before engaging mode 1.
+
+To engage mode 1, pass `--confirm-loopback` on the command line.
+================================================================
+"""
 
 
 def _find_pmod_status(overlay):
@@ -147,10 +214,15 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--duration", type=float, default=5.0,
                    help="Seconds to watch the status counters. Default 5.")
-    p.add_argument("--mode", type=int, choices=(0, 1), default=None,
-                   help="If set, write this value to cfg_mode before the "
-                        "observation window. 0 = TX tone + ADC probe (default), "
-                        "1 = ADC -> DAC loopback.")
+    p.add_argument("--mode", type=_parse_mode, default=None,
+                   help="cfg_mode to write before the observation window. "
+                        "Names: 'tone' (0, default) = internal 1 kHz tone + "
+                        "ADC probe, 'loopback' (1) = ADC -> DAC direct loopback "
+                        "(NO DSP). Numeric aliases 0/1 also accepted.")
+    p.add_argument("--confirm-loopback", action="store_true",
+                   help="Required when --mode loopback is selected. Without it "
+                        "the script prints a safety warning and refuses to "
+                        "engage mode 1 (falls back to mode 0).")
     p.add_argument("--clear", action="store_true",
                    help="Issue a CLEAR write (zeroes peak / nonzero counters) "
                         "before sampling. frame_count keeps running.")
@@ -159,6 +231,14 @@ def main():
     print("Pmod I2S2 bring-up smoke (Phase Pmod-1/2/3)")
     print("Expected wiring:")
     print(JB_WIRING)
+
+    requested_mode = args.mode
+    effective_mode = requested_mode
+    if requested_mode == MODE_ADC_TO_DAC_DIRECT_LOOP and not args.confirm_loopback:
+        print(LOOPBACK_WARNING)
+        print("[pmod_i2s2] --confirm-loopback NOT set -- refusing mode 1; "
+              "falling back to mode 0 (tone + probe).")
+        effective_mode = MODE_TONE_PROBE
 
     from audio_lab_pynq import AudioLabOverlay  # type: ignore
     overlay = AudioLabOverlay()
@@ -179,9 +259,13 @@ def main():
         print("[pmod_i2s2] WARN: VERSION 0x%08X != expected 0x%08X"
               % (ver, EXPECTED_VERSION))
 
-    if args.mode is not None:
-        print("[pmod_i2s2] writing MODE = %d" % args.mode)
-        mmio.write(REG["MODE"], args.mode & 0x3)
+    if effective_mode is not None:
+        mode_name = "tone" if effective_mode == MODE_TONE_PROBE else "loopback"
+        print("[pmod_i2s2] writing MODE = %d (%s)" % (effective_mode, mode_name))
+        if effective_mode == MODE_ADC_TO_DAC_DIRECT_LOOP:
+            print("[pmod_i2s2] *** ADC -> DAC direct loopback engaged ***")
+            print("[pmod_i2s2] Stop the run if you hear squealing / feedback.")
+        mmio.write(REG["MODE"], effective_mode & 0x3)
 
     if args.clear:
         print("[pmod_i2s2] issuing CLEAR pulse (peak / nonzero / xcount reset)")

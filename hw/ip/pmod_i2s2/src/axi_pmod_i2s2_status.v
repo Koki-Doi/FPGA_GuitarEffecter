@@ -140,60 +140,67 @@ module axi_pmod_i2s2_status #(
     initial cfg_clear_toggle_o = 1'b0;
 
     // -------------------------------------------------------------------------
-    // AXI4-Lite write channel: standard awready/wready handshake. wresp = OKAY.
+    // AXI4-Lite write FSM (single writer for the two writable regs). Pattern
+    // mirrors axi_encoder_input.v: latch the awaddr in the AW phase, commit
+    // the write in the W phase using the latched address. The earlier
+    // "use axi_awaddr_q in the same cycle it is being updated" formulation
+    // dropped the new awaddr in the case statement, which on PYNQ caused
+    // back-to-back MMIO writes (e.g. write MODE=0 then write CLEAR=1) to
+    // commit at the previous transaction's address. The result was that
+    // the CLEAR write landed on MODE and silently flipped cfg_mode_o.
     // -------------------------------------------------------------------------
-    reg [C_S_AXI_ADDR_WIDTH-1:0] axi_awaddr_q;
-    reg                          aw_en;
+    localparam [3:0]
+        REG_VERSION_W = 4'h0,
+        REG_MODE_W    = 4'hA,
+        REG_CLEAR_W   = 4'hB;
+
+    wire [3:0] reg_sel_w = s_axi_awaddr[5:2];
+    reg  [3:0] write_addr_lat;
+    reg        write_in_progress;
 
     always @(posedge s_axi_aclk) begin
         if (!s_axi_aresetn) begin
-            s_axi_awready <= 1'b0;
-            s_axi_wready  <= 1'b0;
-            s_axi_bvalid  <= 1'b0;
-            s_axi_bresp   <= 2'b00;
-            axi_awaddr_q  <= {C_S_AXI_ADDR_WIDTH{1'b0}};
-            aw_en         <= 1'b1;
-            cfg_mode_o    <= 2'd0;
+            s_axi_awready      <= 1'b0;
+            s_axi_wready       <= 1'b0;
+            s_axi_bvalid       <= 1'b0;
+            s_axi_bresp        <= 2'b00;
+            write_in_progress  <= 1'b0;
+            write_addr_lat     <= 4'h0;
+            cfg_mode_o         <= 2'd0;
             cfg_clear_toggle_o <= 1'b0;
         end else begin
-
-            // AWREADY
-            if (!s_axi_awready && s_axi_awvalid && s_axi_wvalid && aw_en) begin
-                s_axi_awready <= 1'b1;
-                axi_awaddr_q  <= s_axi_awaddr;
-                aw_en         <= 1'b0;
-            end else if (s_axi_bready && s_axi_bvalid) begin
-                aw_en         <= 1'b1;
-                s_axi_awready <= 1'b0;
+            // 1. AW phase: latch the address into write_addr_lat.
+            if (!write_in_progress && s_axi_awvalid && !s_axi_awready) begin
+                s_axi_awready     <= 1'b1;
+                write_addr_lat    <= reg_sel_w;
+                write_in_progress <= 1'b1;
             end else begin
                 s_axi_awready <= 1'b0;
             end
 
-            // WREADY + write commit
-            if (!s_axi_wready && s_axi_wvalid && s_axi_awvalid && aw_en) begin
+            // 2. W phase: commit using the latched address.
+            if (write_in_progress && s_axi_wvalid && !s_axi_wready && !s_axi_bvalid) begin
                 s_axi_wready <= 1'b1;
-                // Commit the write (single-cycle when both wvalid + awvalid hit).
-                case (axi_awaddr_q[5:2])
-                    4'h0A: begin // 0x28 MODE
+                case (write_addr_lat)
+                    REG_MODE_W: begin
                         if (s_axi_wstrb[0])
                             cfg_mode_o <= s_axi_wdata[1:0];
                     end
-                    4'h0B: begin // 0x2C CLEAR
+                    REG_CLEAR_W: begin
                         if (s_axi_wstrb[0] && s_axi_wdata[0])
                             cfg_clear_toggle_o <= ~cfg_clear_toggle_o;
                     end
-                    default: begin /* RO regs: ignore writes */ end
+                    default: ; // RO regs: ignore writes
                 endcase
+                s_axi_bvalid      <= 1'b1;
+                s_axi_bresp       <= 2'b00;
+                write_in_progress <= 1'b0;
             end else begin
                 s_axi_wready <= 1'b0;
             end
 
-            // BVALID
-            if (s_axi_awready && s_axi_awvalid && !s_axi_bvalid &&
-                s_axi_wready  && s_axi_wvalid) begin
-                s_axi_bvalid <= 1'b1;
-                s_axi_bresp  <= 2'b00;
-            end else if (s_axi_bready && s_axi_bvalid) begin
+            // 3. B phase: deassert bvalid when accepted.
+            if (s_axi_bvalid && s_axi_bready) begin
                 s_axi_bvalid <= 1'b0;
             end
         end

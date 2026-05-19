@@ -51,6 +51,22 @@ REG = dict(
     CLEAR           = 0x2C,
 )
 
+MODE_TONE_PROBE              = 0
+MODE_ADC_TO_DAC_DIRECT_LOOP  = 1
+
+
+def _parse_mode(value):
+    """Accept --mode tone | loopback | 0 | 1."""
+    if value is None:
+        return None
+    s = str(value).strip().lower()
+    if s in ("tone", "tone_probe", "probe", "0"):
+        return MODE_TONE_PROBE
+    if s in ("loopback", "adc_to_dac_loopback", "loop", "1"):
+        return MODE_ADC_TO_DAC_DIRECT_LOOP
+    raise argparse.ArgumentTypeError(
+        "--mode must be one of: tone, loopback, 0, 1; got %r" % value)
+
 
 def _read(mmio, off):
     return mmio.read(off) & 0xFFFFFFFF
@@ -87,8 +103,16 @@ def main():
                    help="Total observation duration in seconds. Default 10.")
     p.add_argument("--interval", type=float, default=0.5,
                    help="Polling interval in seconds. Default 0.5.")
-    p.add_argument("--mode", type=int, choices=(0, 1), default=None,
-                   help="Optional mode write before observing.")
+    p.add_argument("--mode", type=_parse_mode, default=None,
+                   help="cfg_mode to write before observing. Names: "
+                        "'tone' (0, default) = internal 1 kHz tone + ADC probe, "
+                        "'loopback' (1) = ADC -> DAC direct loopback (NO DSP). "
+                        "Numeric aliases 0/1 also accepted. Loopback requires "
+                        "--confirm-loopback (see test_pmod_i2s2.py for the same "
+                        "rationale).")
+    p.add_argument("--confirm-loopback", action="store_true",
+                   help="Required to engage --mode loopback. Without it the "
+                        "script falls back to mode 0.")
     p.add_argument("--peak-threshold", type=int, default=1 << 12,
                    help="peak_abs threshold for PASS (default %(default)d, "
                         "about -53 dBFS of 24-bit full-scale).")
@@ -103,9 +127,19 @@ def main():
         print("[pmod_probe] FAIL: status IP not found in overlay")
         return 2
 
-    if args.mode is not None:
-        print("[pmod_probe] MODE write = %d" % args.mode)
-        mmio.write(REG["MODE"], args.mode & 0x3)
+    effective_mode = args.mode
+    if effective_mode == MODE_ADC_TO_DAC_DIRECT_LOOP and not args.confirm_loopback:
+        print("[pmod_probe] WARN: --mode loopback selected but "
+              "--confirm-loopback NOT set. Falling back to mode 0. "
+              "Mode 1 echoes the ADC sample straight to the DAC at full "
+              "scale and can feed back if Line Out <-> Line In is wired.")
+        effective_mode = MODE_TONE_PROBE
+    if effective_mode is not None:
+        mode_name = "tone" if effective_mode == MODE_TONE_PROBE else "loopback"
+        print("[pmod_probe] MODE write = %d (%s)" % (effective_mode, mode_name))
+        if effective_mode == MODE_ADC_TO_DAC_DIRECT_LOOP:
+            print("[pmod_probe] *** ADC -> DAC direct loopback engaged ***")
+        mmio.write(REG["MODE"], effective_mode & 0x3)
     print("[pmod_probe] CLEAR pulse")
     mmio.write(REG["CLEAR"], 1)
     time.sleep(0.05)

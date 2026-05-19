@@ -1,6 +1,9 @@
 # Current state
 
-Last updated: **2026-05-19 (D48 Pmod I2S2 is the sole PMOD JB external audio path; branch `feature/pmod-i2s2-bringup`): Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) is now the only external audio module on PMOD JB. The PCM5102 / PCM1808 bring-up path is retired**
+Last updated: **2026-05-20 (D48 Pmod I2S2 mode 1 loopback verified; branch `feature/pmod-i2s2-mode1-loopback`): Pmod I2S2 mode 0 (TX tone + ADC probe) and mode 1 (ADC -> DAC direct loopback) are both reachable from `scripts/test_pmod_i2s2.py --mode tone | loopback`. The mode-1 path requires `--confirm-loopback` because the on-module Line Out ↔ Line In jumper plus the full-scale echo can feed back. `axi_pmod_i2s2_status.v` write FSM was reworked to the same shape `axi_encoder_input.v` uses (latch awaddr in the AW phase, commit in the W phase using the latched address), which fixed a same-cycle race where back-to-back MMIO writes (e.g. MODE=0 then CLEAR=1) committed the CLEAR write at the MODE address and silently flipped `cfg_mode_o`. No DSP integration: Pmod I2S2 ADC is NOT routed into the AudioLab AXIS chain; that is intentionally deferred.**
+
+Previous-pass header (D48 retire PCM5102/PCM1808 PMOD JB path, 2026-05-19):
+**Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) is now the only external audio module on PMOD JB. The PCM5102 / PCM1808 bring-up path is retired**
 (`create_project.tcl` always sources `pmod_i2s2_integration.tcl`
 + `audio_lab_pmod_i2s2.xdc`; `pcm5102_dac_integration.tcl`,
 `pcm1808_adc_integration.tcl`, the PCM5102 / PCM1808 RTL under

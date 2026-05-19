@@ -259,11 +259,26 @@ asking it to re-discover the project from scratch.
 >     -log vivado.log -source create_project.tcl
 > cd ../..
 > PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
+>
+> # mode 0: internal 1 kHz tone + ADC probe (Line Out -> Line In OK)
 > ssh xilinx@192.168.1.9 '
 >   cd /home/xilinx/Audio-Lab-PYNQ &&
 >   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
->       scripts/test_pmod_i2s2.py --duration 5
+>       scripts/test_pmod_i2s2.py --duration 5 --mode tone --clear
 > '
+>
+> # mode 1: ADC -> DAC direct loopback (NO DSP). The --confirm-loopback
+> # flag is REQUIRED; the script refuses mode 1 without it and falls
+> # back to mode 0. Disconnect the Line Out <-> Line In jumper first or
+> # keep the audio source level minimal to avoid feedback.
+> ssh xilinx@192.168.1.9 '
+>   cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>       scripts/test_pmod_i2s2.py --duration 3 --mode loopback \
+>       --confirm-loopback --clear
+> '
+>
+> # Optional: rolling status counter view
 > ssh xilinx@192.168.1.9 '
 >   cd /home/xilinx/Audio-Lab-PYNQ &&
 >   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
@@ -291,6 +306,10 @@ asking it to re-discover the project from scratch.
 > - 96 kHz 化、stereo DSP 化、PMOD JA / Raspberry Pi header /
 >   Arduino header の追加割当。
 > - PCM5102 / PCM1808 path の再 enable (D48 で retire 済)。
+> - Pmod I2S2 ADC を AudioLab DSP chain (`i2s_to_stream_0` /
+>   `stream_to_i2s_0`) に接続すること。これは「mode 2 = ADC -> DSP
+>   -> DAC」相当で、user は今回 branch で明確に NOT 実装と指示。
+>   `pmod_i2s2_master.v` だけで完結させ、AXIS chain は触らない。
 > - `git push` / `git pull` / `git fetch`。
 >
 > Rollback: `git checkout main` で Phase 7D close-out 構成に戻す。
