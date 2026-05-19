@@ -58,7 +58,7 @@ PYNQ-Z2 ボードには次の外部 IO ヘッダがあり、現状 `audio_lab.xd
 
 | ヘッダ | 概略 | 第一候補用途 (Phase 7) |
 | --- | --- | --- |
-| **PMOD JB** | 8 信号 + GND + 3.3V (clean 8-pin block) | **外付け I2S audio (PCM1808 + PCM5102)** |
+| **PMOD JB** | 8 信号 + GND + 3.3V (clean 8-pin block) | **外付け I2S audio (PCM1808 + PCM5102) OR Digilent Pmod I2S2 — variant 切替**, `DECISIONS.md` D48 |
 | **PMOD JA** | 8 信号 + GND + 3.3V | 追加 audio control (FMT / MD0 / MD1 / XSMT / RESET / spare) |
 | **Raspberry Pi header** | 40-pin (GPIO 多数 + 3.3V + GND) | **ロータリーエンコーダー (低速 GPIO)** |
 | **Arduino digital / analog header** | digital + analog | spare / 将来のフットスイッチ / LED |
@@ -278,8 +278,18 @@ PMOD pin 配置は公式 reference manual で **2026-05-18 に確定** 済。
   問題 (D40 / D41) は構造的に発生しない。
 - Phase Pmod-1 では 48 kHz / 24-bit / 32-bit slot / stereo I2S Philips
   で開始する。96 kHz は Phase Pmod-5 (別 branch、後回し)。
-- 本予約は **Phase Pmod-0 docs のみ**。`hw/Pynq-Z2/audio_lab.xdc` /
-  `block_design.tcl` / bit / hwh は未変更。
+- 本予約は **Phase Pmod-0 docs のみ**だったが、Phase Pmod-1 (2026-05-19、
+  branch `feature/pmod-i2s2-bringup`、`DECISIONS.md` D48) で
+  実装が入った。**Pmod I2S2 は PMOD JB の唯一の外付け audio
+  module**。`hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` に Pmod I2S2 用の
+  8 pin 制約 (LVCMOS33) を置き、`hw/Pynq-Z2/audio_lab.xdc` は ADAU +
+  HDMI + encoder の universal 制約のみを残す。Pmod I2S2 の
+  `pmod_i2s2_integration.tcl` は `create_project.tcl` から無条件に
+  source される (env var 切替なし)。PCM5102 / PCM1808 用の
+  `audio_lab_pcm.xdc` / `pcm5102_dac_integration.tcl` /
+  `pcm1808_adc_integration.tcl` / PCM5102 / PCM1808 RTL は repo に
+  archival で残るが build に入らない。
+  `hw/Pynq-Z2/block_design.tcl` は依然として未編集。
 
 ---
 

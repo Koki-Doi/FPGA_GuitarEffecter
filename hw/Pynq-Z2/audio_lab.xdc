@@ -153,55 +153,16 @@ set_property PACKAGE_PIN B19 [get_ports {enc2_sw_i}]
 set_property IOSTANDARD LVCMOS33 [get_ports {enc2_sw_i}]
 
 ###################################################
-## Phase 7C: PCM5102 (external DAC) bring-up on PMOD JB.
+## PMOD JB pin constraints live in `audio_lab_pmod_i2s2.xdc`. The
+## Digilent Pmod I2S2 module (CS4344 DAC + CS5343 ADC) is the active
+## external audio path on PMOD JB (`DECISIONS.md` D48); the legacy
+## PCM5102 / PCM1808 constraint file (`audio_lab_pcm.xdc`) is kept in
+## the repo as archival reference only and is NOT loaded by
+## `create_project.tcl` any more.
 ##
-## Wiring (DECISIONS.md D38 / D40 / D42, IO_PIN_RESERVATION.md 4A.1):
-##   JB1 (W14)  EXT_AUDIO_MCLK  = constant 0     (PCM5102 SCK stays GND / Low)
-##   JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM5102 BCK   ( 3.072 MHz)
-##   JB3 (T11)  EXT_AUDIO_LRCLK -> PCM5102 LCK   (48 kHz)
-##   JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN   (24-bit I2S)
-##
-## PCM1808 (ADC) pins are NOT added yet -- Phase 7D.
-## All four pins are LVCMOS33 outputs, no PULLUP. PMOD JA stays free.
+## The split exists because Vivado 2019.1 does not support `if` in
+## `.xdc` (the parser silently drops guarded pin assignments and the
+## placer then fails with "IO placement infeasible"), so the simplest
+## robust pattern is one file per variant + `add_files` selecting
+## the right one in `create_project.tcl`.
 ###################################################
-set_property PACKAGE_PIN W14 [get_ports {ext_audio_mclk_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_mclk_o}]
-
-set_property PACKAGE_PIN Y14 [get_ports {ext_audio_bclk_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_bclk_o}]
-
-set_property PACKAGE_PIN T11 [get_ports {ext_audio_lrclk_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_audio_lrclk_o}]
-
-set_property PACKAGE_PIN V16 [get_ports {ext_dac_din_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_dac_din_o}]
-
-###################################################
-## Phase 7D: PCM1808 (external ADC) bring-up on PMOD JB4.
-##
-## Wiring (DECISIONS.md D41 / D42, IO_PIN_RESERVATION.md 4A.1):
-##   JB1 (W14)  EXT_AUDIO_MCLK  = constant 0                    (unused)
-##   JB2 (Y14)  EXT_AUDIO_BCLK  -> PCM1808 BCK + PCM5102 BCK    (= ADAU BCLK)
-##   JB3 (T11)  EXT_AUDIO_LRCLK -> PCM1808 LRCK + PCM5102 LCK   (= ADAU LRCLK)
-##   JB4 (T10)  EXT_ADC_DOUT    <- PCM1808 DOUT                 (new input pin)
-##   JB7 (V16)  EXT_DAC_DIN     -> PCM5102 DIN                  (unchanged)
-##   JB8 (W16)  EXT_PCM1808_SCKI -> PCM1808 SCKI                (12.288 MHz)
-##
-## PCM1808 mode pins (FMT / MD0 / MD1) are NOT wired -- the module is
-## strapped to I2S slave mode on the board. LVCMOS33 input, no pull.
-## *Do not* drive 5V on this pin -- PCM1808 module VCC must be at the
-## level its onboard regulator expects to feed a 3.3V DOUT.
-###################################################
-set_property PACKAGE_PIN T10 [get_ports {ext_adc_dout_i}]
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_adc_dout_i}]
-
-###################################################
-## Phase 7D follow-up (DECISIONS.md D42): PCM1808 SCKI on dedicated JB8.
-##
-## JB1 stays at constant 0 (D40 SCK-low fix preserved structurally).
-## PCM1808 SCKI = 12.288 MHz from clk_wiz_audio_ext, routed to JB8 / W16
-## so the FPGA-side guarantee no longer depends on the user's physical
-## isolation of PCM5102 SCK from JB1.
-###################################################
-set_property PACKAGE_PIN W16 [get_ports {ext_pcm1808_sckie_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_pcm1808_sckie_o}]
