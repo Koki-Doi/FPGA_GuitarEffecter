@@ -29,8 +29,18 @@ set_property ip_repo_paths [list $iprepo_dir $digilent_ip_repo] [current_project
 set_property target_language VHDL [current_project]
 update_ip_catalog
 
-# Add constraints file
+# Add constraints file. audio_lab.xdc carries the universally-present
+# constraints (ADAU1761 codec, HDMI TX, encoder pins). The PMOD JB pin
+# constraints live in a per-variant XDC because Vivado 2019.1 does NOT
+# accept `if` in .xdc -- guarded pin assignments are silently dropped,
+# leading to "IO placement infeasible" at impl_1.
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
+if {[info exists ::env(PMOD_I2S2_ENABLE)] && $::env(PMOD_I2S2_ENABLE) == 1} {
+    puts "create_project: PMOD_I2S2_ENABLE=1 -- using audio_lab_pmod_i2s2.xdc for PMOD JB pin constraints"
+    add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_pmod_i2s2.xdc
+} else {
+    add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_pcm.xdc
+}
 
 # Phase 7F/7G: add the rotary-encoder input RTL as a regular source before
 # the block design references it via `create_bd_cell -type module -reference
@@ -48,6 +58,13 @@ add_files -norecurse $origin_dir/../ip/pcm5102_audio_out/src/pcm5102_audio_out.v
 # between ADAU1761 sdata_i and the new external PCM1808 DOUT as the feed
 # to i2s_to_stream_0/si.
 add_files -norecurse $origin_dir/../ip/pcm1808_adc_input/src/pcm1808_input_select.v
+# Phase Pmod-1/2/3: add the Pmod I2S2 master + AXI-Lite status slave
+# RTL ahead of pmod_i2s2_integration.tcl. They are only instantiated when
+# this build variant is selected (PMOD_I2S2_ENABLE=1, see below); the
+# sources_1 add_files itself is unconditional so future re-builds without
+# the variant can still elaborate the project.
+add_files -norecurse $origin_dir/../ip/pmod_i2s2/src/pmod_i2s2_master.v
+add_files -norecurse $origin_dir/../ip/pmod_i2s2/src/axi_pmod_i2s2_status.v
 update_compile_order -fileset sources_1
 
 # Generate block design
@@ -59,17 +76,29 @@ source ./hdmi_integration.tcl
 # The audio path, DSP block, existing GPIOs, and HDMI integration are not
 # touched. The encoder IP simply adds M17 on ps7_0_axi_periph.
 source ./encoder_integration.tcl
-# Phase 7C: extend with the PCM5102 external DAC bring-up (4 top-level
-# I2S pins on PMOD JB driven by a dedicated 12.288 MHz MMCM and a small
-# RTL tone generator). No AXI-Lite. Existing audio / HDMI / encoder /
-# GPIO untouched.
-source ./pcm5102_dac_integration.tcl
-# Phase 7D: extend with the PCM1808 external ADC bring-up. Inserts a 2:1
-# wire mux on the i2s_to_stream_0/si input so the existing AXIS DSP chain
-# can be fed from either the ADAU1761 ADC (sdata_i) or the new PCM1808
-# DOUT (ext_adc_dout_i on JB4 / T10). Build-time default picks PCM1808.
-# No AXI-Lite, no GPIO, no block_design.tcl direct edit.
-source ./pcm1808_adc_integration.tcl
+# Phase Pmod-1/2/3 build variant select. Set PMOD_I2S2_ENABLE to 1 in the
+# environment to source the Pmod I2S2 integration tcl and SKIP the existing
+# PCM5102 / PCM1808 scripts; PMOD JB then belongs to the Digilent Pmod I2S2
+# board (CS4344 DAC + CS5343 ADC) and the PCM5102 / PCM1808 jumper wiring
+# must be physically removed before powering. Default (variable absent or
+# 0) keeps the Phase 7D close-out behaviour (PCM5102 mirror + PCM1808 mux
+# falling back to ADAU).
+if {[info exists ::env(PMOD_I2S2_ENABLE)] && $::env(PMOD_I2S2_ENABLE) == 1} {
+    puts "create_project: PMOD_I2S2_ENABLE=1 -- sourcing pmod_i2s2_integration.tcl, skipping pcm5102 / pcm1808"
+    source ./pmod_i2s2_integration.tcl
+} else {
+    # Phase 7C: extend with the PCM5102 external DAC bring-up (4 top-level
+    # I2S pins on PMOD JB driven by a dedicated 12.288 MHz MMCM and a small
+    # RTL tone generator). No AXI-Lite. Existing audio / HDMI / encoder /
+    # GPIO untouched.
+    source ./pcm5102_dac_integration.tcl
+    # Phase 7D: extend with the PCM1808 external ADC bring-up. Inserts a 2:1
+    # wire mux on the i2s_to_stream_0/si input so the existing AXIS DSP chain
+    # can be fed from either the ADAU1761 ADC (sdata_i) or the new PCM1808
+    # DOUT (ext_adc_dout_i on JB4 / T10). Build-time default picks PCM1808.
+    # No AXI-Lite, no GPIO, no block_design.tcl direct edit.
+    source ./pcm1808_adc_integration.tcl
+}
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1

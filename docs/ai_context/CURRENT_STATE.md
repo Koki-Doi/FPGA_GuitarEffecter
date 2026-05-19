@@ -1,6 +1,37 @@
 # Current state
 
-Last updated: **2026-05-19 (D47 encoder button-state controls): short/long-press classifications dropped from `EncoderUiController`; Encoder 0 button-down rising edge is the only press-driven action**
+Last updated: **2026-05-19 (D48 Pmod I2S2 bring-up branch `feature/pmod-i2s2-bringup`): Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) added as a build variant on PMOD JB; ADAU1761 / PCM5102 / PCM1808 paths preserved as separate variant**
+(New build variant `PMOD_I2S2_ENABLE=1` sources
+`hw/Pynq-Z2/pmod_i2s2_integration.tcl` and skips the
+`pcm5102_dac_integration.tcl` + `pcm1808_adc_integration.tcl` pair.
+PMOD JB belongs entirely to the Digilent Pmod I2S2 module in this
+variant; the existing PCM5102 / PCM1808 jumper wiring must be
+physically removed before powering. New RTL:
+`hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` (FPGA-master I2S engine,
+12.288 MHz → 3.072 MHz BCLK → 48 kHz LRCK, 24-bit MSB-first /
+32-bit slot I2S Philips, internal 1 kHz sine ROM for TX, I2S
+deserializer + status counters for RX, build / runtime mode 0 = TX
+tone + ADC probe, mode 1 = ADC → DAC loopback) and
+`hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v` (AXI-Lite slave at
+0x43D20000 exposing VERSION / STATUS / FRAME_COUNT /
+NONZERO_COUNT / SDOUT_XCOUNT / CLIP_COUNT / LAST_LEFT /
+LAST_RIGHT / PEAK_ABS_* / MODE / CLEAR). Pin map (LVCMOS33):
+JB1 W14 → DA MCLK, JB2 Y14 → DA LRCK, JB3 T11 → DA SCLK,
+JB4 T10 → DA SDIN, JB7 V16 → AD MCLK (fanout), JB8 W16 → AD LRCK
+(fanout), JB9 V12 → AD SCLK (fanout), JB10 W13 → AD SDOUT (input).
+Same `audio_lab.xdc` covers both variants — each pin entry is
+wrapped in `if {[llength [get_ports -quiet ...]]>0}`. Python smoke:
+`scripts/test_pmod_i2s2.py` + `scripts/pmod_i2s2_capture_probe.py`
+poll the new status block and print PASS / WARN / FAIL based on
+frame_count / peak_abs movement. Baseline Phase 7D bit/hwh saved as
+`hw/Pynq-Z2/bitstreams/audio_lab.baseline.bit` / `.hwh` for
+rollback. `block_design.tcl`, GPIO_CONTROL_MAP, LowPassFir,
+topEntity, HDMI timing, encoder PL IP, compact-v2 GUI, notebooks,
+encoder runtime, ADAU1761 codec init are all untouched.
+`DECISIONS.md` D48.)
+
+Previous-pass header (D47 encoder button-state controls, 2026-05-19):
+**short/long-press classifications dropped from `EncoderUiController`; Encoder 0 button-down rising edge is the only press-driven action**
 (Encoder 0 rotate = effect select, Encoder 0 button-down edge =
 `effect_on[selected_effect]` toggle (PRESET-like slots are no-op).
 Encoder 1 rotate without hold = knob select, with hold = model-index

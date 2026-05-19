@@ -130,6 +130,59 @@ Caveats baked into Phase 7D:
   `pcm1808-dual-supply-and-pmod-brownout`). Until the module is
   replaced, keep `CONST_VAL = 0`.
 
+## Pmod I2S2 build variant (Phase Pmod-1, `DECISIONS.md` D48, branch `feature/pmod-i2s2-bringup`)
+
+When `PMOD_I2S2_ENABLE=1` is set at Vivado build time,
+`hw/Pynq-Z2/create_project.tcl` sources
+`hw/Pynq-Z2/pmod_i2s2_integration.tcl` and **skips**
+`pcm5102_dac_integration.tcl` + `pcm1808_adc_integration.tcl`.
+PMOD JB is dedicated to the Digilent Pmod I2S2 module (CS4344 stereo
+DAC + CS5343 stereo ADC). The ADAU1761 → AXIS → ADAU1761 DSP loop
+above is **unchanged**; the Pmod I2S2 path is **a completely separate
+bringup-only path** that does not feed the AXIS DSP chain.
+
+```
+clk_wiz_audio_ext.clk_out1 (12.288 MHz)
+        └──► pmod_i2s2_master ─┬── 1 kHz sine ROM (cfg_mode=0, default)
+                               │      └──► JB4 (T10) ext_pmod_i2s2_da_sdin_o
+                               │             ──► Pmod I2S2 CS4344 DAC ──► Line Out
+                               │
+                               └── ADC RX deserializer (24-bit I2S Philips)
+                                      ◄── JB10 (W13) ext_pmod_i2s2_ad_sdout_i
+                                              ◄── Pmod I2S2 CS5343 ADC ◄── Line In
+
+         Shared FPGA-master clock tree (one source, two fanouts):
+         MCLK 12.288 MHz   ──┬──► JB1 (W14)  ext_pmod_i2s2_da_mclk_o
+                             └──► JB7 (V16)  ext_pmod_i2s2_ad_mclk_o
+         BCLK  3.072 MHz   ──┬──► JB3 (T11)  ext_pmod_i2s2_da_sclk_o
+                             └──► JB9 (V12)  ext_pmod_i2s2_ad_sclk_o
+         LRCK  48 kHz      ──┬──► JB2 (Y14)  ext_pmod_i2s2_da_lrck_o
+                             └──► JB8 (W16)  ext_pmod_i2s2_ad_lrck_o
+```
+
+Mode select (AXI register at `0x43D20000 + 0x28`):
+- `cfg_mode = 0` (default): DAC SDIN gets the internal 1 kHz tone;
+  ADC SDOUT is captured but only feeds the status counters (no
+  audio sink). Used by `scripts/test_pmod_i2s2.py` to verify clocks
+  + ADC line-in via the on-module Line Out → Line In physical
+  loopback.
+- `cfg_mode = 1`: DAC SDIN echoes the just-received ADC sample (24-bit
+  L → L, 24-bit R → R, no DSP). With Line Out tied to Line In this
+  feedback-loops; use external audio source on Line In and listen
+  on a separate Line Out destination.
+
+Triage tips specific to the Pmod I2S2 variant:
+- If `frame_count` (`0x43D20000 + 0x08`) is stuck at 0, the BCLK /
+  LRCK generator is dead — check `clk_wiz_audio_ext` locked, check
+  the `pmod_master_0` reset.
+- If `frame_count` is rising but `sdout_xcount` (`+ 0x10`) is 0,
+  the ADC line in JB10 (W13) is dead (cable / module / FPGA pin).
+- If `sdout_xcount` is rising but `peak_abs_left/right` (`+ 0x20 /
+  + 0x24`) is 0, the ADC is alive but the analog line-in is silent.
+- ADAU1761 DAC / ADC, HDMI, encoder, GPIO_CONTROL_MAP, LowPassFir
+  are all *unchanged* in this variant — if they break, the issue is
+  in the Pmod I2S2 integration tcl, not in the existing path.
+
 ## Triage rules of thumb
 
 - If the **bypass route** (`passthrough`, no Clash) is noisy, look at the

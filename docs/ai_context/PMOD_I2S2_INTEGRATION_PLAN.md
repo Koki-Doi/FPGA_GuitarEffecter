@@ -651,3 +651,174 @@ Phase Pmod-1 開始前に **CS4344 / CS5343 datasheet + 実機** で埋める
 > Phase Pmod-1 完了後、`PMOD_I2S2_INTEGRATION_PLAN.md` の Phase Pmod-1
 > 節に「deploy result + WNS + smoke 結果」を追記し、Phase Pmod-2 への
 > 移行可否を判定する。
+
+---
+
+## 17. Phase Pmod-1 / Pmod-2 / Pmod-3 implementation status (2026-05-19, branch `feature/pmod-i2s2-bringup`, `DECISIONS.md` D48)
+
+Pmod I2S2 module 到着済。Pmod-0 設計の通りに以下を実装した
+**(まだ実機 deploy / smoke 結果は埋まっていない。Vivado build と
+PYNQ-Z2 deploy 後にこの節を更新する。)**
+
+### 17.1 実装したファイル
+
+- **RTL**: `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v`
+  + `hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v`
+  (両方 `default_nettype none`、self-contained、Xilinx IP 依存なし)。
+- **Tcl 統合**: `hw/Pynq-Z2/pmod_i2s2_integration.tcl`
+  + `hw/Pynq-Z2/create_project.tcl` に `PMOD_I2S2_ENABLE` env var
+  での variant 切替を追加。
+- **XDC**: `hw/Pynq-Z2/audio_lab.xdc` に Pmod I2S2 用 8 pin
+  (JB1/JB2/JB3/JB4/JB7/JB8/JB9/JB10) を追加。既存 PCM5102 / PCM1808
+  pin と同居させるため、すべての pin 制約を
+  `if {[llength [get_ports -quiet <port>]] > 0} { ... }` で
+  guard した。
+- **Python smoke**: `scripts/test_pmod_i2s2.py`
+  + `scripts/pmod_i2s2_capture_probe.py`。
+- **Baseline preserve**:
+  `hw/Pynq-Z2/bitstreams/audio_lab.baseline.bit` /
+  `.hwh` (Phase 7D close-out bit、rollback 用)。
+
+### 17.2 確定 pin map (section 10 と同一、再掲)
+
+| Pmod I2S2 J1 Pin | 信号 | Direction | PMOD JB | Package pin | LVCMOS33 |
+| --- | --- | --- | --- | --- | --- |
+| 1  | D/A MCLK   | out | JB1  | W14 | yes |
+| 2  | D/A LRCK   | out | JB2  | Y14 | yes |
+| 3  | D/A SCLK   | out | JB3  | T11 | yes |
+| 4  | D/A SDIN   | out | JB4  | T10 | yes |
+| 5  | GND        | -   | JB11 | -   | - |
+| 6  | VCC (3.3V) | -   | JB12 | -   | - |
+| 7  | A/D MCLK   | out | JB7  | V16 | yes |
+| 8  | A/D LRCK   | out | JB8  | W16 | yes |
+| 9  | A/D SCLK   | out | JB9  | V12 | yes |
+| 10 | A/D SDOUT  | **in** | JB10 | W13 | yes |
+| 11 | GND        | -   | (JB GND) | - | - |
+| 12 | VCC (3.3V) | -   | (JB VCC) | - | - |
+
+### 17.3 内部クロック木
+
+```
+clk_wiz_audio_ext.clk_out1 (12.288 MHz, exact)
+        |
+        +--> pmod_i2s2_master.clk_12m288_i
+               |
+               +--> ext_pmod_i2s2_da_mclk_o  (JB1, fanout #1)
+               +--> ext_pmod_i2s2_ad_mclk_o  (JB7, fanout #2)
+               |
+        BCLK = MCLK / 4 = 3.072 MHz (internal `bclk_int`)
+               +--> ext_pmod_i2s2_da_sclk_o  (JB3)
+               +--> ext_pmod_i2s2_ad_sclk_o  (JB9)
+               |
+        LRCK = BCLK / 64 = 48 kHz (internal `lrck_int`)
+               +--> ext_pmod_i2s2_da_lrck_o  (JB2)
+               +--> ext_pmod_i2s2_ad_lrck_o  (JB8)
+```
+
+D/A 側 と A/D 側は同じ source からの fanout なので **bit-true 同期**。
+独立 PLL が並ぶ Phase 7D の構成 (D40 / D41 async-clocks 問題) は
+構造的に発生しない。
+
+### 17.4 I2S frame
+
+- LRCK low = LEFT, high = RIGHT.
+- I2S Philips: data MSB は LRCK transition の 1 BCLK 後に出る。
+- 24-bit data MSB-first、32-bit slot per channel、8-bit zero pad LSBs。
+- DAC TX (CS4344) と ADC RX (CS5343) で同じ frame format。
+
+### 17.5 AXI-Lite status block
+
+- Address: `0x43D20000 / 0x10000` (encoder `0x43D10000` の次)。
+- ps7_0_axi_periph M18 (NUM_MI 18 → 19)。
+- Register map: `DECISIONS.md` D48 + axi_pmod_i2s2_status.v ヘッダ参照。
+- 全 status は MCLK domain で生成し、AXI clock domain (100 MHz) へ
+  2-FF synchronizer で渡す。`cfg_mode` は level signal で master 内
+  でも 2-FF 同期する。`cfg_clear` は toggle bit + edge-detect で
+  clock-period mismatch に robust。
+
+### 17.6 Build variant 切替
+
+- Default (env `PMOD_I2S2_ENABLE` 未設定 or `0`):
+  Phase 7D close-out 構成 (PCM5102 ADAU-mirror + PCM1808 mux=ADAU
+  fallback、`DECISIONS.md` D39 / D42 / D43)。
+- `PMOD_I2S2_ENABLE=1`:
+  Pmod I2S2 variant。`pmod_i2s2_integration.tcl` を source し、
+  `pcm5102_dac_integration.tcl` + `pcm1808_adc_integration.tcl` を
+  **skip** する。PMOD JB は Pmod I2S2 module 専用。
+
+### 17.7 実機手順 (Pmod-1 + Pmod-2 同時)
+
+1. **物理配線**: 既存 PCM5102 / PCM1808 のジャンパ線 / module を
+   PMOD JB から物理的に外す。Pmod I2S2 module を PMOD JB に直挿し
+   (Pin 1 が JB1 / W14 側になる向き)。電源は 3.3V (JB12) のみ。
+   5V には絶対繋がない。
+2. **Line Out ↔ Line In アナログ接続**: Pmod I2S2 の Line Out
+   3.5 mm ジャックを Line In 3.5 mm ジャックに stereo ケーブルで
+   ループバック接続済 (user 前提)。これは Phase Pmod-2 の ADC probe
+   smoke を 1 回の deploy で済ませるための物理 loopback。
+3. **Vivado build**:
+   ```
+   cd hw/Pynq-Z2
+   source /home/doi20/vivado/Vivado/2019.1/settings64.sh
+   PMOD_I2S2_ENABLE=1 vivado -mode batch -notrace -nojournal \
+       -log vivado.log -source create_project.tcl
+   ```
+4. **timing review**: `audio_lab/audio_lab.runs/impl_1/block_design_wrapper_timing_summary_routed.rpt`
+   を読み、WNS が Phase 7D close-out baseline `-7.931 ns` 比で
+   `-9.5 ns` を超えていないことを確認 (`TIMING_AND_FPGA_NOTES.md`
+   deploy gate)。
+5. **deploy**: `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`。
+   5 か所 bit/hwh sync。
+6. **on-board smoke**:
+   ```
+   ssh xilinx@192.168.1.9 '
+     cd /home/xilinx/Audio-Lab-PYNQ &&
+     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+         scripts/test_pmod_i2s2.py --duration 5
+   '
+   ```
+7. **ADC probe**:
+   ```
+   ssh xilinx@192.168.1.9 '
+     cd /home/xilinx/Audio-Lab-PYNQ &&
+     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+         scripts/pmod_i2s2_capture_probe.py --duration 10 --interval 0.5
+   '
+   ```
+   期待: Line Out → Line In 接続中なら peak_abs_left/right が
+   非ゼロで増加。Line In のケーブルを抜くと peak が下がる。
+8. **ADC → DAC direct loopback (任意 / Phase Pmod-3)**:
+   ```
+   ssh xilinx@192.168.1.9 '
+     cd /home/xilinx/Audio-Lab-PYNQ &&
+     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+         scripts/test_pmod_i2s2.py --mode 1 --duration 5
+   '
+   ```
+   注意: Line Out ↔ Line In が物理接続されたまま `--mode 1` を
+   走らせると自己フィードバックする可能性がある。最初は外部音源
+   (スマートフォン等) を Line In に入れて Line Out から音が戻る
+   ことを確認するのが安全。
+
+### 17.8 結果欄 (build / deploy / smoke 後に埋める)
+
+- Vivado bit/hwh: `???` (timestamp / md5)
+- WNS routed: `??? ns` / `???`
+- critical warnings: `???`
+- PYNQ overlay load: `??? ms` / `???`
+- ADAU1761 R19: `0x???` (`0x23` 期待)
+- HDMI VTC GEN_ACTSZ: `0x???` (`0x02580320` 期待)
+- encoder VERSION: `0x???` (`0x00070001` 期待)
+- pmod_status VERSION: `0x???` (`0x00480001` 期待)
+- DAC tone audible: `???`
+- ADC probe pass (frame_count rising + peak_abs > 0): `???`
+- ADC → DAC direct loopback (mode=1, 外部音源): `???`
+
+### 17.9 Rollback
+
+| 状況 | 対応 |
+| --- | --- |
+| Vivado build PASS、timing NG (WNS < -9.5 ns) | 新しい bit を deploy しない。`audio_lab.baseline.bit/.hwh` をそのまま使う。 |
+| Vivado build PASS、deploy 成功、smoke FAIL | `audio_lab.baseline.bit/.hwh` を 5 か所に書き戻し、reboot。`git checkout main` で source code も Phase 7D close-out に戻す。 |
+| Vivado build NG | `PMOD_I2S2_ENABLE=0` (= default) で再 build、Phase 7D close-out で動くことを確認。失敗箇所を `git log` で trace。 |
+| Pmod I2S2 module 故障疑い | branch を main へ戻し、PCM5102 / PCM1808 ジャンパを物理的に挿し直し、Phase 7D close-out bit を deploy。 |

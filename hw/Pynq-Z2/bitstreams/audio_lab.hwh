@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon May 18 21:14:03 2026" VIVADOVERSION="2019.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Tue May 19 22:25:34 2026" VIVADOVERSION="2019.1">
 
   <SYSTEMINFO ARCH="zynq" BOARD="tul.com.tw:pynq-z2:part0:1.0" DEVICE="7z020" NAME="block_design" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -8,7 +8,6 @@
       <CONNECTIONS>
         <CONNECTION INSTANCE="i2s_to_stream_0" PORT="bclk"/>
         <CONNECTION INSTANCE="proc_sys_reset_0" PORT="slowest_sync_clk"/>
-        <CONNECTION INSTANCE="pcm5102_out_0" PORT="adau_bclk_i"/>
       </CONNECTIONS>
     </PORT>
     <PORT DIR="O" LEFT="1" NAME="codec_address" RIGHT="0" SIGIS="undef" SIGNAME="xlconstant_0_dout">
@@ -19,7 +18,6 @@
     <PORT DIR="I" NAME="lrclk" SIGIS="undef" SIGNAME="External_Ports_lrclk">
       <CONNECTIONS>
         <CONNECTION INSTANCE="i2s_to_stream_0" PORT="lrclk"/>
-        <CONNECTION INSTANCE="pcm5102_out_0" PORT="adau_lrclk_i"/>
       </CONNECTIONS>
     </PORT>
     <PORT CLKFREQUENCY="24000000" DIR="O" NAME="mclk" SIGIS="clk" SIGNAME="clk_wiz_0_clk_out1">
@@ -29,7 +27,7 @@
     </PORT>
     <PORT DIR="I" NAME="sdata_i" SIGIS="undef" SIGNAME="External_Ports_sdata_i">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="adc_sel_0" PORT="adau_sdata_i"/>
+        <CONNECTION INSTANCE="i2s_to_stream_0" PORT="si"/>
       </CONNECTIONS>
     </PORT>
     <PORT DIR="O" NAME="sdata_o" SIGIS="undef" SIGNAME="i2s_to_stream_0_so">
@@ -237,34 +235,44 @@
         <CONNECTION INSTANCE="enc_in_0" PORT="enc2_sw_i"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_audio_mclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_mclk_o">
+    <PORT DIR="O" NAME="ext_pmod_i2s2_da_mclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_mclk_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_audio_mclk_o"/>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_da_mclk_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_audio_bclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_bclk_o">
+    <PORT DIR="O" NAME="ext_pmod_i2s2_da_lrck_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_lrck_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_audio_bclk_o"/>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_da_lrck_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_audio_lrclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_lrclk_o">
+    <PORT DIR="O" NAME="ext_pmod_i2s2_da_sclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_sclk_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_audio_lrclk_o"/>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_da_sclk_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_dac_din_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_dac_din_o">
+    <PORT DIR="O" NAME="ext_pmod_i2s2_da_sdin_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_sdin_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="pcm5102_out_0" PORT="ext_dac_din_o"/>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_da_sdin_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="I" NAME="ext_adc_dout_i" SIGIS="undef" SIGNAME="External_Ports_ext_adc_dout_i">
+    <PORT DIR="O" NAME="ext_pmod_i2s2_ad_mclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_ad_mclk_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="adc_sel_0" PORT="pcm1808_dout_i"/>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_ad_mclk_o"/>
       </CONNECTIONS>
     </PORT>
-    <PORT DIR="O" NAME="ext_pcm1808_sckie_o" SIGIS="undef" SIGNAME="clk_wiz_audio_ext_clk_out1">
+    <PORT DIR="O" NAME="ext_pmod_i2s2_ad_lrck_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_ad_lrck_o">
       <CONNECTIONS>
-        <CONNECTION INSTANCE="clk_wiz_audio_ext" PORT="clk_out1"/>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_ad_lrck_o"/>
+      </CONNECTIONS>
+    </PORT>
+    <PORT DIR="O" NAME="ext_pmod_i2s2_ad_sclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_ad_sclk_o">
+      <CONNECTIONS>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_ad_sclk_o"/>
+      </CONNECTIONS>
+    </PORT>
+    <PORT DIR="I" NAME="ext_pmod_i2s2_ad_sdout_i" SIGIS="undef" SIGNAME="External_Ports_ext_pmod_i2s2_ad_sdout_i">
+      <CONNECTIONS>
+        <CONNECTION INSTANCE="pmod_master_0" PORT="ext_pmod_i2s2_ad_sdout_i"/>
       </CONNECTIONS>
     </PORT>
   </EXTERNALPORTS>
@@ -327,53 +335,6 @@
   </EXTERNALINTERFACES>
 
   <MODULES>
-    <MODULE COREREVISION="1" FULLNAME="/adc_sel_0" HWVERSION="1.0" INSTANCE="adc_sel_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="pcm1808_input_select" VLNV="xilinx.com:module_ref:pcm1808_input_select:1.0">
-      <DOCUMENTS/>
-      <PARAMETERS>
-        <PARAMETER NAME="Component_Name" VALUE="block_design_adc_sel_0_0"/>
-        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
-      </PARAMETERS>
-      <PORTS>
-        <PORT DIR="I" NAME="adau_sdata_i" SIGIS="undef" SIGNAME="External_Ports_sdata_i">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="sdata_i"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="pcm1808_dout_i" SIGIS="undef" SIGNAME="External_Ports_ext_adc_dout_i">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="ext_adc_dout_i"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="sel_external_i" SIGIS="undef" SIGNAME="adc_sel_const_dout">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="adc_sel_const" PORT="dout"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="sdata_to_dsp_o" SIGIS="undef" SIGNAME="adc_sel_0_sdata_to_dsp_o">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="i2s_to_stream_0" PORT="si"/>
-          </CONNECTIONS>
-        </PORT>
-      </PORTS>
-      <BUSINTERFACES/>
-    </MODULE>
-    <MODULE COREREVISION="6" FULLNAME="/adc_sel_const" HWVERSION="1.1" INSTANCE="adc_sel_const" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="xlconstant" VLNV="xilinx.com:ip:xlconstant:1.1">
-      <DOCUMENTS/>
-      <PARAMETERS>
-        <PARAMETER NAME="CONST_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="CONST_VAL" VALUE="0x0"/>
-        <PARAMETER NAME="Component_Name" VALUE="block_design_adc_sel_const_0"/>
-        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
-      </PARAMETERS>
-      <PORTS>
-        <PORT DIR="O" LEFT="0" NAME="dout" RIGHT="0" SIGIS="undef" SIGNAME="adc_sel_const_dout">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="adc_sel_0" PORT="sel_external_i"/>
-          </CONNECTIONS>
-        </PORT>
-      </PORTS>
-      <BUSINTERFACES/>
-    </MODULE>
     <MODULE COREREVISION="20" FULLNAME="/axi_dma_0" HWVERSION="7.1" INSTANCE="axi_dma_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="axi_dma" VLNV="xilinx.com:ip:axi_dma:7.1">
       <DOCUMENTS>
         <DOCUMENT SOURCE="http://www.xilinx.com/cgi-bin/docs/ipdoc?c=axi_dma;v=v7_1;d=pg021_axi_dma.pdf"/>
@@ -11470,8 +11431,7 @@
         </PORT>
         <PORT CLKFREQUENCY="12288000" DIR="O" NAME="clk_out1" SIGIS="clk" SIGNAME="clk_wiz_audio_ext_clk_out1">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="pcm5102_out_0" PORT="mclk_12m288_i"/>
-            <CONNECTION INSTANCE="External_Ports" PORT="ext_pcm1808_sckie_o"/>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="clk_12m288_i"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="locked" SIGIS="undef"/>
@@ -12822,9 +12782,9 @@
             <CONNECTION INSTANCE="External_Ports" PORT="lrclk"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="si" SIGIS="undef" SIGNAME="adc_sel_0_sdata_to_dsp_o">
+        <PORT DIR="I" NAME="si" SIGIS="undef" SIGNAME="External_Ports_sdata_i">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="adc_sel_0" PORT="sdata_to_dsp_o"/>
+            <CONNECTION INSTANCE="External_Ports" PORT="sdata_i"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="47" NAME="axis_hp_tdata" RIGHT="0" SIGIS="undef" SIGNAME="axis_switch_sink_m_axis_tdata">
@@ -12845,7 +12805,6 @@
         <PORT DIR="O" NAME="so" SIGIS="undef" SIGNAME="i2s_to_stream_0_so">
           <CONNECTIONS>
             <CONNECTION INSTANCE="External_Ports" PORT="sdata_o"/>
-            <CONNECTION INSTANCE="pcm5102_out_0" PORT="adau_sdata_o_i"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="axis_hp_tready" SIGIS="undef" SIGNAME="axis_switch_sink_m_axis_tready">
@@ -12913,55 +12872,372 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
-    <MODULE COREREVISION="1" FULLNAME="/pcm5102_out_0" HWVERSION="1.0" INSTANCE="pcm5102_out_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="pcm5102_audio_out" VLNV="xilinx.com:module_ref:pcm5102_audio_out:1.0">
+    <MODULE COREREVISION="1" FULLNAME="/pmod_master_0" HWVERSION="1.0" INSTANCE="pmod_master_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="pmod_i2s2_master" VLNV="xilinx.com:module_ref:pmod_i2s2_master:1.0">
       <DOCUMENTS/>
       <PARAMETERS>
-        <PARAMETER NAME="Component_Name" VALUE="block_design_pcm5102_out_0_0"/>
+        <PARAMETER NAME="Component_Name" VALUE="block_design_pmod_master_0_0"/>
         <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
       </PARAMETERS>
       <PORTS>
-        <PORT DIR="I" NAME="mclk_12m288_i" SIGIS="undef" SIGNAME="clk_wiz_audio_ext_clk_out1">
+        <PORT DIR="I" NAME="clk_12m288_i" SIGIS="undef" SIGNAME="clk_wiz_audio_ext_clk_out1">
           <CONNECTIONS>
             <CONNECTION INSTANCE="clk_wiz_audio_ext" PORT="clk_out1"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="adau_bclk_i" SIGIS="undef" SIGNAME="External_Ports_bclk">
+        <PORT DIR="I" NAME="resetn_i" SIGIS="undef" SIGNAME="rst_ps7_0_100M_peripheral_aresetn">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="bclk"/>
+            <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="peripheral_aresetn"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="adau_lrclk_i" SIGIS="undef" SIGNAME="External_Ports_lrclk">
+        <PORT DIR="I" LEFT="1" NAME="cfg_mode_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_cfg_mode_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="lrclk"/>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="cfg_mode_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="adau_sdata_o_i" SIGIS="undef" SIGNAME="i2s_to_stream_0_so">
+        <PORT DIR="I" NAME="cfg_clear_toggle_i" SIGIS="undef" SIGNAME="pmod_status_0_cfg_clear_toggle_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="i2s_to_stream_0" PORT="so"/>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="cfg_clear_toggle_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_audio_mclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_mclk_o">
+        <PORT DIR="O" NAME="ext_pmod_i2s2_da_mclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_mclk_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="ext_audio_mclk_o"/>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_da_mclk_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_audio_bclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_bclk_o">
+        <PORT DIR="O" NAME="ext_pmod_i2s2_da_lrck_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_lrck_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="ext_audio_bclk_o"/>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_da_lrck_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_audio_lrclk_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_audio_lrclk_o">
+        <PORT DIR="O" NAME="ext_pmod_i2s2_da_sclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_sclk_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="ext_audio_lrclk_o"/>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_da_sclk_o"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="ext_dac_din_o" SIGIS="undef" SIGNAME="pcm5102_out_0_ext_dac_din_o">
+        <PORT DIR="O" NAME="ext_pmod_i2s2_da_sdin_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_da_sdin_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="External_Ports" PORT="ext_dac_din_o"/>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_da_sdin_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="ext_pmod_i2s2_ad_mclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_ad_mclk_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_ad_mclk_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="ext_pmod_i2s2_ad_lrck_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_ad_lrck_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_ad_lrck_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="ext_pmod_i2s2_ad_sclk_o" SIGIS="undef" SIGNAME="pmod_master_0_ext_pmod_i2s2_ad_sclk_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_ad_sclk_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="ext_pmod_i2s2_ad_sdout_i" SIGIS="undef" SIGNAME="External_Ports_ext_pmod_i2s2_ad_sdout_i">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="External_Ports" PORT="ext_pmod_i2s2_ad_sdout_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="frame_count_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_frame_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="frame_count_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="nonzero_count_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_nonzero_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="nonzero_count_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="sdout_transition_count_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_sdout_transition_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="sdout_transition_count_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="clip_count_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_clip_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="clip_count_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="23" NAME="last_left_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_last_left_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="last_left_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="23" NAME="last_right_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_last_right_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="last_right_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="23" NAME="peak_abs_left_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_peak_abs_left_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="peak_abs_left_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="23" NAME="peak_abs_right_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_peak_abs_right_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="peak_abs_right_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="lrclk_seen_o" SIGIS="undef" SIGNAME="pmod_master_0_lrclk_seen_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="lrclk_seen_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="bclk_seen_o" SIGIS="undef" SIGNAME="pmod_master_0_bclk_seen_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="bclk_seen_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="sdout_alive_o" SIGIS="undef" SIGNAME="pmod_master_0_sdout_alive_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="sdout_alive_i"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
       <BUSINTERFACES/>
+    </MODULE>
+    <MODULE COREREVISION="1" FULLNAME="/pmod_status_0" HWVERSION="1.0" INSTANCE="pmod_status_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="axi_pmod_i2s2_status" VLNV="xilinx.com:module_ref:axi_pmod_i2s2_status:1.0">
+      <DOCUMENTS/>
+      <ADDRESSBLOCKS>
+        <ADDRESSBLOCK ACCESS="" INTERFACE="s_axi" NAME="reg0" RANGE="4096" USAGE="register"/>
+      </ADDRESSBLOCKS>
+      <PARAMETERS>
+        <PARAMETER NAME="C_S_AXI_ADDR_WIDTH" VALUE="6"/>
+        <PARAMETER NAME="C_S_AXI_DATA_WIDTH" VALUE="32"/>
+        <PARAMETER NAME="Component_Name" VALUE="block_design_pmod_status_0_0"/>
+        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
+        <PARAMETER NAME="C_BASEADDR" VALUE="0x43D20000"/>
+        <PARAMETER NAME="C_HIGHADDR" VALUE="0x43D2FFFF"/>
+      </PARAMETERS>
+      <PORTS>
+        <PORT CLKFREQUENCY="100000000" DIR="I" NAME="s_axi_aclk" SIGIS="clk" SIGNAME="processing_system7_0_FCLK_CLK0">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="processing_system7_0" PORT="FCLK_CLK0"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axi_aresetn" SIGIS="rst" SIGNAME="rst_ps7_0_100M_peripheral_aresetn">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="peripheral_aresetn"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="5" NAME="s_axi_awaddr" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awaddr">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_awaddr"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="2" NAME="s_axi_awprot" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awprot">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_awprot"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axi_awvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_awvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_axi_awready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_awready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="s_axi_wdata" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wdata">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_wdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="3" NAME="s_axi_wstrb" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wstrb">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_wstrb"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axi_wvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_wvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_axi_wready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_wready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="1" NAME="s_axi_bresp" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_bresp">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_bresp"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_axi_bvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_bvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_bvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axi_bready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_bready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_bready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="5" NAME="s_axi_araddr" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_araddr">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_araddr"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="2" NAME="s_axi_arprot" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_arprot">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_arprot"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axi_arvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_arvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_arvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_axi_arready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_arready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_arready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="s_axi_rdata" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rdata">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_rdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="1" NAME="s_axi_rresp" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rresp">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_rresp"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_axi_rvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_rvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axi_rready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_AXI_rready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="frame_count_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_frame_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="frame_count_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="nonzero_count_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_nonzero_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="nonzero_count_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="sdout_transition_count_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_sdout_transition_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="sdout_transition_count_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="clip_count_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_clip_count_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="clip_count_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="23" NAME="last_left_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_last_left_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="last_left_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="23" NAME="last_right_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_last_right_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="last_right_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="23" NAME="peak_abs_left_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_peak_abs_left_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="peak_abs_left_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="23" NAME="peak_abs_right_i" RIGHT="0" SIGIS="undef" SIGNAME="pmod_master_0_peak_abs_right_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="peak_abs_right_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="lrclk_seen_i" SIGIS="undef" SIGNAME="pmod_master_0_lrclk_seen_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="lrclk_seen_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="bclk_seen_i" SIGIS="undef" SIGNAME="pmod_master_0_bclk_seen_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="bclk_seen_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="sdout_alive_i" SIGIS="undef" SIGNAME="pmod_master_0_sdout_alive_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="sdout_alive_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="1" NAME="cfg_mode_o" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_cfg_mode_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="cfg_mode_i"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="cfg_clear_toggle_o" SIGIS="undef" SIGNAME="pmod_status_0_cfg_clear_toggle_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="cfg_clear_toggle_i"/>
+          </CONNECTIONS>
+        </PORT>
+      </PORTS>
+      <BUSINTERFACES>
+        <BUSINTERFACE BUSNAME="ps7_0_axi_periph_M18_AXI" DATAWIDTH="32" NAME="s_axi" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
+          <PARAMETER NAME="DATA_WIDTH" VALUE="32"/>
+          <PARAMETER NAME="PROTOCOL" VALUE="AXI4LITE"/>
+          <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
+          <PARAMETER NAME="ID_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="ADDR_WIDTH" VALUE="6"/>
+          <PARAMETER NAME="AWUSER_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="ARUSER_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="WUSER_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="RUSER_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="BUSER_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="READ_WRITE_MODE" VALUE="READ_WRITE"/>
+          <PARAMETER NAME="HAS_BURST" VALUE="0"/>
+          <PARAMETER NAME="HAS_LOCK" VALUE="0"/>
+          <PARAMETER NAME="HAS_PROT" VALUE="1"/>
+          <PARAMETER NAME="HAS_CACHE" VALUE="0"/>
+          <PARAMETER NAME="HAS_QOS" VALUE="0"/>
+          <PARAMETER NAME="HAS_REGION" VALUE="0"/>
+          <PARAMETER NAME="HAS_WSTRB" VALUE="1"/>
+          <PARAMETER NAME="HAS_BRESP" VALUE="1"/>
+          <PARAMETER NAME="HAS_RRESP" VALUE="1"/>
+          <PARAMETER NAME="SUPPORTS_NARROW_BURST" VALUE="0"/>
+          <PARAMETER NAME="NUM_READ_OUTSTANDING" VALUE="1"/>
+          <PARAMETER NAME="NUM_WRITE_OUTSTANDING" VALUE="1"/>
+          <PARAMETER NAME="MAX_BURST_LENGTH" VALUE="1"/>
+          <PARAMETER NAME="PHASE" VALUE="0.000"/>
+          <PARAMETER NAME="CLK_DOMAIN" VALUE="block_design_processing_system7_0_0_FCLK_CLK0"/>
+          <PARAMETER NAME="NUM_READ_THREADS" VALUE="1"/>
+          <PARAMETER NAME="NUM_WRITE_THREADS" VALUE="1"/>
+          <PARAMETER NAME="RUSER_BITS_PER_BYTE" VALUE="0"/>
+          <PARAMETER NAME="WUSER_BITS_PER_BYTE" VALUE="0"/>
+          <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
+          <PORTMAPS>
+            <PORTMAP LOGICAL="AWADDR" PHYSICAL="s_axi_awaddr"/>
+            <PORTMAP LOGICAL="AWPROT" PHYSICAL="s_axi_awprot"/>
+            <PORTMAP LOGICAL="AWVALID" PHYSICAL="s_axi_awvalid"/>
+            <PORTMAP LOGICAL="AWREADY" PHYSICAL="s_axi_awready"/>
+            <PORTMAP LOGICAL="WDATA" PHYSICAL="s_axi_wdata"/>
+            <PORTMAP LOGICAL="WSTRB" PHYSICAL="s_axi_wstrb"/>
+            <PORTMAP LOGICAL="WVALID" PHYSICAL="s_axi_wvalid"/>
+            <PORTMAP LOGICAL="WREADY" PHYSICAL="s_axi_wready"/>
+            <PORTMAP LOGICAL="BRESP" PHYSICAL="s_axi_bresp"/>
+            <PORTMAP LOGICAL="BVALID" PHYSICAL="s_axi_bvalid"/>
+            <PORTMAP LOGICAL="BREADY" PHYSICAL="s_axi_bready"/>
+            <PORTMAP LOGICAL="ARADDR" PHYSICAL="s_axi_araddr"/>
+            <PORTMAP LOGICAL="ARPROT" PHYSICAL="s_axi_arprot"/>
+            <PORTMAP LOGICAL="ARVALID" PHYSICAL="s_axi_arvalid"/>
+            <PORTMAP LOGICAL="ARREADY" PHYSICAL="s_axi_arready"/>
+            <PORTMAP LOGICAL="RDATA" PHYSICAL="s_axi_rdata"/>
+            <PORTMAP LOGICAL="RRESP" PHYSICAL="s_axi_rresp"/>
+            <PORTMAP LOGICAL="RVALID" PHYSICAL="s_axi_rvalid"/>
+            <PORTMAP LOGICAL="RREADY" PHYSICAL="s_axi_rready"/>
+          </PORTMAPS>
+        </BUSINTERFACE>
+      </BUSINTERFACES>
     </MODULE>
     <MODULE COREREVISION="13" FULLNAME="/proc_sys_reset_0" HWVERSION="5.0" INSTANCE="proc_sys_reset_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="proc_sys_reset" VLNV="xilinx.com:ip:proc_sys_reset:5.0">
       <DOCUMENTS>
@@ -14525,6 +14801,8 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M17_ACLK"/>
             <CONNECTION INSTANCE="enc_in_0" PORT="s_axi_aclk"/>
             <CONNECTION INSTANCE="clk_wiz_audio_ext" PORT="clk_in1"/>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_ACLK"/>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_aclk"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="FCLK_RESET0_N" SIGIS="rst" SIGNAME="processing_system7_0_FCLK_RESET0_N">
@@ -14949,6 +15227,7 @@
         <MEMRANGE ADDRESSBLOCK="Reg" BASENAME="C_BASEADDR" BASEVALUE="0x43CE0000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x43CEFFFF" INSTANCE="axi_vdma_hdmi" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="M_AXI_GP0" MEMTYPE="REGISTER" SLAVEBUSINTERFACE="S_AXI_LITE"/>
         <MEMRANGE ADDRESSBLOCK="Reg" BASENAME="C_BASEADDR" BASEVALUE="0x43CF0000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x43CFFFFF" INSTANCE="v_tc_hdmi" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="M_AXI_GP0" MEMTYPE="REGISTER" SLAVEBUSINTERFACE="ctrl"/>
         <MEMRANGE ADDRESSBLOCK="reg0" BASENAME="C_BASEADDR" BASEVALUE="0x43D10000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x43D1FFFF" INSTANCE="enc_in_0" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="M_AXI_GP0" MEMTYPE="REGISTER" SLAVEBUSINTERFACE="s_axi"/>
+        <MEMRANGE ADDRESSBLOCK="reg0" BASENAME="C_BASEADDR" BASEVALUE="0x43D20000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x43D2FFFF" INSTANCE="pmod_status_0" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="M_AXI_GP0" MEMTYPE="REGISTER" SLAVEBUSINTERFACE="s_axi"/>
       </MEMORYMAP>
       <PERIPHERALS>
         <PERIPHERAL INSTANCE="axi_dma_0"/>
@@ -14969,6 +15248,7 @@
         <PERIPHERAL INSTANCE="axi_vdma_hdmi"/>
         <PERIPHERAL INSTANCE="v_tc_hdmi"/>
         <PERIPHERAL INSTANCE="enc_in_0"/>
+        <PERIPHERAL INSTANCE="pmod_status_0"/>
       </PERIPHERALS>
     </MODULE>
     <MODULE COREREVISION="20" FULLNAME="/ps7_0_axi_periph" HWVERSION="2.1" INSTANCE="ps7_0_axi_periph" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="axi_interconnect" VLNV="xilinx.com:ip:axi_interconnect:2.1">
@@ -14977,7 +15257,7 @@
       </DOCUMENTS>
       <PARAMETERS>
         <PARAMETER NAME="NUM_SI" VALUE="1"/>
-        <PARAMETER NAME="NUM_MI" VALUE="18"/>
+        <PARAMETER NAME="NUM_MI" VALUE="19"/>
         <PARAMETER NAME="STRATEGY" VALUE="0"/>
         <PARAMETER NAME="ENABLE_ADVANCED_OPTIONS" VALUE="0"/>
         <PARAMETER NAME="ENABLE_PROTOCOL_CHECKERS" VALUE="0"/>
@@ -17530,6 +17810,127 @@
             <CONNECTION INSTANCE="enc_in_0" PORT="s_axi_rready"/>
           </CONNECTIONS>
         </PORT>
+        <PORT DIR="I" NAME="M18_ACLK" SIGIS="clk" SIGNAME="processing_system7_0_FCLK_CLK0">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="processing_system7_0" PORT="FCLK_CLK0"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="M18_ARESETN" SIGIS="rst" SIGNAME="rst_ps7_0_100M_peripheral_aresetn">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="peripheral_aresetn"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="M18_AXI_awaddr" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awaddr">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_awaddr"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_awlen" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_awsize" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_awburst" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_awlock" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_awcache" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="2" NAME="M18_AXI_awprot" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awprot">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_awprot"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_awregion" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_awqos" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_awvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_awvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="M18_AXI_awready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_awready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_awready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="M18_AXI_wdata" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wdata">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_wdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="3" NAME="M18_AXI_wstrb" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wstrb">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_wstrb"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_wlast" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_wvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_wvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="M18_AXI_wready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_wready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_wready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="1" NAME="M18_AXI_bresp" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_bresp">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_bresp"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="M18_AXI_bvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_bvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_bvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_bready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_bready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_bready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="M18_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_araddr">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_araddr"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_arlen" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_arsize" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_arburst" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_arlock" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_arcache" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="2" NAME="M18_AXI_arprot" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_arprot">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_arprot"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_arregion" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_arqos" SIGIS="undef"/>
+        <PORT DIR="O" NAME="M18_AXI_arvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_arvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_arvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="M18_AXI_arready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_arready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_arready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="M18_AXI_rdata" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rdata">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_rdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="1" NAME="M18_AXI_rresp" RIGHT="0" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rresp">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_rresp"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="M18_AXI_rlast" SIGIS="undef"/>
+        <PORT DIR="I" NAME="M18_AXI_rvalid" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_rvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="M18_AXI_rready" SIGIS="undef" SIGNAME="pmod_status_0_s_axi_rready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_rready"/>
+          </CONNECTIONS>
+        </PORT>
       </PORTS>
       <BUSINTERFACES>
         <BUSINTERFACE BUSNAME="processing_system7_0_M_AXI_GP0" DATAWIDTH="32" NAME="S00_AXI" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
@@ -18276,6 +18677,45 @@
             <PORTMAP LOGICAL="RREADY" PHYSICAL="M17_AXI_rready"/>
           </PORTMAPS>
         </BUSINTERFACE>
+        <BUSINTERFACE BUSNAME="ps7_0_axi_periph_M18_AXI" DATAWIDTH="32" NAME="M18_AXI" TYPE="MASTER" VLNV="xilinx.com:interface:aximm:1.0">
+          <PORTMAPS>
+            <PORTMAP LOGICAL="AWADDR" PHYSICAL="M18_AXI_awaddr"/>
+            <PORTMAP LOGICAL="AWLEN" PHYSICAL="M18_AXI_awlen"/>
+            <PORTMAP LOGICAL="AWSIZE" PHYSICAL="M18_AXI_awsize"/>
+            <PORTMAP LOGICAL="AWBURST" PHYSICAL="M18_AXI_awburst"/>
+            <PORTMAP LOGICAL="AWLOCK" PHYSICAL="M18_AXI_awlock"/>
+            <PORTMAP LOGICAL="AWCACHE" PHYSICAL="M18_AXI_awcache"/>
+            <PORTMAP LOGICAL="AWPROT" PHYSICAL="M18_AXI_awprot"/>
+            <PORTMAP LOGICAL="AWREGION" PHYSICAL="M18_AXI_awregion"/>
+            <PORTMAP LOGICAL="AWQOS" PHYSICAL="M18_AXI_awqos"/>
+            <PORTMAP LOGICAL="AWVALID" PHYSICAL="M18_AXI_awvalid"/>
+            <PORTMAP LOGICAL="AWREADY" PHYSICAL="M18_AXI_awready"/>
+            <PORTMAP LOGICAL="WDATA" PHYSICAL="M18_AXI_wdata"/>
+            <PORTMAP LOGICAL="WSTRB" PHYSICAL="M18_AXI_wstrb"/>
+            <PORTMAP LOGICAL="WLAST" PHYSICAL="M18_AXI_wlast"/>
+            <PORTMAP LOGICAL="WVALID" PHYSICAL="M18_AXI_wvalid"/>
+            <PORTMAP LOGICAL="WREADY" PHYSICAL="M18_AXI_wready"/>
+            <PORTMAP LOGICAL="BRESP" PHYSICAL="M18_AXI_bresp"/>
+            <PORTMAP LOGICAL="BVALID" PHYSICAL="M18_AXI_bvalid"/>
+            <PORTMAP LOGICAL="BREADY" PHYSICAL="M18_AXI_bready"/>
+            <PORTMAP LOGICAL="ARADDR" PHYSICAL="M18_AXI_araddr"/>
+            <PORTMAP LOGICAL="ARLEN" PHYSICAL="M18_AXI_arlen"/>
+            <PORTMAP LOGICAL="ARSIZE" PHYSICAL="M18_AXI_arsize"/>
+            <PORTMAP LOGICAL="ARBURST" PHYSICAL="M18_AXI_arburst"/>
+            <PORTMAP LOGICAL="ARLOCK" PHYSICAL="M18_AXI_arlock"/>
+            <PORTMAP LOGICAL="ARCACHE" PHYSICAL="M18_AXI_arcache"/>
+            <PORTMAP LOGICAL="ARPROT" PHYSICAL="M18_AXI_arprot"/>
+            <PORTMAP LOGICAL="ARREGION" PHYSICAL="M18_AXI_arregion"/>
+            <PORTMAP LOGICAL="ARQOS" PHYSICAL="M18_AXI_arqos"/>
+            <PORTMAP LOGICAL="ARVALID" PHYSICAL="M18_AXI_arvalid"/>
+            <PORTMAP LOGICAL="ARREADY" PHYSICAL="M18_AXI_arready"/>
+            <PORTMAP LOGICAL="RDATA" PHYSICAL="M18_AXI_rdata"/>
+            <PORTMAP LOGICAL="RRESP" PHYSICAL="M18_AXI_rresp"/>
+            <PORTMAP LOGICAL="RLAST" PHYSICAL="M18_AXI_rlast"/>
+            <PORTMAP LOGICAL="RVALID" PHYSICAL="M18_AXI_rvalid"/>
+            <PORTMAP LOGICAL="RREADY" PHYSICAL="M18_AXI_rready"/>
+          </PORTMAPS>
+        </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
     <MODULE COREREVISION="8" FULLNAME="/rgb2dvi_hdmi" HWVERSION="1.4" INSTANCE="rgb2dvi_hdmi" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="rgb2dvi" VLNV="digilentinc.com:ip:rgb2dvi:1.4">
@@ -18458,6 +18898,9 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M17_ARESETN"/>
             <CONNECTION INSTANCE="enc_in_0" PORT="s_axi_aresetn"/>
             <CONNECTION INSTANCE="clk_wiz_audio_ext" PORT="resetn"/>
+            <CONNECTION INSTANCE="pmod_master_0" PORT="resetn_i"/>
+            <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M18_ARESETN"/>
+            <CONNECTION INSTANCE="pmod_status_0" PORT="s_axi_aresetn"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
