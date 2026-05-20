@@ -141,8 +141,34 @@ def _build_argparser() -> argparse.ArgumentParser:
 # --------------------------------------------------------------------------
 
 def _bring_up_overlay():
+    """Attach the AudioLab overlay; reuse the loaded bit when possible.
+
+    Phase 6I C2 puts the HDMI pixel clock at 40 MHz which sits at the
+    rgb2dvi v1.4 kClkRange=3 VCO lower bound (~800 MHz). Re-downloading
+    `audio_lab.bit` while it is already loaded can knock the PLL out and
+    drop the LCD to white (project memory ``rgb2dvi-pll-edge-at-40mhz``,
+    `DECISIONS.md` D25). Mirror the smart-attach guard the
+    `HdmiGuiShow.ipynb` / `EncoderGuiSmoke.ipynb` cells use: if
+    `pynq.PL.bitfile_name` already reports `audio_lab.bit`, attach with
+    ``download=False`` so the PLL keeps its lock. Anything else (no bit,
+    `base.bit`, a different overlay) falls through to a fresh download.
+    """
     from audio_lab_pynq import AudioLabOverlay  # type: ignore
-    overlay = AudioLabOverlay()
+    try:
+        from pynq import PL  # type: ignore
+        loaded_basename = os.path.basename(PL.bitfile_name or "")
+    except Exception as exc:
+        print("[gui] PL.bitfile_name lookup failed (%r); doing a full download."
+              % (exc,))
+        loaded_basename = ""
+    if loaded_basename == "audio_lab.bit":
+        print("[gui] audio_lab.bit already loaded; "
+              "attaching with download=False to preserve rgb2dvi PLL lock.")
+        overlay = AudioLabOverlay(download=False)
+    else:
+        print("[gui] PL.bitfile_name=%r; loading audio_lab.bit (download=True)."
+              % (loaded_basename or "<none>",))
+        overlay = AudioLabOverlay()
     print("[gui] AudioLabOverlay loaded")
     return overlay
 
