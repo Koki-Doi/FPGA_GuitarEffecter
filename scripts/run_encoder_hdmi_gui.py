@@ -6,6 +6,13 @@ Run this on the PYNQ-Z2 (no notebook needed):
     sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
         scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
 
+Pmod I2S2 mode 2 (ADC -> AudioLab DSP -> DAC, D49) -- pair with the
+`PmodI2S2HdmiGuiOneCell.ipynb` Notebook:
+
+    sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+        scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat \
+        --pmod-mode dsp
+
 The script:
   1. Loads AudioLabOverlay (one overlay only -- no base.bit, no second
      load, see DECISIONS.md D23/D24/D25).
@@ -20,8 +27,12 @@ The script:
      last apply message).
   7. Quits cleanly on Ctrl+C, stops VTC/VDMA.
 
-The script does NOT touch PMOD JA/JB or the external PCM1808/PCM5102
-plans. RAT pedal model is skipped from encoder-driven control by
+The script does NOT touch PMOD JA/JB unless ``--pmod-mode`` is passed.
+When ``--pmod-mode {tone,loopback,dsp,mute}`` is supplied, the runner
+writes the Pmod I2S2 status block MODE register once at startup and
+writes MODE=3 (mute) at shutdown so SIGTERM / Ctrl+C leaves the
+external speakers silent. The retired PCM1808 / PCM5102 path is left
+alone. RAT pedal model is skipped from encoder-driven control by
 default; pass ``--include-rat`` to override.
 """
 
@@ -112,6 +123,16 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Cap the render rate even under continuous rotation.")
     p.add_argument("--status-interval-s", type=float, default=2.0,
                    help="Seconds between resource/status prints.")
+    # Pmod I2S2 cfg_mode (optional, default keep).
+    p.add_argument("--pmod-mode",
+                   choices=("keep", "tone", "loopback", "dsp", "mute"),
+                   default="keep",
+                   help="Write the Pmod I2S2 status block MODE register "
+                        "right after AudioLabOverlay loads. 'keep' (default) "
+                        "does not touch the register. 'dsp' selects the "
+                        "ADC -> AudioLab DSP -> DAC path (mode 2). On exit "
+                        "the runner mutes (MODE=3) if a non-keep mode was "
+                        "set, so Ctrl+C / SIGTERM produce a clean shutdown.")
     return p
 
 
@@ -124,6 +145,58 @@ def _bring_up_overlay():
     overlay = AudioLabOverlay()
     print("[gui] AudioLabOverlay loaded")
     return overlay
+
+
+# Pmod I2S2 status (`axi_pmod_i2s2_status`) register map -- mirrors
+# `scripts/test_pmod_i2s2.py` and `PmodI2S2EffectControlOneCell.ipynb`.
+_PMOD_REG_MODE = 0x28
+_PMOD_REG_CLEAR = 0x2C
+_PMOD_MODE_INT = {"tone": 0, "loopback": 1, "dsp": 2, "mute": 3}
+
+
+def _find_pmod_status_mmio(overlay):
+    """Return a `pynq.MMIO` for the Pmod I2S2 status IP, or None."""
+    try:
+        from pynq import MMIO  # type: ignore
+    except Exception:  # pragma: no cover -- off-board
+        return None
+    ip_dict = getattr(overlay, "ip_dict", {}) or {}
+    for key in sorted(ip_dict):
+        if "pmod_status" in key or "pmod_i2s2_status" in key:
+            entry = ip_dict[key]
+            phys_addr = entry.get("phys_addr")
+            if phys_addr is None:
+                continue
+            rng = entry.get("addr_range", 0x10000)
+            try:
+                return MMIO(int(phys_addr), int(rng))
+            except Exception:
+                return None
+    return None
+
+
+def _write_pmod_mode(overlay, mode_name):
+    """Write the Pmod I2S2 MODE register; return True on success."""
+    if overlay is None or mode_name in (None, "keep"):
+        return False
+    if mode_name not in _PMOD_MODE_INT:
+        print("[gui] pmod-mode %r unrecognised; skipping." % (mode_name,))
+        return False
+    mmio = _find_pmod_status_mmio(overlay)
+    if mmio is None:
+        print("[gui] pmod_status IP not found in overlay; "
+              "--pmod-mode is a no-op on this bit.")
+        return False
+    mode_int = _PMOD_MODE_INT[mode_name]
+    try:
+        mmio.write(_PMOD_REG_MODE, mode_int & 0x3)
+        rb = mmio.read(_PMOD_REG_MODE) & 0x3
+        print("[gui] pmod_mode set to %d (%s); readback=%d"
+              % (mode_int, mode_name, rb))
+        return True
+    except Exception as exc:
+        print("[gui] pmod_mode write failed: %r" % (exc,))
+        return False
 
 
 def _start_hdmi(overlay, *, width: Optional[int] = None,
@@ -215,8 +288,11 @@ def main(argv=None):
     overlay = None
     backend = None
     encoder = None
+    pmod_mode_active = False
     if not args.dry_run:
         overlay = _bring_up_overlay()
+        if args.pmod_mode != "keep":
+            pmod_mode_active = _write_pmod_mode(overlay, args.pmod_mode)
         backend = _start_hdmi(overlay)
         encoder = _build_encoder(overlay, args.encoder_ip_name, cfg_overrides)
         encoder.configure(clear_on_read=True)
@@ -365,6 +441,11 @@ def main(argv=None):
             if elapsed < period:
                 time.sleep(period - elapsed)
     finally:
+        if pmod_mode_active and overlay is not None and args.pmod_mode != "mute":
+            # Clean shutdown: mute the Pmod I2S2 DAC so SIGTERM / Ctrl+C does
+            # not leave the external speakers driven. Skip when the user
+            # explicitly started in mute already.
+            _write_pmod_mode(overlay, "mute")
         if backend is not None:
             try:
                 backend.stop()
