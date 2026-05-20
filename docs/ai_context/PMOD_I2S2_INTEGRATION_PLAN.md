@@ -745,6 +745,36 @@ D/A 側 と A/D 側は同じ source からの fanout なので **bit-true 同期
   でも 2-FF 同期する。`cfg_clear` は toggle bit + edge-detect で
   clock-period mismatch に robust。
 
+### 17.5b One-cell notebook for mode 2 (2026-05-20)
+
+`audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb` (1
+code cell, 0 markdown cells) is the live Jupyter UI for the
+Pmod I2S2 mode-2 path. The cell loads `AudioLabOverlay`, finds the
+`pmod_status_0` MMIO, writes `cfg_mode = 2` (DSP) at startup, and
+builds an `ipywidgets` panel with:
+
+- Top buttons: `Load/Reload overlay`, `Apply effects`,
+  `All effects off`, `Safe clean (mode 2)`, `Panic / mute (mode 3)`,
+  `Clear status counters`, `Refresh status`.
+- Mode buttons: `Mode 0: tone`, `Mode 2: DSP` (active default),
+  `Mode 3: mute`, `Mode 1: ADC->DAC loopback` (requires the
+  `confirm loopback` checkbox to commit).
+- Status panel: VERSION / STATUS / MODE register / FRAME_COUNT /
+  NONZERO_COUNT / SDOUT_XCOUNT / CLIP_COUNT / LAST_LEFT/RIGHT /
+  PEAK_ABS_LEFT/RIGHT in raw + dBFS.
+- An Accordion with eight panels, one per effect: Noise Suppressor,
+  Compressor (`set_compressor_settings`), Overdrive (model
+  dropdown from `OVERDRIVE_MODEL_LABELS`), Distortion (pedal
+  dropdown from `DISTORTION_PEDALS_IMPLEMENTED`), Amp Sim (model
+  dropdown from `AMP_MODELS`, 0..100 sliders), Cab IR (model 0/1/2),
+  EQ (low/mid/high 0..200, unity = 100), Reverb (decay/tone/mix).
+
+The notebook is **deploy-via** `scripts/deploy_to_pynq.sh`
+(`install_notebooks` already copies everything under
+`audio_lab_pynq/notebooks/` to `/home/xilinx/jupyter_notebooks/audio_lab/`,
+so no per-notebook plumbing was needed). No RTL / Tcl / XDC / bit /
+hwh change; existing notebooks are not edited.
+
 ### 17.6 Build flow (no variant)
 
 - `create_project.tcl` は **無条件に** Pmod I2S2 build を行う:
