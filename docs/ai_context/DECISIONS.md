@@ -2358,3 +2358,143 @@ not get removed even when superseded — they get updated.
     the RTL, `source` for the two tcls, `add_files` for
     `audio_lab_pcm.xdc`) AND dropping the Pmod I2S2 references
     since they share PMOD JB pins.
+
+### D48 follow-up (2026-05-20, branch `feature/pmod-i2s2-mode1-loopback`)
+
+- **Mode 1 verified.** `pmod_i2s2_master.v` already implemented the
+  ADC → DAC direct loopback at `cfg_mode == 2'd1` (echoes the
+  just-captured `rx_left_captured` / `rx_right_captured` 24-bit
+  sample straight back into the TX serializer, no DSP, no
+  attenuation). The Python smoke
+  (`scripts/test_pmod_i2s2.py --mode loopback --confirm-loopback`)
+  flips the AXI-Lite MODE register, the master 2-FF-syncs it into
+  the MCLK domain, and the next stereo frame already comes out of
+  JB4 SDIN as a copy of JB10 SDOUT. The on-module Line Out ↔ Line
+  In jumper plus the full-scale echo means the analog loop can
+  feed back, so the script refuses `--mode loopback` unless
+  `--confirm-loopback` is also passed.
+- **Pmod I2S2 ADC is NOT wired into the AudioLab DSP chain.** The
+  user requested NOT to implement a "mode 2 = ADC → DSP → DAC"
+  path in this branch. `i2s_to_stream_0` / `stream_to_i2s_0` and
+  the AXIS DSP loop continue to be fed by ADAU1761 ADC only, as in
+  Phase 7D close-out.
+- **AXI write FSM bug fix.** The original `axi_pmod_i2s2_status.v`
+  write path used `axi_awaddr_q[5:2]` in the same `always @(posedge
+  s_axi_aclk)` cycle that the assignment to `axi_awaddr_q`
+  happened. Non-blocking semantics meant the WREADY case statement
+  picked up the *previous* address, so back-to-back MMIO writes
+  (e.g. `mmio.write(MODE, 0)` immediately followed by
+  `mmio.write(CLEAR, 1)`) committed the CLEAR write at the MODE
+  address and silently flipped `cfg_mode_o`. The fix is a proper
+  AW-then-W FSM with a `write_in_progress` flag and an explicit
+  `write_addr_lat` register, mirroring the `axi_encoder_input.v`
+  pattern (which has been deployed on-board since D32 with no
+  similar symptom). Bit / hwh were rebuilt (`audio_lab.bit`
+  re-issued at md5 different from the previous Pmod I2S2 build);
+  WNS / utilization deltas are negligible.
+- **Smoke results (post-fix).** `scripts/test_pmod_i2s2.py
+  --mode tone --clear --duration 5` reports MODE=0 after the
+  CLEAR pulse (was incorrectly MODE=1 in the pre-fix build);
+  frame_count rises at 48 kHz, peak_abs_left/right ~250k.
+  `scripts/test_pmod_i2s2.py --mode loopback --confirm-loopback
+  --clear --duration 3` reports MODE=1 and CLIP_COUNT=0 with the
+  ADC seeing the just-emitted DAC sample.
+- **Boundary (still untouched).** `block_design.tcl`,
+  `GPIO_CONTROL_MAP`, `LowPassFir.hs`, `topEntity`, HDMI
+  integration, encoder PL IP, compact-v2 GUI, notebooks, encoder
+  runtime, and ADAU1761 codec init.
+
+## D49 — Route Pmod I2S2 ADC/DAC through the existing AudioLab DSP chain (mode 2)
+
+- **Why.** D48 brought up the Pmod I2S2 as a standalone audio
+  module with two modes: internal 1 kHz tone + ADC probe
+  (`cfg_mode = 0`) and ADC → DAC direct loopback (`cfg_mode = 1`).
+  Neither uses the AudioLab DSP pipeline, so the practical bench
+  workflow ("plug a guitar into Line In, hear Overdrive on Line
+  Out") was not reachable. D49 closes that gap by adding
+  `cfg_mode = 2` (ADC → DSP → DAC) without touching any existing
+  GPIO byte, effect algorithm, or top-level interface.
+- **Architecture (one clock tree, no CDC inside the I2S converter).**
+  `pmod_i2s2_master.v` already generates `mclk_int` (12.288 MHz from
+  `clk_wiz_audio_ext`), `bclk_int = mclk_int / 4 = 3.072 MHz`, and
+  `lrck_int = bclk_int / 64 = 48 kHz` and fans them out to JB1/JB2/
+  JB3 (D/A side) and JB7/JB8/JB9 (A/D side). D49 exposes these
+  internal clocks as new module outputs (`dsp_bclk_o`,
+  `dsp_lrck_o`) and a new module input `dsp_dac_sdin_i` for the
+  bit-serial DSP output. `pmod_i2s2_integration.tcl` deletes the
+  pre-existing `bclk_1` / `lrclk_1` / `sdata_i_1` block-design nets
+  (which used to ferry ADAU1761 `bclk` R18 / `lrclk` T17 /
+  `sdata_i` F17 to `i2s_to_stream_0`) and re-routes them onto the
+  Pmod clock tree:
+  - `pmod_master_0/dsp_bclk_o` → `i2s_to_stream_0/bclk` +
+    `proc_sys_reset_0/slowest_sync_clk`.
+  - `pmod_master_0/dsp_lrck_o` → `i2s_to_stream_0/lrclk`.
+  - Top-level `ext_pmod_i2s2_ad_sdout_i` → `i2s_to_stream_0/si`
+    (the same Pmod ADC SDOUT line that also feeds
+    `pmod_master_0/ext_pmod_i2s2_ad_sdout_i` for the status
+    counters).
+  - `i2s_to_stream_0/so` keeps driving the legacy `sdata_o` G18
+    pin AND now also drives `pmod_master_0/dsp_dac_sdin_i`. The
+    DAC SDIN mux inside the master selects between the internal
+    serializer (tone / ADC echo) and `dsp_dac_sdin_i` based on
+    `cfg_mode`. No multi-driver: the JB4 SDIN pin only has one
+    driver, the mux's combinational output.
+  This shifts the entire `i2s_to_stream_0` block into the
+  Pmod-MMCM-derived 3.072 MHz / 48 kHz clock domain. The
+  downstream `axis_data_fifo_0` already handles the CDC from
+  `i2s_to_stream_0`'s bclk domain to `clk_fpga_0` 100 MHz, exactly
+  as before -- only the upstream clock source changed.
+- **MODE register.** `cfg_mode` was already 2 bits.  D49 uses both
+  bits, mapping the four values to:
+  - `2'd0` = tone (default at reset; SDIN = internal sine ROM)
+  - `2'd1` = loopback (SDIN = internal serializer with ADC echo)
+  - `2'd2` = dsp (SDIN = `dsp_dac_sdin_i`, i.e. the DSP chain
+    serial output)
+  - `2'd3` = mute (SDIN = 0)
+  The DAC SDIN mux is in the MCLK domain after a 2-FF synchronizer
+  on `cfg_mode_i`. AXI-Lite VERSION stays `0x00480001`; STATUS bits
+  `[9:8]` still carry the live `cfg_mode` so the smoke can confirm
+  the write.
+- **Python smoke.** `scripts/test_pmod_i2s2.py` extends
+  `--mode` to accept `tone`/`loopback`/`dsp`/`mute` (and numeric
+  `0`..`3`). Mode 2 requires the new `--confirm-dsp` flag with the
+  same shape as `--confirm-loopback`: without it the script prints
+  a strong warning ("PHYSICALLY DISCONNECT the on-module Line Out
+  ↔ Line In jumper before engaging mode 2") and falls back to
+  mode 0.
+- **Boundary (what this decision does NOT change).**
+  - `hw/Pynq-Z2/block_design.tcl` is not edited; the rewiring is
+    all in `pmod_i2s2_integration.tcl` via `delete_bd_objs` +
+    `connect_bd_net`, the same pattern `pcm1808_adc_integration.tcl`
+    used in the retired Phase 7D path.
+  - `GPIO_CONTROL_MAP.md` (D12) is untouched. No new AXI GPIO. No
+    byte / ctrlA/B/C/D reassignment.
+  - `LowPassFir.hs`, `topEntity`, the AXIS DSP chain
+    (`axi_dma_0` / `axis_subset_converter_*` / `axis_switch_*` /
+    `axis_data_fifo_0` / `clash_lowpass_fir_0`), the effect API,
+    notebooks, compact-v2 GUI, encoder PL IP, encoder runtime,
+    HDMI integration, and ADAU1761 codec init are all unchanged.
+  - 48 kHz / 24-bit / mono DSP policy unchanged (D22).
+  - ADAU1761 line-out is still a top-level port; it will receive
+    a Pmod-clocked stream (visible only to a debug scope on G18),
+    but it is NOT in the deployed audio path any more. ADAU input
+    pin F17 is unloaded internally (the `sdata_i_1` net was
+    deleted) but the codec stays alive via I2C config so
+    `ADC HPF True` keeps reporting.
+- **Smoke (post-deploy, see TIMING_AND_FPGA_NOTES.md for numbers).**
+  - mode 0 regression: frame_count rises at 48 kHz, MODE = 0,
+    peak_abs > 0 with the on-module Line Out → Line In jumper.
+  - mode 1 regression: requires `--confirm-loopback`; MODE = 1,
+    CLIP_COUNT = 0.
+  - mode 2: requires `--confirm-dsp`; Line In external source →
+    Line Out audible; Overdrive / Distortion / Reverb effects
+    audibly change the output via the existing AudioLab API
+    (`AudioLabOverlay.set_guitar_effects(...)`).
+- **Rollback.**
+  - Branch-level: `git checkout main^` (before this commit) returns
+    to the D48 follow-up state where mode 2 does not exist and
+    `i2s_to_stream_0` is driven by ADAU bclk.
+  - Bit-level: redeploy any earlier `audio_lab.bit` / `.hwh` from
+    `git log` and resync the five PYNQ locations.
+  - Mode-level: writing `2'd3` (mute) to MODE silences the Pmod DAC
+    without rebuilding; useful while debugging the DSP chain.

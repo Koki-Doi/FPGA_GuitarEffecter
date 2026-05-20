@@ -250,6 +250,12 @@ asking it to re-discover the project from scratch.
 >   は archival で load しない。
 > - smoke: `scripts/test_pmod_i2s2.py` + `scripts/pmod_i2s2_capture_probe.py`。
 >   `pynq.MMIO(phys_addr, 0x10000)` で `pmod_status` を直接開く。
+> - live UI: `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb`
+>   (D49 follow-up): 1 セル ipywidgets で mode 2 を default 起動し、
+>   全 effect + mode buttons (0/1/2/3) + status panel + Safe clean
+>   / Panic mute を提供。`bash scripts/deploy_to_pynq.sh` で配置済、
+>   `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2EffectControlOneCell.ipynb`
+>   で開いて「Run all」で one-shot。
 >
 > Build + deploy + smoke 手順 (env var は不要):
 > ```
@@ -259,11 +265,40 @@ asking it to re-discover the project from scratch.
 >     -log vivado.log -source create_project.tcl
 > cd ../..
 > PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
+>
+> # mode 0: internal 1 kHz tone + ADC probe (Line Out -> Line In OK)
 > ssh xilinx@192.168.1.9 '
 >   cd /home/xilinx/Audio-Lab-PYNQ &&
 >   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
->       scripts/test_pmod_i2s2.py --duration 5
+>       scripts/test_pmod_i2s2.py --duration 5 --mode tone --clear
 > '
+>
+> # mode 1: ADC -> DAC direct loopback (NO DSP). The --confirm-loopback
+> # flag is REQUIRED; the script refuses mode 1 without it and falls
+> # back to mode 0. Disconnect the Line Out <-> Line In jumper first or
+> # keep the audio source level minimal to avoid feedback.
+> ssh xilinx@192.168.1.9 '
+>   cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>       scripts/test_pmod_i2s2.py --duration 3 --mode loopback \
+>       --confirm-loopback --clear
+> '
+>
+> # mode 2: ADC -> AudioLab DSP -> DAC (D49). The --confirm-dsp flag is
+> # REQUIRED; without it the script falls back to mode 0. The DSP chain
+> # (Overdrive / Distortion / Compressor / Amp / Cab / Reverb / EQ) is
+> # in the audio loop -- disconnect the on-module Line Out <-> Line In
+> # jumper before engaging mode 2 and put a real audio source on Line In.
+> ssh xilinx@192.168.1.9 '
+>   cd /home/xilinx/Audio-Lab-PYNQ &&
+>   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
+>       scripts/test_pmod_i2s2.py --duration 3 --mode dsp \
+>       --confirm-dsp --clear
+> '
+>
+> # mode 3: mute -- writes 0 to DAC SDIN. Useful while debugging.
+>
+> # Optional: rolling status counter view
 > ssh xilinx@192.168.1.9 '
 >   cd /home/xilinx/Audio-Lab-PYNQ &&
 >   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
@@ -292,6 +327,13 @@ asking it to re-discover the project from scratch.
 >   Arduino header の追加割当。
 > - PCM5102 / PCM1808 path の再 enable (D48 で retire 済)。
 > - `git push` / `git pull` / `git fetch`。
+>
+> mode 2 = ADC → DSP → DAC は D49 (branch
+> `feature/pmod-i2s2-dsp-path`) で実装済。`pmod_i2s2_integration.tcl`
+> が `bclk_1` / `lrclk_1` / `sdata_i_1` を retarget し、
+> `i2s_to_stream_0` を Pmod クロックドメインで動かす。AXIS chain と
+> 既存 effect GPIO は触っていない。Overdrive ON で peak_abs が ~14k
+> から ~46k に上がるのを bench で確認済。
 >
 > Rollback: `git checkout main` で Phase 7D close-out 構成に戻す。
 > 過去 bit を物理 PYNQ に戻したい場合は `git show

@@ -76,6 +76,36 @@ H=800). If `GEN_ACTSZ` reads anything else, one of the five bit
 copies on the PYNQ is stale — see `BUILD_AND_DEPLOY.md` for the full
 list and `sudo cp` recipe.
 
+## Pmod I2S2 effect-control notebook (mode 2 live UI, D49)
+
+`audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb` is the
+single-cell ipywidgets UI for the Pmod I2S2 mode-2 path (Pmod Line
+In → Pmod ADC → AudioLab DSP chain → Pmod DAC → Pmod Line Out). The
+cell loads `AudioLabOverlay`, finds the `pmod_status_0` MMIO from
+`ip_dict`, forces `cfg_mode = 2` (DSP) at startup, and exposes every
+effect (Noise Suppressor / Compressor / Overdrive / Distortion
+pedal-mask / Amp Sim / Cab IR / EQ / Reverb) through ipywidgets
+checkboxes, sliders, and dropdowns. The Pmod status panel shows
+VERSION / STATUS / MODE / FRAME_COUNT / NONZERO_COUNT /
+SDOUT_XCOUNT / CLIP_COUNT / LAST_LEFT/RIGHT / PEAK_ABS_*` in raw +
+dBFS, and the global buttons cover `Safe clean (mode 2)`,
+`Panic / mute (mode 3)`, `Mode 0 tone`, `Mode 1 loopback` (requires
+the inline `confirm loopback` checkbox), `Clear status counters`,
+and `Refresh status`.
+
+Bench wiring (always check before running mode 2):
+- Disconnect the on-module Line Out ↔ Line In 3.5 mm jumper before
+  engaging mode 2. The DSP chain is in the audio loop and can feed
+  back at high-gain pedals.
+- Put a real audio source on Line In at LOW volume.
+- Listen on Line Out via a separate audio interface, NOT plugged
+  back into Line In.
+
+Open `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2EffectControlOneCell.ipynb`
+in the browser; the single cell auto-runs `load_overlay →
+write_mode(2) → apply_effects → refresh_status` at the bottom so
+"open + Run all" is one-shot.
+
 ## Filesystem layout on the board
 
 | Path | What it is |
