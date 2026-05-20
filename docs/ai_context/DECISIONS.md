@@ -2498,3 +2498,172 @@ not get removed even when superseded — they get updated.
     `git log` and resync the five PYNQ locations.
   - Mode-level: writing `2'd3` (mute) to MODE silences the Pmod DAC
     without rebuilding; useful while debugging the DSP chain.
+
+## D50 — Mode 2 RIGHT-to-LEFT mirror in `pmod_i2s2_master.v` (work around the i2s_to_stream IP LEFT-extraction + 1-BCLK setup bugs)
+- **Context.** After D49 deployed `cfg_mode = 2'd2` (Pmod ADC → AudioLab
+  DSP chain → Pmod DAC) the user reported that the chain sounded
+  "slightly distorted" even with every effect off. A diagnostic capture
+  via `scripts/diagnose_pmod_i2s2_dma_capture.py` (DMA from
+  `axis_switch_sink/M01` while the mode 2 path is otherwise live)
+  confirmed two issues inside the existing `i2s_to_stream` IP:
+  1. The IP's `i2sIn` LEFT extraction did not match the Pmod-master's
+     own deserializer. DMA-captured LEFT regularly hit `-0 dBFS` peaks
+     and held a large DC offset while Pmod-master `peak_abs_left` for
+     the same SDOUT bits stayed near `-7 dBFS`. RIGHT extraction
+     matched the Pmod-master exactly (delta = 0 across multiple
+     captures). Bit-prevalence histograms showed LEFT bits 16..21
+     set roughly **half** as often as RIGHT, isolating the bug to
+     the IP's LEFT slot extraction.
+  2. The IP's `i2sOut` updates `so` on BCLK rising edges -- the same
+     edge the CS4344 DAC samples on. Without a half-BCLK setup margin
+     the DAC can latch the OLD bit and play a 1-BCLK-shifted bit
+     stream that sounds like asymmetric distortion. This was likely
+     masked on the legacy ADAU codec setup where the codec drove the
+     bclk and any race resolved in its favour, but it surfaces on the
+     Pmod-as-slave configuration.
+- **Decision.** Add a Verilog-only RIGHT-to-LEFT mirror inside
+  `pmod_i2s2_master.v` so that in mode 2 the DAC SDIN comes from a
+  Pmod-master-internal 32-bit buffer instead of the IP's live `so`:
+  1. `mode2_right_snapshot[31:0]` -- a 32-bit register indexed by
+     `slot_idx` (`bit_idx[4:0]`). It captures `dsp_dac_sdin_i` on
+     `bclk_fall_pre` whenever `bit_idx[5] == 1` (RIGHT slot). At
+     that MCLK posedge `dsp_dac_sdin_i` is the IP's post-rising
+     `so` value, so the bit is the IP's intended payload for the
+     just-finished BCLK period (not the pre-edge stale value the
+     DAC would otherwise see).
+  2. The mode 2 branch of the DAC SDIN mux drives
+     `mode2_right_snapshot[bit_idx[4:0]]` regardless of LEFT or
+     RIGHT slot. As a result both ears get the previous frame's
+     RIGHT slot bits with the same one-frame (~21 us) delay --
+     the user hears clean mono.
+  - Mode 0 / 1 / 3 paths in `pmod_i2s2_master.v` are unchanged.
+  - The Clash DSP chain still receives the IP's `axis_li_tdata`
+    LEFT/RIGHT (LEFT is still corrupt at the chain input, but the
+    chain output is only audible via the RIGHT slot bits, so the
+    LEFT corruption never reaches the listener).
+- **What this is NOT.**
+  - Not a fix to the IP. The IP's `i2sIn` / `i2sOut` are unchanged;
+    we work around them. The user-confirmed test plan covers mode 2
+    clean + Overdrive A/B and is sufficient for the current PMOD
+    audio scope; revisiting the IP itself is deferred.
+  - Not a stereo restoration. True stereo through the DSP chain is
+    lost in mode 2 -- both ears carry the chain's RIGHT output.
+- **Scope guard.** No `block_design.tcl` edit. No new GPIO. No new
+  `topEntity` / `LowPassFir.hs` port or coefficient change. No new
+  Clash work. No notebook UI change. No PCM5102 / PCM1808 revival.
+- **Smoke (post-deploy, branch `feature/pmod-i2s2-dsp-clean-fix`).**
+  - mode 1 regression: `--mode loopback --confirm-loopback` reports
+    MODE=1, CLIP_COUNT=0, frame_count rising at 48 kHz exactly,
+    peak_abs_left/right > 0 (external source ~ -6 dBFS).
+  - mode 2 clean (effects all off, `scripts/diagnose_pmod_i2s2_dsp_clean.py
+    --duration 15`): MODE=2, frame delta `+720,720` / 15 s, CLIP_COUNT=0,
+    peak_abs_left/right ~ `-13.6` / `-11.9 dBFS`. **User-confirmed
+    "mode 1 と同じくクリーン" (clean, matches mode 1).**
+  - mode 2 A/B with Overdrive (`--ab-overdrive` 6 s each): Phase A
+    clean, Phase B `set_guitar_effects(overdrive_on=True, ...)`
+    audibly engages overdrive, Phase C `overdrive_on=False` returns
+    to clean. **User-confirmed "ON で歪んで、OFF でクリーンに戻った"**.
+  - mode 3 (mute): MODE=3, DAC silent.
+- **Timing.** WNS `-7.985 ns` (TNS `-8737.608 ns`, WHS `+0.050 ns`,
+  THS `0 ns`). Inside the historical `-7..-9 ns` deploy band and
+  improves the previous D49 deployed baseline (`-8.521 ns`) by
+  `0.536 ns`. The mode2 buffer is a single 32-bit register; adds
+  ~32 FFs, no DSP, no BRAM.
+- **Rollback.**
+  - Branch-level: `git checkout main` returns to the D49 state
+    (mode 2 routes the IP's live `so` to the DAC directly; LEFT
+    extraction bug and 1-BCLK race re-appear).
+  - File-level: revert the `pmod_i2s2_master.v` edit that adds
+    `mode2_right_snapshot` and switches the mode 2 mux to use it.
+  - Mode-level: writing `2'd1` (loopback) keeps the IP out of
+    the audio path entirely; mode `2'd3` (mute) silences the DAC
+    without rebuilding.
+
+## D51 — Encoder 0 short_press HW latch fallback + poll/render uplift (sluggish-GUI fix)
+
+- **Date.** 2026-05-20.
+- **Why.** Bench feedback after the D47 / D50 series: the GUI felt
+  sluggish under sustained encoder use, and Encoder 0 short taps
+  ("拾い損ね") were frequently missed. Root causes:
+  1. `EncoderUiController` (D47) dispatched Encoder 0 ON/OFF only on
+     the `BUTTON_STATE` level rising edge. Polled at 10 Hz active /
+     4 Hz idle, any tap shorter than the poll period (≤100 ms active,
+     ≤250 ms idle) slipped between two polls — the rising edge never
+     reached the controller. The HW `short_press` latch on the IP was
+     reliably set in that window but `handle_event` dropped every
+     `event.kind != "rotate"`, so the latch was thrown away.
+  2. The dirty-flag render loop was capped at 5 fps (200 ms) with a
+     100 ms apply throttle. Even when events were detected, the
+     visible feedback lagged enough to feel "もっさり".
+- **What changed (pure Python, no RTL / bit / hwh / Tcl edit).**
+  - `audio_lab_pynq/encoder_ui.py`:
+    - `handle_event` now consumes a `short_press` event for Encoder 0
+      as the same toggle that the level-edge path produces, then sets
+      a tick-local `_enc0_toggle_consumed_this_tick` flag.
+    - `process_button_state` checks that flag before firing the level
+      rising-edge toggle, so a tap that triggered both paths in the
+      same tick only toggles once.
+    - `tick()` resets the flag at the top of each iteration.
+    - Encoder 1 / Encoder 2 `short_press` / every `long_press` /
+      `click` event remain dropped (the D47 invariant is preserved).
+  - `scripts/run_encoder_hdmi_gui.py` defaults:
+    - `--poll-hz-active 10 → 30`, `--poll-hz-idle 4 → 10`,
+      `--max-render-fps 5 → 20`, `--apply-interval-ms 100 → 50`.
+    - `--poll-hz-idle 10` keeps the idle period (100 ms) at or below
+      the short_press latch detection window so brief taps after an
+      idle stretch are still caught.
+  - `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`:
+    - `POLL_HZ_ACTIVE 10 → 30`, `POLL_HZ_IDLE 4 → 10`,
+      `MAX_RENDER_FPS 5 → 20`, `APPLY_INTERVAL_MS 100 → 50`.
+    - Loop body replaced `enc.poll() + controller.handle_events(events)`
+      with `controller.tick(enc, timestamp=...)` so the notebook now
+      shares the same press / button_state path as the standalone
+      runner (level-edge + short_press fallback both fire). Comment
+      header rewritten to the D47 / D51 mapping (the old text still
+      referenced the pre-D47 short/long-press spec).
+  - `tests/test_encoder_ui_controller.py`:
+    - `test_enc0_short_press_event_is_noop` replaced with
+      `test_enc0_short_press_event_toggles_current_effect` and a new
+      `test_enc0_short_press_and_level_edge_in_same_tick_toggles_once`
+      that pins the no-double-toggle invariant.
+    - `test_short_long_press_events_never_trigger_overlay_writes`
+      now asserts the guard for every (kind, encoder_id) **except**
+      Encoder 0 short_press, which is the new sanctioned trigger.
+  - `CLAUDE.md` Rotary-encoder runtime bullet updated with the new
+    throttle / poll / render numbers and the short_press fallback
+    rule.
+- **Per-encoder semantics (delta vs D47).**
+  - Encoder 0 button toggle now fires on **either** the BUTTON_STATE
+    rising edge **or** a HW `short_press` event consumed inside the
+    same `tick()`. Whichever is observed first wins; the second is
+    suppressed by the consumed flag.
+  - Long press, release, and Encoder 1 / Encoder 2 button events stay
+    no-ops. The D47 "hold does not auto-repeat, release does not
+    toggle" invariant is preserved.
+- **Scope guard.**
+  - No change to the encoder PL IP, no new GPIO, no
+    `block_design.tcl` / Tcl integration / XDC / Clash / Vivado /
+    bit / hwh edit. No HDMI signal change. No effect-defaults change.
+  - The applier (`EncoderEffectApplier`) is untouched; the throttle
+    parameter still defaults to 50 ms via the runner / notebook
+    constants. RAT skip behaviour is preserved.
+  - The `HdmiEffectStateMirror` API and notebooks that drive the
+    overlay directly (e.g. the Pmod I2S2 one-cell control) are
+    untouched.
+- **Test.**
+  - `python3 tests/test_encoder_ui_controller.py` → 32 / 32 PASS
+    (includes the two new D51 tests). Adjacent suites
+    `tests/test_encoder_effect_apply.py`,
+    `tests/test_encoder_input_decode.py`,
+    `tests/test_compact_v2_encoder_state.py` all PASS.
+- **Bench verification (pending).** User to run
+  `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat` on the
+  PYNQ-Z2 and confirm (a) short taps on Encoder 0 are no longer
+  missed during continuous knob editing, (b) knob movement on
+  Encoder 2 produces visible response within ~50 ms, (c) idle
+  proc_cpu remains low (the idle poll rate trebled, so a small
+  rise is expected; previously ~0–1 %).
+- **Rollback.** Revert the four edits (`encoder_ui.py`,
+  `run_encoder_hdmi_gui.py`, `EncoderGuiSmoke.ipynb`, test file)
+  and restore the D47 numbers in `CLAUDE.md`. No bit / hwh
+  involved.

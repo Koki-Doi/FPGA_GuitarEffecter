@@ -137,19 +137,25 @@ When a previous turn stopped mid-implementation:
   into `AudioLabOverlay` writes from the encoder loop; it calls only
   `set_noise_suppressor_settings`, `set_compressor_settings`, and
   `set_guitar_effects(**kwargs)` — **no raw GPIO writes**, no
-  `set_distortion_pedal*` shortcut. Default throttle is 100 ms; encoder
-  3 short press always force-applies. RAT (`distortion_pedal_mask` bit
-  2) is excluded from encoder cycling and live apply while
+  `set_distortion_pedal*` shortcut. Default throttle is 50 ms (D51);
+  encoder 2 force-apply path is preserved. RAT (`distortion_pedal_mask`
+  bit 2) is excluded from encoder cycling and live apply while
   `skip_rat=True` (default); the Clash stage and
   `HdmiEffectStateMirror.rat()` are untouched and notebooks can still
   drive RAT. EQ knobs are mapped GUI `0..100` -> overlay `0..200`
   (`50` is unity); the Cab IR `MODEL` knob is overridden by
   `AppState.cab_model_idx`. `scripts/run_encoder_hdmi_gui.py` and
   `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell) share
-  a dirty-flag loop with poll 10 Hz active / 4 Hz idle and a render
-  cap of 5 fps. Do not re-introduce per-loop render or per-loop
-  overlay write, do not add a second translation layer beside the
-  applier, and do not silently flip `skip_rat=False`.
+  a dirty-flag loop with poll 30 Hz active / 10 Hz idle and a render
+  cap of 20 fps (D51 sluggishness fix). Encoder 0 toggle fires on
+  EITHER the `button_state` rising edge OR the HW `short_press` latch
+  consumed via `controller.tick()`; the consumed flag guards against
+  double-toggling in the same tick (D51 fallback for taps shorter
+  than the poll period). Do not re-introduce per-loop render or
+  per-loop overlay write, do not add a second translation layer
+  beside the applier, do not silently flip `skip_rat=False`, and do
+  not drop the short_press fallback (the level-edge path alone misses
+  taps shorter than the poll period).
 - External PCM5102 DAC + PCM1808 ADC path (Phase 7C / 7E / 7D + D44
   follow-up plan, `DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 /
   D44). PMOD JB carries

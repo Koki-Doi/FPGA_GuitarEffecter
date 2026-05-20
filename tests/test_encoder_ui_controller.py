@@ -4,10 +4,13 @@ D47 spec:
 
 * Encoder 0 rotate -> effect select (no toggle).
 * Encoder 0 button-down rising edge -> toggle ``effect_on[selected_effect]``.
+* Encoder 0 HW short_press event -> same toggle as the level-edge path
+  (D51 fallback for taps shorter than the poll period).
 * Encoder 1 rotate without hold -> knob select.
 * Encoder 1 rotate with hold -> model index cycle (OD / DIST / AMP / CAB).
 * Encoder 2 rotate -> knob value change.
-* short_press / long_press / click on any encoder: no-op.
+* long_press / click on any encoder: no-op.
+* short_press on Encoder 1 / Encoder 2: no-op.
 * Encoder 1 / Encoder 2 standalone button: no-op.
 * PRESET-like slots are NOT bypassable from the encoder.
 """
@@ -126,13 +129,32 @@ def test_enc0_button_release_does_not_toggle():
     assert s.effect_on[idx] is after_press
 
 
-def test_enc0_short_press_event_is_noop():
+def test_enc0_short_press_event_toggles_current_effect():
+    """D51 fallback: the HW short_press latch on Encoder 0 toggles the
+    selected effect even when the SW level rising edge was not visible
+    between polls (taps shorter than the poll period)."""
     s = _new_state()
-    snap = _snapshot(s)
+    idx = s.selected_effect
+    before = bool(s.effect_on[idx])
     ctl = EncoderUiController(s)
     ctl.handle_event(EncoderEvent("short_press", 0))
-    assert s.effect_on == snap["effect_on"]
-    assert s.selected_effect == snap["selected_effect"]
+    assert bool(s.effect_on[idx]) == (not before)
+
+
+def test_enc0_short_press_and_level_edge_in_same_tick_toggles_once():
+    """The short_press latch is consumed first; the level-edge path that
+    runs inside the same tick must not double-toggle."""
+    s = _new_state()
+    idx = s.selected_effect
+    before = bool(s.effect_on[idx])
+    ctl = EncoderUiController(s)
+    ctl.process_button_state([False, False, False])  # seed prev=0
+    ctl._enc0_toggle_consumed_this_tick = False
+    ctl.handle_event(EncoderEvent("short_press", 0))  # toggle #1 (short_press)
+    # process_button_state with cur[0]=True would ordinarily fire a rising edge,
+    # but the consumed flag prevents the double toggle.
+    ctl.process_button_state([True, False, False])
+    assert bool(s.effect_on[idx]) == (not before)
 
 
 def test_enc0_long_press_event_is_noop_no_safe_bypass():
@@ -451,12 +473,17 @@ def test_enc2_rotate_throttle_active():
 
 
 def test_short_long_press_events_never_trigger_overlay_writes():
-    """The applier should never be exercised by short_press/long_press alone."""
+    """Only Encoder 0 short_press is allowed to drive the applier (D51
+    fallback for missed level-edge taps); every other button event kind
+    on every encoder stays a no-op."""
     s = _new_state()
     ctl, _, overlay = _make_controller(s, dry_run=False, apply_interval_s=0.0)
-    for kind in ("short_press", "long_press", "click"):
-        for eid in (0, 1, 2):
-            ctl.handle_event(EncoderEvent(kind, eid))
+    for kind, eid in (
+        ("short_press", 1), ("short_press", 2),
+        ("long_press", 0), ("long_press", 1), ("long_press", 2),
+        ("click", 0), ("click", 1), ("click", 2),
+    ):
+        ctl.handle_event(EncoderEvent(kind, eid))
     assert overlay.calls == []
 
 
@@ -528,7 +555,8 @@ _TEST_FUNCTIONS = [
     test_enc0_button_down_edge_toggles_current_effect,
     test_enc0_button_hold_does_not_repeat_toggle,
     test_enc0_button_release_does_not_toggle,
-    test_enc0_short_press_event_is_noop,
+    test_enc0_short_press_event_toggles_current_effect,
+    test_enc0_short_press_and_level_edge_in_same_tick_toggles_once,
     test_enc0_long_press_event_is_noop_no_safe_bypass,
     test_enc0_button_down_on_preset_like_slot_is_noop,
     # Encoder 1
