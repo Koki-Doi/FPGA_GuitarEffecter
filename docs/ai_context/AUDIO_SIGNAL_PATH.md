@@ -196,6 +196,16 @@ Mode select (AXI register at `0x43D20000 + 0x28`):
 - `cfg_mode = 3` (mode name `mute`): DAC SDIN tied to 0. Useful
   while debugging the DSP chain without driving the speakers.
 
+Runtime entries for the Pmod I2S2 path:
+- `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb` —
+  single-cell ipywidgets UI; forces `cfg_mode = 2` at startup and
+  exposes every effect plus mode 0/1/2/3 buttons + status panel.
+- `scripts/test_pmod_i2s2.py --mode tone | loopback | dsp | mute`
+  — terminal smoke + safety gates (`--confirm-loopback`,
+  `--confirm-dsp`).
+- `scripts/pmod_i2s2_capture_probe.py` — rolling status-counter
+  view for ADC line-in correlation.
+
 Block-design wiring change for mode 2:
 ```
 Original (D48 follow-up, mode 0/1 only):

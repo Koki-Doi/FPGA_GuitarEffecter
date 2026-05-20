@@ -250,6 +250,12 @@ asking it to re-discover the project from scratch.
 >   は archival で load しない。
 > - smoke: `scripts/test_pmod_i2s2.py` + `scripts/pmod_i2s2_capture_probe.py`。
 >   `pynq.MMIO(phys_addr, 0x10000)` で `pmod_status` を直接開く。
+> - live UI: `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb`
+>   (D49 follow-up): 1 セル ipywidgets で mode 2 を default 起動し、
+>   全 effect + mode buttons (0/1/2/3) + status panel + Safe clean
+>   / Panic mute を提供。`bash scripts/deploy_to_pynq.sh` で配置済、
+>   `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2EffectControlOneCell.ipynb`
+>   で開いて「Run all」で one-shot。
 >
 > Build + deploy + smoke 手順 (env var は不要):
 > ```
