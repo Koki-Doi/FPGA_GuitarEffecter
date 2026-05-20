@@ -9,7 +9,7 @@ order, and what each layer needs), see
 | What changed | Build steps | Deploy |
 | --- | --- | --- |
 | Only Python in `audio_lab_pynq/` | none | `bash scripts/deploy_to_pynq.sh` |
-| Only `audio_lab_pynq/notebooks/*.ipynb` (e.g. `GuitarPedalboardOneCell.ipynb`, `DistortionModelsDebug.ipynb`, `GuitarEffectSwitcher.ipynb`) | **none — no Clash, no Vivado, no bit/hwh** | `bash scripts/deploy_to_pynq.sh` |
+| Only `audio_lab_pynq/notebooks/*.ipynb` (e.g. `GuitarPedalboardOneCell.ipynb`, `DistortionModelsDebug.ipynb`, `GuitarEffectSwitcher.ipynb`, `PmodI2S2EffectControlOneCell.ipynb`) | **none — no Clash, no Vivado, no bit/hwh** | `bash scripts/deploy_to_pynq.sh` |
 | GPIO-neutral refactor (Python + docs + tests; no Clash, no `block_design.tcl`, no GPIO byte semantics change) | none — **no bit/hwh rebuild** | `bash scripts/deploy_to_pynq.sh` |
 | C++ DSP prototype removal (`src/effects/*.cpp`) | none — never on the live PL path | none on the FPGA side; `bash scripts/deploy_to_pynq.sh` only if Python or notebooks shipped alongside |
 | `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed baseline; deploy only if not significantly worse |
