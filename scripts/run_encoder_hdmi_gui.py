@@ -58,8 +58,8 @@ def _build_argparser() -> argparse.ArgumentParser:
     apply_group.add_argument("--no-live-apply", dest="live_apply",
                              action="store_false",
                              help="Only apply on encoder-3 short press.")
-    p.add_argument("--apply-interval-ms", type=int, default=100,
-                   help="Throttle (ms) between live-apply pushes. Default 100.")
+    p.add_argument("--apply-interval-ms", type=int, default=50,
+                   help="Throttle (ms) between live-apply pushes. Default 50.")
     p.add_argument("--value-step", type=float, default=5.0,
                    help="Knob value step per encoder-3 detent (0..100 scale).")
     # RAT skip
@@ -99,15 +99,16 @@ def _build_argparser() -> argparse.ArgumentParser:
                           action="store_false",
                           help="Treat SW=HIGH as pressed (default for this rig).")
     # Loop pacing
-    p.add_argument("--poll-hz-active", type=float, default=10.0,
+    p.add_argument("--poll-hz-active", type=float, default=30.0,
                    help="Encoder poll rate while events are arriving.")
-    p.add_argument("--poll-hz-idle", type=float, default=4.0,
+    p.add_argument("--poll-hz-idle", type=float, default=10.0,
                    help="Encoder poll rate after --idle-threshold-s of no "
-                        "events.")
+                        "events. Kept >= short_press latch detection window "
+                        "so brief taps are not missed when idle.")
     p.add_argument("--idle-threshold-s", type=float, default=1.0,
                    help="After this many seconds without events, switch to "
                         "the idle poll rate.")
-    p.add_argument("--max-render-fps", type=float, default=5.0,
+    p.add_argument("--max-render-fps", type=float, default=20.0,
                    help="Cap the render rate even under continuous rotation.")
     p.add_argument("--status-interval-s", type=float, default=2.0,
                    help="Seconds between resource/status prints.")

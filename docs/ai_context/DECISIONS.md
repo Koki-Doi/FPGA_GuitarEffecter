@@ -2578,3 +2578,92 @@ not get removed even when superseded — they get updated.
   - Mode-level: writing `2'd1` (loopback) keeps the IP out of
     the audio path entirely; mode `2'd3` (mute) silences the DAC
     without rebuilding.
+
+## D51 — Encoder 0 short_press HW latch fallback + poll/render uplift (sluggish-GUI fix)
+
+- **Date.** 2026-05-20.
+- **Why.** Bench feedback after the D47 / D50 series: the GUI felt
+  sluggish under sustained encoder use, and Encoder 0 short taps
+  ("拾い損ね") were frequently missed. Root causes:
+  1. `EncoderUiController` (D47) dispatched Encoder 0 ON/OFF only on
+     the `BUTTON_STATE` level rising edge. Polled at 10 Hz active /
+     4 Hz idle, any tap shorter than the poll period (≤100 ms active,
+     ≤250 ms idle) slipped between two polls — the rising edge never
+     reached the controller. The HW `short_press` latch on the IP was
+     reliably set in that window but `handle_event` dropped every
+     `event.kind != "rotate"`, so the latch was thrown away.
+  2. The dirty-flag render loop was capped at 5 fps (200 ms) with a
+     100 ms apply throttle. Even when events were detected, the
+     visible feedback lagged enough to feel "もっさり".
+- **What changed (pure Python, no RTL / bit / hwh / Tcl edit).**
+  - `audio_lab_pynq/encoder_ui.py`:
+    - `handle_event` now consumes a `short_press` event for Encoder 0
+      as the same toggle that the level-edge path produces, then sets
+      a tick-local `_enc0_toggle_consumed_this_tick` flag.
+    - `process_button_state` checks that flag before firing the level
+      rising-edge toggle, so a tap that triggered both paths in the
+      same tick only toggles once.
+    - `tick()` resets the flag at the top of each iteration.
+    - Encoder 1 / Encoder 2 `short_press` / every `long_press` /
+      `click` event remain dropped (the D47 invariant is preserved).
+  - `scripts/run_encoder_hdmi_gui.py` defaults:
+    - `--poll-hz-active 10 → 30`, `--poll-hz-idle 4 → 10`,
+      `--max-render-fps 5 → 20`, `--apply-interval-ms 100 → 50`.
+    - `--poll-hz-idle 10` keeps the idle period (100 ms) at or below
+      the short_press latch detection window so brief taps after an
+      idle stretch are still caught.
+  - `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb`:
+    - `POLL_HZ_ACTIVE 10 → 30`, `POLL_HZ_IDLE 4 → 10`,
+      `MAX_RENDER_FPS 5 → 20`, `APPLY_INTERVAL_MS 100 → 50`.
+    - Loop body replaced `enc.poll() + controller.handle_events(events)`
+      with `controller.tick(enc, timestamp=...)` so the notebook now
+      shares the same press / button_state path as the standalone
+      runner (level-edge + short_press fallback both fire). Comment
+      header rewritten to the D47 / D51 mapping (the old text still
+      referenced the pre-D47 short/long-press spec).
+  - `tests/test_encoder_ui_controller.py`:
+    - `test_enc0_short_press_event_is_noop` replaced with
+      `test_enc0_short_press_event_toggles_current_effect` and a new
+      `test_enc0_short_press_and_level_edge_in_same_tick_toggles_once`
+      that pins the no-double-toggle invariant.
+    - `test_short_long_press_events_never_trigger_overlay_writes`
+      now asserts the guard for every (kind, encoder_id) **except**
+      Encoder 0 short_press, which is the new sanctioned trigger.
+  - `CLAUDE.md` Rotary-encoder runtime bullet updated with the new
+    throttle / poll / render numbers and the short_press fallback
+    rule.
+- **Per-encoder semantics (delta vs D47).**
+  - Encoder 0 button toggle now fires on **either** the BUTTON_STATE
+    rising edge **or** a HW `short_press` event consumed inside the
+    same `tick()`. Whichever is observed first wins; the second is
+    suppressed by the consumed flag.
+  - Long press, release, and Encoder 1 / Encoder 2 button events stay
+    no-ops. The D47 "hold does not auto-repeat, release does not
+    toggle" invariant is preserved.
+- **Scope guard.**
+  - No change to the encoder PL IP, no new GPIO, no
+    `block_design.tcl` / Tcl integration / XDC / Clash / Vivado /
+    bit / hwh edit. No HDMI signal change. No effect-defaults change.
+  - The applier (`EncoderEffectApplier`) is untouched; the throttle
+    parameter still defaults to 50 ms via the runner / notebook
+    constants. RAT skip behaviour is preserved.
+  - The `HdmiEffectStateMirror` API and notebooks that drive the
+    overlay directly (e.g. the Pmod I2S2 one-cell control) are
+    untouched.
+- **Test.**
+  - `python3 tests/test_encoder_ui_controller.py` → 32 / 32 PASS
+    (includes the two new D51 tests). Adjacent suites
+    `tests/test_encoder_effect_apply.py`,
+    `tests/test_encoder_input_decode.py`,
+    `tests/test_compact_v2_encoder_state.py` all PASS.
+- **Bench verification (pending).** User to run
+  `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat` on the
+  PYNQ-Z2 and confirm (a) short taps on Encoder 0 are no longer
+  missed during continuous knob editing, (b) knob movement on
+  Encoder 2 produces visible response within ~50 ms, (c) idle
+  proc_cpu remains low (the idle poll rate trebled, so a small
+  rise is expected; previously ~0–1 %).
+- **Rollback.** Revert the four edits (`encoder_ui.py`,
+  `run_encoder_hdmi_gui.py`, `EncoderGuiSmoke.ipynb`, test file)
+  and restore the D47 numbers in `CLAUDE.md`. No bit / hwh
+  involved.
