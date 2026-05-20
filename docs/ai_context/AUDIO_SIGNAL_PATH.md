@@ -181,9 +181,10 @@ Mode select (AXI register at `0x43D20000 + 0x28`):
   to mode 0 with a safety warning. Recommended workflow: disconnect
   the on-module jumper, put a real audio source on Line In at low
   volume, and listen on Line Out via a separate audio interface.
-- `cfg_mode = 2` (mode name `dsp`, `DECISIONS.md` D49): DAC SDIN
-  gets the bit-serial output of the existing AudioLab DSP chain
-  (`i2s_to_stream_0/so`). The Pmod ADC SDOUT feeds
+- `cfg_mode = 2` (mode name `dsp`, `DECISIONS.md` D49 + D50): DAC
+  SDIN gets the bit-serial output of the existing AudioLab DSP chain
+  (`i2s_to_stream_0/so`), routed through the RIGHT-to-LEFT mirror
+  buffer described below (D50). The Pmod ADC SDOUT feeds
   `i2s_to_stream_0/si`, and `i2s_to_stream_0/bclk` / `/lrclk` are
   driven by the Pmod-generated 3.072 MHz / 48 kHz clocks
   (`pmod_master_0/dsp_bclk_o` / `dsp_lrck_o`). All existing
@@ -193,6 +194,28 @@ Mode select (AXI register at `0x43D20000 + 0x28`):
   REQUIRES `--confirm-dsp`; the DSP chain in the loop can feed
   back if the on-module Line Out ↔ Line In jumper is still on, so
   disconnect it first.
+  - **Mode 2 is MONO output, not stereo** (D50). The Pmod-master's
+    `mode2_right_snapshot` register snapshots the IP's RIGHT slot
+    bits and replays them in BOTH LEFT and RIGHT slots of the DAC
+    SDIN. The user hears the chain's RIGHT output in both ears with
+    a one-frame (~21 us) delay. This works around two
+    `i2s_to_stream` IP bugs: LEFT extraction does not match the
+    Pmod-master's deserializer (DMA captures of `axis_li_tdata`
+    show LEFT spiking to `-0 dBFS` while RIGHT matches Pmod-master
+    exactly), and `i2sOut` updates `so` on BCLK rising edges with
+    no setup margin so the DAC can latch the stale bit. The Clash
+    DSP chain still receives the IP's `axis_li_tdata` for both
+    channels; the broken LEFT samples are processed inside the
+    chain but never reach the listener.
+  - **Diagnostic scripts.** `scripts/diagnose_pmod_i2s2_dsp_clean.py
+    --duration N [--ab-overdrive]` applies safe-clean (all effects
+    off, conservative levels), writes `MODE=2`, and reports the
+    pmod_status counters over a measurement window. Optional A/B
+    engages Overdrive ON then OFF for live verification.
+    `scripts/diagnose_pmod_i2s2_dma_capture.py --frames N` captures
+    the IP's `axis_li_tdata` via DMA and prints per-channel peak /
+    RMS / dBFS / bit prevalence — useful for confirming the IP-side
+    LEFT extraction bug and the mirror is doing its job.
 - `cfg_mode = 3` (mode name `mute`): DAC SDIN tied to 0. Useful
   while debugging the DSP chain without driving the speakers.
 

@@ -227,6 +227,53 @@ asking it to re-discover the project from scratch.
 > 禁止: ADAU1761 即置換、HDMI baseline (SVGA 800x600 @ 40 MHz) 変更、
 > DSP / Clash / GPIO map 変更、`git push` / `git pull` / `git fetch`。
 
+## Phase Pmod-clean-fix — mode 2 RIGHT-to-LEFT mirror (branch `feature/pmod-i2s2-dsp-clean-fix`, `DECISIONS.md` D50)
+
+> Pmod I2S2 の mode 2 (ADC → AudioLab DSP → DAC) は D49 で deploy 済だが、
+> ユーザー耳確認で「エフェクト全 OFF でも mode 1 と比べて少し歪んで聞こえる」
+> 問題が出ていた。D50 は `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` に
+> 32-bit `mode2_right_snapshot` バッファを追加し、`i2s_to_stream` IP の
+> RIGHT スロットビットを `bclk_fall_pre`+`bit_idx[5]==1` で snapshot、
+> mode 2 では LEFT/RIGHT 両スロットを同じバッファ位置 (slot_idx) で
+> 再生する。両耳とも previous-frame RIGHT slot = モノラル、~21 us 遅延、
+> 耳には知覚不能。IP の 2 つのバグ ((1) i2sIn の LEFT 抽出が Pmod-master
+> deserializer と一致しない、(2) i2sOut が BCLK rising edge で `so` を
+> 更新するため DAC が古いビットを latch する 1-BCLK shift) を一度に
+> 回避する。`block_design.tcl` / `pmod_i2s2_integration.tcl` / GPIO map /
+> Clash / topEntity / HDMI / encoder / notebooks / compact-v2 GUI は
+> 一切触っていない。
+>
+> WNS routed = `-7.985 ns` (D49 `-8.521 ns` から `+0.536 ns` 改善)。
+> WHS `+0.050 ns`、THS `0 ns`。Inside `-7..-9 ns` deploy band。
+>
+> Smoke (deploy 後):
+> - mode 1 regression: `scripts/test_pmod_i2s2.py --mode loopback
+>   --confirm-loopback --clear --duration 5` → MODE=1、CLIP_COUNT=0、
+>   48 kHz lock。耳: clean (mode 2 修正で破壊していない確認)。
+> - mode 2 clean: `scripts/diagnose_pmod_i2s2_dsp_clean.py --duration 15`
+>   → MODE=2、frame +720,720、CLIP_COUNT=0。**ユーザー耳: mode 1 と
+>   同じくクリーン**。
+> - mode 2 + Overdrive A/B: `scripts/diagnose_pmod_i2s2_dsp_clean.py
+>   --ab-overdrive --duration 6` → Phase A clean → Phase B OD ON
+>   (歪み) → Phase C OFF (clean)。**ユーザー耳: ON で歪んで、OFF で
+>   クリーンに戻った**。
+> - mode 3 mute: PASS。
+>
+> 既知の制限 / 残課題:
+> - mode 2 はモノラル (両耳とも chain RIGHT 出力)。
+> - DSP chain は引き続き broken LEFT を入力として処理するが、出力
+>   LEFT は DAC に届かない。stereo cross-feed が必要な将来の effect
+>   stage では再考が必要。
+> - `i2s_to_stream` IP 自体の bug fix は未対応 (今回 scope 外)。
+>
+> 詳細: `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` section 18、
+> `docs/ai_context/DECISIONS.md` D50、`docs/ai_context/AUDIO_SIGNAL_PATH.md`
+> Pmod I2S2 mode 2 段落、`docs/ai_context/TIMING_AND_FPGA_NOTES.md` の
+> May 20 D50 行。診断スクリプト:
+> `scripts/diagnose_pmod_i2s2_dsp_clean.py`、
+> `scripts/diagnose_pmod_i2s2_dma_capture.py`、
+> `scripts/diagnose_pmod_i2s2_dma_mode1.py`。
+
 ## Phase Pmod-1/2/3 — Pmod I2S2 bring-up (branch `feature/pmod-i2s2-bringup`, `DECISIONS.md` D48)
 
 > Pmod I2S2 module は手元にあり、PMOD JB へ直挿し済。Pmod I2S2 の Line

@@ -863,3 +863,137 @@ hwh change; existing notebooks are not edited.
 | Vivado build PASS、deploy 成功、smoke FAIL | `audio_lab.baseline.bit/.hwh` を 5 か所に書き戻し、reboot。`git checkout main` で source code も Phase 7D close-out に戻す。 |
 | Vivado build NG | `git checkout main` で Phase 7D close-out source に戻し再 build。失敗箇所を `git log` で trace。 |
 | Pmod I2S2 module 故障疑い | branch を main へ戻し、PCM5102 / PCM1808 ジャンパを物理的に挿し直し、Phase 7D close-out bit を deploy。 |
+
+## 18. Phase Pmod-clean-fix implementation status (2026-05-20, branch `feature/pmod-i2s2-dsp-clean-fix`, `DECISIONS.md` D50)
+
+### 18.1 動機
+
+D49 で mode 2 (Pmod ADC → AudioLab DSP → Pmod DAC) は **frame_count
++1.44M / 30 s, CLIP_COUNT=0** で動いていたが、ユーザー耳確認で
+「エフェクト全 OFF でも mode 1 (直 echo) と比べて少し歪んで聞こえる」
+という報告があった。mode 1 (Pmod 内部直 echo) は同じハードウェアで
+クリーン耳確認済みなので、原因は **mode 2 path 内部** に限定された。
+
+### 18.2 切り分け (`scripts/diagnose_pmod_i2s2_dma_capture.py`)
+
+`feature/pmod-i2s2-dsp-clean-fix` ブランチに切って、AXIS passthrough
+の中身を DMA で直接覗くスクリプトを追加:
+
+- mode 2 は AXIS で `passthrough` ルートが選ばれる
+  (`_route_effect_chain` で全 flag=0 のとき)。passthrough は
+  `axis_switch_source/M00 → axis_switch_sink/S00` で Clash 経由しない。
+- `route(line_in, passthrough, dma)` で DMA S2MM に切り替えると、
+  同じ `i2s_to_stream_0/axis_li_tdata` を numpy で取れる。
+
+結果 (同じ外部音源 -6..-10 dBFS、mode 2 と mode 1 両方で):
+
+| 項目 | Pmod-master deserializer | DMA (i2s_to_stream 経由) |
+| --- | --- | --- |
+| RIGHT peak | `4,300,727` (`-5.8 dBFS`) | **`4,300,727` (delta=0)** |
+| LEFT peak | `4,249,702` (`-5.9 dBFS`) | **`8,388,152` (`-0.02 dBFS`)** |
+| LEFT mean | ~0 | **`-341,868` (大きな負 DC オフセット)** |
+| LEFT bit prevalence (bit 16..21) | 通常 ~26-27% | **半分 (12-13%)** |
+| LEFT bit prevalence (bit 12..15, 22, 23) | 通常 ~26-27% | 通常 ~26-27% |
+
+RIGHT は Pmod-master と完全一致、LEFT は IP が壊れているのが確定。
+mode 1 でも DMA を取ると同じパターンになる (= IP の不具合は
+audio mode と無関係、IP 内部の固有バグ)。
+
+加えて、`i2s_to_stream/so` の更新タイミング (= BCLK rising edge) が
+DAC sampling edge と同じで setup margin がゼロのため、DAC が **古い
+bit** を latch する 1-BCLK shift も同時に起きる可能性がある (Pmod
+master mode 0/1 の serializer は BCLK falling edge で出力するため
+DAC への setup time は約 162 ns で安全)。
+
+### 18.3 修正方針 (`hw/ip/pmod_i2s2/src/pmod_i2s2_master.v`)
+
+**目標:** IP には触らず、`pmod_i2s2_master.v` だけで mode 2 を
+clean にする (D50)。
+
+実装:
+
+```verilog
+reg [31:0] mode2_right_snapshot;
+always @(posedge clk_12m288_i) begin
+    if (!resetn_i) begin
+        mode2_right_snapshot <= 32'd0;
+    end else if (bclk_fall_pre && bit_idx[5]) begin
+        // bclk_fall_pre = mclk_phase==01. この時点で dsp_dac_sdin_i
+        // は IP の post-rising 値 (1 MCLK 経過した安定値)。
+        // bit_idx[5]=1 は RIGHT slot。
+        mode2_right_snapshot[bit_idx[4:0]] <= dsp_dac_sdin_i;
+    end
+end
+
+always @(*) begin
+    case (cfg_mode)
+        2'd0:    din_mux_r = din_internal_r;
+        2'd1:    din_mux_r = din_internal_r;
+        2'd2:    din_mux_r = mode2_right_snapshot[bit_idx[4:0]];
+        default: din_mux_r = 1'b0;
+    endcase
+end
+```
+
+挙動:
+- RIGHT slot (bit_idx 32..63) で `mode2_right_snapshot[0..31]` を
+  順次更新。各 `slot_idx` 位置に IP の意図する RIGHT bit が入る。
+- LEFT slot (bit_idx 0..31) で同じバッファを LEFT slot の `slot_idx`
+  で読み出す。前フレームの RIGHT slot bit が再生される。
+- 結果として両耳とも **前フレームの RIGHT slot bits** = チェーンの
+  RIGHT 出力 = モノラル。frame 遅延 ≈ 21 us で人間には知覚不能。
+
+副作用:
+- mode 2 はステレオを失う (両耳とも RIGHT)。スタジオ品質には不向き
+  だが、ギターエフェクト用途は元々モノなので影響なし。
+- mode 0 / 1 / 3 は完全に未変更 (case 文の他のブランチを触っていない)。
+- Clash チェーンは引き続き broken LEFT を入力として処理するが、
+  出力 LEFT は DAC に届かないので問題なし。
+
+### 18.4 Build / Deploy
+
+- Vivado bit/hwh rebuild PASS (~21 分):
+  - WNS = `-7.985 ns` (D49 baseline `-8.521 ns` から `+0.536 ns` 改善)
+  - WHS = `+0.050 ns`, THS = `0 ns` (hold OK)
+  - Inside historical `-7..-9 ns` deploy band
+- `bash scripts/deploy_to_pynq.sh` PASS (5 か所同期、overlay 再ロード OK)。
+
+### 18.5 Smoke 結果 (deploy 後、PYNQ-Z2 で実行)
+
+- **mode 1 regression (5 s)**: PASS。MODE=1、frame_count
+  +240,269 / 5s (48 kHz lock)、CLIP_COUNT=0、peak_abs_left/right
+  ~ -6 dBFS。ユーザー耳: クリーン (mode 2 修正で mode 1 を壊して
+  いないことを確認)。
+- **mode 2 clean (15 s, `diagnose_pmod_i2s2_dsp_clean.py`)**:
+  MODE=2、frame delta +720,720 / 15s、CLIP_COUNT=0、peak_abs ~ -13 dBFS。
+  **ユーザー耳確認: 「mode 1 と同じくクリーン」**。修正前と同じ
+  入力レベルで歪みが消えた。
+- **mode 2 + Overdrive A/B (`--ab-overdrive` 6s 区間 ×3)**:
+  Phase A clean → Phase B Overdrive ON (歪み加算) → Phase C OFF
+  (clean に戻る)。**ユーザー耳確認: 「ON で歪んで、OFF でクリーンに
+  戻った」**。DSP チェーンが期待通り反応する。
+- **mode 3 mute**: PASS。MODE=3、DAC silent。
+
+### 18.6 Rollback
+
+| 状況 | 対応 |
+| --- | --- |
+| `feature/pmod-i2s2-dsp-clean-fix` の bit/hwh で予期しない動作 | `git checkout main` で D49 状態に戻し再 deploy。mode 2 は元の (歪んだ) 挙動に戻る。 |
+| `pmod_i2s2_master.v` の修正だけ取り消したい | `git diff main -- hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` で差分確認、`mode2_right_snapshot` 関連を削除し mux を `dsp_dac_sdin_i` に戻す + 再 build。 |
+| mode 2 を完全に避けたい | runtime で `MODE=1` (loopback) または `MODE=3` (mute) に書く。RTL 変更不要。 |
+
+### 18.7 既知の制限・残課題
+
+- **mode 2 はモノラル**: ステレオ録音を mode 2 で通すと両耳とも
+  チェーンの RIGHT 出力になる。ステレオが必要ならば `i2s_to_stream`
+  IP 自体の修正が必要 (今回は scope 外)。
+- **DSP チェーンの中の LEFT サンプルは壊れたまま**: IP が壊れた
+  LEFT を chain に渡しているので chain 内部状態 (フィードバック・
+  フィルタ・エンベロープ等) は broken LEFT を入力として動く。chain
+  の RIGHT 出力に LEFT が混ざる stage (例: 将来導入するステレオ
+  reverb の cross-feed) があると影響が出る可能性がある。現状の
+  guitar effects はモノ前提なので問題なし。
+- **IP 自体の bug fix は未対応**: `i2s_to_stream` の Clash auto-
+  generated VHDL の LEFT 抽出ロジックは構文的には samplesFromVec
+  と等価に見えるが measurement で broken なため、CDC / BRAM
+  timing 側の問題と推測。深い調査は別セッションで扱う。

@@ -2498,3 +2498,83 @@ not get removed even when superseded — they get updated.
     `git log` and resync the five PYNQ locations.
   - Mode-level: writing `2'd3` (mute) to MODE silences the Pmod DAC
     without rebuilding; useful while debugging the DSP chain.
+
+## D50 — Mode 2 RIGHT-to-LEFT mirror in `pmod_i2s2_master.v` (work around the i2s_to_stream IP LEFT-extraction + 1-BCLK setup bugs)
+- **Context.** After D49 deployed `cfg_mode = 2'd2` (Pmod ADC → AudioLab
+  DSP chain → Pmod DAC) the user reported that the chain sounded
+  "slightly distorted" even with every effect off. A diagnostic capture
+  via `scripts/diagnose_pmod_i2s2_dma_capture.py` (DMA from
+  `axis_switch_sink/M01` while the mode 2 path is otherwise live)
+  confirmed two issues inside the existing `i2s_to_stream` IP:
+  1. The IP's `i2sIn` LEFT extraction did not match the Pmod-master's
+     own deserializer. DMA-captured LEFT regularly hit `-0 dBFS` peaks
+     and held a large DC offset while Pmod-master `peak_abs_left` for
+     the same SDOUT bits stayed near `-7 dBFS`. RIGHT extraction
+     matched the Pmod-master exactly (delta = 0 across multiple
+     captures). Bit-prevalence histograms showed LEFT bits 16..21
+     set roughly **half** as often as RIGHT, isolating the bug to
+     the IP's LEFT slot extraction.
+  2. The IP's `i2sOut` updates `so` on BCLK rising edges -- the same
+     edge the CS4344 DAC samples on. Without a half-BCLK setup margin
+     the DAC can latch the OLD bit and play a 1-BCLK-shifted bit
+     stream that sounds like asymmetric distortion. This was likely
+     masked on the legacy ADAU codec setup where the codec drove the
+     bclk and any race resolved in its favour, but it surfaces on the
+     Pmod-as-slave configuration.
+- **Decision.** Add a Verilog-only RIGHT-to-LEFT mirror inside
+  `pmod_i2s2_master.v` so that in mode 2 the DAC SDIN comes from a
+  Pmod-master-internal 32-bit buffer instead of the IP's live `so`:
+  1. `mode2_right_snapshot[31:0]` -- a 32-bit register indexed by
+     `slot_idx` (`bit_idx[4:0]`). It captures `dsp_dac_sdin_i` on
+     `bclk_fall_pre` whenever `bit_idx[5] == 1` (RIGHT slot). At
+     that MCLK posedge `dsp_dac_sdin_i` is the IP's post-rising
+     `so` value, so the bit is the IP's intended payload for the
+     just-finished BCLK period (not the pre-edge stale value the
+     DAC would otherwise see).
+  2. The mode 2 branch of the DAC SDIN mux drives
+     `mode2_right_snapshot[bit_idx[4:0]]` regardless of LEFT or
+     RIGHT slot. As a result both ears get the previous frame's
+     RIGHT slot bits with the same one-frame (~21 us) delay --
+     the user hears clean mono.
+  - Mode 0 / 1 / 3 paths in `pmod_i2s2_master.v` are unchanged.
+  - The Clash DSP chain still receives the IP's `axis_li_tdata`
+    LEFT/RIGHT (LEFT is still corrupt at the chain input, but the
+    chain output is only audible via the RIGHT slot bits, so the
+    LEFT corruption never reaches the listener).
+- **What this is NOT.**
+  - Not a fix to the IP. The IP's `i2sIn` / `i2sOut` are unchanged;
+    we work around them. The user-confirmed test plan covers mode 2
+    clean + Overdrive A/B and is sufficient for the current PMOD
+    audio scope; revisiting the IP itself is deferred.
+  - Not a stereo restoration. True stereo through the DSP chain is
+    lost in mode 2 -- both ears carry the chain's RIGHT output.
+- **Scope guard.** No `block_design.tcl` edit. No new GPIO. No new
+  `topEntity` / `LowPassFir.hs` port or coefficient change. No new
+  Clash work. No notebook UI change. No PCM5102 / PCM1808 revival.
+- **Smoke (post-deploy, branch `feature/pmod-i2s2-dsp-clean-fix`).**
+  - mode 1 regression: `--mode loopback --confirm-loopback` reports
+    MODE=1, CLIP_COUNT=0, frame_count rising at 48 kHz exactly,
+    peak_abs_left/right > 0 (external source ~ -6 dBFS).
+  - mode 2 clean (effects all off, `scripts/diagnose_pmod_i2s2_dsp_clean.py
+    --duration 15`): MODE=2, frame delta `+720,720` / 15 s, CLIP_COUNT=0,
+    peak_abs_left/right ~ `-13.6` / `-11.9 dBFS`. **User-confirmed
+    "mode 1 と同じくクリーン" (clean, matches mode 1).**
+  - mode 2 A/B with Overdrive (`--ab-overdrive` 6 s each): Phase A
+    clean, Phase B `set_guitar_effects(overdrive_on=True, ...)`
+    audibly engages overdrive, Phase C `overdrive_on=False` returns
+    to clean. **User-confirmed "ON で歪んで、OFF でクリーンに戻った"**.
+  - mode 3 (mute): MODE=3, DAC silent.
+- **Timing.** WNS `-7.985 ns` (TNS `-8737.608 ns`, WHS `+0.050 ns`,
+  THS `0 ns`). Inside the historical `-7..-9 ns` deploy band and
+  improves the previous D49 deployed baseline (`-8.521 ns`) by
+  `0.536 ns`. The mode2 buffer is a single 32-bit register; adds
+  ~32 FFs, no DSP, no BRAM.
+- **Rollback.**
+  - Branch-level: `git checkout main` returns to the D49 state
+    (mode 2 routes the IP's live `so` to the DAC directly; LEFT
+    extraction bug and 1-BCLK race re-appear).
+  - File-level: revert the `pmod_i2s2_master.v` edit that adds
+    `mode2_right_snapshot` and switches the mode 2 mux to use it.
+  - Mode-level: writing `2'd1` (loopback) keeps the IP out of
+    the audio path entirely; mode `2'd3` (mute) silences the DAC
+    without rebuilding.
