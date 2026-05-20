@@ -79,6 +79,10 @@ class EncoderUiController:
         # Previous button state -- None until first observation so we never
         # emit a spurious rising-edge on first tick.
         self._prev_pressed: Optional[List[bool]] = None
+        # Set inside tick() when the HW short_press latch already triggered
+        # the Encoder 0 toggle, so the subsequent level-edge check inside
+        # process_button_state() does not double-fire on the same tap.
+        self._enc0_toggle_consumed_this_tick: bool = False
 
     # -- helpers ---------------------------------------------------------------
 
@@ -168,7 +172,7 @@ class EncoderUiController:
             return
 
         prev = self._prev_pressed
-        if (not prev[0]) and cur[0]:
+        if (not prev[0]) and cur[0] and not self._enc0_toggle_consumed_this_tick:
             self._enc0_button_down_edge()
         # Encoder 1 / Encoder 2 button: no-op.
         # No short_press / long_press / click handling on any encoder.
@@ -226,15 +230,23 @@ class EncoderUiController:
         self.state.live_apply = self.live_apply
 
         eid = event.encoder_id
-        if event.kind != "rotate":
-            # short_press / long_press / click / release are all dropped.
+        if event.kind == "rotate":
+            if eid == 0:
+                self._enc0_rotate(event.delta)
+            elif eid == 1:
+                self._enc1_rotate(event.delta)
+            elif eid == 2:
+                self._enc2_rotate(event.delta)
             return
-        if eid == 0:
-            self._enc0_rotate(event.delta)
-        elif eid == 1:
-            self._enc1_rotate(event.delta)
-        elif eid == 2:
-            self._enc2_rotate(event.delta)
+        # The HW short_press latch on Encoder 0 is consumed here as a
+        # fallback for taps shorter than the poll period. The level-edge
+        # path in process_button_state() still catches long presses; the
+        # consumed flag prevents a double toggle in the same tick.
+        # Encoder 1 / Encoder 2 button events (short / long / release)
+        # remain dropped per D47.
+        if event.kind == "short_press" and eid == 0:
+            self._enc0_button_down_edge()
+            self._enc0_toggle_consumed_this_tick = True
 
     def handle_events(self, events: Iterable) -> None:
         for ev in events:
@@ -257,6 +269,7 @@ class EncoderUiController:
         # Position pressed state BEFORE handle_events so encoder-1 rotate
         # dispatch sees the live hold.
         self._current_pressed = list(cur)
+        self._enc0_toggle_consumed_this_tick = False
         self.handle_events(events)
         self.process_button_state(cur)
         if self.apply_on_value_change and getattr(self.state, "apply_pending", False):
