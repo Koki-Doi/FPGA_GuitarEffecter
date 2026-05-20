@@ -339,11 +339,60 @@ module pmod_i2s2_master (
             din_internal_r = 1'b0;
     end
 
+    // -------------------------------------------------------------------------
+    // Mode 2 RIGHT-to-LEFT mirror buffer.
+    //
+    // The i2s_to_stream IP that bridges the AudioLab DSP chain into the
+    // Pmod I2S2 codec has two issues that make mode 2 sound distorted even
+    // with every effect off:
+    //   1. i2sIn LEFT extraction is broken. DMA captures of axis_li_tdata
+    //      show LEFT hitting near -0 dBFS while Pmod-master deserializer
+    //      peaks at the same time stay below -5 dBFS. RIGHT extraction
+    //      matches Pmod-master exactly.
+    //   2. i2sOut updates `so` on BCLK rising edges -- the same edge the
+    //      DAC samples on -- so the DAC can latch the OLD bit and play a
+    //      1-BCLK-shifted bitstream that sounds like asymmetric distortion.
+    //
+    // Fix: capture i2s_to_stream/so once per BCLK during the RIGHT slot of
+    // every frame into `mode2_right_snapshot` (32 bits, indexed by
+    // slot_idx). In mode 2, drive the DAC SDIN from the same buffer
+    // position regardless of LEFT vs RIGHT slot. The user hears mono
+    // (= IP RIGHT slot data in both ears) with a one-frame delay (about
+    // 21 us, imperceptible).
+    //
+    // The snapshot is updated at bclk_fall_pre, i.e., the MCLK posedge
+    // where mclk_phase is 01. At that moment dsp_dac_sdin_i = the IP's so
+    // post the most-recent BCLK rising edge, so the bit is the IP's
+    // intended payload for the current slot (not the pre-edge stale
+    // value the DAC would otherwise see). The DAC samples on BCLK rising
+    // edges and so reads din_mux_r = the snapshot at the slot index of
+    // the period that just started -- which holds the previous frame's
+    // matching RIGHT slot bit. Identical bits land in both LEFT and
+    // RIGHT slots, giving a clean mono signal.
+    //
+    // Mode 0 / 1 / 3 paths are unchanged.
+    // -------------------------------------------------------------------------
+    reg [31:0] mode2_right_snapshot;
+    always @(posedge clk_12m288_i) begin
+        if (!resetn_i) begin
+            mode2_right_snapshot <= 32'd0;
+        end else if (bclk_fall_pre && bit_idx[5]) begin
+            // bit_idx pre-edge here is the slot index that just finished
+            // its BCLK period (the falling edge is about to increment it).
+            // bit_idx[5] == 1 -> the just-ended period was a RIGHT slot
+            // bit.
+            mode2_right_snapshot[bit_idx[4:0]] <= dsp_dac_sdin_i;
+        end
+    end
+
     // Final DAC SDIN mux. cfg_mode is 2-FF-synchronized into the MCLK domain
     // above, so this is a clean combinational select.
     //   2'd0 -> internal serializer (tone)
     //   2'd1 -> internal serializer (ADC echo via cfg_mode==1 in tx_sample_*)
-    //   2'd2 -> bit-serial DSP DAC output from i2s_to_stream_0/so
+    //   2'd2 -> mode2_right_snapshot[slot_idx]  (RIGHT-mirrored mono, both
+    //           ears get the previous frame's RIGHT slot bits; works around
+    //           the i2s_to_stream IP LEFT-extraction bug and the 1-BCLK
+    //           setup race documented above.)
     //   2'd3 -> mute
     // The mode 0 / mode 1 distinction is already encoded inside
     // `tx_sample_left` / `tx_sample_right` (they pick tone vs ADC echo based
@@ -353,7 +402,7 @@ module pmod_i2s2_master (
         case (cfg_mode)
             2'd0:    din_mux_r = din_internal_r;
             2'd1:    din_mux_r = din_internal_r;
-            2'd2:    din_mux_r = dsp_dac_sdin_i;
+            2'd2:    din_mux_r = mode2_right_snapshot[bit_idx[4:0]];
             default: din_mux_r = 1'b0;
         endcase
     end
