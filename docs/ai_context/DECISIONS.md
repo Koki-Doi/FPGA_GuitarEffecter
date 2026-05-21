@@ -2752,3 +2752,164 @@ not get removed even when superseded — they get updated.
   `docs/ai_context/AUDIO_SIGNAL_PATH.md`,
   `docs/ai_context/RESUME_PROMPTS.md`,
   `docs/ai_context/CURRENT_STATE.md`. No bit / hwh involved.
+
+## D53 — Replace Amp Sim character knob with model-only voicing and binary drive mode
+
+- **Date.** 2026-05-21.
+- **Status.** Implemented, Python-only (no Vivado / Clash / bit /
+  hwh change). Bench verification on the PYNQ-Z2 (Encoder 1 hold +
+  rotate cycles amp models, Encoder 2 on AMP slot 7 toggles 0/1,
+  Pmod I2S2 mode 2 audible difference between drive_mode=0 and
+  drive_mode=1) pending.
+- **Context.** Amp Sim shipped an 8th continuous knob `CHAR` (the
+  Clash side reads `ctrlD(fAmpTone)` as an 8-bit character byte
+  with `ampModelSel` quantising into four bands at 63 / 126 / 190).
+  The user-facing voicing was therefore controlled by two knobs at
+  once: the `Amp Model` dropdown (which sets the band centre via
+  `AMP_MODELS`) **and** the `CHAR` slider (free to walk the byte
+  away from the labelled centre). That made the labelled voicings
+  ambiguous and forced the encoder runtime to expose a continuous
+  byte for what is conceptually a 0/1 switch.
+- **Decision.** Replace the Amp Sim CHAR knob with a binary
+  `DRV MODE` (0 / 1):
+  - Amp character is now derived from `amp_model_idx` only. The
+    Python helper
+    `AudioLabOverlay.amp_character_byte_for_model(idx, drive_mode)`
+    picks the model-centre byte (`AMP_MODEL_CHARACTER_BYTES =
+    (26, 89, 153, 216)` for jc_clean / clean_combo /
+    british_crunch / high_gain_stack) and, when `drive_mode=1`,
+    shifts the byte by `AMP_DRIVE_MODE_OFFSET = 30`. Every result
+    stays inside the same Clash `ampModelSel` band so the model
+    identity is preserved across drive modes.
+  - `drive_mode=0` produces the byte the previous percent-only
+    path produced for each labelled model -- existing bitstreams
+    are bit-for-bit compatible.
+  - `drive_mode=1` lowers `ampAsymClip`'s positive / negative
+    knees (more clipping), raises `ampSecondStageMultiplyFrame`
+    gain by `(character >> 2) / 9`, and darkens
+    `ampPreLowpassFrame`'s `baseAlpha = 128 + (character >> 2)`
+    -- a "more drive / more darkened" voicing nudge with no
+    volume-only effect.
+  - The 8th Amp Sim knob is now binary (`is_binary_knob("Amp Sim",
+    7) == True`), value clamped to {0.0, 1.0}; mirrored into
+    `AppState.amp_drive_mode` so the encoder applier and Notebook
+    UIs can read a single canonical 0/1.
+  - Encoder 2 on the DRV MODE slot snaps to 0/1 via delta sign
+    (positive -> 1, negative -> 0) and forces a live apply on
+    every toggle (no value_step accumulation).
+  - HDMI GUI renderer special-cases binary knobs: integer 0/1 in
+    the value readout instead of the percent integer, and full
+    bar segments lit at value=1.
+  - Notebook UIs (`PmodI2S2EffectControlOneCell.ipynb`,
+    `GuitarPedalboardOneCell.ipynb`) drop the Character slider and
+    expose `amp_drive_mode` as a 0/1 Dropdown; `safe_clean` /
+    `panic_mute` / `all_effects_off` set `amp_drive_mode=0`.
+- **Encoding (no new GPIO).**
+  - `axi_gpio_amp_tone.ctrlD` continues to carry the 8-bit
+    character byte. No address change. No `block_design.tcl`
+    change. No new AXI GPIO.
+  - In-band shift instead of bit-pack: `ctrlD = AMP_MODEL_CHARACTER_BYTES[idx]
+    + (drive_mode * 30)`. Values land at:
+    - `(0, 0)` -> 26, `(0, 1)` -> 56 (both <63, band M0)
+    - `(1, 0)` -> 89, `(1, 1)` -> 119 (both <126, band M1)
+    - `(2, 0)` -> 153, `(2, 1)` -> 183 (both <190, band M2)
+    - `(3, 0)` -> 216, `(3, 1)` -> 246 (both >=190, band M3)
+  - The user-recommended encoding ("`ctrlD[6:0]` = character,
+    `ctrlD[7]` = drive_mode") was rejected: the existing model
+    centre bytes 153 and 216 already have bit 7 set, so a
+    bit-7-only drive-mode would corrupt M2 / M3 character bands
+    unless the Clash side was rewritten to mask `ctrlD & 0x7F`
+    -- which is a Vivado rebuild that the task explicitly avoided
+    when an alternative encoding exists. CLAUDE.md mandates a
+    WNS-summary review on any `LowPassFir.hs` edit, so the
+    in-band shift was preferred per the user's own
+    "既存設計を優先 / docsに採用理由を書く" escape clause.
+- **API impact.**
+  - `AudioLabOverlay.guitar_effect_control_words` gains
+    `amp_model_idx=None, amp_drive_mode=0` kwargs. When
+    `amp_model_idx` is supplied the new path wins over the
+    legacy `amp_character` percent; otherwise the legacy path
+    is preserved bit-for-bit.
+  - `AudioLabOverlay.set_guitar_effects` accepts both new kwargs
+    transparently through `**kwargs`.
+  - `EncoderEffectApplier.apply_appstate` stops passing
+    `amp_character`; it forwards `amp_model_idx` +
+    `amp_drive_mode` derived from
+    `AppState.amp_model_idx` and the binary value at
+    `AppState.all_knob_values["Amp Sim"][7]` (with
+    `AppState.amp_drive_mode` as the canonical store).
+  - `HdmiEffectStateMirror._apply_guitar_effects_state` mirrors
+    the new `amp_drive_mode` kwarg into `AppState.amp_drive_mode`
+    and slot 7 of the AMP knob list. `set_amp_model` defaults
+    `drive_mode` to the current `AppState.amp_drive_mode`.
+- **Files changed.**
+  - `GUI/compact_v2/knobs.py` (`Amp Sim` slot 7 CHAR -> DRV MODE,
+    new `BINARY_KNOBS` / `is_binary_knob` helpers).
+  - `GUI/compact_v2/state.py` (`amp_drive_mode` AppState field,
+    binary `set_knob` clamp, legacy state.json migration).
+  - `GUI/compact_v2/renderer.py` (binary-knob display: 0/1
+    integer + full bar segments at value 1).
+  - `audio_lab_pynq/encoder_ui.py` (delta-sign 0/1 toggle on
+    binary knobs, force live apply on toggle).
+  - `audio_lab_pynq/encoder_effect_apply.py` (forward
+    `amp_model_idx` + `amp_drive_mode`; never `amp_character`).
+  - `audio_lab_pynq/AudioLabOverlay.py`
+    (`AMP_MODEL_CHARACTER_BYTES`, `AMP_DRIVE_MODE_OFFSET`,
+    `amp_character_byte_for_model`,
+    `guitar_effect_control_words` model-first path).
+  - `audio_lab_pynq/hdmi_state/knobs.py` (`AMP SIM` knob 7
+    label -> DRV MODE, default 0).
+  - `audio_lab_pynq/hdmi_effect_state_mirror.py` (mirror
+    `amp_drive_mode` into AppState; drop `amp_character` mapping
+    from the AMP SIM knob updates).
+  - `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb`
+    (new `amp_drive_mode` state key + Dropdown widget;
+    `amp_character` no longer forwarded).
+  - `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`
+    (drop Character slider; replace with DRV MODE Dropdown).
+  - `docs/ai_context/GPIO_CONTROL_MAP.md` (note that
+    `axi_gpio_amp_tone.ctrlD` is now model-derived + drive-mode
+    shifted, not a user-facing percent).
+  - `tests/test_overlay_controls.py`,
+    `tests/test_encoder_effect_apply.py`,
+    `tests/test_encoder_ui_controller.py`,
+    `tests/test_compact_v2_encoder_state.py` (new D53 tests).
+- **Backward compatibility.**
+  - Older chain presets and legacy Notebooks that still pass
+    `amp_character=<percent>` via `set_guitar_effects` keep
+    working byte-for-byte (the new model-first path is opt-in
+    via `amp_model_idx`).
+  - Older `fx_gui_state.json` files that stored a continuous
+    CHAR percent at slot 7 of Amp Sim are migrated on load: the
+    value is snapped to 0 / 1 based on the >=50% threshold and
+    mirrored into `amp_drive_mode`. Values are clamped before
+    the renderer ever sees them, so a stale character byte
+    cannot resurface.
+  - The legacy single-character `amp_character` knob still
+    exists in the overlay public API (and inside
+    `AudioLabOverlay.set_amp_model`); only the GUI / encoder
+    runtime stopped exposing it.
+- **Tests.** `python3 -m py_compile` PASS for every edited Python
+  module. `python3 -m unittest -v` PASS for
+  `tests.test_encoder_input_decode`, `tests.test_encoder_ui_controller`,
+  `tests.test_compact_v2_encoder_state`, `tests.test_encoder_effect_apply`,
+  `tests.test_overdrive_model_select` (87 tests, 0 failures).
+  `python3 tests/test_overlay_controls.py` PASS. Notebook JSON
+  validation (`ast.parse(''.join(cell['source']))`) PASS for the
+  two edited one-cell notebooks. The pre-existing
+  `tests.test_hdmi_origin_mapping` import error is unrelated
+  (confirmed against main).
+- **Rollback.** Revert the `Amp Sim` slot 7 edit in
+  `GUI/compact_v2/knobs.py` (DRV MODE -> CHAR), delete the
+  `BINARY_KNOBS` constant, drop `AppState.amp_drive_mode` +
+  the legacy migration in `GUI/compact_v2/state.py`, undo the
+  binary branch in `GUI/compact_v2/renderer.py` and
+  `audio_lab_pynq/encoder_ui.py`, revert
+  `AudioLabOverlay.amp_character_byte_for_model` /
+  `AMP_MODEL_CHARACTER_BYTES` /
+  `AMP_DRIVE_MODE_OFFSET` and the `amp_model_idx` /
+  `amp_drive_mode` parameters of
+  `guitar_effect_control_words`, restore
+  `amp_character=_clamp_percent(amp[7])` in the encoder applier,
+  revert the notebooks and the GPIO map note, and drop the new
+  tests. No Vivado / bit / hwh involved.

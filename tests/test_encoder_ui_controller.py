@@ -547,6 +547,54 @@ def test_tick_reads_button_state_and_dispatches():
     assert s.effect_on[idx] is after
 
 
+# ---- D53 binary DRV MODE knob -------------------------------------------
+
+
+def test_enc2_rotate_on_amp_drv_mode_toggles_zero_one():
+    """Encoder 2 on the Amp Sim binary slot (idx 7) must snap to 0/1
+    rather than stepping by value_step (D53)."""
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Amp Sim")
+    s.selected_knob = 7
+    # Start at 0.
+    s.all_knob_values["Amp Sim"][7] = 0.0
+    s.amp_drive_mode = 0
+    ctl = EncoderUiController(s)
+    ctl.handle_event(EncoderEvent("rotate", 2, 1, 4))
+    assert s.all_knob_values["Amp Sim"][7] == 1.0
+    assert s.amp_drive_mode == 1
+    # A negative delta clamps back to 0.
+    ctl.handle_event(EncoderEvent("rotate", 2, -1, -4))
+    assert s.all_knob_values["Amp Sim"][7] == 0.0
+    assert s.amp_drive_mode == 0
+
+
+def test_enc2_rotate_on_amp_drv_mode_repeated_delta_stays_binary():
+    """Multiple positive deltas on the DRV MODE knob keep value at 1
+    instead of accumulating beyond 1.0."""
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Amp Sim")
+    s.selected_knob = 7
+    s.all_knob_values["Amp Sim"][7] = 0.0
+    s.amp_drive_mode = 0
+    ctl = EncoderUiController(s)
+    for _ in range(5):
+        ctl.handle_event(EncoderEvent("rotate", 2, 1, 4))
+    assert s.all_knob_values["Amp Sim"][7] == 1.0
+    assert s.amp_drive_mode == 1
+
+
+def test_enc2_rotate_on_continuous_knob_still_steps():
+    """Continuous knobs keep the value_step behaviour (regression guard)."""
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Amp Sim")
+    s.selected_knob = 0  # GAIN -- continuous
+    s.all_knob_values["Amp Sim"][0] = 45.0
+    ctl = EncoderUiController(s)
+    ctl.handle_event(EncoderEvent("rotate", 2, 2, 8))
+    assert s.all_knob_values["Amp Sim"][0] == 55.0
+
+
 _TEST_FUNCTIONS = [
     test_appstate_defaults_have_encoder_fields,
     # Encoder 0
@@ -585,6 +633,10 @@ _TEST_FUNCTIONS = [
     test_skip_rat_cycle_advances_past_bit_2_via_hold,
     test_include_rat_cycle_lands_on_bit_2_via_hold,
     test_tick_reads_button_state_and_dispatches,
+    # D53 binary DRV MODE
+    test_enc2_rotate_on_amp_drv_mode_toggles_zero_one,
+    test_enc2_rotate_on_amp_drv_mode_repeated_delta_stays_binary,
+    test_enc2_rotate_on_continuous_knob_still_steps,
 ]
 
 

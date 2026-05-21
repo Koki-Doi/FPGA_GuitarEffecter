@@ -124,12 +124,93 @@ def test_renderer_with_phase7g_flags_emits_status_text():
     assert frame is not None
 
 
+# ---- D53 amp model-only character + binary DRV MODE --------------------
+
+
+def test_amp_sim_knob_layout_replaces_char_with_drv_mode():
+    """Amp Sim EFFECT_KNOBS must drop CHAR and add DRV MODE @ idx 7
+    with default 0 (D53)."""
+    from compact_v2.knobs import EFFECT_KNOBS
+    labels = [label for label, _ in EFFECT_KNOBS["Amp Sim"]]
+    assert "CHAR" not in labels
+    assert labels[7] == "DRV MODE"
+    assert EFFECT_KNOBS["Amp Sim"][7][1] == 0
+
+
+def test_amp_drive_mode_field_defaults_to_zero():
+    """AppState exposes amp_drive_mode (D53), defaulting to 0."""
+    s = AppState()
+    assert hasattr(s, "amp_drive_mode")
+    assert s.amp_drive_mode == 0
+
+
+def test_set_knob_on_amp_drv_mode_clamps_to_zero_or_one():
+    """set_knob on the Amp Sim DRV MODE slot must snap to 0/1 and
+    mirror into AppState.amp_drive_mode."""
+    from compact_v2.knobs import EFFECTS as _EFFECTS
+    s = AppState()
+    s.selected_effect = _EFFECTS.index("Amp Sim")
+    s.set_knob(7, 73.5)
+    assert s.all_knob_values["Amp Sim"][7] == 1.0
+    assert s.amp_drive_mode == 1
+    s.set_knob(7, 0.0)
+    assert s.all_knob_values["Amp Sim"][7] == 0.0
+    assert s.amp_drive_mode == 0
+
+
+def test_appstate_json_round_trip_persists_amp_drive_mode():
+    """The new amp_drive_mode field survives save/load (D53)."""
+    s = AppState()
+    s.amp_drive_mode = 1
+    s.all_knob_values["Amp Sim"][7] = 1.0
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        path = f.name
+    try:
+        save_state_json(s, path)
+        with open(path, "r", encoding="utf-8") as f:
+            blob = json.load(f)
+        assert blob["amp_drive_mode"] == 1
+        s2 = load_state_json(path)
+        assert s2.amp_drive_mode == 1
+        assert s2.all_knob_values["Amp Sim"][7] == 1.0
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+
+def test_legacy_state_with_char_value_loads_as_binary_drive_mode():
+    """A pre-D53 state.json that stored the continuous CHAR value at
+    Amp Sim slot 7 must load as a 0/1 DRV MODE so the GUI never
+    surfaces a stale character byte. Values >= 50 snap to 1."""
+    s_legacy = AppState()
+    s_legacy.all_knob_values["Amp Sim"][7] = 60.0  # legacy CHAR
+    s_legacy.amp_drive_mode = 0
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        path = f.name
+    try:
+        save_state_json(s_legacy, path)
+        s2 = load_state_json(path)
+        assert s2.all_knob_values["Amp Sim"][7] in (0.0, 1.0)
+        assert s2.amp_drive_mode in (0, 1)
+        # The legacy 60 percent value sits above the 50% snap threshold
+        # so it should map to drive=1.
+        assert s2.amp_drive_mode == 1
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+
 _TEST_FUNCTIONS = [
     test_appstate_phase7g_fields_present,
     test_appstate_json_round_trip_ignores_phase7g_fields,
     test_renderer_imports_and_runs_with_defaults,
     test_renderer_with_phase7g_flags_emits_status_text,
     test_renderer_with_live_apply_flags_emits_status_text,
+    test_amp_sim_knob_layout_replaces_char_with_drv_mode,
+    test_amp_drive_mode_field_defaults_to_zero,
+    test_set_knob_on_amp_drv_mode_clamps_to_zero_or_one,
+    test_appstate_json_round_trip_persists_amp_drive_mode,
+    test_legacy_state_with_char_value_loads_as_binary_drive_mode,
 ]
 
 
