@@ -1099,6 +1099,71 @@ def test_set_amp_model_overrides_let_caller_pin_other_amp_params():
     assert (last_word >> 8) & 0xFF == expected_master
 
 
+# ---- D53 amp model-only character + binary drive mode -------------------
+
+
+def test_amp_character_byte_for_model_default_drive_matches_legacy_bytes():
+    """drive_mode=0 must keep the bytes the previous percent-only path
+    produced for each labelled amp model (centre of the Clash band)."""
+    assert AudioLabOverlay.amp_character_byte_for_model(0, 0) == 26
+    assert AudioLabOverlay.amp_character_byte_for_model(1, 0) == 89
+    assert AudioLabOverlay.amp_character_byte_for_model(2, 0) == 153
+    assert AudioLabOverlay.amp_character_byte_for_model(3, 0) == 216
+
+
+def test_amp_character_byte_for_model_drive_one_stays_in_band():
+    """drive_mode=1 shifts the byte by AMP_DRIVE_MODE_OFFSET (+30) and
+    every result stays inside the Clash ampModelSel band so the
+    labelled voicing is preserved (cutpoints at 63 / 126 / 190)."""
+    band_top = (62, 125, 189, 255)
+    band_bot = (0, 63, 126, 190)
+    for idx in range(4):
+        b = AudioLabOverlay.amp_character_byte_for_model(idx, 1)
+        assert band_bot[idx] <= b <= band_top[idx], (idx, b)
+    # Concrete values from the +30 in-band shift documented in D53.
+    assert AudioLabOverlay.amp_character_byte_for_model(0, 1) == 56
+    assert AudioLabOverlay.amp_character_byte_for_model(1, 1) == 119
+    assert AudioLabOverlay.amp_character_byte_for_model(2, 1) == 183
+    assert AudioLabOverlay.amp_character_byte_for_model(3, 1) == 246
+
+
+def test_amp_character_byte_for_model_drive_clamps_truthy_to_one():
+    """Out-of-range drive_mode values clamp to 1 (no separate level)."""
+    assert (AudioLabOverlay.amp_character_byte_for_model(2, 100)
+            == AudioLabOverlay.amp_character_byte_for_model(2, 1))
+    assert (AudioLabOverlay.amp_character_byte_for_model(2, 2)
+            == AudioLabOverlay.amp_character_byte_for_model(2, 1))
+    assert (AudioLabOverlay.amp_character_byte_for_model(2, 0)
+            != AudioLabOverlay.amp_character_byte_for_model(2, 1))
+
+
+def test_guitar_effect_control_words_amp_model_idx_wins_over_amp_character():
+    """When amp_model_idx is supplied, the character byte is derived
+    from the model band + drive_mode and the legacy amp_character
+    percent kwarg is ignored."""
+    words = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True, amp_model_idx=2, amp_drive_mode=1,
+        amp_character=0,  # would map to 0 in the legacy path
+    )
+    char_byte = (words["amp_tone"] >> 24) & 0xFF
+    assert char_byte == 183
+    # drive_mode=0 path stays bit-identical to the legacy centre byte.
+    words0 = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True, amp_model_idx=2, amp_drive_mode=0,
+        amp_character=0,
+    )
+    assert (words0["amp_tone"] >> 24) & 0xFF == 153
+
+
+def test_guitar_effect_control_words_without_model_idx_uses_amp_character():
+    """Back-compat: callers (chain presets / legacy notebooks) that
+    omit amp_model_idx keep getting the old amp_character byte."""
+    words = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True, amp_character=60)
+    assert (words["amp_tone"] >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(
+        60, 255)
+
+
 # ---- Chain presets ------------------------------------------------------
 
 
@@ -1361,4 +1426,9 @@ if __name__ == "__main__":
     test_set_amp_model_writes_correct_character_byte()
     test_set_amp_model_distinct_bytes_per_model()
     test_set_amp_model_overrides_let_caller_pin_other_amp_params()
+    test_amp_character_byte_for_model_default_drive_matches_legacy_bytes()
+    test_amp_character_byte_for_model_drive_one_stays_in_band()
+    test_amp_character_byte_for_model_drive_clamps_truthy_to_one()
+    test_guitar_effect_control_words_amp_model_idx_wins_over_amp_character()
+    test_guitar_effect_control_words_without_model_idx_uses_amp_character()
     print("AudioLabOverlay guitar effect control tests passed")

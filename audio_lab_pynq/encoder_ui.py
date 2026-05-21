@@ -27,13 +27,20 @@ controller never writes raw GPIO.
 from typing import Iterable, List, Optional, Sequence
 
 try:  # noqa: SIM105 — import guard is needed to keep this file workstation-safe
-    from GUI.compact_v2.knobs import EFFECTS, EFFECT_KNOBS  # type: ignore
+    from GUI.compact_v2.knobs import (  # type: ignore
+        EFFECTS, EFFECT_KNOBS, is_binary_knob,
+    )
 except Exception:  # pragma: no cover — fallback when run from inside /GUI
     try:
-        from compact_v2.knobs import EFFECTS, EFFECT_KNOBS  # type: ignore
+        from compact_v2.knobs import (  # type: ignore
+            EFFECTS, EFFECT_KNOBS, is_binary_knob,
+        )
     except Exception:
         EFFECTS = []  # type: ignore
         EFFECT_KNOBS = {}  # type: ignore
+
+        def is_binary_knob(_effect_name, _knob_index):  # type: ignore
+            return False
 
 from audio_lab_pynq.encoder_effect_apply import RAT_PEDAL_INDEX
 
@@ -352,15 +359,32 @@ class EncoderUiController:
         vals = self.state.all_knob_values.get(name)
         if vals is None or idx >= len(vals):
             return
-        new_val = float(vals[idx]) + (float(delta) * self.value_step)
-        new_val = max(0.0, min(100.0, new_val))
-        vals[idx] = new_val
+        if is_binary_knob(name, idx):
+            # Binary knobs (e.g. Amp Sim DRV MODE, D53): delta sign picks
+            # 0 or 1; any non-zero direction clamps cleanly to one of the
+            # two states rather than stepping by value_step.
+            step = int(delta)
+            if step == 0:
+                return
+            new_val = 1.0 if step > 0 else 0.0
+            vals[idx] = new_val
+            if name == "Amp Sim" and idx == 7:
+                self.state.amp_drive_mode = int(new_val)
+            # Drive-mode toggles want immediate apply (no value_step
+            # accumulation); force the apply path so the user hears the
+            # change on the next encoder detent.
+            force_apply = True
+        else:
+            new_val = float(vals[idx]) + (float(delta) * self.value_step)
+            new_val = max(0.0, min(100.0, new_val))
+            vals[idx] = new_val
+            force_apply = False
         # ``edit_mode`` is a renderer-visible hint, not a persistent toggle.
         self.state.edit_mode = True
         self.state.value_dirty = True
         self.state.apply_pending = True
         # Throttled live apply -- a fast rotation cannot flood AXI.
-        self._maybe_live_apply(force=False)
+        self._maybe_live_apply(force=force_apply)
 
     # -- apply -----------------------------------------------------------------
 

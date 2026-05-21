@@ -12,10 +12,12 @@ GUI_EFFECTS = [
     "Amp Sim", "Cab IR", "EQ", "Reverb",
 ]
 
-# Phase 6E: 8-slot knob layout. AMP SIM uses all 8 indices
-# (GAIN / BASS / MIDDLE / TREBLE / PRESENCE / RESONANCE / MASTER /
-# CHARACTER); the other effects fill 3-6 slots and leave the rest as
-# the empty marker so the renderer can ignore them.
+# Phase 6E: 8-slot knob layout. AMP SIM uses all 8 indices.
+# D53: the 8th slot, previously the continuous CHARACTER knob, is now
+# binary DRV MODE (0/1) -- the character byte is derived from
+# amp_model_idx alone, see AudioLabOverlay.amp_character_byte_for_model.
+# The other effects fill 3-6 slots and leave the rest as the empty
+# marker so the renderer can ignore them.
 GUI_EFFECT_KNOBS = {
     "Noise Sup":  [("THRESHOLD", 35), ("DECAY", 45), ("DAMP", 80),
                    ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
@@ -28,7 +30,7 @@ GUI_EFFECT_KNOBS = {
                    ("", 0), ("", 0)],
     "Amp Sim":    [("GAIN", 45), ("BASS", 55), ("MIDDLE", 60),
                    ("TREBLE", 50), ("PRESENCE", 45), ("RESONANCE", 35),
-                   ("MASTER", 70), ("CHARACTER", 60)],
+                   ("MASTER", 70), ("DRV MODE", 0)],
     "Cab IR":     [("MIX", 100), ("LEVEL", 70), ("MODEL", 33),
                    ("AIR", 35), ("", 0), ("", 0), ("", 0), ("", 0)],
     "EQ":         [("LOW", 50), ("MID", 55), ("HIGH", 55),

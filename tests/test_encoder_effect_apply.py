@@ -194,6 +194,53 @@ def test_apply_exception_does_not_propagate():
     assert ap.error_count == 1
 
 
+# ---- D53 amp model-only character + binary drive mode -------------------
+
+def test_apply_appstate_forwards_amp_model_idx_and_drive_mode():
+    """D53: encoder live-apply must pass amp_model_idx + amp_drive_mode
+    instead of the legacy amp_character percent."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.amp_model_idx = 2
+    state.amp_drive_mode = 1
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+    assert kw is not None
+    assert kw.get("amp_model_idx") == 2
+    assert kw.get("amp_drive_mode") == 1
+    assert "amp_character" not in kw, (
+        "encoder applier must not forward amp_character (D53)")
+
+
+def test_apply_appstate_drive_mode_falls_back_to_knob_slot():
+    """D53: if the AppState was mutated only via set_knob (so
+    all_knob_values["Amp Sim"][7] = 1.0 but amp_drive_mode is 0 still),
+    the applier still forwards drive_mode=1."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.amp_drive_mode = 0
+    amp_vals = state.all_knob_values["Amp Sim"]
+    amp_vals[7] = 1.0
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+    assert kw is not None
+    assert kw.get("amp_drive_mode") == 1
+
+
+def test_apply_appstate_drive_mode_clamps_out_of_range():
+    """D53: any non-zero drive_mode value clamps to 1."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.amp_drive_mode = 100
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+    assert kw is not None
+    assert kw.get("amp_drive_mode") == 1
+
+
 _TEST_FUNCTIONS = [
     test_dry_run_does_not_call_overlay,
     test_apply_appstate_calls_three_overlay_methods,
@@ -206,6 +253,9 @@ _TEST_FUNCTIONS = [
     test_effect_on_off_unsupported_records_label,
     test_safe_bypass_clears_pedals_and_disables_all,
     test_apply_exception_does_not_propagate,
+    test_apply_appstate_forwards_amp_model_idx_and_drive_mode,
+    test_apply_appstate_drive_mode_falls_back_to_knob_slot,
+    test_apply_appstate_drive_mode_clamps_out_of_range,
 ]
 
 
