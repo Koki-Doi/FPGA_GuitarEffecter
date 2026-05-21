@@ -558,6 +558,48 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
+## Phase D54 — Amp Sim Clean/Drive becomes a real Clash DSP branch (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `feature/amp-clean-drive-dsp-mode` (または merge 後の main) で
+> `hw/ip/clash/src/AudioLab/Effects/Amp.hs` に `ampModelIdxF` /
+> `ampDriveModeF` / `ampCharForModel` があることを確認してください。
+>
+> 構成 (実装済):
+> - `axi_gpio_amp_tone.ctrlD` は D54 で bit-pack:
+>   `ctrlD[7] = ampDriveMode` (0=Clean, 1=Drive),
+>   `ctrlD[6:2] = 0` reserved,
+>   `ctrlD[1:0] = ampModelIdx` (0..3 = jc_clean / clean_combo /
+>   british_crunch / high_gain_stack)。
+> - Python: `AudioLabOverlay.amp_model_drive_byte(amp_model_idx,
+>   amp_drive_mode) = ((mode & 1) << 7) | (idx & 0x03)`。
+>   D53 名 `amp_character_byte_for_model` は同義のエイリアスとして
+>   残置。D53 の in-band `+30` シフトは廃止 (`AMP_DRIVE_MODE_OFFSET = 0`)。
+> - Clash: `Amp.hs` が `ctrlD` を bit-decode し、`ampAsymClip
+>   intensity drive x` が Drive モードで knee を `ch * 2_000 /
+>   ch * 1_800` だけ追加で縮め、負側の post-knee shift を `>> 3 → >> 2`
+>   に切替。`ampPreLowpassFrame` が `-12` alpha 追加、
+>   `ampSecondStageMultiplyFrame` が `+24` gain bonus 追加。
+>   `softClipK 3_300_000 / 3_400_000` の safety stage は据置で
+>   clip_count の暴走を防止。
+> - `ampModelSel :: Unsigned 8 -> Unsigned 2` は廃止 (model idx が
+>   ctrlD[1:0] から直接得られるため不要)。
+> - Compact-v2 GUI / encoder runtime / HDMI mirror / D53 Notebook UI
+>   は D53 のまま (`amp_model_idx + amp_drive_mode` を渡す)。
+> - Clash → VHDL → IP package → Vivado batch build → bit/hwh 5 箇所
+>   sync → deploy_to_pynq.sh まで完了。
+> - Tests: 87 + 5 件 PASS (`tests.test_overlay_controls` に D54
+>   ケース追加; D53 の in-band-shift ケースは置換);
+>   pre-existing `tests.test_hdmi_origin_mapping` は無関係。
+>
+> やってよい変更: Python / GUI / Notebook / docs / tests / 必要なら
+> 最小の Clash DSP 追修正 + Vivado 再ビルド。
+> 禁止: 新規 AXI GPIO、`block_design.tcl` 変更、`axi_gpio_amp_tone`
+> address 変更、`amp_character` の UI 復活、Drive モードを音量差だけ
+> で再実装、HDMI / encoder / Pmod I2S2 path 改変、
+> `git push` / `git pull` / `git fetch`。
+
 ## Phase D53 — Amp Sim model-only character + binary DRV MODE (current)
 
 > 続きを始める前に `git status --short` と

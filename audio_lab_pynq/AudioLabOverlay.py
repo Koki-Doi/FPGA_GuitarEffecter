@@ -84,19 +84,25 @@ class AudioLabOverlay(Overlay):
     # ``amp_character`` knob still works directly.
     AMP_MODELS = _AMP_MODELS
 
-    # D53 — Amp Sim is "model-only": the user no longer dials the
-    # character byte directly. The amp_model_idx (0..3) picks the base
-    # character byte (centre of the Clash ampModelSel band: 26 / 89 /
-    # 153 / 216), and the new binary ``amp_drive_mode`` 0/1 shifts that
-    # byte by ``AMP_DRIVE_MODE_OFFSET`` within the same band so mode 1
-    # tightens clip knees, darkens pre-LPF and adds second-stage gain
-    # without changing the model identity. Picking a "bit-7-only"
-    # encoding would have crossed the Clash bands at 63 / 126 / 190 for
-    # M2 / M3 (existing bytes 153 / 216 already have bit 7 set), so the
-    # intra-band shift avoids a Vivado / Clash rebuild. See
-    # ``DECISIONS.md`` D53 for the alternative bit-pack rationale.
+    # D54 — Amp Sim is "model-only" + real DSP Clean/Drive split.
+    # The Python writer packs amp_model_idx into ctrlD[1:0] and the
+    # binary amp_drive_mode into ctrlD[7]; ctrlD[6:2] is reserved (0).
+    # The Clash side reads the two fields independently and branches
+    # the clip knees / pre-LPF darken / second-stage gain on the
+    # drive bit. ``amp_character`` is no longer composed into ctrlD
+    # via the legacy ``_percent_to_u8`` path; it is preserved only as
+    # an opt-in fallback for callers that never pass amp_model_idx
+    # (legacy notebooks / chain presets). The pre-D54 in-band byte
+    # shift (D53 ``AMP_MODEL_CHARACTER_BYTES`` / ``AMP_DRIVE_MODE_OFFSET``)
+    # is retired: drive_mode is a real DSP branch in Amp.hs, not a
+    # character-byte nudge.
+    AMP_MODEL_IDX_MASK = 0x03
+    AMP_DRIVE_MODE_BIT = 7
+    # Legacy D53 constants kept as 0-shift placeholders so any external
+    # caller that imported them gets a safe no-op instead of an
+    # AttributeError. Do not use them as a drive-mode encoding source.
     AMP_MODEL_CHARACTER_BYTES = (26, 89, 153, 216)
-    AMP_DRIVE_MODE_OFFSET = 30  # added to character byte when drive_mode=1
+    AMP_DRIVE_MODE_OFFSET = 0
 
     # Selectable Overdrive models (D45). The single generic Overdrive
     # is retired; every load picks one of these six voicings. The
@@ -861,33 +867,39 @@ class AudioLabOverlay(Overlay):
         return list(cls.AMP_MODELS.keys())
 
     @classmethod
-    def amp_character_byte_for_model(cls, amp_model_idx, amp_drive_mode=0):
-        """Return the ``axi_gpio_amp_tone.ctrlD`` character byte for the
-        given amp model index (0..3) and binary drive mode (0/1, D53).
+    def amp_model_drive_byte(cls, amp_model_idx=0, amp_drive_mode=0):
+        """Return the ``axi_gpio_amp_tone.ctrlD`` byte that the Clash
+        Amp Sim stage decodes after D54.
 
-        The byte stays inside the Clash ampModelSel band for the chosen
-        model so the labelled voicing (jc_clean / clean_combo /
-        british_crunch / high_gain_stack) is preserved across drive
-        modes; drive_mode=1 only nudges the character byte higher
-        within the same band, which the Clash side translates into
-        more clip nonlinearity, a darker pre-LPF alpha, and slightly
-        higher second-stage gain.
+        Encoding: ``ctrlD = (drive_mode << 7) | (model_idx & 0x03)``;
+        bits[6:2] are reserved (0). The Clash side reads bits[1:0] as
+        the amp model index (0..3 = jc_clean / clean_combo /
+        british_crunch / high_gain_stack) and bit 7 as the binary
+        Clean/Drive switch -- the character voicing is no longer
+        carried in the byte itself.
         """
         try:
             idx = int(amp_model_idx)
         except Exception:
             idx = 0
-        idx = max(0, min(len(cls.AMP_MODEL_CHARACTER_BYTES) - 1, idx))
-        base = cls.AMP_MODEL_CHARACTER_BYTES[idx]
+        idx = max(0, min(cls.AMP_MODEL_IDX_MASK, idx))
         try:
-            drive = 1 if int(amp_drive_mode) >= 1 else 0
+            mode = 1 if int(amp_drive_mode) >= 1 else 0
         except Exception:
-            drive = 0
-        if drive:
-            byte = base + cls.AMP_DRIVE_MODE_OFFSET
-        else:
-            byte = base
-        return max(0, min(255, byte))
+            mode = 0
+        return ((mode & 1) << cls.AMP_DRIVE_MODE_BIT) | (
+            idx & cls.AMP_MODEL_IDX_MASK)
+
+    @classmethod
+    def amp_character_byte_for_model(cls, amp_model_idx, amp_drive_mode=0):
+        """Back-compat alias of :meth:`amp_model_drive_byte` (D53 name).
+
+        D53 callers expected an 8-bit character byte; D54 returns the
+        new bit-packed byte from the same kwargs so any external
+        caller still gets a valid ctrlD value.
+        """
+        return cls.amp_model_drive_byte(
+            amp_model_idx=amp_model_idx, amp_drive_mode=amp_drive_mode)
 
     @classmethod
     def amp_model_to_character(cls, name):
@@ -1231,14 +1243,16 @@ class AudioLabOverlay(Overlay):
             cls._percent_to_u8(amp_presence, 255),
             cls._percent_to_u8(amp_resonance, 255),
         )
-        # D53: when amp_model_idx is supplied the character byte is
-        # derived from the model band + binary drive_mode, ignoring
-        # ``amp_character``. ``amp_character`` stays as a back-compat
-        # fallback for callers (older Notebook presets / chain
-        # presets) that still pass a percent value directly.
+        # D54: when amp_model_idx is supplied, ctrlD is a bit-packed
+        # field (bit 7 = drive_mode, bits[1:0] = model idx) that the
+        # Clash side decodes directly. Legacy callers without
+        # amp_model_idx fall back to the pre-D53 percent-character
+        # path so older Notebook presets / chain presets keep
+        # working byte-for-byte.
         if amp_model_idx is not None:
-            character_byte = cls.amp_character_byte_for_model(
-                amp_model_idx, amp_drive_mode)
+            character_byte = cls.amp_model_drive_byte(
+                amp_model_idx=amp_model_idx,
+                amp_drive_mode=amp_drive_mode)
         else:
             character_byte = cls._percent_to_u8(amp_character, 255)
         amp_tone_word = cls._pack4(
