@@ -969,6 +969,8 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         col_w = (grid_x1 - grid_x0 - col_gap * (cols - 1)) // cols
         row_h = (grid_y1 - grid_y0 - row_gap * (rows - 1)) // rows
         bar_h = 12
+        from .knobs import is_binary_knob as _is_binary_knob
+        _fx_name = EFFECTS[state.selected_effect]
         for i, (label, value) in enumerate(knobs):
             col = i % cols
             row = i // cols
@@ -977,14 +979,19 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             cy0r = grid_y0 + row * (row_h + row_gap)
             cy1r = cy0r + row_h
             is_sel = (i == state.selected_knob)
+            _binary_here = _is_binary_knob(_fx_name, i)
 
             label_y = cy0r + 4
             value_y = cy0r + 4
             draw_text(img, (cx0, label_y), label,
                       fill=(LED if is_sel else SCR_TEXT_DIM) + (255,),
                       scale=2, letter_spacing=2)
+            if _binary_here:
+                _disp = "  1" if float(value) >= 0.5 else "  0"
+            else:
+                _disp = "{:>3}".format(int(value))
             draw_text(img, (cx1, value_y),
-                      "{:>3}".format(int(value)),
+                      _disp,
                       fill=LED + (255,), scale=2, anchor="rt",
                       letter_spacing=1)
             # Pip-Boy dot separator between label and value
@@ -1002,7 +1009,10 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             bar_y1 = bar_y0 + bar_h
             bar_x0 = cx0
             bar_x1 = cx1
-            v_clamp = max(0.0, min(1.0, value / 100.0))
+            if _binary_here:
+                v_clamp = 1.0 if float(value) >= 0.5 else 0.0
+            else:
+                v_clamp = max(0.0, min(1.0, value / 100.0))
             # Pip-Boy segmented progress bar
             n_seg = 14
             s_gap = 2

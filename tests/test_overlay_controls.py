@@ -1099,6 +1099,81 @@ def test_set_amp_model_overrides_let_caller_pin_other_amp_params():
     assert (last_word >> 8) & 0xFF == expected_master
 
 
+# ---- D54 amp model bit-pack + real DSP Clean/Drive split ----------------
+
+
+def test_amp_model_drive_byte_clean_mode_layout():
+    """D54: drive_mode=0 packs only the model idx into ctrlD[1:0];
+    bit 7 stays clear so the Clash side sees Clean mode."""
+    for idx in range(4):
+        b = AudioLabOverlay.amp_model_drive_byte(
+            amp_model_idx=idx, amp_drive_mode=0)
+        assert b == idx
+        assert (b >> 7) & 1 == 0
+
+
+def test_amp_model_drive_byte_drive_mode_layout():
+    """D54: drive_mode=1 sets ctrlD[7]; the model idx still lives at
+    ctrlD[1:0] so the Clash side can route both fields independently."""
+    for idx in range(4):
+        b = AudioLabOverlay.amp_model_drive_byte(
+            amp_model_idx=idx, amp_drive_mode=1)
+        assert b & 0x03 == idx
+        assert (b >> 7) & 1 == 1
+        assert (b >> 2) & 0x1F == 0, (idx, hex(b))
+
+
+def test_amp_model_drive_byte_clamps_inputs():
+    """Out-of-range model idx clamps to 0..3; out-of-range drive_mode
+    clamps to 0/1; non-int inputs default to 0."""
+    assert AudioLabOverlay.amp_model_drive_byte(
+        amp_model_idx=99, amp_drive_mode=0) == 3
+    assert AudioLabOverlay.amp_model_drive_byte(
+        amp_model_idx=-1, amp_drive_mode=0) == 0
+    assert AudioLabOverlay.amp_model_drive_byte(
+        amp_model_idx=0, amp_drive_mode=100) == 0x80
+    assert AudioLabOverlay.amp_model_drive_byte(
+        amp_model_idx="bogus", amp_drive_mode="bogus") == 0
+
+
+def test_amp_character_byte_for_model_alias_matches_d54_pack():
+    """The D53 helper name is preserved as a thin alias of
+    amp_model_drive_byte so any external caller keeps working."""
+    for idx in range(4):
+        for drive in (0, 1):
+            assert (AudioLabOverlay.amp_character_byte_for_model(idx, drive)
+                    == AudioLabOverlay.amp_model_drive_byte(
+                        amp_model_idx=idx, amp_drive_mode=drive))
+
+
+def test_guitar_effect_control_words_amp_model_idx_uses_d54_bit_pack():
+    """When amp_model_idx is supplied, ctrlD carries the D54 bit-pack
+    (bit 7 = drive_mode, bits[1:0] = model idx); the legacy
+    amp_character percent kwarg is ignored."""
+    words = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True, amp_model_idx=2, amp_drive_mode=1,
+        amp_character=0)
+    char_byte = (words["amp_tone"] >> 24) & 0xFF
+    assert char_byte == ((1 << 7) | 2)
+    assert (char_byte >> 7) & 1 == 1
+    assert char_byte & 0x03 == 2
+    # Clean mode keeps bit 7 clear regardless of amp_character percent.
+    words0 = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True, amp_model_idx=2, amp_drive_mode=0,
+        amp_character=0)
+    assert (words0["amp_tone"] >> 24) & 0xFF == 2
+
+
+def test_guitar_effect_control_words_without_model_idx_uses_amp_character():
+    """Back-compat: callers (chain presets / legacy notebooks) that
+    omit amp_model_idx keep getting the old amp_character byte
+    via the legacy percent path."""
+    words = AudioLabOverlay.guitar_effect_control_words(
+        amp_on=True, amp_character=60)
+    assert (words["amp_tone"] >> 24) & 0xFF == AudioLabOverlay._percent_to_u8(
+        60, 255)
+
+
 # ---- Chain presets ------------------------------------------------------
 
 
@@ -1361,4 +1436,10 @@ if __name__ == "__main__":
     test_set_amp_model_writes_correct_character_byte()
     test_set_amp_model_distinct_bytes_per_model()
     test_set_amp_model_overrides_let_caller_pin_other_amp_params()
+    test_amp_model_drive_byte_clean_mode_layout()
+    test_amp_model_drive_byte_drive_mode_layout()
+    test_amp_model_drive_byte_clamps_inputs()
+    test_amp_character_byte_for_model_alias_matches_d54_pack()
+    test_guitar_effect_control_words_amp_model_idx_uses_d54_bit_pack()
+    test_guitar_effect_control_words_without_model_idx_uses_amp_character()
     print("AudioLabOverlay guitar effect control tests passed")

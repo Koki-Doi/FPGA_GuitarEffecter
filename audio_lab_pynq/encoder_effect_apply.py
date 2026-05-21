@@ -40,7 +40,10 @@ RAT_PEDAL_INDEX = 2
 #   "Compressor": [THRESH, RATIO, RESP, MAKEUP]
 #   "Overdrive":  [TONE, LEVEL, DRIVE]
 #   "Distortion": [TONE, LEVEL, DRIVE, BIAS, TIGHT, MIX]
-#   "Amp Sim":    [GAIN, BASS, MID, TREB, PRES, RES, MSTR, CHAR]
+#   "Amp Sim":    [GAIN, BASS, MID, TREB, PRES, RES, MSTR, DRV MODE]
+#       (D53: slot 7 is now the binary 0/1 amp_drive_mode; the
+#       character byte is derived from amp_model_idx in the overlay
+#       via amp_character_byte_for_model.)
 #   "Cab IR":     [MIX, LEVEL, MODEL, AIR]
 #   "EQ":         [LOW, MID, HIGH]   (GUI 0..100 -> overlay 0..200)
 #   "Reverb":     [DECAY, TONE, MIX]
@@ -228,7 +231,7 @@ class EncoderEffectApplier(object):
             od  = _knob_list(state, EFFECT_OVERDRIVE,  [60, 60, 35])
             dst = _knob_list(state, EFFECT_DISTORTION, [55, 35, 50, 50, 60, 100])
             amp = _knob_list(state, EFFECT_AMP,
-                             [45, 55, 60, 50, 50, 50, 70, 60])
+                             [45, 55, 60, 50, 50, 50, 70, 0])
             cab = _knob_list(state, EFFECT_CAB,        [100, 70, 33, 35])
             eq  = _knob_list(state, EFFECT_EQ,         [50, 55, 55])
             rv  = _knob_list(state, EFFECT_REVERB,     [30, 65, 25])
@@ -253,6 +256,24 @@ class EncoderEffectApplier(object):
             # the integer.
             od_model = int(getattr(state, "overdrive_model_idx", 0) or 0)
             od_model = max(0, min(5, od_model))
+
+            # D53: Amp Sim character byte is derived from amp_model_idx
+            # + binary amp_drive_mode by AudioLabOverlay. The encoder
+            # applier never passes ``amp_character`` -- it forwards the
+            # model index and the binary drive mode read from
+            # all_knob_values["Amp Sim"][7] (mirrored in
+            # ``state.amp_drive_mode``).
+            amp_model = int(getattr(state, "amp_model_idx", 0) or 0)
+            amp_model = max(
+                0, min(len(self.overlay.AMP_MODEL_CHARACTER_BYTES) - 1,
+                       amp_model)
+                if self.overlay is not None
+                and hasattr(self.overlay, "AMP_MODEL_CHARACTER_BYTES")
+                else min(3, amp_model))
+            amp_drive_mode = int(getattr(state, "amp_drive_mode", 0) or 0)
+            if amp_drive_mode < 1 and len(amp) > 7 and float(amp[7]) >= 0.5:
+                amp_drive_mode = 1
+            amp_drive_mode = 1 if amp_drive_mode >= 1 else 0
 
             # The dedicated noise-suppressor + compressor GPIOs each take
             # their own setter so the cached state stays consistent.
@@ -298,7 +319,11 @@ class EncoderEffectApplier(object):
                 amp_presence=_clamp_percent(amp[4]),
                 amp_resonance=_clamp_percent(amp[5]),
                 amp_master=_clamp_percent(amp[6]),
-                amp_character=_clamp_percent(amp[7]),
+                # D53: amp_character is no longer forwarded from the
+                # GUI; the character byte is computed in the overlay
+                # from amp_model_idx + amp_drive_mode.
+                amp_model_idx=int(amp_model),
+                amp_drive_mode=int(amp_drive_mode),
 
                 cab_mix=_clamp_percent(cab[0]),
                 cab_level=_clamp_percent(cab[1]),

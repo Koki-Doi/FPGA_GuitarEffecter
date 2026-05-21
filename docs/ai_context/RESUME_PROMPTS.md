@@ -558,6 +558,99 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
+## Phase D54 — Amp Sim Clean/Drive becomes a real Clash DSP branch (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `feature/amp-clean-drive-dsp-mode` (または merge 後の main) で
+> `hw/ip/clash/src/AudioLab/Effects/Amp.hs` に `ampModelIdxF` /
+> `ampDriveModeF` / `ampCharForModel` があることを確認してください。
+>
+> 構成 (実装済):
+> - `axi_gpio_amp_tone.ctrlD` は D54 で bit-pack:
+>   `ctrlD[7] = ampDriveMode` (0=Clean, 1=Drive),
+>   `ctrlD[6:2] = 0` reserved,
+>   `ctrlD[1:0] = ampModelIdx` (0..3 = jc_clean / clean_combo /
+>   british_crunch / high_gain_stack)。
+> - Python: `AudioLabOverlay.amp_model_drive_byte(amp_model_idx,
+>   amp_drive_mode) = ((mode & 1) << 7) | (idx & 0x03)`。
+>   D53 名 `amp_character_byte_for_model` は同義のエイリアスとして
+>   残置。D53 の in-band `+30` シフトは廃止 (`AMP_DRIVE_MODE_OFFSET = 0`)。
+> - Clash: `Amp.hs` が `ctrlD` を bit-decode し、`ampAsymClip
+>   intensity drive x` が Drive モードで knee を `ch * 2_000 /
+>   ch * 1_800` だけ追加で縮め、負側の post-knee shift を `>> 3 → >> 2`
+>   に切替。`ampPreLowpassFrame` が `-12` alpha 追加、
+>   `ampSecondStageMultiplyFrame` が `+24` gain bonus 追加。
+>   `softClipK 3_300_000 / 3_400_000` の safety stage は据置で
+>   clip_count の暴走を防止。
+> - `ampModelSel :: Unsigned 8 -> Unsigned 2` は廃止 (model idx が
+>   ctrlD[1:0] から直接得られるため不要)。
+> - Compact-v2 GUI / encoder runtime / HDMI mirror / D53 Notebook UI
+>   は D53 のまま (`amp_model_idx + amp_drive_mode` を渡す)。
+> - Clash → VHDL → IP package → Vivado batch build → bit/hwh 5 箇所
+>   sync → deploy_to_pynq.sh まで完了。
+> - Tests: 87 + 5 件 PASS (`tests.test_overlay_controls` に D54
+>   ケース追加; D53 の in-band-shift ケースは置換);
+>   pre-existing `tests.test_hdmi_origin_mapping` は無関係。
+>
+> やってよい変更: Python / GUI / Notebook / docs / tests / 必要なら
+> 最小の Clash DSP 追修正 + Vivado 再ビルド。
+> 禁止: 新規 AXI GPIO、`block_design.tcl` 変更、`axi_gpio_amp_tone`
+> address 変更、`amp_character` の UI 復活、Drive モードを音量差だけ
+> で再実装、HDMI / encoder / Pmod I2S2 path 改変、
+> `git push` / `git pull` / `git fetch`。
+
+## Phase D53 — Amp Sim model-only character + binary DRV MODE (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `feature/amp-model-only-drive-mode` (または merge 後の main) で
+> `audio_lab_pynq/AudioLabOverlay.py` の `AMP_MODEL_CHARACTER_BYTES`
+> と `amp_character_byte_for_model` が存在することを確認してください。
+>
+> 構成 (実装済):
+> - Amp Sim の 8 個目ノブは連続 `CHAR` から 0/1 の `DRV MODE` に置換
+>   (`GUI/compact_v2/knobs.py` 7-th slot, `BINARY_KNOBS` 集合の
+>   `("Amp Sim", 7)`)。character byte は `amp_model_idx` のみから
+>   決まり (`AMP_MODEL_CHARACTER_BYTES = (26, 89, 153, 216)`)、
+>   `amp_drive_mode=1` のときバンド内で `+30` シフト
+>   (`AMP_DRIVE_MODE_OFFSET`)。`amp_drive_mode=0` は D52 以前と
+>   byte-for-byte 同一なので bitstream / Vivado / Clash 変更なし。
+> - `set_guitar_effects(amp_model_idx=…, amp_drive_mode=0|1)` を
+>   受け取り、`amp_model_idx is not None` のときは
+>   `amp_character` percent kwarg より優先する。
+>   `amp_character` は chain preset / 旧 Notebook 経路の
+>   フォールバックとして残置。
+> - `AppState.amp_drive_mode` (0/1) を永続フィールドとして追加。
+>   `set_knob` は `("Amp Sim", 7)` を binary clamp し、レガシー
+>   state.json (slot 7 に連続 CHAR 値) は >=50% で 1 に snap して
+>   AppState を migrate する。
+> - Encoder 2 は binary knob で delta 符号 → 0/1 toggle、live apply
+>   を強制発火 (value\_step 累積なし)。continuous knob は従来通り。
+> - HDMI GUI renderer は binary knob の値表示を 0/1 に、bar segment を
+>   value=1 で全点灯に切替 (`GUI/compact_v2/renderer.py`)。
+> - `EncoderEffectApplier.apply_appstate` は `amp_model_idx` +
+>   `amp_drive_mode` を forward。`amp_character` は forward しない。
+> - `HdmiEffectStateMirror._apply_guitar_effects_state` は
+>   `amp_drive_mode` を AppState と slot 7 へ mirror。
+> - Notebook: `PmodI2S2EffectControlOneCell.ipynb` /
+>   `GuitarPedalboardOneCell.ipynb` の AMP セクションから連続
+>   Character slider を削除し、`DRV MODE` Dropdown (0/1) を追加。
+>   `safe_clean` / `panic_mute` / `all_effects_off` は
+>   `amp_drive_mode = 0` を維持。
+> - Tests: 87 PASS (`test_encoder_input_decode` + `test_encoder_ui_controller`
+>   + `test_compact_v2_encoder_state` + `test_encoder_effect_apply`
+>   + `test_overdrive_model_select`); `tests/test_overlay_controls.py`
+>   PASS (新規 D53 ケース含む); pre-existing
+>   `tests.test_hdmi_origin_mapping` の import error は本パスとは無関係。
+>
+> やってよい変更: Python / GUI / Notebook / docs / tests のみ。
+> 禁止: bit / hwh / XDC / RTL / block\_design / create\_project /
+> `LowPassFir.hs` の D53 非関連改変、Vivado build、新規 AXI GPIO、
+> `axi_gpio_amp_tone` の address 変更、`amp_character` を UI に
+> 再露出すること、`AMP_DRIVE_MODE_OFFSET` を変更して既存バンドを
+> 越境させること、`git push` / `git pull` / `git fetch`。
+
 ## Phase 7G+ — GUI-first encoder live apply (current)
 
 > 続きを始める前に `git status --short` と

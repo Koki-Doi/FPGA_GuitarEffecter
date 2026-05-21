@@ -513,6 +513,19 @@ class HdmiEffectStateMirror(object):
             self.current_amp_model = self._amp_model_from_character(
                 values["amp_character"])
             self._sync_model_state_to_app_state("AMP")
+        # D53: amp_drive_mode is a separate 0/1 input; mirror it into
+        # AppState so the renderer can show the binary slot and the
+        # encoder applier can read it back on the next live apply.
+        if "amp_drive_mode" in values:
+            try:
+                _dm = 1 if int(values["amp_drive_mode"]) >= 1 else 0
+            except Exception:
+                _dm = 0
+            setattr(self.app_state, "amp_drive_mode", _dm)
+            _amp_vals = (getattr(self.app_state, "all_knob_values", {}) or {})
+            _amp_slot = _amp_vals.get("Amp Sim")
+            if isinstance(_amp_slot, list) and len(_amp_slot) >= 8:
+                _amp_slot[7] = float(_dm)
         if "cab_model" in values:
             cab_idx = max(0, min(len(CAB_MODELS) - 1,
                                  int(values["cab_model"])))
@@ -557,15 +570,23 @@ class HdmiEffectStateMirror(object):
             self._set_knobs(selected_fx, updates)
         elif selected_fx == "AMP SIM":
             # Phase 6E: PRESENCE and RESONANCE join the AMP knob set at
-            # indices 4 and 5; MASTER and CHARACTER move to 6 and 7. The
-            # DSP already wires them via axi_gpio_amp.ctrlC/ctrlD on the
-            # Amp.hs side -- no bit/hwh change.
+            # indices 4 and 5; MASTER moves to 6. D53: slot 7 was
+            # CHARACTER, now binary DRV MODE -- character is derived
+            # from amp_model_idx in the overlay so we no longer map
+            # amp_character into slot 7. amp_drive_mode is the new
+            # AppState mirror for slot 7.
             for key, idx in (("amp_input_gain", 0), ("amp_bass", 1),
                              ("amp_middle", 2), ("amp_treble", 3),
                              ("amp_presence", 4), ("amp_resonance", 5),
-                             ("amp_master", 6), ("amp_character", 7)):
+                             ("amp_master", 6)):
                 if key in values:
                     updates[idx] = values[key]
+            if "amp_drive_mode" in values:
+                try:
+                    _dm = 1 if int(values["amp_drive_mode"]) >= 1 else 0
+                except Exception:
+                    _dm = 0
+                updates[7] = float(_dm)
             self._set_knobs(selected_fx, updates)
         elif selected_fx == "CAB":
             for key, idx in (("cab_mix", 0), ("cab_level", 1),
@@ -849,7 +870,7 @@ class HdmiEffectStateMirror(object):
 
     def set_amp_model(self, model, gain=None, bass=None, mid=None,
                       treble=None, presence=None, resonance=None,
-                      master=None, sink=None):
+                      master=None, drive_mode=None, sink=None):
         model = normalize_amp_model(model)
         amp_kwargs = {}
         for key, value in (("amp_input_gain", gain),
@@ -861,6 +882,10 @@ class HdmiEffectStateMirror(object):
                            ("amp_master", master)):
             if value is not None:
                 amp_kwargs[key] = value
+        # D53: drive_mode is binary 0/1; default 0 = legacy voicing byte.
+        if drive_mode is None:
+            drive_mode = int(getattr(self.app_state, "amp_drive_mode", 0) or 0)
+        drive_mode = 1 if int(drive_mode) >= 1 else 0
         if hasattr(self.overlay, "set_amp_model"):
             if sink is None:
                 result = self.overlay.set_amp_model(model, **amp_kwargs)
@@ -875,6 +900,7 @@ class HdmiEffectStateMirror(object):
         values = dict(amp_kwargs)
         values.setdefault("amp_on", True)
         values.setdefault("amp_character", AMP_MODEL_CHARACTER[model])
+        values["amp_drive_mode"] = drive_mode
         self._set_current_amp_model(model)
         self._apply_guitar_effects_state(values, selected_fx="AMP SIM")
         expected = self.mark_selected_fx(

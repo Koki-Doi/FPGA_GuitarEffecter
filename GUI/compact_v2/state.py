@@ -9,7 +9,12 @@ import json
 import os
 from typing import List, Tuple
 
-from .knobs import EFFECTS, EFFECT_KNOBS, _EFFECT_KNOB_DEFAULTS
+from .knobs import (
+    EFFECTS,
+    EFFECT_KNOBS,
+    _EFFECT_KNOB_DEFAULTS,
+    is_binary_knob,
+)
 
 try:
     from dataclasses import dataclass, field
@@ -97,6 +102,10 @@ class AppState:
     # Overdrive model select (DECISIONS.md D45). 0..5 maps to
     # OVERDRIVE_MODELS in GUI/compact_v2/knobs.py; default = TS9.
     overdrive_model_idx: int = 0
+    # Amp Sim binary drive mode (DECISIONS.md D53). 0 = current/normal
+    # voicing, 1 = higher-drive voicing (same amp model). Mirrors
+    # all_knob_values["Amp Sim"][7] which is the renderer-visible slot.
+    amp_drive_mode: int = 0
 
     # footswitches
     fs_states: List[bool] = field(default_factory=lambda:
@@ -148,7 +157,13 @@ class AppState:
         name = EFFECTS[self.selected_effect]
         vals = self.all_knob_values.get(name)
         if vals is not None and 0 <= knob_idx < len(vals):
-            vals[knob_idx] = max(0.0, min(100.0, float(value)))
+            if is_binary_knob(name, knob_idx):
+                v = 1.0 if float(value) >= 0.5 else 0.0
+                vals[knob_idx] = v
+                if name == "Amp Sim" and knob_idx == 7:
+                    self.amp_drive_mode = int(v)
+            else:
+                vals[knob_idx] = max(0.0, min(100.0, float(value)))
 
 
 STATE_FILE = "fx_gui_state.json"
@@ -157,7 +172,7 @@ _STATE_KEYS = ("preset_id", "preset_name", "preset_idx",
                "selected_effect", "selected_knob",
                "effect_on", "all_knob_values", "chain", "display_mode",
                "dist_model_idx", "amp_model_idx", "cab_model_idx",
-               "overdrive_model_idx",
+               "overdrive_model_idx", "amp_drive_mode",
                "fs_states", "fs_selected")
 
 def save_state_json(state: AppState, path: str = STATE_FILE) -> None:
@@ -192,6 +207,20 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
                 state.all_knob_values[_nm] = [float(k[1]) for k in EFFECT_KNOBS[_nm]]
         if len(state.chain) != len(EFFECTS):
             state.chain = list(range(len(EFFECTS)))
+        # D53: legacy state.json files store a continuous CHAR value in
+        # all_knob_values["Amp Sim"][7]. Snap that slot to the new 0/1
+        # DRV MODE encoding and mirror into amp_drive_mode so the load
+        # path never resurfaces a stale character byte.
+        amp_vals = state.all_knob_values.get("Amp Sim")
+        if isinstance(amp_vals, list) and len(amp_vals) >= 8:
+            try:
+                _saved_drive = int(getattr(state, "amp_drive_mode", 0) or 0)
+            except Exception:
+                _saved_drive = 0
+            _binary = 1 if (_saved_drive >= 1
+                            or float(amp_vals[7]) >= 50.0) else 0
+            amp_vals[7] = float(_binary)
+            state.amp_drive_mode = int(_binary)
         state.selected_effect = max(0, min(len(EFFECTS) - 1,
                                            state.selected_effect))
         _n_knobs = len(EFFECT_KNOBS.get(EFFECTS[state.selected_effect], []))

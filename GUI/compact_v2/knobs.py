@@ -21,7 +21,7 @@ EFFECT_KNOBS = {
     "Distortion": [("TONE",   55),  ("LEVEL",  35),  ("DRIVE",  50),
                    ("BIAS",   50),  ("TIGHT",  60),  ("MIX",   100)],
     "Amp Sim":    [("GAIN",   45),  ("BASS",   55),  ("MID",    60),  ("TREB",  50),
-                   ("PRES",   50),  ("RES",    50),  ("MSTR",   70),  ("CHAR",  60)],
+                   ("PRES",   50),  ("RES",    50),  ("MSTR",   70),  ("DRV MODE", 0)],
     "Cab IR":     [("MIX",   100),  ("LEVEL",  70),  ("MODEL",  33),  ("AIR",   35)],
     "EQ":         [("LOW",    50),  ("MID",    55),  ("HIGH",   55)],
     "Reverb":     [("DECAY",  30),  ("TONE",   65),  ("MIX",    25)],
@@ -32,6 +32,32 @@ _EFFECT_KNOB_DEFAULTS = {
     name: [float(k[1]) for k in knobs]
     for name, knobs in EFFECT_KNOBS.items()
 }
+
+# Binary knobs (effect_name, knob_index): value clamped to {0.0, 1.0}.
+# Amp Sim slot 7 replaced the old continuous CHAR knob (D53): the amp
+# character byte is now derived from amp_model_idx only, and the user
+# only chooses a 0/1 DRV MODE here that shifts the character byte
+# within its amp-model band (see AudioLabOverlay.amp_tone_word_for_model
+# and DECISIONS.md D53).
+BINARY_KNOBS = {
+    ("Amp Sim", 7),
+}
+
+
+def is_binary_knob(effect_name, knob_index):
+    """Return True if the knob at (effect_name, knob_index) is 0/1 only."""
+    try:
+        return (str(effect_name), int(knob_index)) in BINARY_KNOBS
+    except Exception:
+        return False
+
+
+def binary_knob_display(value):
+    """Snap value to '0' or '1' for renderer display of a binary knob."""
+    try:
+        return 1 if float(value) >= 0.5 else 0
+    except Exception:
+        return 0
 
 # Distortion Pedalboard model names (pedal-mask bit -> name).
 DIST_MODELS = ["CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
