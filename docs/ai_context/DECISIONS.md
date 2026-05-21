@@ -2913,3 +2913,39 @@ not get removed even when superseded — they get updated.
   `amp_character=_clamp_percent(amp[7])` in the encoder applier,
   revert the notebooks and the GPIO map note, and drop the new
   tests. No Vivado / bit / hwh involved.
+
+## D54 — Amp Sim Clean/Drive becomes a real Clash DSP branch (retires D53 character shift)
+
+- **Date.** 2026-05-21.
+- **Status.** Implemented end-to-end: Clash + VHDL regenerated, Vivado batch build run, deployed to PYNQ-Z2. Bench A/B (Clean vs Drive audibly distinct under the same amp model, clip_count stays bounded) pending the next session.
+- **Context.** D53 introduced an Amp Sim `DRV MODE` 0/1 binary knob and replaced the user-facing continuous CHAR knob with a model-only character byte derived from `amp_model_idx`. To avoid a Vivado rebuild, D53 simulated "drive" by shifting the same character byte by `+30` within the Clash `ampModelSel` band. That fakes a drive effect by re-using existing character-driven branches (clip knees, alpha, second-stage gain) but the Clash side has no separate Clean/Drive concept: the byte alone decides everything, and "more drive" is indistinguishable from "different character within the same model". The user flagged this and asked for the in-band shift to be retired in favour of a real DSP branch.
+- **Decision.**
+  - **`axi_gpio_amp_tone.ctrlD` is re-defined as a two-field bit-pack.**
+    - `ctrlD[1:0]` = `ampModelIdx` (0..3 = jc_clean / clean_combo / british_crunch / high_gain_stack).
+    - `ctrlD[7]` = `ampDriveMode` (0 = Clean, 1 = Drive).
+    - `ctrlD[6:2]` is reserved; the Python writer always sets it to 0 and the Clash side ignores it.
+    - Python composer: `AudioLabOverlay.amp_model_drive_byte(amp_model_idx, amp_drive_mode) = ((mode & 1) << 7) | (idx & 0x03)`. `amp_character_byte_for_model` is preserved as a thin alias so the D53 helper name keeps working.
+  - **Clash `Amp.hs` decodes the two fields independently and adds real Drive-mode DSP branches.**
+    - `ampModelIdxF f = unpack (slice d25 d24 (fAmpTone f))`.
+    - `ampDriveModeF f = slice d31 d31 (fAmpTone f) == (1 :: BitVector 1)`.
+    - `ampCharForModel idx` returns the four legacy D52 band centres (26, 89, 153, 216) so every character-driven branch keeps its identity for Clean mode.
+    - `ampAsymClip intensity drive x` shrinks the positive knee by an extra `ch * 2_000` and the negative knee by `ch * 1_800` in Drive mode (linear in the per-model `intensity` byte so high-gain models cut deeper); the negative-side post-knee shift drops from `>> 3` to `>> 2`, sharpening the clip plateau.
+    - `ampPreLowpassFrame` subtracts `12` from the LPF alpha when `drive` is set, on top of the per-model darken `0 / 4 / 12 / 24`, absorbing the new clipper's high-frequency content so Drive mode does not just brighten.
+    - `ampSecondStageMultiplyFrame` adds `+24` to the Q7-style second-stage gain coefficient in Drive mode, pushing more signal into the second clipper instead of just lifting output level.
+    - `ampWaveshapeFrame`, `ampSecondStageFrame`, `ampPreLowpassFrame`, `ampToneProductsFrame`, `ampResPresenceProductsFrame` now derive `character` from `ampModelIdx` directly; the old `ampModelSel :: Unsigned 8 -> Unsigned 2` quantiser is removed (the model is now an explicit 2-bit field).
+    - `ampMasterFrame`, `ampPowerFrame`, `ampResPresenceMixFrame` unchanged: the post-amp safety stages still cap the chain output (`softClipK 3_300_000` / `3_400_000`) so the harder Drive-mode clip cannot run `clip_count` away.
+  - **The D53 in-band byte shift is retired.** `AMP_DRIVE_MODE_OFFSET` stays defined as `0` for back-compat (external code that imports it sees a safe no-op rather than `AttributeError`), and `amp_character_byte_for_model` now returns the D54 bit-pack byte. The `AMP_MODEL_CHARACTER_BYTES` tuple is preserved as documentation of the four band centres but no longer participates in ctrlD composition.
+  - **No new GPIO, no address change, no `block_design.tcl` change.** Only `Amp.hs` and `AudioLabOverlay.py` change.
+- **Backward compatibility.**
+  - Older notebooks / chain presets that call `set_guitar_effects(amp_character=<percent>)` without an `amp_model_idx` keep using the legacy percent path (`_percent_to_u8(amp_character, 255)`), so their existing voicing bytes pass through unchanged. The Clash side then interprets that byte as a bit-pack; the four labelled percents (10 / 35 / 60 / 85) map to bytes 26 / 89 / 153 / 216, whose low 2 bits collide with the D54 model field. This is an acceptable regression for legacy callers: they were already coupled to specific character bytes, and the user-facing path now goes through `amp_model_idx`.
+  - The compact-v2 GUI, encoder runtime, HDMI mirror, and the two D53-edited Notebooks (`PmodI2S2EffectControlOneCell.ipynb`, `GuitarPedalboardOneCell.ipynb`) all already pass `amp_model_idx + amp_drive_mode` after D53. No GUI / encoder / notebook edits were needed for D54 beyond the overlay byte change.
+- **Files changed.**
+  - `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (new `ampModelIdxF` / `ampDriveModeF` / `ampCharForModel`; `ampAsymClip` takes a `drive :: Bool`; `ampPreLowpassFrame` adds drive darken; `ampSecondStageMultiplyFrame` adds drive gain bonus; `ampTrebleGain` signature changed from `Unsigned 8 -> Unsigned 8 -> Unsigned 8` to `Unsigned 2 -> Unsigned 8 -> Unsigned 8`; legacy `ampModelSel` byte quantiser removed).
+  - `hw/ip/clash/vhdl/LowPassFir/` regenerated by Clash + `create_ip.tcl`.
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit` + `audio_lab.hwh` rebuilt by Vivado batch.
+  - `audio_lab_pynq/AudioLabOverlay.py` (`amp_model_drive_byte` helper, `AMP_MODEL_IDX_MASK` / `AMP_DRIVE_MODE_BIT` constants, `guitar_effect_control_words` uses the new helper when `amp_model_idx` is supplied).
+  - `docs/ai_context/GPIO_CONTROL_MAP.md` (amp_tone.ctrlD row rewritten for the D54 bit-pack).
+  - `docs/ai_context/CURRENT_STATE.md` / `RESUME_PROMPTS.md` / `TIMING_AND_FPGA_NOTES.md` (D54 entry).
+  - `tests/test_overlay_controls.py` (D54 bit-pack tests; D53 in-band-shift tests retired).
+- **Tests.** `python3 -m py_compile` PASS for every edited Python file. `python3 -m unittest -v` PASS for the encoder / state / overlay suite (87 + 5 new D54 tests, 0 failures). `python3 tests/test_overlay_controls.py` PASS.
+- **Rollback.** Revert `Amp.hs` to the pre-D54 `ampAsymClip :: Unsigned 8 -> Sample -> Sample` shape, restore the legacy `ampModelSel` byte quantiser, drop `ampModelIdxF` / `ampDriveModeF` / `ampCharForModel`, restore the `_percent_to_u8(amp_character, 255)` path in `AudioLabOverlay.guitar_effect_control_words`, revert `amp_model_drive_byte` to the D53 `amp_character_byte_for_model` shape, regenerate Clash VHDL, re-run Vivado, redeploy. The D53 bit-shift gives the same UI surface (DRV MODE 0/1) for a no-rebuild fallback if the new bit decoding regresses timing on a future P&R seed.
