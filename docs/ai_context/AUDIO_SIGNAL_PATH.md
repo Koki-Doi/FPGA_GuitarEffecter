@@ -223,9 +223,22 @@ Runtime entries for the Pmod I2S2 path:
 - `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb` —
   single-cell ipywidgets UI; forces `cfg_mode = 2` at startup and
   exposes every effect plus mode 0/1/2/3 buttons + status panel.
+- `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` —
+  single-cell Notebook that spawns
+  `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
+  --pmod-mode dsp` as a sudo subprocess so the HDMI GUI + rotary
+  encoders drive the Pmod I2S2 mode-2 audio path. Stop / Panic-Mute
+  SIGTERM the runner (runner mutes MODE=3 on shutdown); Set DSP /
+  Refresh shell out to `scripts/pmod_i2s2_mode.py`.
 - `scripts/test_pmod_i2s2.py --mode tone | loopback | dsp | mute`
   — terminal smoke + safety gates (`--confirm-loopback`,
   `--confirm-dsp`).
+- `scripts/pmod_i2s2_mode.py --mode … | --read | --clear` — thin
+  MMIO helper that `Overlay(..., download=False)`-attaches to the
+  already-loaded `audio_lab.bit` and read/writes the
+  `pmod_status_0` MODE / CLEAR / status registers. Used by the
+  HDMI GUI Notebook for Set DSP / Refresh / Panic so the kernel
+  never re-downloads the bit.
 - `scripts/pmod_i2s2_capture_probe.py` — rolling status-counter
   view for ADC line-in correlation.
 

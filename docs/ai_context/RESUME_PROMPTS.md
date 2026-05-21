@@ -303,6 +303,17 @@ asking it to re-discover the project from scratch.
 >   / Panic mute を提供。`bash scripts/deploy_to_pynq.sh` で配置済、
 >   `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2EffectControlOneCell.ipynb`
 >   で開いて「Run all」で one-shot。
+> - HDMI GUI + encoder live UI:
+>   `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` (D51 follow
+>   up). 1 セルで `scripts/run_encoder_hdmi_gui.py --live-apply
+>   --skip-rat --pmod-mode dsp` を sudo subprocess として起動し、
+>   HDMI GUI + ロータリーエンコーダーで Pmod I2S2 mode-2 audio path
+>   を操作する。Stop / Panic-Mute は runner を SIGTERM (runner が
+>   shutdown 時に MODE=3 を書く)。Set DSP / Refresh は
+>   `scripts/pmod_i2s2_mode.py --mode dsp` / `--read` を subprocess
+>   で呼び出す (overlay 再 download なし、codec 再 init なし)。
+>   `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2HdmiGuiOneCell.ipynb`
+>   で開いて「Run all」で one-shot。
 >
 > Build + deploy + smoke 手順 (env var は不要):
 > ```
