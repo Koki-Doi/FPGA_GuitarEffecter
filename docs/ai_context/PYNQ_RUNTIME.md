@@ -106,6 +106,43 @@ in the browser; the single cell auto-runs `load_overlay →
 write_mode(2) → apply_effects → refresh_status` at the bottom so
 "open + Run all" is one-shot.
 
+## Pmod I2S2 HDMI GUI notebook (encoder live control, mode 2)
+
+`audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` is the
+single-cell companion that drives the **HDMI GUI plus rotary
+encoders** on top of the same Pmod I2S2 mode-2 path. Instead of
+loading `AudioLabOverlay` inside the kernel, the cell spawns
+`scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode
+dsp` as a sudo subprocess so the runner owns the overlay /
+HDMI VDMA / encoder polling loop and the Notebook stays
+interactive. Buttons:
+
+- `Start HDMI GUI + Pmod DSP` — spawn the runner (auto-fired on cell
+  execution; subsequent presses stop and restart so only one runner is
+  alive at a time).
+- `Stop HDMI GUI` — SIGTERM the runner. The runner's shutdown path
+  writes Pmod MODE=3 (mute) before tearing down the HDMI backend.
+- `Panic / Mute Pmod` — same SIGTERM path; falls back to
+  `scripts/pmod_i2s2_mode.py --mode mute` if the runner is already
+  dead.
+- `Set Pmod mode 2 / DSP` — shell out to
+  `scripts/pmod_i2s2_mode.py --mode dsp` (no overlay reload, no codec
+  reconfig).
+- `Refresh Pmod status` — `scripts/pmod_i2s2_mode.py --read` snapshot.
+- `Show command` — echo the runner / helper commands into the log.
+
+Bench wiring (Pmod I2S2 mode 2):
+- Disconnect the on-module Line Out ↔ Line In 3.5 mm jumper.
+- External source (audio IF OUT, guitar pedal output, phone headphone
+  out) → Pmod Line In, source level at MINIMUM.
+- Pmod Line Out → audio IF IN / powered speakers / headphone amp.
+  Do NOT plug Line Out back into Line In.
+
+Open `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2HdmiGuiOneCell.ipynb`
+in the browser; the cell auto-fires Start so the HDMI GUI is up
+within ~30..60 s and the rotary encoders drive the Pmod I2S2 mode-2
+audio chain.
+
 ## Filesystem layout on the board
 
 | Path | What it is |

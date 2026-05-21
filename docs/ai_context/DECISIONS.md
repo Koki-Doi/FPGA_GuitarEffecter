@@ -2667,3 +2667,88 @@ not get removed even when superseded — they get updated.
   `run_encoder_hdmi_gui.py`, `EncoderGuiSmoke.ipynb`, test file)
   and restore the D47 numbers in `CLAUDE.md`. No bit / hwh
   involved.
+
+## D52 — Pmod I2S2 HDMI GUI one-cell Notebook (encoder-driven mode-2 audio)
+- **Goal.** A single Jupyter cell that brings up the rotary encoder
+  + HDMI GUI runtime on top of the Pmod I2S2 mode-2 audio path
+  (Pmod Line In → ADC → AudioLab DSP → DAC → Pmod Line Out) without
+  duplicating the existing GUI / runner code inside the Notebook
+  and without forcing the Notebook kernel to re-download
+  `audio_lab.bit` or re-init the ADAU1761 codec.
+- **Why.** D49 added the mode-2 audio routing and
+  `PmodI2S2EffectControlOneCell.ipynb` exposes the effect API via
+  ipywidgets, but the rotary encoders / compact-v2 HDMI GUI were
+  only reachable through `scripts/run_encoder_hdmi_gui.py` (and the
+  ADAU-driven `EncoderGuiSmoke.ipynb`). Drum-machine-style bench
+  use wants "HDMI GUI + encoders on the Pmod I2S2 audio path" in
+  one click, with a Panic button.
+- **Shape.**
+  - `scripts/run_encoder_hdmi_gui.py` gains one option
+    `--pmod-mode {keep,tone,loopback,dsp,mute}` (default `keep`,
+    i.e. preserves the prior behaviour exactly). When non-keep, the
+    runner writes `pmod_status_0` MODE at startup, and writes MODE=3
+    (mute) in the `finally` block at shutdown so SIGTERM / Ctrl+C
+    silences the Pmod DAC.
+  - New helper `scripts/pmod_i2s2_mode.py` (`--mode … | --read |
+    --clear`, optional `--confirm-loopback`) attaches with
+    `pynq.Overlay(<bit>, download=False)` (raw `pynq.Overlay`, NOT
+    `AudioLabOverlay`) so the helper does not run
+    `codec.config_pll()` / `config_codec()` and cannot disturb the
+    live DSP. Falls back to the documented physical address
+    `0x43D20000` if `ip_dict` lookup fails. Refuses to touch /dev/mem
+    unless `pynq.PL.bitfile_name` already points at `audio_lab.bit`.
+  - New Notebook
+    `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` (single
+    code cell, no markdown cells) builds an ipywidgets toolbar
+    (Start / Stop / Panic-Mute / Set Pmod mode 2 DSP / Refresh Pmod
+    status / Show command) plus a runner-log `Output` widget and a
+    `pmod_status` snapshot panel. It spawns the runner as
+    `sudo env PYTHONPATH=$PROJECT_ROOT python3 -u
+    scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
+    --pmod-mode dsp` via `subprocess.Popen` with `preexec_fn =
+    os.setsid` so Stop / Panic can `os.killpg(SIGTERM, pgid)` and
+    drag the whole runner process group down. A daemon reader
+    thread streams the runner's stdout/stderr into the log
+    `Output`. Set DSP / Refresh / Panic-fallback shell out to
+    `scripts/pmod_i2s2_mode.py`; the Notebook itself never imports
+    `pynq` or `AudioLabOverlay`, so the
+    `pynq-mmio-before-overlay-kills-kernel` foot-gun is avoided
+    entirely. The cell auto-starts the runner on execution so
+    "open + Run all" is the only required step.
+- **Hardware safety.** Notebook header and the `Refresh Pmod
+  status` panel both restate the mode-2 wiring contract: disconnect
+  the on-module Line Out ↔ Line In jumper, external source on Line
+  In at LOW level, Line Out into a separate audio interface. The
+  runner's startup banner and `--pmod-mode dsp` write are visible
+  in the runner log; Panic-Mute SIGTERMs the runner, the runner's
+  `finally` writes MODE=3, the LCD goes dark when the HDMI backend
+  stops.
+- **Scope guard.**
+  - No RTL change, no Tcl change, no XDC change, no
+    `block_design.tcl` change, no bit / hwh rebuild, no
+    `LowPassFir.hs` / `topEntity` / `GPIO_CONTROL_MAP` change.
+  - The default behaviour of every existing runner invocation
+    (i.e. without `--pmod-mode`) is byte-identical to the D51
+    state. Existing notebooks
+    (`EncoderGuiSmoke.ipynb`, `HdmiGuiShow.ipynb`,
+    `PmodI2S2EffectControlOneCell.ipynb`, …) are untouched.
+  - The runner's Pmod write goes through the same ip_dict-lookup
+    pattern that `scripts/test_pmod_i2s2.py` and
+    `PmodI2S2EffectControlOneCell.ipynb` use; failure is logged
+    but never aborts the GUI loop.
+- **Test.** `python3 -m py_compile` PASS for the runner and the
+  new helper script. `python3 -c "import ast, json;
+  ast.parse(''.join(json.load(open(<notebook>))['cells'][0]['source']))"`
+  PASS for the new Notebook source. Bench verification on the
+  PYNQ-Z2 (running the cell, confirming HDMI GUI + encoder ops,
+  Pmod Line Out audible, Panic-Mute silences) is pending.
+- **Rollback.** Delete
+  `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` and
+  `scripts/pmod_i2s2_mode.py`, revert the
+  `scripts/run_encoder_hdmi_gui.py` diff (the option block, the
+  `_find_pmod_status_mmio` / `_write_pmod_mode` helpers, the two
+  call sites in `main`), and revert the doc additions in
+  `CLAUDE.md`, `docs/ai_context/PYNQ_RUNTIME.md`,
+  `docs/ai_context/AUDIO_SIGNAL_PATH.md`,
+  `docs/ai_context/RESUME_PROMPTS.md`,
+  `docs/ai_context/CURRENT_STATE.md`. No bit / hwh involved.
