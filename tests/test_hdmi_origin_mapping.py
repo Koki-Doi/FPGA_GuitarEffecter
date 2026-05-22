@@ -139,9 +139,9 @@ def test_renderer_compact_v2_dropdown_chip_does_not_overflow():
     state.preset_name = "DROPDOWN  RIGHT"
     state.selected_fx = "AMP SIM"
     state.pedal_model_label = "TUBE SCREAMER"
-    state.amp_model_label = "HIGH GAIN STACK"
+    state.amp_model_label = "TriAmp Mk3"
     state.cab_model_label = "4x12 CLOSED"
-    state.dropdown_label = "HIGH GAIN STACK"
+    state.dropdown_label = "TriAmp Mk3"
     frame = render_frame_800x480_compact_v2(state, theme="pipboy-green")
     bbox = _non_background_bbox(frame, (3, 8, 4), tol=12)
     assert bbox is not None
