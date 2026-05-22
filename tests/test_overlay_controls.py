@@ -1031,67 +1031,114 @@ def test_effect_defaults_module_exposes_compressor_dict():
 
 
 def test_amp_models_table_anchors():
-    """The four documented amp models must land at the centre of the
-    Clash ampModelSel bands (0..24, 25..49, 50..74, 75..100)."""
+    """D55: the six documented amp models map onto the integer
+    ``amp_model_idx`` 0..5 written to ``axi_gpio_amp_tone.ctrlD[2:0]``."""
     from audio_lab_pynq.effect_defaults import AMP_MODELS
     assert AMP_MODELS == {
-        "jc_clean":        10,
-        "clean_combo":     35,
-        "british_crunch":  60,
-        "high_gain_stack": 85,
+        "jc_120":      0,
+        "twin_reverb": 1,
+        "ac30":        2,
+        "rockerverb":  3,
+        "jcm800":      4,
+        "triamp_mk3":  5,
     }
     # Module re-export must mirror the class attribute for back-compat.
     assert AudioLabOverlay.AMP_MODELS == AMP_MODELS
 
 
+def test_amp_model_labels_are_human_readable_titles():
+    """Display labels for the HDMI GUI / encoder GUI / Notebook
+    dropdowns must use the title-case names called out in D55."""
+    assert AudioLabOverlay.AMP_MODEL_LABELS == (
+        "JC-120", "Twin Reverb", "AC30",
+        "Rockerverb", "JCM800", "TriAmp Mk3",
+    )
+    assert AudioLabOverlay.get_amp_model_labels() == [
+        "JC-120", "Twin Reverb", "AC30",
+        "Rockerverb", "JCM800", "TriAmp Mk3"]
+
+
+def test_amp_models_old_d52_names_are_retired():
+    """The retired D52 names must not be present in the user-facing
+    name list any more. Aliases on the HDMI mirror side are tested
+    separately."""
+    names = AudioLabOverlay.get_amp_model_names()
+    for retired in ("jc_clean", "clean_combo", "british_crunch",
+                    "high_gain_stack"):
+        assert retired not in names, (retired, names)
+
+
 def test_get_amp_model_names_lists_documented_models():
     names = AudioLabOverlay.get_amp_model_names()
-    assert names == ["jc_clean", "clean_combo", "british_crunch",
-                     "high_gain_stack"]
+    assert names == ["jc_120", "twin_reverb", "ac30",
+                     "rockerverb", "jcm800", "triamp_mk3"]
 
 
-def test_amp_model_to_character_known_names():
-    assert AudioLabOverlay.amp_model_to_character("jc_clean") == 10
-    assert AudioLabOverlay.amp_model_to_character("clean_combo") == 35
-    assert AudioLabOverlay.amp_model_to_character("british_crunch") == 60
-    assert AudioLabOverlay.amp_model_to_character("high_gain_stack") == 85
+def test_amp_model_to_idx_known_names():
+    assert AudioLabOverlay.amp_model_to_idx("jc_120") == 0
+    assert AudioLabOverlay.amp_model_to_idx("twin_reverb") == 1
+    assert AudioLabOverlay.amp_model_to_idx("ac30") == 2
+    assert AudioLabOverlay.amp_model_to_idx("rockerverb") == 3
+    assert AudioLabOverlay.amp_model_to_idx("jcm800") == 4
+    assert AudioLabOverlay.amp_model_to_idx("triamp_mk3") == 5
 
 
-def test_amp_model_to_character_unknown_raises():
+def test_amp_model_to_idx_display_labels():
+    """Title-case display labels resolve too, so notebook dropdowns
+    can pass the human-readable name straight through."""
+    assert AudioLabOverlay.amp_model_to_idx("JC-120") == 0
+    assert AudioLabOverlay.amp_model_to_idx("Twin Reverb") == 1
+    assert AudioLabOverlay.amp_model_to_idx("AC30") == 2
+    assert AudioLabOverlay.amp_model_to_idx("Rockerverb") == 3
+    assert AudioLabOverlay.amp_model_to_idx("JCM800") == 4
+    assert AudioLabOverlay.amp_model_to_idx("TriAmp Mk3") == 5
+
+
+def test_amp_model_to_character_back_compat_returns_idx():
+    """D55 retired the continuous ``amp_character`` percent knob, so
+    ``amp_model_to_character`` now returns the integer idx (0..5);
+    that integer is still a valid ``amp_model_idx`` for old code that
+    fed the return value back into ``set_amp_model``."""
+    assert AudioLabOverlay.amp_model_to_character("jc_120") == 0
+    assert AudioLabOverlay.amp_model_to_character("triamp_mk3") == 5
+
+
+def test_amp_model_to_idx_unknown_raises():
     raised = False
     try:
-        AudioLabOverlay.amp_model_to_character("not_an_amp")
+        AudioLabOverlay.amp_model_to_idx("not_an_amp")
     except ValueError as exc:
         assert "unknown amp model" in str(exc)
         raised = True
     assert raised
 
 
-def test_set_amp_model_writes_correct_character_byte():
-    """set_amp_model must write the documented character byte to
-    axi_gpio_amp_tone.ctrlD without disturbing the other amp_tone
-    bytes."""
+def test_set_amp_model_writes_correct_model_idx_byte():
+    """set_amp_model must write the D55 bit-packed byte (ctrlD[7]=drive,
+    ctrlD[2:0]=model_idx) to axi_gpio_amp_tone.ctrlD."""
     overlay = make_overlay_with_distortion_state()
-    overlay.set_amp_model("british_crunch")
+    overlay.set_amp_model("ac30")
     last_word = overlay.axi_gpio_amp_tone.writes[-1][1]
-    expected = AudioLabOverlay._percent_to_u8(60, 255)  # 60 -> 153
-    assert (last_word >> 24) & 0xFF == expected, hex(last_word)
+    # Clean mode -> bit 7 clear, model idx = 2 (AC30)
+    assert (last_word >> 24) & 0xFF == 2, hex(last_word)
 
 
 def test_set_amp_model_distinct_bytes_per_model():
-    """Each model writes a different byte to amp_tone.ctrlD."""
+    """Each model writes a different byte to amp_tone.ctrlD (six
+    distinct bytes for the six D55 voicings)."""
     seen = set()
     for name in AudioLabOverlay.get_amp_model_names():
         overlay = make_overlay_with_distortion_state()
         overlay.set_amp_model(name)
         last_word = overlay.axi_gpio_amp_tone.writes[-1][1]
         seen.add((last_word >> 24) & 0xFF)
-    assert len(seen) == 4, "each amp model must produce a unique byte"
+    assert len(seen) == 6, ("each amp model must produce a unique byte",
+                            sorted(seen))
 
 
 def test_set_amp_model_overrides_let_caller_pin_other_amp_params():
     overlay = make_overlay_with_distortion_state()
-    overlay.set_amp_model("clean_combo", amp_master=70, amp_input_gain=40)
+    overlay.set_amp_model("twin_reverb", amp_master=70, amp_input_gain=40)
     last_word = overlay.axi_gpio_amp.writes[-1][1]
     expected_master = AudioLabOverlay._level_to_q7(70)
     expected_gain = AudioLabOverlay._percent_to_u8(40, 255)
@@ -1099,35 +1146,63 @@ def test_set_amp_model_overrides_let_caller_pin_other_amp_params():
     assert (last_word >> 8) & 0xFF == expected_master
 
 
-# ---- D54 amp model bit-pack + real DSP Clean/Drive split ----------------
+def test_set_amp_model_propagates_drive_mode():
+    """set_amp_model accepts amp_drive_mode= and writes it into ctrlD bit 7."""
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_amp_model("triamp_mk3", amp_drive_mode=1)
+    last_word = overlay.axi_gpio_amp_tone.writes[-1][1]
+    assert (last_word >> 24) & 0xFF == 0x85  # drive=1 + idx=5
+
+
+# ---- D55 amp model bit-pack + real DSP Clean/Drive split ----------------
 
 
 def test_amp_model_drive_byte_clean_mode_layout():
-    """D54: drive_mode=0 packs only the model idx into ctrlD[1:0];
+    """D55: drive_mode=0 packs only the model idx into ctrlD[2:0];
     bit 7 stays clear so the Clash side sees Clean mode."""
-    for idx in range(4):
+    for idx in range(6):
         b = AudioLabOverlay.amp_model_drive_byte(
             amp_model_idx=idx, amp_drive_mode=0)
         assert b == idx
         assert (b >> 7) & 1 == 0
+        # bits 6..3 reserved -> must read 0 on the writer side
+        assert (b >> 3) & 0x0F == 0, (idx, hex(b))
 
 
 def test_amp_model_drive_byte_drive_mode_layout():
-    """D54: drive_mode=1 sets ctrlD[7]; the model idx still lives at
-    ctrlD[1:0] so the Clash side can route both fields independently."""
-    for idx in range(4):
+    """D55: drive_mode=1 sets ctrlD[7]; the model idx still lives at
+    ctrlD[2:0] so the Clash side can route both fields independently."""
+    for idx in range(6):
         b = AudioLabOverlay.amp_model_drive_byte(
             amp_model_idx=idx, amp_drive_mode=1)
-        assert b & 0x03 == idx
+        assert b & 0x07 == idx
         assert (b >> 7) & 1 == 1
-        assert (b >> 2) & 0x1F == 0, (idx, hex(b))
+        assert (b >> 3) & 0x0F == 0, (idx, hex(b))
+
+
+def test_amp_model_drive_byte_known_values_match_spec():
+    """Anchor values from the D55 spec: each (idx, drive) pair must
+    map to a specific ctrlD byte."""
+    cases = [
+        (0, 0, 0x00), (1, 0, 0x01), (2, 0, 0x02),
+        (3, 0, 0x03), (4, 0, 0x04), (5, 0, 0x05),
+        (0, 1, 0x80), (1, 1, 0x81), (2, 1, 0x82),
+        (3, 1, 0x83), (4, 1, 0x84), (5, 1, 0x85),
+    ]
+    for idx, drive, expected in cases:
+        b = AudioLabOverlay.amp_model_drive_byte(
+            amp_model_idx=idx, amp_drive_mode=drive)
+        assert b == expected, (idx, drive, hex(b), hex(expected))
 
 
 def test_amp_model_drive_byte_clamps_inputs():
-    """Out-of-range model idx clamps to 0..3; out-of-range drive_mode
+    """Out-of-range model idx clamps to 0..5; out-of-range drive_mode
     clamps to 0/1; non-int inputs default to 0."""
+    # 99 clamps to AMP_MODEL_IDX_MAX (5), not to MASK (7)
     assert AudioLabOverlay.amp_model_drive_byte(
-        amp_model_idx=99, amp_drive_mode=0) == 3
+        amp_model_idx=99, amp_drive_mode=0) == 5
+    assert AudioLabOverlay.amp_model_drive_byte(
+        amp_model_idx=99, amp_drive_mode=1) == 0x85
     assert AudioLabOverlay.amp_model_drive_byte(
         amp_model_idx=-1, amp_drive_mode=0) == 0
     assert AudioLabOverlay.amp_model_drive_byte(
@@ -1136,32 +1211,33 @@ def test_amp_model_drive_byte_clamps_inputs():
         amp_model_idx="bogus", amp_drive_mode="bogus") == 0
 
 
-def test_amp_character_byte_for_model_alias_matches_d54_pack():
+def test_amp_character_byte_for_model_alias_matches_d55_pack():
     """The D53 helper name is preserved as a thin alias of
     amp_model_drive_byte so any external caller keeps working."""
-    for idx in range(4):
+    for idx in range(6):
         for drive in (0, 1):
             assert (AudioLabOverlay.amp_character_byte_for_model(idx, drive)
                     == AudioLabOverlay.amp_model_drive_byte(
                         amp_model_idx=idx, amp_drive_mode=drive))
 
 
-def test_guitar_effect_control_words_amp_model_idx_uses_d54_bit_pack():
-    """When amp_model_idx is supplied, ctrlD carries the D54 bit-pack
-    (bit 7 = drive_mode, bits[1:0] = model idx); the legacy
-    amp_character percent kwarg is ignored."""
+def test_guitar_effect_control_words_amp_model_idx_uses_d55_bit_pack():
+    """When amp_model_idx is supplied, ctrlD carries the D55 bit-pack
+    (bit 7 = drive_mode, bits[2:0] = model idx); the legacy
+    amp_character percent kwarg is ignored. Verified for the highest
+    voicing so the 3-bit field actually exercises bit 2."""
     words = AudioLabOverlay.guitar_effect_control_words(
-        amp_on=True, amp_model_idx=2, amp_drive_mode=1,
+        amp_on=True, amp_model_idx=5, amp_drive_mode=1,
         amp_character=0)
     char_byte = (words["amp_tone"] >> 24) & 0xFF
-    assert char_byte == ((1 << 7) | 2)
+    assert char_byte == 0x85
     assert (char_byte >> 7) & 1 == 1
-    assert char_byte & 0x03 == 2
+    assert char_byte & 0x07 == 5
     # Clean mode keeps bit 7 clear regardless of amp_character percent.
     words0 = AudioLabOverlay.guitar_effect_control_words(
-        amp_on=True, amp_model_idx=2, amp_drive_mode=0,
+        amp_on=True, amp_model_idx=5, amp_drive_mode=0,
         amp_character=0)
-    assert (words0["amp_tone"] >> 24) & 0xFF == 2
+    assert (words0["amp_tone"] >> 24) & 0xFF == 5
 
 
 def test_guitar_effect_control_words_without_model_idx_uses_amp_character():
@@ -1430,16 +1506,22 @@ if __name__ == "__main__":
     test_apply_chain_preset_survives_missing_compressor_gpio()
     test_apply_chain_preset_unknown_name_raises()
     test_amp_models_table_anchors()
+    test_amp_model_labels_are_human_readable_titles()
+    test_amp_models_old_d52_names_are_retired()
     test_get_amp_model_names_lists_documented_models()
-    test_amp_model_to_character_known_names()
-    test_amp_model_to_character_unknown_raises()
-    test_set_amp_model_writes_correct_character_byte()
+    test_amp_model_to_idx_known_names()
+    test_amp_model_to_idx_display_labels()
+    test_amp_model_to_character_back_compat_returns_idx()
+    test_amp_model_to_idx_unknown_raises()
+    test_set_amp_model_writes_correct_model_idx_byte()
     test_set_amp_model_distinct_bytes_per_model()
     test_set_amp_model_overrides_let_caller_pin_other_amp_params()
+    test_set_amp_model_propagates_drive_mode()
     test_amp_model_drive_byte_clean_mode_layout()
     test_amp_model_drive_byte_drive_mode_layout()
+    test_amp_model_drive_byte_known_values_match_spec()
     test_amp_model_drive_byte_clamps_inputs()
-    test_amp_character_byte_for_model_alias_matches_d54_pack()
-    test_guitar_effect_control_words_amp_model_idx_uses_d54_bit_pack()
+    test_amp_character_byte_for_model_alias_matches_d55_pack()
+    test_guitar_effect_control_words_amp_model_idx_uses_d55_bit_pack()
     test_guitar_effect_control_words_without_model_idx_uses_amp_character()
     print("AudioLabOverlay guitar effect control tests passed")

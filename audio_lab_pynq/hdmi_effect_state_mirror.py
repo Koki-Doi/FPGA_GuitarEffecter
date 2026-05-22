@@ -300,17 +300,30 @@ class HdmiEffectStateMirror(object):
         self._sync_model_state_to_app_state("OVERDRIVE")
 
     def _amp_model_from_character(self, value):
+        """D55 fallback: when a legacy chain preset / notebook writes a
+        continuous ``amp_character`` percent value (instead of an
+        explicit ``amp_model_idx``), pick the closest D55 voicing band
+        so the HDMI mirror still displays a sensible model name.
+
+        Six band centres (10 / 35 / 60 / 72 / 80 / 90 from
+        ``AMP_MODEL_CHARACTER``) map onto the six D55 voicings in
+        order; the boundaries below sit halfway between each centre.
+        """
         try:
             v = float(value)
         except Exception:
             v = AMP_MODEL_CHARACTER[self.current_amp_model]
-        if v < 25:
-            return "jc_clean"
-        if v < 50:
-            return "clean_combo"
-        if v < 75:
-            return "british_crunch"
-        return "high_gain_stack"
+        if v < 22:
+            return "jc_120"          # 0..21
+        if v < 47:
+            return "twin_reverb"     # 22..46
+        if v < 66:
+            return "ac30"            # 47..65
+        if v < 76:
+            return "rockerverb"      # 66..75
+        if v < 85:
+            return "jcm800"          # 76..84
+        return "triamp_mk3"          # 85..
 
     def _set_effect_index_for_selected_fx(self, effect_name):
         canonical = canonical_selected_fx(effect_name)
@@ -882,16 +895,23 @@ class HdmiEffectStateMirror(object):
                            ("amp_master", master)):
             if value is not None:
                 amp_kwargs[key] = value
-        # D53: drive_mode is binary 0/1; default 0 = legacy voicing byte.
+        # D53/D55: drive_mode is binary 0/1; default 0 = Clean voicing.
         if drive_mode is None:
             drive_mode = int(getattr(self.app_state, "amp_drive_mode", 0) or 0)
         drive_mode = 1 if int(drive_mode) >= 1 else 0
+        # D55: when the overlay supports it, push the 3-bit model index
+        # and the binary drive mode directly so the Clash side decodes
+        # the per-model voicing table. Fall back to the legacy
+        # amp_character percent path for older overlays that lack
+        # set_amp_model with a named-model argument.
         if hasattr(self.overlay, "set_amp_model"):
             if sink is None:
-                result = self.overlay.set_amp_model(model, **amp_kwargs)
+                result = self.overlay.set_amp_model(
+                    model, amp_drive_mode=drive_mode, **amp_kwargs)
             else:
                 result = self.overlay.set_amp_model(
-                    model, sink=sink, **amp_kwargs)
+                    model, sink=sink, amp_drive_mode=drive_mode,
+                    **amp_kwargs)
         else:
             amp_kwargs["amp_on"] = True
             amp_kwargs["amp_character"] = AMP_MODEL_CHARACTER[model]
@@ -909,31 +929,69 @@ class HdmiEffectStateMirror(object):
                     expected_selected_fx=expected)
         return result
 
+    # D55 — six named amp helpers (replace the four legacy
+    # jc_clean / clean_combo / british_crunch / high_gain_stack methods
+    # while keeping back-compat aliases so existing notebooks do not
+    # break). The body is identical to ``set_amp_model`` with the
+    # model name hard-wired.
+
+    def _amp_named(self, model_name, gain, bass, mid, treble, presence,
+                   resonance, master):
+        return self.set_amp_model(
+            model_name, gain=gain, bass=bass, mid=mid, treble=treble,
+            presence=presence, resonance=resonance, master=master)
+
+    def jc_120(self, gain=None, bass=None, mid=None, treble=None,
+               presence=None, resonance=None, master=None):
+        return self._amp_named("jc_120", gain, bass, mid, treble,
+                               presence, resonance, master)
+
+    def twin_reverb(self, gain=None, bass=None, mid=None, treble=None,
+                    presence=None, resonance=None, master=None):
+        return self._amp_named("twin_reverb", gain, bass, mid, treble,
+                               presence, resonance, master)
+
+    def ac30(self, gain=None, bass=None, mid=None, treble=None,
+             presence=None, resonance=None, master=None):
+        return self._amp_named("ac30", gain, bass, mid, treble,
+                               presence, resonance, master)
+
+    def rockerverb(self, gain=None, bass=None, mid=None, treble=None,
+                   presence=None, resonance=None, master=None):
+        return self._amp_named("rockerverb", gain, bass, mid, treble,
+                               presence, resonance, master)
+
+    def jcm800(self, gain=None, bass=None, mid=None, treble=None,
+               presence=None, resonance=None, master=None):
+        return self._amp_named("jcm800", gain, bass, mid, treble,
+                               presence, resonance, master)
+
+    def triamp_mk3(self, gain=None, bass=None, mid=None, treble=None,
+                   presence=None, resonance=None, master=None):
+        return self._amp_named("triamp_mk3", gain, bass, mid, treble,
+                               presence, resonance, master)
+
+    # Back-compat aliases: route the four retired D52 helper names onto
+    # the closest D55 voicing via the alias table in hdmi_state/amps.py.
     def jc_clean(self, gain=None, bass=None, mid=None, treble=None,
                  presence=None, resonance=None, master=None):
-        return self.set_amp_model(
-            "jc_clean", gain=gain, bass=bass, mid=mid, treble=treble,
-            presence=presence, resonance=resonance, master=master)
+        return self._amp_named("jc_120", gain, bass, mid, treble,
+                               presence, resonance, master)
 
     def clean_combo(self, gain=None, bass=None, mid=None, treble=None,
                     presence=None, resonance=None, master=None):
-        return self.set_amp_model(
-            "clean_combo", gain=gain, bass=bass, mid=mid, treble=treble,
-            presence=presence, resonance=resonance, master=master)
+        return self._amp_named("twin_reverb", gain, bass, mid, treble,
+                               presence, resonance, master)
 
     def british_crunch(self, gain=None, bass=None, mid=None, treble=None,
                        presence=None, resonance=None, master=None):
-        return self.set_amp_model(
-            "british_crunch", gain=gain, bass=bass, mid=mid,
-            treble=treble, presence=presence, resonance=resonance,
-            master=master)
+        return self._amp_named("ac30", gain, bass, mid, treble,
+                               presence, resonance, master)
 
     def high_gain_stack(self, gain=None, bass=None, mid=None, treble=None,
                         presence=None, resonance=None, master=None):
-        return self.set_amp_model(
-            "high_gain_stack", gain=gain, bass=bass, mid=mid,
-            treble=treble, presence=presence, resonance=resonance,
-            master=master)
+        return self._amp_named("jcm800", gain, bass, mid, treble,
+                               presence, resonance, master)
 
     def set_cab_model(self, model, air=None, mix=None, level=None,
                       enabled=True):

@@ -558,7 +558,57 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
-## Phase D54 — Amp Sim Clean/Drive becomes a real Clash DSP branch (current)
+## Phase D55 — Replace Amp Sim model set with six researched amp voicings (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `feature/replace-amp-models-six-pack-researched` (または merge 後の main)
+> で `hw/ip/clash/src/AudioLab/Effects/Amp.hs` の `ampModelIdxF` が
+> `Unsigned 3` (slice `d26 d24`) になっていることを確認してください。
+>
+> 構成 (実装済):
+> - 旧 D52 4 モデル (`jc_clean / clean_combo / british_crunch /
+>   high_gain_stack`) は退役。新 D55 6 モデル:
+>     `0 = JC-120` / `1 = Twin Reverb` / `2 = AC30` /
+>     `3 = Rockerverb` / `4 = JCM800` / `5 = TriAmp Mk3`
+>   各モデルの音響特徴・DSP 係数根拠は
+>   `docs/ai_context/AMP_MODEL_RESEARCH_D55.md` を参照。
+> - `axi_gpio_amp_tone.ctrlD` の model field は 2-bit から 3-bit に拡張:
+>     `ctrlD[7] = ampDriveMode` (0=Clean, 1=Drive),
+>     `ctrlD[6:3] = 0` reserved,
+>     `ctrlD[2:0] = ampModelIdx` (0..5 valid; 6..7 は Clash 側で
+>     0 = JC-120 にフォールバック (clip_count 暴走防止))。
+> - Python: `AudioLabOverlay.amp_model_drive_byte(idx, drive)` で
+>   `AMP_MODEL_IDX_MASK = 0x07`, `AMP_MODEL_IDX_MAX = 5`。
+>   `amp_character_byte_for_model` は同義エイリアス。
+> - Clash: `Amp.hs` に 6 モデル分の voicing 係数テーブル
+>   (`ampModelDarken`, `ampPreLpfDriveDarken`,
+>   `ampSecondStageDriveBonus`, `ampDrivePosDelta`,
+>   `ampDriveNegDelta`, `ampTrebleGain` 6-entry case,
+>   `presenceTrim` 6-entry case)。`ampAsymClip` シグネチャは
+>   `Unsigned 3 -> Unsigned 8 -> Bool -> Sample -> Sample` (model
+>   idx を取って per-model knee delta を引く)。`softClipK
+>   3_300_000 / 3_400_000` safety stage は据置。
+> - Compact-v2 GUI / HDMI mirror / encoder runtime / 3 notebooks
+>   (`PmodI2S2EffectControlOneCell.ipynb`,
+>   `GuitarPedalboardOneCell.ipynb`, `HdmiGuiShow.ipynb`) 更新。
+>   旧 snake_case helper (`mirror.jc_clean()` 等) は alias として残置 →
+>   `jc_clean -> jc_120`, `clean_combo -> twin_reverb`,
+>   `british_crunch -> ac30`, `high_gain_stack -> jcm800`。
+> - tests: `python3 tests/test_overlay_controls.py` PASS,
+>   `python3 -m unittest -v tests.test_encoder_*
+>   tests.test_overdrive_model_select tests.test_hdmi_selected_fx_state`
+>   PASS (90 + 3 件 D55 ケース追加)。`tests.test_hdmi_origin_mapping`
+>   の import error は pre-existing。
+>
+> やってよい変更: Python / GUI / Notebook / docs / tests / 必要なら
+> 最小の Clash DSP 追修正 + Vivado 再ビルド + deploy + 実機 smoke。
+> 禁止: 新規 AXI GPIO、`block_design.tcl` 変更、`axi_gpio_amp_tone`
+> address 変更、`amp_character` 連続ノブの UI 復活、D54 Clean/Drive
+> 分岐の削除、モデル差を音量差だけで作ること、HDMI / encoder /
+> Pmod I2S2 path 改変、`git push` / `git pull` / `git fetch`。
+
+## Phase D54 — Amp Sim Clean/Drive becomes a real Clash DSP branch (superseded by D55)
 
 > 続きを始める前に `git status --short` と
 > `git log -8 --oneline --decorate --graph` を実行し、

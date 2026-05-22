@@ -11,6 +11,8 @@ from .effect_defaults import (
     NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
     COMPRESSOR_DEFAULTS as _COMPRESSOR_DEFAULTS,
     AMP_MODELS as _AMP_MODELS,
+    AMP_MODEL_LABELS as _AMP_MODEL_LABELS,
+    AMP_MODELS_LEGACY_PERCENT as _AMP_MODELS_LEGACY_PERCENT,
     OVERDRIVE_DEFAULTS as _OVERDRIVE_DEFAULTS,
     OVERDRIVE_MODELS as _OVERDRIVE_MODELS,
     OVERDRIVE_MODEL_LABELS as _OVERDRIVE_MODEL_LABELS,
@@ -74,35 +76,42 @@ class AudioLabOverlay(Overlay):
     COMPRESSOR_DEFAULTS = _COMPRESSOR_DEFAULTS
     COMPRESSOR_GPIO_NAME = 'axi_gpio_compressor'
 
-    # Amp Simulator named "models" — convenience labels that map onto
-    # the existing ``amp_character`` percent value. The Clash side
-    # quantises the same byte into a 2-bit ``ampModelSel`` index that
-    # darkens the post-clip pre-LPF a touch more for the higher-gain
-    # models so high-gain pedals into the amp do not produce the
-    # second brightening that the audio-analysis pass flagged.
-    # ``AMP_MODELS`` is a friendly mapping; the numeric
-    # ``amp_character`` knob still works directly.
+    # Amp Simulator models (D55). The 6 voicings are JC-120 / Twin Reverb /
+    # AC30 / Rockerverb / JCM800 / TriAmp Mk3 -- inspired-by, not
+    # commercial circuit / IR / coefficient copies (`DECISIONS.md` D7;
+    # research notes in `docs/ai_context/AMP_MODEL_RESEARCH_D55.md`).
+    # ``AMP_MODELS`` maps the snake_case enum name to the integer
+    # ``amp_model_idx`` (0..5). ``AMP_MODEL_LABELS`` is the
+    # title-case display list, same order. Indices 6/7 are reserved;
+    # Python helpers clamp to ``AMP_MODEL_IDX_MAX = 5`` so they cannot
+    # be written through the normal path. The Clash side falls back to
+    # 0 = JC-120 if it ever sees 6 or 7 -- safest choice because
+    # JC-120 has the highest clean headroom and lowest drive depth, so
+    # an unintended write does not run ``clip_count`` away.
     AMP_MODELS = _AMP_MODELS
+    AMP_MODEL_LABELS = _AMP_MODEL_LABELS
 
-    # D54 — Amp Sim is "model-only" + real DSP Clean/Drive split.
-    # The Python writer packs amp_model_idx into ctrlD[1:0] and the
-    # binary amp_drive_mode into ctrlD[7]; ctrlD[6:2] is reserved (0).
-    # The Clash side reads the two fields independently and branches
-    # the clip knees / pre-LPF darken / second-stage gain on the
-    # drive bit. ``amp_character`` is no longer composed into ctrlD
-    # via the legacy ``_percent_to_u8`` path; it is preserved only as
-    # an opt-in fallback for callers that never pass amp_model_idx
-    # (legacy notebooks / chain presets). The pre-D54 in-band byte
-    # shift (D53 ``AMP_MODEL_CHARACTER_BYTES`` / ``AMP_DRIVE_MODE_OFFSET``)
-    # is retired: drive_mode is a real DSP branch in Amp.hs, not a
-    # character-byte nudge.
-    AMP_MODEL_IDX_MASK = 0x03
+    # D55 — Amp Sim has 6 selectable voicings + real DSP Clean/Drive split.
+    # The Python writer packs amp_model_idx into ctrlD[2:0] (3 bits, 0..5)
+    # and the binary amp_drive_mode into ctrlD[7]; ctrlD[6:3] is reserved (0).
+    # The Clash side decodes both fields independently and branches the
+    # clip knees / pre-LPF darken / second-stage gain / treble trim /
+    # presence trim on (model_idx, drive_mode). The pre-D54 character
+    # byte byte-shift API is retired: drive_mode is a real DSP branch
+    # in Amp.hs, not a character-byte nudge.
+    AMP_MODEL_IDX_MASK = 0x07
+    AMP_MODEL_IDX_MAX = 5
     AMP_DRIVE_MODE_BIT = 7
     # Legacy D53 constants kept as 0-shift placeholders so any external
     # caller that imported them gets a safe no-op instead of an
     # AttributeError. Do not use them as a drive-mode encoding source.
     AMP_MODEL_CHARACTER_BYTES = (26, 89, 153, 216)
     AMP_DRIVE_MODE_OFFSET = 0
+    # Centre amp_character percent values from the retired D52 4-model
+    # API. Preserved only so the chain-preset back-compat path
+    # (which still passes ``amp_character=`` percent values) keeps
+    # working byte-for-byte for older saved presets.
+    AMP_MODELS_LEGACY_PERCENT = _AMP_MODELS_LEGACY_PERCENT
 
     # Selectable Overdrive models (D45). The single generic Overdrive
     # is retired; every load picks one of these six voicings. The
@@ -848,41 +857,47 @@ class AudioLabOverlay(Overlay):
             'implementation_status': 'threshold_ratio_response_makeup_fpga',
         }
 
-    # ---- Amp Simulator named models ------------------------------------
+    # ---- Amp Simulator named models (D55) ------------------------------
     #
-    # The Amp Simulator section has one shared `amp_character` knob in
-    # the existing pedalboard API. ``AMP_MODELS`` defines four named
-    # voicings (jc_clean / clean_combo / british_crunch /
-    # high_gain_stack) that each correspond to one centre value of
-    # `amp_character`. The Clash side quantises the same byte into a
-    # two-bit ``ampModelSel`` index that nudges the post-clip pre-LPF
-    # alpha so the labelled voicings sound distinguishably different
-    # without adding a new GPIO or `topEntity` port. The numeric
-    # `amp_character` knob still works for users who prefer continuous
-    # control; named models are a convenience layer on top.
+    # The Amp Simulator section selects one of six researched voicings
+    # via ``amp_model_idx`` (0..5 = JC-120 / Twin Reverb / AC30 /
+    # Rockerverb / JCM800 / TriAmp Mk3) and chooses Clean vs Drive
+    # behaviour via the binary ``amp_drive_mode`` knob (0 = Clean,
+    # 1 = Drive). The Clash side decodes both fields from
+    # ``axi_gpio_amp_tone.ctrlD`` directly; the legacy
+    # ``amp_character`` percent knob is retired (`DECISIONS.md` D53 /
+    # D54), but the kwarg name is kept as a chain-preset fallback so
+    # older JSON does not break.
 
     @classmethod
     def get_amp_model_names(cls):
-        """Return the ordered list of amp-model names."""
+        """Return the ordered list of amp-model snake_case names."""
         return list(cls.AMP_MODELS.keys())
+
+    @classmethod
+    def get_amp_model_labels(cls):
+        """Return the ordered list of amp-model display labels."""
+        return list(cls.AMP_MODEL_LABELS)
 
     @classmethod
     def amp_model_drive_byte(cls, amp_model_idx=0, amp_drive_mode=0):
         """Return the ``axi_gpio_amp_tone.ctrlD`` byte that the Clash
-        Amp Sim stage decodes after D54.
+        Amp Sim stage decodes after D55.
 
-        Encoding: ``ctrlD = (drive_mode << 7) | (model_idx & 0x03)``;
-        bits[6:2] are reserved (0). The Clash side reads bits[1:0] as
-        the amp model index (0..3 = jc_clean / clean_combo /
-        british_crunch / high_gain_stack) and bit 7 as the binary
-        Clean/Drive switch -- the character voicing is no longer
-        carried in the byte itself.
+        Encoding: ``ctrlD = (drive_mode << 7) | (model_idx & 0x07)``;
+        bits[6:3] are reserved (0). The Clash side reads bits[2:0] as
+        the amp model index (0..5 = JC-120 / Twin Reverb / AC30 /
+        Rockerverb / JCM800 / TriAmp Mk3; 6..7 fall back to JC-120 on
+        the Clash side as a safety default) and bit 7 as the binary
+        Clean/Drive switch. The character voicing is no longer carried
+        in the byte itself -- each model has its own per-coefficient
+        voicing table inside Amp.hs.
         """
         try:
             idx = int(amp_model_idx)
         except Exception:
             idx = 0
-        idx = max(0, min(cls.AMP_MODEL_IDX_MASK, idx))
+        idx = max(0, min(cls.AMP_MODEL_IDX_MAX, idx))
         try:
             mode = 1 if int(amp_drive_mode) >= 1 else 0
         except Exception:
@@ -894,42 +909,65 @@ class AudioLabOverlay(Overlay):
     def amp_character_byte_for_model(cls, amp_model_idx, amp_drive_mode=0):
         """Back-compat alias of :meth:`amp_model_drive_byte` (D53 name).
 
-        D53 callers expected an 8-bit character byte; D54 returns the
-        new bit-packed byte from the same kwargs so any external
+        D53 callers expected an 8-bit character byte; D54 / D55 return
+        the new bit-packed byte from the same kwargs so any external
         caller still gets a valid ctrlD value.
         """
         return cls.amp_model_drive_byte(
             amp_model_idx=amp_model_idx, amp_drive_mode=amp_drive_mode)
 
     @classmethod
-    def amp_model_to_character(cls, name):
-        """Map an amp-model name to its centre `amp_character` value.
+    def amp_model_to_idx(cls, name):
+        """Map an amp-model name (snake_case enum or title-case display
+        label) to its integer ``amp_model_idx``.
 
         Raises ``ValueError`` if ``name`` is not a documented model.
         """
-        try:
-            return cls.AMP_MODELS[name]
-        except KeyError:
+        if isinstance(name, int):
+            idx = int(name)
+            if 0 <= idx <= cls.AMP_MODEL_IDX_MAX:
+                return idx
             raise ValueError(
-                "unknown amp model: {!r}; valid names are {}".format(
-                    name, ", ".join(cls.AMP_MODELS.keys())))
+                "unknown amp model idx: {!r}; valid range is 0..{}".format(
+                    name, cls.AMP_MODEL_IDX_MAX))
+        if name in cls.AMP_MODELS:
+            return cls.AMP_MODELS[name]
+        # Allow title-case display labels too so notebook code can pass
+        # the human-readable name from the dropdown straight through.
+        for i, label in enumerate(cls.AMP_MODEL_LABELS):
+            if label == name:
+                return i
+        raise ValueError(
+            "unknown amp model: {!r}; valid names are {}".format(
+                name, ", ".join(cls.AMP_MODELS.keys())))
+
+    @classmethod
+    def amp_model_to_character(cls, name):
+        """D52/D53 back-compat: map a name to its integer model idx.
+
+        D55 retires the continuous 0..100 ``amp_character`` knob, so
+        this returns the integer ``amp_model_idx`` (0..5) instead of
+        the legacy percent value. Old code that fed the return value
+        back into ``set_guitar_effects(amp_character=...)`` still works
+        because the legacy fallback path is unused when
+        ``amp_model_idx`` is set explicitly via ``set_amp_model``.
+        """
+        return cls.amp_model_to_idx(name)
 
     def set_amp_model(self, name, sink=XbarSink.headphone, **overrides):
-        """Apply an amp model by name.
+        """Apply an amp model by name (D55).
 
-        Internally this just calls
-        ``set_guitar_effects(amp_character=AMP_MODELS[name], ...)`` so
-        the whole flag-byte / route-to-chain logic stays untouched.
-        ``overrides`` lets callers supply any other ``set_guitar_effects``
-        kwargs alongside the model (e.g. ``amp_master=80`` or
-        ``amp_on=True``); explicit ``amp_character=...`` overrides the
-        model lookup. Returns the dict produced by
+        Internally calls ``set_guitar_effects`` with
+        ``amp_model_idx`` derived from the model name. ``overrides``
+        lets callers supply any other ``set_guitar_effects`` kwargs
+        alongside the model; explicit ``amp_model_idx=...`` overrides
+        the model lookup. Returns the dict produced by
         ``set_guitar_effects`` so callers can inspect the bytes that
         were written.
         """
-        character = self.amp_model_to_character(name)
-        if "amp_character" not in overrides:
-            overrides["amp_character"] = character
+        idx = self.amp_model_to_idx(name)
+        if "amp_model_idx" not in overrides:
+            overrides["amp_model_idx"] = idx
         overrides.setdefault("amp_on", True)
         return self.set_guitar_effects(sink=sink, **overrides)
 

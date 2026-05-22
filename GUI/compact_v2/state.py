@@ -97,7 +97,7 @@ class AppState:
 
     # model-pick indices for the model-driven effects
     dist_model_idx: int = 1   # Tube Screamer
-    amp_model_idx:  int = 2   # British Crunch
+    amp_model_idx:  int = 2   # AC30 (D55 default, replaces "British Crunch")
     cab_model_idx:  int = 2   # 4x12 British
     # Overdrive model select (DECISIONS.md D45). 0..5 maps to
     # OVERDRIVE_MODELS in GUI/compact_v2/knobs.py; default = TS9.
@@ -226,6 +226,18 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
         _n_knobs = len(EFFECT_KNOBS.get(EFFECTS[state.selected_effect], []))
         state.selected_knob = max(0, min(max(0, _n_knobs - 1),
                                          state.selected_knob))
+        # D55: legacy state.json may store an amp_model_idx in 0..3
+        # (the retired 4-model set). Clamp to the 0..5 range so the new
+        # 6-model GUI never resurfaces an out-of-range index.
+        try:
+            from .knobs import AMP_MODELS as _AMP_MODELS_V2
+            _amp_max = max(0, len(_AMP_MODELS_V2) - 1)
+        except Exception:
+            _amp_max = 5
+        try:
+            state.amp_model_idx = max(0, min(_amp_max, int(state.amp_model_idx)))
+        except Exception:
+            state.amp_model_idx = 0
     except Exception as exc:
         print(f"[state] load failed ({exc}); using defaults")
         state = AppState()

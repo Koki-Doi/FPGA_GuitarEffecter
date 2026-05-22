@@ -44,10 +44,19 @@ DROPDOWN_SHORT_LABELS = {
     "BIG MUFF": "BIG MUFF",
     "FUZZ FACE": "FUZZ",
     "METAL": "METAL",
-    "JC CLEAN": "JC CLEAN",
-    "CLEAN COMBO": "CLN COMBO",
-    "BRITISH CRUNCH": "BRIT CRUNCH",
-    "HIGH GAIN STACK": "HI-GAIN",
+    # D55 amp model labels. ``dropdown_short_label`` uppercases its
+    # input before lookup, so keys here must be uppercase. The legacy
+    # D52 entries (JC CLEAN / CLEAN COMBO / BRITISH CRUNCH / HIGH GAIN
+    # STACK) are removed from the labels table -- the HDMI mirror
+    # normalises old aliases to D55 names via
+    # ``audio_lab_pynq/hdmi_state/amps.py::AMP_MODEL_ALIASES`` before
+    # the label ever reaches the short-label lookup.
+    "JC-120": "JC-120",
+    "TWIN REVERB": "TWIN RVB",
+    "AC30": "AC30",
+    "ROCKERVERB": "ROCKERVRB",
+    "JCM800": "JCM800",
+    "TRIAMP MK3": "TRIAMP MK3",
     "1X12 OPEN": "1x12 OPN",
     "2X12 COMBO": "2x12 CMB",
     "4X12 CLOSED": "4x12 CLS",
