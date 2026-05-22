@@ -240,25 +240,30 @@ def test_dropdown_visible_only_for_pedal_overdrive_amp_cab():
 
 
 def test_dropdown_label_for_pedal_overdrive_amp_cab():
+    """``dropdown_label_for`` is a pure label router: it uppercases the
+    label that matches the SELECTED FX category, regardless of the
+    actual amp-model name table. D55 swaps the amp names from D52 but
+    the dropdown router still passes whatever string the caller hands
+    in -- so this test uses the canonical D55 amp label."""
     assert dropdown_label_for("CLEAN BOOST", "TUBE SCREAMER",
-                              "BRITISH CRUNCH", "4x12 CLOSED") == "TUBE SCREAMER"
+                              "AC30", "4x12 CLOSED") == "TUBE SCREAMER"
     assert dropdown_label_for("AMP SIM", "TUBE SCREAMER",
-                              "BRITISH CRUNCH", "4x12 CLOSED") == "BRITISH CRUNCH"
+                              "AC30", "4x12 CLOSED") == "AC30"
     assert dropdown_label_for("CAB", "TUBE SCREAMER",
-                              "BRITISH CRUNCH", "4x12 CLOSED") == "4X12 CLOSED"
+                              "AC30", "4x12 CLOSED") == "4X12 CLOSED"
     # D46: OVERDRIVE consumes the new ``overdrive_label=`` kwarg.
     assert dropdown_label_for(
-        "OVERDRIVE", "TUBE SCREAMER", "BRITISH CRUNCH", "4x12 CLOSED",
+        "OVERDRIVE", "TUBE SCREAMER", "AC30", "4x12 CLOSED",
         overdrive_label="Ibanez / TS9") == "IBANEZ / TS9"
     # Backward-compat: OVERDRIVE callers that don't pass overdrive_label
     # (i.e. pre-D46 callers) keep getting an empty string and the chip
     # stays hidden.
     assert dropdown_label_for("OVERDRIVE", "TUBE SCREAMER",
-                              "BRITISH CRUNCH", "4x12 CLOSED") == ""
+                              "AC30", "4x12 CLOSED") == ""
     for fx in ("REVERB", "EQ", "COMPRESSOR", "NOISE SUPPRESSOR",
                "SAFE BYPASS", "PRESET"):
         assert dropdown_label_for(fx, "TUBE SCREAMER",
-                                  "BRITISH CRUNCH", "4x12 CLOSED") == "", fx
+                                  "AC30", "4x12 CLOSED") == "", fx
 
 
 def test_mirror_sets_dropdown_visibility_on_app_state():

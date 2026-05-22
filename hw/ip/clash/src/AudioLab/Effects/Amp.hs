@@ -9,33 +9,112 @@ import AudioLab.FixedPoint
 import AudioLab.Types
 
 -- ---------------------------------------------------------------------
--- D54 amp_tone.ctrlD layout:
---   bit  7 : ampDriveMode (0 = Clean, 1 = Drive)
---   bits 6..2 : reserved (0)
---   bits 1..0 : ampModelIdx (0 = jc_clean, 1 = clean_combo,
---                            2 = british_crunch, 3 = high_gain_stack)
+-- D55 amp_tone.ctrlD layout:
+--   bit  7   : ampDriveMode (0 = Clean, 1 = Drive)
+--   bits 6..3: reserved (0)
+--   bits 2..0: ampModelIdx (3-bit, 0..5 valid)
+--                0 = JC-120
+--                1 = Twin Reverb
+--                2 = AC30
+--                3 = Rockerverb
+--                4 = JCM800
+--                5 = TriAmp Mk3
+--                6..7 reserved -> fall back to 0 (JC-120) for safety
 --
--- The legacy D52 "character byte" is gone: the user no longer dials
--- amp_character, the model index alone picks a centre voicing, and
--- the new drive_mode bit branches the clip/preLPF/gain stages
--- independently of the model. The four legacy "character" bytes
--- 26/89/153/216 are preserved as ``ampCharForModel`` so the existing
--- knee / alpha / treble-trim formulas keep their character bands.
+-- Per-model voicing is driven by independent tables instead of a single
+-- "character byte". See ``ampCharForModel`` (legacy character band
+-- centre for the formulas that still consume an Unsigned 8 intensity),
+-- ``ampModelDarken`` (post-clip pre-LPF darken), ``ampTrebleTrim``
+-- (treble byte trim), ``ampPresenceShift`` (presence-trim divisor),
+-- ``ampDrivePosDelta`` / ``ampDriveNegDelta`` (extra knee shrink in
+-- Drive mode), ``ampPreLpfDriveDarken`` (extra alpha cut in Drive
+-- mode) and ``ampSecondStageDriveBonus`` (Drive-mode bonus on the
+-- second-stage gain). Coefficients are derived from
+-- ``docs/ai_context/AMP_MODEL_RESEARCH_D55.md``.
 -- ---------------------------------------------------------------------
 
-ampModelIdxF :: Frame -> Unsigned 2
-ampModelIdxF f = unpack (slice d25 d24 (fAmpTone f))
+-- | 3-bit amp model index decoded from ``amp_tone.ctrlD[2:0]``.
+ampModelIdxF :: Frame -> Unsigned 3
+ampModelIdxF f = unpack (slice d26 d24 (fAmpTone f))
 
 ampDriveModeF :: Frame -> Bool
 ampDriveModeF f = slice d31 d31 (fAmpTone f) == (1 :: BitVector 1)
 
--- | Centre character byte per amp model (same band centres as D52).
-ampCharForModel :: Unsigned 2 -> Unsigned 8
+-- | Centre character byte per amp model. The values come from the D52
+-- band centres for the four pre-D55 models; the two new high-gain
+-- voicings get higher intensities so the existing knee / alpha /
+-- second-stage formulas (which take this byte as an 8-bit intensity)
+-- give a stronger response on JCM800 / TriAmp Mk3 even before the
+-- Drive-mode branch fires. Reserved indices (6, 7) fall back to the
+-- JC-120 value so an unexpected write does not run clip_count away.
+ampCharForModel :: Unsigned 3 -> Unsigned 8
 ampCharForModel idx = case idx of
-  0 -> 26
-  1 -> 89
-  2 -> 153
-  _ -> 216
+  0 -> 26    -- JC-120        : tightest clean
+  1 -> 89    -- Twin Reverb   : big clean
+  2 -> 153   -- AC30          : edge-of-breakup chime
+  3 -> 200   -- Rockerverb    : thick saturated
+  4 -> 220   -- JCM800        : classic rock cascaded drive
+  5 -> 240   -- TriAmp Mk3    : modern high-gain peak
+  _ -> 26    -- 6/7 reserved -> safe (JC-120)
+
+-- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
+-- darker / less fizz. Indexed by ``ampModelIdxF`` directly.
+ampModelDarken :: Unsigned 3 -> Unsigned 8
+ampModelDarken idx = case idx of
+  0 ->  0    -- JC-120: bright SS feel, no darken
+  1 ->  2    -- Twin: bright but slightly rounded
+  2 ->  4    -- AC30: keep upper-mid chime
+  3 -> 12    -- Rockerverb: round the high, mid-rich
+  4 -> 10    -- JCM800: tame fizz, keep upper-mid bark
+  5 -> 28    -- TriAmp Mk3: maximum fizz cut for modern HG
+  _ ->  0
+
+-- | Per-model extra darken to add only in Drive mode. Stacked on top of
+-- ``ampModelDarken`` so each model's Drive-mode tone is darker than
+-- its own Clean-mode tone (otherwise harder clipping just brightens).
+ampPreLpfDriveDarken :: Unsigned 3 -> Unsigned 8
+ampPreLpfDriveDarken idx = case idx of
+  0 ->  4    -- JC-120: tiny extra in Drive
+  1 ->  6    -- Twin: light breakup
+  2 ->  8    -- AC30: jangly crunch
+  3 -> 14    -- Rockerverb: thick saturation
+  4 -> 12    -- JCM800: classic rock drive
+  5 -> 20    -- TriAmp Mk3: modern HG, kill fizz
+  _ ->  4
+
+-- | Per-model second-stage gain bonus in Drive mode.
+ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
+ampSecondStageDriveBonus idx = case idx of
+  0 ->  8    -- JC-120: tiny bonus, SS feel
+  1 -> 12    -- Twin: light push
+  2 -> 20    -- AC30: harmonic bloom
+  3 -> 32    -- Rockerverb: thick push
+  4 -> 36    -- JCM800: cascaded gain
+  5 -> 44    -- TriAmp Mk3: modern HG sustain
+  _ ->  8
+
+-- | Per-model positive-side asym-clip knee delta in Drive mode.
+-- Signed 25 fits the existing arithmetic in ``ampAsymClip``.
+ampDrivePosDelta :: Unsigned 3 -> Signed 25
+ampDrivePosDelta idx = case idx of
+  0 -> 1_200
+  1 -> 1_500
+  2 -> 1_900
+  3 -> 2_400
+  4 -> 2_700
+  5 -> 3_200
+  _ -> 1_200
+
+-- | Per-model negative-side asym-clip knee delta in Drive mode.
+ampDriveNegDelta :: Unsigned 3 -> Signed 25
+ampDriveNegDelta idx = case idx of
+  0 -> 1_000
+  1 -> 1_300
+  2 -> 1_700
+  3 -> 2_100
+  4 -> 2_400
+  5 -> 2_900
+  _ -> 1_000
 
 ampHighpassFrame :: Sample -> Sample -> Frame -> Frame
 ampHighpassFrame prevIn prevOut f =
@@ -62,18 +141,18 @@ ampDriveBoostFrame f =
  where
   on = flag6 (fGate f)
 
--- | Soft asymmetric clip. ``intensity`` keeps the existing knee scale
--- (driven by the per-model character byte) so Clean mode's clip
--- behaviour is identical to D52 / D53 for the labelled models. When
--- ``drive`` is True, the knees shrink by an additional model-aware
--- delta (and the negative-knee shift drops from 3 to 2) so the same
--- input clips earlier AND harder -- a real DSP branch, not a volume
--- difference. The legacy ``intensity = 0`` case (used by the legacy
--- ``amp_character`` fallback path with a low percent value) keeps the
--- D52 knees unchanged regardless of drive_mode so older notebooks see
--- no behavioural change.
-ampAsymClip :: Unsigned 8 -> Bool -> Sample -> Sample
-ampAsymClip intensity drive x
+-- | Soft asymmetric clip. ``intensity`` keeps the legacy character-byte
+-- scale (per-model centre via ``ampCharForModel``) so each model's
+-- Clean-mode knee character is preserved. When ``drive`` is True the
+-- knees shrink by an additional per-model delta (``ampDrivePosDelta``
+-- / ``ampDriveNegDelta``) so the same input clips earlier AND harder
+-- -- a real DSP branch, not a volume difference. The legacy
+-- ``intensity = 0`` case (used by the legacy ``amp_character``
+-- fallback path with a low percent value) keeps the D52 knees
+-- unchanged regardless of drive_mode so older notebooks see no
+-- behavioural change.
+ampAsymClip :: Unsigned 3 -> Unsigned 8 -> Bool -> Sample -> Sample
+ampAsymClip modelIdx intensity drive x
   | x > posKnee =
       satWide (resize (resize posKnee + (((resize x :: Signed 25) - resize posKnee) `shiftR` posShift) :: Signed 25))
   | x < negate negKnee =
@@ -82,12 +161,12 @@ ampAsymClip intensity drive x
  where
   ch :: Signed 25
   ch = resize (asSigned9 intensity)
-  -- Extra knee shrink in Drive mode. Linear in the character byte so
-  -- the high-gain model takes the largest cut.
+  -- Extra knee shrink in Drive mode, per-model (linear in the per-model
+  -- delta so high-gain models cut deeper).
   posDriveDelta :: Signed 25
-  posDriveDelta = if drive then ch * 2_000 else 0
+  posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
-  negDriveDelta = if drive then ch * 1_800 else 0
+  negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
   posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta) :: Sample
   negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta) :: Sample
   posShift = 2 :: Int
@@ -95,7 +174,7 @@ ampAsymClip intensity drive x
 
 ampWaveshapeFrame :: Frame -> Frame
 ampWaveshapeFrame f =
-  setMonoWet (if on then ampAsymClip intensity drive (monoWet f) else monoSample f) f
+  setMonoWet (if on then ampAsymClip idx intensity drive (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
   idx = ampModelIdxF f
@@ -112,18 +191,10 @@ ampPreLowpassFrame prev f =
   charByte = ampCharForModel idx
   -- Base alpha = 128 + (char >> 2) keeps the D52 voicing centres.
   baseAlpha = 128 + (charByte `shiftR` 2)
-  -- Per-model post-clip darken (same as D52, indexed by ampModelIdx
-  -- directly instead of going through the ``ampModelSel`` byte
-  -- quantiser).
-  modelDarken = case idx of
-    0 ->  0 :: Unsigned 8
-    1 ->  4
-    2 -> 12
-    _ -> 24
-  -- D54 Drive mode adds an extra alpha cut to absorb the new clip
-  -- stage's high-frequency content (otherwise the harder clip would
-  -- brighten the post-LPF signal again).
-  driveDarken = if drive then 12 :: Unsigned 8 else 0
+  -- Per-model post-clip darken (Clean-mode baseline).
+  modelDarken = ampModelDarken idx
+  -- Per-model Drive-mode extra darken (absorbs fizz from the harder clip).
+  driveDarken = if drive then ampPreLpfDriveDarken idx else 0
   alpha = baseAlpha - modelDarken - driveDarken
 
 ampSecondStageMultiplyFrame :: Frame -> Frame
@@ -134,11 +205,11 @@ ampSecondStageMultiplyFrame f =
   idx = ampModelIdxF f
   drive = ampDriveModeF f
   charByte = ampCharForModel idx
-  -- D54 Drive mode adds a small fixed bonus to the second-stage gain;
-  -- combined with the harder asym-clip below it pushes more signal
-  -- into the clipper instead of just raising output level.
+  -- Per-model Drive-mode bonus on the second-stage gain. Combined with
+  -- the harder asym-clip below it pushes more signal into the clipper
+  -- instead of just raising output level.
   driveBonus :: Unsigned 9
-  driveBonus = if drive then 24 else 0
+  driveBonus = if drive then ampSecondStageDriveBonus idx else 0
   gain :: Unsigned 9
   gain = 112
        + resize (ctrlA (fAmp f) `shiftR` 3)
@@ -147,7 +218,7 @@ ampSecondStageMultiplyFrame f =
 
 ampSecondStageFrame :: Frame -> Frame
 ampSecondStageFrame f =
-  setMonoWet (if on then ampAsymClip intensity drive (satShift7 (fAccL f)) else monoSample f) f
+  setMonoWet (if on then ampAsymClip idx intensity drive (satShift7 (fAccL f)) else monoSample f) f
  where
   on = flag6 (fGate f)
   idx = ampModelIdxF f
@@ -184,17 +255,20 @@ ampToneBandFrame f =
 ampToneGain :: Unsigned 8 -> Unsigned 8
 ampToneGain x = 64 + (x `shiftR` 1)
 
-ampTrebleGain :: Unsigned 2 -> Unsigned 8 -> Unsigned 8
+ampTrebleGain :: Unsigned 3 -> Unsigned 8 -> Unsigned 8
 ampTrebleGain idx x = base - modelTrim
  where
   -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
   -- much raw 8..16 kHz fizz when TREBLE is near 100.
   base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
   modelTrim = case idx of
-    0 -> 0 :: Unsigned 8
-    1 -> 2
-    2 -> 5
-    _ -> 9
+    0 ->  0 :: Unsigned 8   -- JC-120  : full bright
+    1 ->  1                 -- Twin    : barely trimmed
+    2 ->  3                 -- AC30    : keep chime
+    3 ->  6                 -- Rockerv : rounded
+    4 ->  8                 -- JCM800  : bark, slight trim
+    5 -> 12                 -- TriAmp  : controlled high
+    _ ->  0
 
 ampToneProductsFrame :: Frame -> Frame
 ampToneProductsFrame f =
@@ -263,11 +337,17 @@ ampResPresenceProductsFrame f =
   presenceByte = ctrlC (fAmp f)
   idx = ampModelIdxF f
   basePresence = presenceByte - (presenceByte `shiftR` 2) - (presenceByte `shiftR` 3)
+  -- Per-model presence trim. Larger right-shift = smaller subtraction =
+  -- brighter presence. JC-120 keeps the full presence; TriAmp Mk3
+  -- shaves the most.
   presenceTrim = case idx of
-    0 -> 0 :: Unsigned 8
-    1 -> presenceByte `shiftR` 5
-    2 -> presenceByte `shiftR` 4
-    _ -> presenceByte `shiftR` 3
+    0 -> 0 :: Unsigned 8         -- JC-120  : full
+    1 -> presenceByte `shiftR` 6 -- Twin    : tiny shave
+    2 -> presenceByte `shiftR` 5 -- AC30    : modest
+    3 -> presenceByte `shiftR` 4 -- Rockerv : thicker
+    4 -> presenceByte `shiftR` 4 -- JCM800  : tight low + strong presence trim
+    5 -> presenceByte `shiftR` 3 -- TriAmp  : maximum trim, modern voicing
+    _ -> 0
   high = satWide (resize (monoWet f) - resize (monoEqHighLp f))
 
 satShift9Wide :: Wide -> Wide

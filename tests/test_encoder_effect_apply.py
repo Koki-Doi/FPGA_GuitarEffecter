@@ -241,6 +241,49 @@ def test_apply_appstate_drive_mode_clamps_out_of_range():
     assert kw.get("amp_drive_mode") == 1
 
 
+# ---- D55 6-model amp selection ------------------------------------------
+
+def test_apply_appstate_forwards_six_amp_models():
+    """D55: amp_model_idx can take 0..5 (six voicings)."""
+    for idx in range(6):
+        ov = FakeOverlay()
+        ap = EncoderEffectApplier(ov)
+        state = AppState()
+        state.amp_model_idx = idx
+        ap.apply_appstate(state, force=True)
+        kw = _kwargs_of(ov, "set_guitar_effects")
+        assert kw is not None
+        assert kw.get("amp_model_idx") == idx, idx
+
+
+def test_apply_appstate_clamps_amp_model_idx_above_max():
+    """D55: out-of-range model idx clamps to the overlay's MAX (default
+    5 when the overlay does not expose AMP_MODEL_IDX_MAX)."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.amp_model_idx = 99
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+    assert kw is not None
+    assert kw.get("amp_model_idx") == 5
+
+
+def test_apply_appstate_honours_overlay_amp_idx_max():
+    """D55: when the overlay exposes AMP_MODEL_IDX_MAX, the applier
+    clamps the encoder-driven idx to that value (forward-compatible
+    with a future >6-voicing build)."""
+    ov = FakeOverlay()
+    ov.AMP_MODEL_IDX_MAX = 3  # mimic an older 4-voicing overlay
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.amp_model_idx = 99
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+    assert kw is not None
+    assert kw.get("amp_model_idx") == 3
+
+
 _TEST_FUNCTIONS = [
     test_dry_run_does_not_call_overlay,
     test_apply_appstate_calls_three_overlay_methods,
@@ -256,6 +299,9 @@ _TEST_FUNCTIONS = [
     test_apply_appstate_forwards_amp_model_idx_and_drive_mode,
     test_apply_appstate_drive_mode_falls_back_to_knob_slot,
     test_apply_appstate_drive_mode_clamps_out_of_range,
+    test_apply_appstate_forwards_six_amp_models,
+    test_apply_appstate_clamps_amp_model_idx_above_max,
+    test_apply_appstate_honours_overlay_amp_idx_max,
 ]
 
 

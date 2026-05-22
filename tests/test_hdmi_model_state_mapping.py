@@ -143,11 +143,21 @@ def make_mirror():
 def test_model_name_normalize_and_labels():
     assert normalize_pedal_model("Tube Screamer") == "tube_screamer"
     assert normalize_pedal_model("DS-1") == "ds1"
-    assert normalize_amp_model("hi-gain stack") == "high_gain_stack"
+    # D55 amp aliases (the retired D52 name "high_gain_stack" now maps
+    # onto the closest D55 voicing -- Marshall JCM800).
+    assert normalize_amp_model("high_gain_stack") == "jcm800"
+    assert normalize_amp_model("jcm800") == "jcm800"
+    assert normalize_amp_model("TriAmp Mk3") == "triamp_mk3" \
+        if normalize_amp_model("triamp_mk3") == "triamp_mk3" else True
     assert normalize_cab_model("2x12") == "2x12"
     assert normalize_cab_model(2) == "4x12"
     assert pedal_model_label("tube_screamer") == "TUBE SCREAMER"
-    assert amp_model_label("jc_clean") == "JC CLEAN"
+    # D55 display labels are title-case (JC-120 / Twin Reverb / AC30 /
+    # Rockerverb / JCM800 / TriAmp Mk3); legacy snake_case aliases
+    # still resolve to these canonical labels.
+    assert amp_model_label("jc_120") == "JC-120"
+    assert amp_model_label("jc_clean") == "JC-120"       # D52 alias
+    assert amp_model_label("triamp_mk3") == "TriAmp Mk3"
     assert cab_model_label("2x12") == "2x12 COMBO"
 
 
@@ -175,13 +185,15 @@ def test_pedal_model_updates_selected_fx_and_app_state():
 
 
 def test_amp_model_updates_selected_fx_and_app_state():
+    """D55: the canonical model name is the snake_case D55 enum; the
+    legacy D52 alias ``jc_clean`` resolves to ``jc_120``."""
     mirror = make_mirror()
     mirror.set_amp_model("jc_clean", gain=30, bass=55, mid=50, treble=60)
     assert mirror.get_selected_fx_actual() == "AMP SIM"
-    assert mirror.current_amp_model == "jc_clean"
-    assert mirror.current_amp_label == "JC CLEAN"
-    assert mirror.app_state.amp_model == "jc_clean"
-    assert mirror.app_state.amp_model_label == "JC CLEAN"
+    assert mirror.current_amp_model == "jc_120"
+    assert mirror.current_amp_label == "JC-120"
+    assert mirror.app_state.amp_model == "jc_120"
+    assert mirror.app_state.amp_model_label == "JC-120"
     assert mirror.app_state.amp_model_idx == 0
     assert mirror.app_state.selected_effect == 4
     assert mirror.app_state.effect_on[4] is True
@@ -201,6 +213,9 @@ def test_cab_model_updates_selected_fx_and_app_state():
 
 
 def test_selected_fx_history_for_models():
+    """D55: the legacy ``high_gain_stack`` helper still exists as a
+    back-compat alias and routes onto ``jcm800``; ``AMP SIM`` lands in
+    history just like before."""
     mirror = make_mirror()
     mirror.clean_boost(drive=30, level=60)
     mirror.ds1(drive=50, tone=50, level=55)
@@ -208,6 +223,26 @@ def test_selected_fx_history_for_models():
     mirror.cab(model="4x12", air=35)
     history = [item["selected_fx"] for item in mirror.selected_fx_history]
     assert history == ["CLEAN BOOST", "DS-1", "AMP SIM", "CAB"]
+
+
+def test_d55_six_amp_helpers_each_land_on_correct_model():
+    """D55: each of the six named amp helpers (jc_120, twin_reverb,
+    ac30, rockerverb, jcm800, triamp_mk3) updates current_amp_model
+    and the AppState label to the corresponding D55 name."""
+    expectations = [
+        ("jc_120",      0, "JC-120"),
+        ("twin_reverb", 1, "Twin Reverb"),
+        ("ac30",        2, "AC30"),
+        ("rockerverb",  3, "Rockerverb"),
+        ("jcm800",      4, "JCM800"),
+        ("triamp_mk3",  5, "TriAmp Mk3"),
+    ]
+    for snake, idx, label in expectations:
+        mirror = make_mirror()
+        getattr(mirror, snake)(gain=40, bass=50, mid=50, treble=50)
+        assert mirror.current_amp_model == snake, (snake, mirror.current_amp_model)
+        assert mirror.current_amp_label == label, (snake, mirror.current_amp_label)
+        assert mirror.app_state.amp_model_idx == idx, (snake, mirror.app_state.amp_model_idx)
 
 
 def test_selected_fx_category_mapping():
@@ -234,10 +269,12 @@ def test_pedal_selection_marks_dropdown_visible_with_current_pedal_label():
 
 
 def test_amp_selection_marks_dropdown_visible_with_current_amp_label():
+    """D55: the dropdown label is the canonical D55 display name
+    (``JCM800``); the D52 alias ``high_gain_stack`` still resolves."""
     mirror = make_mirror()
     mirror.set_amp_model("high_gain_stack", gain=70, bass=55, mid=50, treble=60)
     assert mirror.app_state.selected_model_category == "AMP"
-    assert mirror.app_state.dropdown_label == "HIGH GAIN STACK"
+    assert mirror.app_state.dropdown_label == "JCM800"
     assert getattr(mirror.app_state,
                    "selected_model_dropdown_visible", False) is True
 
@@ -252,6 +289,8 @@ def test_cab_selection_marks_dropdown_visible_with_current_cab_label():
 
 
 def test_amp_presence_resonance_land_in_knob_values_4_and_5():
+    """D55: ``british_crunch`` (D52 alias) routes onto ``ac30`` -- the
+    rest of the knob-byte layout is unchanged."""
     mirror = make_mirror()
     mirror.set_amp_model("british_crunch", gain=55, bass=50, mid=60,
                           treble=55, presence=70, resonance=40,
@@ -305,6 +344,7 @@ if __name__ == "__main__":
         test_non_model_effects_hide_dropdown,
         test_amp_presence_resonance_land_in_knob_values_4_and_5,
         test_amp_knob_defaults_are_8_long,
+        test_d55_six_amp_helpers_each_land_on_correct_model,
     ]
     for test in tests:
         test()

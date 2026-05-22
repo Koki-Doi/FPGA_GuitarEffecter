@@ -179,9 +179,15 @@ def test_selected_fx_category_mapping():
 
 
 def test_dropdown_short_label_known_and_fallback():
+    """D55: short labels for the six new amp voicings; pedal / cab
+    entries unchanged."""
     assert dropdown_short_label("TUBE SCREAMER") == "TUBE SCRMR"
-    assert dropdown_short_label("BRITISH CRUNCH") == "BRIT CRUNCH"
-    assert dropdown_short_label("HIGH GAIN STACK") == "HI-GAIN"
+    assert dropdown_short_label("JC-120") == "JC-120"
+    assert dropdown_short_label("Twin Reverb") == "TWIN RVB"
+    assert dropdown_short_label("AC30") == "AC30"
+    assert dropdown_short_label("Rockerverb") == "ROCKERVRB"
+    assert dropdown_short_label("JCM800") == "JCM800"
+    assert dropdown_short_label("TriAmp Mk3") == "TRIAMP MK3"
     assert dropdown_short_label("2x12 COMBO") == "2x12 CMB"
     assert dropdown_short_label("RAT") == "RAT"
     assert dropdown_short_label("CUSTOM THING") == "CUSTOM THING"
@@ -218,11 +224,13 @@ def test_mirror_updates_app_state_dropdown_fields_on_pedal_edit():
 
 
 def test_mirror_updates_app_state_dropdown_fields_on_amp_edit():
+    """D55: ``high_gain_stack`` is a back-compat alias for the D55
+    ``jcm800`` voicing; the dropdown label is the canonical D55 name."""
     mirror = make_mirror()
     mirror.high_gain_stack(gain=70, bass=55, mid=50, treble=60)
     assert mirror.app_state.selected_model_category == "AMP"
-    assert mirror.app_state.dropdown_label == "HIGH GAIN STACK"
-    assert mirror.app_state.dropdown_short_label == "HI-GAIN"
+    assert mirror.app_state.dropdown_label == "JCM800"
+    assert mirror.app_state.dropdown_short_label == "JCM800"
 
 
 def test_mirror_updates_app_state_dropdown_fields_on_cab_edit():

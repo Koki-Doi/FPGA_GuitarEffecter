@@ -2949,3 +2949,151 @@ not get removed even when superseded — they get updated.
   - `tests/test_overlay_controls.py` (D54 bit-pack tests; D53 in-band-shift tests retired).
 - **Tests.** `python3 -m py_compile` PASS for every edited Python file. `python3 -m unittest -v` PASS for the encoder / state / overlay suite (87 + 5 new D54 tests, 0 failures). `python3 tests/test_overlay_controls.py` PASS.
 - **Rollback.** Revert `Amp.hs` to the pre-D54 `ampAsymClip :: Unsigned 8 -> Sample -> Sample` shape, restore the legacy `ampModelSel` byte quantiser, drop `ampModelIdxF` / `ampDriveModeF` / `ampCharForModel`, restore the `_percent_to_u8(amp_character, 255)` path in `AudioLabOverlay.guitar_effect_control_words`, revert `amp_model_drive_byte` to the D53 `amp_character_byte_for_model` shape, regenerate Clash VHDL, re-run Vivado, redeploy. The D53 bit-shift gives the same UI surface (DRV MODE 0/1) for a no-rebuild fallback if the new bit decoding regresses timing on a future P&R seed.
+
+## D55 — Replace Amp Sim model set with six researched amp voicings
+
+- **Date.** 2026-05-22.
+- **Status.** Implemented end-to-end: research notes drafted, Python /
+  GUI / HDMI mirror / encoder runtime / notebooks / tests updated,
+  Clash regenerated, Vivado batch rebuild kicked off, deploy +
+  on-board smoke pending the next session.
+- **Context.** D54 wired the Amp Sim DRV MODE bit into a real Clash
+  Clean/Drive branch, but the model set was still the legacy D52
+  four-band lineup (`jc_clean` / `clean_combo` / `british_crunch` /
+  `high_gain_stack`) whose voicing differences came from one shared
+  per-model "character byte" and only nudged a single LPF / clip
+  knee. The user requested six researched amp models with real
+  voicing differences, with each model having a Clean and Drive
+  variant via the existing D54 bit.
+- **Decision.**
+  - **Six inspired-by amp voicings replace the D52 set.** The new
+    table (snake_case enum, integer idx, title-case label) is:
+    - `0 = jc_120` — `JC-120` (Roland Jazz Chorus 120 SS clean)
+    - `1 = twin_reverb` — `Twin Reverb` (Fender Blackface AB763)
+    - `2 = ac30` — `AC30` (Vox Top Boost EL84 chime)
+    - `3 = rockerverb` — `Rockerverb` (Orange EL34 dirty)
+    - `4 = jcm800` — `JCM800` (Marshall 2203 master volume)
+    - `5 = triamp_mk3` — `TriAmp Mk3` (Hughes & Kettner modern HG)
+    The research notes / source URLs / DSP coefficient rationale
+    live in `docs/ai_context/AMP_MODEL_RESEARCH_D55.md`. Labels are
+    inspired-by, not commercial circuit / IR / coefficient copies
+    (`DECISIONS.md` D7).
+  - **`axi_gpio_amp_tone.ctrlD` widened from 2-bit to 3-bit model
+    field.** D55 layout:
+    - `ctrlD[7]` = `ampDriveMode` (0 = Clean, 1 = Drive, unchanged from D54).
+    - `ctrlD[6:3]` = reserved, Python writer must set 0; Clash side
+      ignores them.
+    - `ctrlD[2:0]` = `ampModelIdx` (3-bit, 0..5 valid; 6..7
+      reserved -> Clash falls back to 0 = JC-120 as a safety default
+      so an unexpected write does not run `clip_count` away on the
+      highest-gain voicing).
+    - Python composer:
+      `AudioLabOverlay.amp_model_drive_byte(amp_model_idx, amp_drive_mode)
+      = ((mode & 1) << 7) | (idx & 0x07)`, with idx clamped to
+      `AMP_MODEL_IDX_MAX = 5` before pack.
+  - **Per-model coefficient tables in `Amp.hs`, not just a shared
+    character byte.** New helpers:
+    - `ampModelIdxF f = unpack (slice d26 d24 (fAmpTone f))` returns
+      `Unsigned 3` (was `Unsigned 2` in D54).
+    - `ampCharForModel` returns the per-model centre intensity
+      (`26 / 89 / 153 / 200 / 220 / 240`). The two new high-gain
+      indices get bigger intensities so the existing knee / alpha /
+      second-stage formulas (which consume the byte) already react
+      harder before the Drive bit fires.
+    - `ampModelDarken` / `ampPreLpfDriveDarken` /
+      `ampSecondStageDriveBonus` / `ampDrivePosDelta` /
+      `ampDriveNegDelta` are six independent per-model tables driving
+      `ampPreLowpassFrame`, `ampSecondStageMultiplyFrame`, and
+      `ampAsymClip`. JC-120 lands at the tightest / brightest end;
+      TriAmp Mk3 at the darkest / most saturated end.
+    - `ampTrebleGain :: Unsigned 3 -> Unsigned 8 -> Unsigned 8` now
+      carries a 6-entry case (`0..12`) so the top-octave fizz cut
+      scales with the voicing.
+    - `ampResPresenceProductsFrame` has its `presenceTrim` case
+      widened to 6 entries (`0`, `>>6`, `>>5`, `>>4`, `>>4`, `>>3`).
+  - **Output safety preserved.** `softClipK 3_300_000` /
+    `3_400_000` are kept at the same values, so the TriAmp Mk3 +
+    Drive combo cannot run `clip_count` past the historical band.
+  - **The legacy continuous `amp_character` percent knob stays
+    retired (D53 / D54).** `amp_character` kwarg remains as a
+    chain-preset back-compat path -- callers that supply only
+    `amp_character` still get a byte from the percent, but the user-
+    facing UI / encoder / notebook / HDMI all pass
+    `amp_model_idx + amp_drive_mode`.
+- **Backward compatibility.**
+  - `audio_lab_pynq/hdmi_state/amps.py` aliases the four retired
+    D52 snake_case names onto the closest D55 voicing
+    (`jc_clean -> jc_120`, `clean_combo -> twin_reverb`,
+    `british_crunch -> ac30`, `high_gain_stack -> jcm800`); the
+    legacy `mirror.jc_clean() / mirror.clean_combo() /
+    mirror.british_crunch() / mirror.high_gain_stack()` helpers stay
+    callable and route onto the new voicings.
+  - Legacy state.json files written by D54 / D53 / D52 load cleanly:
+    `compact_v2/state.py::load_state_json` clamps
+    `amp_model_idx` into the new 0..5 range. A pre-D52 state file
+    with idx=3 still loads as `Rockerverb` after D55 (the closest
+    high-gain slot to the retired `high_gain_stack`).
+  - `AMP_MODEL_CHARACTER_BYTES`, `AMP_DRIVE_MODE_OFFSET` constants
+    are preserved as 0-shift placeholders for any external caller
+    that imported them; new code should use
+    `AMP_MODEL_IDX_MASK = 0x07` / `AMP_MODEL_IDX_MAX = 5` instead.
+- **Files changed.**
+  - `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (3-bit model field,
+    six-way coefficient tables, `ampAsymClip` signature changed to
+    `Unsigned 3 -> Unsigned 8 -> Bool -> Sample -> Sample`).
+  - `hw/ip/clash/vhdl/LowPassFir/` regenerated by Clash + `create_ip.tcl`.
+  - `audio_lab_pynq/effect_defaults.py` (AMP_MODELS rewritten to the
+    six snake_case names; new `AMP_MODEL_LABELS` /
+    `AMP_MODELS_LEGACY_PERCENT` exports).
+  - `audio_lab_pynq/AudioLabOverlay.py` (`AMP_MODEL_IDX_MASK = 0x07`,
+    `AMP_MODEL_IDX_MAX = 5`, new `get_amp_model_labels` /
+    `amp_model_to_idx`; six `set_amp_model` helpers in
+    `HdmiEffectStateMirror`; legacy `set_amp_model` route updated).
+  - `audio_lab_pynq/encoder_effect_apply.py` (clamps to
+    `overlay.AMP_MODEL_IDX_MAX` if exposed; D55 docstring).
+  - `audio_lab_pynq/hdmi_effect_state_mirror.py` (`_amp_model_from_
+    character` rewritten for six bands; six new named helpers; four
+    legacy aliases preserved).
+  - `audio_lab_pynq/hdmi_state/amps.py` (AMP_MODELS / labels /
+    aliases rewritten for D55).
+  - `audio_lab_pynq/hdmi_state/selected_fx.py` (`DROPDOWN_SHORT_LABELS`
+    rewritten for the six D55 amp names).
+  - `GUI/compact_v2/knobs.py` (AMP_MODELS list rewritten to six
+    title-case labels; index = `amp_model_idx`).
+  - `GUI/compact_v2/state.py` (default `amp_model_idx = 2`
+    (`AC30`); load_state clamps to 0..len(AMP_MODELS)-1).
+  - `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`
+    (inline AMP_MODELS fallback dict updated to six entries).
+  - `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb`
+    (default `amp_model = "twin_reverb"`).
+  - `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb` (demo
+    `state.amp_model_label = "JCM800"`).
+  - `tests/test_overlay_controls.py` /
+    `tests/test_encoder_effect_apply.py` /
+    `tests/test_hdmi_model_state_mapping.py` /
+    `tests/test_hdmi_resource_monitor.py` /
+    `tests/test_hdmi_selected_fx_state.py` /
+    `tests/test_hdmi_origin_mapping.py` updated for the six-model
+    set + 3-bit field + alias behaviour.
+  - `docs/ai_context/AMP_MODEL_RESEARCH_D55.md` (new, research notes).
+  - `docs/ai_context/GPIO_CONTROL_MAP.md`,
+    `docs/ai_context/CURRENT_STATE.md`,
+    `docs/ai_context/RESUME_PROMPTS.md`,
+    `docs/ai_context/TIMING_AND_FPGA_NOTES.md` updated for D55.
+- **Tests.** `python3 -m py_compile` PASS for every edited Python
+  file. `python3 -m unittest -v
+  tests.test_encoder_input_decode tests.test_encoder_ui_controller
+  tests.test_compact_v2_encoder_state tests.test_encoder_effect_apply
+  tests.test_overdrive_model_select tests.test_hdmi_selected_fx_state`
+  PASS (90 + 3 new D55 tests). `python3 tests/test_overlay_controls.py`
+  PASS. `python3 tests/test_hdmi_model_state_mapping.py` /
+  `tests/test_hdmi_resource_monitor.py` /
+  `tests/test_hdmi_gui_bridge.py` PASS as scripts.
+- **Rollback.** Revert `Amp.hs` to the D54 2-bit
+  `ampModelIdxF :: Unsigned 2` shape, drop the per-model coefficient
+  tables, restore `AMP_MODELS` in `effect_defaults.py` to the four
+  D52 snake_case names, restore `AMP_MODEL_IDX_MASK = 0x03`, revert
+  the GUI / HDMI / encoder / notebook edits, regenerate Clash VHDL,
+  re-run Vivado, redeploy. The D54 bit-pack remains a clean
+  fallback target because the bit positions of the drive bit and
+  the model field's LSB are preserved.

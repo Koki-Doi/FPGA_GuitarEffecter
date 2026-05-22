@@ -120,25 +120,43 @@ RAT_DEFAULTS = {
     "mix": 100,
 }
 
-# Amp simulator named "models" -- convenience labels that map onto the
-# existing ``amp_character`` percent value. Four models are documented;
-# they are inspirations, not commercial circuit / IR / coefficient
-# copies (DECISIONS.md D7). The numeric ``amp_character`` knob still
-# works directly; this dict only adds a friendlier API on top.
+# D55 Amp simulator models. Order matches the 3-bit ``amp_model_idx``
+# field that the Python writer packs into ``axi_gpio_amp_tone.ctrlD[2:0]``.
+# Values 0..5 are valid; 6/7 are reserved and the Clash side falls back to
+# 0 = JC-120 if it ever sees them (the Python helpers clamp to
+# ``AMP_MODEL_IDX_MAX = 5`` so they cannot be written through the normal
+# path). Labels are inspired-by, not commercial circuit / IR /
+# coefficient copies (`DECISIONS.md` D7).
 #
-# Bands inside the Clash ``ampModelSel`` helper:
-#   character 0..24   -> model 0 (jc_clean)
-#   character 25..49  -> model 1 (clean_combo)
-#   character 50..74  -> model 2 (british_crunch)
-#   character 75..100 -> model 3 (high_gain_stack)
-# The values below land in the centre of each band so the labelled
-# voicings are stable against a small notebook bump.
+# The legacy "amp_character percent" knob is retired (`DECISIONS.md`
+# D53 / D54). ``AMP_MODELS`` still exists so back-compat lookups (e.g.
+# ``set_amp_model("jc_120")``) work, but the numeric value is the
+# ``amp_model_idx`` integer 0..5, not a 0..100 percent. The four
+# centre values from the D52 "character band" world (10/35/60/85) are
+# preserved as ``AMP_MODELS_LEGACY_PERCENT`` for any external caller
+# still on that API.
 AMP_MODELS = {
-    "jc_clean":        10,
-    "clean_combo":     35,
-    "british_crunch":  60,
-    "high_gain_stack": 85,
+    "jc_120":         0,
+    "twin_reverb":    1,
+    "ac30":           2,
+    "rockerverb":     3,
+    "jcm800":         4,
+    "triamp_mk3":     5,
 }
+
+AMP_MODEL_LABELS = (
+    "JC-120",
+    "Twin Reverb",
+    "AC30",
+    "Rockerverb",
+    "JCM800",
+    "TriAmp Mk3",
+)
+
+# Centre amp_character percent values for the retired D52 4-model API
+# (kept only so the chain-preset back-compat path -- which still passes
+# ``amp_character=`` -- does not regress on existing JSON presets).
+AMP_MODELS_LEGACY_PERCENT = (10, 35, 60, 85)
 
 # Amp simulator (axi_gpio_amp + axi_gpio_amp_tone).
 AMP_DEFAULTS = {
@@ -244,6 +262,8 @@ __all__ = [
     "RAT_DEFAULTS",
     "AMP_DEFAULTS",
     "AMP_MODELS",
+    "AMP_MODEL_LABELS",
+    "AMP_MODELS_LEGACY_PERCENT",
     "CAB_DEFAULTS",
     "EQ_DEFAULTS",
     "REVERB_DEFAULTS",

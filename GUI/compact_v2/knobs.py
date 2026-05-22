@@ -78,9 +78,19 @@ OVERDRIVE_MODELS = [
     "CENTAUR",
 ]
 
-# Amp Simulator named voicings (label, character byte center value).
-AMP_MODELS = [("JC CLEAN", 10), ("CLEAN COMBO", 35),
-              ("BRITISH CRUNCH", 60), ("HIGH GAIN STACK", 85)]
+# Amp Simulator named voicings (D55). The list index IS the
+# ``amp_model_idx`` 0..5 written to ``axi_gpio_amp_tone.ctrlD[2:0]``;
+# the tuple shape is preserved as (label, idx) so existing callers
+# that index the second tuple field keep working. The Clash voicings
+# are described in ``docs/ai_context/AMP_MODEL_RESEARCH_D55.md``.
+AMP_MODELS = [
+    ("JC-120",       0),
+    ("Twin Reverb",  1),
+    ("AC30",         2),
+    ("Rockerverb",   3),
+    ("JCM800",       4),
+    ("TriAmp Mk3",   5),
+]
 
 # Cabinet IR model names.
 CAB_MODELS = ["1x12 OPEN BACK", "2x12 BRITISH", "4x12 CLOSED"]
