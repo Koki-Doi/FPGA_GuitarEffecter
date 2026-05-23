@@ -72,49 +72,73 @@ ampModelDarken idx = case idx of
 -- | Per-model extra darken to add only in Drive mode. Stacked on top of
 -- ``ampModelDarken`` so each model's Drive-mode tone is darker than
 -- its own Clean-mode tone (otherwise harder clipping just brightens).
+-- D58.2 (vs D55): +1..+4 to absorb the extra harmonics from the larger
+-- Drive-mode knee deltas without re-introducing D57's pre-clip push.
 ampPreLpfDriveDarken :: Unsigned 3 -> Unsigned 8
 ampPreLpfDriveDarken idx = case idx of
-  0 ->  4    -- JC-120: tiny extra in Drive
-  1 ->  6    -- Twin: light breakup
-  2 ->  8    -- AC30: jangly crunch
-  3 -> 14    -- Rockerverb: thick saturation
-  4 -> 12    -- JCM800: classic rock drive
-  5 -> 20    -- TriAmp Mk3: modern HG, kill fizz
-  _ ->  4
+  0 ->  5    -- JC-120: tiny extra in Drive
+  1 ->  7    -- Twin: light breakup
+  2 -> 10    -- AC30: jangly crunch
+  3 -> 16    -- Rockerverb: thick saturation
+  4 -> 16    -- JCM800: classic rock drive
+  5 -> 24    -- TriAmp Mk3: modern HG, kill fizz
+  _ ->  5
 
 -- | Per-model second-stage gain bonus in Drive mode.
+-- D58.2 (vs D55): lifted into 14..56 so each model's second-stage push
+-- is audibly stronger than D55's 8..44, but the highest entry sits well
+-- below the D57 overshoot. Stays a simple per-model adder (no DSP cost).
 ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
 ampSecondStageDriveBonus idx = case idx of
-  0 ->  8    -- JC-120: tiny bonus, SS feel
-  1 -> 12    -- Twin: light push
-  2 -> 20    -- AC30: harmonic bloom
-  3 -> 32    -- Rockerverb: thick push
-  4 -> 36    -- JCM800: cascaded gain
-  5 -> 44    -- TriAmp Mk3: modern HG sustain
-  _ ->  8
+  0 -> 14    -- JC-120: light bonus, SS feel
+  1 -> 18    -- Twin: light push
+  2 -> 28    -- AC30: harmonic bloom
+  3 -> 42    -- Rockerverb: thick push
+  4 -> 48    -- JCM800: cascaded gain
+  5 -> 56    -- TriAmp Mk3: modern HG sustain
+  _ -> 14
 
 -- | Per-model positive-side asym-clip knee delta in Drive mode.
 -- Signed 25 fits the existing arithmetic in ``ampAsymClip``.
+--
+-- D58.2 uses **per-model fixed scalars** (no ch dependency) sized to
+-- approximate D58's first-stage `ch * factor` evaluated at each model's
+-- own ``ampCharForModel`` peak value. The previous D58 attempt at
+-- proportional ``ch * factor`` deltas added four new multiplier
+-- instantiations (DSP48E1 count 83 -> 87), and the resulting Vivado
+-- P&R shift introduced an audible high-frequency saturation noise on
+-- the ADC -> DAC bypass path (Amp OFF + safe bypass still glitched
+-- under the D58 bit, even though the affected stage was nominally
+-- dead code). The fixed-scalar form lands at the same DSP count as
+-- D55 (83) so the bypass path P&R stays the same, while still giving
+-- a Drive-mode knee shrink comparable to D58 at the first stage. The
+-- second stage receives the same fixed value -- it ends up slightly
+-- tighter than D58 on the high-gain voicings (D58 also halved its ch
+-- there), but stays well above ``softClipK 3_300_000`` so the safety
+-- clip is not over-tripped.
 ampDrivePosDelta :: Unsigned 3 -> Signed 25
 ampDrivePosDelta idx = case idx of
-  0 -> 1_200
-  1 -> 1_500
-  2 -> 1_900
-  3 -> 2_400
-  4 -> 2_700
-  5 -> 3_200
-  _ -> 1_200
+  0 ->  13_000   -- JC-120
+  1 ->  58_000   -- Twin Reverb
+  2 -> 130_000   -- AC30
+  3 -> 210_000   -- Rockerverb
+  4 -> 264_000   -- JCM800
+  5 -> 336_000   -- TriAmp Mk3
+  _ ->  13_000
 
 -- | Per-model negative-side asym-clip knee delta in Drive mode.
+-- Slightly smaller than ``ampDrivePosDelta`` so the asymmetric
+-- character (negKnee was already 550 k below posKnee in D55) is
+-- preserved.
 ampDriveNegDelta :: Unsigned 3 -> Signed 25
 ampDriveNegDelta idx = case idx of
-  0 -> 1_000
-  1 -> 1_300
-  2 -> 1_700
-  3 -> 2_100
-  4 -> 2_400
-  5 -> 2_900
-  _ -> 1_000
+  0 ->  11_000   -- JC-120
+  1 ->  50_000   -- Twin Reverb
+  2 -> 113_000   -- AC30
+  3 -> 180_000   -- Rockerverb
+  4 -> 231_000   -- JCM800
+  5 -> 300_000   -- TriAmp Mk3
+  _ ->  11_000
 
 ampHighpassFrame :: Sample -> Sample -> Frame -> Frame
 ampHighpassFrame prevIn prevOut f =
