@@ -23,14 +23,44 @@ The current load-bearing facts:
   no new GPIO, no `topEntity` port, no `block_design.tcl` change, no
   Python API / Notebook UI break. See `AUDIO_RECORDING_ANALYSIS.md`,
   `DECISIONS.md` D17, and `TIMING_AND_FPGA_NOTES.md`.
-- The **Amp Simulator named models shipped** on the same branch.
-  Four named voicings (`jc_clean` / `clean_combo` / `british_crunch` /
-  `high_gain_stack`) are layered on the existing `amp_character`
-  byte; the Clash side adds an `ampModelSel` quantiser that biases
-  the post-clip pre-LPF alpha per band. No new GPIO, no `topEntity`
-  port, no `block_design.tcl` change, no `Frame` field added. The
-  numeric `amp_character` knob still works directly. See
-  `DECISIONS.md` D18 and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
+- The **Amp Simulator six-model rework shipped** (D55 +
+  D58.2). The legacy four-voicing D52 lineup (`jc_clean` /
+  `clean_combo` / `british_crunch` / `high_gain_stack`) is retired
+  and replaced by six "inspired-by" voicings: `0 = JC-120` /
+  `1 = Twin Reverb` / `2 = AC30` / `3 = Rockerverb` / `4 = JCM800` /
+  `5 = TriAmp Mk3`. `axi_gpio_amp_tone.ctrlD` now carries
+  `ctrlD[7] = ampDriveMode` (0 = Clean, 1 = Drive),
+  `ctrlD[6:3] = 0` reserved, `ctrlD[2:0] = ampModelIdx` (3-bit,
+  0..5 valid; 6/7 reserved -> Clash safety fallback to JC-120).
+  Per-model voicing tables in `Amp.hs` (`ampCharForModel`,
+  `ampModelDarken`, `ampPreLpfDriveDarken`,
+  `ampSecondStageDriveBonus`, `ampDrivePosDelta`, `ampDriveNegDelta`,
+  six-entry `ampTrebleGain` / `presenceTrim`) replace the old
+  shared character-byte arithmetic. The legacy
+  `ampModelSel :: Unsigned 8 -> Unsigned 2` four-band quantiser is
+  gone. Clean / Drive is a real Clash DSP branch (D54): in Drive
+  mode the asym-clip knee shrinks by `ampDrivePosDelta` /
+  `ampDriveNegDelta`, the post-clip LPF darken stacks
+  `ampPreLpfDriveDarken` on top of `ampModelDarken`, and the
+  second-stage gain adds `ampSecondStageDriveBonus`. D58.2 keeps
+  the D55 first-stage `ampAsymClip` signature (`Unsigned 3 ->
+  Unsigned 8 -> Bool -> Sample -> Sample`) and uses **per-model
+  fixed-scalar Drive deltas** (JC-120 `13_000`/`11_000` ...
+  TriAmp Mk3 `336_000`/`300_000`) sized to approximate the
+  abandoned D58 `ch * factor` form at each model's intensity peak.
+  The fixed-scalar form is load-bearing: D58's `ch * factor`
+  added four DSP48E1 multipliers (DSP count `83 -> 87`), and the
+  resulting Vivado P&R shift introduced an audible high-frequency
+  saturation noise on the ADC -> DAC bypass path even with Amp OFF
+  and full safe bypass; D58.2's fixed scalars bring DSP back to
+  `83 / 220 (37.73 %)` -- the same as D55 -- and the bypass-path
+  symptom is gone. `softClipK 3_300_000` / `3_400_000` output
+  safety preserved across all six voicings (TriAmp Mk3 + Drive
+  3 s `CLIP_COUNT delta = 0` on the deployed bit). No new GPIO,
+  no `block_design.tcl` change, no `topEntity` port change. See
+  `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
+  table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
+  D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
 - The **noise-suppressor refactor shipped** earlier (branch
   `feature/noise-suppressor-gpio-ui`, merged into `main`). A
   dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` carries

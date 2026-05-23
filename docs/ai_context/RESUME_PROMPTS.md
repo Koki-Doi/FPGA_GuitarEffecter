@@ -558,7 +558,67 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
-## Phase D55 — Replace Amp Sim model set with six researched amp voicings (current)
+## Phase D58.2 — Balanced Amp Drive Mode saturation, fixed-scalar retake (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `main` (merge `7ba801f` "Merge feature/amp-drive-mode-balanced-gain-v2
+> into main") か `feature/amp-drive-mode-balanced-gain-v2`
+> (`f9b8759` "Add balanced amp drive mode saturation (fixed-scalar
+> retake)") にいることを確認してください。
+>
+> 構成 (実装済 / deploy 済 / 耳確認済):
+> - D55 の 6-model 構造 (`JC-120 / Twin Reverb / AC30 / Rockerverb /
+>   JCM800 / TriAmp Mk3`) と `ctrlD[7] = ampDriveMode` /
+>   `ctrlD[6:3] = 0` / `ctrlD[2:0] = ampModelIdx` の bit-pack、
+>   `softClipK 3_300_000 / 3_400_000` safety、second-stage
+>   `intensity = ampCharForModel idx >> 1` (half intensity) は **完全に
+>   D55 と同一**。
+> - `Amp.hs` の Drive 係数だけを D55 から再調整:
+>     - `ampDrivePosDelta` (`Unsigned 3 -> Signed 25`): `13_000 /
+>       58_000 / 130_000 / 210_000 / 264_000 / 336_000`
+>     - `ampDriveNegDelta` (`Unsigned 3 -> Signed 25`): `11_000 /
+>       50_000 / 113_000 / 180_000 / 231_000 / 300_000`
+>     - `ampSecondStageDriveBonus`: `14 / 18 / 28 / 42 / 48 / 56`
+>     - `ampPreLpfDriveDarken`: `5 / 7 / 10 / 16 / 16 / 24`
+>   `ampAsymClip` の signature は **D55 と同じ** (`Unsigned 3 ->
+>   Unsigned 8 -> Bool -> Sample -> Sample`)、Drive delta 引数は
+>   `modelIdx` のみ (D58 の `ch` 追加引数 は採用しない)。
+> - **重要な失敗教訓: D58 (`feature/amp-drive-mode-balanced-gain`,
+>   `797467c`) は `ch * factor` 比例型 Drive delta で DSP 数を
+>   83 → 87 に増やし、Vivado P&R が ADC→DAC bypass 経路に高音域
+>   飽和ノイズを乗せた (Amp OFF / 全 effect_on=False でも audible)。
+>   D58.2 は fixed scalar で DSP 数を 83 (D55 と同一) に戻して
+>   regression を回避**。
+> - bit/hwh sha `93f31348...` / `25991dc0...` を 5-site sync で
+>   PYNQ-Z2 192.168.1.9 に deploy 済 (`hw/Pynq-Z2/bitstreams/`,
+>   repo `audio_lab_pynq/bitstreams/`, site-packages
+>   `audio_lab_pynq/bitstreams/`, `pynq/overlays/audio_lab/`,
+>   `jupyter_notebooks/audio_lab/bitstreams/`)。
+> - timing: WNS `-8.495 ns` (D55 比 -0.264 ns、deploy 帯内)、
+>   WHS `+0.051 ns`、THS `0 ns`、DSP `83 / 220 (37.73 %)`。
+> - smoke: ADC HPF True、6 model ctrlD readback OK、Pmod mode
+>   0/1/2/3 readback OK、safe bypass + mode-2 DSP 3 s CLIP_COUNT = 0、
+>   TriAmp Mk3 + Drive 3 s CLIP_COUNT = 0、GUI 起動例外無し。
+>   **耳確認 PASS** ("D58 のような高音域飽和ノイズは消えた")。
+>
+> やってよい変更: Python / GUI / Notebook / docs / tests / 必要なら
+> 最小の Clash DSP 追修正 + Vivado 再ビルド + deploy + 実機 smoke。
+> 禁止: D58 の `ch * factor` Drive delta を復活させる (DSP+4 →
+> bypass 経路 P&R regression)、D57 の `ampInputDriveGainBonus` /
+> pre-clip push / second clip stage full intensity / `ch * 5000+`
+> 多項係数を採用する、新規 AXI GPIO、`block_design.tcl` 変更、
+> `axi_gpio_amp_tone` address 変更、`amp_character` 連続ノブの
+> UI 復活、Clean/Drive 分岐の削除、モデル差を音量差だけで作ること、
+> HDMI / encoder / Pmod I2S2 path 改変、
+> `git push` / `git pull` / `git fetch`。
+>
+> 失敗時の rollback: PYNQ bit/hwh を D55 (`8df39b06...` /
+> `9fb470c7...`) に 5-site sync で戻すだけで audio がクリーン状態に
+> 戻る (Vivado 再ビルド不要)。`git show 314b7c6:hw/Pynq-Z2/
+> bitstreams/audio_lab.bit > /tmp/d55.bit` で抽出可能。
+
+## Phase D55 — Replace Amp Sim model set with six researched amp voicings (superseded by D58.2)
 
 > 続きを始める前に `git status --short` と
 > `git log -8 --oneline --decorate --graph` を実行し、
