@@ -3287,3 +3287,127 @@ not get removed even when superseded — they get updated.
     `feature/amp-drive-mode-balanced-gain-v2` (this D58.2 attempt)
     remain available for inspection.
 
+## D59 — Rejected Compressor target-gain pipeline split with full `Frame` carry
+
+- **Decision.** D59 is rejected for deployment. It split the Compressor
+  target-gain calculation into three registered stages and improved
+  routed WNS, but the user heard the same high-frequency saturation
+  noise pattern that D58.1/D58 exposed.
+- **What D59 changed.** `compTargetStage1` did threshold /
+  soft-threshold comparison, excess calculation, and excess clamp;
+  `compTargetStage2` did `excessU12 * ratioByte`, reduction shift /
+  clamp, and target-gain conversion; `compGainNext` kept the smoothing
+  register update. D59 also carried the full `Frame` through
+  `compTargetStage1Pipe`, `compTargetPipe`, and `compGainFramePipe`.
+- **Why it was rejected.** Programmatic smoke was clean
+  (`FRAME_COUNT delta = 144150`, `CLIP_COUNT delta = 0`), but this is
+  the same class of regression as D58: a P&R-sensitive audible artifact
+  that counters and the top-level timing summary do not prove away. The
+  extra full-frame carry added 254 registers and likely moved enough
+  placement/routing to disturb the audio path.
+- **Rollback.** The PYNQ-Z2 board was immediately restored to the D58.2
+  clean baseline from `feature/amp-drive-mode-balanced-gain-v2`: bit/hwh
+  md5 `1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`. Board smoke after rollback:
+  `ADC HPF True`, `R19_ADC_CONTROL 0x23`, Pmod mode 2 readback `2`,
+  `FRAME_COUNT delta = 144154`, `CLIP_COUNT delta = 0`.
+- **D59 timing record.** Routed WNS improved from D58.2 `-8.495 ns` to
+  `-8.138 ns`; TNS `-8756.266 ns`; WHS `+0.052 ns`; THS `0.000 ns`.
+  Utilization after place: Slice LUTs `19698`, Slice Registers `22364`,
+  Block RAM Tile `6`, DSPs `83`. bit/hwh md5
+  `a42358803798acc1e63ef5d4abd45b33` /
+  `1ddd377d077401ccf60a9096d319ed52`. Do not redeploy this bit.
+
+## D60 — Compressor target-gain split, control-only retake
+
+- **Decision.** Keep the Compressor gain-calculation split, but do not
+  carry the audio `Frame` through the target-gain pipeline. Only the
+  Compressor control word and target terms flow through
+  `compTargetStage1Pipe` / `compTargetPipe`; the audio frame stays on
+  the original `compLevelPipe -> compApplyPipe` data path.
+- **Reason.** D60 still breaks the packed
+  threshold/soft-threshold/excess/multiply/reduction/target/smoothing
+  path, but avoids the broad full-frame register insertion that made
+  D59 risky. Compressor gain reaction is delayed by a small number of
+  samples, which was explicitly allowed; the DSP chain effect order and
+  global audio-frame latency are not changed.
+- **Scope intentionally excluded.** No DS-1 / Distortion, `Amp.hs`,
+  GUI, Pmod I2S2, `block_design.tcl`, GPIO map, `topEntity` port,
+  Vivado strategy, Compressor coefficient, threshold/ratio/response /
+  makeup semantic, or effect-order change.
+- **Files touched.**
+  - `hw/ip/clash/src/AudioLab/Effects/Compressor.hs`
+  - `hw/ip/clash/src/AudioLab/Pipeline.hs`
+  - regenerated Clash/VHDL/IP artifacts under
+    `hw/ip/clash/vhdl/LowPassFir/`
+  - rebuilt local `hw/Pynq-Z2/bitstreams/audio_lab.bit` /
+    `hw/Pynq-Z2/bitstreams/audio_lab.hwh`
+  - `docs/ai_context/CURRENT_STATE.md`,
+    `docs/ai_context/TIMING_AND_FPGA_NOTES.md`, and this file
+- **Build / timing.** Clash regeneration, Vivado IP repackage, and full
+  `hw/Pynq-Z2 make clean && make` completed with
+  `write_bitstream completed successfully` and 0 errors. Routed WNS
+  `-8.300 ns`, TNS `-8836.632 ns`, failing setup endpoints
+  `3181 / 60265`, WHS `+0.043 ns`, THS `0.000 ns`. This is
+  `+0.195 ns` better than D58.2 (`-8.495 ns`) and `0.162 ns` worse
+  than rejected D59 (`-8.138 ns`). Utilization after place: Slice LUTs
+  `19728` (`37.08 %`), Slice Registers `22253` (`20.91 %`), Block RAM
+  Tile `6` (`4.29 %`), DSPs `83` (`37.73 %`).
+- **Critical-path result.** The top routed setup path remains DS-1-side,
+  not Compressor: `ARG__6__3` DSP48E1 -> `ds1_5_reg[1015]`, slack
+  `-8.300 ns`, logic levels
+  `18 (CARRY4=11 DSP48E1=1 LUT2=2 LUT3=1 LUT4=1 LUT5=1 LUT6=1)`.
+  DS-1 remains explicitly out of scope for this task.
+- **Deploy status.** D60 bit/hwh md5:
+  `078f39c78991f1b36e6bfd1806b830a5` /
+  `48160ae4acdf3abb9d1abf14dd65cc6d`. **Deployed 2026-05-24 to
+  PYNQ-Z2 192.168.1.9 and audio-rejected on bench.**
+  Deploy-time programmatic smoke PASSed: cold-power-cycled PYNQ +
+  explicit `AudioLabOverlay(download=True)` to force a fresh PL
+  program (`PL.timestamp` confirmed re-program), `ADC HPF True`,
+  Pmod mode 2 readback `2`, three-second `FRAME_COUNT delta` between
+  `144148` and `144154` across `all_off` / `comp_on_mild` /
+  `comp_on_stronger` / `comp_off_again` cases, `CLIP_COUNT delta = 0`
+  in every window,
+  `set_compressor_settings(threshold/ratio/response/makeup/enabled)`
+  readback consistent, GUI keep-mode + dsp-mode 20 s holds clean with
+  `live=ON apply=OK` and no Python exceptions, LCD compact-v2 rendered
+  correctly, final mute=3 confirmed. **On-bench audio verification by
+  ear FAILED: high-frequency saturation noise was audible even in
+  safe-bypass (all `effect_on = False`, Pmod mode 2 ADC -> DSP -> DAC).**
+  This is the same class of regression as D58
+  (`feature/amp-drive-mode-balanced-gain`) and D59 -- a Vivado P&R-induced
+  bypass-path artifact that the macroscopic timing summary and
+  `CLIP_COUNT` do not flag.
+- **Rollback.** PYNQ board was rolled back to D58.2 (bit/hwh md5
+  `1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) via
+  `git checkout HEAD -- hw/Pynq-Z2/bitstreams/{audio_lab.bit,audio_lab.hwh}`
+  + `scripts/deploy_to_pynq.sh` + explicit
+  `AudioLabOverlay(download=True)` to force a fresh PL program.
+  Post-rollback Pmod mode 2 safe-clean smoke PASSed
+  (`FRAME_COUNT delta = 144153`, `CLIP_COUNT delta = 0`,
+  `ADC HPF True`, `VERSION 0x00480001`, final mute=3). The D60 bit
+  `078f39c7...` / hwh `48160ae4...` must not be redeployed.
+- **Source revert in this commit.**
+  `hw/ip/clash/src/AudioLab/Effects/Compressor.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`, and the regenerated Clash
+  artifacts under `hw/ip/clash/vhdl/LowPassFir/` are reverted back to
+  the D58.2 baseline so the source tree matches the deployed bit. The
+  D60 attempt is preserved in this `DECISIONS.md` entry, in
+  `CURRENT_STATE.md`'s "Superseded D60 attempt note", and in the D60
+  row of `TIMING_AND_FPGA_NOTES.md` so the design rationale and
+  measurements stay discoverable in history.
+- **Conclusion: rule for future Compressor target-pipeline work.**
+  Both D59 (full-`Frame` carry) and D60 (control-only split, audio
+  frame left on the original `compLevelPipe -> compApplyPipe` path)
+  split-pipeline Compressor target-gain reworks have been
+  audio-rejected for the same class of P&R artifact. **The bench ear
+  on safe-bypass is the only sensor that has caught this class of
+  regression so far**; macroscopic timing summary, CLIP_COUNT,
+  FRAME_COUNT, GUI smoke, and `apply=OK` traces are not dispositive
+  on their own. Any further Compressor target-pipeline split must be
+  validated by listening on safe-bypass before being treated as a
+  candidate, and must be ready to be rolled back to D58.2 without a
+  Vivado rebuild (the D58.2 bit/hwh are at HEAD in
+  `hw/Pynq-Z2/bitstreams/` for this reason).
