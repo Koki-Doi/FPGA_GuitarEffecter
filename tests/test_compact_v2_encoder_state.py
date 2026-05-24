@@ -200,6 +200,36 @@ def test_legacy_state_with_char_value_loads_as_binary_drive_mode():
             os.unlink(path)
 
 
+def test_renderer_covers_all_six_amp_models_and_both_drive_modes():
+    """D55 / D57 regression guard: render_frame must complete for every
+    (amp_model_idx, amp_drive_mode) combination so a future six-pack
+    rename or DRV MODE rework cannot silently blank the HDMI GUI.
+    Also walks every selected_effect index 0..7 so a per-effect render
+    branch (e.g. the Amp Sim knob grid) cannot regress unnoticed."""
+    try:
+        from compact_v2.renderer import render_frame_800x480_compact_v2
+        from compact_v2.knobs import AMP_MODELS, EFFECTS
+    except Exception as exc:
+        import warnings
+        warnings.warn("renderer import skipped: %r" % (exc,))
+        return
+    assert len(AMP_MODELS) == 6, "D55 expects six amp voicings"
+    for amp_idx in range(len(AMP_MODELS)):
+        for drv in (0, 1):
+            s = AppState()
+            s.amp_model_idx = amp_idx
+            s.amp_drive_mode = drv
+            s.all_knob_values["Amp Sim"][7] = float(drv)
+            for sel in range(len(EFFECTS)):
+                s.selected_effect = sel
+                frame = render_frame_800x480_compact_v2(s)
+                assert frame is not None
+                if hasattr(frame, "shape"):
+                    assert frame.shape[0] == 480
+                    assert frame.shape[1] == 800
+                    assert frame.shape[2] == 3
+
+
 _TEST_FUNCTIONS = [
     test_appstate_phase7g_fields_present,
     test_appstate_json_round_trip_ignores_phase7g_fields,
@@ -211,6 +241,7 @@ _TEST_FUNCTIONS = [
     test_set_knob_on_amp_drv_mode_clamps_to_zero_or_one,
     test_appstate_json_round_trip_persists_amp_drive_mode,
     test_legacy_state_with_char_value_loads_as_binary_drive_mode,
+    test_renderer_covers_all_six_amp_models_and_both_drive_modes,
 ]
 
 

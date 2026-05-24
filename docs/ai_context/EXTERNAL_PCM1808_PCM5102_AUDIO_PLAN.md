@@ -1,37 +1,32 @@
-# External PCM1808 / PCM5102 audio path plan + Phase 7C/7E/7D close-out
+# External PCM1808 / PCM5102 audio path history (retired)
 
 このドキュメントは元々 **Phase 7A 設計フェーズ**として書かれた
 (セクション 1 〜 8 がその名残)。Phase 7C / 7E / 7D を経て **PCM5102
 DAC 並列出力は deployed**、**PCM1808 ADC mux は build-time 実装済 + JB
-配線済だが deploy bit は ADAU フォールバック**まで進んでいる。最新
-状況の要約はセクション 9 (実装計画兼進捗ログ) と
-`docs/ai_context/CURRENT_STATE.md` 冒頭、決定事項は
-`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44 を参照する。
+配線済だが deploy bit は ADAU フォールバック**まで進んだ。
 
-**Pmod I2S2 への発展計画 (Phase Pmod-0, planning only)**:
-PCM1808 module は analog 前段 damage 仮説 (`DECISIONS.md` D43) で
-事実上 retire 状態、PCM5102 line out は JB7 / JB8 隣接クロストーク
-疑い (`DECISIONS.md` D44)。次の評価ステップは **Digilent Pmod I2S2**
-(CS4344 stereo DAC + CS5343 stereo ADC on 1 PMOD board) を PMOD JB
-に直挿しして外付け I2S I/O のリファレンスにする案で、`DECISIONS.md`
-D45 にプランのみ記録、詳細は
-`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`。本ドキュメント (PCM5102
-/ PCM1808 計画) と Pmod I2S2 plan は **共存**: Pmod I2S2 評価時には
-PMOD JB を Pmod I2S2 専用にして既存 PCM5102 / PCM1808 ジャンパを物理
-的に外す build variant 方針。
+Current status: this path is **retired**. D48/D49/D50 replaced PMOD JB
+ownership with the Digilent Pmod I2S2 active audio path
+(`pmod_i2s2_integration.tcl`, `audio_lab_pmod_i2s2.xdc`,
+`pmod_status_0` @ `0x43D20000`). The PCM5102 / PCM1808 Tcl/XDC/RTL files
+remain in the repository only as archival reference for old bitstreams and
+rollback archaeology; `create_project.tcl` does not source them in the
+current build. Do not use the wiring tables below as current instructions
+unless a future user explicitly starts a PCM5102 / PCM1808 revival phase.
+The current external-audio record is
+`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`.
 
 関連:
-- `docs/ai_context/IO_PIN_RESERVATION.md` (ピン予約台帳、`Status` =
-  `wired` の行が Phase 7C / 7D 反映済)
+- `docs/ai_context/IO_PIN_RESERVATION.md` (current PMOD JB owner is Pmod I2S2; PCM rows are historical)
 - `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` (ロータリーエンコーダー仕様)
-- `docs/ai_context/AUDIO_SIGNAL_PATH.md` (PCM5102 並列出力 + PCM1808
-  build-time mux 入力の信号経路図)
+- `docs/ai_context/AUDIO_SIGNAL_PATH.md` (current Pmod I2S2 signal path plus historical PCM5102 / PCM1808 section)
 - `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md` (D27 / D28 / D29 /
-  D30、Phase 7C/7E/7D ぶんは D38 / D39 / D40 / D41 / D42 / D43 / D44)
+  D30、Phase 7C/7E/7D ぶんは D38 / D39 / D40 / D41 / D42 / D43 / D44、
+  retirement and Pmod replacement are D48 / D49 / D50)
 
 ---
 
-## 1. 目的
+## 1. Original purpose (historical Phase 7A)
 
 PYNQ-Z2 ボード搭載の ADAU1761 codec に加えて、外付け I2S audio
 モジュールを使う前提を整える。
@@ -277,9 +272,13 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
 
 ---
 
-## 9. 段階的実装計画 (Phase 7A ~ 7H)
+## 9. Historical implementation log (Phase 7A ~ 7D)
 
-### Phase 7A (本フェーズ): planning only
+This section records the retired PCM5102 / PCM1808 path as it existed before
+D48. The current PMOD JB path is Pmod I2S2; do not continue this plan unless
+a future explicit revival phase says so.
+
+### Phase 7A (historical): planning only
 - PCM1808 / PCM5102 module plan
 - external audio pin reservation (this doc + IO_PIN_RESERVATION.md)
 - rotary encoder pin reservation
@@ -331,7 +330,7 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
   - XDC `ext_adc_dout_i T10` + `ext_pcm1808_sckie_o W16`
   - smoke `scripts/test_pcm1808_adc_to_pcm5102.py`、`--inject-sine` /
     `--capture-adc` diagnostic flags を追加(D43)
-- **デプロイ状態 (Phase 7D close-out)**: `CONST_VAL=0` (mux=ADAU)。
+- **当時のデプロイ状態 (Phase 7D close-out)**: `CONST_VAL=0` (mux=ADAU)。
   ADAU Line In -> AudioLab DSP -> PCM5102 line out 動作確認済。HDMI
   / encoder GUI 健在。PCM1808 module 自体は alive (clock 受信、I2S
   frame 刻んでいる) だが analog-to-digital が機能していない。最有力
@@ -343,7 +342,7 @@ Phase 7E まで A / C を維持し、外付けパスが完全に動いてから 
   JB8 / W16 に専用ピンとして分離し、JB1 は RTL レベルで constant 0
   を維持。
 - 未対応:
-  - **PCM1808未使用時のJB8 SCKI停止**。現行 deploy bit は
+  - **PCM1808未使用時のJB8 SCKI停止**。Phase 7D deploy bit は
     `CONFIG.CONST_VAL=0` でADAU入力を選んでいるが、`ext_pcm1808_sckie_o`
     はPCM1808再投入用に12.288 MHzを出し続ける。JB8 / W16 はPCM5102
     DINのJB7 / V16と隣接するため、PCM5102音質改善の次段階では

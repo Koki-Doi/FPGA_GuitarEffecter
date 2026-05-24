@@ -1,22 +1,59 @@
-# Pmod I2S2 integration plan (planning only)
+# Pmod I2S2 integration record (current deployed path)
 
-このドキュメントは **設計フェーズ専用**。Pmod I2S2 (Digilent) を購入済
-で、納品前に導入仕様 / 接続方針 / 実装フェーズ / 検証手順を整理する。
+このドキュメントは、Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) の
+PMOD JB audio path について、最初の Phase Pmod-0 設計メモと、その後の
+実装・deploy 済み仕様をまとめる。
 
-**RTL / XDC / Tcl / Vivado / bitstream / Python runtime / Notebook の
-変更は今回行わない**。本ドキュメント追加 + 既存 docs への最小追記のみ。
+## Current deployed status (D48 / D49 / D50 / D62)
+
+Pmod I2S2 は現行デプロイ済み build の **active audio path** です。
+`hw/Pynq-Z2/create_project.tcl` は `pmod_i2s2_integration.tcl` を
+無条件に source し、PMOD JB は `audio_lab_pmod_i2s2.xdc` の
+8 pin (`JB1..JB4`, `JB7..JB10`) が専有します。PCM5102 / PCM1808 の
+Tcl/XDC/RTL は repo に archival reference として残っていますが、
+現行 build では source されません。
+
+Current implementation:
+
+- `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v`: FPGA-master I2S engine。
+  MCLK 12.288 MHz、BCLK 3.072 MHz、LRCK 48 kHz、24-bit / 32-bit slot /
+  I2S Philips。
+- `hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v`: AXI status/control slave
+  at `0x43D20000`, VERSION `0x00480001`。
+- Runtime modes: `0 = tone`, `1 = loopback`, `2 = dsp`, `3 = mute`.
+- Mode 2 (D49) routes Pmod CS5343 ADC SDOUT into `i2s_to_stream_0/si`,
+  drives `i2s_to_stream_0/bclk` / `/lrclk` from the Pmod-generated clocks,
+  sends `i2s_to_stream_0/so` to Pmod CS4344 DAC, and keeps ADAU
+  `sdata_o` G18 as debug visibility.
+- Mode 2 output is intentionally mono RIGHT-to-both-channels (D50):
+  `mode2_right_snapshot` mirrors the IP RIGHT slot into both DAC slots to
+  work around the `i2s_to_stream` LEFT extraction bug and `i2sOut` setup
+  race.
+- Runtime entries:
+  `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb`,
+  `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb`,
+  `scripts/test_pmod_i2s2.py`, `scripts/pmod_i2s2_mode.py`,
+  `scripts/pmod_i2s2_capture_probe.py`.
+- Latest deployed bitstream baseline is D62 BD-2 coefficient-only retune:
+  WNS `-8.497 ns`, TNS `-5876.740 ns`, WHS `+0.053 ns`, THS `0`,
+  bit/hwh md5 `349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`.
+
+The original Phase Pmod-0 planning text remains below as history. Any
+sections that say "planning only" or "do not change RTL/XDC/Tcl" describe
+that earlier docs-only phase, not the current repository state.
 
 関連:
-- `docs/ai_context/CURRENT_STATE.md` (Phase 7D close-out 状態)
-- `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (既存 PCM5102 / PCM1808 計画)
+- `docs/ai_context/CURRENT_STATE.md` (current D62 / Pmod mode 2 state)
+- `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (retired PCM5102 / PCM1808 history)
 - `docs/ai_context/IO_PIN_RESERVATION.md` (PMOD / RPi / Arduino header の pin 予約台帳)
 - `docs/ai_context/AUDIO_SIGNAL_PATH.md` (内部 AXIS DSP 経路と外付け codec 接続点)
 - `docs/ai_context/TIMING_AND_FPGA_NOTES.md` (deploy band と WNS baseline)
-- `docs/ai_context/DECISIONS.md` (D27 / D28 / D29 / D38 / D39 / D40 / D41 / D42 / D43 / D44 / D45)
+- `docs/ai_context/DECISIONS.md` (D45 / D48 / D49 / D50 / D62)
 
 ---
 
-## 1. Purpose
+## 1. Original purpose (historical Phase Pmod-0)
 
 Digilent **Pmod I2S2** (CS4344 24-bit stereo DAC + CS5343 24-bit stereo
 ADC、両方 I2S 入出力、共通 MCLK) を AudioLab 外付け I/O の **安定基準
@@ -40,7 +77,7 @@ ADAU1761 経路と Phase 7E PCM5102 ADAU-mirror 経路は維持し、Pmod I2S2
 
 ---
 
-## 2. Current baseline (2026-05-18, Phase 7D close-out)
+## 2. Historical baseline before Pmod I2S2 (2026-05-18, Phase 7D close-out)
 
 - `audio_lab.bit` (commit `f502373` 系) deploy 済。
 - 入力 path: ADAU1761 ADC -> `pcm1808_input_select` mux
@@ -81,9 +118,11 @@ ADAU1761 経路と Phase 7E PCM5102 ADAU-mirror 経路は維持し、Pmod I2S2
 
 ---
 
-## 4. Non-goals
+## 4. Original Phase Pmod-0 non-goals (historical)
 
-本フェーズ (Phase Pmod-0 / planning only) では以下を **やらない**:
+Phase Pmod-0 / planning-only の時点では以下を **やらない**としていた。
+現在は D48 / D49 / D50 で RTL / XDC / Tcl / bit/hwh / Python runtime /
+Notebook まで実装・deploy 済みであり、この節は当時の境界記録である。
 
 - RTL / XDC / Tcl / Vivado build / bit/hwh 再生成 / deploy。
 - Python ライブラリ / Notebook / GUI / encoder runtime 変更。
@@ -281,8 +320,8 @@ fanout (複製) 出力**する。SDIN (DAC data, FPGA → Pmod) と SDOUT
 (ADC data, Pmod → FPGA) は **唯一の独立 / 反対方向 data 信号**。
 
 凡例:
-- `wired-pcm` = 既存 PCM5102 / PCM1808 構成 (現行 deploy bit) で物理的に
-  配線済の機能。Pmod I2S2 評価時には外す。
+- `wired-pcm` = historical Phase 7D PCM5102 / PCM1808 構成で物理的に
+  配線されていた機能。現行 build では PMOD JB は Pmod I2S2 が専有する。
 - `confirmed` = 公式 Pmod I2S2 reference manual で確定済。
 - `confirmed (board file)` = PYNQ-Z2 TUL board file 由来。
 

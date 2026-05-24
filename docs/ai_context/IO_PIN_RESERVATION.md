@@ -1,15 +1,17 @@
-# IO pin reservation (Phase 7A planning)
+# IO pin reservation and current ownership
 
-PYNQ-Z2 の **未使用 IO pin** を Phase 7 (外付け PCM1808 ADC、
-PCM5102 DAC、ロータリーエンコーダー 3 個) のためにどう予約するかを
-記録する。
+PYNQ-Z2 の IO pin について、Phase 7 planning 時点の予約と、現行
+deploy 済み build の実オーナーを記録する。現在の active audio は
+Digilent Pmod I2S2 on PMOD JB、encoder は Raspberry Pi header
+`raspberry_pi_tri_i_6..14`、HDMI は Phase 6I SVGA 800x600。
 
-**このドキュメントは予約 (reservation) であり、XDC への実ピン書込み
-ではない**。`hw/Pynq-Z2/audio_lab.xdc` は Phase 7A の間は触らない
-(`DECISIONS.md` D28)。実ピン番号は Phase 7B 以降に確定する。
+Phase 7A の **予約 (reservation)** 文言は履歴として残す。現行 build では
+`hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` と `hw/Pynq-Z2/audio_lab.xdc` に
+実ピン制約が入っている。
 
 関連:
-- `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (PCM1808 / PCM5102 設計)
+- `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` (current Pmod I2S2 implementation)
+- `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (retired PCM1808 / PCM5102 history)
 - `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md` (encoder 仕様)
 - `docs/ai_context/GPIO_CONTROL_MAP.md` (既存 AXI GPIO 出力台帳。本ドキュメントとは別レイヤ)
 - `hw/Pynq-Z2/audio_lab.xdc` (実際の pin 制約。Phase 7A の間は read-only)
@@ -58,7 +60,7 @@ PYNQ-Z2 ボードには次の外部 IO ヘッダがあり、現状 `audio_lab.xd
 
 | ヘッダ | 概略 | 第一候補用途 (Phase 7) |
 | --- | --- | --- |
-| **PMOD JB** | 8 信号 + GND + 3.3V (clean 8-pin block) | **外付け I2S audio (PCM1808 + PCM5102) OR Digilent Pmod I2S2 — variant 切替**, `DECISIONS.md` D48 |
+| **PMOD JB** | 8 信号 + GND + 3.3V (clean 8-pin block) | **Current owner: Digilent Pmod I2S2 active audio** (`DECISIONS.md` D48 / D49 / D50) |
 | **PMOD JA** | 8 信号 + GND + 3.3V | 追加 audio control (FMT / MD0 / MD1 / XSMT / RESET / spare) |
 | **Raspberry Pi header** | 40-pin (GPIO 多数 + 3.3V + GND) | **ロータリーエンコーダー (低速 GPIO)** |
 | **Arduino digital / analog header** | digital + analog | spare / 将来のフットスイッチ / LED |
@@ -76,7 +78,11 @@ PYNQ-Z2 ボードには次の外部 IO ヘッダがあり、現状 `audio_lab.xd
 
 ---
 
-## 3. 外付け audio (PCM1808 + PCM5102) ピン予約
+## 3. Historical external audio (PCM1808 + PCM5102) pin reservation
+
+This section is the retired Phase 7A/7D PCM5102 + PCM1808 reservation record.
+Current PMOD JB ownership is the Pmod I2S2 assignment in section 3A. Do not use
+the PCM rows below as current build instructions.
 
 ### 3.1 必須 5 pin (絶対に確保する)
 
@@ -242,15 +248,13 @@ PYNQ-Z2 の board file (`part0_pins.xml`、TUL board v1.0) を確認した結果
 
 ---
 
-## 3A. Pmod I2S2 evaluation reservation (Phase Pmod-0, official pinout confirmed 2026-05-18)
+## 3A. Pmod I2S2 current PMOD JB assignment (official pinout confirmed 2026-05-18, deployed D48+)
 
-Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC) を
-PMOD JB に直挿しで評価する計画が
-`docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` + `DECISIONS.md` D45
-に記録されている。Phase Pmod-0 では **XDC を変更しない**。
-section 4A.1 の PMOD JB 行 (現状の `wired`) を維持したまま、Pmod I2S2
-評価フェーズに入ったときに上書きされる pin を以下に記載。Pmod I2S2 の
-PMOD pin 配置は公式 reference manual で **2026-05-18 に確定** 済。
+Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC) は
+PMOD JB の現行 active audio module。`audio_lab_pmod_i2s2.xdc` が
+8 pin を制約し、`pmod_i2s2_integration.tcl` が D/A side と A/D side を
+同一 FPGA-master clock tree から fanout する。Pmod I2S2 の PMOD pin
+配置は公式 reference manual で **2026-05-18 に確定** 済。
 
 | Pmod I2S2 Pin | Pmod I2S2 signal | PMOD JB pin | Package pin | 既存使用 (Phase 7D deploy) | Pmod I2S2 評価時の役割 | Confirmation |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -293,11 +297,11 @@ PMOD pin 配置は公式 reference manual で **2026-05-18 に確定** 済。
 
 ---
 
-## 4A. Candidate package pins, Phase 7B draft
+## 4A. Historical candidate package pins, Phase 7B draft
 
-下記の表は **候補** (`candidate`) であり、`audio_lab.xdc` への書込みは
-Phase 7C / 7F で実モジュール接続確認後に行う。Phase 7B 時点では
-docs に列挙するのみで XDC 変更はしない。
+下記の表は Phase 7B 当時の **候補** (`candidate`) 記録である。
+現行 PMOD JB の実オーナーは section 3A の Pmod I2S2 であり、
+PCM5102 / PCM1808 行は active build instructions ではない。
 
 凡例:
 - **IOSTANDARD**: 全 `LVCMOS33` 固定 (PYNQ-Z2 PL bank は 3.3V)
@@ -309,14 +313,14 @@ docs に列挙するのみで XDC 変更はしない。
 
 | Logical signal | External module pin | Direction | Connector | Board pin | Package pin | IOSTANDARD | Pull plan | Notes | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `ext_audio_mclk_o`  | none (historical PCM5102 `SCK`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | **constant 0** in current bit; PCM5102 `SCK` stays tied to GND / Low (D40 / D42) | **wired** |
-| `ext_audio_bclk_o`  | PCM5102 `BCK` (+ later PCM1808 `BCK`)  | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | 3.072 MHz, MCLK と隣接で skew 最小化 | **wired** |
-| `ext_audio_lrclk_o` | PCM5102 `LCK` (+ later PCM1808 `LRCK`) | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | 48 kHz | **wired** |
-| `ext_adc_dout_i`    | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | Phase 7D wired; sampled in `bclk` domain by `i2s_to_stream_0/si` via `pcm1808_input_select` mux (D41) | **wired** |
-| `ext_dac_din_o`     | PCM5102 `DIN`                          | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | data only, 24-bit I2S Philips | **wired** |
-| `ext_pcm1808_sckie_o` | PCM1808 `SCKI` | out | PMOD JB | `JB8`  | `W16` | LVCMOS33 | none | Phase 7D follow-up wired (D42); 12.288 MHz from `clk_wiz_audio_ext` so JB1 can stay constant 0 and PCM5102 SCK stays GND | **wired** |
-| `EXT_AUDIO_SPARE_JB9`  | (将来用) | -- | PMOD JB | `JB9`  | `V12` | LVCMOS33 | -- | spare | candidate |
-| `EXT_AUDIO_SPARE_JB10` | (将来用) | -- | PMOD JB | `JB10` | `W13` | LVCMOS33 | -- | spare | candidate |
+| `ext_audio_mclk_o`  | none (historical PCM5102 `SCK`) | out | PMOD JB | `JB1`  | `W14` | LVCMOS33 | none | **Phase 7D historical**: constant 0, PCM5102 `SCK` tied to GND / Low (D40 / D42). Current Pmod I2S2 uses this package pin as D/A MCLK; see section 3A. | **historical** |
+| `ext_audio_bclk_o`  | PCM5102 `BCK` (+ later PCM1808 `BCK`)  | out | PMOD JB | `JB2`  | `Y14` | LVCMOS33 | none | Phase 7D historical; current Pmod I2S2 uses this pin as D/A LRCK. | **historical** |
+| `ext_audio_lrclk_o` | PCM5102 `LCK` (+ later PCM1808 `LRCK`) | out | PMOD JB | `JB3`  | `T11` | LVCMOS33 | none | Phase 7D historical; current Pmod I2S2 uses this pin as D/A SCLK/BCLK. | **historical** |
+| `ext_adc_dout_i`    | PCM1808 `DOUT`                         | **in** | PMOD JB | `JB4`  | `T10` | LVCMOS33 | none | Phase 7D historical; current Pmod I2S2 uses this pin as D/A SDIN output. | **historical** |
+| `ext_dac_din_o`     | PCM5102 `DIN`                          | out | PMOD JB | `JB7`  | `V16` | LVCMOS33 | none | Phase 7D historical; current Pmod I2S2 uses this pin as A/D MCLK. | **historical** |
+| `ext_pcm1808_sckie_o` | PCM1808 `SCKI` | out | PMOD JB | `JB8`  | `W16` | LVCMOS33 | none | Phase 7D historical; current Pmod I2S2 uses this pin as A/D LRCK. | **historical** |
+| `EXT_AUDIO_SPARE_JB9`  | (将来用) | -- | PMOD JB | `JB9`  | `V12` | LVCMOS33 | -- | Phase 7B draft spare; current Pmod I2S2 uses this pin as A/D SCLK/BCLK. | **historical** |
+| `EXT_AUDIO_SPARE_JB10` | (将来用) | -- | PMOD JB | `JB10` | `W13` | LVCMOS33 | -- | Phase 7B draft spare; current Pmod I2S2 uses this pin as A/D SDOUT input. | **historical** |
 | (PMOD JB VCC) | `+3.3V` (PMOD power) | power | PMOD JB | `JB12` (PMOD VCC) | -- | -- | -- | module 側 VCC が 3.3V 受けの場合のみ | needs physical verification |
 | (PMOD JB GND) | `GND` | ground | PMOD JB | `JB11` (PMOD GND) | -- | -- | -- | common GND | needs physical verification |
 
@@ -459,22 +463,22 @@ SPARE_GPIO0..3 (将来のフットスイッチ / LED)
 
 ---
 
-## 7. Phase 7B での状態
+## 7. Phase 7B での状態 (historical)
 
-- 本ドキュメントは **論理予約 + 候補 package pin 表** (`Status` は
+- 当時の本ドキュメントは **論理予約 + 候補 package pin 表** (`Status` は
   `candidate` / `needs physical verification` / `reserved` のいずれか)
 - `hw/Pynq-Z2/audio_lab.xdc` は **未変更**
 - `hw/Pynq-Z2/block_design.tcl` は **未変更**
 - bit / hwh は **未再生成**
 - 実モジュール (PCM1808 / PCM5102 / rotary encoder) の物理確認が
-  終わったら Phase 7C で XDC へ反映する (確認項目は
+  終わったら Phase 7C で XDC へ反映する計画だった (確認項目は
   `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` section 11 と
   本ドキュメント section 4.4)
 - encoder 用 AXI IP の base address は **TBD** (Phase 7F で確定)。
   `0x43CE0000` (`axi_vdma_hdmi`) と `0x43CF0000` (`v_tc_hdmi`) は
   **禁止** (`DECISIONS.md` D32)
 
-## 8. Phase 7F/7G での状態 (encoder 実装)
+## 8. Current deployed state after Phase 7F/7G and D48+ (encoder + Pmod I2S2)
 
 - `hw/Pynq-Z2/audio_lab.xdc` に encoder 9 pin を追加済み:
   `F19 / V10 / V8` (`ENC0_CLK / DT / SW`),
@@ -482,12 +486,19 @@ SPARE_GPIO0..3 (将来のフットスイッチ / LED)
   `V6 / Y6 / B19` (`ENC2_*`)。すべて `LVCMOS33`。
   `PULLUP` は付けていない (典型 module は基板上 pull-up あり、必要なら
   `set_property PULLUP true` または外付け 10 kΩ で補強)。
-- PMOD JB / PMOD JA は **依然として未配線**。外付け PCM1808 / PCM5102
-  予約 (`DECISIONS.md` D28 / D34) を温存。
+- PMOD JB は **Pmod I2S2 active audio path として配線済み / 制約済み**。
+  `audio_lab_pmod_i2s2.xdc` が `JB1..JB4 / JB7..JB10` を Pmod I2S2
+  D/A + A/D side に割り当てる。PCM5102 / PCM1808 予約は retired /
+  archival。
 - encoder PL IP `axi_encoder_input` は base address **`0x43D10000`** に
   確定 (`DECISIONS.md` D32 の禁止リスト = `0x43CE0000` / `0x43CF0000` /
   `0x43D00000` を回避)。
 - block_design.tcl は変更なし。`hw/Pynq-Z2/encoder_integration.tcl` を
   追加し、`hdmi_integration.tcl` と同じパターンで `create_project.tcl`
   から source する。
-- 実モジュール (PCM1808 / PCM5102) 物理配線は **未着手** (Phase 7C 以降)。
+- Pmod I2S2 status/control slave `pmod_status_0` は base address
+  **`0x43D20000`**。MODE 0/1/2/3 (`tone` / `loopback` / `dsp` / `mute`)
+  を `scripts/pmod_i2s2_mode.py` と
+  `scripts/test_pmod_i2s2.py` から操作する。
+- `hw/Pynq-Z2/block_design.tcl` は変更なし。Pmod I2S2 追加・reroute は
+  `hw/Pynq-Z2/pmod_i2s2_integration.tcl` で行う。

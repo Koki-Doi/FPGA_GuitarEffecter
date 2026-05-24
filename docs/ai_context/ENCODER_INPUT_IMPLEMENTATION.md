@@ -23,10 +23,11 @@ Register-level details are in
   be read raw, defeating the whole point of doing PL-side debounce; and
   reuse of any existing `axi_gpio_*` byte would break the
   `GPIO_CONTROL_MAP.md` ledger.
-* `DECISIONS.md` D34 (new): PMOD JB and PMOD JA stay reserved for the
-  planned PCM1808 / PCM5102 external codec path. Encoders land on the
-  Raspberry Pi header pins that do **not** physically share with PMOD
-  JA (`raspberry_pi_tri_i_6..14`).
+* `DECISIONS.md` D34 (new at the time): encoders land on the Raspberry
+  Pi header pins that do **not** physically share with PMOD JA
+  (`raspberry_pi_tri_i_6..14`). That kept PMOD JA/JB clear for audio
+  work; after D48/D49/D50, PMOD JB is no longer the old PCM1808 /
+  PCM5102 plan but the active Pmod I2S2 audio path.
 
 ## Hardware
 
@@ -48,9 +49,11 @@ PL-pin damage risk).
 
 ## Block design changes (incremental)
 
-* `hw/Pynq-Z2/encoder_integration.tcl` (new) is sourced from
-  `create_project.tcl` after `hdmi_integration.tcl`. It:
-  1. Bumps `ps7_0_axi_periph/NUM_MI` from 17 to 18.
+* `hw/Pynq-Z2/encoder_integration.tcl` (new in Phase 7F/7G) is sourced
+  from `create_project.tcl` after `hdmi_integration.tcl`. It:
+  1. Bumps `ps7_0_axi_periph/NUM_MI` from 17 to 18 for encoder M17.
+     In the current build, `pmod_i2s2_integration.tcl` runs after this
+     and bumps `NUM_MI` again to 19 for `pmod_status_0` on M18.
   2. Adds 9 top-level input ports.
   3. Adds `enc_in_0` as a Verilog **module reference** to
      `axi_encoder_input` (no IP packaging needed).
@@ -62,8 +65,9 @@ PL-pin damage risk).
   (before `block_design.tcl`) via `add_files -norecurse` so the
   module-reference cell in step 5 resolves.
 * `hw/Pynq-Z2/audio_lab.xdc` adds the 9 LVCMOS33 PACKAGE_PIN +
-  IOSTANDARD entries listed above. PMOD JB / PMOD JA / HDMI / ADAU1761
-  pins are untouched.
+  IOSTANDARD entries listed above. The encoder constraints do not
+  consume PMOD JA/JB; current PMOD JB ownership lives in
+  `audio_lab_pmod_i2s2.xdc`.
 * `hw/Pynq-Z2/block_design.tcl`, `hw/Pynq-Z2/hdmi_integration.tcl`,
   `hw/ip/clash/src/LowPassFir.hs`, and `docs/ai_context/GPIO_CONTROL_MAP.md`
   are **not changed** by this work.
@@ -137,13 +141,14 @@ Verilog file with:
 
 ```
 sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
-    scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
+    scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp
 ```
 
-It loads `AudioLabOverlay`, starts the HDMI back end at 800×600,
-builds AppState, wires an `EncoderEffectApplier` (live apply enabled
-by default), creates the encoder controller, attaches `EncoderInput`,
-and runs a dirty-flag loop:
+It loads `AudioLabOverlay`, optionally sets the Pmod I2S2 MODE register
+(`--pmod-mode dsp` for current audio use), starts the HDMI back end at
+800×600, builds AppState, wires an `EncoderEffectApplier` (live apply
+enabled by default), creates the encoder controller, attaches
+`EncoderInput`, and runs a dirty-flag loop:
 
 ```
 encoder.poll() -> EncoderUiController.handle_events(...)
@@ -160,6 +165,8 @@ CLI flags (Phase 7G+):
 * `--skip-rat` / `--include-rat` — RAT pedal model exclusion (default skip)
 * `--no-audio-apply` — keep the GUI but skip every overlay write
 * `--dry-run` — skip overlay/HDMI/encoder entirely (off-board smoke)
+* `--pmod-mode tone|loopback|dsp|mute|keep` — set Pmod I2S2 mode at
+  startup (`dsp` is the current live audio path)
 * `--poll-hz-active N` / `--poll-hz-idle N` / `--idle-threshold-s N` —
   dirty-flag loop pacing (defaults 10 / 4 / 1.0)
 * `--max-render-fps N` — render cap (default 5)
@@ -220,8 +227,10 @@ The Notebook deliberately separates success criteria:
    `backend.stop()`.
 
 It never loads `base.bit`, never loads a second overlay after
-`AudioLabOverlay()`, and does not touch PMOD JA/JB or the external
-PCM1808 / PCM5102 plan.
+`AudioLabOverlay()`, and does not rewire PMOD JA/JB. For current
+audio operation, use the Pmod I2S2-aware runner path
+(`--pmod-mode dsp`) rather than reviving the retired PCM1808 /
+PCM5102 plan.
 
 ## Build result
 

@@ -42,9 +42,10 @@ independently enabled small stages, originally restoring WNS to
 -7.801 ns. After every pedal slot was filled by the reserved-pedal
 implementation, the deployed WNS sat at -7.535 ns. The later
 audio-analysis voicing pass retuned existing Compressor / Overdrive /
-Amp / Cab stages and the current deployed WNS is -8.731 ns (still
-inside the accepted deploy band). Do not bring `model_select` back —
-see `DECISIONS.md` D6 / D9 and `TIMING_AND_FPGA_NOTES.md`.
+Amp / Cab stages. The current deployed baseline after the later D62
+BD-2 coefficient-only retune is WNS `-8.497 ns`, still inside the
+accepted deploy band. Do not bring `model_select` back — see
+`DECISIONS.md` D6 / D9 and `TIMING_AND_FPGA_NOTES.md`.
 
 ## Control plane (final)
 
@@ -149,10 +150,10 @@ done; remaining work is incremental.
   still inside the -7..-9 ns deploy band). Hold remained clean
   (`WHS = +0.051 ns`, `THS = 0.000 ns`).
 - **Phase D — Timing tightening.**
-  Current deployed WNS is -8.731 ns after the audio-analysis voicing
-  pass, still negative. A pass that splits any remaining deep
-  combinational block and pipelines the address paths into the cab
-  tap / reverb BRAM should bring WNS toward 0.
+  Current deployed WNS is `-8.497 ns` after the D62 BD-2
+  coefficient-only retune, still negative. A pass that splits any
+  remaining deep combinational block and pipelines the address paths
+  into the cab tap / reverb BRAM should bring WNS toward 0.
 - **Phase E — UI / preset polish.**
   Per-pedal default presets in `DistortionModelsDebug.ipynb`,
   per-pedal capture-and-compare in the one-cell notebook, A/B
@@ -174,6 +175,6 @@ done; remaining work is incremental.
 - **No** copying from GPL-licensed reference projects (guitarix,
   BYOD, …). Algorithm shape is a fair reference; source is not.
 - **No** deploying a bitstream with WNS markedly worse than the
-  current -8.731 ns without flagging the regression first.
+  current D62 `-8.497 ns` without flagging the regression first.
 - **No** repurposing bit 7 for a non-pedal feature; it stays held
   for an 8th pedal slot.

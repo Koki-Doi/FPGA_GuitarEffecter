@@ -3,11 +3,14 @@
 ## What this repository is
 
 Audio-Lab-PYNQ (a.k.a. FPGA_GuitarEffecter) is a real-time guitar effect
-chain. A guitar plugged into the Line-in jack of a PYNQ-Z2 board is digitised
-by the ADAU1761 codec, processed in the Zynq-7000 PL by a Clash-generated
-DSP block, and returned to the same codec for headphone / line output. The
-PS-side Python and Jupyter layers route audio, configure the codec, and
-control effect parameters via AXI GPIO.
+chain. In the current deployed build, line-level audio enters and exits through
+the Digilent Pmod I2S2 module on PMOD JB: the CS5343 ADC feeds the Zynq-7000
+PL through `i2s_to_stream_0`, a Clash-generated DSP block processes the
+samples, and the CS4344 DAC plays the result. The ADAU1761 onboard codec is
+still configured by Python for I2C/ADC-HPF health checks and `sdata_o` debug
+visibility, but its BCLK/LRCLK/SDATA_I pins are not the active DSP source in
+the Pmod build. The PS-side Python and Jupyter layers route audio, configure
+the codec/status IPs, and control effect parameters via AXI GPIO.
 
 ## Toolchain
 
@@ -17,7 +20,7 @@ control effect parameters via AXI GPIO.
 | Clash | 1.8.1 (clash-prelude pinned to the matching package id) |
 | GHC | 8.10.7 |
 | PYNQ image | 2020.1 series, Python 3.6 |
-| Board | PYNQ-Z2 (xc7z020clg400-1, ADAU1761 codec) |
+| Board | PYNQ-Z2 (xc7z020clg400-1) + Digilent Pmod I2S2 active audio on PMOD JB; ADAU1761 codec configured for health/debug |
 
 ## Top-level layout
 
@@ -27,8 +30,12 @@ control effect parameters via AXI GPIO.
 | `hw/Pynq-Z2/audio_lab.xdc` | Pin / clock constraints. |
 | `hw/Pynq-Z2/create_project.tcl` | Vivado batch entry point. |
 | `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` | Built artefacts shipped to PYNQ. |
+| `hw/Pynq-Z2/pmod_i2s2_integration.tcl` | Sourced by `create_project.tcl` to add the current PMOD JB Pmod I2S2 path, reroute `i2s_to_stream_0` onto the Pmod ADC/clocks, instantiate `pmod_master_0` plus `pmod_status_0`, and map the status/control slave at `0x43D20000`. |
+| `hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` | PMOD JB constraints for Pmod I2S2 D/A and A/D sides (`JB1..JB4`, `JB7..JB10`). |
 | `hw/ip/clash/src/LowPassFir.hs` | The full PL DSP pipeline. Real source of truth for every effect. |
 | `hw/ip/clash/vhdl/LowPassFir/` | Clash-generated VHDL plus packaged Vivado IP. |
+| `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` | FPGA-master I2S engine for the active Pmod I2S2 path. Generates 12.288 MHz MCLK, 3.072 MHz BCLK, 48 kHz LRCK, supports modes 0 tone / 1 loopback / 2 DSP / 3 mute, and mirrors mode-2 RIGHT slot to both DAC channels via `mode2_right_snapshot` (D50). |
+| `hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v` | AXI-Lite status/control slave (`pmod_status_0` @ `0x43D20000`): VERSION `0x00480001`, STATUS, FRAME_COUNT, NONZERO_COUNT, SDOUT_XCOUNT, CLIP_COUNT, LAST/PEAK sample registers, MODE, CLEAR. |
 | `hw/ip/fx_gain/` | Legacy HLS gain IP (instantiated but not stream-connected). |
 | `audio_lab_pynq/AudioLabOverlay.py` | Python facade: overlay loading, AXIS routing, GPIO writes. |
 | `audio_lab_pynq/AudioCodec.py` | ADAU1761 register driver and config sequence. |
@@ -39,14 +46,15 @@ control effect parameters via AXI GPIO.
 | `audio_lab_pynq/encoder_effect_apply.py` | Phase 7G+ `EncoderEffectApplier`: the only Python object allowed to translate compact-v2 `AppState` into `AudioLabOverlay` writes from the encoder runtime. Uses `set_noise_suppressor_settings`, `set_compressor_settings`, and `set_guitar_effects(**kwargs)` only — no raw GPIO writes. Default throttle 100 ms; `skip_rat=True` excludes pedal-mask bit 2 from cycling / live apply. Tracks `apply_count` / `error_count` / `last_apply_ok` / `last_apply_message` / `unsupported` for the GUI status strip and resource print. See `DECISIONS.md` D37. |
 | `audio_lab_pynq/hdmi_effect_state_mirror.py` | One-way notebook -> overlay -> HDMI GUI state mirror plus the `HdmiEffectStateMirror` class. After the post-Phase-6I split (`DECISIONS.md` D26), this file is a thin re-export shim over `audio_lab_pynq/hdmi_state/`; the constant tables (pedal / amp / cab model names + labels + aliases, SELECTED FX categories, dropdown short labels), the normalisation helpers, the GUI knob layout, and the `ResourceSampler` live in per-effect submodules under `audio_lab_pynq/hdmi_state/`. Every external import path (`from audio_lab_pynq.hdmi_effect_state_mirror import X`) is preserved. |
 | `audio_lab_pynq/hdmi_state/` | Per-effect / per-theme submodules used by `hdmi_effect_state_mirror`. `pedals.py` / `amps.py` / `cabs.py` carry the model names + labels + aliases for each category; `selected_fx.py` holds the SELECTED FX classification + dropdown chip plumbing; `knobs.py` holds `GUI_EFFECT_KNOBS` (the 8-slot per-effect knob layout); `resource_sampler.py` holds the `/proc`-based `ResourceSampler` + `STATIC_PL_UTILIZATION`; `common.py` holds the shared `_clamp_percent` / `_model_key` / `_normalize_index_or_name` helpers. |
-| `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. Includes the HDMI runtime entries `HdmiGui.ipynb` (live loop, resource monitor) and `HdmiGuiShow.ipynb` (one-shot single-cell renderer with `download=False` smart-attach so the rgb2dvi PLL at the Phase 6I `40 MHz` lower edge survives cell re-runs). Phase 7G+ adds `EncoderGuiSmoke.ipynb` (single-cell dirty-flag loop with live apply + resource monitor, RAT excluded by default). D49 adds `PmodI2S2EffectControlOneCell.ipynb` (single-cell ipywidgets UI for the Pmod I2S2 mode-2 path: loads AudioLabOverlay, forces `cfg_mode=2`, exposes all effects + Pmod status panel + mode buttons 0/1/2/3). |
+| `audio_lab_pynq/notebooks/` | Jupyter notebooks installed onto the board. Includes the HDMI runtime entries `HdmiGui.ipynb` (live loop, resource monitor) and `HdmiGuiShow.ipynb` (one-shot single-cell renderer with `download=False` smart-attach so the rgb2dvi PLL at the Phase 6I `40 MHz` lower edge survives cell re-runs). Phase 7G+ adds `EncoderGuiSmoke.ipynb`. D49/D50 adds `PmodI2S2EffectControlOneCell.ipynb` (single-cell ipywidgets UI for Pmod mode 2) and `PmodI2S2HdmiGuiOneCell.ipynb` (spawns `scripts/run_encoder_hdmi_gui.py --pmod-mode dsp`). |
 | `hw/ip/encoder_input/src/axi_encoder_input.v` | Verilog AXI-Lite slave for the Phase 7F rotary-encoder input IP (3 channels, 2-stage sync + debounce + quadrature decode + signed delta + event latch). Module-reference instantiated as `enc_in_0`. |
 | `hw/Pynq-Z2/encoder_integration.tcl` | Sourced after `hdmi_integration.tcl` to bump `ps7_0_axi_periph/NUM_MI` to 18, instantiate `axi_encoder_input` at `0x43D10000`, and wire the 9 RPi-header ports. |
-| `scripts/run_encoder_hdmi_gui.py` | Standalone notebook-less Phase 7G+ runtime: AudioLabOverlay attach + HDMI backend start + EncoderInput + EncoderUiController + EncoderEffectApplier + dirty-flag render loop. CLI flags `--live-apply` / `--no-live-apply` / `--apply-interval-ms` / `--value-step` / `--skip-rat` / `--include-rat` / `--no-audio-apply` / `--dry-run` / `--poll-hz-active` / `--poll-hz-idle` / `--idle-threshold-s` / `--max-render-fps` / `--status-interval-s` plus the `--reverse-encN` / `--swap-encN` / `--debounce-ms` encoder CONFIG overrides. |
+| `scripts/run_encoder_hdmi_gui.py` | Standalone notebook-less Phase 7G+ runtime: AudioLabOverlay attach + HDMI backend start + EncoderInput + EncoderUiController + EncoderEffectApplier + dirty-flag render loop. CLI flags `--live-apply` / `--no-live-apply` / `--apply-interval-ms` / `--value-step` / `--skip-rat` / `--include-rat` / `--no-audio-apply` / `--dry-run` / `--pmod-mode` / `--poll-hz-active` / `--poll-hz-idle` / `--idle-threshold-s` / `--max-render-fps` / `--status-interval-s` plus the `--reverse-encN` / `--swap-encN` / `--debounce-ms` encoder CONFIG overrides. |
+| `scripts/test_pmod_i2s2.py` / `scripts/pmod_i2s2_mode.py` / `scripts/pmod_i2s2_capture_probe.py` | On-board Pmod I2S2 smoke/status helpers for modes `tone` / `loopback` / `dsp` / `mute`, MODE/CLEAR/status MMIO, and rolling ADC counter probes. |
 | `GUI/pynq_multi_fx_gui.py` | 800x480 compact-v2 HDMI GUI renderer (`render_frame_800x480_compact_v2`). After the post-Phase-6I split (`DECISIONS.md` D26), this is a thin re-export shim over `GUI/compact_v2/`; the actual palette / themes / `AppState` / render functions / `hit_test_compact_v2` live in `GUI/compact_v2/{knobs,state,layout,renderer,hit_test}.py`. Every `from pynq_multi_fx_gui import X` import (including `AppState`, `EFFECT_KNOBS`, `render_frame_800x480_compact_v2`, `compact_v2_panel_boxes`, `hit_test_compact_v2`, etc.) keeps working unchanged. After the Phase 6H (1).py spec port (`d7ea0ab`), `EFFECT_KNOBS` is keyed by title-case `EFFECTS` names, `AppState` uses `all_knob_values`, and PEDAL / AMP / CAB draw the model dropdown inline. The 1280x720 reference renderer / Tk desktop preview / `run_pynq_hdmi()` were removed in `DECISIONS.md` D24. |
 | `GUI/compact_v2/` | Per-theme split of the compact-v2 GUI: `knobs.py` (per-effect knob layout + model tables + chain preset names), `state.py` (`AppState` + `save_state_json` / `load_state_json`), `layout.py` (palette + themes + `COMPACT_V2_LAYOUT` + `compact_v2_panel_boxes`), `renderer.py` (NumPy / Pillow render primitives + `RenderCache` + every `render_frame_800x480_*` builder), `hit_test.py` (`hit_test_compact_v2`). |
 | `GUI/audio_lab_gui_bridge.py` | Dry-run-first bridge from GUI `AppState` to existing `AudioLabOverlay` control APIs. |
-| `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install package, install notebooks. |
+| `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install/refresh package, mirror bit/hwh into PYNQ overlays registry, install notebooks, import sanity check. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |
 | `scripts/test_hdmi_800x480_frame.py` | 5-inch LCD smoke: compact 800x480 GUI at framebuffer `x=0,y=0`. Originally written for the Phase 5C `1280x720` signal; the same script also works against the Phase 6I `800x600` SVGA framebuffer because the renderer still emits an 800x480 frame and the backend composes it at `(0,0)`. |
 | `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. |
@@ -59,6 +67,14 @@ control effect parameters via AXI GPIO.
 - ADAU1761 ADC digital HPF is enabled by default in `config_codec()`.
   After init, `R19_ADC_CONTROL == 0x23`. The HPF is a ~2 Hz DC blocker, not
   a 20–40 Hz guitar low-cut.
+- Current deployed audio I/O is Pmod I2S2 mode 2, not the onboard ADAU
+  analog path. `pmod_i2s2_integration.tcl` deletes the old `bclk_1` /
+  `lrclk_1` / `sdata_i_1` loads and drives `i2s_to_stream_0` from
+  `pmod_master_0/dsp_bclk_o`, `pmod_master_0/dsp_lrck_o`, and
+  `ext_pmod_i2s2_ad_sdout_i`. `i2s_to_stream_0/so` feeds
+  `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
+  G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
+  via `mode2_right_snapshot` (D50).
 - The DSP pipeline runs on the FCLK0 100 MHz domain (`AudioDomain` in
   Clash). Sample rate is 48 kHz, so the PL has ~2080 clock cycles per
   audio frame for a single channel pair.

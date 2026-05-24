@@ -284,8 +284,9 @@ Read this **before** touching a new byte / bit / GPIO.
      API, and tests.
    - `docs/ai_context/GPIO_CONTROL_MAP.md` row update plus an entry in
      `DECISIONS.md`.
-   The shipped `axi_gpio_noise_suppressor` (`0x43CC0000`) is the
-   exception, approved case-by-case under `DECISIONS.md` D11.
+   The shipped `axi_gpio_noise_suppressor` (`0x43CC0000`) and
+   `axi_gpio_compressor` (`0x43CD0000`) are the approved exceptions
+   under `DECISIONS.md` D11 and D14.
 8. **Refactoring rule (current branch).** When restructuring Python /
    docs / tests / notebooks for "easier effect-add" reasons, the GPIO
    table in this file must not change. Only the wording and rule

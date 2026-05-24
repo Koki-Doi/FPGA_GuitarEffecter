@@ -27,10 +27,10 @@ exposes only the 800x480 logical layouts used by the 5-inch LCD.
 
 ## Live HDMI Runtime
 
-The deployed Phase 4/5 HDMI design emits a fixed `1280x720` HDMI signal.
-For the 5-inch 800x480 LCD, Phase 5A output mapping and user visual
-inspection set the practical visible viewport to the top-left `800x480`
-region:
+The deployed Phase 6I HDMI design emits VESA SVGA `800x600 @ 60 Hz /
+40 MHz`. For the 5-inch 800x480 LCD, the compact-v2 GUI is composed into
+the top-left `800x480` region of that framebuffer and rows `480..599`
+remain black:
 
 ```text
 x=0, y=0, w=800, h=480
@@ -51,9 +51,11 @@ ssh xilinx@192.168.1.9 '
 '
 ```
 
-The Jupyter equivalent is `audio_lab_pynq/notebooks/HdmiGui.ipynb`, which
-also exposes `OFFSET_X` / `OFFSET_Y` calibration knobs at the top of the
-cell for LCDs whose visible viewport drifts from the framebuffer origin.
+The Jupyter equivalents are `audio_lab_pynq/notebooks/HdmiGuiShow.ipynb`
+(one-shot, smart `download=False` attach when the bit is already loaded)
+and `audio_lab_pynq/notebooks/HdmiGui.ipynb` (live loop/resource monitor).
+Do not use `Overlay("base.bit")` or `run_pynq_hdmi()` for the live
+AudioLab GUI.
 
 ## Renderer API
 

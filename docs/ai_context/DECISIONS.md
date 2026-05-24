@@ -419,6 +419,11 @@ not get removed even when superseded — they get updated.
 
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
+- **Current status.** Historical for the original ADAU/DSP notebook
+  surface. The current Pmod I2S2 bench entry point is
+  `PmodI2S2EffectControlOneCell.ipynb` (D49/D50), while
+  `GuitarPedalboardOneCell.ipynb` remains the generic pedalboard UI and
+  chain-preset compatibility surface.
 - **Decision.** A new two-cell notebook,
   `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`, is the
   primary single-screen UI for the live chain. It exists alongside
@@ -502,7 +507,11 @@ not get removed even when superseded — they get updated.
 
 ## D18 — Amp Simulator named models reuse `amp_character`, never new GPIO
 
-- **Decision.** The Amp Simulator section ships four named voicings —
+- **Status.** Historical Amp model decision. Superseded by D53/D54/D55
+  and D58.2: the live Amp Sim is now six researched models carried by
+  `axi_gpio_amp_tone.ctrlD[2:0]` plus `ctrlD[7]` Drive mode; the
+  `amp_character` percent API remains only as a compatibility fallback.
+- **Decision.** The Amp Simulator section shipped four named voicings —
   `jc_clean` / `clean_combo` / `british_crunch` / `high_gain_stack` —
   as a convenience layer on top of the existing `amp_character`
   knob. The Python side adds an `AMP_MODELS` table, `set_amp_model`,
@@ -547,8 +556,10 @@ not get removed even when superseded — they get updated.
     centre-of-band character values. Keep it in lock-step with the
     `ampModelSel` thresholds in `LowPassFir.hs` and the inline
     fallback inside `GuitarPedalboardOneCell.ipynb`.
-  - The `amp_character` numeric API stays public; `set_amp_model` is
-    a thin wrapper around `set_guitar_effects(amp_character=...)`.
+  - In this historical D18 layer, the `amp_character` numeric API
+    stayed public and `set_amp_model` was a thin wrapper around
+    `set_guitar_effects(amp_character=...)`. In the current D55/D58.2
+    layer, `amp_model_idx` + `amp_drive_mode` are the live model fields.
     Tests in `tests/test_overlay_controls.py` lock the mapping
     anchors and the per-model byte distinctness.
 
@@ -714,9 +725,12 @@ not get removed even when superseded — they get updated.
 
 - **Decision.** The live HDMI GUI path uses the integrated AudioLab
   `audio_lab.bit`; it must not load PYNQ `base.bit` or any second full
-  overlay. For the current 5-inch 800x480 HDMI LCD, the adopted default
-  visible viewport is the top-left `x=0,y=0,w=800,h=480` region inside
-  the fixed 1280x720 HDMI framebuffer.
+  overlay. This entry records the Phase 5C viewport decision: the
+  top-left `x=0,y=0,w=800,h=480` region of the then-720p framebuffer was
+  the adopted LCD-visible area. **Superseded by D25 for signal timing**:
+  the current bit emits VESA SVGA `800x600 @ 60 Hz / 40 MHz` and keeps
+  the same 800x480 compact GUI at framebuffer `(0,0)`, with rows
+  `480..599` black.
 - **Why.** Phase 5A output mapping showed that the LCD does not behave
   like a clean full-frame 1280x720-to-800x480 scaler. User visual
   inspection confirmed the `800x480 x0 y0` candidate box is correctly
@@ -739,11 +753,10 @@ not get removed even when superseded — they get updated.
       --offset-x 0 --offset-y 0 --hold-seconds 60
   ```
 
-- **Boundaries.** Native 800x480 HDMI timing remains a Phase 5B candidate,
-  but it is not required for correct placement now. Any native-timing
-  trial is a separate Vivado rebuild / timing-review / bit-hwh deploy
-  decision. The old untracked `HDMI/` experiment tree was removed after
-  confirming current deploy, tests, and runtime scripts use `GUI/` plus
+- **Boundaries.** Native 800x480 HDMI timing was later attempted in
+  Phase 6H and rejected on the real LCD; do not restore it. The old
+  untracked `HDMI/` experiment tree was removed after confirming deploy,
+  tests, and runtime scripts use `GUI/` plus
   `audio_lab_pynq/hdmi_backend.py` instead.
 
 ## D24 — 800x480 compact-v2 is the only renderer; HDMI GUI runs from `HdmiGui.ipynb`
@@ -1819,11 +1832,13 @@ not get removed even when superseded — they get updated.
 ## D44 — PCM5102 quality follow-up starts with unused-SCKI gating and output diagnostics
 
 - **Decision.** Do not start with a DSP / Clash change for the
-  remaining "PCM5102 sounds worse than desired" report. The current
-  output path is still the ADAU DAC serial bitstream mirrored to
-  PCM5102 (`i2s_to_stream_0/so`), PCM5102 SCK is correctly tied low
-  for internal-SYSCLK mode, and the deployed mux selects ADAU input.
-  The first non-physical improvement to implement next is therefore:
+  remaining "PCM5102 sounds worse than desired" report. This entry
+  describes the Phase 7D close-out state, before D48 retired the
+  PCM5102 / PCM1808 path in favour of Pmod I2S2. At that time, the
+  output path was still the ADAU DAC serial bitstream mirrored to
+  PCM5102 (`i2s_to_stream_0/so`), PCM5102 SCK was correctly tied low
+  for internal-SYSCLK mode, and the deployed mux selected ADAU input.
+  The first non-physical improvement proposed for that historical path was:
   **when PCM1808 is not the active ADC source, stop the unused
   `ext_pcm1808_sckie_o` 12.288 MHz output on JB8 / W16**. The second
   improvement is a PCM5102-oriented debug output mode that can select
@@ -1873,7 +1888,8 @@ not get removed even when superseded — they get updated.
 
 ## D45 — Evaluate Digilent Pmod I2S2 as a stable external I2S I/O reference before further PCM1808 work
 
-- **Decision (plan only).** Add Digilent **Pmod I2S2** (CS4344 24-bit
+- **Decision (plan only, later implemented by D48/D49/D50).** Add
+  Digilent **Pmod I2S2** (CS4344 24-bit
   stereo DAC + CS5343 24-bit stereo ADC on a single PMOD board) as an
   evaluation reference for external I2S I/O before the next PCM1808
   bring-up attempt. The plan is staged in
@@ -1885,8 +1901,9 @@ not get removed even when superseded — they get updated.
     `--capture-adc` returns pure 0 even with line-in present). Going
     back to the same PCM1808 module is not a healthy starting point
     for the next audio-quality pass.
-  - PCM5102 line out and PCM1808 line in currently live on two
-    separate breakout boards with hand-routed jumper wires on PMOD JB;
+  - At the Phase 7D close-out, PCM5102 line out and PCM1808 line in
+    lived on two separate breakout boards with hand-routed jumper wires
+    on PMOD JB;
     JB7 (PCM5102 DIN) / JB8 (PCM1808 SCKI) crosstalk is one suspected
     contributor to the residual PCM5102 audio-quality nits the user
     reported at Phase 7D close-out (`DECISIONS.md` D42 / D44).
@@ -2373,11 +2390,11 @@ not get removed even when superseded — they get updated.
   In jumper plus the full-scale echo means the analog loop can
   feed back, so the script refuses `--mode loopback` unless
   `--confirm-loopback` is also passed.
-- **Pmod I2S2 ADC is NOT wired into the AudioLab DSP chain.** The
-  user requested NOT to implement a "mode 2 = ADC → DSP → DAC"
-  path in this branch. `i2s_to_stream_0` / `stream_to_i2s_0` and
-  the AXIS DSP loop continue to be fed by ADAU1761 ADC only, as in
-  Phase 7D close-out.
+- **Historical D48 follow-up only; superseded by D49.** In this
+  branch, the Pmod I2S2 ADC was **not** wired into the AudioLab DSP
+  chain because the user requested NOT to implement a
+  "mode 2 = ADC → DSP → DAC" path yet. D49 later added that mode and
+  made it the current active audio path.
 - **AXI write FSM bug fix.** The original `axi_pmod_i2s2_status.v`
   write path used `axi_awaddr_q[5:2]` in the same `always @(posedge
   s_axi_aclk)` cycle that the assignment to `axi_awaddr_q`
@@ -3097,3 +3114,511 @@ not get removed even when superseded — they get updated.
   re-run Vivado, redeploy. The D54 bit-pack remains a clean
   fallback target because the bit positions of the drive bit and
   the model field's LSB are preserved.
+
+## D58.2 — Balanced Amp Drive Mode saturation, fixed-scalar retake (after the D58 bypass-path P&R regression)
+
+- **Date.** 2026-05-23.
+- **Status.** Implemented: `Amp.hs` re-edited with per-model fixed
+  scalars, Clash VHDL + IP repackaged, Vivado batch rebuild PASS with
+  DSP count back to D55's `83` (vs the failed D58's `87`), bit/hwh
+  deployed 5-site to PYNQ, programmatic smoke incl. the D58
+  bypass-path regression guard PASS. On-bench audio verification by
+  ear is pending the user's next session.
+- **Context.** D58 (`feature/amp-drive-mode-balanced-gain`, commit
+  `797467c`) replaced the D55 fixed-scalar Drive deltas with
+  `ch * factor` (`Unsigned 3 -> Signed 25 -> Signed 25`) so the knee
+  shrink would scale with each model's intensity byte. Functionally
+  the change targeted exactly the "between D55 and D57" sweet spot
+  the user asked for, and programmatic smoke (CLIP_COUNT, GUI
+  startup, MODE registers) all passed. On hardware the user heard
+  a **high-frequency saturation noise** in *every* configuration --
+  including all six amp models, both Drive and Clean, **Amp OFF
+  (`amp_on=False`), and full safe bypass (every `effect_on=False`)**.
+  Disconnecting the Pmod ADC cable silenced the symptom, so the
+  noise was carried by an in-chain signal path, not generated by
+  the DAC or downstream analog. D55 was clean in the same scenarios.
+  - Diagnosis: D58 added four new DSP48E1 multiplications (DSP count
+    `83 -> 87` in `block_design_wrapper_utilization_placed.rpt`) for
+    the `ch * 500..1400` and `ch * 420..1250` Drive deltas. Vivado
+    P&R re-packed the design around the new multipliers and the new
+    placement happened to make the ADC -> I2S serializer -> DAC
+    bypass path tight enough at the rising edge of `BCLK` that the
+    high-frequency content audibly saturated. The macroscopic
+    timing summary still looked fine (WNS `-8.209 ns`, WHS
+    `+0.053 ns`, both inside the historical band) -- the regression
+    was in a sub-path that the static timing report did not flag.
+  - The D58 bit (sha `7481e2f7...`) was rolled back on the PYNQ to
+    the D55 bit (sha `8df39b06...`) via a one-off 5-site re-sync
+    that left the source tree on the D58 commit -- the user
+    confirmed by ear "治りました" after a cold power-cycle.
+- **Decision.**
+  - **Re-shape the Drive deltas so they cost zero new DSP slices.**
+    `ampDrivePosDelta` / `ampDriveNegDelta` revert to the D55
+    signature `Unsigned 3 -> Signed 25` -- per-model fixed scalars
+    with no `ch` argument. Values are picked to approximate the
+    D58 first-stage `ch * factor` evaluated at each model's own
+    `ampCharForModel` peak so the audible character matches D58's
+    target without the DSP cost:
+
+    | idx | model        | posDelta  | negDelta  |
+    | --- | ------------ | --------- | --------- |
+    | 0   | JC-120       | `13_000`  | `11_000`  |
+    | 1   | Twin Reverb  | `58_000`  | `50_000`  |
+    | 2   | AC30         | `130_000` | `113_000` |
+    | 3   | Rockerverb   | `210_000` | `180_000` |
+    | 4   | JCM800       | `264_000` | `231_000` |
+    | 5   | TriAmp Mk3   | `336_000` | `300_000` |
+
+    The `_` fallback (reserved indices 6, 7) maps to the JC-120 row
+    so an unexpected ctrlD write does not run `clip_count` away on
+    the highest-gain voicing.
+  - **Side-effect on the second stage.** `ampAsymClip` is called
+    from both the first stage (`ampWaveshapeFrame`, `intensity =
+    ampCharForModel idx`) and the second stage
+    (`ampSecondStageFrame`, `intensity = ampCharForModel idx >> 1`).
+    Because the new D58.2 deltas are fixed (no `ch` argument), both
+    stages get the same value -- the second stage therefore sees a
+    slightly tighter knee than D58 would have given there (D58
+    halved its `ch * factor` automatically because `ch` was
+    halved). On the high-gain voicings the second-stage posKnee
+    drops by `~ delta / 2` vs the D58 design (e.g. TriAmp Mk3 first
+    stage posKnee `2_884_000` matches D58; second stage posKnee
+    `3_724_000` is `168_000` lower than D58's `3_892_000`). This
+    extra second-stage tightness:
+    - generates more harmonic content,
+    - is partially absorbed by the D58 `ampPreLpfDriveDarken` Drive
+      darken (`5..24`, unchanged from D58),
+    - is capped by the existing `softClipK 3_300_000` / `3_400_000`
+      output safety so `clip_count` stays bounded
+      (programmatic 3 s smoke with TriAmp Mk3 + Drive on the deployed
+      bit reports `CLIP_COUNT delta = 0`),
+    and is judged acceptable as a side-effect of the DSP-saving
+    fixed-scalar form.
+  - **Keep the D58 darken / bonus tables verbatim.**
+    `ampPreLpfDriveDarken` `5 / 7 / 10 / 16 / 16 / 24` and
+    `ampSecondStageDriveBonus` `14 / 18 / 28 / 42 / 48 / 56` are
+    bit-for-bit the same as D58. They are simple per-model
+    subtractor / adder constants -- no DSP cost, no P&R risk.
+  - **`ampAsymClip` call sites revert to the D55 form.**
+    `posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0`
+    and `negDriveDelta = if drive then ampDriveNegDelta modelIdx
+    else 0` -- no `ch` argument forwarded to the delta helpers.
+  - **D55 structure preserved verbatim** everywhere else: six-model
+    lineup (`JC-120` / `Twin Reverb` / `AC30` / `Rockerverb` /
+    `JCM800` / `TriAmp Mk3`), `ctrlD[7] = ampDriveMode` /
+    `ctrlD[6:3] = 0` / `ctrlD[2:0] = ampModelIdx`,
+    `softClipK 3_300_000 / 3_400_000` output safety, second-stage
+    `intensity = ampCharForModel idx >> 1`, six-entry
+    `ampTrebleGain` / `presenceTrim`.
+  - **D57 anti-patterns explicitly NOT adopted.** No
+    `ampInputDriveGainBonus`, no pre-clip push, no `ch * 5000+`
+    multiplier in either delta helper, no full-intensity
+    second-stage clip.
+  - **No Python / GUI / encoder / HDMI / Pmod / block_design /
+    GPIO / `topEntity` change.** Six-model labels in
+    `GUI/compact_v2/knobs.py` / `audio_lab_pynq/hdmi_state/amps.py`
+    / `audio_lab_pynq/AudioLabOverlay.AMP_MODEL_LABELS` are
+    untouched. ctrlD layout, `AMP_MODEL_IDX_MAX = 5`, encoder
+    cycling, and the HDMI mirror all stay D55-shape.
+- **Files touched.**
+  - `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (delta helper values
+    + comments; bonus / darken values + comments; call sites already
+    in D55 form, no re-edit needed).
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl`
+    (regenerated VHDL).
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json`
+    (regenerated SHA).
+  - `hw/ip/clash/vhdl/LowPassFir/component.xml` (Vivado IP repack
+    timestamp + checksum).
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit` /
+    `hw/Pynq-Z2/bitstreams/audio_lab.hwh` (sha
+    `93f31348...` / `25991dc0...`).
+  - `docs/ai_context/AMP_MODEL_RESEARCH_D55.md` (DSP coefficient
+    summary table -- D58.2 column added).
+  - `docs/ai_context/CURRENT_STATE.md`, this file
+    (`DECISIONS.md`), `docs/ai_context/TIMING_AND_FPGA_NOTES.md`.
+- **Build / deploy.**
+  - Clash: `clash -package-id
+    clash-prelude-1.8.1-...e64d575898...144c -isrc -fclash-hdldir
+    /tmp/clash_d582 --vhdl src/LowPassFir.hs` (`-package-id` pins the
+    `clash-prelude` that matches the installed `clash-ghc` -- same
+    workaround as D58).
+  - Vivado IP repack: `vivado -mode batch -source create_ip.tcl
+    -tclargs "./vhdl/LowPassFir"` in `hw/ip/clash/`.
+  - Vivado full project: `vivado -mode batch -source
+    create_project.tcl` in `hw/Pynq-Z2/`.
+  - Deploy: `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh`;
+    bit/hwh sha matches across all five PYNQ sites.
+- **Timing.** WNS `-8.495 ns` (D55 baseline `-8.231 ns`; regresses
+  by `0.264 ns`); inside the historical `-7..-9 ns` deploy band and
+  well above the `-9.5 ns` hard gate. WHS `+0.051 ns`; THS
+  `0.000 ns` (hold clean). Failing setup endpoints
+  `3224 / 60227` (`5.35 %`). Utilization after place: Slice LUTs
+  `19713` (`37.05 %`; -73 vs D55), Slice Registers `22110`
+  (`20.78 %`; -50 vs D55), Block RAM Tile `6` (`4.29 %`;
+  unchanged), **DSPs `83` (`37.73 %`; same as D55, four below
+  D58's `87`)**. The DSP count is the load-bearing metric that
+  proves the fixed-scalar form actually removed the four
+  multiplications that triggered the D58 bypass-path regression.
+- **Tests / smoke.**
+  - `python3 -m py_compile` PASS for `audio_lab_pynq/AudioLabOverlay.py`,
+    `encoder_ui.py`, `encoder_effect_apply.py`.
+  - `python3 -m unittest -v
+    tests.test_encoder_input_decode tests.test_encoder_ui_controller
+    tests.test_compact_v2_encoder_state tests.test_encoder_effect_apply
+    tests.test_overdrive_model_select tests.test_hdmi_selected_fx_state`
+    PASS (91 tests). `python3 tests/test_overlay_controls.py` PASS.
+  - PYNQ programmatic smoke: `ADC HPF True`; six amp models `0..5`
+    ctrlD readback OK across Clean + Drive; `scripts/pmod_i2s2_mode.py`
+    MODE writes `0 / 1 / 2 / 3` all readback OK; **safe bypass
+    (all `effect_on = False`) + mode-2 DSP 3 s CLIP_COUNT delta = `0`,
+    FRAME_COUNT delta = `144150` (exact 48 kHz cadence) -- this is
+    the D58 regression guard**; Amp OFF (others default) 3 s
+    CLIP_COUNT delta = `0`; TriAmp Mk3 + Drive (full chain) 3 s
+    CLIP_COUNT delta = `0`; `scripts/run_encoder_hdmi_gui.py
+    --live-apply --skip-rat --pmod-mode dsp` starts cleanly,
+    `AudioLabOverlay loaded`, `HDMI backend started at 800x600`,
+    `live=ON apply=OK`, no Python exceptions in a 12 s hold.
+  - **Audio verification by ear is pending the user's bench
+    session.** Programmatic smoke alone cannot prove the D58
+    high-frequency saturation noise on the bypass path is actually
+    gone -- the symptom was audible only, not flagged by any
+    overlay register. The key listening checks for the next session
+    are: (a) safe bypass + Pmod mode 2 with the Line In cable in
+    place must be clean (the original D58 regression), (b) Amp OFF
+    + default chain must be clean, (c) per-model Drive should sit
+    audibly between D55 and D57, and (d) no `clip_count` runaway
+    on TriAmp Mk3 + Drive at sane input levels.
+- **Rollback.**
+  - **Step 1 (audio-only rollback, no Vivado).** Revert the PYNQ
+    bit/hwh to D55 with `git show 314b7c6:hw/Pynq-Z2/bitstreams/
+    audio_lab.bit > /tmp/d55.bit && git show 314b7c6:hw/Pynq-Z2/
+    bitstreams/audio_lab.hwh > /tmp/d55.hwh` plus a 5-site PYNQ
+    `cp` (the same procedure used to revert from D58 on
+    2026-05-23). Source tree may stay on this branch. A cold
+    PYNQ-Z2 power-cycle is recommended afterwards so the
+    rgb2dvi PLL re-locks cleanly when the next overlay load runs.
+  - **Step 2 (full revert).** `git checkout main` to drop the
+    Amp.hs / VHDL / IP / bit / hwh / docs back to D55 source.
+    Branches `feature/amp-drive-mode-balanced-gain` (D58) and
+    `feature/amp-drive-mode-balanced-gain-v2` (this D58.2 attempt)
+    remain available for inspection.
+
+## D59 — Rejected Compressor target-gain pipeline split with full `Frame` carry
+
+- **Decision.** D59 is rejected for deployment. It split the Compressor
+  target-gain calculation into three registered stages and improved
+  routed WNS, but the user heard the same high-frequency saturation
+  noise pattern that D58.1/D58 exposed.
+- **What D59 changed.** `compTargetStage1` did threshold /
+  soft-threshold comparison, excess calculation, and excess clamp;
+  `compTargetStage2` did `excessU12 * ratioByte`, reduction shift /
+  clamp, and target-gain conversion; `compGainNext` kept the smoothing
+  register update. D59 also carried the full `Frame` through
+  `compTargetStage1Pipe`, `compTargetPipe`, and `compGainFramePipe`.
+- **Why it was rejected.** Programmatic smoke was clean
+  (`FRAME_COUNT delta = 144150`, `CLIP_COUNT delta = 0`), but this is
+  the same class of regression as D58: a P&R-sensitive audible artifact
+  that counters and the top-level timing summary do not prove away. The
+  extra full-frame carry added 254 registers and likely moved enough
+  placement/routing to disturb the audio path.
+- **Rollback.** The PYNQ-Z2 board was immediately restored to the D58.2
+  clean baseline from `feature/amp-drive-mode-balanced-gain-v2`: bit/hwh
+  md5 `1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`. Board smoke after rollback:
+  `ADC HPF True`, `R19_ADC_CONTROL 0x23`, Pmod mode 2 readback `2`,
+  `FRAME_COUNT delta = 144154`, `CLIP_COUNT delta = 0`.
+- **D59 timing record.** Routed WNS improved from D58.2 `-8.495 ns` to
+  `-8.138 ns`; TNS `-8756.266 ns`; WHS `+0.052 ns`; THS `0.000 ns`.
+  Utilization after place: Slice LUTs `19698`, Slice Registers `22364`,
+  Block RAM Tile `6`, DSPs `83`. bit/hwh md5
+  `a42358803798acc1e63ef5d4abd45b33` /
+  `1ddd377d077401ccf60a9096d319ed52`. Do not redeploy this bit.
+
+## D60 — Compressor target-gain split, control-only retake
+
+- **Decision.** Keep the Compressor gain-calculation split, but do not
+  carry the audio `Frame` through the target-gain pipeline. Only the
+  Compressor control word and target terms flow through
+  `compTargetStage1Pipe` / `compTargetPipe`; the audio frame stays on
+  the original `compLevelPipe -> compApplyPipe` data path.
+- **Reason.** D60 still breaks the packed
+  threshold/soft-threshold/excess/multiply/reduction/target/smoothing
+  path, but avoids the broad full-frame register insertion that made
+  D59 risky. Compressor gain reaction is delayed by a small number of
+  samples, which was explicitly allowed; the DSP chain effect order and
+  global audio-frame latency are not changed.
+- **Scope intentionally excluded.** No DS-1 / Distortion, `Amp.hs`,
+  GUI, Pmod I2S2, `block_design.tcl`, GPIO map, `topEntity` port,
+  Vivado strategy, Compressor coefficient, threshold/ratio/response /
+  makeup semantic, or effect-order change.
+- **Files touched.**
+  - `hw/ip/clash/src/AudioLab/Effects/Compressor.hs`
+  - `hw/ip/clash/src/AudioLab/Pipeline.hs`
+  - regenerated Clash/VHDL/IP artifacts under
+    `hw/ip/clash/vhdl/LowPassFir/`
+  - rebuilt local `hw/Pynq-Z2/bitstreams/audio_lab.bit` /
+    `hw/Pynq-Z2/bitstreams/audio_lab.hwh`
+  - `docs/ai_context/CURRENT_STATE.md`,
+    `docs/ai_context/TIMING_AND_FPGA_NOTES.md`, and this file
+- **Build / timing.** Clash regeneration, Vivado IP repackage, and full
+  `hw/Pynq-Z2 make clean && make` completed with
+  `write_bitstream completed successfully` and 0 errors. Routed WNS
+  `-8.300 ns`, TNS `-8836.632 ns`, failing setup endpoints
+  `3181 / 60265`, WHS `+0.043 ns`, THS `0.000 ns`. This is
+  `+0.195 ns` better than D58.2 (`-8.495 ns`) and `0.162 ns` worse
+  than rejected D59 (`-8.138 ns`). Utilization after place: Slice LUTs
+  `19728` (`37.08 %`), Slice Registers `22253` (`20.91 %`), Block RAM
+  Tile `6` (`4.29 %`), DSPs `83` (`37.73 %`).
+- **Critical-path result.** The top routed setup path remains DS-1-side,
+  not Compressor: `ARG__6__3` DSP48E1 -> `ds1_5_reg[1015]`, slack
+  `-8.300 ns`, logic levels
+  `18 (CARRY4=11 DSP48E1=1 LUT2=2 LUT3=1 LUT4=1 LUT5=1 LUT6=1)`.
+  DS-1 remains explicitly out of scope for this task.
+- **Deploy status.** D60 bit/hwh md5:
+  `078f39c78991f1b36e6bfd1806b830a5` /
+  `48160ae4acdf3abb9d1abf14dd65cc6d`. **Deployed 2026-05-24 to
+  PYNQ-Z2 192.168.1.9 and audio-rejected on bench.**
+  Deploy-time programmatic smoke PASSed: cold-power-cycled PYNQ +
+  explicit `AudioLabOverlay(download=True)` to force a fresh PL
+  program (`PL.timestamp` confirmed re-program), `ADC HPF True`,
+  Pmod mode 2 readback `2`, three-second `FRAME_COUNT delta` between
+  `144148` and `144154` across `all_off` / `comp_on_mild` /
+  `comp_on_stronger` / `comp_off_again` cases, `CLIP_COUNT delta = 0`
+  in every window,
+  `set_compressor_settings(threshold/ratio/response/makeup/enabled)`
+  readback consistent, GUI keep-mode + dsp-mode 20 s holds clean with
+  `live=ON apply=OK` and no Python exceptions, LCD compact-v2 rendered
+  correctly, final mute=3 confirmed. **On-bench audio verification by
+  ear FAILED: high-frequency saturation noise was audible even in
+  safe-bypass (all `effect_on = False`, Pmod mode 2 ADC -> DSP -> DAC).**
+  This is the same class of regression as D58
+  (`feature/amp-drive-mode-balanced-gain`) and D59 -- a Vivado P&R-induced
+  bypass-path artifact that the macroscopic timing summary and
+  `CLIP_COUNT` do not flag.
+- **Rollback.** PYNQ board was rolled back to D58.2 (bit/hwh md5
+  `1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) via
+  `git checkout HEAD -- hw/Pynq-Z2/bitstreams/{audio_lab.bit,audio_lab.hwh}`
+  + `scripts/deploy_to_pynq.sh` + explicit
+  `AudioLabOverlay(download=True)` to force a fresh PL program.
+  Post-rollback Pmod mode 2 safe-clean smoke PASSed
+  (`FRAME_COUNT delta = 144153`, `CLIP_COUNT delta = 0`,
+  `ADC HPF True`, `VERSION 0x00480001`, final mute=3). The D60 bit
+  `078f39c7...` / hwh `48160ae4...` must not be redeployed.
+- **Source revert in this commit.**
+  `hw/ip/clash/src/AudioLab/Effects/Compressor.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`, and the regenerated Clash
+  artifacts under `hw/ip/clash/vhdl/LowPassFir/` are reverted back to
+  the D58.2 baseline so the source tree matches the deployed bit. The
+  D60 attempt is preserved in this `DECISIONS.md` entry, in
+  `CURRENT_STATE.md`'s "Superseded D60 attempt note", and in the D60
+  row of `TIMING_AND_FPGA_NOTES.md` so the design rationale and
+  measurements stay discoverable in history.
+- **Conclusion: rule for future Compressor target-pipeline work.**
+  Both D59 (full-`Frame` carry) and D60 (control-only split, audio
+  frame left on the original `compLevelPipe -> compApplyPipe` path)
+  split-pipeline Compressor target-gain reworks have been
+  audio-rejected for the same class of P&R artifact. **The bench ear
+  on safe-bypass is the only sensor that has caught this class of
+  regression so far**; macroscopic timing summary, CLIP_COUNT,
+  FRAME_COUNT, GUI smoke, and `apply=OK` traces are not dispositive
+  on their own. Any further Compressor target-pipeline split must be
+  validated by listening on safe-bypass before being treated as a
+  candidate, and must be ready to be rolled back to D58.2 without a
+  Vivado rebuild (the D58.2 bit/hwh are at HEAD in
+  `hw/Pynq-Z2/bitstreams/` for this reason).
+
+## D61 -- Rejected BD-2 Overdrive model fidelity attempt (both v1 and v2)
+
+- **Decision.** D61 is rejected for deployment in both forms (v1 and v2).
+  The BD-2 differentiation the attempt added (pre-clip HPF, upper-mid
+  emphasis, first-stage mild asymmetric soft clip, post-clip fizz-guard
+  LPF) sounded audibly correct on the bench when engaged, but safe-bypass
+  (every `effect_on = False`, Pmod mode 2 ADC -> DSP -> DAC) was clearly
+  noisier than D58.2 on the same A/B. This is the same class of regression
+  as D58 / D59 / D60: a Vivado P&R-induced bypass-path artifact that the
+  macroscopic timing summary, CLIP_COUNT, FRAME_COUNT, and the rest of
+  the programmatic smoke do not flag.
+- **Research deliverable kept on main.** `docs/ai_context/BD2_MODEL_RESEARCH.md`
+  is the source-by-source circuit research note for the BD-2 Blues Driver
+  (Analog Is Not Dead, Guitar Pedals Visualized, Aion FX Sapphire,
+  PedalPCB / Chuck D. Bones breadboard, Premier Guitar mods). It survives
+  this rollback so the next BD-2 attempt does not have to repeat the
+  research. The note also explicitly records what the real BD-2 does
+  *not* do (diode clippers D7-D10 are effectively inactive in stock per
+  measurement) so the next attempt does not waste cycles modelling them.
+- **Files reverted in this commit.**
+  - `hw/ip/clash/src/AudioLab/Effects/Overdrive.hs`
+  - `hw/ip/clash/src/AudioLab/Pipeline.hs`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl`
+  - `hw/ip/clash/vhdl/LowPassFir/component.xml`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.hwh`
+  All revert back to the D58.2 baseline so the source tree matches the
+  deployed bit. No D61 bit / hwh is committed.
+- **D61 v1 (rejected without bench listen, DSP count out of budget).**
+  v1 added new BD-2-only state registers (`bd2PreLpPrev`, `bd2PostLpPrev`)
+  in `Pipeline.hs` and used `onePoleU8` (two `mulU8` per IIR pole) plus
+  one `mulU8` for the upper-mid emphasis. Vivado batch build PASSed;
+  routed WNS `-7.891 ns` (+0.604 ns better than D58.2 `-8.495 ns`),
+  TNS `-6724.798 ns`, WHS `+0.051 ns`, THS `0 ns`. **DSP count climbed
+  from 83 to 88 (+5)**, which is the same class of DSP-count delta that
+  triggered the D58 bypass regression (DSP 83 -> 87). v1 was not even
+  bench-listened on this basis; the bit/hwh md5
+  `13429faf72b87015725dfee2ee814dee` / `fe6cd05ef0ea78f4fe5c15abf4bc9432`
+  are recorded for traceability but must not be redeployed.
+- **D61 v2 (built, deployed, bench-listened, rejected on bypass noise).**
+  v2 rewrote the same two BD-2 IIRs and the upper-mid emphasis as
+  shift-only leaky-integrator expressions
+  (`y = prev + ((x - prev) >> N)`), so the synth maps them to pure
+  adder + subtractor + shifter logic with zero DSP48E1. The first-stage
+  BD-2 mild clip stayed as a constant-LUT mux on the existing
+  `asymSoftClip` in the boost stage. **DSP count back to 83 (same as
+  D58.2 baseline)**, which removes the D58-class DSP-count risk. Routed
+  WNS `-8.083 ns` (+0.412 ns better than D58.2), TNS `-5959.880 ns`,
+  WHS `+0.052 ns`, THS `0 ns`, failing setup endpoints `2172 / 52784`,
+  Slice LUTs `20048` (+335 vs D58.2), Slice Registers `22277` (+167 vs
+  D58.2), BRAM `6` (unchanged). bit/hwh md5
+  `065a869a34e2bde86051c6a96c4aaa2f` / `927a3dfcc9819171226cb0686348fb01`
+  deployed five-site to PYNQ-Z2 192.168.1.9. Deploy-time programmatic
+  smoke PASS across the full audition cycle: FRAME_COUNT delta ~480k
+  per 10 s, CLIP_COUNT delta = 0 for every case (all_off, TS9, OD-1,
+  BD-2 G20 / G50 / G80 at T50, BD-2 G50 at T30 / T70, Centaur), MUTE 3
+  honoured, GUI keep + dsp 20 s holds clean with `live=ON apply=OK`.
+  Bench audition with proper monitoring (CLAUDE.md spec connection,
+  no Pmod Line Out -> Line In direct loopback): **BD-2 G20 / G50 / G80
+  produced the documented edge-of-breakup / canonical / fuzzy-splatty
+  gradation; tone 30 / 50 / 70 gave dark / flat / bright with no
+  ice-pick; TS9 / OD-1 / Centaur sounded identical to D58.2 (no leak
+  to other models).** However safe-bypass was clearly noisier than
+  D58.2 on the same A/B by ear, so D61 v2 was rejected. Do not
+  redeploy this bit.
+- **Rollback executed.** PYNQ rolled back to D58.2 (bit/hwh md5
+  `1c9071b5f2e1eec63ef6abbcfcacbf02` / `21c1ca7a6ddd5c26fd39f8746abe28d8`)
+  via `git checkout HEAD -- hw/Pynq-Z2/bitstreams/{audio_lab.bit,audio_lab.hwh}`
+  + `scripts/deploy_to_pynq.sh` + `AudioLabOverlay(download=True)`.
+  Post-rollback Pmod mode 2 safe-clean smoke PASS: FRAME_COUNT delta
+  144150, CLIP_COUNT delta 0, ADC HPF True, VERSION 0x00480001, MUTE 3.
+- **Diagnostic note: loopback positive feedback (sweep-test artifact).**
+  During the failure investigation the user temporarily connected
+  Pmod Line Out -> Pmod Line In with a direct cable for measurement;
+  this creates a positive feedback loop through the DSP chain whose
+  small (>1) loop gain in mode 2 builds up to near-FS in seconds.
+  Programmatic peak-L on either D58.2 or D61 v2 under this loopback
+  reads ~7M (-1.3 dBFS) on the left channel and is *not* a bit-specific
+  regression; both bits show the same loopback resonance. The
+  bench-listening rejection of D61 v2 was reproduced separately with
+  the loopback cable removed (CLAUDE.md spec connection), so it is the
+  load-bearing evidence -- not the sweep numbers. The sweep also showed
+  that D58.2 and D61 v2 share comparable left-channel peak energy per
+  (freq, level) bucket but their per-freq pattern is shifted (e.g. at
+  16 kHz / 0 dBFS, D58.2 peak ~2.6 M vs D61 v2 ~5.0 M; at 12 kHz / 0 dBFS
+  D58.2 ~3.2 M vs D61 v2 ~0.03 M); the shift is consistent with the
+  ~1-sample additional group delay D61 v2 introduces in the OD section
+  rotating the cable-loop standing-wave pattern in frequency.
+- **Rule for the next BD-2 attempt (load-bearing for the next session).**
+  Do *not* add new register stages or new feedback state registers in
+  `Pipeline.hs`. Do *not* add new `mulU8` / `mulU12` invocations
+  anywhere on the OD path. Limit the BD-2 differentiation to:
+  1. New per-model constant entries in the existing tables
+     (`odDriveK` / `odKneeP` / `odKneeN` / `odSafetyKnee`).
+  2. New per-model constant tables that feed the *existing* arithmetic
+     operators in the existing six stages
+     (`overdriveDriveMultiplyFrame` / `overdriveDriveBoostFrame` /
+     `overdriveDriveClipFrame` / `overdriveToneMultiplyFrame` /
+     `overdriveToneBlendFrame` / `overdriveLevelFrame`).
+  Anything richer (pre-HPF, upper-mid emphasis, post-LPF) requires
+  feedback state, and D61 v2 demonstrated that even shift-only
+  leaky-integrator feedback inside the OD section is enough to perturb
+  the Vivado P&R and re-introduce the bypass artifact. The bench ear
+  on safe-bypass remains the only sensor that has caught this class
+  of regression across D58 / D59 / D60 / D61; macroscopic timing,
+  CLIP_COUNT, FRAME_COUNT, GUI smoke, and DMA-capture peaks are
+  necessary but not sufficient. D62 is now the deployed baseline; the
+  D58.2 bit/hwh remain the historical rollback target if D62 itself
+  needs to be undone.
+
+## D62 -- BD-2 Overdrive coefficient-only retune (accepted on bench)
+
+- **Decision.** D62 is accepted as the new deployed baseline. The
+  three-numeric-edit retune of BD-2 (`Overdrive.hs` model index 2)
+  achieved the BD-2 fidelity target documented in
+  `docs/ai_context/BD2_MODEL_RESEARCH.md` without any structural
+  change. Bench audition confirmed: (a) safe-bypass is as quiet as
+  D58.2 -- the D58 / D59 / D60 / D61 v2 class of bypass HF
+  saturation noise did NOT reappear; (b) BD-2 G20 / G50 / G80
+  audibly clips earlier and with stronger even-harmonic asymmetry
+  than the D58.2 BD-2; (c) TS9 / OD-1 / Centaur sound identical to
+  D58.2 (byte-exact for the other five models).
+- **What changed (exhaustive).** Three case entries in `Overdrive.hs`:
+  - `odDriveK 2`: `6` -> `7`. Matches OCD's `7` ceiling (per the
+    documented two-cascaded ~40 dB op-amp character in
+    BD2_MODEL_RESEARCH.md sources [1] / [4]); BD-2's max drive
+    multiplier goes from `~1..6.97x` to `~1..7.97x`.
+  - `odKneeP 2`: `3_000_000` -> `2_400_000`. Pre-D62 value treated
+    BD-2 as "transparent"; source [4]'s breadboard measurement
+    (Chuck D. Bones) reports audible op-amp rail clipping well
+    below mid-drive, with the diodes essentially inactive. `2.4M`
+    places BD-2 between OCD (`2.3M`) and OD-1 (`2.6M`).
+  - `odKneeN 2`: `2_700_000` -> `1_900_000`. The BD-2 op-amps run
+    from a single supply with the rail offset documented in source
+    [1]; their saturation is asymmetric. P/N gap is now `500k` (vs
+    OCD's `400k` and OD-1's `500k`), so the BD-2 entry carries the
+    most pronounced even-harmonic colour in the six-model lineup.
+  - `odSafetyKnee 2`: unchanged at `3_400_000`.
+- **What did NOT change.** `Pipeline.hs` is byte-for-byte unchanged.
+  No new register stage, no new feedback state register, no new
+  `mulU8` / `mulU12` invocation, no new combinational fan-out, no
+  GPIO map / `topEntity` / `block_design.tcl` / GUI / Pmod I2S2 /
+  Compressor / Amp / Distortion / DS-1 / RAT touch. The five
+  non-BD-2 Overdrive models (TS9 / OD-1 / Jan Ray / OCD / Centaur)
+  are byte-exact preserved -- their per-model entries in the same
+  `odDriveK` / `odKneeP` / `odKneeN` / `odSafetyKnee` case statements
+  are not touched.
+- **Build / timing.** Clash -> VHDL -> IP repackage -> Vivado batch
+  build PASS (`write_bitstream completed successfully`, 0 Errors).
+  Routed WNS `-8.497 ns` (vs D58.2 `-8.495 ns`, delta `-0.002 ns`
+  -- noise floor, essentially identical), TNS `-5876.740 ns`
+  (improved over D58.2's `-9052.753`), WHS `+0.053 ns`,
+  THS `0.000 ns`, failing setup endpoints `2107 / 52730` (better
+  than D58.2's `3224 / 60227`). Utilization after place: Slice LUTs
+  `19700` (-13 vs D58.2), Slice Registers `22280` (+170 vs D58.2),
+  Block RAM Tile `6` (unchanged), DSPs `83` (unchanged from D58.2).
+  bit/hwh md5
+  `349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`. The near-zero WNS delta vs
+  D58.2 is the load-bearing signal that Vivado P&R landed on
+  essentially the same placement -- which D58 / D59 / D60 / D61 v2
+  collectively proved is the prerequisite for keeping the safe-bypass
+  path clean.
+- **Deploy + smoke.** Deployed 5-site to PYNQ-Z2 192.168.1.9 via
+  `scripts/deploy_to_pynq.sh`. PL freshly programmed via
+  `AudioLabOverlay(download=True)`. Pmod mode 2 safe-clean 3 s:
+  FRAME_COUNT delta `144150`, CLIP_COUNT delta `0`, ADC HPF True,
+  VERSION `0x00480001`, MUTE 3 readback. Audition cycle 10 cases x
+  15 s ran clean (no Python exceptions, FRAME / CLIP nominal, MUTE
+  honoured at end). Bench audition (CLAUDE.md spec connection,
+  no Pmod direct loopback): pass on all three criteria.
+- **Conclusion for the D58 / D59 / D60 / D61 history.** D62
+  demonstrates that the bypass-path P&R sensitivity documented
+  across the prior four rejected attempts is specifically a response
+  to *structural* changes (new DSP48E1 multipliers in D58, new
+  `Pipeline.hs` register stages in D59 / D60 / D61 v1 / D61 v2).
+  A pure constant edit in the existing per-model tables does NOT
+  perturb Vivado P&R enough to leak into the safe-bypass path.
+  This is the engineering rule that survives this commit: any
+  *audio* improvement on the existing six-stage Overdrive (or any
+  other section with the same structural sensitivity) should first
+  try a constant-only retune; only if the audible target genuinely
+  cannot be reached without new arithmetic / new register stages
+  should the more expensive structural path be considered, and even
+  then with the understanding that the bypass-path is the dispositive
+  acceptance gate.
+- **Rollback target.** D58.2 bit/hwh
+  (`1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
+  `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  if D62 ever needs to be undone. The D62 bit/hwh are tracked in
+  this commit so they likewise survive in git history.

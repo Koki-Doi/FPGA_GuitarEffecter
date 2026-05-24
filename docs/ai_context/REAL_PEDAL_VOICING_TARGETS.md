@@ -7,6 +7,15 @@ existing effects closer to the recognised voicing of common pedals,
 amps, and cabs **without** adding new GPIOs, new `topEntity` ports, or
 new effect stages.
 
+Current note (2026-05-24): this file is the D16-era voicing target
+record. The live build has since added selectable Overdrive models,
+the six-model Amp Sim + Drive mode, Pmod I2S2 mode 2, and the D62 BD-2
+coefficient retune. Treat the stage-by-stage rows below as the
+voicing rationale for that pass; use `DSP_EFFECT_CHAIN.md`,
+`AMP_MODEL_RESEARCH_D55.md`, `BD2_MODEL_RESEARCH.md`, and
+`TIMING_AND_FPGA_NOTES.md` for the current exact deployed constants
+and timing baseline.
+
 The references named below are inspirations for *algorithmic shape*
 only (cf. `DECISIONS.md` D7 / D11 / D14): no commercial-pedal source
 code, schematic-derived coefficient table, or GPL DSP code is copied
@@ -207,9 +216,10 @@ existing pipeline.
 - All ten chain presets apply cleanly and the smoke-test on the board
   reports the expected bytes.
 - `tests/test_overlay_controls.py` passes.
-- Vivado WNS stays in the accepted deploy band (latest audio-analysis
-  voicing pass: `-8.731 ns` vs previous `-7.917 ns`); WHS / THS stay
-  non-negative.
+- Vivado WNS stays in the accepted deploy band. The current deployed
+  D62 baseline is `WNS = -8.497 ns`, `WHS = +0.053 ns`,
+  `THS = 0.000 ns`; compare any new build against
+  `TIMING_AND_FPGA_NOTES.md`.
 - ADC HPF default-on (`R19_ADC_CONTROL == 0x23`) is preserved.
 - No reference-pedal source code, schematic-exact coefficient table,
   or GPL DSP code is added to the tree.

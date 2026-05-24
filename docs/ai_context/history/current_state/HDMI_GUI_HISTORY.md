@@ -9,6 +9,10 @@ file is the CURRENT_STATE-flavoured prose of the same arc.
 
 Read the live `CURRENT_STATE.md` first; come here only when an old
 phase block is the load-bearing reference.
+Terms such as "current" below refer to the historical phase being
+quoted. The actual live HDMI baseline is Phase 6I C2 SVGA `800x600 @
+60 Hz / 40 MHz` with the compact 800x480 GUI at framebuffer `(0,0)`;
+see `HDMI_GUI_INTEGRATION_PLAN.md` and `DECISIONS.md` D25.
 
 ---
 
@@ -29,7 +33,7 @@ overlay after the AudioLab overlay.
 
 What was found:
 
-- The current deployed `audio_lab.bit` contains the Phase 4 HDMI
+- At that phase, the deployed `audio_lab.bit` contained the Phase 4 HDMI
   framebuffer output path.
 - `GUI/pynq_multi_fx_gui.py` is a good rendering candidate because
   `render_frame(state)` returns a 1280x720 RGB `numpy.ndarray`, but its
@@ -1098,4 +1102,3 @@ proposed `block_design.tcl` patch shape is in
 `docs/ai_context/HDMI_BLOCK_DESIGN_TCL_PATCH_PLAN.md`. The Phase 4
 implementation prompt draft is in
 `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE4_IMPLEMENTATION_PROMPT_DRAFT.md`.
-

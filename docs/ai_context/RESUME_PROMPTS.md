@@ -114,8 +114,9 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。Vivado 実装で WNS が現行 deploy(-8.096 ns)より明らかに
-> 悪い bitstream は deploy しないでください。
+> してください。Vivado 実装で WNS が現行 D62 deploy (`-8.497 ns`) より
+> 明らかに悪い bitstream、または safe-bypass で高域ノイズが出る
+> bitstream は deploy しないでください。
 
 ## Adding a new effect
 
@@ -145,13 +146,15 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -8.096 ns (Phase 6I C2 SVGA 800x600 HDMI
-> ビルド) はベースライン同等で、運用上は動いていますが厳密には
-> まだ負です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
+> 現状 deploy 済の WNS = -8.497 ns (D62 BD-2 coefficient-only retune)
+> は D58.2 とほぼ同一で、運用上は動いていますが厳密にはまだ負です。
+> これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
 > 残った深い組合せブロックを register で分け、必要なら cab タップ
 > や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
 > 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
-> (`TIMING_AND_FPGA_NOTES.md` 参照)。
+> (`TIMING_AND_FPGA_NOTES.md` 参照)。ただし D58 / D59 / D60 / D61 v2 の
+> 反省として、WNS 改善だけでは不十分です。safe-bypass の実音確認も
+> deploy gate です。
 
 ## Codec / input debug
 
@@ -168,8 +171,9 @@ asking it to re-discover the project from scratch.
 > 触ってよいファイルは `AGENTS.md` / `CLAUDE.md` / `docs/` 配下のみ。
 > 実装ファイルや bitstream を巻き込まないでください。
 
-## Phase 7B — PCM1808 / PCM5102 module verification + pin candidate docs
+## Historical Phase 7B — PCM1808 / PCM5102 module verification + pin candidate docs
 
+> **履歴プロンプトです。現行 PMOD JB audio は Pmod I2S2 です。**
 > Phase 7A / 7B は planning only。実 XDC / block_design / bit / hwh は
 > Phase 7C 以降。まず以下を読んでください:
 > `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (section 11
@@ -204,8 +208,10 @@ asking it to re-discover the project from scratch.
 > `hdmi_integration.tcl` 変更、bit / hwh 再生成、Vivado build、
 > ADAU1761 即置換、`git push` / `git pull` / `git fetch`。
 
-## Phase 7C — PCM5102 DAC 出力 prototype (XDC 反映の最初の段階)
+## Historical Phase 7C — PCM5102 DAC 出力 prototype (XDC 反映の最初の段階)
 
+> **履歴プロンプトです。現行 build では PCM5102 / PCM1808 path は retired
+> で、PMOD JB は Pmod I2S2 が専有します。**
 > 前提: Phase 7B のモジュール確認 (`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
 > section 11.1 / 11.2) が埋まっていること。
 >
@@ -342,7 +348,7 @@ asking it to re-discover the project from scratch.
 >       --confirm-loopback --clear
 > '
 >
-> # mode 2: ADC -> AudioLab DSP -> DAC (D49). The --confirm-dsp flag is
+> # mode 2: ADC -> AudioLab DSP -> DAC (D49 + D50 mono RIGHT mirror). The --confirm-dsp flag is
 > # REQUIRED; without it the script falls back to mode 0. The DSP chain
 > # (Overdrive / Distortion / Compressor / Amp / Cab / Reverb / EQ) is
 > # in the audio loop -- disconnect the on-module Line Out <-> Line In
@@ -398,9 +404,10 @@ asking it to re-discover the project from scratch.
 > 78ef562:hw/Pynq-Z2/bitstreams/audio_lab.bit > /tmp/old.bit` で
 > 取り出して 5 か所に sync。
 
-## Phase Pmod-0 — Pmod I2S2 integration planning (docs only, module not yet delivered)
+## Historical Phase Pmod-0 — Pmod I2S2 integration planning (docs only, module not yet delivered)
 
-> Digilent Pmod I2S2 (CS4344 stereo DAC + CS5343 stereo ADC) を購入済、
+> **履歴プロンプトです。現行 Pmod I2S2 path は D48 / D49 / D50 で
+> 実装・deploy 済みです。** Digilent Pmod I2S2 (CS4344 stereo DAC + CS5343 stereo ADC) を購入済、
 > 納品前の **設計フェーズ専用** プラン docs が
 > `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md` (Phase Pmod-0 commit)
 > 全文 + `DECISIONS.md` D45 にまとまっている。
@@ -443,18 +450,24 @@ asking it to re-discover the project from scratch.
 > 全部揃ったら Phase Pmod-1 を別セッションで開始する。Phase Pmod-1 用の
 > プロンプトは `PMOD_I2S2_INTEGRATION_PLAN.md` section 16 にある。
 
-## Phase 7C / 7E / 7D — External PCM5102 / PCM1808 audio path (deployed; D44 follow-up plan only)
+## Historical Phase 7C / 7E / 7D — External PCM5102 / PCM1808 audio path (retired)
 
-> 外付け PCM5102 DAC + PCM1808 ADC は **Phase 7C / 7E / 7D で実装・
+> **履歴プロンプトです。現行 PMOD JB audio は D48 / D49 / D50 の Pmod
+> I2S2 mode 2 (`ADC -> AudioLab DSP -> DAC`) で、PCM5102 / PCM1808 path
+> は retired / archival です。**
+>
+> 外付け PCM5102 DAC + PCM1808 ADC は **Phase 7C / 7E / 7D 当時に実装・
 > deploy 済**。PCM5102 は AudioLab DSP 出力の並列ライン
 > (`i2s_to_stream_0/so` をそのままミラー) として動作中、PCM1808 は
 > build-time 2:1 wire mux + JB8 SCKI まで実装済だが deploy bit は
-> `CONFIG.CONST_VAL {0}` (mux=ADAU フォールバック) で出荷中。詳細は
+> `CONFIG.CONST_VAL {0}` (mux=ADAU フォールバック) で出荷中だった。詳細は
 > `docs/ai_context/AUDIO_SIGNAL_PATH.md` の "External PCM1808 /
 > PCM5102 paths" 節、`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
 > section 9、`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44。
 >
 > 触ってはいけないこと:
+> - 現行 build で PCM5102 / PCM1808 path を再 enable する (D48 で retired。
+>   Pmod I2S2 と PMOD JB pin が衝突する)。
 > - `pcm5102_audio_out.v` の `assign ext_audio_mclk_o = 1'b0;` を外す
 >   (D40 / D42、PCM5102 SCK を低位レベル固定する RTL 側保証)。
 > - `pcm5102_dac_tone` を再 instantiate する (D39、Phase 7E で
@@ -558,7 +571,67 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
-## Phase D55 — Replace Amp Sim model set with six researched amp voicings (current)
+## Phase D58.2 — Balanced Amp Drive Mode saturation, fixed-scalar retake (current)
+
+> 続きを始める前に `git status --short` と
+> `git log -8 --oneline --decorate --graph` を実行し、
+> `main` (merge `7ba801f` "Merge feature/amp-drive-mode-balanced-gain-v2
+> into main") か `feature/amp-drive-mode-balanced-gain-v2`
+> (`f9b8759` "Add balanced amp drive mode saturation (fixed-scalar
+> retake)") にいることを確認してください。
+>
+> 構成 (実装済 / deploy 済 / 耳確認済):
+> - D55 の 6-model 構造 (`JC-120 / Twin Reverb / AC30 / Rockerverb /
+>   JCM800 / TriAmp Mk3`) と `ctrlD[7] = ampDriveMode` /
+>   `ctrlD[6:3] = 0` / `ctrlD[2:0] = ampModelIdx` の bit-pack、
+>   `softClipK 3_300_000 / 3_400_000` safety、second-stage
+>   `intensity = ampCharForModel idx >> 1` (half intensity) は **完全に
+>   D55 と同一**。
+> - `Amp.hs` の Drive 係数だけを D55 から再調整:
+>     - `ampDrivePosDelta` (`Unsigned 3 -> Signed 25`): `13_000 /
+>       58_000 / 130_000 / 210_000 / 264_000 / 336_000`
+>     - `ampDriveNegDelta` (`Unsigned 3 -> Signed 25`): `11_000 /
+>       50_000 / 113_000 / 180_000 / 231_000 / 300_000`
+>     - `ampSecondStageDriveBonus`: `14 / 18 / 28 / 42 / 48 / 56`
+>     - `ampPreLpfDriveDarken`: `5 / 7 / 10 / 16 / 16 / 24`
+>   `ampAsymClip` の signature は **D55 と同じ** (`Unsigned 3 ->
+>   Unsigned 8 -> Bool -> Sample -> Sample`)、Drive delta 引数は
+>   `modelIdx` のみ (D58 の `ch` 追加引数 は採用しない)。
+> - **重要な失敗教訓: D58 (`feature/amp-drive-mode-balanced-gain`,
+>   `797467c`) は `ch * factor` 比例型 Drive delta で DSP 数を
+>   83 → 87 に増やし、Vivado P&R が ADC→DAC bypass 経路に高音域
+>   飽和ノイズを乗せた (Amp OFF / 全 effect_on=False でも audible)。
+>   D58.2 は fixed scalar で DSP 数を 83 (D55 と同一) に戻して
+>   regression を回避**。
+> - bit/hwh sha `93f31348...` / `25991dc0...` を 5-site sync で
+>   PYNQ-Z2 192.168.1.9 に deploy 済 (`hw/Pynq-Z2/bitstreams/`,
+>   repo `audio_lab_pynq/bitstreams/`, site-packages
+>   `audio_lab_pynq/bitstreams/`, `pynq/overlays/audio_lab/`,
+>   `jupyter_notebooks/audio_lab/bitstreams/`)。
+> - timing: WNS `-8.495 ns` (D55 比 -0.264 ns、deploy 帯内)、
+>   WHS `+0.051 ns`、THS `0 ns`、DSP `83 / 220 (37.73 %)`。
+> - smoke: ADC HPF True、6 model ctrlD readback OK、Pmod mode
+>   0/1/2/3 readback OK、safe bypass + mode-2 DSP 3 s CLIP_COUNT = 0、
+>   TriAmp Mk3 + Drive 3 s CLIP_COUNT = 0、GUI 起動例外無し。
+>   **耳確認 PASS** ("D58 のような高音域飽和ノイズは消えた")。
+>
+> やってよい変更: Python / GUI / Notebook / docs / tests / 必要なら
+> 最小の Clash DSP 追修正 + Vivado 再ビルド + deploy + 実機 smoke。
+> 禁止: D58 の `ch * factor` Drive delta を復活させる (DSP+4 →
+> bypass 経路 P&R regression)、D57 の `ampInputDriveGainBonus` /
+> pre-clip push / second clip stage full intensity / `ch * 5000+`
+> 多項係数を採用する、新規 AXI GPIO、`block_design.tcl` 変更、
+> `axi_gpio_amp_tone` address 変更、`amp_character` 連続ノブの
+> UI 復活、Clean/Drive 分岐の削除、モデル差を音量差だけで作ること、
+> HDMI / encoder / Pmod I2S2 path 改変、
+> `git push` / `git pull` / `git fetch`。
+>
+> 失敗時の rollback: PYNQ bit/hwh を D55 (`8df39b06...` /
+> `9fb470c7...`) に 5-site sync で戻すだけで audio がクリーン状態に
+> 戻る (Vivado 再ビルド不要)。`git show 314b7c6:hw/Pynq-Z2/
+> bitstreams/audio_lab.bit > /tmp/d55.bit` で抽出可能。
+
+## Phase D55 — Replace Amp Sim model set with six researched amp voicings (superseded by D58.2)
 
 > 続きを始める前に `git status --short` と
 > `git log -8 --oneline --decorate --graph` を実行し、

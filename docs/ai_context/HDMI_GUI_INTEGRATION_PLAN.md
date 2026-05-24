@@ -4,7 +4,16 @@ This document records the design direction for showing the existing
 `GUI/pynq_multi_fx_gui.py` rendering on the PYNQ-Z2 HDMI output without
 breaking the current AudioLab DSP path.
 
-Status: integrated Phase 4 implementation deployed, Phase 4C runtime
+Current status: Phase 6I is the deployed HDMI timing baseline. The live
+AudioLab HDMI path uses the integrated `audio_lab.bit`, one
+`AudioLabOverlay()` load, `audio_lab_pynq.hdmi_backend` with
+`DEFAULT_WIDTH=800` / `DEFAULT_HEIGHT=600`, VESA SVGA `800x600 @ 60 Hz /
+40 MHz`, and the compact-v2 800x480 GUI composed at framebuffer `(0,0)`.
+Rows `480..599` stay black. The Phase 6H native 800x480 timing attempt was
+rejected on the real LCD (white screen) and must not be used as the current
+baseline.
+
+History: integrated Phase 4 implementation deployed, Phase 4C runtime
 resource profile measured, Phase 4D small-LCD fit modes added, Phase 4E
 800x480 logical GUI mode tested, Phase 4F manual viewport calibration
 added, Phase 4G compact-v2 layout plus negative-offset placement added,
@@ -34,13 +43,11 @@ long model labels), switches `AppState` to a single per-effect
 baseline coordinates (`outer=(12,12,788,468)`, panels at `left=24`).
 Phase 6G's strong-UI diagnostics still PASS at
 `strong_ui_bbox=[24,776,20,454]` (all `estimated_*_left_x=24`).
-The later Phase 6H native-timing pass moved the integrated HDMI signal
-itself to native `800x480` for the 5-inch LCD because the Python
-renderer, backend placement, and framebuffer origin had all passed while
-the real LCD still showed a left blank region under the 720p signal.
-The deployed native mode is `40.000 MHz`, H timing
-`800/40/128/88/1056`, V timing `480/13/3/132/628`, with VDMA
-HSIZE/STRIDE/VSIZE `2400/2400/480`.
+The later Phase 6H native-timing pass attempted to move the integrated HDMI
+signal itself to native `800x480`, but the real LCD rejected that mode with a
+white screen. Phase 6I superseded it by using standard VESA SVGA
+`800x600 @ 60 Hz / 40 MHz` while keeping the 800x480 GUI at framebuffer
+origin `(0,0)`.
 Phase 1 offscreen render benchmark, Phase 2A PYNQ compatibility, Phase 2B
 static/change-driven render optimization, Phase 2C
 AppState-to-`AudioLabOverlay` bridge planning, Phase 2D bridge runtime
@@ -79,16 +86,16 @@ resource profile, LCD fit test, 800x480 logical GUI result, viewport
 calibration result, 800x480 compact-v2 layout correction, 800x480
 vertical safe margin + horizontal layout diagnosis, 800x480
 compact-v2 baseline restore, HDMI output-side diagnosis, and the
-native 800x480 timing plan. Phase 5C's adopted runtime mode is the
+native 800x480 timing plan. Phase 5C's adopted runtime mode was the
 existing 1280x720 HDMI signal with the 800x480 compact GUI at
-framebuffer `x=0,y=0`.
-Phase 6H supersedes that default for the 5-inch LCD by using a native
-800x480 HDMI signal and a native 800x480 framebuffer. See
-`history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
+framebuffer `x=0,y=0`. Phase 6H native 800x480 was rejected; Phase 6I
+is the current deployed standard. See
+`history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` and
+`history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`.
 
 ## 1. Current state
 
-### Phase 5D snapshot (post-cleanup runtime)
+### Current Phase 6I runtime snapshot
 
 The HDMI GUI runtime as it ships today (see `CURRENT_STATE.md` "Phase 5D"
 and `DECISIONS.md` D24):
@@ -157,18 +164,14 @@ and `DECISIONS.md` D24):
   inside `<=28` / `<=40` thresholds. No bit/hwh / Vivado / Clash /
   GPIO change. See
   `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`.
-- Phase 6H native 800x480 timing (2026-05-16, after the renderer port)
-  changes the integrated HDMI signal from 1280x720 to native 800x480.
-  The final timing is pixel clock `40.000 MHz`, H
-  `800/40/128/88/1056`, V `480/13/3/132/628`, `rgb2dvi` `kClkRange=3`,
-  VDMA HSIZE/STRIDE/VSIZE `2400/2400/480`, framebuffer `1152000`
-  bytes. Vivado build passed with WNS `-8.138 ns`, TNS `-6405.865 ns`,
-  WHS `+0.040 ns`, THS `0.000 ns`; utilization LUT `18634`,
-  Registers `20846`, BRAM `9`, DSP `83`. PYNQ actual UI visual,
-  model UI, and realtime pedalboard tests pass with VDMA error bits
-  clear. Human LCD left-edge confirmation remains the final visual
-  check. See
-  `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md`.
+- Phase 6H native 800x480 timing (2026-05-16) was rejected on the real
+  LCD, despite register-level tests passing. Do not restore it.
+- Phase 6I changes the integrated HDMI signal to standard VESA SVGA
+  `800x600 @ 60 Hz / 40 MHz`: H `800/40/128/88/1056`, V
+  `600/1/4/23/628`, VDMA HSIZE/STRIDE/VSIZE `2400/2400/600`. The
+  compact-v2 GUI remains a `[480,800,3]` frame copied to `(0,0)`, with
+  the bottom 120 rows black. VTC `GEN_ACTSZ (0x60) = 0x02580320` is the
+  live-bit check.
 
 ### AudioLabOverlay and audio_lab.bit
 
@@ -179,14 +182,16 @@ control API.
 
 The current `audio_lab.bit` owns the real-time DSP path:
 
-- Line-in from the ADAU1761 enters the Zynq PL.
+- Pmod I2S2 CS5343 Line In enters the Zynq PL through `i2s_to_stream_0`.
 - The Clash-generated DSP block processes the guitar chain.
 - AXI GPIOs drive effect enable flags and parameters.
-- Audio returns to the ADAU1761 headphone / line output.
+- Audio returns to the Pmod I2S2 CS4344 Line Out in mode 2.
+- ADAU1761 remains configured for I2C/HPF health checks and `sdata_o`
+  debug visibility.
 
 The current deployed `audio_lab.bit` contains the integrated HDMI
-framebuffer output subsystem. As of Phase 6H native timing, this path is
-configured for a native 800x480 signal for the 5-inch LCD:
+framebuffer output subsystem. As of Phase 6I, this path is configured for
+VESA SVGA 800x600 for the 5-inch LCD:
 
 - `axi_vdma_hdmi` MM2S framebuffer scanout at `0x43CE0000`
 - `v_tc_hdmi` timing generator at `0x43CF0000`
@@ -197,14 +202,14 @@ configured for a native 800x480 signal for the 5-inch LCD:
 The HDMI Tcl is isolated in `hw/Pynq-Z2/hdmi_integration.tcl` and is
 sourced by `create_project.tcl` after the existing audio block design.
 
-Current Phase 6H HDMI runtime values:
+Current Phase 6I HDMI runtime values:
 
 - Pixel clock: `40.000 MHz`.
-- VTC active: `800x480`.
+- VTC active: `800x600`.
 - VTC total: `1056x628`.
 - VDMA HSIZE/STRIDE: `2400` bytes.
-- VDMA VSIZE: `480`.
-- Framebuffer size: `800 * 480 * 3 = 1152000` bytes.
+- VDMA VSIZE: `600`.
+- Framebuffer size: `800 * 600 * 3 = 1440000` bytes.
 
 Phase 4C re-ran the static-frame test and profiled the already-deployed
 path without rebuilding or changing the bitstream. VDMA scanout started
@@ -312,17 +317,19 @@ another offset test. `scripts/test_hdmi_output_mapping_720p.py` loads
 status, and holds the frame so the user can read visible x/y labels on
 the physical LCD. The 60-second PYNQ run completed with no VDMA error
 bits (`DMASR=0x00011000`, `vtc_ctl=0x00000006`). EDID was not
-available through Linux DRM, and the
-current XDC does not connect HDMI OUT DDC. Phase 5B native 800x480
+available through Linux DRM, and the XDC did not connect HDMI OUT DDC.
+Phase 5B native 800x480
 timing is documented as the next implementation candidate, but it is
 deferred until separately approved because it requires a Vivado rebuild,
 fresh timing summary, and bit/hwh deploy decision.
 
 Phase 5C records the user's visual conclusion from the output mapping
 test: the `800x480 x0 y0` candidate box is perfectly positioned on the
-5-inch LCD. The project now treats the top-left `800x480` region of the
-fixed 1280x720 framebuffer as the default visible viewport for this
-panel. The standard command is
+5-inch LCD. At that point, the project treated the top-left `800x480`
+region of the fixed 1280x720 framebuffer as the default visible viewport
+for this panel. Phase 6I later replaced the 720p framebuffer with SVGA
+800x600 while keeping the GUI at `(0,0)`. The historical Phase 5C
+standard command was
 `scripts/test_hdmi_800x480_frame.py --variant compact-v2 --placement
 manual --offset-x 0 --offset-y 0 --hold-seconds 60`. Center placement
 `(240,120)` and further positive/negative offset sweeps are not adopted
@@ -343,25 +350,29 @@ The AudioLab control contract must remain intact:
   approval.
 - Do not rebuild or deploy a bitstream for documentation-only work.
 
-### GUI/pynq_multi_fx_gui.py
+### Historical GUI/pynq_multi_fx_gui.py pre-D24 state
 
-`GUI/pynq_multi_fx_gui.py` is the best candidate for HDMI GUI reuse. It
-is structured as a renderer plus optional desktop preview helpers:
+This subsection records the pre-D24 renderer shape. The current file is
+an 800x480 compact-v2 shim over `GUI/compact_v2/`; the 1280x720
+renderer, Tk preview, and `run_pynq_hdmi()` were removed.
+Historically, `GUI/pynq_multi_fx_gui.py` was structured as a renderer
+plus optional desktop preview helpers:
 
 - `AppState` holds GUI state such as selected effect, enabled effects,
   knobs, chain-preset label, model indices, meters, and animation time.
-- `render_frame(state, width=1280, height=720)` returns a RGB
+- `render_frame(state, width=1280, height=720)` returned a RGB
   `numpy.ndarray` shaped `(height, width, 3)` with `dtype=uint8`.
-- The default rendering target is 1280x720 RGB, which matches the
+- The default rendering target was 1280x720 RGB, which matched the
   intended HDMI display resolution.
-- The Tkinter path is only for desktop preview. Tk handles mouse /
-  keyboard input; PIL and NumPy do the actual frame rendering.
-- `run_pynq_hdmi(bitfile="base.bit", fps=5)` is a simple PYNQ HDMI hook,
-  but it loads a separate overlay and is not safe for the live AudioLab
-  DSP overlay.
+- The Tkinter path was only for desktop preview. Tk handled mouse /
+  keyboard input; PIL and NumPy did the actual frame rendering.
+- `run_pynq_hdmi(bitfile="base.bit", fps=5)` was a simple PYNQ HDMI hook,
+  but it loaded a separate overlay and was not safe for the live AudioLab
+  DSP overlay. It no longer exists in the current runtime.
 
-The renderer can be preserved. The overlay-loading and HDMI backend must
-be replaced before it can be used with the live audio DSP.
+The useful renderer ideas were preserved in compact-v2; the
+overlay-loading and HDMI backend were replaced by the integrated
+AudioLab HDMI backend.
 
 ### Removed legacy HDMI/GUI.py
 
@@ -403,18 +414,21 @@ script dependency on the untracked `HDMI/` tree. It was backed up under
 `/tmp/fpga_guitar_effecter_backup/` and removed from the working tree.
 Do not reintroduce it as a HDMI solution.
 
-### run_pynq_hdmi() problem
+### Historical run_pynq_hdmi() problem
 
-`GUI/pynq_multi_fx_gui.py` includes a `run_pynq_hdmi()` helper that does:
+Before D24 removed it, `GUI/pynq_multi_fx_gui.py` included a
+`run_pynq_hdmi()` helper that did:
 
 ```python
 base = Overlay(bitfile)
 hdmi_out = base.video.hdmi_out
 ```
 
-The default `bitfile` is `"base.bit"`. On PYNQ, loading this overlay
+The default `bitfile` was `"base.bit"`. On PYNQ, loading this overlay
 would replace the live AudioLab bitstream in the PL. That makes the
-function unsuitable for the current goal.
+function unsuitable for the live AudioLab goal. The current code has no
+`run_pynq_hdmi()` path; use `AudioLabOverlay()` plus
+`audio_lab_pynq.hdmi_backend`.
 
 ## 2. Why the base.bit approach cannot be used
 
@@ -433,7 +447,7 @@ Therefore:
 - Loading `AudioLabOverlay()` after `base.bit` removes the base overlay
   video subsystem.
 
-That means the existing `run_pynq_hdmi()` cannot be used for a live
+That means the old `run_pynq_hdmi()` could not be used for a live
 AudioLab HDMI GUI. It would display graphics only by sacrificing the
 current guitar-effect bitstream.
 
@@ -536,10 +550,11 @@ Measured Phase 4E 800x480 logical mode cost:
 - RGB888 -> DDR `GBR888` full-frame copy: `0.207 s`.
 - Total content update: about `0.550 s`.
 
-The renderer/compose work is much cheaper than the 1280x720 `fit-90`
-path, but the current copy still swizzles the full 1280x720 framebuffer.
-Partial copy of the 800x480 active region is the next obvious
-optimization if update rate matters.
+The renderer/compose work was much cheaper than the 1280x720 `fit-90`
+path, but that Phase 4E runtime still swizzled the full 1280x720
+framebuffer. Phase 6I no longer uses that 720p buffer; the current
+framebuffer is 800x600, with the compact 800x480 GUI copied at
+origin `(0,0)` and rows `480..599` black.
 
 The integration must preserve the existing AudioLab design:
 
@@ -573,8 +588,9 @@ framebuffer-style HDMI backend.
 
 ### Replace the HDMI backend
 
-Do not use the current `run_pynq_hdmi()` overlay-loading behavior. In the
-AudioLab integration path:
+This is now implemented by `audio_lab_pynq.hdmi_backend`. The historical
+replacement rule was: do not use the `run_pynq_hdmi()` overlay-loading
+behavior. In the AudioLab integration path:
 
 - `run_pynq_hdmi()` must not load `base.bit`.
 - It must not call `Overlay("base.bit")`.
@@ -582,7 +598,7 @@ AudioLab integration path:
 - The HDMI output object must come from the already-loaded integrated
   AudioLab overlay, or from a helper owned by that overlay.
 
-In practice, a future implementation should add a new backend such as:
+The implemented backend follows this shape:
 
 ```text
 AudioLabOverlay -> integrated HDMI output object -> writeframe(rgb)
@@ -772,18 +788,23 @@ GUI controls:
 - presence
 - resonance
 - master
-- character or named amp model
+- amp model (six D55/D58.2 models)
+- drive mode (Clean / Drive)
 
 Overlay API:
 
-- `set_guitar_effects(amp_on=..., amp_input_gain=..., amp_bass=..., amp_middle=..., amp_treble=..., amp_presence=..., amp_resonance=..., amp_master=..., amp_character=...)`
-- `set_amp_model(name, **overrides)` when selecting a named model
+- `set_guitar_effects(amp_on=..., amp_input_gain=..., amp_bass=..., amp_middle=..., amp_treble=..., amp_presence=..., amp_resonance=..., amp_master=..., amp_model_idx=..., amp_drive_mode=...)`
+- `set_amp_model(name_or_idx, **overrides)` when selecting a named model
 - `get_amp_model_names()`
-- `amp_model_to_character(name)`
+- `amp_model_drive_byte(idx, drive_mode)`
 
 Notes:
 
-- Named amp models are a convenience layer over `amp_character`.
+- `axi_gpio_amp_tone.ctrlD[2:0]` carries `amp_model_idx` (0..5) and
+  `ctrlD[7]` carries `amp_drive_mode`; `ctrlD[6:3]` stays reserved.
+- The old `amp_character` percent kwarg is compatibility input only
+  when no `amp_model_idx` is supplied. Do not revive the continuous
+  CHAR UI as the live model control.
 - Do not add a new amp model GPIO.
 
 ### Cab
@@ -1227,8 +1248,9 @@ are copied.
 
 Constraints kept:
 
-- 800x480 logical GUI at `offset_x=0`, `offset_y=0` inside the fixed
-  1280x720 HDMI signal.
+- At Phase 5D, 800x480 logical GUI at `offset_x=0`, `offset_y=0`
+  inside the fixed 1280x720 HDMI signal. Current Phase 6I uses SVGA
+  800x600 with the same GUI origin and black rows `480..599`.
 - `audio_lab.bit` / `audio_lab.hwh` untouched (no Vivado rebuild).
 - `block_design.tcl`, `audio_lab.xdc`, `create_project.tcl`,
   `LowPassFir.hs` untouched.
