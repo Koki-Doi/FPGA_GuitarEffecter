@@ -3411,3 +3411,113 @@ not get removed even when superseded — they get updated.
   candidate, and must be ready to be rolled back to D58.2 without a
   Vivado rebuild (the D58.2 bit/hwh are at HEAD in
   `hw/Pynq-Z2/bitstreams/` for this reason).
+
+## D61 -- Rejected BD-2 Overdrive model fidelity attempt (both v1 and v2)
+
+- **Decision.** D61 is rejected for deployment in both forms (v1 and v2).
+  The BD-2 differentiation the attempt added (pre-clip HPF, upper-mid
+  emphasis, first-stage mild asymmetric soft clip, post-clip fizz-guard
+  LPF) sounded audibly correct on the bench when engaged, but safe-bypass
+  (every `effect_on = False`, Pmod mode 2 ADC -> DSP -> DAC) was clearly
+  noisier than D58.2 on the same A/B. This is the same class of regression
+  as D58 / D59 / D60: a Vivado P&R-induced bypass-path artifact that the
+  macroscopic timing summary, CLIP_COUNT, FRAME_COUNT, and the rest of
+  the programmatic smoke do not flag.
+- **Research deliverable kept on main.** `docs/ai_context/BD2_MODEL_RESEARCH.md`
+  is the source-by-source circuit research note for the BD-2 Blues Driver
+  (Analog Is Not Dead, Guitar Pedals Visualized, Aion FX Sapphire,
+  PedalPCB / Chuck D. Bones breadboard, Premier Guitar mods). It survives
+  this rollback so the next BD-2 attempt does not have to repeat the
+  research. The note also explicitly records what the real BD-2 does
+  *not* do (diode clippers D7-D10 are effectively inactive in stock per
+  measurement) so the next attempt does not waste cycles modelling them.
+- **Files reverted in this commit.**
+  - `hw/ip/clash/src/AudioLab/Effects/Overdrive.hs`
+  - `hw/ip/clash/src/AudioLab/Pipeline.hs`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl`
+  - `hw/ip/clash/vhdl/LowPassFir/component.xml`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.hwh`
+  All revert back to the D58.2 baseline so the source tree matches the
+  deployed bit. No D61 bit / hwh is committed.
+- **D61 v1 (rejected without bench listen, DSP count out of budget).**
+  v1 added new BD-2-only state registers (`bd2PreLpPrev`, `bd2PostLpPrev`)
+  in `Pipeline.hs` and used `onePoleU8` (two `mulU8` per IIR pole) plus
+  one `mulU8` for the upper-mid emphasis. Vivado batch build PASSed;
+  routed WNS `-7.891 ns` (+0.604 ns better than D58.2 `-8.495 ns`),
+  TNS `-6724.798 ns`, WHS `+0.051 ns`, THS `0 ns`. **DSP count climbed
+  from 83 to 88 (+5)**, which is the same class of DSP-count delta that
+  triggered the D58 bypass regression (DSP 83 -> 87). v1 was not even
+  bench-listened on this basis; the bit/hwh md5
+  `13429faf72b87015725dfee2ee814dee` / `fe6cd05ef0ea78f4fe5c15abf4bc9432`
+  are recorded for traceability but must not be redeployed.
+- **D61 v2 (built, deployed, bench-listened, rejected on bypass noise).**
+  v2 rewrote the same two BD-2 IIRs and the upper-mid emphasis as
+  shift-only leaky-integrator expressions
+  (`y = prev + ((x - prev) >> N)`), so the synth maps them to pure
+  adder + subtractor + shifter logic with zero DSP48E1. The first-stage
+  BD-2 mild clip stayed as a constant-LUT mux on the existing
+  `asymSoftClip` in the boost stage. **DSP count back to 83 (same as
+  D58.2 baseline)**, which removes the D58-class DSP-count risk. Routed
+  WNS `-8.083 ns` (+0.412 ns better than D58.2), TNS `-5959.880 ns`,
+  WHS `+0.052 ns`, THS `0 ns`, failing setup endpoints `2172 / 52784`,
+  Slice LUTs `20048` (+335 vs D58.2), Slice Registers `22277` (+167 vs
+  D58.2), BRAM `6` (unchanged). bit/hwh md5
+  `065a869a34e2bde86051c6a96c4aaa2f` / `927a3dfcc9819171226cb0686348fb01`
+  deployed five-site to PYNQ-Z2 192.168.1.9. Deploy-time programmatic
+  smoke PASS across the full audition cycle: FRAME_COUNT delta ~480k
+  per 10 s, CLIP_COUNT delta = 0 for every case (all_off, TS9, OD-1,
+  BD-2 G20 / G50 / G80 at T50, BD-2 G50 at T30 / T70, Centaur), MUTE 3
+  honoured, GUI keep + dsp 20 s holds clean with `live=ON apply=OK`.
+  Bench audition with proper monitoring (CLAUDE.md spec connection,
+  no Pmod Line Out -> Line In direct loopback): **BD-2 G20 / G50 / G80
+  produced the documented edge-of-breakup / canonical / fuzzy-splatty
+  gradation; tone 30 / 50 / 70 gave dark / flat / bright with no
+  ice-pick; TS9 / OD-1 / Centaur sounded identical to D58.2 (no leak
+  to other models).** However safe-bypass was clearly noisier than
+  D58.2 on the same A/B by ear, so D61 v2 was rejected. Do not
+  redeploy this bit.
+- **Rollback executed.** PYNQ rolled back to D58.2 (bit/hwh md5
+  `1c9071b5f2e1eec63ef6abbcfcacbf02` / `21c1ca7a6ddd5c26fd39f8746abe28d8`)
+  via `git checkout HEAD -- hw/Pynq-Z2/bitstreams/{audio_lab.bit,audio_lab.hwh}`
+  + `scripts/deploy_to_pynq.sh` + `AudioLabOverlay(download=True)`.
+  Post-rollback Pmod mode 2 safe-clean smoke PASS: FRAME_COUNT delta
+  144150, CLIP_COUNT delta 0, ADC HPF True, VERSION 0x00480001, MUTE 3.
+- **Diagnostic note: loopback positive feedback (sweep-test artifact).**
+  During the failure investigation the user temporarily connected
+  Pmod Line Out -> Pmod Line In with a direct cable for measurement;
+  this creates a positive feedback loop through the DSP chain whose
+  small (>1) loop gain in mode 2 builds up to near-FS in seconds.
+  Programmatic peak-L on either D58.2 or D61 v2 under this loopback
+  reads ~7M (-1.3 dBFS) on the left channel and is *not* a bit-specific
+  regression; both bits show the same loopback resonance. The
+  bench-listening rejection of D61 v2 was reproduced separately with
+  the loopback cable removed (CLAUDE.md spec connection), so it is the
+  load-bearing evidence -- not the sweep numbers. The sweep also showed
+  that D58.2 and D61 v2 share comparable left-channel peak energy per
+  (freq, level) bucket but their per-freq pattern is shifted (e.g. at
+  16 kHz / 0 dBFS, D58.2 peak ~2.6 M vs D61 v2 ~5.0 M; at 12 kHz / 0 dBFS
+  D58.2 ~3.2 M vs D61 v2 ~0.03 M); the shift is consistent with the
+  ~1-sample additional group delay D61 v2 introduces in the OD section
+  rotating the cable-loop standing-wave pattern in frequency.
+- **Rule for the next BD-2 attempt (load-bearing for the next session).**
+  Do *not* add new register stages or new feedback state registers in
+  `Pipeline.hs`. Do *not* add new `mulU8` / `mulU12` invocations
+  anywhere on the OD path. Limit the BD-2 differentiation to:
+  1. New per-model constant entries in the existing tables
+     (`odDriveK` / `odKneeP` / `odKneeN` / `odSafetyKnee`).
+  2. New per-model constant tables that feed the *existing* arithmetic
+     operators in the existing six stages
+     (`overdriveDriveMultiplyFrame` / `overdriveDriveBoostFrame` /
+     `overdriveDriveClipFrame` / `overdriveToneMultiplyFrame` /
+     `overdriveToneBlendFrame` / `overdriveLevelFrame`).
+  Anything richer (pre-HPF, upper-mid emphasis, post-LPF) requires
+  feedback state, and D61 v2 demonstrated that even shift-only
+  leaky-integrator feedback inside the OD section is enough to perturb
+  the Vivado P&R and re-introduce the bypass artifact. The bench ear
+  on safe-bypass remains the only sensor that has caught this class
+  of regression across D58 / D59 / D60 / D61; macroscopic timing,
+  CLIP_COUNT, FRAME_COUNT, GUI smoke, and DMA-capture peaks are
+  necessary but not sufficient. The D58.2 bit/hwh at HEAD remain the
+  canonical rollback target.
