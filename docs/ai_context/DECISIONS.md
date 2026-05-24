@@ -3903,3 +3903,34 @@ not get removed even when superseded — they get updated.
   (`349ebbe609ac15f58d8b676d2dedee94` /
   `3a90e966c5d76762b60ba3ab0e982685`) remain the deployed and
   in-source baseline.
+- **Follow-up A/B comparison: D62 vs reproduced D64.** Per a follow-up
+  request, the D64 5-constant retune was temporarily restored,
+  rebuilt, deployed, put through the same diagnostic, then
+  immediately reverted to D62. The D64 reproduction landed on
+  identical Vivado timing (WNS `-7.903 ns`, DSP `83`, BRAM `6`,
+  matching the original D64) and produced a fresh bit (md5
+  `0c31cf02db2011102bf07c3219264043` -- timestamp metadata differs
+  from the original D64 `ea647168...`, logical behaviour is the
+  same). **Verdict on D64 reproduction: also PASS.** Phase B
+  per-cell `uniq1k` 930..1000 and `max_run = 2` are statistically
+  indistinguishable from D62's 845..1000 / 2; Phase 1 MODE 0
+  baseline peakL `1.18M` matches D62 exactly; Phase 1 MODE 2
+  cable-loop feedback peakL `7.14M` matches D62's `7.26M` within
+  noise; the only metric that diverges is the Phase 3 DMA capture
+  peak (D64 ~4x higher) which is a route-change transient
+  artifact at capture start, not a steady-state audio difference.
+  **Conclusion: the self-loopback test does NOT distinguish D62
+  from D64**; both pass the bit-pattern checks. The audible
+  "bit-crusher" the user reported during the D64 bench audition
+  cannot be reproduced under cable-loop self-test conditions and
+  must require external-instrument input, the user's analog
+  monitoring path, or bypass-path P&R artifacts that stay below
+  the `uniq1k` / `max_run` thresholds the script catches. The
+  D58 / D59 / D60 / D61 v2 / D63 / D64 rule continues to apply:
+  the bench ear remains the dispositive sensor.
+- **Final post-comparison state.** Distortion.hs / clash VHDL /
+  bit / hwh all reverted to D62 baseline. PYNQ-Z2 PL D62 freshly
+  downloaded, MODE 3 mute, FRAME_COUNT delta 144151 / CLIP_COUNT
+  0 confirmed. **No D64 source / VHDL / bit / hwh committed.**
+  Only the diagnostic comparison record is added to
+  `PMOD_LOOPBACK_DIAGNOSTIC.md` and this D65 entry.

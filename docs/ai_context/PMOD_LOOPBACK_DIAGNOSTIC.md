@@ -127,6 +127,112 @@ ssh xilinx@192.168.1.9 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
     python3 scripts/diagnose_pmod_loopback.py --phase 3'
 ```
 
+## 2026-05-24 D62 vs D64 A/B comparison (follow-up)
+
+The user pointed out that D62-only diagnostic is insufficient: D64 was
+bench-rejected for HF / bit-crusher symptoms, so to isolate whether the
+self-loopback test can distinguish a clean D62 from a "bypass-noisy"
+D64, the D64 5-constant retune was temporarily restored, the bitstream
+was rebuilt, deployed, and put through the same diagnostic. After the
+comparison the source / VHDL / bit / hwh were reverted to D62 and the
+diagnostic re-run to confirm restoration. **No D64 source / VHDL / bit
+/ hwh ships in any commit.**
+
+### D64 reproduction build
+
+- 5-constant retune restored in `Distortion.hs` only (no Pipeline.hs
+  edit, no helper count change). Confirmed `asymSoftClip` invocation
+  count unchanged (3); `asymHardClip` invocation count unchanged (0).
+- Vivado batch build PASS (`write_bitstream completed successfully`,
+  0 Errors). Routed WNS `-7.903 ns`, TNS `-5457.133 ns`, WHS `+0.052
+  ns`, THS `0 ns`, failing endpoints `2038 / 52739`, Slice LUTs `19690`,
+  DSPs `83`, BRAM `6`. These numbers exactly match the original D64
+  build (commit `318e42b` D64 record), confirming the same logical
+  design landed on the same Vivado P&R outcome. Bit/hwh md5 differ
+  from the original D64 (`0c31cf02db2011102bf07c3219264043` /
+  `bb9ab4adb37c5ab3d3a61811c1886644` vs original
+  `ea647168adda426d4d7d35656c7ca91f` /
+  `a15147c3c5f832826f78c588c3a7551b`) because Vivado bitstream output
+  includes time-of-build metadata; the logical behaviour is the same.
+
+### Side-by-side cell-by-cell comparison
+
+| Diagnostic cell | D62 baseline | D64 reproduction | Differs? |
+| --------------- | ------------ | ---------------- | -------- |
+| Phase 1 MODE 0 peakL (3 s window) | 1.18M (-17 dBFS) | 1.18M (-17 dBFS) | No -- identical |
+| Phase 1 MODE 1 peakL | ~1k (noise floor) | ~1k (noise floor) | No |
+| Phase 1 MODE 2 peakL (cable-loop feedback) | 7.26M (-1.3 dBFS) | 7.14M (-1.4 dBFS) | Essentially the same (chaotic broadband feedback, value is amplitude of the oscillation snapshot at capture time) |
+| Phase 1 MODE 3 peakL | ~1k | ~1k | No |
+| Phase 3 MODE 0 DMA 24k-sample capture peak | 1.18M (-17 dBFS) | 4.72M (-5 dBFS) | **Yes -- D64 peak ~4x higher.** Likely a route-change transient at capture start; RMS is similar (D62 499k, D64 451k) so the steady-state signal level is the same. |
+| Phase 3 MODE 0 DMA top spectral peak | 1000 Hz | 1000-1004 Hz | Same fundamental, both pedals cleanly play 1 kHz |
+| Phase 3 MODE 3 DMA peak | 991k (-18.5 dBFS) | 3.97M (-6.5 dBFS) | **Yes -- D64 peak ~4x higher.** Also a route-change transient; steady-state RMS is comparable. |
+| Phase 5 (passthrough sweep) per-cell `uniq1k` | 999..1000 | 999..1000 | No |
+| Phase 5 per-cell `max_run` | 1 | 1 | No |
+| Phase B (DSP chain all-off sweep) per-cell `uniq1k` | 845..1000 | 930..1000 | Within measurement noise of each other |
+| Phase B per-cell `max_run` | 2 | 2 | No |
+| **Overall VERDICT** | **PASS** | **PASS** | **Both pass** |
+
+### What this comparison establishes
+
+1. **The Phase B bit-pattern indicators (`uniq1k`, `max_run`)** cannot
+   distinguish D62 from D64 under the cable-loop self-test. Both bits
+   produce identical clean readings.
+2. **The Phase 1 MODE 0/1/3 baseline counters** are likewise identical
+   between D62 and D64.
+3. **The Phase 1 MODE 2 cable-loop feedback peak** is essentially the
+   same on both bits (D62 7.26M, D64 7.14M), so the chaotic broadband
+   feedback is bit-independent at this level.
+4. **The Phase 3 MODE 0 and MODE 3 DMA capture peaks** differ by ~4x
+   between D62 and D64. This is *the only* metric where the two bits
+   diverge measurably. Both readings are dominated by a single
+   route-change transient at capture start (the steady-state RMS is
+   comparable). The transient may be slightly larger on D64 due to
+   the different Vivado placement of the AXIS path, but this is not
+   the same as the "bit-crusher" symptom the user reported during
+   the D64 audition.
+
+### What this comparison does NOT establish
+
+The Phase B self-loopback test **cannot reproduce** the audible
+"bit-crusher" / "HF noise" the user reported during the D64 audition.
+That bench audition was with:
+- An external instrument (richer frequency content / dynamics than
+  the MM2S sine sweep)
+- The user's analog monitoring path (audio interface, headphones /
+  monitors)
+- The actual `line_in -> guitar_chain -> headphone` route, possibly
+  with the user's analog environment contributing
+- Possibly bypass-path P&R artifacts that are audible to the human ear
+  but stay below the `uniq1k` / `max_run` thresholds the script checks
+
+### Revised takeaways
+
+- The self-loopback diagnostic IS a useful smoke check for catching
+  structural breakage (helper count change, register count change,
+  AXIS misalignment, hardware bit-misalignment, gross quantisation).
+  **D62 and D64 both pass this smoke**, so we can confirm that
+  category of bug is absent in both.
+- The diagnostic is **not** a substitute for the bench ear when the
+  symptom is subtle bypass-path P&R artifact. The D58 / D59 / D60 /
+  D61 v2 / D63 / D64 rejection rule still applies: the bench ear on
+  safe-bypass with the user's actual instrument and monitoring path
+  is the only sensor that has caught those regressions.
+- Future deploys should run `diagnose_pmod_loopback.py` as a
+  pre-deploy structural check, then still go to the bench for the
+  dispositive audio acceptance check.
+
+### Final state after the D62 vs D64 comparison
+
+- PYNQ-Z2 PL: D62 baseline (bit/hwh md5
+  `349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`), freshly downloaded via
+  `AudioLabOverlay(download=True)`, MODE 3 mute.
+- Local source / VHDL / bit / hwh: all reverted to D62 baseline.
+  `git status --short` tracked diff = 0.
+- Post-rollback safe-clean smoke: FRAME_COUNT delta 144151,
+  CLIP_COUNT 0, ADC HPF True, MUTE 3.
+- No D64 bit / hwh / source committed to git.
+
 ## What this diagnostic does NOT cover
 
 - Real-instrument bench audition. The cable loop can't reproduce the
