@@ -3934,3 +3934,46 @@ not get removed even when superseded — they get updated.
   0 confirmed. **No D64 source / VHDL / bit / hwh committed.**
   Only the diagnostic comparison record is added to
   `PMOD_LOOPBACK_DIAGNOSTIC.md` and this D65 entry.
+
+## D66 -- DS-1-only asymSoftClip knee retune accepted
+
+- **Decision.** Accept and deploy the DS-1-only retune on branch
+  `feature/ds1-only-asymsoftclip-retune`. The only functional source
+  edit is in `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`
+  `ds1ClipFrame`: `kneeP` `2_400_000 -> 1_900_000` and `kneeN`
+  `2_000_000 -> 1_900_000`.
+- **Why.** D64 proved that DS-1 needed a harder, more symmetric move,
+  but D64 touched TS9 / DS-1 / Fuzz Face together and was rejected for
+  bypass regression. D66 applies the D64 lesson at the minimal safe
+  scope: one pedal, two constants, existing helper topology only.
+  The result keeps the existing `asymSoftClip` approximation while
+  making the DS-1 stage fully symmetric and lower-knee.
+- **What did not change.** No TS9 / RAT / Fuzz Face / Big Muff / Metal
+  / clean boost retune, no `Overdrive.hs`, no `Amp.hs`, no
+  `Compressor.hs`, no `Pipeline.hs`, no `LowPassFir.hs`, no GUI /
+  HDMI / Pmod RTL / `block_design.tcl`, no helper addition, no helper
+  swap, no cascade, no `asymHardClip`, no new register, no new IIR,
+  no drive / tone / level / highpass / lowpass coefficient change.
+  `asymSoftClip` call count remains `3`; `asymHardClip` remains `0`;
+  `mulU8` / `mulU12` counts remain `13` / `8`.
+- **Build result.** Vivado completed with `write_bitstream completed
+  successfully` and `0 Errors`. Routed timing: WNS `-8.016 ns`,
+  TNS `-9648.033 ns`, WHS `+0.051 ns`, THS `0.000 ns`; main
+  `clk_fpga_0` setup group worst endpoint is `ARG__7__1/CLK ->
+  ds1_5_reg[1032]/D`. Utilization: LUT `19712`, FF `22160`, BRAM
+  `6`, DSP `83`.
+- **Deployment record.** bit/hwh md5 are
+  `52f0e9937993dca11272d561f6cf6b32` /
+  `d75d38394a529ac3524e0a64f73bcd34`; all PYNQ board copies matched.
+  `AudioLabOverlay(download=True)` updated PL to timestamp
+  `2026/5/24 14:15:57 +844083`; ADC HPF True, VERSION `0x00480001`,
+  MODE 3 mute, CLIP_COUNT 0.
+- **Smoke / acceptance.** `scripts/diagnose_pmod_loopback.py` PASSed
+  with no QUANT! / STAIR! flags. The diagnostic remains a smoke check
+  only, not an adoption criterion by itself. The user then requested
+  merge to `main`; that request is the acceptance signal for this
+  D66 build.
+- **Baseline.** D66 is now the deployed source-control baseline. D62
+  bit/hwh (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deeper rollback
+  reference.
