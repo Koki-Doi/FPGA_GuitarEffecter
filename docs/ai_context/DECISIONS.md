@@ -3739,3 +3739,109 @@ not get removed even when superseded — they get updated.
   `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
   `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
   if D62 ever needs to be undone too.
+
+## D64 -- Rejected distortion-wide asymSoftClip knee-only retune (5 constants, 3 pedals)
+
+- **Decision.** D64 is rejected for deployment. The build was the strictest
+  possible interpretation of the D62 / D63 cumulative rule (constants only
+  on existing `asymSoftClip` invocations, no helper added / swapped /
+  cascaded, no `Pipeline.hs` edit, no DSP / BRAM / register count change),
+  yet still triggered a bypass-path HF regression vs D62 on the bench.
+  Per-pedal audition itself was a mixed picture: TS9 and Fuzz Face moved
+  in the right direction audibly, DS-1 moved in the right direction but
+  not far enough; the bypass regression alone made the build
+  non-deployable.
+- **Research deliverable kept on main.**
+  `docs/ai_context/DISTORTION_ASYMSOFTCLIP_RETUNE_RESEARCH.md` is the
+  source-by-source research note (ElectroSmash TS-9, ElectroSmash DS-1,
+  ElectroSmash Fuzz Face, stompboxelectronics TS-9). It is the
+  prerequisite for any future per-pedal retake. The note remains in
+  git history; future retakes can pull individual coefficient targets
+  from it without redoing the literature search.
+- **Files reverted in this commit.**
+  - `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl`
+  - `hw/ip/clash/vhdl/LowPassFir/component.xml`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit` (already reverted in deploy step)
+  - `hw/Pynq-Z2/bitstreams/audio_lab.hwh` (already reverted in deploy step)
+  All revert back to the D62 baseline. No D64 bit / hwh is committed.
+- **What D64 attempted (exhaustive).** Five numeric constants in
+  `Distortion.hs`, scoped to the three existing `asymSoftClip` invocations:
+  | Pedal | `kneeP` (old -> new) | `kneeN` (old -> new) | Per-knee delta | Direction |
+  | ----- | -------------------- | -------------------- | -------------- | --------- |
+  | TS9 (`tubeScreamerClipFrame`) | 2_900_000 -> 2_900_000 (unchanged) | 2_500_000 -> 2_700_000 | P 0 %, N +8 % | gap 400k -> 200k, more symmetric (real D1/D2 antiparallel IS symmetric per ElectroSmash TS9 analysis) |
+  | DS-1 (`ds1ClipFrame`) | 2_400_000 -> 2_200_000 | 2_000_000 -> 2_100_000 | P -8 %, N +5 % | gap 400k -> 100k, nearly symmetric + slightly earlier clip (real op-amp diode pair IS symmetric per ElectroSmash DS-1 analysis) |
+  | Fuzz Face (`fuzzFaceClipFrame`) | 1_900_000 -> 2_000_000 | 1_400_000 -> 1_200_000 | P +5 %, N -14 % | gap 500k -> 800k, more asymmetric (real BJT pair is strongly asymmetric and that asymmetry is "important for the musical quality" per ElectroSmash Fuzz Face analysis) |
+  All per-knee deltas within ±25 % of D62 baseline; ACTUAL `asymSoftClip`
+  invocation count unchanged (3); ACTUAL `asymHardClip` invocation count
+  unchanged (0); no other helper / arithmetic / register / pipeline
+  edit.
+- **Build outcome (programmatic, looked excellent).** Clash regen +
+  Vivado batch build PASS (`write_bitstream completed successfully`, 0
+  Errors). Routed WNS `-7.903 ns` (+0.594 ns vs D62 `-8.497 ns` --
+  notably *better* than D62, not worse), TNS `-5457.133 ns`, WHS
+  `+0.052 ns`, THS `0 ns`, failing setup endpoints `2038 / 52739`.
+  Utilization: Slice LUTs `19690` (-10 vs D62), Slice Registers `22304`
+  (+24 vs D62), BRAM `6` (unchanged), **DSPs `83` (unchanged from
+  D62)**. bit/hwh md5 `ea647168adda426d4d7d35656c7ca91f` /
+  `a15147c3c5f832826f78c588c3a7551b`. Deploy-time programmatic smoke
+  PASS (Pmod mode 2 safe-clean 3 s: FRAME_COUNT delta `144150`,
+  CLIP_COUNT delta `0`, ADC HPF True, MUTE 3).
+- **Bench audition (CLAUDE.md spec connection, no Pmod direct loopback).**
+  - **bypass all_off**: MORE noise than D62. **Audio-reject.**
+  - TS9 D50 / D80: more symmetric and smoother, as intended (OK).
+  - DS-1 D50 / D80: harder + closer to symmetric direction was audible,
+    but the user wants the change pushed further ("more hard, more
+    sym"); a follow-up retake should drop knees further.
+  - Fuzz Face D50 / D80: clearly more asymmetric and "broken-up"
+    germanium-style, as intended (OK).
+  Per-pedal directions are validated by bench; the failure is the
+  bypass regression alone.
+- **Load-bearing engineering lesson (revising D62's interpretation).**
+  D62 demonstrated that constants-only changes CAN be safe. D64
+  demonstrates that **this is only true at very small edit scope**.
+  The D62 outcome (3 constants in one Overdrive model) is now
+  understood to have been load-bearing in itself; D64 touched 5
+  constants across 3 distortion pedals and triggered a P&R-induced
+  bypass regression even though every individual edit was within the
+  D62 "safe" pattern. **The revised rule is "one model at a time, and
+  as few constants as possible per build".** Touching multiple
+  pedals' clip knees simultaneously is now classified as a structural
+  change in the Vivado-P&R sense, similar to (but smaller than) the
+  helper-cascade structural class D63 demonstrated. The bench ear on
+  safe-bypass remains the only sensor that has caught these
+  regressions across D58 / D59 / D60 / D61 v2 / D63 / D64; macroscopic
+  WNS / TNS / DSP / BRAM / CLIP_COUNT / FRAME_COUNT / GUI smoke /
+  programmatic-smoke / deploy-time numeric checks have NEVER caught
+  the bypass-path regression class on their own.
+- **Rule for the next distortion retake (D64.1 / D65 / ...).**
+  1. Each pedal gets its OWN Vivado rebuild + bench cycle. No
+     simultaneous edit to multiple pedals' knees in one build.
+  2. Within a single pedal's retake, prefer the smallest possible
+     numeric move that still hits the target audibly. The D62
+     successful pattern was P shifted ~17 %, N shifted ~30 %, and
+     the overall envelope was clearly inside ±30 % per knee with
+     only one model touched -- treat that as the empirical ceiling.
+  3. Of the three direction-validated D64 changes:
+     - **Fuzz Face widened P/N gap** -- highest priority retake target
+       because the bench audition confirmed the direction is right.
+     - **TS9 narrowed P/N gap** -- next priority. Smoother symmetric
+       sound was audible and desired.
+     - **DS-1 harder + symmetric** -- direction OK but needs more
+       magnitude; do this *after* TS9 and Fuzz Face are individually
+       validated, so DS-1's bigger move doesn't get blamed on a
+       multi-pedal build.
+  4. If a *single-pedal* knee retake triggers the bypass artifact,
+     the per-pedal asymSoftClip knee constant retake is permanently
+     off-limits in this build and the affected pedal stays at its
+     current values forever. The distortion fidelity ceiling for
+     this build is then D62, not "D62 plus N more iterations".
+- **Rollback target.** D62 bit/hwh
+  (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deployed and
+  in-source baseline. D58.2 bit/hwh
+  (`1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
+  `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  as the deeper fallback.
