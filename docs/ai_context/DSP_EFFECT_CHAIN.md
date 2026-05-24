@@ -29,7 +29,7 @@ latency DSP core still produces exactly one output frame for each
 accepted input frame even if S2MM ready drops briefly.
 
 The earlier C++ DSP prototypes that lived under `src/effects/` were
-removed (`DECISIONS.md` D12). They were not on the live PL path and
+removed (`DECISIONS.md` D13). They were not on the live PL path and
 their continued presence risked steering future work into "implement
 in C++ then port" loops, which this project does not do.
 
@@ -43,6 +43,17 @@ and listening points, and
 measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
+
+The current deployed DSP baseline is D62 (2026-05-24), a BD-2
+Overdrive coefficient-only retune. It changes only model index 2
+constants in `AudioLab.Effects.Overdrive`: `odDriveK 2 = 7`,
+`odKneeP 2 = 2_400_000`, `odKneeN 2 = 1_900_000`, and
+`odSafetyKnee 2 = 3_400_000`. `Pipeline.hs`, register count,
+multiplier count, GPIOs, `topEntity`, and the five other Overdrive
+models are unchanged. This pure-constant approach is load-bearing:
+D58 / D59 / D60 / D61 v2 showed that adding DSP48 multipliers or new
+feedback state can perturb Vivado P&R enough to make the safe-bypass
+path audibly noisy even when CLIP_COUNT and WNS look acceptable.
 
 ## Core types
 
@@ -208,17 +219,33 @@ Clash top entity. See `DECISIONS.md` D14.
 
 Driven by the existing `axi_gpio_overdrive` GPIO. Enable remains
 `gate_control.ctrlA` bit 1, and `ctrlA` / `ctrlB` / `ctrlC` remain
-tone / level / drive. The audio-analysis pass found the stage too close
-to Bypass at the recorded input level, so it retunes existing stages
-only:
+tone / level / drive. `ctrlD` is shared: the top five bits carry
+Distortion `TIGHT`, and the bottom three bits carry `overdriveModel`
+(`0..5` valid; `6/7` clamp/fallback on the Python side). This reuse is
+safe because the Distortion consumers shift away the low model bits.
+
+The six selectable models are implemented as constant lookup tables in
+`AudioLab.Effects.Overdrive`, not as separate pipelines and not as a
+wide 8-way mux of independent DSP blocks.
+
+| Model idx | User label | Current coefficient intent |
+| ---: | --- | --- |
+| 0 | TS9 | mid-focused mild asym clip |
+| 1 | OD-1 | simple early overdrive |
+| 2 | BD-2 | D62 retune: `odDriveK=7`, knees `2_400_000 / 1_900_000`, safety `3_400_000` |
+| 3 | Jan Ray | low-gain transparent style |
+| 4 | OCD | wider drive ceiling |
+| 5 | Centaur | polished low/mid gain |
+
+The stage shape is unchanged from the previous selectable-OD build:
 
 | Stage | Current shape |
 | --- | --- |
-| `overdriveDriveMultiplyFrame` | Q8 pre-gain is now `256 + drive*5`, about 1x..6x, so DRIVE 30..50 reaches the asymmetric clip knee more often. |
+| `overdriveDriveMultiplyFrame` | Q8 pre-gain is `256 + drive * odDriveK model`, selected by a small constant table. |
 | `overdriveDriveBoostFrame` | Existing `satShift8` return to `Sample`. |
-| `overdriveDriveClipFrame` | `asymSoftClip 2_700_000 2_300_000`, lower than the previous `3_300_000 / 2_900_000`, for audible light crunch without becoming DS-1 / RAT style distortion. |
-| `overdriveToneMultiplyFrame` -> `overdriveToneBlendFrame` | Existing one-pole tone blend; no GPIO or UI change. |
-| `overdriveLevelFrame` | Existing Q7 level multiply now runs through `softClipK 3_200_000` so higher drive settings do not create a large output jump. |
+| `overdriveDriveClipFrame` | `asymSoftClip (odKneeP model) (odKneeN model)`. D62 only changes the BD-2 row. |
+| `overdriveToneMultiplyFrame` -> `overdriveToneBlendFrame` | Existing one-pole tone blend; no GPIO topology change. |
+| `overdriveLevelFrame` | Existing Q7 level multiply with per-model `odSafetyKnee`. |
 
 ## Legacy distortion section
 

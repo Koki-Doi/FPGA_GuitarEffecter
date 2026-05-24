@@ -7,6 +7,14 @@ model (`OVERDRIVE_MODELS` index 2, label `BOSS / BD-2`). It is the prerequisite
 for any coefficient or DSP-stage change to the BD-2 path. It does NOT cover
 TS9, OD-1, Jan Ray, OCD, or Centaur — those models stay byte-exact.
 
+Current deployed result: D62 accepted a **coefficient-only** retune for
+BD-2 (`odDriveK 2 = 7`, `odKneeP 2 = 2_400_000`,
+`odKneeN 2 = 1_900_000`, `odSafetyKnee 2 = 3_400_000`) and rejected the
+D61 structural/IIR approach because it reintroduced bypass-path noise on
+the bench. Any future BD-2 work starts from the D62 section near the end
+of this file; the structural blueprint below is retained only as the
+research target that D61 proved too risky for the current FPGA build.
+
 The goal is to ground every BD-2 DSP coefficient in something documented in the
 real-pedal literature, not in "sounds nicer when I turn it up".
 
@@ -155,11 +163,13 @@ traceable back to one of these:
 - **The Waza Craft "C" mode tonestack changes** described in [2].
   The model is the original BD-2, not the BD-2w.
 
-## DSP-side blueprint (what the implementation needs to add for model 2)
+## Superseded D61 structural blueprint (not current implementation)
 
-This is the structural intent; the exact constants and helper choices
+This was the D61 structural intent; the exact constants and helper choices
 will be decided when reading the existing `Overdrive.hs` helpers
 (`asymSoftClip`, `softClipK`, `onePoleU8`, `mulU8/U12`, `satShift*`).
+It is retained as research history only. D61 v1/v2 were rejected on the
+safe-bypass bench check, and D62 deliberately avoids this structure.
 
 For BD-2 (`overdriveModel == 2`) only:
 
@@ -237,18 +247,17 @@ sample), that state is a single `Sample` register and lives next to
 the existing `odTonePrev` register in `Pipeline.hs`. One extra Sample
 register is acceptable; a new pipeline stage is not.
 
-## Coefficient first-cut proposals (subject to review against existing helpers)
+## Superseded D61 coefficient first-cut proposals
 
-These are starting values, deliberately conservative. They will be
-finalised when we read the existing `asymSoftClip` / `onePoleU8`
-implementations and confirm Q-format.
+These were starting values for the rejected D61 structural attempt. They
+are not the current deployed constants; see the D62 section below.
 
 | Element | Proposed value | Why |
 | --- | --- | --- |
 | Pre-clip HPF alpha (~700 Hz @ 48 kHz) | ≈ 235 / 255 (≈ 0.92) | Standard one-pole HPF for 700 Hz / 48 kHz |
 | Pre-clip upper-mid emphasis gain | small (e.g. +25% of HF residual) | Mild — too much and BD-2 becomes ice-picky |
 | First-stage softer knees (asymSoftClip) | `kneeP_first = 3_400_000`, `kneeN_first = 3_100_000` | Above the second-stage knees so the first stage only barely engages at mid GAIN |
-| Second-stage knees (existing) | `kneeP = 3_000_000`, `kneeN = 2_700_000` | Keep — these are already in `odKneeP/odKneeN` for model 2 |
+| Second-stage knees (pre-D62 baseline) | `kneeP = 3_000_000`, `kneeN = 2_700_000` | Superseded by D62's `2_400_000 / 1_900_000` coefficient-only retune |
 | Optional knee tightening with drive | up to -15% at `ctrlC=255` | Matches "fizzy at high gain", capped so BD-2 doesn't become TS9 |
 | Post-clip LPF alpha (~5 kHz @ 48 kHz) | ≈ 90 / 255 (≈ 0.35 → corner ~5 kHz) | Matches the C17/R25/C19 network behaviour |
 | Output safety knee (existing) | `safetyKnee = 3_400_000` | Keep — D45 value, fine. |

@@ -4,14 +4,17 @@ This file consolidates the original CURRENT_STATE.md snapshots from
 Phase 7A (external codec + encoder planning), Phase 7B (module
 verification + candidate package pin docs), and the Phase 7F/7G
 encoder PL IP + Python driver + HDMI GUI control implementation
-log. The deployed Phase 7C / 7E / 7D external-codec state and the
-Phase 7G+ encoder live-apply runtime are described in the live
-`CURRENT_STATE.md` headers and in `DECISIONS.md` D27 — D44.
+log. Phase 7C / 7E / 7D external-codec work is now historical: the
+current PMOD JB audio owner is the Digilent Pmod I2S2 path from
+D48/D49/D50, and PCM5102 / PCM1808 is retired unless a future user
+explicitly starts a revival phase. The Phase 7G+ encoder live-apply
+runtime remains active.
 
-Authoritative living docs: `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
-(plan + Phase 7C/7E/7D close-out), `IO_PIN_RESERVATION.md`,
+Authoritative living docs: `PMOD_I2S2_INTEGRATION_PLAN.md`,
+`AUDIO_SIGNAL_PATH.md`, `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+(retired PCM history), `IO_PIN_RESERVATION.md`,
 `ENCODER_GUI_CONTROL_SPEC.md`, `ENCODER_INPUT_IMPLEMENTATION.md`,
-`ENCODER_INPUT_MAP.md`, `DECISIONS.md` D27 — D44.
+`ENCODER_INPUT_MAP.md`, and `DECISIONS.md`.
 
 ---
 
@@ -265,4 +268,3 @@ Vivado build:
   `/home/xilinx/jupyter_notebooks/audio_lab/EncoderGuiSmoke.ipynb`。
   各 live cell の完全な手動操作確認は次の実機操作で行う。
 - 外付け PCM1808 / PCM5102 codec 実装 (Phase 7C 以降の別作業)。
-

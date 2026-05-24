@@ -9,9 +9,12 @@ and the earlier effect-chain refactor. Plus the post-reserved-pedal
 "Headline / Working tree / What ships / Live verification / Vivado
 timing / Notebooks" snapshot.
 
-Authoritative living docs: `DECISIONS.md` (D6 / D9 / D11 / D14 — D22),
-`TIMING_AND_FPGA_NOTES.md`, `DSP_EFFECT_CHAIN.md`,
-`REAL_PEDAL_VOICING_TARGETS.md`, `AUDIO_RECORDING_ANALYSIS.md`.
+This is history, not the current baseline. For the latest deployed DSP
+state read `CURRENT_STATE.md` first; D62 is the current bitstream
+baseline and D58.2 is the current Amp Drive coefficient baseline.
+Authoritative living docs: `DECISIONS.md`, `TIMING_AND_FPGA_NOTES.md`,
+`DSP_EFFECT_CHAIN.md`, `REAL_PEDAL_VOICING_TARGETS.md`, and
+`AUDIO_RECORDING_ANALYSIS.md`.
 
 ---
 
@@ -853,4 +856,3 @@ notes) is in
 
 All five notebooks are deployed under
 `/home/xilinx/jupyter_notebooks/audio_lab/` on the board.
-

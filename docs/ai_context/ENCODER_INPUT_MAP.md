@@ -26,7 +26,7 @@ and [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md).
 | Base address | **`0x43D10000`**, size `0x10000` |
 | Clock domain | `processing_system7_0/FCLK_CLK0` (100 MHz) |
 | Reset | `rst_ps7_0_100M/peripheral_aresetn` |
-| ps7_0_axi_periph | M17 (HDMI VDMA M15, HDMI VTC M16, encoder M17 — `NUM_MI=18`) |
+| ps7_0_axi_periph | Encoder on M17 (HDMI VDMA M15, HDMI VTC M16). The Phase 7F/7G encoder build bumped `NUM_MI` to 18; the current Pmod I2S2 build later adds M18 (`pmod_status_0`) and the final interconnect uses `NUM_MI=19`. |
 | Top-level ports | `enc{0,1,2}_clk_i / dt_i / sw_i` (9 LVCMOS33 inputs on the RPi header) |
 
 ### Forbidden addresses (do not reuse)
@@ -38,6 +38,7 @@ and [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md).
 | `0x43CF0000` | `v_tc_hdmi` |
 | `0x43D00000` | reserved for a future HDMI / rgb2dvi control surface |
 | `0x43D10000` | **this IP** |
+| `0x43D20000` | `pmod_status_0` (`axi_pmod_i2s2_status`) |
 
 ## Register table
 

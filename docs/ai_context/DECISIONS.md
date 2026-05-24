@@ -419,6 +419,11 @@ not get removed even when superseded — they get updated.
 
 ## D10 — `GuitarPedalboardOneCell.ipynb` is the user-facing entry point
 
+- **Current status.** Historical for the original ADAU/DSP notebook
+  surface. The current Pmod I2S2 bench entry point is
+  `PmodI2S2EffectControlOneCell.ipynb` (D49/D50), while
+  `GuitarPedalboardOneCell.ipynb` remains the generic pedalboard UI and
+  chain-preset compatibility surface.
 - **Decision.** A new two-cell notebook,
   `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`, is the
   primary single-screen UI for the live chain. It exists alongside
@@ -502,7 +507,11 @@ not get removed even when superseded — they get updated.
 
 ## D18 — Amp Simulator named models reuse `amp_character`, never new GPIO
 
-- **Decision.** The Amp Simulator section ships four named voicings —
+- **Status.** Historical Amp model decision. Superseded by D53/D54/D55
+  and D58.2: the live Amp Sim is now six researched models carried by
+  `axi_gpio_amp_tone.ctrlD[2:0]` plus `ctrlD[7]` Drive mode; the
+  `amp_character` percent API remains only as a compatibility fallback.
+- **Decision.** The Amp Simulator section shipped four named voicings —
   `jc_clean` / `clean_combo` / `british_crunch` / `high_gain_stack` —
   as a convenience layer on top of the existing `amp_character`
   knob. The Python side adds an `AMP_MODELS` table, `set_amp_model`,
@@ -547,8 +556,10 @@ not get removed even when superseded — they get updated.
     centre-of-band character values. Keep it in lock-step with the
     `ampModelSel` thresholds in `LowPassFir.hs` and the inline
     fallback inside `GuitarPedalboardOneCell.ipynb`.
-  - The `amp_character` numeric API stays public; `set_amp_model` is
-    a thin wrapper around `set_guitar_effects(amp_character=...)`.
+  - In this historical D18 layer, the `amp_character` numeric API
+    stayed public and `set_amp_model` was a thin wrapper around
+    `set_guitar_effects(amp_character=...)`. In the current D55/D58.2
+    layer, `amp_model_idx` + `amp_drive_mode` are the live model fields.
     Tests in `tests/test_overlay_controls.py` lock the mapping
     anchors and the per-model byte distinctness.
 
@@ -714,9 +725,12 @@ not get removed even when superseded — they get updated.
 
 - **Decision.** The live HDMI GUI path uses the integrated AudioLab
   `audio_lab.bit`; it must not load PYNQ `base.bit` or any second full
-  overlay. For the current 5-inch 800x480 HDMI LCD, the adopted default
-  visible viewport is the top-left `x=0,y=0,w=800,h=480` region inside
-  the fixed 1280x720 HDMI framebuffer.
+  overlay. This entry records the Phase 5C viewport decision: the
+  top-left `x=0,y=0,w=800,h=480` region of the then-720p framebuffer was
+  the adopted LCD-visible area. **Superseded by D25 for signal timing**:
+  the current bit emits VESA SVGA `800x600 @ 60 Hz / 40 MHz` and keeps
+  the same 800x480 compact GUI at framebuffer `(0,0)`, with rows
+  `480..599` black.
 - **Why.** Phase 5A output mapping showed that the LCD does not behave
   like a clean full-frame 1280x720-to-800x480 scaler. User visual
   inspection confirmed the `800x480 x0 y0` candidate box is correctly
@@ -739,11 +753,10 @@ not get removed even when superseded — they get updated.
       --offset-x 0 --offset-y 0 --hold-seconds 60
   ```
 
-- **Boundaries.** Native 800x480 HDMI timing remains a Phase 5B candidate,
-  but it is not required for correct placement now. Any native-timing
-  trial is a separate Vivado rebuild / timing-review / bit-hwh deploy
-  decision. The old untracked `HDMI/` experiment tree was removed after
-  confirming current deploy, tests, and runtime scripts use `GUI/` plus
+- **Boundaries.** Native 800x480 HDMI timing was later attempted in
+  Phase 6H and rejected on the real LCD; do not restore it. The old
+  untracked `HDMI/` experiment tree was removed after confirming deploy,
+  tests, and runtime scripts use `GUI/` plus
   `audio_lab_pynq/hdmi_backend.py` instead.
 
 ## D24 — 800x480 compact-v2 is the only renderer; HDMI GUI runs from `HdmiGui.ipynb`
@@ -1819,11 +1832,13 @@ not get removed even when superseded — they get updated.
 ## D44 — PCM5102 quality follow-up starts with unused-SCKI gating and output diagnostics
 
 - **Decision.** Do not start with a DSP / Clash change for the
-  remaining "PCM5102 sounds worse than desired" report. The current
-  output path is still the ADAU DAC serial bitstream mirrored to
-  PCM5102 (`i2s_to_stream_0/so`), PCM5102 SCK is correctly tied low
-  for internal-SYSCLK mode, and the deployed mux selects ADAU input.
-  The first non-physical improvement to implement next is therefore:
+  remaining "PCM5102 sounds worse than desired" report. This entry
+  describes the Phase 7D close-out state, before D48 retired the
+  PCM5102 / PCM1808 path in favour of Pmod I2S2. At that time, the
+  output path was still the ADAU DAC serial bitstream mirrored to
+  PCM5102 (`i2s_to_stream_0/so`), PCM5102 SCK was correctly tied low
+  for internal-SYSCLK mode, and the deployed mux selected ADAU input.
+  The first non-physical improvement proposed for that historical path was:
   **when PCM1808 is not the active ADC source, stop the unused
   `ext_pcm1808_sckie_o` 12.288 MHz output on JB8 / W16**. The second
   improvement is a PCM5102-oriented debug output mode that can select
@@ -1873,7 +1888,8 @@ not get removed even when superseded — they get updated.
 
 ## D45 — Evaluate Digilent Pmod I2S2 as a stable external I2S I/O reference before further PCM1808 work
 
-- **Decision (plan only).** Add Digilent **Pmod I2S2** (CS4344 24-bit
+- **Decision (plan only, later implemented by D48/D49/D50).** Add
+  Digilent **Pmod I2S2** (CS4344 24-bit
   stereo DAC + CS5343 24-bit stereo ADC on a single PMOD board) as an
   evaluation reference for external I2S I/O before the next PCM1808
   bring-up attempt. The plan is staged in
@@ -1885,8 +1901,9 @@ not get removed even when superseded — they get updated.
     `--capture-adc` returns pure 0 even with line-in present). Going
     back to the same PCM1808 module is not a healthy starting point
     for the next audio-quality pass.
-  - PCM5102 line out and PCM1808 line in currently live on two
-    separate breakout boards with hand-routed jumper wires on PMOD JB;
+  - At the Phase 7D close-out, PCM5102 line out and PCM1808 line in
+    lived on two separate breakout boards with hand-routed jumper wires
+    on PMOD JB;
     JB7 (PCM5102 DIN) / JB8 (PCM1808 SCKI) crosstalk is one suspected
     contributor to the residual PCM5102 audio-quality nits the user
     reported at Phase 7D close-out (`DECISIONS.md` D42 / D44).
@@ -2373,11 +2390,11 @@ not get removed even when superseded — they get updated.
   In jumper plus the full-scale echo means the analog loop can
   feed back, so the script refuses `--mode loopback` unless
   `--confirm-loopback` is also passed.
-- **Pmod I2S2 ADC is NOT wired into the AudioLab DSP chain.** The
-  user requested NOT to implement a "mode 2 = ADC → DSP → DAC"
-  path in this branch. `i2s_to_stream_0` / `stream_to_i2s_0` and
-  the AXIS DSP loop continue to be fed by ADAU1761 ADC only, as in
-  Phase 7D close-out.
+- **Historical D48 follow-up only; superseded by D49.** In this
+  branch, the Pmod I2S2 ADC was **not** wired into the AudioLab DSP
+  chain because the user requested NOT to implement a
+  "mode 2 = ADC → DSP → DAC" path yet. D49 later added that mode and
+  made it the current active audio path.
 - **AXI write FSM bug fix.** The original `axi_pmod_i2s2_status.v`
   write path used `axi_awaddr_q[5:2]` in the same `always @(posedge
   s_axi_aclk)` cycle that the assignment to `axi_awaddr_q`
@@ -3519,8 +3536,9 @@ not get removed even when superseded — they get updated.
   on safe-bypass remains the only sensor that has caught this class
   of regression across D58 / D59 / D60 / D61; macroscopic timing,
   CLIP_COUNT, FRAME_COUNT, GUI smoke, and DMA-capture peaks are
-  necessary but not sufficient. The D58.2 bit/hwh at HEAD remain the
-  canonical rollback target.
+  necessary but not sufficient. D62 is now the deployed baseline; the
+  D58.2 bit/hwh remain the historical rollback target if D62 itself
+  needs to be undone.
 
 ## D62 -- BD-2 Overdrive coefficient-only retune (accepted on bench)
 

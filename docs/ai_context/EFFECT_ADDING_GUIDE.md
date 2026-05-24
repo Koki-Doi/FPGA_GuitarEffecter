@@ -175,7 +175,11 @@ make it easier to follow:
 
 ## 6. Notebook rules
 
-Live UI is `audio_lab_pynq/notebooks/GuitarPedalboardOneCell.ipynb`.
+The current Pmod I2S2 bench UI is
+`audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb`; update it
+for any user-facing effect control that must work on the deployed mode-2
+audio path. `GuitarPedalboardOneCell.ipynb` remains the generic
+single-screen pedalboard UI and compatibility surface for chain presets.
 
 1. **Add a new accordion section** rather than restructuring the
    existing ones. The accordion is where users expect to find each

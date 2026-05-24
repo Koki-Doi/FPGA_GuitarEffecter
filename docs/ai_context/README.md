@@ -61,6 +61,17 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
+- The **BD-2 Overdrive coefficient-only retune shipped and is the
+  current deployed baseline** (D62, 2026-05-24). Only model index 2
+  constants in `AudioLab/Effects/Overdrive.hs` changed:
+  `odDriveK 2 = 7`, `odKneeP 2 = 2_400_000`,
+  `odKneeN 2 = 1_900_000`, `odSafetyKnee 2 = 3_400_000`.
+  `Pipeline.hs`, GPIO, `block_design.tcl`, multiplier count, and other
+  Overdrive models are unchanged. D62 timing is WNS `-8.497 ns`,
+  TNS `-5876.740 ns`, WHS `+0.053 ns`, THS `0`, with bit/hwh md5
+  `349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`. Bench audition accepted
+  safe-bypass quietness and BD-2 earlier/asymmetric breakup.
 - The **noise-suppressor refactor shipped** earlier (branch
   `feature/noise-suppressor-gpio-ui`, merged into `main`). A
   dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` carries
@@ -128,23 +139,22 @@ The current load-bearing facts:
   change; PMOD JA / JB are left reserved for the external codec
   path. See `ENCODER_GUI_CONTROL_SPEC.md`, `ENCODER_INPUT_IMPLEMENTATION.md`,
   `ENCODER_INPUT_MAP.md`.
-- The **external PCM5102 DAC + PCM1808 ADC path shipped** through
-  Phase 7C / 7E / 7D on PMOD JB (`DECISIONS.md` D38 — D44). Phase 7C
-  brought up PCM5102 as a free-running tone generator, Phase 7E
-  replaced it with `pcm5102_audio_out.v` (4-signal pass-through that
-  mirrors the ADAU1761 I2S DAC interface so PCM5102 plays the same
-  processed audio in parallel), Phase 7E follow-up tied PCM5102 SCK
-  to GND structurally to remove MCLK/BCK async-clocks jitter (D40),
-  Phase 7D added a build-time 2:1 wire mux between ADAU `sdata_i`
-  and PCM1808 `ext_adc_dout_i` plus a dedicated PMOD JB8 SCKI port
-  for PCM1808 (D41 / D42), and Phase 7D close-out shipped the bit
-  with `CONFIG.CONST_VAL {0}` (mux=ADAU fallback) because PCM1808
-  `--capture-adc` returned pure zeros on the bench — suspected
-  analog-front-end damage from an earlier `3.3V on VCC` brown-out
-  (D43). D44 records the next PCM5102 quality follow-ups: stop JB8
-  SCKI when PCM1808 is unused, and add a PCM5102 debug output mode.
-  No new AXI GPIO, no `topEntity` change, no `LowPassFir.hs` change;
-  see `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` section 9.
+- The **Pmod I2S2 path is the current deployed external audio path** on
+  PMOD JB (`DECISIONS.md` D48 / D49 / D50). `create_project.tcl`
+  unconditionally sources `pmod_i2s2_integration.tcl`; the retired
+  PCM5102 / PCM1808 Tcl/XDC/RTL files remain as archival reference only
+  and are not part of the current build. Mode 2 routes Pmod CS5343 ADC
+  SDOUT into `i2s_to_stream_0`, clocks the IP from the Pmod-generated
+  BCLK/LRCK, feeds the existing AudioLab DSP chain, and sends the DSP
+  serial output to the Pmod CS4344 DAC. D50 intentionally mirrors the
+  RIGHT slot to both output channels in mode 2 to work around the
+  `i2s_to_stream` LEFT extraction and `i2sOut` setup issues. Runtime
+  entries are `PmodI2S2EffectControlOneCell.ipynb`,
+  `PmodI2S2HdmiGuiOneCell.ipynb`, `scripts/test_pmod_i2s2.py`,
+  `scripts/pmod_i2s2_mode.py`, and `scripts/pmod_i2s2_capture_probe.py`.
+  The older PCM5102 / PCM1808 path shipped through Phase 7C / 7E / 7D
+  but is now retired by D48; see `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`
+  only for historical details.
 
 See `CURRENT_STATE.md` for the post-deploy snapshot.
 
@@ -173,8 +183,8 @@ Then read whatever is topical for the task at hand:
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
 | [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4 through Phase 6I status (Section 11 has the Phase 6I C2 SVGA 800x600 result). |
 | [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md) / [`ENCODER_INPUT_IMPLEMENTATION.md`](ENCODER_INPUT_IMPLEMENTATION.md) / [`ENCODER_INPUT_MAP.md`](ENCODER_INPUT_MAP.md) | Rotary encoder PL IP + Python driver + GUI live-apply (Phase 7F / 7G / 7G+). |
-| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) / [`IO_PIN_RESERVATION.md`](IO_PIN_RESERVATION.md) | External PCM1808 ADC + PCM5102 DAC plan, deployed Phase 7C / 7E / 7D status, and PMOD JB / JA pin reservations. |
-| [`PMOD_I2S2_INTEGRATION_PLAN.md`](PMOD_I2S2_INTEGRATION_PLAN.md) | Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) integration plan — Phase Pmod-0 (planning only, no RTL/XDC/Tcl change). Tracks the next external-codec evaluation before any further PCM1808 work (`DECISIONS.md` D45). |
+| [`PMOD_I2S2_INTEGRATION_PLAN.md`](PMOD_I2S2_INTEGRATION_PLAN.md) | Current Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) PMOD JB audio implementation plus the original Phase Pmod-0 plan kept as history. |
+| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) / [`IO_PIN_RESERVATION.md`](IO_PIN_RESERVATION.md) | Retired PCM1808 ADC + PCM5102 DAC history, PMOD JB ownership migration to Pmod I2S2, and RPi/Arduino pin reservations. |
 | [`history/hdmi_phases/README.md`](history/hdmi_phases/README.md) | Per-phase HDMI GUI history index (Phase 1 -- Phase 6I), kept for archaeology. Read individual phase files only when you need contemporaneous detail. |
 | [`history/current_state/`](history/current_state/) | CURRENT_STATE-flavoured snapshots that were trimmed out of the live `CURRENT_STATE.md` (HDMI Phase 4/5 + Phase 1-3 prose, DSP / voicing arc, Phase 7A/7B/7F/7G planning, Phase 6F-6I dated detail). Read only when an old phase block is the load-bearing reference. |
 | [`DISTORTION_REFACTOR_PLAN.md`](DISTORTION_REFACTOR_PLAN.md) | The distortion-model refactor (pedal-mask + reserved-pedal phases). |

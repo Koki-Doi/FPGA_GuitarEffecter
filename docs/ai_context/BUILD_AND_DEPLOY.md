@@ -13,6 +13,7 @@ order, and what each layer needs), see
 | GPIO-neutral refactor (Python + docs + tests; no Clash, no `block_design.tcl`, no GPIO byte semantics change) | none — **no bit/hwh rebuild** | `bash scripts/deploy_to_pynq.sh` |
 | C++ DSP prototype removal (`src/effects/*.cpp`) | none — never on the live PL path | none on the FPGA side; `bash scripts/deploy_to_pynq.sh` only if Python or notebooks shipped alongside |
 | `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed baseline; deploy only if not significantly worse |
+| `hw/Pynq-Z2/pmod_i2s2_integration.tcl`, `audio_lab_pmod_i2s2.xdc`, `hw/ip/pmod_i2s2/src/*.v` | full Vivado rebuild (Pmod I2S2 owns PMOD JB in the current build) | review timing + Pmod mode smoke, then deploy |
 | `hw/Pynq-Z2/block_design.tcl`, `audio_lab.xdc`, IP topology | full Vivado rebuild — **only with explicit user approval** | review timing, then deploy |
 
 When a `block_design.tcl` change adds a new `axi_gpio_*` IP (as the
@@ -145,6 +146,9 @@ The script:
   `audio_lab.hwh` to `/home/xilinx/Audio-Lab-PYNQ/`.
 - Copies (or pip-installs) the package into
   `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/`.
+- Mirrors `audio_lab.bit` / `audio_lab.hwh` into
+  `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`
+  so bare `Overlay("audio_lab")` resolves to the same build.
 - Re-installs the notebooks under `/home/xilinx/jupyter_notebooks/audio_lab/`.
 - Runs an import sanity check.
 
@@ -162,6 +166,20 @@ PY'
 ```
 
 A clean run prints `ADC HPF: True` and `R19_ADC_CONTROL: 0x23`.
+
+For the current Pmod I2S2 audio path, also confirm mode 2 can run safely:
+
+```sh
+ssh xilinx@192.168.1.9 '
+  cd /home/xilinx/Audio-Lab-PYNQ &&
+  sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+    python3 scripts/test_pmod_i2s2.py --mode dsp --confirm-dsp --duration 3 --clear
+'
+```
+
+For mode 2 listening tests, do not leave the Pmod I2S2 module's Line
+Out-to-Line In direct loopback jumper installed. Use an external source
+into Pmod Line In and monitor Pmod Line Out.
 
 ## HDMI GUI checks
 
@@ -204,12 +222,11 @@ Verify with `md5sum` across all five, and read
 If only HDMI Python scripts or docs changed and the bitstream must not be
 overwritten, use selective `scp` for the relevant `scripts/test_hdmi_*.py`
 file instead of the full deploy script. `scripts/deploy_to_pynq.sh`
-always stages the current `audio_lab.bit` / `audio_lab.hwh` as-is, but
-does NOT sync the jupyter-notebook copy or the `pynq/overlays` copy;
-those need a separate `sudo cp` from the staged copy. Failure to sync
-all five usually shows up as VTC `GEN_ACTSZ != 0x02580320` even though
-the `hw/Pynq-Z2/bitstreams/` md5 looks right — see memory
-`pynq-site-packages-bit-cache`.
+always stages and syncs the current `audio_lab.bit` / `audio_lab.hwh`
+as-is across the package, notebook install, and `pynq/overlays` copies.
+Failure to sync all five manually usually shows up as VTC
+`GEN_ACTSZ != 0x02580320` even though the `hw/Pynq-Z2/bitstreams/` md5
+looks right — see memory `pynq-site-packages-bit-cache`.
 
 After C2 deploys, also remember the rgb2dvi PLL edge gotcha
 (`DECISIONS.md` D25, memory `rgb2dvi-pll-edge-at-40mhz`): a second

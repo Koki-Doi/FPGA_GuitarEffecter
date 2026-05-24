@@ -1,9 +1,11 @@
 # Codex Agent Guide
 
 This repository is **Audio-Lab-PYNQ** (a.k.a. FPGA_GuitarEffecter), a real-time
-guitar effect chain that runs on a PYNQ-Z2 board with an ADAU1761 codec, a
-Clash/VHDL DSP block synthesised under Vivado 2019.1, and a Python /
-PYNQ-Jupyter control layer.
+guitar effect chain that runs on a PYNQ-Z2 board. The current deployed audio
+path uses a Digilent Pmod I2S2 module on PMOD JB for line input/output, keeps
+the ADAU1761 codec configured for I2C/HPF health checks and debug visibility,
+and processes samples through a Clash/VHDL DSP block synthesised under Vivado
+2019.1 plus a Python / PYNQ-Jupyter control layer.
 
 ## Read these first, in order
 
@@ -69,8 +71,10 @@ Then read the topic doc that matches the work:
   `AudioLabOverlay()` once and use `audio_lab_pynq.hdmi_backend`; do not
   call `Overlay("base.bit")`, do not call `run_pynq_hdmi()`, and do not
   load a second overlay after AudioLab. For the 5-inch 800x480 LCD, the
-  Phase 5C default visible viewport is framebuffer `x=0,y=0,w=800,h=480`
-  inside the fixed 1280x720 HDMI signal.
+  current Phase 6I signal is VESA SVGA `800x600 @ 60 Hz / 40 MHz`; the
+  compact-v2 GUI occupies framebuffer `x=0,y=0,w=800,h=480`, with rows
+  `480..599` black. Do not switch back to 720p or the rejected native
+  800x480 timing.
 - `git push`, `git pull`, `git fetch`, and any other remote operation are
   forbidden. Local commits only.
 - Do not clone reference repositories into the working tree. Treat them as

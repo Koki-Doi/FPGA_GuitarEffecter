@@ -10,7 +10,7 @@ Superseded D60 attempt note (audio-rejected; source reverted; retained for histo
 
 Superseded D59 note (audio-rejected; retained for history): **2026-05-23 (D59 Compressor gain target path pipeline split for WNS):** branch `wns-compressor-gain-pipeline` splits only the Compressor gain-calculation path. `Compressor.hs` now separates target calculation into `compTargetStage1` (threshold / soft-threshold comparison, excess calculation, excess clamp), `compTargetStage2` (`excessU12 * ratioByte`, reduction shift/clamp, target-gain calculation), and the existing `compGainNext` smoothing/register update. `Pipeline.hs` registers those target stages and carries the `Frame` through `compTargetPipe` / `compGainFramePipe` before `compApplyPipe`, preserving compressor-local control/frame alignment while adding the allowed sample-scale gain reaction latency. No Compressor coefficients, threshold/ratio/response/makeup semantics, effect order, GPIO map, `topEntity` ports, DS-1 / Distortion, `Amp.hs`, GUI, Pmod I2S2, `block_design.tcl`, or Vivado strategy changed. Clash -> VHDL -> IP repackage -> Vivado full build PASS; WNS improves vs D58.2 from `-8.495 ns` to `-8.138 ns` (`+0.357 ns`), TNS improves from `-9052.753 ns` to `-8756.266 ns`, failing setup endpoints drop `3224 / 60227 -> 2922 / 60321`, and hold remains clean (`WHS +0.052 ns`, `THS 0.000 ns`). DSP count stays `83`, BRAM stays `6`; registers rise by 254 as expected from the new pipeline registers. The top routed critical path has moved off Compressor and is now DS-1-side `ARG__7__2` -> `ds1_5_reg[...]`, which this task intentionally did not touch. bit/hwh md5 `a42358803798acc1e63ef5d4abd45b33` / `1ddd377d077401ccf60a9096d319ed52` deployed to PYNQ-Z2 192.168.1.9, with all five board copies md5-matching. Programmatic smoke PASS: `AudioLabOverlay()` loads the new bit, `ADC HPF True`, `R19_ADC_CONTROL 0x23`, `axi_gpio_compressor` present, compressor enable/disable word readback works, Pmod I2S2 mode 2 readback `2`, safe-clean 3 s `FRAME_COUNT delta = 144150`, `CLIP_COUNT delta = 0`, and final mode 3 mute readback `3`. `DECISIONS.md` D59 and `TIMING_AND_FPGA_NOTES.md` carry the timing/deploy record.
 
-Last updated: **2026-05-23 (D58.2 Balanced Amp Drive Mode saturation -- fixed-scalar retake after the D58 bit caused a P&R-induced bypass regression; Vivado rebuild + deploy + programmatic smoke PASS, on-bench audio verification pending):** D58's `ch * factor` Drive-mode knee deltas added four DSP48E1 multipliers (DSP count `83 -> 87`) and the resulting Vivado P&R shift introduced an audible high-frequency saturation noise on the ADC -> DAC bypass path that the user heard even with Amp OFF and full safe bypass; the D58 bit (`feature/amp-drive-mode-balanced-gain`, commit `797467c`) was rolled back on the PYNQ to the D55 bit (sha `8df39b06...` / hwh `9fb470c7...`) to restore clean audio while keeping the D58 source commit on its branch for reference. D58.2 picks the same coefficient targets but re-shapes them so they cost no extra DSP: `ampDrivePosDelta` / `ampDriveNegDelta` switch back to the D55 `Unsigned 3 -> Signed 25` signature (per-model fixed scalars, no `ch` argument), with per-model values sized to approximate D58's first-stage `ch * factor` evaluated at each model's own `ampCharForModel` peak (JC-120 `13_000` / Twin `58_000` / AC30 `130_000` / Rockerverb `210_000` / JCM800 `264_000` / TriAmp Mk3 `336_000` for pos; `11_000` / `50_000` / `113_000` / `180_000` / `231_000` / `300_000` for neg). `ampSecondStageDriveBonus` keeps D58's `14..56` (simple per-model adder, no DSP), `ampPreLpfDriveDarken` keeps D58's `5..24` (simple per-model subtractor, no DSP). The `ampAsymClip` call sites revert to the D55 form (`ampDrivePosDelta modelIdx` -- no `ch` arg passed). D55 structure preserved verbatim everywhere else (six-model lineup, `ctrlD[7] = ampDriveMode` / `ctrlD[6:3] = 0` / `ctrlD[2:0] = ampModelIdx`, `softClipK 3_300_000 / 3_400_000` safety, second-stage `intensity = ampCharForModel idx >> 1`, six-entry `ampTrebleGain` / `presenceTrim`). D57's anti-patterns explicitly NOT adopted: no `ampInputDriveGainBonus`, no pre-clip push, no `ch * 5000+` knee multiplier, no full-intensity second-stage clip. Clash regenerated VHDL via `clash -package-id clash-prelude-1.8.1-...144c -isrc -fclash-hdldir /tmp/clash_d582 --vhdl src/LowPassFir.hs`; IP repackaged via `vivado -mode batch -source create_ip.tcl`. Vivado batch build PASS (`write_bitstream completed successfully`, 0 Errors). **DSP count back to `83 / 220 (37.73 %)` -- the same as D55 and four below D58's `87`**, which is the load-bearing metric for not retriggering the bypass-path P&R regression. WNS `-8.495 ns` vs D55 baseline `-8.231 ns` (regresses `0.264 ns`, still inside the historical `-7..-9 ns` deploy band and well above the `-9.5 ns` hard gate); WHS `+0.051 ns`; THS `0.000 ns` (hold clean); 3224 / 60227 failing setup endpoints (5.35 %). Utilization after place: Slice LUTs `19713` (`37.05 %`, -73 vs D55), Slice Registers `22110` (`20.78 %`, -50 vs D55), Block RAM Tile `6` (`4.29 %`, unchanged). bit/hwh `93f31348...` / `25991dc0...` deployed 5-site to PYNQ-Z2 192.168.1.9 (all five `/home/xilinx/.../bitstreams/`, `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/`, `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`, `/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/`, `/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/` sha-match the local build). Programmatic smoke PASS: `ADC HPF True`; six amp models `0..5` ctrlD readback OK across Clean + Drive (12 cases); Pmod I2S2 MODE writes `tone / loopback / dsp / mute` (0 / 1 / 2 / 3) all readback OK via `scripts/pmod_i2s2_mode.py`; **D58 regression guard -- safe bypass (`all effect_on = False`) + mode 2 DSP 3 s CLIP_COUNT delta `0` (FRAME_COUNT `+144150` -- exact 48 kHz cadence)**; Amp OFF (others default) 3 s CLIP_COUNT delta `0`; TriAmp Mk3 + Drive (full chain) 3 s CLIP_COUNT delta `0`; `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp` starts cleanly (`AudioLabOverlay loaded`, `HDMI backend started at 800x600`, `live=ON apply=OK`, no Python exceptions, initial render fires once on the signature change then idles per the dirty-flag policy). `python3 -m unittest -v tests.test_encoder_*` 91 tests PASS; `python3 tests/test_overlay_controls.py` PASS. **Audio verification by ear ("ブチブチしない", "Drive で D55 より歪む", "D57 より穏やか", "Amp OFF / safe bypass で D58 のような高音域飽和ノイズが消えた" -- the original D58 regression symptom) is pending the user's bench session.** GUI / `block_design.tcl` / HDMI timing / Encoder PL IP / Pmod I2S2 RTL / `GPIO_CONTROL_MAP` / `topEntity` ports untouched. Branch `feature/amp-drive-mode-balanced-gain-v2`. `DECISIONS.md` D58.2.**
+Superseded D58.2 note (accepted before D62, retained for history): **2026-05-23 (D58.2 Balanced Amp Drive Mode saturation -- fixed-scalar retake after the D58 bit caused a P&R-induced bypass regression; Vivado rebuild + deploy + programmatic smoke PASS, on-bench audio verification pending):** D58's `ch * factor` Drive-mode knee deltas added four DSP48E1 multipliers (DSP count `83 -> 87`) and the resulting Vivado P&R shift introduced an audible high-frequency saturation noise on the ADC -> DAC bypass path that the user heard even with Amp OFF and full safe bypass; the D58 bit (`feature/amp-drive-mode-balanced-gain`, commit `797467c`) was rolled back on the PYNQ to the D55 bit (sha `8df39b06...` / hwh `9fb470c7...`) to restore clean audio while keeping the D58 source commit on its branch for reference. D58.2 picks the same coefficient targets but re-shapes them so they cost no extra DSP: `ampDrivePosDelta` / `ampDriveNegDelta` switch back to the D55 `Unsigned 3 -> Signed 25` signature (per-model fixed scalars, no `ch` argument), with per-model values sized to approximate D58's first-stage `ch * factor` evaluated at each model's own `ampCharForModel` peak (JC-120 `13_000` / Twin `58_000` / AC30 `130_000` / Rockerverb `210_000` / JCM800 `264_000` / TriAmp Mk3 `336_000` for pos; `11_000` / `50_000` / `113_000` / `180_000` / `231_000` / `300_000` for neg). `ampSecondStageDriveBonus` keeps D58's `14..56` (simple per-model adder, no DSP), `ampPreLpfDriveDarken` keeps D58's `5..24` (simple per-model subtractor, no DSP). The `ampAsymClip` call sites revert to the D55 form (`ampDrivePosDelta modelIdx` -- no `ch` arg passed). D55 structure preserved verbatim everywhere else (six-model lineup, `ctrlD[7] = ampDriveMode` / `ctrlD[6:3] = 0` / `ctrlD[2:0] = ampModelIdx`, `softClipK 3_300_000 / 3_400_000` safety, second-stage `intensity = ampCharForModel idx >> 1`, six-entry `ampTrebleGain` / `presenceTrim`). D57's anti-patterns explicitly NOT adopted: no `ampInputDriveGainBonus`, no pre-clip push, no `ch * 5000+` knee multiplier, no full-intensity second-stage clip. Clash regenerated VHDL via `clash -package-id clash-prelude-1.8.1-...144c -isrc -fclash-hdldir /tmp/clash_d582 --vhdl src/LowPassFir.hs`; IP repackaged via `vivado -mode batch -source create_ip.tcl`. Vivado batch build PASS (`write_bitstream completed successfully`, 0 Errors). **DSP count back to `83 / 220 (37.73 %)` -- the same as D55 and four below D58's `87`**, which is the load-bearing metric for not retriggering the bypass-path P&R regression. WNS `-8.495 ns` vs D55 baseline `-8.231 ns` (regresses `0.264 ns`, still inside the historical `-7..-9 ns` deploy band and well above the `-9.5 ns` hard gate); WHS `+0.051 ns`; THS `0.000 ns` (hold clean); 3224 / 60227 failing setup endpoints (5.35 %). Utilization after place: Slice LUTs `19713` (`37.05 %`, -73 vs D55), Slice Registers `22110` (`20.78 %`, -50 vs D55), Block RAM Tile `6` (`4.29 %`, unchanged). bit/hwh `93f31348...` / `25991dc0...` deployed 5-site to PYNQ-Z2 192.168.1.9 (all five `/home/xilinx/.../bitstreams/`, `/usr/local/lib/python3.6/dist-packages/audio_lab_pynq/bitstreams/`, `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`, `/home/xilinx/jupyter_notebooks/audio_lab/bitstreams/`, `/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams/` sha-match the local build). Programmatic smoke PASS: `ADC HPF True`; six amp models `0..5` ctrlD readback OK across Clean + Drive (12 cases); Pmod I2S2 MODE writes `tone / loopback / dsp / mute` (0 / 1 / 2 / 3) all readback OK via `scripts/pmod_i2s2_mode.py`; **D58 regression guard -- safe bypass (`all effect_on = False`) + mode 2 DSP 3 s CLIP_COUNT delta `0` (FRAME_COUNT `+144150` -- exact 48 kHz cadence)**; Amp OFF (others default) 3 s CLIP_COUNT delta `0`; TriAmp Mk3 + Drive (full chain) 3 s CLIP_COUNT delta `0`; `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp` starts cleanly (`AudioLabOverlay loaded`, `HDMI backend started at 800x600`, `live=ON apply=OK`, no Python exceptions, initial render fires once on the signature change then idles per the dirty-flag policy). `python3 -m unittest -v tests.test_encoder_*` 91 tests PASS; `python3 tests/test_overlay_controls.py` PASS. **Audio verification by ear ("ブチブチしない", "Drive で D55 より歪む", "D57 より穏やか", "Amp OFF / safe bypass で D58 のような高音域飽和ノイズが消えた" -- the original D58 regression symptom) is pending the user's bench session.** GUI / `block_design.tcl` / HDMI timing / Encoder PL IP / Pmod I2S2 RTL / `GPIO_CONTROL_MAP` / `topEntity` ports untouched. Branch `feature/amp-drive-mode-balanced-gain-v2`. `DECISIONS.md` D58.2.**
 
 Previous-pass header (D55 Amp Sim model set replaced with six researched voicings, Vivado rebuild kicked off): The legacy 4-model D52 lineup (`jc_clean` / `clean_combo` / `british_crunch` / `high_gain_stack`) is retired. Six inspired-by voicings replace it: `0 = JC-120` / `1 = Twin Reverb` / `2 = AC30` / `3 = Rockerverb` / `4 = JCM800` / `5 = TriAmp Mk3`. Research notes / source URLs / DSP coefficient rationale live in `docs/ai_context/AMP_MODEL_RESEARCH_D55.md`. `axi_gpio_amp_tone.ctrlD` widens the model field from 2 bits to 3 bits: `ctrlD[7] = ampDriveMode`, `ctrlD[6:3] = 0` reserved, `ctrlD[2:0] = ampModelIdx` (0..5 valid; 6..7 -> Clash safety fallback to JC-120). Python writer: `AudioLabOverlay.amp_model_drive_byte(idx, drive)` with `AMP_MODEL_IDX_MASK = 0x07` and `AMP_MODEL_IDX_MAX = 5`. Per-model voicing tables in `Amp.hs` (`ampModelDarken` / `ampPreLpfDriveDarken` / `ampSecondStageDriveBonus` / `ampDrivePosDelta` / `ampDriveNegDelta` / 6-entry `ampTrebleGain` case / 6-entry `presenceTrim` case) replace the single shared character byte so each model has its own clip / LPF / second-stage profile -- not just a volume difference. `softClipK` output safety preserved (`3_300_000` / `3_400_000`). The D54 Clean/Drive bit remains a real DSP branch and is per-model in D55 (different knee delta / preLPF darken / second-stage bonus on each voicing). Compact-v2 GUI / HDMI mirror / encoder runtime / three notebooks updated; legacy snake_case helper names (`mirror.jc_clean()` etc.) preserved as back-compat aliases that route onto the closest D55 voicing. tests updated; `python3 tests/test_overlay_controls.py` PASS, `python3 -m unittest -v tests.test_encoder_*` PASS (90 + 3 new D55 tests). Branch `feature/replace-amp-models-six-pack-researched`. `DECISIONS.md` D55. Vivado batch rebuild kicked off; deploy + on-board smoke pending the next session.**
 
@@ -33,7 +33,7 @@ Previous-pass header (D49 Pmod I2S2 ADC → AudioLab DSP → DAC, 2026-05-20):
 **Pmod I2S2 mode 2 added, the existing AudioLab DSP chain (`i2s_to_stream_0` → axis_data_fifo / Clash effects → `i2s_to_stream_0/so`) is now driven by the Pmod-generated BCLK / LRCK / SDATA tree. `cfg_mode = 0` (tone), `1` (loopback), `2` (DSP), `3` (mute) are all reachable from `scripts/test_pmod_i2s2.py --mode tone | loopback | dsp | mute`. Mode 2 requires `--confirm-dsp`; with the on-module Line Out ↔ Line In jumper disconnected and a low-volume Line In source, Overdrive / Distortion / Amp / Cab / Reverb audibly change the Line Out. ADAU1761 codec stays alive via I2C but its R18 bclk / T17 lrclk / F17 sdata_i inputs are now unloaded internally (the `bclk_1` / `lrclk_1` / `sdata_i_1` block-design nets were retargeted in `pmod_i2s2_integration.tcl`). G18 sdata_o still receives the DSP serial output for debug visibility. `block_design.tcl`, `GPIO_CONTROL_MAP`, `LowPassFir.hs`, `topEntity`, HDMI, encoder PL IP, compact-v2 GUI, notebooks, encoder runtime untouched. `DECISIONS.md` D49.**
 
 Previous-pass header (D48 follow-up Pmod I2S2 mode 1 loopback verified, 2026-05-20):
-**Pmod I2S2 mode 0 (TX tone + ADC probe) and mode 1 (ADC -> DAC direct loopback) are both reachable from `scripts/test_pmod_i2s2.py --mode tone | loopback`. The mode-1 path requires `--confirm-loopback` because the on-module Line Out ↔ Line In jumper plus the full-scale echo can feed back. `axi_pmod_i2s2_status.v` write FSM was reworked to the same shape `axi_encoder_input.v` uses (latch awaddr in the AW phase, commit in the W phase using the latched address), which fixed a same-cycle race where back-to-back MMIO writes (e.g. MODE=0 then CLEAR=1) committed the CLEAR write at the MODE address and silently flipped `cfg_mode_o`. No DSP integration: Pmod I2S2 ADC is NOT routed into the AudioLab AXIS chain; that is intentionally deferred.**
+**Pmod I2S2 mode 0 (TX tone + ADC probe) and mode 1 (ADC -> DAC direct loopback) are both reachable from `scripts/test_pmod_i2s2.py --mode tone | loopback`. The mode-1 path requires `--confirm-loopback` because the on-module Line Out ↔ Line In jumper plus the full-scale echo can feed back. `axi_pmod_i2s2_status.v` write FSM was reworked to the same shape `axi_encoder_input.v` uses (latch awaddr in the AW phase, commit in the W phase using the latched address), which fixed a same-cycle race where back-to-back MMIO writes (e.g. MODE=0 then CLEAR=1) committed the CLEAR write at the MODE address and silently flipped `cfg_mode_o`. At this D48-only point there was no DSP integration yet; D49 superseded it by routing Pmod I2S2 ADC into the AudioLab AXIS chain as current mode 2.**
 
 Previous-pass header (D48 retire PCM5102/PCM1808 PMOD JB path, 2026-05-19):
 **Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) is now the only external audio module on PMOD JB. The PCM5102 / PCM1808 bring-up path is retired**
@@ -65,9 +65,11 @@ poll the status block and print PASS / WARN / FAIL based on
 frame_count / peak_abs movement. `block_design.tcl`,
 `GPIO_CONTROL_MAP`, `LowPassFir.hs`, `topEntity`, HDMI timing,
 encoder PL IP, compact-v2 GUI, notebooks, encoder runtime, and
-ADAU1761 codec init are all untouched. The ADAU1761 path is
-still available through the existing ADAU DAC line out / headphone
-out for users who need the on-board codec. `DECISIONS.md` D48.)
+ADAU1761 codec init are all untouched. At D48 time the ADAU path was still
+separate; D49 superseded that by routing the active DSP source/clock tree to
+Pmod I2S2 mode 2, and D50 made mode 2's DAC output mono by mirroring the
+IP RIGHT slot into both channels via `mode2_right_snapshot`. ADAU remains
+alive for I2C/HPF/debug visibility only. `DECISIONS.md` D48 / D49 / D50.)
 
 Previous-pass header (D47 encoder button-state controls, 2026-05-19):
 **short/long-press classifications dropped from `EncoderUiController`; Encoder 0 button-down rising edge is the only press-driven action**
@@ -327,10 +329,11 @@ PCM1808 mux = ADAU (D43), Phase 7D close-out WNS `-7.931 ns`. See
   smart-attach via `download=False` when bit already loaded —
   protects the rgb2dvi PLL at the 800 MHz VCO lower edge from
   re-`download=True` knock-outs in the same Jupyter session).
-- **PL timing baseline**: WNS `-8.096 ns`, TNS `-6389.430 ns`,
-  WHS `+0.040 ns`, THS `0.000 ns`; Slice LUTs `18618 (35.00%)`,
-  Slice Registers `20846 (19.59%)`. Within the historical
-  `-7..-9 ns` deploy band. See `TIMING_AND_FPGA_NOTES.md`.
+- **Latest PL timing baseline**: D62 WNS `-8.497 ns`, TNS
+  `-5876.740 ns`, WHS `+0.053 ns`, THS `0.000 ns`; Slice LUTs
+  `19700`, Slice Registers `22280`, BRAM `6`, DSPs `83`. The older
+  Phase 6I HDMI-only timing baseline was WNS `-8.096 ns`; D62 is the
+  current deployed bit/hwh baseline. See `TIMING_AND_FPGA_NOTES.md`.
 - **Encoder GUI live apply (Phase 7G+)**: `EncoderEffectApplier` is the
   only Python object allowed to translate the compact-v2 `AppState`
   into `AudioLabOverlay` calls from the encoder runtime. It uses
@@ -440,21 +443,17 @@ bash scripts/deploy_to_pynq.sh
 
 Open work, in roughly priority order:
 
-1. **D44 follow-up RTL/Tcl pass** (`DECISIONS.md` D44, plan only).
-   (a) `pcm1808_adc_integration.tcl` で `CONFIG.CONST_VAL` に応じて
-   `ext_pcm1808_sckie_o` を `clk_wiz_audio_ext/clk_out1` か
-   `xlconstant 0` に切替 (deploy bit が mux=ADAU の時 JB8 に不要な
-   12.288 MHz を出さない)。(b) `pcm5102_audio_out.v` に build-time
-   `MODE` パラメータで `processed audio / digital silence /
-   -18 dBFS 1 kHz tone / ramp` を選べる selector を追加。Vivado
-   rebuild + timing review が要る。PCM1808 復活時 (`CONST_VAL {1}`)
-   は SCKI 復元を忘れない。
-2. **PCM1808 ハードウェア診断 / 再投入** (`DECISIONS.md` D43)。新規
-   module に差し替えて `hw/Pynq-Z2/pcm1808_adc_integration.tcl` の
-   `CONFIG.CONST_VAL {0}` を `{1}` に戻し、bit/hwh rebuild + deploy、
-   `scripts/test_pcm1808_adc_to_pcm5102.py --capture-adc` で
-   `min/max/mean/RMS/peak_dBFS` を確認。pure 0 が続けば chip / analog
-   前段の damage 仮説継続。
+1. **D62 / Pmod mode-2 post-deploy QA.** The current active audio path is
+   Pmod I2S2 mode 2 (`ADC -> DSP -> DAC`) with D50 mono RIGHT-slot
+   mirroring and the D62 BD-2 coefficient-only retune. Continue bench
+   listening with external source -> Pmod Line In and Pmod Line Out ->
+   monitor; keep the on-module Line Out -> Line In jumper disconnected
+   for mode 2.
+2. **Pmod mode-2 mono workaround future improvement.** D50 intentionally
+   mirrors `mode2_right_snapshot` into both DAC slots. A future fix can
+   repair the `i2s_to_stream` LEFT extraction / `i2sOut` setup issues and
+   restore true stereo, but until then mono RIGHT output is the current
+   specification.
 3. **物理 rotary encoder smoke** (`DECISIONS.md` D35)。3 ch すべての
    rotate / short / long / release を実操作で記録し、必要なら
    `--reverse-encN` / `--swap-encN` / `--debounce-ms` の最終設定を
@@ -465,11 +464,11 @@ Open work, in roughly priority order:
    following the same shape as the new `ds1` / `big_muff` /
    `fuzz_face` stages.
 5. **Drive WNS toward 0.** The deployed build is at the value
-   recorded in `TIMING_AND_FPGA_NOTES.md` (Phase 7D close-out
-   `-7.931 ns`); the audio path tolerates the current band in
-   practice but the build is not formally clean. Worth a pass that
-   splits any remaining deeper combinational stage and / or
-   pipelines the cab or reverb tap address paths.
+   recorded in `TIMING_AND_FPGA_NOTES.md` (D62 WNS `-8.497 ns`);
+   the audio path tolerates the current band in practice but the
+   build is not formally clean. Any timing work must preserve the
+   safe-bypass bench result; D58 / D59 / D60 / D61 proved that better
+   WNS alone is not sufficient if audio regresses.
 6. **UI / preset polish** in the notebooks. Possible adds:
    per-pedal default presets, an A/B compare cell, a quick-record
    cell that pairs the pedalboard with the existing diagnostic
@@ -477,6 +476,10 @@ Open work, in roughly priority order:
 7. **Diagnostic capture for distortion stages.** Re-use
    `diagnostics.capture_input` to log a clip waveform per pedal so
    we can compare voicings without ear fatigue.
+8. **PCM5102 / PCM1808 revival only if explicitly requested.** The old
+   Phase 7C / 7E / 7D path is retired because PMOD JB is now owned by
+   Pmod I2S2. Do not continue D44 / D43 PCM follow-ups as normal
+   backlog without a new user-approved revival phase.
 
 ## Things to be careful about
 
@@ -486,9 +489,9 @@ Open work, in roughly priority order:
   seven pedals. That is exactly what regressed timing the first time;
   see `TIMING_AND_FPGA_NOTES.md`.
 - Do **not** deploy a bitstream whose WNS is significantly worse than
-  the current Phase 7D close-out build's WNS (`-7.931 ns`) without
-  flagging the regression first. A -15 ns-class result remains a hard
-  reject.
+  the current D62 baseline (`-8.497 ns`) without flagging the regression
+  first. A -15 ns-class result remains a hard reject, and any audible
+  safe-bypass regression is a blocker even if WNS improves.
 - Do **not** revive the legacy `gateGainNext` / `gateFrame` registers
   in the active pipeline. The active gain stage is the noise
   suppressor (`nsApplyFrame`); the legacy helpers are kept as Haskell
@@ -496,21 +499,14 @@ Open work, in roughly priority order:
 - Do **not** drop the legacy `gate_control.ctrlB` write from
   `set_guitar_effects` -- older bitstreams without
   `axi_gpio_noise_suppressor` still rely on it.
-- Do **not** silently replace the ADAU1761 path with PCM1808 / PCM5102.
-  Phase 7 では外付け codec は別 I2S path として追加し (`DECISIONS.md`
-  D27)、Phase 7C / 7E で PCM5102 は ADAU 並列出力、Phase 7D で PCM1808
-  は build-time mux + JB8 SCKI (`DECISIONS.md` D38 / D39 / D41 / D42)
-  に landing 済。既存 ADAU1761 経路 / DSP / GPIO map を破壊しない。
-- Do **not** drive `pcm5102_audio_out.v` の `ext_audio_mclk_o` を 0 以外に
-  する (`DECISIONS.md` D40 / D42)。PCM5102 SCK は GND-tied / internal-
-  SYSCLK 固定。JB1 は構造的に常時 0。PCM1808 SCKI は JB8 / W16
-  (`ext_pcm1808_sckie_o`) 経由でのみ供給する。
-- Do **not** flip `pcm1808_adc_integration.tcl` の `CONFIG.CONST_VAL {0}`
-  を勝手に `{1}` に戻す (`DECISIONS.md` D43)。PCM1808 module の analog
-  前段ハードウェア診断が完了するまで mux=ADAU フォールバック維持。
-- Do **not** allocate rotary encoder GPIO into the PMOD reserved for
-  external audio. Audio が優先で、encoder は Raspberry Pi header 側へ
-  逃がす (`DECISIONS.md` D28、`IO_PIN_RESERVATION.md`)。
+- Do **not** silently revive the retired PCM1808 / PCM5102 path. PMOD JB
+  is owned by Pmod I2S2 in the current build, and `create_project.tcl`
+  sources `pmod_i2s2_integration.tcl`, not the PCM Tcl files. A PCM
+  revival requires an explicit new phase, PMOD ownership decision,
+  full rebuild, timing review, and deploy plan.
+- Do **not** allocate rotary encoder GPIO into PMOD JB. PMOD JB is the
+  active Pmod I2S2 audio connector; encoder remains on the Raspberry Pi
+  header side (`DECISIONS.md` D28 / D34, `IO_PIN_RESERVATION.md`).
 - Do **not** poll encoder A / B / SW from Python directly. PL 側で
   debounce + quadrature decode + event 化する (`DECISIONS.md` D30、
   `ENCODER_GUI_CONTROL_SPEC.md`)。
@@ -529,8 +525,8 @@ Open work, in roughly priority order:
   は独立 AXI-Lite IP として実装 (`DECISIONS.md` D33)。
   `GPIO_CONTROL_MAP.md` の `ctrlA..D` 4-byte 契約に encoder event /
   delta を混ぜない。
-- Do **not** allocate encoder pins to PMOD JB / PMOD JA. これらは
-  外付け PCM1808 / PCM5102 codec 予約のまま温存 (`DECISIONS.md` D28 /
-  D34)。encoder は Raspberry Pi header の JA 非共有 pin
-  (`raspberry_pi_tri_i_6..14`) を使う。
+- Do **not** allocate encoder pins to PMOD JB / PMOD JA without a fresh
+  pin-ownership review. Current encoder wiring uses Raspberry Pi header
+  non-JA-shared pins (`raspberry_pi_tri_i_6..14`), and PMOD JB must stay
+  dedicated to Pmod I2S2.
 - Do **not** push, pull, or fetch.

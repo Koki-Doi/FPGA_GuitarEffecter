@@ -2,25 +2,39 @@
 
 This is the picture you should keep in your head when something sounds
 wrong. The PL never sees raw analog — by the time samples reach the Clash
-block they are already two's-complement 24-bit numbers from the codec.
+block they are already two's-complement 24-bit numbers from the active
+codec path.
 
 ```
-ADAU1761 ADC
-  | I2S (SDATA_I, BCLK, LRCLK)
+Pmod I2S2 CS5343 ADC (Line In)
+  | I2S SDOUT on JB10, with FPGA-master MCLK/BCLK/LRCK from pmod_i2s2_master
   v
 i2s_to_stream_0
   | 48-bit AXI-Stream (TDATA[47:24]=right, TDATA[23:0]=left)
   v
 axis_switch_source  (1-of-N source select, controlled from PS via AXI-Lite)
-  +-- M00 --> axis_switch_sink/S00 -> i2s_to_stream_0/axis_hp -> ADAU1761 DAC  (passthrough)
+  +-- M00 --> axis_switch_sink/S00 -> i2s_to_stream_0/axis_hp
   |
-  +-- M01 --> axis_data_fifo_0 -> clash_lowpass_fir_0 -> axis_switch_sink/S01 -> i2s_to_stream_0/axis_hp -> ADAU1761 DAC  (effect path)
+  +-- M01 --> axis_data_fifo_0 -> clash_lowpass_fir_0 -> axis_switch_sink/S01 -> i2s_to_stream_0/axis_hp
   |
   +-- M0x --> axis_subset_converter_1 -> S2MM DMA  (capture; 24-bit -> 32-bit sign-extended per channel)
+
+i2s_to_stream_0/so
+  |\
+  | +--> pmod_i2s2_master_0/dsp_dac_sdin_i
+  |        -> mode2_right_snapshot (D50, RIGHT slot mirrored to L/R)
+  |        -> Pmod I2S2 CS4344 DAC (Line Out)
+  |
+  +----> ADAU1761 sdata_o G18 debug visibility
 ```
 
 The reverse direction (PS-to-board playback) goes through the MM2S DMA, a
 sign-narrowing subset converter, and back into `axis_switch_sink`.
+
+The onboard ADAU1761 is still configured over I2C and its ADC HPF is still
+default-on (`R19_ADC_CONTROL == 0x23`), but in the current Pmod I2S2 build
+the ADAU `bclk` / `lrclk` / `sdata_i` top-level ports are unloaded internally.
+They are not the active DSP source.
 
 ## On-the-wire layout
 
@@ -46,20 +60,22 @@ In `numpy`, capture buffers are read back as `numpy.int32` of shape
 
 | Source | `XbarSource` | Sink | `XbarSink` |
 | --- | --- | --- | --- |
-| Line-in | `line_in` | DAC | `headphone` |
+| Pmod I2S2 line-in | `line_in` | Pmod I2S2 DAC | `headphone` |
 | MM2S DMA | `dma`     | S2MM DMA | `dma` |
 
 `XbarEffect` selects whether the active route goes through `passthrough`,
 `guitar_chain` (the Clash effect block), or alternative paths. See
 `AudioLabOverlay.route()`.
 
-## External PCM1808 / PCM5102 paths (Phase 7C / 7E / 7D)
+## Historical external PCM1808 / PCM5102 paths (Phase 7C / 7E / 7D)
 
-Two additional physical paths on PMOD JB share the same internal AXIS
+These older physical paths on PMOD JB shared the same internal AXIS
 plumbing. They were added by Phase 7C / 7E / 7D
 (`DECISIONS.md` D38 / D39 / D40 / D41 / D42 / D43 / D44) without any change
 to `LowPassFir.hs`, `i2s_to_stream_0`, `axis_switch_*`, or the GPIO
-control map.
+control map. They are now retired in the current D48+ Pmod I2S2 build:
+`create_project.tcl` does not source the PCM5102 / PCM1808 integration Tcl
+files, and PMOD JB is owned by `audio_lab_pmod_i2s2.xdc`.
 
 ### Output side (parallel to the ADAU1761 DAC)
 
@@ -141,11 +157,12 @@ archival reference only and are not part of the deployed build
 (see the section above for the historical PCM5102 / PCM1808 path,
 kept for triage of older bitstreams from `git log` history).
 
-The ADAU1761 → AXIS → ADAU1761 DSP loop documented at the top of
-this file is **unchanged**. The Pmod I2S2 path is a completely
-separate bringup-only path that does not feed the AXIS DSP chain —
-ADAU Line In / Line Out on the on-board codec keeps working
-exactly as before for users who do not need Pmod I2S2.
+The Pmod I2S2 path is the current active AXIS DSP path. D49 reroutes
+`i2s_to_stream_0` away from ADAU BCLK/LRCLK/SDATA_I and onto the
+Pmod-generated BCLK/LRCK plus ADC SDOUT. ADAU remains alive via I2C
+configuration and `i2s_to_stream_0/so` still fans out to ADAU
+`sdata_o` for debug visibility, but the onboard ADAU analog input is
+not the current DSP source.
 
 ```
 clk_wiz_audio_ext.clk_out1 (12.288 MHz)
@@ -272,19 +289,24 @@ Triage tips specific to the Pmod I2S2 variant:
   the ADC line in JB10 (W13) is dead (cable / module / FPGA pin).
 - If `sdout_xcount` is rising but `peak_abs_left/right` (`+ 0x20 /
   + 0x24`) is 0, the ADC is alive but the analog line-in is silent.
-- ADAU1761 DAC / ADC, HDMI, encoder, GPIO_CONTROL_MAP, LowPassFir
-  are all *unchanged* in this variant — if they break, the issue is
-  in the Pmod I2S2 integration tcl, not in the existing path.
+- HDMI, encoder, GPIO_CONTROL_MAP, and the Clash effect GPIO contract
+  are unchanged by this variant. The audio source/clock ownership is
+  intentionally changed to Pmod I2S2; if mode 2 breaks while the rest of
+  the overlay loads, start with `pmod_i2s2_integration.tcl`,
+  `pmod_i2s2_master.v`, and the status counters.
 
 ## Triage rules of thumb
 
-- If the **bypass route** (`passthrough`, no Clash) is noisy, look at the
-  output side: codec DAC, headphone amp, R29-R32 (HP/LO volume), R35
-  (playback power), grounding. Editing Clash will not fix it.
+- If the **bypass route** (`passthrough`, no Clash) is noisy in the
+  current Pmod mode-2 path, first check Pmod Line In/Out cabling,
+  monitor gain, grounding, `pmod_status_0` counters, and whether the
+  on-module Line Out -> Line In loopback jumper is accidentally installed.
+  Editing Clash will not fix an analog loop or output-stage problem.
 - If `output_zero_test` is silent and `output_sine_test` is clean, the
   output stage is good and any noise is upstream of the DAC.
-- Capture stats with input shorted: mean near zero, RMS small. If mean
-  drifts, the ADC HPF is probably off. Confirm `R19_ADC_CONTROL == 0x23`.
+- ADAU capture stats with input shorted are still useful for legacy
+  onboard-codec diagnosis. If mean drifts there, confirm the ADC HPF is
+  on (`R19_ADC_CONTROL == 0x23`).
 - Capture stats with the guitar plugged in but silent: any large RMS
   comes from pickups / cable / room, not the FPGA.
 - Bit-bypass is the contract: with every effect off, samples in must

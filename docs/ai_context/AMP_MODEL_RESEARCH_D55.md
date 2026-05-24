@@ -1,5 +1,11 @@
 # AMP_MODEL_RESEARCH_D55
 
+Current status: D55 landed the six-model Amp Sim structure; D58.2 is
+the current accepted Amp Drive coefficient retake. D62 only retunes the
+BD-2 Overdrive model and does not change Amp Sim. Treat the D55 sections
+below as the model-research basis and the D58.2 section as the current
+Amp coefficient baseline.
+
 D55 で Amp Sim の旧 4 モデル (jc_clean / clean_combo / british_crunch /
 high_gain_stack) を、実機を意識した 6 voicing へ置き換える。本ドキュメ
 ントは各モデルの音響特徴と、それを Clash `Amp.hs` の係数 (clip knee /

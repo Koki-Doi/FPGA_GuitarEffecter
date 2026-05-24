@@ -1,6 +1,11 @@
 # Audio-Lab-PYNQ
 
-PYNQ-Z2 と ADAU1761 オーディオコーデックを使って、Line-in の音声を FPGA 上で処理し、ヘッドホン/ライン出力へ返すためのオーディオDSP実験環境です。
+PYNQ-Z2 と Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) を使って、
+Line-in の音声を FPGA 上で処理し、Pmod Line Out へ返すための
+オーディオ DSP 実験環境です。ADAU1761 オンボード codec は現行 build でも
+I2C 初期化 / ADC HPF health check / `sdata_o` debug visibility のために
+残していますが、実際のデプロイ済み主音声経路は PMOD JB の Pmod I2S2
+mode 2 (`ADC -> DSP -> DAC`) です。
 
 現在の主な用途は、ギター/ライン音声向けのリアルタイムエフェクト処理です。Jupyter Notebook、HDMI 統合 GUI、3 個のロータリーエンコーダー、または `scripts/` 配下の CLI からエフェクトの ON/OFF と各パラメータを操作できます。
 
@@ -43,7 +48,7 @@ make Pynq-Z2
 bash scripts/deploy_to_pynq.sh
 
 # 3a. 1セル Notebook で実機エフェクト確認
-#     http://192.168.1.9:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
+#     http://192.168.1.9:9090/notebooks/audio_lab/PmodI2S2EffectControlOneCell.ipynb
 
 # 3b. HDMI GUI smoke (5 インチ 800x480 LCD)
 #     http://192.168.1.9:9090/notebooks/audio_lab/HdmiGuiShow.ipynb
@@ -52,7 +57,7 @@ bash scripts/deploy_to_pynq.sh
 ssh xilinx@192.168.1.9 '
   cd /home/xilinx/Audio-Lab-PYNQ &&
   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
-    python3 scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
+    python3 scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp
 '
 
 # 4. ローカルユニットテスト (Python 制御層のみ、PYNQ 不要)
@@ -72,14 +77,15 @@ ssh xilinx@192.168.1.9 'md5sum \
   /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit'
 ```
 
-5 行とも同じ md5 が出れば OK (Phase 6I C2 build は
-`81f4c149fac2e5b3fc6ed4421da60cdf`)。
+5 行とも同じ md5 が出れば OK。最新 D62 BD-2 coefficient-only retune
+deployed build は `.bit = 349ebbe609ac15f58d8b676d2dedee94`、
+`.hwh = 3a90e966c5d76762b60ba3ab0e982685` です。
 
 ## システム要件 / Toolchain
 
 | 項目 | 値 |
 | --- | --- |
-| Board | PYNQ-Z2 (Xilinx Zynq-7000, `xc7z020clg400-1`) + ADAU1761 codec |
+| Board | PYNQ-Z2 (Xilinx Zynq-7000, `xc7z020clg400-1`) + Digilent Pmod I2S2 on PMOD JB (active audio) + ADAU1761 codec (configured / debug) |
 | Vivado | 2019.1 (bit / hwh 再生成と timing 解析) |
 | Clash | 1.8.1 (`clash-prelude` のバージョンも揃える) |
 | GHC | 8.10.7 |
@@ -124,6 +130,7 @@ Audio-Lab-PYNQ/
 │   │   ├── clash/src/AudioLab/       # split modules (effects / pipeline / helpers)
 │   │   ├── clash/vhdl/LowPassFir/    # Clash-generated VHDL + packaged Vivado IP
 │   │   ├── encoder_input/src/axi_encoder_input.v  # Phase 7F encoder PL IP
+│   │   ├── pmod_i2s2/src/            # Pmod I2S2 FPGA-master I2S + AXI status IP
 │   │   └── fx_gain/                  # legacy HLS gain IP (instantiated, not stream-connected)
 │   └── Pynq-Z2/
 │       ├── audio_lab.xdc                       # pin / clock constraints
@@ -131,11 +138,15 @@ Audio-Lab-PYNQ/
 │       ├── create_project.tcl                  # batch entry, sources every *_integration.tcl
 │       ├── hdmi_integration.tcl                # HDMI VDMA + VTC + rgb2dvi (Phase 4/6I)
 │       ├── encoder_integration.tcl             # axi_encoder_input @ 0x43D10000 (Phase 7F)
+│       ├── pmod_i2s2_integration.tcl           # Pmod I2S2 active audio path + status @ 0x43D20000
+│       ├── audio_lab_pmod_i2s2.xdc             # PMOD JB pin constraints for Pmod I2S2
 │       └── bitstreams/audio_lab.{bit,hwh}      # built artefacts (deploy 経路 #1)
 ├── scripts/
 │   ├── deploy_to_pynq.sh                  # rsync + sudo install + 5-ヶ所 bit/hwh 同期
 │   ├── audio_diagnostics.py               # capture/stats CLI
 │   ├── run_encoder_hdmi_gui.py            # Phase 7G+ notebook-less encoder runtime
+│   ├── test_pmod_i2s2.py                  # Pmod I2S2 tone/loopback/dsp/mute smoke
+│   ├── pmod_i2s2_mode.py                  # Pmod I2S2 MODE / status helper
 │   ├── test_encoder_input.py              # on-board encoder manual smoke
 │   ├── test_hdmi_encoder_gui_control.py   # on-board encoder + GUI smoke
 │   ├── test_hdmi_800x480_frame.py         # 1-frame HDMI smoke
@@ -161,9 +172,12 @@ Audio-Lab-PYNQ/
 
 - PYNQ-Z2 用 Vivado オーバーレイ
 - ADAU1761 コーデック初期化と Python からのレジスタ制御
-- Line-in からのリアルタイム入力
-- PYNQ-Z2 の実配線に合わせた LOUT/ROUT 出力経路
-- Line-in -> headphone のパススルー
+- Digilent Pmod I2S2 mode 2 (`ADC -> DSP -> DAC`) による PMOD JB
+  Line-in / Line-out のリアルタイム入力・出力
+- Pmod I2S2 status/control AXI slave (`pmod_status_0` @ `0x43D20000`) と
+  mode `tone` / `loopback` / `dsp` / `mute`
+- ADAU1761 I2C 初期化、ADC HPF default-on smoke、`sdata_o` debug output
+  の維持
 - 単体リバーブの操作
 - 複数エフェクトを固定順で通すギターエフェクトチェーン
 - pedal-mask 方式の Distortion Pedalboard (`clean_boost` /
@@ -184,16 +198,10 @@ Audio-Lab-PYNQ/
   GUI-first live apply。詳細は
   [Rotary Encoder GUI 操作](#rotary-encoder-gui-操作-phase-7f--7g--7g)
   セクション
-- 外付け **PCM5102 DAC** (PMOD JB1..JB7) を AudioLab DSP 出力の
-  並列ライン (`i2s_to_stream_0/so` と同じビットストリーム) としてデプロイ
-  済 (`DECISIONS.md` D39)。SCK=GND (内蔵 SYSCLK) で外部 MCLK ジッタを
-  回避 (D40 / D42)。外付け **PCM1808 ADC** は PMOD JB4 入力 + JB8 SCKI
-  まで配線 + build-time 2:1 wire mux で実装済 (`DECISIONS.md` D41 /
-  D42)。現行 deploy bit は mux=ADAU フォールバック (`CONFIG.CONST_VAL
-  {0}`, `DECISIONS.md` D43) — PCM1808 module の analog 前段ハードウェア
-  診断待ち。PCM5102 残品質改善の最小 RTL/Tcl 候補 (mux=ADAU 時の JB8
-  SCKI 停止 + PCM5102 debug output mode) は `DECISIONS.md` D44 に
-  プランのみ記録、実装はまだ。
+- 旧外付け **PCM5102 DAC / PCM1808 ADC** path は Phase 7C / 7E / 7D の
+  履歴として repo に残していますが、現行 build では `create_project.tcl`
+  から source されません。PMOD JB は Pmod I2S2 が専有します
+  (`DECISIONS.md` D48)。
 - DMA を使った入力/出力経路のデバッグ用ノートブック
 
 ## HDMI GUI
@@ -280,8 +288,8 @@ Raspberry Pi header から 9 pin (`raspberry_pi_tri_i_6..14`):
 
 `+` は **PYNQ-Z2 3.3V rail のみ** に繋いでください。5V は基板上 pull-up
 経由で `CLK` / `DT` / `SW` を 5V 化し、PL pin (LVCMOS33) を破損する恐れが
-あります (`DECISIONS.md` D31)。PMOD JA / JB は外付け PCM1808 / PCM5102
-codec 予約のため encoder では使いません (`DECISIONS.md` D28 / D34)。
+あります (`DECISIONS.md` D31)。PMOD JB は現行 Pmod I2S2 audio path が
+専有し、PMOD JA は将来 I/O 予約のため encoder では使いません。
 
 ### 操作マッピング
 
@@ -335,7 +343,7 @@ http://192.168.1.9:9090/notebooks/audio_lab/EncoderGuiSmoke.ipynb
 ssh xilinx@192.168.1.9 '
   cd /home/xilinx/Audio-Lab-PYNQ &&
   sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
-    python3 scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
+    python3 scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp
 '
 ```
 
@@ -349,6 +357,7 @@ ssh xilinx@192.168.1.9 '
 | `--skip-rat` / `--include-rat` | `--skip-rat` | RAT (Distortion pedal-mask bit 2) を encoder cycle と live apply から除外 |
 | `--no-audio-apply` | off | overlay write を全てスキップ (GUI のみ動作) |
 | `--dry-run` | off | overlay / HDMI / encoder bring-up を全てスキップ (off-board smoke) |
+| `--pmod-mode dsp/tone/loopback/mute/keep` | `keep` | Pmod I2S2 MODE を runtime 起動時に設定。現行 audio 実操作は `--pmod-mode dsp` |
 | `--poll-hz-active N` | `10.0` | event 受信中の poll 周期 |
 | `--poll-hz-idle N` | `4.0` | idle 状態の poll 周期 |
 | `--idle-threshold-s N` | `1.0` | idle と判定するまでの無 event 秒数 |
@@ -389,15 +398,17 @@ Noise Suppressor -> Compressor -> Overdrive -> Distortion Pedalboard -> RAT Dist
 | --- | --- |
 | Noise Suppressor | `THRESHOLD`, `DECAY`, `DAMP` |
 | Compressor | `THRESHOLD`, `RATIO`, `RESPONSE`, `MAKEUP` |
-| Overdrive | `TONE`, `LEVEL`, `DRIVE` |
+| Overdrive | `TONE`, `LEVEL`, `DRIVE`, `MODEL` (`ts9` / `od1` / `bd2` / `jan_ray` / `ocd` / `centaur`) |
 | Distortion Pedalboard | `TONE`, `LEVEL`, `DRIVE`, `BIAS`, `TIGHT`, `MIX` + 7-bit pedal mask (`clean_boost` / `tube_screamer` / `rat` / `ds1` / `big_muff` / `fuzz_face` / `metal`、全 7 ペダル実装済) |
 | RAT Distortion | `FILTER`, `LEVEL`, `DRIVE`, `MIX` |
-| Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `CHARACTER` |
+| Amp Simulator | `GAIN`, `BASS`, `MIDDLE`, `TREBLE`, `PRESENCE`, `RESONANCE`, `MASTER`, `DRV MODE` + 6 model selector (`JC-120` / `Twin Reverb` / `AC30` / `Rockerverb` / `JCM800` / `TriAmp Mk3`) |
 | Cab IR | `MIX`, `LEVEL`, `MODEL`, `AIR` |
 | EQ | `LOW`, `MID`, `HIGH` |
 | Reverb | `Decay`, `tone`, `mix` |
 
-すべて OFF の場合は、通常の `line_in -> passthrough -> headphone` に戻ります。いずれかのエフェクトを ON にすると、`line_in -> guitar_chain -> headphone` に切り替わります。
+すべて OFF の場合は、Pmod I2S2 mode 2 の `ADC -> DSP bit-bypass -> DAC`
+としてサンプル等価の安全なバイパスに戻ります。いずれかのエフェクトを
+ON にすると同じ Pmod mode 2 経路の中で `guitar_chain` が有効になります。
 
 ### Noise Suppressor (BOSS NS-2 / NS-1X 風)
 
@@ -424,39 +435,45 @@ Compressor 段は **専用 AXI GPIO** (`axi_gpio_compressor` @ `0x43CD0000`) で
 
 `GuitarPedalboardOneCell.ipynb` には Comp Off / Light Sustain / Funk Tight / Lead Sustain / Limiter-ish の 5 プリセットを用意しています。本格的な attack/release 独立、knee、sidechain は今回入れていません。参考にした OSS (`harveyf2801/AudioFX-Compressor`、`bdejong/musicdsp`、`DanielRudrich/SimpleCompressor`、`chipaudette/OpenAudio_ArduinoLibrary`、`p-hlp/SMPLComp`、`Ashymad/bancom`) はパラメータ命名と設計思想のみ参照しており、ソースコードのコピーは行っていません。詳細は [`docs/ai_context/DECISIONS.md`](docs/ai_context/DECISIONS.md) D14、[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) Compressor 節を参照してください。
 
-### Overdrive (asym soft clip + tone blend)
+### Overdrive (six selectable models)
 
-Compressor の後段、Distortion Pedalboard / RAT の前段に配置された軽い tube
-風オーバードライブです。`axi_gpio_overdrive` (`0x43C50000`) で制御。enable
-は **`gate_control.ctrlA` bit 1** (`overdrive_on`)。OFF 時は bit-exact
-bypass で、`axi_gpio_overdrive.ctrlD` は **Distortion Pedalboard の TIGHT**
-が共有しているため、Overdrive 単独 writer は ctrlD を触りません
-(`GPIO_CONTROL_MAP.md`)。
+Compressor の後段、Distortion Pedalboard / RAT の前段に配置された
+constant-coefficient table 方式の selectable Overdrive です。
+`axi_gpio_overdrive` (`0x43C50000`) で制御し、enable は
+**`gate_control.ctrlA` bit 1** (`overdrive_on`)。OFF 時は bit-exact
+bypass です。
 
-| ctrl | bit | パラメータ | 範囲 | DSP での使われ方 |
-| --- | --- | --- | --- | --- |
-| `ctrlA` | -- | `TONE` | 0..100 | 1-pole tone blend (`overdriveToneMultiplyFrame` -> `overdriveToneBlendFrame` の `α`)。低いほど暗く |
-| `ctrlB` | -- | `LEVEL` | 0..100 | 出力 Q7 multiply (`overdriveLevelFrame`)、`softClipK 3_200_000` で safety |
-| `ctrlC` | -- | `DRIVE` | 0..100 | pre-gain `gain = 256 + DRIVE * 5` (Q8、約 1x..6x)。30..50 で `asymSoftClip 2_700_000 / 2_300_000` の knee に届く |
-| `ctrlD` | -- | (Distortion `TIGHT` 共有) | 0..100 | ※ Distortion section が所有 (`set_distortion_settings(tight=)` 経由) |
+`ctrlA` / `ctrlB` / `ctrlC` は従来通り `TONE` / `LEVEL` / `DRIVE`。
+`ctrlD` は上位 5 bit が Distortion `TIGHT`、下位 3 bit が
+`overdrive_model` で共有されます。Python 側は read-modify-write で
+両方を保持します (`GPIO_CONTROL_MAP.md`)。
 
-信号フロー (`fxPipeline` 内):
+| Model idx | Name | Main coefficient intent |
+| ---: | --- | --- |
+| 0 | TS9 | mid-focused mild asym clip |
+| 1 | OD-1 | simple early overdrive |
+| 2 | BD-2 | D62 retuned early breakup; `odDriveK=7`, knees `2_400_000 / 1_900_000`, safety `3_400_000` |
+| 3 | Jan Ray | low-gain transparent style |
+| 4 | OCD | wider drive ceiling |
+| 5 | Centaur | polished low/mid gain |
+
+信号フローは既存 stage のままです:
 
 ```text
-overdriveDriveMultiplyFrame  -- Q8 pre-gain (256 + DRIVE * 5)
-  -> overdriveDriveBoostFrame   -- satShift8 で Sample に戻す
-  -> overdriveDriveClipFrame    -- asymSoftClip 2_700_000 / 2_300_000 (tube 風 even-harmonic 寄り)
-  -> overdriveToneMultiplyFrame -> overdriveToneBlendFrame  -- 1-pole tone blend
-  -> overdriveLevelFrame        -- Q7 level multiply + softClipK 3_200_000 safety
+overdriveDriveMultiplyFrame
+  -> overdriveDriveBoostFrame
+  -> overdriveDriveClipFrame
+  -> overdriveToneMultiplyFrame -> overdriveToneBlendFrame
+  -> overdriveLevelFrame
 ```
 
-実機ペダル風 voicing pass で対称 `softClip` → `asymSoftClip` に切替え、
-recording-analysis pass で drive mapping と clip knee を再調整しています
-(下記の voicing 節参照)。Tube Screamer / RAT / DS-1 の前段に薄く重ねる
-使い方を想定しており、`DRIVE = 30..50` で `LEVEL = 60..70` あたりが穏やかな
-クランチ。`DRIVE > 80` は Distortion 段との重ね使いで意図的に潰す用途です。
-詳細は [`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md)
-Overdrive section を参照してください。
+D62 は BD-2 model idx 2 の係数だけを変更した accepted build です。
+`Pipeline.hs`、register stage、multiplier 数、GPIO、`block_design.tcl` は
+変えていません。詳細は
+[`docs/ai_context/DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md)
+Overdrive section と
+[`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md)
+D62 行を参照してください。
 
 ### Distortion Pedalboard (pedal-mask 方式、全 7 ペダル deployed)
 
@@ -565,80 +582,60 @@ encoder runtime からは RAT を選べません。Notebook の
 - `air` は高域の戻し量として扱いますが、direct tap の戻りは capped なので `air=100` でも raw line には戻りません。
 - Chain Presets は Basic Clean / Clean Sustain / Light Crunch に model 0 を薄く使い、Metal / Big Muff / Fuzz 系は model 2 寄りに調整しています。
 
-### Amp Simulator (8 段スタック + 2 GPIO)
+### Amp Simulator (six models + Clean/Drive)
 
-Distortion 群の後段に置かれた軽量 Amp 模擬で、generic guitar amp inspired
-の DSP として実装しています (商用アンプ回路 / IR / 係数のコピーは一切
-なし、`DECISIONS.md` D7 / D18)。
+Distortion 群の後段に置かれた軽量 Amp 模擬です。D55 で legacy
+4-model `amp_character` band 方式を退役し、D58.2 で Drive-mode の
+fixed-scalar retake を採用しました。商用アンプ回路 / IR / 係数のコピーは
+なく、inspired-by の軽量 DSP です (`DECISIONS.md` D53 / D54 / D55 /
+D58.2)。
 
 GPIO は **2 つ並び**:
 
 | GPIO | Address | ctrlA | ctrlB | ctrlC | ctrlD |
 | --- | --- | --- | --- | --- | --- |
 | `axi_gpio_amp` | `0x43C90000` | `input_gain` | `master` | `presence` | `resonance` |
-| `axi_gpio_amp_tone` | `0x43CA0000` | `bass` | `middle` | `treble` | `character` |
+| `axi_gpio_amp_tone` | `0x43CA0000` | `bass` | `middle` | `treble` | `bit7=ampDriveMode`, `bits2:0=ampModelIdx` |
 
 enable は **`gate_control.ctrlA` bit 6** (`amp_on`)。OFF 時は bit-exact
-bypass。`character` は Amp Simulator named models で 4 band に量子化されます
-(下記参照)。
+bypass。`axi_gpio_amp_tone.ctrlD[6:3]` は reserved、model idx 6/7 は
+Clash 側で JC-120 fallback です。
 
-| パラメータ | 範囲 | 内容 |
-| --- | --- | --- |
-| `GAIN` | 0..100 | プリアンプ pre-gain (`ampDriveMultiplyFrame`、ceiling ~19x。fizz-control pass で下げ済み) |
-| `BASS` / `MIDDLE` / `TREBLE` | 0..100 | 3 band tone stack 近似 (`ampToneFilterFrame` -> `ampToneMixFrame`)。TREBLE は `ampTrebleGain character treble` で 8..16 kHz fizz を model 別に cap |
-| `PRESENCE` | 0..100 | 高域戻し量。`presence * 5/8 - 内部 trim` (model 別) で過剰戻り防止 |
-| `RESONANCE` | 0..100 | 低域戻し量。内部 cap (`resonance * 3/4`) |
-| `MASTER` | 0..100 | 最終出力 multiply (`ampMasterFrame`)、`softClipK 3_300_000` で Cab/EQ/Reverb 直前を保護 |
-| `CHARACTER` | 0..100 | post-clip pre-LPF 制御 + waveshape の歪み方。byte は Amp Simulator named models の 4 band に量子化 |
+| Model idx | GUI label | Internal style |
+| ---: | --- | --- |
+| 0 | `JC-120` | bright clean |
+| 1 | `Twin Reverb` | round clean combo |
+| 2 | `AC30` | chime / crunch |
+| 3 | `Rockerverb` | thicker mid-gain |
+| 4 | `JCM800` | focused rock stack |
+| 5 | `TriAmp Mk3` | modern high-gain |
 
-信号フロー (`fxPipeline` 内、8 register stage):
+`DRV MODE` は Clean/Drive の実 DSP branch です。Drive mode では
+`ampDrivePosDelta` / `ampDriveNegDelta` の per-model fixed scalars で
+asym clip knee を縮め、`ampPreLpfDriveDarken` と
+`ampSecondStageDriveBonus` を加えます。D58 の `ch * factor` 方式は
+DSP48E1 を増やして safe-bypass path の高域ノイズを誘発したため rejected、
+D58.2 の fixed-scalar 方式が current baseline です。
+
+信号フロー (`fxPipeline` 内):
 
 ```text
-ampHighpassFrame           -- 入力 HPF (253/256 で従来 254/256 より少しタイト)
-  -> ampDriveMultiplyFrame    -- Q7 pre-gain (GAIN)
-  -> ampDriveBoostFrame       -- satShift8
-  -> ampWaveshapeFrame        -- CHARACTER controlled asym soft clip (knee は CHARACTER で動く)
-  -> ampPreLowpassFrame       -- 1-pole post-clip smoothing (band 別 darken)
-  -> ampSecondStageMultiplyFrame -> ampSecondStageFrame  -- 2 nd gain/clip stage
-  -> ampToneFilterFrame -> ampToneMixFrame  -- B/M/T tone stack (TREBLE は model cap 付き)
-  -> ampPowerFrame            -- power stage safety (softClipK 3_400_000)
-  -> ampResPresenceProductsFrame -> ampResPresenceMixFrame  -- RES + PRES mix + softClipK 3_400_000
-  -> ampMasterFrame           -- MASTER + softClipK 3_300_000
+ampHighpassFrame
+  -> ampDriveMultiplyFrame
+  -> ampDriveBoostFrame
+  -> ampWaveshapeFrame
+  -> ampPreLowpassFrame
+  -> ampSecondStageMultiplyFrame -> ampSecondStageFrame
+  -> ampToneFilterFrame -> ampToneMixFrame
+  -> ampPowerFrame
+  -> ampResPresenceProductsFrame -> ampResPresenceMixFrame
+  -> ampMasterFrame
 ```
 
-Audio-analysis / fizz-control pass で input gain ceiling、pre-LPF、treble、
-presence、master safety を高域が痛くならない方向に調整済 (下記
-Recording-analysis voicing fixes 節)。
-
-### Amp Simulator named models (deployed)
-
-Amp Simulator の `amp_character` を 4 つの named voicing にラベル付けしました。新規 GPIO / `topEntity` ポート / `block_design.tcl` 変更はありません。商用アンプ回路 / IR / 係数のコピーもありません — いずれも style/inspired のみです (`DECISIONS.md` D7 / D18)。
-
-| Model | `amp_character` | character band | 想定 voicing |
-| --- | --- | --- | --- |
-| `jc_clean` | 10 | 0..24 | Roland JC 系のクリーン inspired。明るく硬質、低歪み、空間系と相性が良い。 |
-| `clean_combo` | 35 | 25..49 | Fender 系クリーンコンボ inspired。低〜中ゲイン、JC より少し丸い。 |
-| `british_crunch` | 60 | 50..74 | Marshall / Vox 系クランチ inspired。中域寄りで TS / RAT / DS-1 と相性が良い。 |
-| `high_gain_stack` | 85 | 75..100 | 4x12 stack / modern high-gain inspired。Metal / Big Muff / Fuzz 後段向け、5 kHz 以上の fizz を最も強く抑える。 |
-
-DSP 側では `LowPassFir.hs` の `ampPreLowpassFrame` が `ampModelSel` ヘルパで character byte を 4 band に量子化し、post-clip pre-LPF の alpha を band ごとに `0 / 4 / 12 / 24` 段階で darken します。さらに fizz-control pass で `ampTrebleGain` と presence 戻し量を model 別に少し cap し、`high_gain_stack` ほど 8..16 kHz の戻りを抑えるようにしました。`ampPowerFrame` / `ampResPresenceMixFrame` の safety `softClipK` knee も `3_500_000` から `3_400_000` へ少し下げています。新規 GPIO / `topEntity` port / `block_design.tcl` 変更はありません。
-
-最新 Amp Simulator fizz-control build は bit/hwh 再生成と PYNQ-Z2 deploy 済みです。timing は `WNS = -8.022 ns` / `TNS = -13937.512 ns` / `WHS = +0.052 ns` / `THS = 0.000 ns` で、直前の audio-analysis build (`WNS = -8.731 ns`) から WNS が 0.709 ns 改善しています。Delay line 実装や `axi_gpio_delay_line` は含まれていません。
-
-Python 側は convenience API を追加 (`amp_character` の数値指定はそのまま動作):
-
-```python
-from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay
-ovl = AudioLabOverlay()
-
-ovl.set_amp_model("british_crunch")          # amp_character=60 を書く
-ovl.set_amp_model("high_gain_stack",
-                  amp_master=70, amp_input_gain=40)  # 他の amp_* と組み合わせ可
-print(AudioLabOverlay.get_amp_model_names())
-print(AudioLabOverlay.amp_model_to_character("jc_clean"))  # -> 10
-```
-
-`GuitarPedalboardOneCell.ipynb` の Amp Simulator アコーディオンに「Amp Model」ドロップダウンを追加しました。選択するとその model の中央 character 値を Character スライダーに書き込むので、Chain Preset / Safe Bypass のロジックは何も変えていません。
+Python 側は `set_amp_model("jcm800", drive_mode=True, ...)` と
+`set_guitar_effects(amp_model=4, amp_drive_mode=True, ...)` の両方を
+受け付けます。旧 `amp_character` percent kwarg は互換入力として残りますが、
+UI / HDMI / encoder の現行表現は model idx + drive mode です。
 
 ### Cab IR (4-tap FIR + air variants)
 
@@ -804,6 +801,8 @@ Case C (Right inverted noise) の全てで timeout なし、skip 16 frame 以降
 
 | Notebook | 内容 |
 | --- | --- |
+| `PmodI2S2EffectControlOneCell.ipynb` | 現行 Pmod I2S2 mode 2 (`ADC -> DSP -> DAC`) の主確認用 1 セル UI。`AudioLabOverlay()` をロードし、`pmod_status_0` の `MODE=2` を設定して全エフェクトと mode 0/1/2/3 ボタン、status counter を操作 |
+| `PmodI2S2HdmiGuiOneCell.ipynb` | HDMI GUI + rotary encoder runtime を Pmod I2S2 mode 2 で起動する 1 セル Notebook。`scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp` を sudo subprocess として起動し、停止時は mute (`MODE=3`) |
 | `GuitarPedalboardOneCell.ipynb` | 1セル UI のメインノートブック。Chain Preset dropdown (Safe Bypass / Basic Clean / Clean Sustain / Light Crunch / Tube Screamer Lead / RAT Rhythm / Metal Tight / Ambient Clean / Solo Boost / Noise Controlled High Gain / DS-1 Crunch / Big Muff Sustain / Vintage Fuzz) で実用音色をワンクリック適用、Distortion Pedalboard dropdown は全 7 ペダル選択可、加えて Compressor / Noise Suppressor / Overdrive / Amp / Cab IR / EQ / Reverb の個別操作 (Apply / Safe Bypass / Refresh / Show Current State) |
 | `EncoderGuiSmoke.ipynb` | Rotary encoder 3 個で HDMI GUI を実操作する 1 セル Notebook。`AudioLabOverlay()` を 1 回だけ attach、VTC `GEN_ACTSZ = 0x02580320` と encoder VERSION/CONFIG を assert、dirty-flag loop で `EncoderEffectApplier` 経由の live apply を実行 (Encoder1 rotate=effect / short=on-off / long=safe-bypass、Encoder2 rotate=param/model / short=mode toggle、Encoder3 rotate=value+throttled apply / short=force apply / long=reset knob)。`live_apply` / `apply_interval_ms` / `value_step` / `skip_rat` / `no_audio_apply` を notebook 先頭の定数で切替可。`ResourceSampler` が 2 秒毎に sys/proc CPU・mem・rss・temp・mode・poll Hz・render fps・last apply message を print。RAT (Distortion pedal-mask bit 2) は encoder 操作対象から除外 |
 | `HdmiGuiShow.ipynb` | Phase 6I 新設の HDMI GUI 動作確認用 1 セルノートブック。`pynq.PL.bitfile_name` を見て `audio_lab.bit` が既にロード済みなら `download=False` で attach し rgb2dvi PLL を保護、未ロードなら `download=True` で fresh program。VTC `GEN_ACTSZ = 0x02580320` (SVGA 800x600) と VDMA error 無しを assert し、`render_frame_800x480_compact_v2` の 1 フレームを framebuffer `(0,0)` に書き出す。ipywidgets / live loop 無しで kernel 死亡を回避 |
@@ -811,8 +810,8 @@ Case C (Right inverted noise) の全てで timeout なし、skip 16 frame 以降
 | `GuitarEffectSwitcher.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb をON/OFFとプリセットで素早く切り替えるノートブック (Distortion Pedalboard セクションに DS-1 / Big Muff Sustain / Fuzz Face プリセット cell 追加) |
 | `DistortionModelsDebug.ipynb` | Distortion pedal-mask API のウォークスルー (pedal一覧 + bit position + 全 7 ペダル実装済の表示と排他切替) |
 | `GuitarEffectsChain.ipynb` | Noise Gate / Overdrive / Distortion / RAT / Amp / Cab IR / EQ / Reverb を操作するメインノートブック |
-| `InputDebug.ipynb` | Line-in のキャプチャ・統計・ADC HPF 切替によるノイズ三角測 |
-| `LineInPassthroughOneCell.ipynb` | 1セルで Line-in をそのまま出力する確認用 |
+| `InputDebug.ipynb` | legacy ADAU / DMA capture 系のキャプチャ・統計・ADC HPF 切替によるノイズ診断 |
+| `LineInPassthroughOneCell.ipynb` | legacy ADAU line-in path 向けの 1セル passthrough 確認用 |
 | `LineInReverbOneCell.ipynb` | 1セルで軽いリバーブを有効化する確認用 |
 | `PassthroughDebug.ipynb` | 入力、出力、コーデック、AXI Stream Switch の診断用 |
 | `AudioLab.ipynb` | 元の Audio Lab 操作用ノートブック |
@@ -820,13 +819,13 @@ Case C (Right inverted noise) の全てで timeout なし、skip 16 frame 以降
 PYNQ 上では通常、次のURLから開きます。
 
 ```text
-http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
+http://<PYNQのIPアドレス>:9090/notebooks/audio_lab/PmodI2S2EffectControlOneCell.ipynb
 ```
 
 この環境では以下に配置済みです。
 
 ```text
-http://192.168.1.9:9090/notebooks/audio_lab/GuitarPedalboardOneCell.ipynb
+http://192.168.1.9:9090/notebooks/audio_lab/PmodI2S2EffectControlOneCell.ipynb
 ```
 
 ## PYNQ-Z2 network
@@ -897,7 +896,8 @@ ol.set_guitar_effects(
     amp_presence=45,
     amp_resonance=35,
     amp_master=80,
-    amp_character=35,
+    amp_model=2,          # AC30
+    amp_drive_mode=False,
     cab_on=True,
     cab_mix=100,
     cab_level=100,
@@ -972,16 +972,21 @@ print(ovl.get_current_pedalboard_state())
 主な信号経路は以下です。
 
 ```text
-ADAU1761 Line-in
-  -> i2s_to_stream
+Pmod I2S2 CS5343 Line In (JB10 SDOUT, FPGA-master clocks)
+  -> pmod_i2s2_master / i2s_to_stream
   -> axis_switch_source
   -> passthrough / guitar_chain / DMA
   -> axis_switch_sink
   -> i2s_to_stream
-  -> ADAU1761 output
+  -> pmod_i2s2_master mode2_right_snapshot
+  -> Pmod I2S2 CS4344 Line Out
 ```
 
-PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる場合があったため、実際に音が出た LOUT/ROUT 側のコーデック設定を使っています。
+Pmod I2S2 mode 2 は D50 の workaround として DSP/IP の RIGHT slot を
+左右 DAC slot に複製する mono output です。ADAU1761 の I2C 初期化と
+ADC HPF smoke は維持していますが、ADAU `bclk` / `lrclk` / `sdata_i`
+top-level port は現行 Pmod build では内部 load を持ちません。`i2s_to_stream_0/so`
+は ADAU `sdata_o` G18 にも debug visibility として出ます。
 
 エフェクト制御用 AXI GPIO は以下の通りです。
 
@@ -994,10 +999,11 @@ PYNQ-Z2 の出力は、ヘッドホン表記の経路だけでは無音になる
 | `axi_gpio_eq` | `0x43C70000` | EQ |
 | `axi_gpio_delay` | `0x43C80000` | RAT Distortion。既存ポート名の互換性のため `delay` 名を維持 |
 | `axi_gpio_amp` | `0x43C90000` | Amp Simulator の gain/master/presence/resonance |
-| `axi_gpio_amp_tone` | `0x43CA0000` | Amp Simulator の bass/middle/treble/character |
+| `axi_gpio_amp_tone` | `0x43CA0000` | Amp Simulator の bass/middle/treble + `ampDriveMode` / `ampModelIdx` |
 | `axi_gpio_cab` | `0x43CB0000` | Cab IR の mix/level/model/air |
 | `axi_gpio_noise_suppressor` | `0x43CC0000` | Noise Suppressor の THRESHOLD / DECAY / DAMP / mode |
 | `axi_gpio_compressor` | `0x43CD0000` | Compressor の THRESHOLD / RATIO / RESPONSE / enable+MAKEUP |
+| `pmod_status_0` | `0x43D20000` | Pmod I2S2 status counters + mode `tone` / `loopback` / `dsp` / `mute` |
 
 ## ビルド
 
@@ -1064,9 +1070,9 @@ ssh xilinx@192.168.1.9 'md5sum \
   /usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/audio_lab.bit'
 ```
 
-5 行とも同じ md5 が出れば OK。Phase 6I C2 build の md5 は
-`81f4c149fac2e5b3fc6ed4421da60cdf` (`.bit`) /
-`b42e99bec9223b06c40d25ad36583765` (`.hwh`) です。
+5 行とも同じ md5 が出れば OK。最新 D62 deployed build の md5 は
+`349ebbe609ac15f58d8b676d2dedee94` (`.bit`) /
+`3a90e966c5d76762b60ba3ab0e982685` (`.hwh`) です。
 
 古い手動配置手順は以下に残していますが、通常運用では
 `scripts/deploy_to_pynq.sh` を使ってください。
@@ -1211,6 +1217,9 @@ python3 -m unittest -v \
 
 | Script | 用途 |
 | --- | --- |
+| `scripts/test_pmod_i2s2.py --mode tone/loopback/dsp/mute` | Pmod I2S2 mode 0/1/2/3 の実機 smoke。loopback / dsp は safety confirmation flag 必須 |
+| `scripts/pmod_i2s2_mode.py --read/--mode/--clear` | `pmod_status_0` の MODE / CLEAR / status register を既ロード overlay に attach して操作 |
+| `scripts/pmod_i2s2_capture_probe.py` | Pmod ADC SDOUT / peak / frame counter の rolling probe |
 | `scripts/test_encoder_input.py` | 実機 encoder 60 秒 manual rotate/press smoke (VERSION / CONFIG / COUNT 表示) |
 | `scripts/test_hdmi_encoder_gui_control.py` | 実機 encoder + HDMI frame write smoke (scripted または `--use-real-encoder`) |
 | `scripts/test_hdmi_800x480_frame.py` | 1-frame HDMI smoke (Phase 5C/6I 兼用) |
@@ -1223,7 +1232,14 @@ python3 -m unittest -v \
 
 ## 既知の注意点
 
-- Vivado 実装時に setup timing violation が残ります。最新の deploy 済 bitstream (Phase 6I C2 SVGA 800x600 / 40 MHz HDMI 統合版、commit `5332b7e`) は `WNS = -8.096 ns` / `TNS = -6389.430 ns` / `WHS = +0.040 ns` / `THS = 0.000 ns` です (実機 deploy band は -6 ~ -9 ns 程度。この範囲内であれば実機では問題なく動作する確認済み)。ホールド (`WHS / THS`) は引き続き clean を維持しています。詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) を参照してください。
+- Vivado 実装時に setup timing violation が残ります。最新の deploy 済
+  bitstream は D62 BD-2 coefficient-only retune で、
+  `WNS = -8.497 ns` / `TNS = -5876.740 ns` /
+  `WHS = +0.053 ns` / `THS = 0.000 ns` です。ホールド (`WHS / THS`) は
+  引き続き clean です。D58 / D59 / D60 / D61 の rejected attempts で
+  分かった通り、WNS だけでなく safe-bypass の実音確認も deploy gate です。
+  詳細は [`docs/ai_context/TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md)
+  を参照してください。
 - HDMI 統合パスの rgb2dvi v1.4 (`kClkRange=3`) は固定 MMCM 乗算器 `M=20` を使うため、Phase 6I C2 の `40 MHz` pixel clock では PLL の VCO が valid 帯 (`800..1600 MHz`) の下端 `800 MHz` ちょうどに乗ります。**PYNQ-Z2 電源 ON 後の最初の `Overlay(..., download=True)` は安定して lock しますが、同一 Python session で 2 度目の `download=True` を呼ぶと PLL が再 lock せず LCD が白画面 / no signal になることがあります** (VDMA や VTC のレジスタは正常のままで気付きにくい)。`HdmiGuiShow.ipynb` は `pynq.PL.bitfile_name` を見て既ロードなら `download=False` で attach するため、同 session 内で何度でも安全に再実行できます。それでも白画面になったら PYNQ-Z2 を電源 cycle してセルを 1 回だけ実行し直してください。詳細は `DECISIONS.md` D25、memory `rgb2dvi-pll-edge-at-40mhz`。
 - Reverb のバッファは、PYNQ-Z2 のリソースとタイミングを考慮して軽量化しています。長大な空間系ではなく、軽いリバーブ用途を想定しています。
 - PL側の Amp/Cab は、C++版をそのまま合成したものではなく、固定小数点向けに簡略化した近似実装です。Cab IR は現時点では短い固定タッププリセット近似で、Notebookから `MODEL` と `AIR` を選べます。WAV IRローダーや長いIR畳み込みは未実装です。
@@ -1270,14 +1286,14 @@ D12)。新しいエフェクトを追加するときは、まず
 | --- | --- |
 | [`PROJECT_CONTEXT.md`](docs/ai_context/PROJECT_CONTEXT.md) | プロジェクトの目的、toolchain、top-level layout、operational facts、key principles |
 | [`CURRENT_STATE.md`](docs/ai_context/CURRENT_STATE.md) | 直近の load-bearing facts と phase 履歴 (chronological) |
-| [`DECISIONS.md`](docs/ai_context/DECISIONS.md) | 重要決定の付番ログ (D1..D44、その時々の状況 / 決定 / 境界 / why を記録) |
+| [`DECISIONS.md`](docs/ai_context/DECISIONS.md) | 重要決定の付番ログ (D1..D62、その時々の状況 / 決定 / 境界 / why を記録) |
 | [`RESUME_PROMPTS.md`](docs/ai_context/RESUME_PROMPTS.md) / [`RESUME_PROMPTS_HISTORY.md`](docs/ai_context/RESUME_PROMPTS_HISTORY.md) | 作業中断後の再開プロンプト (current / 過去 phase) |
 | [`EFFECT_ADDING_GUIDE.md`](docs/ai_context/EFFECT_ADDING_GUIDE.md) / [`EFFECT_STAGE_TEMPLATE.md`](docs/ai_context/EFFECT_STAGE_TEMPLATE.md) | 新エフェクト追加の判断フローと spec テンプレ |
 | [`DSP_EFFECT_CHAIN.md`](docs/ai_context/DSP_EFFECT_CHAIN.md) | Clash 側エフェクトチェーンの実装メモ |
 | [`DISTORTION_REFACTOR_PLAN.md`](docs/ai_context/DISTORTION_REFACTOR_PLAN.md) | Distortion pedal-mask 設計の経緯 |
 | [`REAL_PEDAL_VOICING_TARGETS.md`](docs/ai_context/REAL_PEDAL_VOICING_TARGETS.md) | 実機ペダル風 voicing pass の目標と変更点 |
 | [`AUDIO_RECORDING_ANALYSIS.md`](docs/ai_context/AUDIO_RECORDING_ANALYSIS.md) | 録音解析で見えた AmpSim / Cabinet / Overdrive / Compressor の差分メモ |
-| [`AUDIO_SIGNAL_PATH.md`](docs/ai_context/AUDIO_SIGNAL_PATH.md) | line-in -> AXIS -> DSP -> codec の signal path |
+| [`AUDIO_SIGNAL_PATH.md`](docs/ai_context/AUDIO_SIGNAL_PATH.md) | Pmod I2S2 mode 2 -> AXIS -> DSP -> Pmod DAC の signal path |
 | [`GPIO_CONTROL_MAP.md`](docs/ai_context/GPIO_CONTROL_MAP.md) | 全 AXI GPIO の byte / bit 契約 (effect output ledger) |
 | [`TIMING_AND_FPGA_NOTES.md`](docs/ai_context/TIMING_AND_FPGA_NOTES.md) | Vivado timing baseline (WNS / TNS / WHS / THS) と reject ライン |
 | [`BUILD_AND_DEPLOY.md`](docs/ai_context/BUILD_AND_DEPLOY.md) | bit / hwh ビルド + 5 ヶ所同期の手順 |
@@ -1287,47 +1303,30 @@ D12)。新しいエフェクトを追加するときは、まず
 | [`ENCODER_GUI_CONTROL_SPEC.md`](docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md) | encoder + GUI 操作仕様 (Phase 7A / 7B planning から 7G+ live apply まで) |
 | [`ENCODER_INPUT_IMPLEMENTATION.md`](docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md) | encoder PL IP + Python driver + standalone runtime + tests + risks |
 | [`ENCODER_INPUT_MAP.md`](docs/ai_context/ENCODER_INPUT_MAP.md) | encoder PL IP の AXI register / address / CONFIG bit 表 |
-| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) | 外付け codec 計画 + Phase 7C/7E/7D close-out (PCM5102 並列 DAC 動作中、PCM1808 mux は ADAU フォールバック) |
-| [`IO_PIN_RESERVATION.md`](docs/ai_context/IO_PIN_RESERVATION.md) | PMOD / RPi header / Arduino header の pin 予約 |
+| [`PMOD_I2S2_INTEGRATION_PLAN.md`](docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md) | 現行 Pmod I2S2 PMOD JB active audio path と元計画の履歴 |
+| [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) | 旧 PCM5102 / PCM1808 path の履歴。現行 build では retired / archival |
+| [`IO_PIN_RESERVATION.md`](docs/ai_context/IO_PIN_RESERVATION.md) | PMOD / RPi header / Arduino header の pin 台帳。PMOD JB は現行 Pmod I2S2 専用 |
 
 ## Future Work
 
-- **PCM1808 ハードウェア診断と再投入** (`DECISIONS.md` D41 / D43)。
-  Phase 7D で 2:1 build-time mux
-  (`hw/ip/pcm1808_adc_input/src/pcm1808_input_select.v`) と PMOD JB4
-  入力 / JB8 SCKI 配線は landing 済だが、bench 実験で PCM1808
-  `--capture-adc` が pure 0 のまま (chip は I2S frame を刻むが
-  analog-to-digital が機能しない)。最有力仮説は以前の `3.3V on VCC` 誤
-  接続による analog front-end damage。デプロイ bit は `CONFIG.CONST_VAL
-  {0}` (mux=ADAU フォールバック) で出荷中。新規 module に差し替えたら
-  `hw/Pynq-Z2/pcm1808_adc_integration.tcl` の `{0}` を `{1}` に戻して
-  rebuild、`scripts/test_pcm1808_adc_to_pcm5102.py --capture-adc` で
-  再評価。
-- **外付け codec の async-clocks 解消 (FPGA を I2S master 化)**
-  (`DECISIONS.md` D40 / D41 / D42)。PCM5102 は SCK=GND (内蔵 SYSCLK
-  モード) で運用中なので動作上は問題ないが、PCM1808 を再投入したときに
-  もし PCM510x と同じ async-clocks 由来のグレイン感が出たら、ADAU1761
-  を I2S slave に再設定して FPGA から BCK / LRCK / SCKI を供給する道に
-  進む。LowPassFir DSP には影響なし、ADAU 経路自体に手を入れる重い
-  改修なので別 phase で扱う。
-- **PCM5102 line out のクロストーク低減 / アナログ磨き** (Phase 7D
-  close-out で user が言及)。JB8 (12.288 MHz SCKI) が JB7 (PCM5102 DIN)
-  と隣接して PMOD ribbon を走るため微小なノイズが乗る疑い。配線
-  短縮、twisted-pair ground return、SCKI ピンを JB の遠い側へ動かす
-  といった対策を検討。bit/hwh 変更は不要 (XDC の pin reassign のみ)。
-- **PCM1808未使用時のJB8 SCKI停止** (`DECISIONS.md` D44)。現行deploy
-  bitはmux=ADAUでもJB8 / W16に12.288 MHzを出し続けるため、PCM5102-only
-  品質改善の最小RTL/Tcl候補は「PCM1808 inactive buildでは
-  `ext_pcm1808_sckie_o` を0固定」です。Vivado rebuild + timing reviewが
-  必要。
-- **PCM5102 debug output mode** (`DECISIONS.md` D44)。processed audio /
-  digital silence / `-18 dBFS` 1 kHz tone / rampを切替できるようにし、
-  DSP・I2S・アナログ出力/後段のどこで音質が崩れるかを測れるようにする。
-- **PCM1808 アナログ front-end (ギター Hi-Z buffer)**。PCM1808 は
-  line-level 入力なので passive pickup を直結すると impedance / level
-  不一致。再投入が成立してから JFET / op-amp buffer + AC coupling +
-  bias + 安全 clamp + anti-alias LPF を別基板で追加する想定 (Phase 7H
-  enclosure と一緒に)。
+- **Pmod I2S2 mode 2 の継続 QA**。現行の主音声経路は Pmod I2S2
+  `ADC -> DSP -> DAC` です。安全な確認手順は外部 source -> Pmod Line In、
+  Pmod Line Out -> monitor、on-module direct loopback jumper なし。
+  `scripts/test_pmod_i2s2.py --mode dsp --confirm-dsp` と
+  `scripts/pmod_i2s2_mode.py --read` を使い、`FRAME_COUNT`、`CLIP_COUNT`、
+  peak counters、実音 safe-bypass を合わせて見る。
+- **Pmod I2S2 mode 2 mono workaround の将来改善**。D50 の現行仕様では
+  `mode2_right_snapshot` が RIGHT slot を左右 DAC slot に複製します。
+  `i2s_to_stream` LEFT extraction と `i2sOut` setup race を根本修正する
+  まではこの mono RIGHT output を current spec として扱います。
+- **96 kHz / alternate sample-rate work**。Pmod I2S2 は将来 96 kHz
+  実験余地がありますが、現行は 48 kHz / 24-bit / 32-bit slot /
+  I2S Philips 固定です。変更時は Pmod master、I2S IP、Clash timing、
+  HDMI/encoder runtime に影響がないかを別 phase で検証します。
+- **旧 PCM5102 / PCM1808 path は archival**。Phase 7C / 7E / 7D の
+  Tcl/XDC/RTL は履歴確認用に残していますが、現行 build では retired です。
+  再投入する場合は Pmod I2S2 からの明示的な切替 phase と full rebuild /
+  timing / bench-audio review が必要です。
 - **物理 rotary encoder での 3 ch すべての rotate / short / long の対面
   smoke**。`scripts/run_encoder_hdmi_gui.py` と `EncoderGuiSmoke.ipynb`
   で音色変化を確認し、必要なら `--reverse-encN` / `--swap-encN` /
@@ -1344,18 +1343,12 @@ Phase 7G+ (GUI-first live apply、`EncoderEffectApplier` 経由) は
 [Rotary Encoder GUI 操作](#rotary-encoder-gui-操作-phase-7f--7g--7g)
 セクションと `DECISIONS.md` D30 ~ D37 を参照してください。
 
-外付け codec 関連も Phase 7C (`DECISIONS.md` D38、PCM5102 DAC-only
-bring-up) / Phase 7E (D39 / D40、PCM5102 を AudioLab DSP の並列出力に
-昇格 + PCM5102 SCK=GND で MCLK/BCK async-clocks ジッタを解消) / Phase
-7D (D41 / D42 / D43、PCM1808 mux + JB8 SCKI、ただしハードウェア診断
-不能で deploy bit は mux=ADAU フォールバック) で landing 済です。XDC
-は `JB1..JB4 / JB7 / JB8` (W14, Y14, T11, T10, V16, W16) を audio
-専用に確保しており、JB1 は構造的に常時 0 駆動 (D40 / D42)。PCM5102
-残品質改善 (mux=ADAU 時の JB8 SCKI 停止 + PCM5102 debug output mode) は
-D44 にプランのみ記録、実装はまだです (Vivado rebuild + timing review が
-必要)。PCM1808 を物理的に再投入するときの手順は上記 Future Work と
+外付け codec 関連は Phase 7C / 7E / 7D の PCM5102 / PCM1808 履歴を経て、
+D48 / D49 / D50 で Pmod I2S2 path に置き換わりました。PMOD JB の
+現行 pin owner は `audio_lab_pmod_i2s2.xdc` と
+`pmod_i2s2_integration.tcl` です。古い PCM5102 / PCM1808 の記述は
 [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md)
-section 9 を参照してください。
+と履歴 docs の中だけで扱ってください。
 
 ## AI development context
 

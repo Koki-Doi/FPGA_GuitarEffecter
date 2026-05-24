@@ -76,7 +76,7 @@ H=800). If `GEN_ACTSZ` reads anything else, one of the five bit
 copies on the PYNQ is stale — see `BUILD_AND_DEPLOY.md` for the full
 list and `sudo cp` recipe.
 
-## Pmod I2S2 effect-control notebook (mode 2 live UI, D49)
+## Pmod I2S2 effect-control notebook (mode 2 live UI, D49/D50)
 
 `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb` is the
 single-cell ipywidgets UI for the Pmod I2S2 mode-2 path (Pmod Line
@@ -92,6 +92,10 @@ dBFS, and the global buttons cover `Safe clean (mode 2)`,
 `Panic / mute (mode 3)`, `Mode 0 tone`, `Mode 1 loopback` (requires
 the inline `confirm loopback` checkbox), `Clear status counters`,
 and `Refresh status`.
+
+Current mode 2 uses the D50 `mode2_right_snapshot` workaround: the
+IP RIGHT slot is mirrored into both DAC slots, so the live output is
+mono RIGHT-to-left/right with about one frame (`~21 us`) of delay.
 
 Bench wiring (always check before running mode 2):
 - Disconnect the on-module Line Out ↔ Line In 3.5 mm jumper before

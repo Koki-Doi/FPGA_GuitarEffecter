@@ -6,6 +6,14 @@ This note records the quantitative recording-analysis pass that drove the
 2026-05-07 voicing fixes. It is not a complete listening verdict; it is a
 measurement aid used to decide where the existing DSP stages should move.
 
+Current note (2026-05-24): this is historical analysis for the D16 /
+D18-era retunes. Later live specifications supersede parts of it:
+Overdrive is now a six-model selector with D62 BD-2 constants, Amp Sim
+is the D55/D58.2 six-model + Drive-mode implementation, and PMOD JB
+audio is Pmod I2S2 mode 2. Use `DSP_EFFECT_CHAIN.md`,
+`AMP_MODEL_RESEARCH_D55.md`, `BD2_MODEL_RESEARCH.md`, and
+`TIMING_AND_FPGA_NOTES.md` for current deployed values.
+
 ## Recordings analysed
 
 - Bypass
@@ -170,10 +178,10 @@ bands (one per named amp model) lets the post-clip pre-LPF darken slightly
 more for the higher-gain bands without making the `amp_character` knob
 discontinuous.
 
-Action: introduce an `ampModelSel :: Unsigned 8 -> Unsigned 2` quantiser in
-`LowPassFir.hs` and bias `ampPreLowpassFrame`'s alpha by `0 / 2 / 8 / 16`
-across the four bands. Add an `AMP_MODELS` table and `set_amp_model` /
-`get_amp_model_names` / `amp_model_to_character` convenience helpers in
-Python. No new GPIO, no `topEntity` port change, no `block_design.tcl`
-change. The existing audio-analysis darken cap on the post-clip pre-LPF is
-preserved; the model-specific darken sits on top. See `DECISIONS.md` D18.
+Historical action: introduce an `ampModelSel :: Unsigned 8 -> Unsigned 2`
+quantiser in `LowPassFir.hs` and bias `ampPreLowpassFrame`'s alpha by
+`0 / 2 / 8 / 16` across the four bands. That D18 four-band layer was later
+superseded by D55/D58.2: the current live Amp Sim uses six researched
+models via `amp_model_idx` plus `amp_drive_mode`, while the old
+`amp_character` path remains compatibility-only. See `DECISIONS.md` D18 /
+D55 / D58.2.

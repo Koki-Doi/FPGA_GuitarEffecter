@@ -2,12 +2,22 @@
 
 Date: 2026-05-14
 
-Status: **IMPLEMENTED IN PHASE 4.** This file began as the Phase 3
-design-only patch plan. Phase 4 implemented the HDMI pieces in the
-separate helper `hw/Pynq-Z2/hdmi_integration.tcl`, which is sourced by
+Status: **IMPLEMENTED IN PHASE 4; no longer a literal current patch.**
+This file began as the Phase 3 design-only patch plan. Phase 4
+implemented the HDMI pieces in the separate helper
+`hw/Pynq-Z2/hdmi_integration.tcl`, which is sourced by
 `hw/Pynq-Z2/create_project.tcl` after the existing audio
-`block_design.tcl`. The plan remains as the architectural reference and
-is now aligned with the built RGB888 / 24-bit VDMA path.
+`block_design.tcl`. The plan remains as an architectural reference for
+the RGB888 / 24-bit VDMA path.
+
+Current deltas: Phase 6I changed the live timing from 720p to VESA SVGA
+`800x600 @ 60 Hz / 40 MHz` with the compact 800x480 GUI at framebuffer
+origin and black rows `480..599`. Encoder and Pmod I2S2 integrations run
+after HDMI, so the current `ps7_0_axi_periph` has encoder M17 and
+`pmod_status_0` M18 (`NUM_MI=19`). Do not apply the literal `74.250 MHz`
+or `NUM_MI {17}` snippets below to the current build; check
+`hdmi_integration.tcl`, `DECISIONS.md` D25, and
+`PMOD_I2S2_INTEGRATION_PLAN.md` for the live spec.
 
 Refer to `history/hdmi_phases/HDMI_GUI_PHASE3_VIVADO_DESIGN_PROPOSAL.md` for context on
 why Option B (`axi_vdma` + `v_tc` + `v_axi4s_vid_out` + `rgb2dvi`) is
