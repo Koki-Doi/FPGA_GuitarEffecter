@@ -1469,7 +1469,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1_48                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_251                                  : clash_lowpass_fir_types.Maybe;
   signal result_252                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Overdrive.hs:141:1-19
+  -- src/AudioLab/Effects/Overdrive.hs:160:1-19
   signal x_133                                       : signed(23 downto 0);
   signal result_253                                  : signed(23 downto 0);
   signal \c$app_arg_125\                             : signed(24 downto 0);
@@ -1482,23 +1482,23 @@ architecture structural of clash_lowpass_fir is
   signal negKnee_1                                   : signed(23 downto 0);
   signal \c$case_alt_99\                             : signed(23 downto 0);
   signal result_255                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Overdrive.hs:141:1-19
+  -- src/AudioLab/Effects/Overdrive.hs:160:1-19
   signal \c$x_app_arg_43\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:25:1-5
   signal gain_39                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Overdrive.hs:141:1-19
+  -- src/AudioLab/Effects/Overdrive.hs:160:1-19
   signal \c$x_app_arg_44\                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Overdrive.hs:141:1-19
+  -- src/AudioLab/Effects/Overdrive.hs:160:1-19
   signal \c$x_app_arg_45\                            : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:51:1-10
   signal odToneBlendPipe                             : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_256                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Overdrive.hs:134:1-23
+  -- src/AudioLab/Effects/Overdrive.hs:153:1-23
   signal \c$x_app_arg_46\                            : signed(47 downto 0);
   signal \c$case_alt_100\                            : signed(23 downto 0);
   signal result_257                                  : signed(23 downto 0);
   signal result_258                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Overdrive.hs:134:1-23
+  -- src/AudioLab/Effects/Overdrive.hs:153:1-23
   signal x_134                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:51:1-10
   signal x_135                                       : clash_lowpass_fir_types.Frame;
@@ -1510,9 +1510,9 @@ architecture structural of clash_lowpass_fir is
   signal result_260                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:25:1-5
   signal gain_40                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Overdrive.hs:121:1-26
+  -- src/AudioLab/Effects/Overdrive.hs:140:1-26
   signal \on_5\                                      : boolean;
-  -- src/AudioLab/Effects/Overdrive.hs:121:1-26
+  -- src/AudioLab/Effects/Overdrive.hs:140:1-26
   signal tone_1                                      : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:51:1-10
   signal odTonePrev                                  : signed(23 downto 0) := to_signed(0,24);
@@ -1525,9 +1525,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:76:1-7
   signal ds1_50                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_261                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Overdrive.hs:112:1-23
+  -- src/AudioLab/Effects/Overdrive.hs:131:1-23
   signal \c$x_app_arg_47\                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Overdrive.hs:112:1-23
+  -- src/AudioLab/Effects/Overdrive.hs:131:1-23
   signal \c$x_app_arg_48\                            : signed(23 downto 0);
   signal result_262                                  : signed(23 downto 0);
   signal \c$app_arg_132\                             : signed(24 downto 0);
@@ -1539,21 +1539,21 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/FixedPoint.hs:88:1-12
   signal negKneeN                                    : signed(23 downto 0);
   signal result_264                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Overdrive.hs:112:1-23
+  -- src/AudioLab/Effects/Overdrive.hs:131:1-23
   signal model_0                                     : unsigned(2 downto 0);
-  -- src/AudioLab/Effects/Overdrive.hs:112:1-23
+  -- src/AudioLab/Effects/Overdrive.hs:131:1-23
   signal x_138                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:51:1-10
   signal x_139                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:51:1-10
   signal ds1_51                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_265                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Overdrive.hs:103:1-24
+  -- src/AudioLab/Effects/Overdrive.hs:122:1-24
   signal \c$x_app_arg_49\                            : signed(47 downto 0);
   signal \c$case_alt_101\                            : signed(23 downto 0);
   signal result_266                                  : signed(23 downto 0);
   signal result_267                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Overdrive.hs:103:1-24
+  -- src/AudioLab/Effects/Overdrive.hs:122:1-24
   signal x_140                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:51:1-10
   signal x_141                                       : clash_lowpass_fir_types.Frame;
@@ -15289,7 +15289,7 @@ begin
   with (model_0) select
     \c$x_app_arg_47\ <= to_signed(2700000,24) when "000",
                         to_signed(2600000,24) when "001",
-                        to_signed(3000000,24) when "010",
+                        to_signed(2400000,24) when "010",
                         to_signed(3200000,24) when "011",
                         to_signed(2300000,24) when "100",
                         to_signed(2800000,24) when "101",
@@ -15298,7 +15298,7 @@ begin
   with (model_0) select
     \c$x_app_arg_48\ <= to_signed(2300000,24) when "000",
                         to_signed(2100000,24) when "001",
-                        to_signed(2700000,24) when "010",
+                        to_signed(1900000,24) when "010",
                         to_signed(3000000,24) when "011",
                         to_signed(1900000,24) when "100",
                         to_signed(2600000,24) when "101",
@@ -15628,7 +15628,7 @@ begin
   with (\c$gain_app_arg_selection_res_0\) select
     \c$gain_app_arg_11\ <= to_unsigned(5,11) when "000",
                            to_unsigned(4,11) when "001",
-                           to_unsigned(6,11) when "010",
+                           to_unsigned(7,11) when "010",
                            to_unsigned(3,11) when "011",
                            to_unsigned(7,11) when "100",
                            to_unsigned(5,11) when others;

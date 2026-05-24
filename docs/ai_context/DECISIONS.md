@@ -3521,3 +3521,86 @@ not get removed even when superseded — they get updated.
   CLIP_COUNT, FRAME_COUNT, GUI smoke, and DMA-capture peaks are
   necessary but not sufficient. The D58.2 bit/hwh at HEAD remain the
   canonical rollback target.
+
+## D62 -- BD-2 Overdrive coefficient-only retune (accepted on bench)
+
+- **Decision.** D62 is accepted as the new deployed baseline. The
+  three-numeric-edit retune of BD-2 (`Overdrive.hs` model index 2)
+  achieved the BD-2 fidelity target documented in
+  `docs/ai_context/BD2_MODEL_RESEARCH.md` without any structural
+  change. Bench audition confirmed: (a) safe-bypass is as quiet as
+  D58.2 -- the D58 / D59 / D60 / D61 v2 class of bypass HF
+  saturation noise did NOT reappear; (b) BD-2 G20 / G50 / G80
+  audibly clips earlier and with stronger even-harmonic asymmetry
+  than the D58.2 BD-2; (c) TS9 / OD-1 / Centaur sound identical to
+  D58.2 (byte-exact for the other five models).
+- **What changed (exhaustive).** Three case entries in `Overdrive.hs`:
+  - `odDriveK 2`: `6` -> `7`. Matches OCD's `7` ceiling (per the
+    documented two-cascaded ~40 dB op-amp character in
+    BD2_MODEL_RESEARCH.md sources [1] / [4]); BD-2's max drive
+    multiplier goes from `~1..6.97x` to `~1..7.97x`.
+  - `odKneeP 2`: `3_000_000` -> `2_400_000`. Pre-D62 value treated
+    BD-2 as "transparent"; source [4]'s breadboard measurement
+    (Chuck D. Bones) reports audible op-amp rail clipping well
+    below mid-drive, with the diodes essentially inactive. `2.4M`
+    places BD-2 between OCD (`2.3M`) and OD-1 (`2.6M`).
+  - `odKneeN 2`: `2_700_000` -> `1_900_000`. The BD-2 op-amps run
+    from a single supply with the rail offset documented in source
+    [1]; their saturation is asymmetric. P/N gap is now `500k` (vs
+    OCD's `400k` and OD-1's `500k`), so the BD-2 entry carries the
+    most pronounced even-harmonic colour in the six-model lineup.
+  - `odSafetyKnee 2`: unchanged at `3_400_000`.
+- **What did NOT change.** `Pipeline.hs` is byte-for-byte unchanged.
+  No new register stage, no new feedback state register, no new
+  `mulU8` / `mulU12` invocation, no new combinational fan-out, no
+  GPIO map / `topEntity` / `block_design.tcl` / GUI / Pmod I2S2 /
+  Compressor / Amp / Distortion / DS-1 / RAT touch. The five
+  non-BD-2 Overdrive models (TS9 / OD-1 / Jan Ray / OCD / Centaur)
+  are byte-exact preserved -- their per-model entries in the same
+  `odDriveK` / `odKneeP` / `odKneeN` / `odSafetyKnee` case statements
+  are not touched.
+- **Build / timing.** Clash -> VHDL -> IP repackage -> Vivado batch
+  build PASS (`write_bitstream completed successfully`, 0 Errors).
+  Routed WNS `-8.497 ns` (vs D58.2 `-8.495 ns`, delta `-0.002 ns`
+  -- noise floor, essentially identical), TNS `-5876.740 ns`
+  (improved over D58.2's `-9052.753`), WHS `+0.053 ns`,
+  THS `0.000 ns`, failing setup endpoints `2107 / 52730` (better
+  than D58.2's `3224 / 60227`). Utilization after place: Slice LUTs
+  `19700` (-13 vs D58.2), Slice Registers `22280` (+170 vs D58.2),
+  Block RAM Tile `6` (unchanged), DSPs `83` (unchanged from D58.2).
+  bit/hwh md5
+  `349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`. The near-zero WNS delta vs
+  D58.2 is the load-bearing signal that Vivado P&R landed on
+  essentially the same placement -- which D58 / D59 / D60 / D61 v2
+  collectively proved is the prerequisite for keeping the safe-bypass
+  path clean.
+- **Deploy + smoke.** Deployed 5-site to PYNQ-Z2 192.168.1.9 via
+  `scripts/deploy_to_pynq.sh`. PL freshly programmed via
+  `AudioLabOverlay(download=True)`. Pmod mode 2 safe-clean 3 s:
+  FRAME_COUNT delta `144150`, CLIP_COUNT delta `0`, ADC HPF True,
+  VERSION `0x00480001`, MUTE 3 readback. Audition cycle 10 cases x
+  15 s ran clean (no Python exceptions, FRAME / CLIP nominal, MUTE
+  honoured at end). Bench audition (CLAUDE.md spec connection,
+  no Pmod direct loopback): pass on all three criteria.
+- **Conclusion for the D58 / D59 / D60 / D61 history.** D62
+  demonstrates that the bypass-path P&R sensitivity documented
+  across the prior four rejected attempts is specifically a response
+  to *structural* changes (new DSP48E1 multipliers in D58, new
+  `Pipeline.hs` register stages in D59 / D60 / D61 v1 / D61 v2).
+  A pure constant edit in the existing per-model tables does NOT
+  perturb Vivado P&R enough to leak into the safe-bypass path.
+  This is the engineering rule that survives this commit: any
+  *audio* improvement on the existing six-stage Overdrive (or any
+  other section with the same structural sensitivity) should first
+  try a constant-only retune; only if the audible target genuinely
+  cannot be reached without new arithmetic / new register stages
+  should the more expensive structural path be considered, and even
+  then with the understanding that the bypass-path is the dispositive
+  acceptance gate.
+- **Rollback target.** D58.2 bit/hwh
+  (`1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
+  `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  if D62 ever needs to be undone. The D62 bit/hwh are tracked in
+  this commit so they likewise survive in git history.

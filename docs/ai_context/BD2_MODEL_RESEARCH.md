@@ -284,3 +284,67 @@ After implementation + Clash regen + Vivado build + deploy:
    **necessary but NOT sufficient** for accepting the build. The
    bench ear on safe-bypass + the BD-2 audition is the dispositive
    sensor.
+
+## D62 — Coefficient-only retake after D61 v2 bypass rejection
+
+After D61 v1 (DSP 88, +5) and D61 v2 (DSP 83 shift-only IIRs) were
+both rejected on bench for the same Vivado P&R-induced bypass-path
+artifact as D58 / D59 / D60, the rule for the next attempt was set
+(see `DECISIONS.md` D61):
+
+- No new register stages in `Pipeline.hs`.
+- No new `mulU8` / `mulU12` invocations on the OD path.
+- BD-2 differentiation must come from new per-model constants in
+  the existing tables only.
+
+D62 applies that rule. The only changes are four per-model entries
+in `Overdrive.hs`, all at `model == 2`:
+
+| Constant | D58.2 baseline | D62 | Why (research source) |
+| --- | --- | --- | --- |
+| `odDriveK 2` | 6 | **7** | Matches the documented two-cascaded ~40 dB op-amp gain ceiling (sources [1] / [4]). Equal to OCD's 7, well above Jan Ray's 3 and TS9's 5; raises BD-2's max drive multiplier from `~1..6.97x` to `~1..7.97x` so the BD-2 entry isn't capped below where its real character lives. |
+| `odKneeP 2` | 3_000_000 | **2_400_000** | The pre-D62 value treated BD-2 as a "transparent" pedal; source [4]'s breadboard measurement (Chuck D. Bones) reports audible op-amp rail clipping well below mid-drive, with the diodes essentially inactive. 2.4M places BD-2 between OCD (2.3M) and OD-1 (2.6M), giving early-onset soft clip that matches the documented "breakup-friendly" character. |
+| `odKneeN 2` | 2_700_000 | **1_900_000** | The BD-2 discrete op-amps run from a single supply with the rail offset documented in source [1]; their saturation is asymmetric. P/N gap is now 500k (vs OCD's 400k and OD-1's 500k), so the BD-2 entry carries the most pronounced even-harmonic colour in the six-model lineup, matching the "tube-like" breakup the real pedal is known for. |
+| `odSafetyKnee 2` | 3_400_000 | 3_400_000 (unchanged) | Output ceiling stays at the existing BD-2 value — same headroom as Centaur / Jan Ray, below OCD's 3_500_000. Adequate per the bench audition before any D61 work. |
+
+### Why nothing else changes
+
+D61 v1 added two `mulU8` per BD-2 IIR (+ one `mulU8` for emphasis)
+and pushed DSP count from 83 to 88; same risk class as D58. D61 v2
+rewrote those as shift-only leaky-integrator expressions
+(`y = prev + ((x - prev) >> N)`) keeping DSP at 83, and *still*
+triggered the bypass-path artifact via the two new feedback Sample
+registers in `Pipeline.hs`. The conclusion from those two attempts
+is that the OD section's audio path is sensitive to *any* structural
+change (DSP-count delta OR new register feedback path), even when
+the new logic is bypassed by an `if model == 2` mux.
+
+D62 therefore touches *only* compile-time constants in the existing
+per-model tables; the generated VHDL has zero new register, zero
+new arithmetic operator, and zero new combinational fan-out.
+`Pipeline.hs` is byte-for-byte unchanged. The expectation is that
+this stays as close to the D58.2 P&R outcome as a non-zero edit
+can get, while still meaningfully shifting BD-2's audible character.
+
+### Validation plan (same as D61 v2)
+
+1. Programmatic smoke: Pmod mode 2 safe-clean, FRAME_COUNT delta
+   ~144000 / 3 s, CLIP_COUNT delta 0, ADC HPF True, MUTE 3.
+2. Audition cycle (no Pmod direct loopback per CLAUDE.md spec):
+   - all_off bypass — must sound *identical* to D58.2 by ear
+     (this is the D58 / D59 / D60 / D61 regression guard).
+   - TS9 / OD-1 / Centaur / Jan Ray / OCD — all five non-BD-2
+     models must sound identical to D58.2 (byte-exact for them).
+   - BD-2 G20 / G50 / G80 at T50 — should audibly progress
+     from edge-of-breakup -> aggressive overdrive -> heavily
+     compressed asymmetric saturation. Stronger than D58.2 BD-2
+     at every level due to the tighter knees and higher driveK.
+   - BD-2 T30 / T50 / T70 at G50 — same dark / flat / bright
+     direction as today; the tone stage is per-model-independent
+     so this should not change qualitatively.
+3. If BD-2 sounds more like OCD than expected, fall back to a
+   less aggressive intermediate (e.g. `odKneeP 2 = 2_600_000`,
+   `odKneeN 2 = 2_100_000`) without another structural change.
+4. Reject if bypass on D62 sounds different from D58.2 on the
+   same A/B — that would prove even pure-constant changes can
+   re-trigger the artifact and force a different approach.
