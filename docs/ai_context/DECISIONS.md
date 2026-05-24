@@ -3622,3 +3622,358 @@ not get removed even when superseded — they get updated.
   `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
   if D62 ever needs to be undone. The D62 bit/hwh are tracked in
   this commit so they likewise survive in git history.
+
+## D63 -- Rejected DS-1 Distortion model fidelity attempt (two-stage clip cascade)
+
+- **Decision.** D63 is rejected for deployment. The DS-1 retake bench-failed
+  on all four acceptance criteria simultaneously (bypass artifact + DS-1
+  character anomalous + tone discrimination impossible + leak to other
+  distortion pedals and the entire Overdrive section). The PYNQ board has
+  been rolled back to the D62 baseline; the D63 source / VHDL / bit / hwh
+  are NOT committed; only the research note
+  `docs/ai_context/DS1_MODEL_RESEARCH.md` and this rejection record ship.
+- **Research deliverable kept on main.**
+  `docs/ai_context/DS1_MODEL_RESEARCH.md` is the source-by-source research
+  note for the BOSS DS-1 (ElectroSmash, sonicfields.be, Guitar Pedals
+  Visualized, electric-safari, MUMT 618 academic report, Boss articles
+  marketing-side). It survives this rollback so D63.1 or any later DS-1
+  retake does not have to repeat the literature search.
+- **Files reverted in this commit.**
+  - `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl`
+  - `hw/ip/clash/vhdl/LowPassFir/component.xml`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit` (already reverted in deploy step)
+  - `hw/Pynq-Z2/bitstreams/audio_lab.hwh` (already reverted in deploy step)
+  All revert back to the D62 baseline so the source tree matches the
+  deployed bit. No D63 bit / hwh is committed.
+- **What D63 attempted.** Four edits in `Distortion.hs`, scoped to the
+  `ds1*Frame` functions only (no `Pipeline.hs` edit, no per-stage register
+  added, no `mulU8` / `mulU12` invocation added):
+  1. `ds1ClipFrame`: chained `asymSoftClip` (Q2 emulator, soft asymmetric
+     pre-knee at softKneeP=`3_000_000` / softKneeN=`2_600_000`) before
+     `asymHardClip` (op-amp diode-pair emulator, symmetric hard knee at
+     hardKneeP=hardKneeN=`2_200_000`). Both helpers are pure
+     compare-add-shift -- zero DSP48E1 cost.
+  2. `ds1MulFrame`: drive coefficient `8 -> 10` (~1x..~11x).
+  3. `ds1ToneFrame`: alpha base `96 -> 80` (range 80..207 instead of
+     96..223) to emulate the always-on 7.2 kHz feedback LPF of the real
+     pedal (R14+C10 per ElectroSmash).
+  4. `ds1HpfFrame` / `ds1LevelFrame`: unchanged.
+- **Build outcome (programmatic, looked excellent).** Clash regen +
+  Vivado batch build PASS (`write_bitstream completed successfully`, 0
+  Errors). Routed WNS `-8.426 ns` (`+0.071 ns` better than D62
+  `-8.497 ns`), TNS `-6452.238 ns`, WHS `+0.051 ns`, THS `0 ns`, failing
+  setup endpoints `2127 / 52725`. Utilization: Slice LUTs `19755` (+55
+  vs D62), Slice Registers `22195` (-85 vs D62), BRAM `6` (unchanged),
+  **DSPs `83` (unchanged from D62)**. bit/hwh md5
+  `b9bb64260d0c9b2ed86f9543a8392359` /
+  `6fb1210f60970118d80993035460342d`. Deploy-time programmatic smoke
+  PASS (Pmod mode 2 safe-clean: FRAME_COUNT delta `144154`,
+  CLIP_COUNT delta `0`, ADC HPF True, MUTE 3 readback).
+- **Bench audition (CLAUDE.md spec connection, no Pmod direct loopback):
+  failed on all four criteria.**
+  1. **bypass all_off**: produced a bit-crusher-like artifact (a
+     *different* failure mode from the HF saturation noise that
+     D58/D59/D60/D61 v2 produced; suggests AXIS-stream sample
+     quantisation / glitching rather than HF leakage).
+  2. **DS-1 D20 / D50 / D80 sweep at T50**: did NOT produce the intended
+     light-crunch -> canonical-hard-clip -> heavy-square-ish
+     progression; the actual sound was anomalous.
+  3. **DS-1 T30 / T50 / T70 sweep at D50**: indistinguishable; the
+     sound was too anomalous for the user to judge tone direction.
+  4. **RAT / TS9 / BD-2** (which the D63 edits did NOT touch in source
+     -- they are independent pedals / Overdrive models): sounded
+     different from D62. **The DS-1-only source edit LEAKED into other
+     pedals and the entire Overdrive section.** This is the strongest
+     evidence yet that a combinational-logic addition inside a single
+     stage perturbs Vivado P&R enough to disturb unrelated nets.
+- **Load-bearing engineering lesson (added to the D58 / D59 / D60 /
+  D61 / D62 sequence).** D63 categorised the
+  `asymSoftClip -> asymHardClip` cascade in `ds1ClipFrame` as a
+  "zero-DSP helper swap, safe like D62's pure-constant retune". That
+  categorisation is **wrong**. Adding a second clip-helper invocation
+  inside a single existing stage is a structural change in the
+  Vivado-P&R sense, even when DSP48E1 count, BRAM count, register
+  count, and WNS all look fine; the cascade increases combinational
+  depth and fan-out and Vivado's downstream placement / routing of
+  unrelated nets shifts enough to leak a perceptible audio artifact.
+  The stricter rule the D58 / D59 / D60 / D61 / D62 / D63 cumulative
+  evidence supports: **any change inside `LowPassFir.hs` or any DSP-
+  effect module that adds combinational logic (not just constants
+  inside an existing LUT) MUST be assumed structural until proven
+  otherwise by bench audition on `all_off` bypass and on every other
+  effect that shares the same axis_switch path**. The acceptance gate
+  is the bench ear on bypass, not the macroscopic timing summary,
+  CLIP_COUNT, FRAME_COUNT, GUI smoke, or DSP count.
+- **Rule for the next DS-1 retake (D63.1 or later).**
+  1. At most ONE clip-helper invocation per existing stage (no
+     cascade in `ds1ClipFrame`).
+  2. Permitted source changes: numeric constant edits in the existing
+     `ds1*Frame` functions, and `if model == X then constA else constB`
+     style muxing on operands of the *existing* helper invocation.
+     Never an *additional* helper invocation.
+  3. The most promising D63.1 candidate is the simplest possible: keep
+     the current `asymSoftClip` invocation in `ds1ClipFrame` and only
+     reduce the knee constants further (e.g. softKneeP -> 2_000_000 /
+     softKneeN -> 1_700_000) to push DS-1 closer to a hard-knee feel
+     without adding any new arithmetic.
+  4. A bolder D63.1 candidate (still inside the rule): swap the
+     `asymSoftClip` call to `asymHardClip` with symmetric knees, but
+     keep it as a *single* helper invocation -- no Q2 emulation
+     cascade. This sacrifices the soft-asym Q2 character but matches
+     the dominant DS-1 sonic signature (op-amp diode hard clip).
+  5. If even that single-helper-swap retake triggers the bypass artifact
+     on bench, DS-1 fidelity work in this section is permanently
+     limited to per-knee constant retunes within the existing
+     `asymSoftClip` invocation.
+  6. The Big Muff style ~500 Hz mid-scoop in `ds1ToneFrame` requires
+     either two `mulU8` invocations or an internal restructure of the
+     stage; both are now strongly contraindicated by the D63 evidence
+     and are deferred indefinitely.
+- **Rollback target.** D62 bit/hwh
+  (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deployed and
+  in-source baseline. D58.2 bit/hwh
+  (`1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
+  `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  if D62 ever needs to be undone too.
+
+## D64 -- Rejected distortion-wide asymSoftClip knee-only retune (5 constants, 3 pedals)
+
+- **Decision.** D64 is rejected for deployment. The build was the strictest
+  possible interpretation of the D62 / D63 cumulative rule (constants only
+  on existing `asymSoftClip` invocations, no helper added / swapped /
+  cascaded, no `Pipeline.hs` edit, no DSP / BRAM / register count change),
+  yet still triggered a bypass-path HF regression vs D62 on the bench.
+  Per-pedal audition itself was a mixed picture: TS9 and Fuzz Face moved
+  in the right direction audibly, DS-1 moved in the right direction but
+  not far enough; the bypass regression alone made the build
+  non-deployable.
+- **Research deliverable kept on main.**
+  `docs/ai_context/DISTORTION_ASYMSOFTCLIP_RETUNE_RESEARCH.md` is the
+  source-by-source research note (ElectroSmash TS-9, ElectroSmash DS-1,
+  ElectroSmash Fuzz Face, stompboxelectronics TS-9). It is the
+  prerequisite for any future per-pedal retake. The note remains in
+  git history; future retakes can pull individual coefficient targets
+  from it without redoing the literature search.
+- **Files reverted in this commit.**
+  - `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash-manifest.json`
+  - `hw/ip/clash/vhdl/LowPassFir/LowPassFir.topEntity/clash_lowpass_fir.vhdl`
+  - `hw/ip/clash/vhdl/LowPassFir/component.xml`
+  - `hw/Pynq-Z2/bitstreams/audio_lab.bit` (already reverted in deploy step)
+  - `hw/Pynq-Z2/bitstreams/audio_lab.hwh` (already reverted in deploy step)
+  All revert back to the D62 baseline. No D64 bit / hwh is committed.
+- **What D64 attempted (exhaustive).** Five numeric constants in
+  `Distortion.hs`, scoped to the three existing `asymSoftClip` invocations:
+  | Pedal | `kneeP` (old -> new) | `kneeN` (old -> new) | Per-knee delta | Direction |
+  | ----- | -------------------- | -------------------- | -------------- | --------- |
+  | TS9 (`tubeScreamerClipFrame`) | 2_900_000 -> 2_900_000 (unchanged) | 2_500_000 -> 2_700_000 | P 0 %, N +8 % | gap 400k -> 200k, more symmetric (real D1/D2 antiparallel IS symmetric per ElectroSmash TS9 analysis) |
+  | DS-1 (`ds1ClipFrame`) | 2_400_000 -> 2_200_000 | 2_000_000 -> 2_100_000 | P -8 %, N +5 % | gap 400k -> 100k, nearly symmetric + slightly earlier clip (real op-amp diode pair IS symmetric per ElectroSmash DS-1 analysis) |
+  | Fuzz Face (`fuzzFaceClipFrame`) | 1_900_000 -> 2_000_000 | 1_400_000 -> 1_200_000 | P +5 %, N -14 % | gap 500k -> 800k, more asymmetric (real BJT pair is strongly asymmetric and that asymmetry is "important for the musical quality" per ElectroSmash Fuzz Face analysis) |
+  All per-knee deltas within ±25 % of D62 baseline; ACTUAL `asymSoftClip`
+  invocation count unchanged (3); ACTUAL `asymHardClip` invocation count
+  unchanged (0); no other helper / arithmetic / register / pipeline
+  edit.
+- **Build outcome (programmatic, looked excellent).** Clash regen +
+  Vivado batch build PASS (`write_bitstream completed successfully`, 0
+  Errors). Routed WNS `-7.903 ns` (+0.594 ns vs D62 `-8.497 ns` --
+  notably *better* than D62, not worse), TNS `-5457.133 ns`, WHS
+  `+0.052 ns`, THS `0 ns`, failing setup endpoints `2038 / 52739`.
+  Utilization: Slice LUTs `19690` (-10 vs D62), Slice Registers `22304`
+  (+24 vs D62), BRAM `6` (unchanged), **DSPs `83` (unchanged from
+  D62)**. bit/hwh md5 `ea647168adda426d4d7d35656c7ca91f` /
+  `a15147c3c5f832826f78c588c3a7551b`. Deploy-time programmatic smoke
+  PASS (Pmod mode 2 safe-clean 3 s: FRAME_COUNT delta `144150`,
+  CLIP_COUNT delta `0`, ADC HPF True, MUTE 3).
+- **Bench audition (CLAUDE.md spec connection, no Pmod direct loopback).**
+  - **bypass all_off**: MORE noise than D62. **Audio-reject.**
+  - TS9 D50 / D80: more symmetric and smoother, as intended (OK).
+  - DS-1 D50 / D80: harder + closer to symmetric direction was audible,
+    but the user wants the change pushed further ("more hard, more
+    sym"); a follow-up retake should drop knees further.
+  - Fuzz Face D50 / D80: clearly more asymmetric and "broken-up"
+    germanium-style, as intended (OK).
+  Per-pedal directions are validated by bench; the failure is the
+  bypass regression alone.
+- **Load-bearing engineering lesson (revising D62's interpretation).**
+  D62 demonstrated that constants-only changes CAN be safe. D64
+  demonstrates that **this is only true at very small edit scope**.
+  The D62 outcome (3 constants in one Overdrive model) is now
+  understood to have been load-bearing in itself; D64 touched 5
+  constants across 3 distortion pedals and triggered a P&R-induced
+  bypass regression even though every individual edit was within the
+  D62 "safe" pattern. **The revised rule is "one model at a time, and
+  as few constants as possible per build".** Touching multiple
+  pedals' clip knees simultaneously is now classified as a structural
+  change in the Vivado-P&R sense, similar to (but smaller than) the
+  helper-cascade structural class D63 demonstrated. The bench ear on
+  safe-bypass remains the only sensor that has caught these
+  regressions across D58 / D59 / D60 / D61 v2 / D63 / D64; macroscopic
+  WNS / TNS / DSP / BRAM / CLIP_COUNT / FRAME_COUNT / GUI smoke /
+  programmatic-smoke / deploy-time numeric checks have NEVER caught
+  the bypass-path regression class on their own.
+- **Rule for the next distortion retake (D64.1 / D65 / ...).**
+  1. Each pedal gets its OWN Vivado rebuild + bench cycle. No
+     simultaneous edit to multiple pedals' knees in one build.
+  2. Within a single pedal's retake, prefer the smallest possible
+     numeric move that still hits the target audibly. The D62
+     successful pattern was P shifted ~17 %, N shifted ~30 %, and
+     the overall envelope was clearly inside ±30 % per knee with
+     only one model touched -- treat that as the empirical ceiling.
+  3. Of the three direction-validated D64 changes:
+     - **Fuzz Face widened P/N gap** -- highest priority retake target
+       because the bench audition confirmed the direction is right.
+     - **TS9 narrowed P/N gap** -- next priority. Smoother symmetric
+       sound was audible and desired.
+     - **DS-1 harder + symmetric** -- direction OK but needs more
+       magnitude; do this *after* TS9 and Fuzz Face are individually
+       validated, so DS-1's bigger move doesn't get blamed on a
+       multi-pedal build.
+  4. If a *single-pedal* knee retake triggers the bypass artifact,
+     the per-pedal asymSoftClip knee constant retake is permanently
+     off-limits in this build and the affected pedal stays at its
+     current values forever. The distortion fidelity ceiling for
+     this build is then D62, not "D62 plus N more iterations".
+- **Rollback target.** D62 bit/hwh
+  (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deployed and
+  in-source baseline. D58.2 bit/hwh
+  (`1c9071b5f2e1eec63ef6abbcfcacbf02` /
+  `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
+  `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
+  as the deeper fallback.
+
+## D65 -- Pmod I2S2 self-loopback diagnostic (added; D62 hardware path verified clean)
+
+- **Decision.** Diagnostic-only change. No bit / hwh / VHDL / Clash /
+  DSP source touched. `scripts/diagnose_pmod_loopback.py` and
+  `docs/ai_context/PMOD_LOOPBACK_DIAGNOSTIC.md` are added so any future
+  build can re-run the same check before deploy.
+- **Why this was needed.** After the D63 (DS-1 cascade) and D64
+  (5-constant distortion retune) bench rejections, the user reported a
+  "high-frequency bit-crusher" symptom and asked whether the Pmod I2S2 /
+  ADC / DAC / AXIS path could itself be corrupting high-frequency
+  content. The diagnostic answers that question without an external
+  instrument: Pmod Line Out -> Pmod Line In direct cable loop, then
+  exercise every MODE of `pmod_i2s2_master.v` (TX_TONE / RTL loopback
+  / DSP path / MUTE) plus axis_switch routes via MM2S sine sweep.
+- **What the script checks.** Per-phase metrics include `uniq1k`
+  (unique sample values in the first 1000 polls of LAST_LEFT) and
+  `max_run` (longest run of identical consecutive samples). These two
+  are the dispositive bit-crusher / quantisation indicators: clean
+  audio gives `uniq1k` near 1000 and `max_run = 1 or 2`. They are
+  not corrupted by the ~26-37 kHz Python polling rate (the spectrum
+  peaks are; the bit-pattern indicators are not).
+- **Verdict.** All phases passed on D62 baseline. MODE 0 1 kHz DMA
+  capture clean (single peak, harmonics >1000x below). MM2S sweep
+  via `dma -> passthrough -> headphone` and via `dma ->
+  guitar_chain -> headphone` both clean: every (freq, level) cell
+  in 100 Hz..15 kHz at -30..-12 dBFS shows `uniq1k` >= 845 and
+  `max_run = 2`. **The deployed D62 I2S / ADC / DAC / AXIS /
+  DSP-pass-through path is clean.**
+- **Implication for D63 / D64.** The "bit-crusher" / "HF noise" /
+  "leak to other pedals" symptoms in those rejected bench auditions
+  cannot be from the hardware layer or from the D62 baseline DSP
+  chain. They must be **build-specific Vivado P&R-induced artifacts**,
+  consistent with the engineering rule already documented in the
+  D58 / D59 / D60 / D61 / D62 / D63 / D64 sequence: structural Clash
+  edits (helper cascades, new `Pipeline.hs` registers, even
+  multi-constant simultaneous retunes) can perturb Vivado P&R enough
+  to leak audio artifacts into the safe-bypass path. D62 remains the
+  deployed baseline.
+- **Files added in this commit.**
+  - `scripts/diagnose_pmod_loopback.py` (new diagnostic script,
+    no Vivado / no bit / no DSP edit)
+  - `docs/ai_context/PMOD_LOOPBACK_DIAGNOSTIC.md` (new procedure +
+    verdict doc)
+  - `docs/ai_context/CURRENT_STATE.md` (latest-work entry updated)
+  - `docs/ai_context/DECISIONS.md` (this D65 entry)
+- **How to re-run.** From the host:
+  ```
+  ssh xilinx@192.168.1.9 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+      python3 scripts/diagnose_pmod_loopback.py'
+  ```
+  Exit code 0 on PASS, 1 on any quantisation flag. See
+  `PMOD_LOOPBACK_DIAGNOSTIC.md` for phase-by-phase detail and
+  the limitations of the cable-loop diagnostic.
+- **Rollback target unchanged.** D62 bit/hwh
+  (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deployed and
+  in-source baseline.
+- **Follow-up A/B comparison: D62 vs reproduced D64.** Per a follow-up
+  request, the D64 5-constant retune was temporarily restored,
+  rebuilt, deployed, put through the same diagnostic, then
+  immediately reverted to D62. The D64 reproduction landed on
+  identical Vivado timing (WNS `-7.903 ns`, DSP `83`, BRAM `6`,
+  matching the original D64) and produced a fresh bit (md5
+  `0c31cf02db2011102bf07c3219264043` -- timestamp metadata differs
+  from the original D64 `ea647168...`, logical behaviour is the
+  same). **Verdict on D64 reproduction: also PASS.** Phase B
+  per-cell `uniq1k` 930..1000 and `max_run = 2` are statistically
+  indistinguishable from D62's 845..1000 / 2; Phase 1 MODE 0
+  baseline peakL `1.18M` matches D62 exactly; Phase 1 MODE 2
+  cable-loop feedback peakL `7.14M` matches D62's `7.26M` within
+  noise; the only metric that diverges is the Phase 3 DMA capture
+  peak (D64 ~4x higher) which is a route-change transient
+  artifact at capture start, not a steady-state audio difference.
+  **Conclusion: the self-loopback test does NOT distinguish D62
+  from D64**; both pass the bit-pattern checks. The audible
+  "bit-crusher" the user reported during the D64 bench audition
+  cannot be reproduced under cable-loop self-test conditions and
+  must require external-instrument input, the user's analog
+  monitoring path, or bypass-path P&R artifacts that stay below
+  the `uniq1k` / `max_run` thresholds the script catches. The
+  D58 / D59 / D60 / D61 v2 / D63 / D64 rule continues to apply:
+  the bench ear remains the dispositive sensor.
+- **Final post-comparison state.** Distortion.hs / clash VHDL /
+  bit / hwh all reverted to D62 baseline. PYNQ-Z2 PL D62 freshly
+  downloaded, MODE 3 mute, FRAME_COUNT delta 144151 / CLIP_COUNT
+  0 confirmed. **No D64 source / VHDL / bit / hwh committed.**
+  Only the diagnostic comparison record is added to
+  `PMOD_LOOPBACK_DIAGNOSTIC.md` and this D65 entry.
+
+## D66 -- DS-1-only asymSoftClip knee retune accepted
+
+- **Decision.** Accept and deploy the DS-1-only retune on branch
+  `feature/ds1-only-asymsoftclip-retune`. The only functional source
+  edit is in `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`
+  `ds1ClipFrame`: `kneeP` `2_400_000 -> 1_900_000` and `kneeN`
+  `2_000_000 -> 1_900_000`.
+- **Why.** D64 proved that DS-1 needed a harder, more symmetric move,
+  but D64 touched TS9 / DS-1 / Fuzz Face together and was rejected for
+  bypass regression. D66 applies the D64 lesson at the minimal safe
+  scope: one pedal, two constants, existing helper topology only.
+  The result keeps the existing `asymSoftClip` approximation while
+  making the DS-1 stage fully symmetric and lower-knee.
+- **What did not change.** No TS9 / RAT / Fuzz Face / Big Muff / Metal
+  / clean boost retune, no `Overdrive.hs`, no `Amp.hs`, no
+  `Compressor.hs`, no `Pipeline.hs`, no `LowPassFir.hs`, no GUI /
+  HDMI / Pmod RTL / `block_design.tcl`, no helper addition, no helper
+  swap, no cascade, no `asymHardClip`, no new register, no new IIR,
+  no drive / tone / level / highpass / lowpass coefficient change.
+  `asymSoftClip` call count remains `3`; `asymHardClip` remains `0`;
+  `mulU8` / `mulU12` counts remain `13` / `8`.
+- **Build result.** Vivado completed with `write_bitstream completed
+  successfully` and `0 Errors`. Routed timing: WNS `-8.016 ns`,
+  TNS `-9648.033 ns`, WHS `+0.051 ns`, THS `0.000 ns`; main
+  `clk_fpga_0` setup group worst endpoint is `ARG__7__1/CLK ->
+  ds1_5_reg[1032]/D`. Utilization: LUT `19712`, FF `22160`, BRAM
+  `6`, DSP `83`.
+- **Deployment record.** bit/hwh md5 are
+  `52f0e9937993dca11272d561f6cf6b32` /
+  `d75d38394a529ac3524e0a64f73bcd34`; all PYNQ board copies matched.
+  `AudioLabOverlay(download=True)` updated PL to timestamp
+  `2026/5/24 14:15:57 +844083`; ADC HPF True, VERSION `0x00480001`,
+  MODE 3 mute, CLIP_COUNT 0.
+- **Smoke / acceptance.** `scripts/diagnose_pmod_loopback.py` PASSed
+  with no QUANT! / STAIR! flags. The diagnostic remains a smoke check
+  only, not an adoption criterion by itself. The user then requested
+  merge to `main`; that request is the acceptance signal for this
+  D66 build.
+- **Baseline.** D66 is now the deployed source-control baseline. D62
+  bit/hwh (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deeper rollback
+  reference.

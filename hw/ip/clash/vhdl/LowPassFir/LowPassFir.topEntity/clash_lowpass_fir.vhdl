@@ -10176,14 +10176,14 @@ begin
 
   result_143 <= ((\c$bv_71\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_72\ = ('1'));
 
-  result_selection_res_49 <= result_142 > to_signed(2400000,24);
+  result_selection_res_49 <= result_142 > to_signed(1900000,24);
 
-  result_144 <= resize((to_signed(2400000,25) + \c$app_arg_73\),24) when result_selection_res_49 else
+  result_144 <= resize((to_signed(1900000,25) + \c$app_arg_73\),24) when result_selection_res_49 else
                 \c$case_alt_61\;
 
-  \c$case_alt_selection_res_43\ <= result_142 < to_signed(-2000000,24);
+  \c$case_alt_selection_res_43\ <= result_142 < to_signed(-1900000,24);
 
-  \c$case_alt_61\ <= resize((to_signed(-2000000,25) + \c$app_arg_74\),24) when \c$case_alt_selection_res_43\ else
+  \c$case_alt_61\ <= resize((to_signed(-1900000,25) + \c$app_arg_74\),24) when \c$case_alt_selection_res_43\ else
                      result_142;
 
   \c$shI_77\ <= (to_signed(2,64));
@@ -10196,7 +10196,7 @@ begin
         natural'high when (\c$shI_77\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_77\);
-    \c$app_arg_73\ <= shift_right((\c$app_arg_75\ - to_signed(2400000,25)),sh_79)
+    \c$app_arg_73\ <= shift_right((\c$app_arg_75\ - to_signed(1900000,25)),sh_79)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -10213,7 +10213,7 @@ begin
         natural'high when (\c$shI_78\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_78\);
-    \c$app_arg_74\ <= shift_right((\c$app_arg_75\ - to_signed(-2000000,25)),sh_80)
+    \c$app_arg_74\ <= shift_right((\c$app_arg_75\ - to_signed(-1900000,25)),sh_80)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on

@@ -278,8 +278,8 @@ ds1ClipFrame f =
   -- Lower knees than TS for a harder edge but still soft (DS-1 has
   -- diode-pair hard clip; we approximate with asym soft to keep
   -- timing comparable to the existing pedals).
-  kneeP = 2_400_000 :: Sample
-  kneeN = 2_000_000 :: Sample
+  kneeP = 1_900_000 :: Sample
+  kneeN = 1_900_000 :: Sample
 
 ds1ToneFrame :: Sample -> Frame -> Frame
 ds1ToneFrame prevLp f =
