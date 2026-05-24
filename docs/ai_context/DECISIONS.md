@@ -3845,3 +3845,61 @@ not get removed even when superseded — they get updated.
   `21c1ca7a6ddd5c26fd39f8746abe28d8`) remain available via
   `git show <previous-commit>:hw/Pynq-Z2/bitstreams/audio_lab.bit`
   as the deeper fallback.
+
+## D65 -- Pmod I2S2 self-loopback diagnostic (added; D62 hardware path verified clean)
+
+- **Decision.** Diagnostic-only change. No bit / hwh / VHDL / Clash /
+  DSP source touched. `scripts/diagnose_pmod_loopback.py` and
+  `docs/ai_context/PMOD_LOOPBACK_DIAGNOSTIC.md` are added so any future
+  build can re-run the same check before deploy.
+- **Why this was needed.** After the D63 (DS-1 cascade) and D64
+  (5-constant distortion retune) bench rejections, the user reported a
+  "high-frequency bit-crusher" symptom and asked whether the Pmod I2S2 /
+  ADC / DAC / AXIS path could itself be corrupting high-frequency
+  content. The diagnostic answers that question without an external
+  instrument: Pmod Line Out -> Pmod Line In direct cable loop, then
+  exercise every MODE of `pmod_i2s2_master.v` (TX_TONE / RTL loopback
+  / DSP path / MUTE) plus axis_switch routes via MM2S sine sweep.
+- **What the script checks.** Per-phase metrics include `uniq1k`
+  (unique sample values in the first 1000 polls of LAST_LEFT) and
+  `max_run` (longest run of identical consecutive samples). These two
+  are the dispositive bit-crusher / quantisation indicators: clean
+  audio gives `uniq1k` near 1000 and `max_run = 1 or 2`. They are
+  not corrupted by the ~26-37 kHz Python polling rate (the spectrum
+  peaks are; the bit-pattern indicators are not).
+- **Verdict.** All phases passed on D62 baseline. MODE 0 1 kHz DMA
+  capture clean (single peak, harmonics >1000x below). MM2S sweep
+  via `dma -> passthrough -> headphone` and via `dma ->
+  guitar_chain -> headphone` both clean: every (freq, level) cell
+  in 100 Hz..15 kHz at -30..-12 dBFS shows `uniq1k` >= 845 and
+  `max_run = 2`. **The deployed D62 I2S / ADC / DAC / AXIS /
+  DSP-pass-through path is clean.**
+- **Implication for D63 / D64.** The "bit-crusher" / "HF noise" /
+  "leak to other pedals" symptoms in those rejected bench auditions
+  cannot be from the hardware layer or from the D62 baseline DSP
+  chain. They must be **build-specific Vivado P&R-induced artifacts**,
+  consistent with the engineering rule already documented in the
+  D58 / D59 / D60 / D61 / D62 / D63 / D64 sequence: structural Clash
+  edits (helper cascades, new `Pipeline.hs` registers, even
+  multi-constant simultaneous retunes) can perturb Vivado P&R enough
+  to leak audio artifacts into the safe-bypass path. D62 remains the
+  deployed baseline.
+- **Files added in this commit.**
+  - `scripts/diagnose_pmod_loopback.py` (new diagnostic script,
+    no Vivado / no bit / no DSP edit)
+  - `docs/ai_context/PMOD_LOOPBACK_DIAGNOSTIC.md` (new procedure +
+    verdict doc)
+  - `docs/ai_context/CURRENT_STATE.md` (latest-work entry updated)
+  - `docs/ai_context/DECISIONS.md` (this D65 entry)
+- **How to re-run.** From the host:
+  ```
+  ssh xilinx@192.168.1.9 'sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ \
+      python3 scripts/diagnose_pmod_loopback.py'
+  ```
+  Exit code 0 on PASS, 1 on any quantisation flag. See
+  `PMOD_LOOPBACK_DIAGNOSTIC.md` for phase-by-phase detail and
+  the limitations of the cable-loop diagnostic.
+- **Rollback target unchanged.** D62 bit/hwh
+  (`349ebbe609ac15f58d8b676d2dedee94` /
+  `3a90e966c5d76762b60ba3ab0e982685`) remain the deployed and
+  in-source baseline.
