@@ -3973,7 +3973,65 @@ not get removed even when superseded — they get updated.
   only, not an adoption criterion by itself. The user then requested
   merge to `main`; that request is the acceptance signal for this
   D66 build.
-- **Baseline.** D66 is now the deployed source-control baseline. D62
-  bit/hwh (`349ebbe609ac15f58d8b676d2dedee94` /
+- **Baseline.** D66 was the deployed source-control baseline until the
+  D67 JCM800 amp-model retune superseded it. D62 bit/hwh
+  (`349ebbe609ac15f58d8b676d2dedee94` /
   `3a90e966c5d76762b60ba3ab0e982685`) remain the deeper rollback
   reference.
+
+## D67 -- JCM800 amp model constants-only retune accepted
+
+- **Decision.** Accept and deploy the JCM800-only amp retune on branch
+  `feature/jcm800-amp-model-retune`, committed on `main` as
+  `Retune JCM800 amp model constants only`. The only functional source
+  edit is in `hw/ip/clash/src/AudioLab/Effects/Amp.hs`, and only
+  model index `4` (`JCM800`) changes:
+  - `ampPreLpfDriveDarken`: `16 -> 13`
+  - `ampSecondStageDriveBonus`: `48 -> 54`
+  - `ampDriveNegDelta`: `231_000 -> 200_000`
+  `ampDrivePosDelta` stays `264_000`; JCM800 `ampTrebleGain` and
+  `presenceTrim` stay unchanged.
+- **Why.** The D55 / D58.2 amp lineup already had JCM800 as model
+  index 4, but it sat too close to the thicker Rockerverb / high-gain
+  side in Drive mode. The retune pushes only the existing JCM800
+  constants toward a Marshall JCM800 2203-style target: tighter low end,
+  brighter upper-mid bark, faster attack, more cascaded crunch, and
+  more cold-clipper-like asymmetry without making it a modern TriAmp
+  voice. Lowering `ampPreLpfDriveDarken` keeps more cutting brightness
+  in Drive mode; raising `ampSecondStageDriveBonus` adds preamp crunch;
+  lowering only `ampDriveNegDelta` makes the negative side clip earlier
+  relative to the positive side.
+- **What did not change.** No JC-120 / Twin Reverb / AC30 /
+  Rockerverb / TriAmp Mk3 amp table entry changed. No `Distortion.hs`,
+  `Overdrive.hs`, `Compressor.hs`, `Pipeline.hs`, `LowPassFir.hs`,
+  GUI, HDMI, Pmod RTL, GPIO mapping, `amp_model_idx` allocation,
+  `amp_drive_mode` bit allocation, or `block_design.tcl` changed. No
+  helper was added, swapped, or cascaded; no IIR, register, `mulU8`,
+  or `mulU12` was added. This is the accepted "one model, few
+  constants, existing table only" pattern.
+- **Build result.** Clash VHDL was regenerated and Vivado completed
+  with `write_bitstream completed successfully` and `0 Errors`. Routed
+  timing: WNS `-8.204 ns`, TNS `-9300.746 ns`, WHS `+0.034 ns`, THS
+  `0.000 ns`; design summary failing endpoints `3284 / 60261`, main
+  `clk_fpga_0` group `2229 / 52745`. The worst setup path remains in
+  the DS-1-side logic (`ARG__17/CLK -> ds1_5_reg[1032]/D`), not in a
+  new JCM800-specific structure. Utilization: LUT `19836`, FF `22174`,
+  BRAM `6`, DSP `83`.
+- **Deployment record.** bit/hwh md5 are
+  `70b5dc7d972510c26fbb3b1014aa06eb` /
+  `dc42290dc7fb46d7486068cc1d11032a`; PYNQ board copies matched the
+  local files. `AudioLabOverlay(download=True)` was run, ADC HPF was
+  True, and the board was returned to MODE 3 mute after the bench
+  check.
+- **Smoke / acceptance.** Python py_compile, 91 unittest cases,
+  `tests/test_overlay_controls.py`, and `scripts/diagnose_pmod_loopback.py`
+  passed. The self-loopback smoke produced no QUANT! / STAIR! flags
+  and CLIP_COUNT stayed clean, but is still only a structural smoke
+  check. During bench setup, two control mistakes were found and
+  corrected: Pmod MODE lives at `pmod_status_0` offset `0x28`, and
+  `axi_gpio_amp` is at `0x43C90000` (not the RAT / legacy
+  `axi_gpio_delay` address `0x43C80000`). After those corrections,
+  Amp ON / JCM800 model 4 / Drive mode / gain max was auditioned, and
+  the user answered **Adopt & merge**. D67 is now the deployed
+  source-control baseline; D66 is the immediate previous rollback
+  reference, and D62 remains the deeper rollback reference.

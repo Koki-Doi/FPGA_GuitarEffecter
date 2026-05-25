@@ -7110,7 +7110,7 @@ begin
                             to_signed(50000,25) when "001",
                             to_signed(113000,25) when "010",
                             to_signed(180000,25) when "011",
-                            to_signed(231000,25) when "100",
+                            to_signed(200000,25) when "100",
                             to_signed(300000,25) when "101",
                             to_signed(11000,25) when others;
 
@@ -7279,7 +7279,7 @@ begin
                            to_unsigned(18,9) when "001",
                            to_unsigned(28,9) when "010",
                            to_unsigned(42,9) when "011",
-                           to_unsigned(48,9) when "100",
+                           to_unsigned(54,9) when "100",
                            to_unsigned(56,9) when "101",
                            to_unsigned(14,9) when others;
 
@@ -7467,7 +7467,7 @@ begin
                       to_unsigned(7,8) when "001",
                       to_unsigned(10,8) when "010",
                       to_unsigned(16,8) when "011",
-                      to_unsigned(16,8) when "100",
+                      to_unsigned(13,8) when "100",
                       to_unsigned(24,8) when "101",
                       to_unsigned(5,8) when others;
 
@@ -7712,7 +7712,7 @@ begin
                               to_signed(50000,25) when "001",
                               to_signed(113000,25) when "010",
                               to_signed(180000,25) when "011",
-                              to_signed(231000,25) when "100",
+                              to_signed(200000,25) when "100",
                               to_signed(300000,25) when "101",
                               to_signed(11000,25) when others;
 

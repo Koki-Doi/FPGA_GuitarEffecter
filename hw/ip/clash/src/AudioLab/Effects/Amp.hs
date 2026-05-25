@@ -80,7 +80,7 @@ ampPreLpfDriveDarken idx = case idx of
   1 ->  7    -- Twin: light breakup
   2 -> 10    -- AC30: jangly crunch
   3 -> 16    -- Rockerverb: thick saturation
-  4 -> 16    -- JCM800: classic rock drive
+  4 -> 13    -- JCM800: less darken in Drive → upper-mid bark / presence
   5 -> 24    -- TriAmp Mk3: modern HG, kill fizz
   _ ->  5
 
@@ -94,7 +94,7 @@ ampSecondStageDriveBonus idx = case idx of
   1 -> 18    -- Twin: light push
   2 -> 28    -- AC30: harmonic bloom
   3 -> 42    -- Rockerverb: thick push
-  4 -> 48    -- JCM800: cascaded gain
+  4 -> 54    -- JCM800: stronger cascaded crunch
   5 -> 56    -- TriAmp Mk3: modern HG sustain
   _ -> 14
 
@@ -136,7 +136,7 @@ ampDriveNegDelta idx = case idx of
   1 ->  50_000   -- Twin Reverb
   2 -> 113_000   -- AC30
   3 -> 180_000   -- Rockerverb
-  4 -> 231_000   -- JCM800
+  4 -> 200_000   -- JCM800: shallower neg clip → more asymmetry
   5 -> 300_000   -- TriAmp Mk3
   _ ->  11_000
 
