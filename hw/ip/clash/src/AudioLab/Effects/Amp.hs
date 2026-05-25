@@ -49,24 +49,24 @@ ampDriveModeF f = slice d31 d31 (fAmpTone f) == (1 :: BitVector 1)
 -- JC-120 value so an unexpected write does not run clip_count away.
 ampCharForModel :: Unsigned 3 -> Unsigned 8
 ampCharForModel idx = case idx of
-  0 -> 26    -- JC-120        : tightest clean
-  1 -> 89    -- Twin Reverb   : big clean
-  2 -> 153   -- AC30          : edge-of-breakup chime
-  3 -> 200   -- Rockerverb    : thick saturated
+  0 -> 18    -- JC-120        : high-headroom solid-state clean
+  1 -> 78    -- Twin Reverb   : glassy tube clean
+  2 -> 166   -- AC30          : earlier chime breakup
+  3 -> 208   -- Rockerverb    : thick dark saturation
   4 -> 220   -- JCM800        : classic rock cascaded drive
-  5 -> 240   -- TriAmp Mk3    : modern high-gain peak
-  _ -> 26    -- 6/7 reserved -> safe (JC-120)
+  5 -> 246   -- TriAmp Mk3    : modern high-gain peak
+  _ -> 18    -- 6/7 reserved -> safe (JC-120)
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
 -- darker / less fizz. Indexed by ``ampModelIdxF`` directly.
 ampModelDarken :: Unsigned 3 -> Unsigned 8
 ampModelDarken idx = case idx of
   0 ->  0    -- JC-120: bright SS feel, no darken
-  1 ->  2    -- Twin: bright but slightly rounded
-  2 ->  4    -- AC30: keep upper-mid chime
-  3 -> 12    -- Rockerverb: round the high, mid-rich
+  1 ->  3    -- Twin: bright but slightly rounded
+  2 ->  3    -- AC30: keep upper-mid chime
+  3 -> 18    -- Rockerverb: darker low-mid thickness
   4 -> 10    -- JCM800: tame fizz, keep upper-mid bark
-  5 -> 28    -- TriAmp Mk3: maximum fizz cut for modern HG
+  5 -> 26    -- TriAmp Mk3: tight modern fizz control
   _ ->  0
 
 -- | Per-model extra darken to add only in Drive mode. Stacked on top of
@@ -76,13 +76,13 @@ ampModelDarken idx = case idx of
 -- Drive-mode knee deltas without re-introducing D57's pre-clip push.
 ampPreLpfDriveDarken :: Unsigned 3 -> Unsigned 8
 ampPreLpfDriveDarken idx = case idx of
-  0 ->  5    -- JC-120: tiny extra in Drive
-  1 ->  7    -- Twin: light breakup
-  2 -> 10    -- AC30: jangly crunch
-  3 -> 16    -- Rockerverb: thick saturation
+  0 ->  3    -- JC-120: keep Drive from sounding warm/fuzzy
+  1 ->  8    -- Twin: glassy tube breakup
+  2 ->  8    -- AC30: jangly crunch
+  3 -> 22    -- Rockerverb: dark thick saturation
   4 -> 13    -- JCM800: less darken in Drive → upper-mid bark / presence
-  5 -> 24    -- TriAmp Mk3: modern HG, kill fizz
-  _ ->  5
+  5 -> 30    -- TriAmp Mk3: modern HG, kill fizz
+  _ ->  3
 
 -- | Per-model second-stage gain bonus in Drive mode.
 -- D58.2 (vs D55): lifted into 14..56 so each model's second-stage push
@@ -90,13 +90,13 @@ ampPreLpfDriveDarken idx = case idx of
 -- below the D57 overshoot. Stays a simple per-model adder (no DSP cost).
 ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
 ampSecondStageDriveBonus idx = case idx of
-  0 -> 14    -- JC-120: light bonus, SS feel
-  1 -> 18    -- Twin: light push
-  2 -> 28    -- AC30: harmonic bloom
-  3 -> 42    -- Rockerverb: thick push
+  0 ->  8    -- JC-120: very light bonus, SS feel
+  1 -> 14    -- Twin: light push
+  2 -> 34    -- AC30: harmonic bloom
+  3 -> 48    -- Rockerverb: thick push
   4 -> 54    -- JCM800: stronger cascaded crunch
-  5 -> 56    -- TriAmp Mk3: modern HG sustain
-  _ -> 14
+  5 -> 68    -- TriAmp Mk3: modern HG sustain
+  _ ->  8
 
 -- | Per-model positive-side asym-clip knee delta in Drive mode.
 -- Signed 25 fits the existing arithmetic in ``ampAsymClip``.
@@ -118,13 +118,13 @@ ampSecondStageDriveBonus idx = case idx of
 -- clip is not over-tripped.
 ampDrivePosDelta :: Unsigned 3 -> Signed 25
 ampDrivePosDelta idx = case idx of
-  0 ->  13_000   -- JC-120
-  1 ->  58_000   -- Twin Reverb
-  2 -> 130_000   -- AC30
-  3 -> 210_000   -- Rockerverb
+  0 ->   6_000   -- JC-120
+  1 ->  38_000   -- Twin Reverb
+  2 -> 155_000   -- AC30
+  3 -> 240_000   -- Rockerverb
   4 -> 264_000   -- JCM800
-  5 -> 336_000   -- TriAmp Mk3
-  _ ->  13_000
+  5 -> 400_000   -- TriAmp Mk3
+  _ ->   6_000
 
 -- | Per-model negative-side asym-clip knee delta in Drive mode.
 -- Slightly smaller than ``ampDrivePosDelta`` so the asymmetric
@@ -132,13 +132,13 @@ ampDrivePosDelta idx = case idx of
 -- preserved.
 ampDriveNegDelta :: Unsigned 3 -> Signed 25
 ampDriveNegDelta idx = case idx of
-  0 ->  11_000   -- JC-120
-  1 ->  50_000   -- Twin Reverb
-  2 -> 113_000   -- AC30
-  3 -> 180_000   -- Rockerverb
+  0 ->   5_000   -- JC-120
+  1 ->  34_000   -- Twin Reverb
+  2 -> 132_000   -- AC30
+  3 -> 220_000   -- Rockerverb
   4 -> 200_000   -- JCM800: shallower neg clip → more asymmetry
-  5 -> 300_000   -- TriAmp Mk3
-  _ ->  11_000
+  5 -> 360_000   -- TriAmp Mk3
+  _ ->   5_000
 
 ampHighpassFrame :: Sample -> Sample -> Frame -> Frame
 ampHighpassFrame prevIn prevOut f =
@@ -287,11 +287,11 @@ ampTrebleGain idx x = base - modelTrim
   base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
-    1 ->  1                 -- Twin    : barely trimmed
-    2 ->  3                 -- AC30    : keep chime
-    3 ->  6                 -- Rockerv : rounded
+    1 ->  2                 -- Twin    : glassy, not piercing
+    2 ->  2                 -- AC30    : keep chime
+    3 ->  9                 -- Rockerv : rounded
     4 ->  8                 -- JCM800  : bark, slight trim
-    5 -> 12                 -- TriAmp  : controlled high
+    5 -> 14                 -- TriAmp  : controlled high
     _ ->  0
 
 ampToneProductsFrame :: Frame -> Frame
@@ -366,9 +366,9 @@ ampResPresenceProductsFrame f =
   -- shaves the most.
   presenceTrim = case idx of
     0 -> 0 :: Unsigned 8         -- JC-120  : full
-    1 -> presenceByte `shiftR` 6 -- Twin    : tiny shave
-    2 -> presenceByte `shiftR` 5 -- AC30    : modest
-    3 -> presenceByte `shiftR` 4 -- Rockerv : thicker
+    1 -> presenceByte `shiftR` 5 -- Twin    : glassy but controlled
+    2 -> presenceByte `shiftR` 6 -- AC30    : jangly presence
+    3 -> presenceByte `shiftR` 3 -- Rockerv : darker and thicker
     4 -> presenceByte `shiftR` 4 -- JCM800  : tight low + strong presence trim
     5 -> presenceByte `shiftR` 3 -- TriAmp  : maximum trim, modern voicing
     _ -> 0
