@@ -28,9 +28,9 @@ distortionDriveMultiplyFrame f =
  where
   on = distortionLegacyOn f
   amount = ctrlC (fDist f)
-  driveGain = resize (256 + (resize amount * 8 :: Unsigned 11)) :: Unsigned 12
-  rawThreshold = 8_388_607 - (resize (asSigned9 amount) * 24_000) :: Signed 25
-  clampedThreshold = if rawThreshold < 1_800_000 then 1_800_000 else rawThreshold
+  driveGain = resize (256 + (resize amount * 9 :: Unsigned 11)) :: Unsigned 12
+  rawThreshold = 8_388_607 - (resize (asSigned9 amount) * 28_000) :: Signed 25
+  clampedThreshold = if rawThreshold < 1_600_000 then 1_600_000 else rawThreshold
   threshold = resize clampedThreshold :: Sample
 
 distortionDriveBoostFrame :: Frame -> Frame
@@ -94,10 +94,9 @@ cleanBoostMulFrame f =
  where
   on = cleanBoostOn f
   drive = ctrlC (fDist f)
-  -- Real-pedal voicing pass: lower the boost ceiling from ~5x to ~4x
-  -- (1.0x at drive=0, ~4x at drive=255) so the clean booster stays
-  -- mostly clean unless really pushed.
-  gain = resize (256 + (resize drive * 3 :: Unsigned 11)) :: Unsigned 12
+  -- Global real-pedal pass: keep the boost mostly clean and let the
+  -- level stage, not clipping, provide the push.
+  gain = resize (256 + (resize drive * 2 :: Unsigned 11)) :: Unsigned 12
 
 cleanBoostShiftFrame :: Frame -> Frame
 cleanBoostShiftFrame f =
@@ -112,9 +111,8 @@ cleanBoostLevelFrame f =
   on = cleanBoostOn f
   level = ctrlB (fDist f)
   afterLevel = satShift7 (mulU8 (monoSample f) level)
-  -- Real-pedal voicing pass: lower the safety knee from ~4.2M to ~3.2M
-  -- so the clean booster catches peaks before they reach the saturator.
-  safetyKnee = 3_200_000 :: Sample
+  -- High safety knee so Clean Boost only catches exceptional peaks.
+  safetyKnee = 3_800_000 :: Sample
 
 -- ---- tube_screamer (5 stages: HPF, mul, clip, post-LPF, level) -------
 
@@ -123,10 +121,8 @@ tubeScreamerHpfFrame prevLp f =
   (if on then setMonoSample hp else setMonoSample x) (setMonoEqLow lp f)
  where
   on = tubeScreamerOn f
-  -- Real-pedal voicing pass: tighten the input low cut. Range bumped
-  -- from 2..9 to 3..18 so the bass that hits the clip stage drops with
-  -- TIGHT, contributing to the TS-style mid bump.
-  alpha = 3 + (distTight (fOd f) `shiftR` 4)
+  -- Stronger low cut into the clip stage for a TS-style mid focus.
+  alpha = 4 + (distTight (fOd f) `shiftR` 4)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -138,10 +134,8 @@ tubeScreamerMulFrame f =
  where
   on = tubeScreamerOn f
   drive = ctrlC (fDist f)
-  -- Real-pedal voicing pass: lower the maximum drive so even at
-  -- DRIVE=100 the TS still sounds like an overdrive (not a fuzz).
-  -- Q8 gain: 1x..~6.97x (was 1x..~9x).
-  gain = resize (256 + (resize drive * 6 :: Unsigned 12)) :: Unsigned 12
+  -- Smooth drive ceiling; this should stay overdrive-like, not fuzz-like.
+  gain = resize (256 + (resize drive * 5 :: Unsigned 12)) :: Unsigned 12
 
 tubeScreamerClipFrame :: Frame -> Frame
 tubeScreamerClipFrame f =
@@ -149,11 +143,9 @@ tubeScreamerClipFrame f =
  where
   on = tubeScreamerOn f
   boosted = satShift8 (fAccL f)
-  -- Real-pedal voicing pass: lower the asym clip knees so the soft
-  -- clip engages earlier and a touch more asymmetrically (TS-style
-  -- diode-to-ground feedback character).
-  kneeP = 2_900_000 :: Sample
-  kneeN = 2_500_000 :: Sample
+  -- Near-symmetric soft knees keep the TS smoother than DS-1.
+  kneeP = 3_000_000 :: Sample
+  kneeN = 2_850_000 :: Sample
 
 tubeScreamerPostLpfFrame :: Sample -> Frame -> Frame
 tubeScreamerPostLpfFrame prevLp f =
@@ -161,11 +153,8 @@ tubeScreamerPostLpfFrame prevLp f =
  where
   on = tubeScreamerOn f
   tone = ctrlA (fDist f)
-  -- Real-pedal voicing pass: shift the post-LPF range darker. Range
-  -- 64..191 (was 96..223) emphasises the mid band and rolls off the
-  -- top end at every TONE setting, so even at TONE=100 the TS does
-  -- not sound piercing under high-gain stacking.
-  alpha = 64 + (tone `shiftR` 1)
+  -- Darker post-LPF emphasises the mid band and avoids piercing highs.
+  alpha = 56 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -185,10 +174,8 @@ metalHpfFrame prevLp f =
   (if on then setMonoSample hp else setMonoSample x) (setMonoEqLow lp f)
  where
   on = metalDistortionOn f
-  -- Real-pedal voicing pass: tighter low cut. Range bumped from
-  -- 4..19 to 6..37 so TIGHT actually tightens the low end for
-  -- modern-metal-style palm-mute response.
-  alpha = 6 + (distTight (fOd f) `shiftR` 3)
+  -- Tight low cut for modern-metal-style palm-mute response.
+  alpha = 8 + (distTight (fOd f) `shiftR` 3)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -200,10 +187,9 @@ metalMulFrame f =
  where
   on = metalDistortionOn f
   drive = ctrlC (fDist f)
-  -- Real-pedal voicing pass: lower the maximum drive from ~22x to
-  -- ~18.95x so the wave does not crash so close to a square at full
-  -- DRIVE -- still plenty of saturation, just less ear-fatigue.
-  gain = resize (768 + (resize drive * 12 :: Unsigned 12)) :: Unsigned 12
+  -- Higher drive within the existing Q12 gain path; threshold and LPF
+  -- below keep the result aggressive without fizzing out.
+  gain = resize (768 + (resize drive * 13 :: Unsigned 12)) :: Unsigned 12
 
 metalClipFrame :: Frame -> Frame
 metalClipFrame f =
@@ -212,11 +198,9 @@ metalClipFrame f =
   on = metalDistortionOn f
   drive = ctrlC (fDist f)
   driveS = resize (asSigned9 drive) :: Signed 25
-  -- Real-pedal voicing pass: raise the threshold floor from 1.2M to
-  -- 1.5M so the hard clip keeps a touch more headroom at full DRIVE
-  -- (less square-wave, more crunchy saturation).
-  rawT = 3_500_000 - driveS * 5_000 :: Signed 25
-  threshold = resize (if rawT < 1_500_000 then 1_500_000 else rawT) :: Sample
+  -- Deeper hard clip than DS-1, held above the bit-crusher danger zone.
+  rawT = 3_300_000 - driveS * 6_000 :: Signed 25
+  threshold = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
   boosted = satShift8 (fAccL f)
 
 metalPostLpfFrame :: Sample -> Frame -> Frame
@@ -225,9 +209,8 @@ metalPostLpfFrame prevLp f =
  where
   on = metalDistortionOn f
   tone = ctrlA (fDist f)
-  -- Real-pedal voicing pass: shift the post-LPF range darker. Range
-  -- 48..175 (was 64..192) keeps fizz off the top end at every TONE.
-  alpha = 48 + (tone `shiftR` 1)
+  -- Dark post-LPF keeps the high-gain top end controlled.
+  alpha = 40 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -253,8 +236,8 @@ ds1HpfFrame prevLp f =
   (if on then setMonoSample hp else setMonoSample x) (setMonoEqLow lp f)
  where
   on = ds1On f
-  -- Moderate input low cut; TIGHT range 4..23 (between TS and metal).
-  alpha = 4 + (distTight (fOd f) `shiftR` 4)
+  -- Moderate input low cut; tighter than TS, looser than metal.
+  alpha = 5 + (distTight (fOd f) `shiftR` 4)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -266,8 +249,8 @@ ds1MulFrame f =
  where
   on = ds1On f
   drive = ctrlC (fDist f)
-  -- Q8 gain ~1x..~9x. A bit more push than TS, less than metal.
-  gain = resize (256 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
+  -- More push than TS and intentionally harder-edged.
+  gain = resize (256 + (resize drive * 9 :: Unsigned 12)) :: Unsigned 12
 
 ds1ClipFrame :: Frame -> Frame
 ds1ClipFrame f =
@@ -287,9 +270,8 @@ ds1ToneFrame prevLp f =
  where
   on = ds1On f
   tone = ctrlA (fDist f)
-  -- Brighter than TS; range 96..223 -> top end stays present at every
-  -- TONE setting but never reaches full pass-through.
-  alpha = 96 + (tone `shiftR` 1)
+  -- Brighter than TS; cutting top end without full pass-through.
+  alpha = 104 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -320,9 +302,8 @@ bigMuffPreFrame f =
  where
   on = bigMuffOn f
   drive = ctrlC (fDist f)
-  -- Q8 gain ~1.5x..~13x. Big Muff has lots of pre-gain; floor 384 so
-  -- even drive=0 already saturates lightly through the cascaded clips.
-  gain = resize (384 + (resize drive * 12 :: Unsigned 12)) :: Unsigned 12
+  -- Hot floor and broad sustain, but keep the ceiling below Metal.
+  gain = resize (448 + (resize drive * 11 :: Unsigned 12)) :: Unsigned 12
 
 bigMuffClip1Frame :: Frame -> Frame
 bigMuffClip1Frame f =
@@ -330,19 +311,18 @@ bigMuffClip1Frame f =
  where
   on = bigMuffOn f
   boosted = satShift8 (fAccL f)
-  -- First clip stage: medium knee, soft slope to keep some sustain.
-  kneeFirst = 2_700_000 :: Sample
+  -- First clip stage: earlier soft compression for sustain.
+  kneeFirst = 2_400_000 :: Sample
 
 bigMuffClip2Frame :: Frame -> Frame
 bigMuffClip2Frame f =
   setMonoSample (if on then softClipK kneeSecond afterMore else monoSample f) f
  where
   on = bigMuffOn f
-  -- Second pass through a lighter (~0.75x via Q8 192) gain ahead of a
-  -- tighter knee. Cascaded soft clips give the Muff its characteristic
-  -- thick saturation without a hard wall.
-  afterMore = satShift8 (mulU8 (monoSample f) 192)
-  kneeSecond = 2_000_000 :: Sample
+  -- Existing second clip stage: a little more push into a tighter knee
+  -- for thicker sustain without adding another cascade.
+  afterMore = satShift8 (mulU8 (monoSample f) 208)
+  kneeSecond = 1_850_000 :: Sample
 
 bigMuffToneFrame :: Sample -> Frame -> Frame
 bigMuffToneFrame prevLp f =
@@ -350,9 +330,8 @@ bigMuffToneFrame prevLp f =
  where
   on = bigMuffOn f
   tone = ctrlA (fDist f)
-  -- Darker tone curve: alpha range 56..183 keeps top-end fizz off the
-  -- output even at TONE=100 (still brighter than TS at high TONE).
-  alpha = 56 + (tone `shiftR` 1)
+  -- Darker tone curve keeps top-end fizz off the output.
+  alpha = 48 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -363,9 +342,8 @@ bigMuffLevelFrame f =
   on = bigMuffOn f
   level = ctrlB (fDist f)
   afterLevel = satShift7 (mulU8 (monoSample f) level)
-  -- Output safety knee, slightly tighter than DS-1 because Muff drives
-  -- a hotter signal into this stage.
-  safetyKnee = 2_900_000 :: Sample
+  -- Output safety knee leaves sustain but avoids level-stage collapse.
+  safetyKnee = 3_100_000 :: Sample
 
 -- ---- fuzz_face (Fuzz Face style; 4 stages: pre-gain, asym clip,
 --                tone, level+safety) ----------------------------------
@@ -385,9 +363,8 @@ fuzzFacePreFrame f =
  where
   on = fuzzFaceOn f
   drive = ctrlC (fDist f)
-  -- Q8 gain ~2x..~10x. Floor 512 so the fuzz is sensitive to input
-  -- level even at drive=0 (Fuzz Faces are notoriously touch-sensitive).
-  gain = resize (512 + (resize drive * 9 :: Unsigned 12)) :: Unsigned 12
+  -- Lower ceiling and hot asymmetry preserve cleanup without gating out.
+  gain = resize (448 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
 
 fuzzFaceClipFrame :: Frame -> Frame
 fuzzFaceClipFrame f =
@@ -395,10 +372,10 @@ fuzzFaceClipFrame f =
  where
   on = fuzzFaceOn f
   boosted = satShift8 (fAccL f)
-  -- Strong asymmetry: the negative half compresses harder, giving the
-  -- broken-up germanium-style waveform shape.
-  kneeP = 1_900_000 :: Sample
-  kneeN = 1_400_000 :: Sample
+  -- Strong asymmetry: the negative half compresses harder, but the
+  -- positive side keeps enough room for cleanup.
+  kneeP = 2_100_000 :: Sample
+  kneeN = 1_150_000 :: Sample
 
 fuzzFaceToneFrame :: Sample -> Frame -> Frame
 fuzzFaceToneFrame prevLp f =
@@ -406,9 +383,8 @@ fuzzFaceToneFrame prevLp f =
  where
   on = fuzzFaceOn f
   tone = ctrlA (fDist f)
-  -- "Round vs. bright": alpha range 72..199 -> TONE=0 is round and
-  -- woolly, TONE=100 brightens up but still rolls off the very top.
-  alpha = 72 + (tone `shiftR` 1)
+  -- "Round vs. bright", still rolling off the very top.
+  alpha = 80 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -419,9 +395,8 @@ fuzzFaceLevelFrame f =
   on = fuzzFaceOn f
   level = ctrlB (fDist f)
   afterLevel = satShift7 (mulU8 (monoSample f) level)
-  -- Output safety knee tighter than DS-1 / Big Muff because the fuzz
-  -- stage produces hotter peaks.
-  safetyKnee = 2_800_000 :: Sample
+  -- Output safety knee avoids gated collapse at high LEVEL.
+  safetyKnee = 3_000_000 :: Sample
 
 ratHighpassFrame :: Sample -> Sample -> Frame -> Frame
 ratHighpassFrame prevIn prevOut f =
@@ -430,14 +405,14 @@ ratHighpassFrame prevIn prevOut f =
   on = flag4 (fGate f)
   x = monoSample f
   highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 254 `shiftR` 8))
+    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 255 `shiftR` 8))
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (monoWet f) driveGain else 0, fAccR = 0}
  where
   on = flag4 (fGate f)
-  driveGain = resize (512 + (resize (ctrlC (fRat f)) * 14 :: Unsigned 12)) :: Unsigned 12
+  driveGain = resize (640 + (resize (ctrlC (fRat f)) * 12 :: Unsigned 12)) :: Unsigned 12
 
 ratDriveBoostFrame :: Frame -> Frame
 ratDriveBoostFrame f =
@@ -450,7 +425,7 @@ ratOpAmpLowpassFrame prev f =
   setMonoWet (if on then low else monoSample f) f
  where
   on = flag4 (fGate f)
-  alpha = 192 - resize (ctrlC (fRat f) `shiftR` 1) :: Unsigned 8
+  alpha = 184 - resize (ctrlC (fRat f) `shiftR` 1) :: Unsigned 8
   low = onePoleU8 alpha prev (monoWet f)
 
 ratClipFrame :: Frame -> Frame
@@ -459,20 +434,16 @@ ratClipFrame f =
  where
   on = flag4 (fGate f)
   amount = ctrlC (fRat f)
-  -- Real-pedal voicing pass: lower the clamp floor so the hard clip
-  -- engages more aggressively at high DRIVE. Floor was 3.75M; at
-  -- 2.5M the clip stage saturates harder, giving the RAT more "rude"
-  -- character at the top of the DRIVE knob.
-  rawThreshold = 6_291_456 - (resize (asSigned9 amount) * 9_000) :: Signed 25
-  clampedThreshold = if rawThreshold < 2_500_000 then 2_500_000 else rawThreshold
+  -- Fat old-op-amp hard clip; rougher than DS-1, less modern than Metal.
+  rawThreshold = 6_000_000 - (resize (asSigned9 amount) * 8_500) :: Signed 25
+  clampedThreshold = if rawThreshold < 2_200_000 then 2_200_000 else rawThreshold
   threshold = resize clampedThreshold :: Sample
 
 ratPostLowpassFrame :: Sample -> Frame -> Frame
--- Real-pedal voicing pass: alpha lowered from 192 to 176 so a touch
--- more high-frequency content is rolled off after the hard clip,
--- matching the darker top end of a real RAT.
+-- Global real-pedal pass: roll off more high-frequency content after the
+-- hard clip, matching the darker top end of a real RAT.
 ratPostLowpassFrame prev f =
-  setMonoWet (if on then onePoleU8 176 prev (monoWet f) else monoSample f) f
+  setMonoWet (if on then onePoleU8 168 prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
 
@@ -482,9 +453,8 @@ ratToneFrame prev f =
  where
   on = flag4 (fGate f)
   dark = resize ((resize (ctrlA (fRat f)) * 3 :: Unsigned 10) `shiftR` 2) :: Unsigned 8
-  -- Real-pedal voicing pass: shift the FILTER (TONE) range so even
-  -- fully bright still has some upper roll-off (alpha base 200 vs 224).
-  alpha = 200 - dark
+  -- Darker FILTER base so fully bright still has upper roll-off.
+  alpha = 192 - dark
 
 ratLevelFrame :: Frame -> Frame
 ratLevelFrame f =

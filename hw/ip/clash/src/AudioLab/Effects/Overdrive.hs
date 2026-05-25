@@ -42,15 +42,15 @@ import AudioLab.Types
 -- byte never saturates beyond Q8.
 odDriveK :: Unsigned 3 -> Unsigned 11
 odDriveK m = case m of
-  0 -> 5
-  1 -> 4
+  0 -> 4
+  1 -> 5
   2 -> 7   -- BD-2: D62, raised from 6 to match the two-cascaded ~40 dB op-amp
            -- character documented in BD2_MODEL_RESEARCH.md. Matches OCD's
            -- ceiling but BD-2's tighter asym knees keep the texture distinct.
-  3 -> 3
+  3 -> 2
   4 -> 7
-  5 -> 5
-  _ -> 5
+  5 -> 4
+  _ -> 4
 
 -- | Per-model positive-half soft-clip knee. Smaller values clip earlier
 -- (more saturation at moderate DRIVE); larger values keep the signal
@@ -58,26 +58,26 @@ odDriveK m = case m of
 -- knee constants change per model.
 odKneeP :: Unsigned 3 -> Sample
 odKneeP m = case m of
-  0 -> 2_700_000   -- TS9 (matches prior generic OD knees)
-  1 -> 2_600_000   -- OD-1: slightly earlier
+  0 -> 2_950_000   -- TS9: smoother, near-symmetric
+  1 -> 2_550_000   -- OD-1: slightly earlier
   2 -> 2_400_000   -- BD-2: D62, aggressive (was 3_000_000). Real BD-2 has
                    -- audible breakup well below mid-drive per source [4]
                    -- breadboard measurement; "transparent" was the wrong
                    -- characterisation. Now sits between OCD (2_300_000)
                    -- and OD-1 (2_600_000) but pairs with a much smaller
                    -- N knee for strong even-harmonic asymmetry.
-  3 -> 3_200_000   -- Jan Ray: transparent
-  4 -> 2_300_000   -- OCD: aggressive
-  5 -> 2_800_000   -- CENTAUR: smooth, midway
-  _ -> 2_700_000
+  3 -> 3_600_000   -- Jan Ray: transparent
+  4 -> 2_450_000   -- OCD: open hard-clip-leaning drive
+  5 -> 3_100_000   -- CENTAUR: smooth, clean-blend-like
+  _ -> 2_950_000
 
 -- | Per-model negative-half soft-clip knee. `kneeN < kneeP` adds even
 -- harmonics; tighter asymmetry == more obvious second-harmonic
 -- "tube" colour.
 odKneeN :: Unsigned 3 -> Sample
 odKneeN m = case m of
-  0 -> 2_300_000   -- TS9
-  1 -> 2_100_000   -- OD-1: stronger asym
+  0 -> 2_850_000   -- TS9: near-symmetric
+  1 -> 1_750_000   -- OD-1: stronger asym
   2 -> 1_900_000   -- BD-2: D62, strong asym (was 2_700_000). The BD-2 op-amps
                    -- run from a single supply with the rail offset documented
                    -- in source [1]; the resulting saturation is asymmetric.
@@ -85,23 +85,23 @@ odKneeN m = case m of
                    -- BD-2 carries the most pronounced even-harmonic colour
                    -- in the six-model lineup, matching the "tube-like"
                    -- breakup the real pedal is known for.
-  3 -> 3_000_000   -- Jan Ray: barely asymmetric
-  4 -> 1_900_000   -- OCD: hard
-  5 -> 2_600_000   -- CENTAUR: gentle asym
-  _ -> 2_300_000
+  3 -> 3_450_000   -- Jan Ray: barely asymmetric
+  4 -> 2_150_000   -- OCD: firm but more open than BD-2
+  5 -> 2_900_000   -- CENTAUR: gentle asym
+  _ -> 2_850_000
 
 -- | Per-model output safety knee. Caps the level stage so a hot LEVEL
 -- knob cannot slam the downstream amp / pedal stages. Higher = more
 -- headroom (more transparent), lower = harder ceiling.
 odSafetyKnee :: Unsigned 3 -> Sample
 odSafetyKnee m = case m of
-  0 -> 3_200_000   -- TS9
-  1 -> 3_000_000   -- OD-1: tighter
+  0 -> 3_350_000   -- TS9
+  1 -> 3_050_000   -- OD-1: tighter
   2 -> 3_400_000   -- BD-2: more headroom
-  3 -> 3_400_000   -- Jan Ray: transparent
-  4 -> 3_500_000   -- OCD: high headroom
-  5 -> 3_400_000   -- CENTAUR: smooth
-  _ -> 3_200_000
+  3 -> 3_700_000   -- Jan Ray: transparent
+  4 -> 3_750_000   -- OCD: high headroom
+  5 -> 3_650_000   -- CENTAUR: smooth
+  _ -> 3_350_000
 
 -- ---- Overdrive pipeline stages ---------------------------------------
 
