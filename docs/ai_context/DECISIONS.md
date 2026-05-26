@@ -4092,3 +4092,65 @@ not get removed even when superseded — they get updated.
   procedure. D68 is the accepted deployed baseline; D67 is the
   immediate rollback reference and D62 remains the deeper known-good
   reference.
+
+## D69 -- Amp Drive Mode saturation candidate pending bench
+
+- **Decision.** Deploy a bench candidate that strengthens only Amp Sim
+  Drive Mode saturation in `hw/ip/clash/src/AudioLab/Effects/Amp.hs`.
+  This is not accepted yet; external-instrument bench still decides
+  whether it becomes the source-control baseline.
+- **Scope.** Functional edits are limited to existing Drive-mode
+  constants in `Amp.hs`. Clean-mode tables, Amp OFF routing,
+  `amp_model_idx`, `amp_drive_mode` bit allocation, GPIO control
+  mapping, AXI addresses, helper topology, pipeline shape,
+  `Overdrive.hs`, `Distortion.hs`, `Compressor.hs`, `Pipeline.hs`,
+  `LowPassFir.hs`, GUI, HDMI, Encoder, Pmod RTL, and
+  `block_design.tcl` are unchanged. No new GPIO, register, IIR,
+  helper, cascade, or DSP operation was added.
+- **Constants.** The per-model Drive values are:
+
+  | model | `ampDrivePosDelta` | `ampDriveNegDelta` | `ampPreLpfDriveDarken` | `ampSecondStageDriveBonus` |
+  | --- | ---: | ---: | ---: | ---: |
+  | JC-120 | `16_200` | `13_500` | 6 | 22 |
+  | Twin Reverb | `85_800` | `74_100` | 8 | 30 |
+  | AC30 | `232_400` | `199_200` | 12 | 42 |
+  | Rockerverb | `374_400` | `322_400` | 20 | 62 |
+  | JCM800 | `462_000` | `407_000` | 20 | 74 |
+  | TriAmp Mk3 | `615_000` | `541_200` | 30 | 88 |
+
+- **Why.** D68 left Drive Mode too close to Clean Mode on the cleaner
+  amp models and not saturated enough on Rockerverb / JCM800 /
+  TriAmp Mk3. The change lowers Drive-only clip knees and raises the
+  Drive-only second-stage gain bonus so Drive Mode sounds closer in
+  change magnitude to enabling Overdrive or Distortion, while keeping
+  Clean Mode and Amp OFF untouched. The extra Drive-only
+  `ampPreLpfDriveDarken` values absorb some high-end fizz from the
+  stronger clipping.
+- **Fixed-scalar rule.** `ampDrivePosDelta` / `ampDriveNegDelta` remain
+  per-model fixed scalars (`Unsigned 3 -> Signed 25`). They are the
+  requested `ch * factor` values pre-evaluated at the current
+  `ampCharForModel` table (`18 / 78 / 166 / 208 / 220 / 246`) so the
+  abandoned D58 runtime-multiplier shape is not reintroduced.
+- **Build result.** Clash VHDL was regenerated and Vivado completed
+  with `write_bitstream completed successfully` and `0 Errors`. Routed
+  timing: WNS `-8.111 ns`, TNS `-9246.014 ns`, WHS `+0.052 ns`, THS
+  `0.000 ns`; design summary failing endpoints `3157 / 60278`.
+  Utilization: LUT `19717`, FF `22156`, BRAM `6`, DSP `83`.
+- **Deployment record.** bit/hwh md5 are
+  `6a1834b7f66693f82663c2c8a2fda28b` /
+  `927191b506c68588eaae286f4ccce112`; all five PYNQ board copies
+  matched the local files. `AudioLabOverlay(download=True)` programmed
+  the PL, ADC HPF was True, R19 was `0x23`, VERSION was `0x00480001`,
+  and the board was returned to MODE 3 mute after smoke checks.
+- **Smoke.** Python py_compile, 91 unittest cases,
+  `tests/test_overlay_controls.py`, and
+  `scripts/diagnose_pmod_loopback.py` passed. The loopback diagnostic
+  produced no `QUANT!` / `STAIR!` flags. A DMA-sine Amp-state smoke
+  at 1 kHz / `-12 dBFS` had `clip_d=0` for all_off passthrough,
+  Amp OFF with Drive bits ignored, JC-120 Clean, JC-120 Drive, AC30
+  Drive, Rockerverb Drive, JCM800 Drive, and TriAmp Drive.
+- **Acceptance gate.** Adopt only if the external-instrument bench
+  confirms all_off bypass is D68-clean, Amp OFF is quiet, Clean Mode
+  is not broken, Drive Mode is audibly stronger on all six models,
+  TriAmp Mk3 does not produce pops, and CLIP_COUNT remains normal.
+  Until then, D68 remains the accepted rollback baseline.
