@@ -4216,3 +4216,63 @@ not get removed even when superseded — they get updated.
   clearly audible, high-gain fizz is reduced, low-end is not muddy,
   and CLIP_COUNT remains normal. D69 remains the rollback baseline
   until bench result is reported.
+
+## D71 -- Cabinet multi-band pseudo-IR speaker character (bench candidate)
+
+- **Decision.** Deploy a bench candidate that extends the D70 cabinet
+  simulator with a multi-band pseudo-IR blend for stronger speaker
+  character and model separation. This is not accepted yet;
+  external-instrument bench decides whether it becomes the baseline.
+- **Scope.** Functional edits are `Cab.hs` only. No `Pipeline.hs`,
+  `LowPassFir.hs`, `Amp.hs`, `Overdrive.hs`, `Distortion.hs`,
+  `Compressor.hs`, GUI, HDMI, Encoder, Pmod RTL, or `block_design.tcl`
+  change. No new GPIO, register, IIR, DSP48, or BRAM. One `softClipK`
+  added (LUT-only) for presence/cone breakup.
+- **Changes from D70.**
+  1. FIR coefficient table redesigned: sums normalized to 256/260/264,
+     Nyquist rejection strengthened (model 0: -8 -> -16, model 2:
+     -32 -> -44 at air 0), early:body ratios widened (model 0: 2.76:1,
+     model 1: 1.24:1, model 2: 0.42:1).
+  2. Presence/cone breakup: `softClipK(cabPresenceKnee)` on the
+     saturated early component in `cabProductsFrame`, carried to
+     `cabIrFrame` via `fEqLowL` (transient field). Per-model mix:
+     open 25%, combo 12.5%, closed 12.5%.
+  3. Fizz suppression: `cabIrFrame` computes `input - mainSat` HF
+     residual and subtracts per-model fraction (open 12.5%, combo 25%,
+     closed 50%). Creates effective H_eff(f) = H(f) + fraction*(H(f)-1)
+     that deepens the FIR null near 12 kHz.
+  4. Mid body emphasis: per-model extra body in `cabIrFrame` (open 0%,
+     combo 6.25%, closed 12.5%).
+  5. Speaker compression knees widened: 5.6M / 4.0M / 2.8M (was
+     5.2M / 4.2M / 3.4M).
+  6. Body resonance knees retuned: 2.4M / 1.6M / 1.2M (was
+     2.2M / 1.8M / 1.4M).
+- **Speaker references.** Celestion Vintage 30: 70 Hz -- 5 kHz / Fs
+  75 Hz. Eminence Man O War: 80 Hz -- 5 kHz / Fs 91 Hz. Design targets
+  the 80-5000 Hz guitar speaker passband with resonance at 80-120 Hz,
+  box body at 200-400 Hz, cone breakup at 2-4 kHz, sharp rolloff above
+  5 kHz, and fizz removal above 8 kHz.
+- **Why not real IR.** BRAM budget is 6 tiles and must not increase.
+  Even a short 128-tap IR at 48 kHz would need one BRAM tile and 128
+  mulS10 taps (or a MAC accumulator pipeline), plus an IR loader and
+  AXI DMA path. The pseudo-IR approach uses the existing 4-tap FIR,
+  shift-add blending, and softClipK saturation to approximate the
+  spectral shaping and speaker compression without any new resources.
+- **Build result.** Clash VHDL regenerated; Vivado completed with
+  `write_bitstream completed successfully` and `0 Errors`. Routed
+  timing: WNS `-9.413 ns`, TNS `-10233.182 ns`, WHS `+0.051 ns`, THS
+  `0.000 ns`; design summary failing endpoints `3219 / 60414`.
+  Utilization: LUT `19956`, FF `22260`, BRAM `6`, DSP `83`.
+- **WNS delta.** 0.000 ns vs D70 (-9.413). The incremental build
+  reused D70 placement; P&R converged to the same timing.
+- **Deployment record.** bit/hwh md5 are
+  `a6d98c0dfcada3211630f4ef0773029d` /
+  `f28f08674d25c65a48cd240ae31a578a`; board copies md5-matched.
+  `AudioLabOverlay(download=True)` programmed the PL, ADC HPF True.
+  `diagnose_pmod_loopback.py` PASS: no QUANT! / STAIR!, CLIP_COUNT 0.
+- **Acceptance gate.** Adopt only if the external-instrument bench
+  confirms: all_off bypass is D69-clean, Cab0/1/2 model difference is
+  clearly audible (Cab0 bright+light, Cab1 mid+chime, Cab2 thick+dark),
+  high-gain fizz is reduced, low-end is not muddy, 5 kHz+ rolloff is
+  sharper than D70, and CLIP_COUNT remains normal. D70 is the rollback
+  baseline until bench result is reported.

@@ -365,32 +365,46 @@ stage is still the existing 4-tap FIR split over `cabProductsFrame`,
 `cabIrFrame`, and `cabLevelMixFrame`; no long IR loader and no extra
 AXI GPIO were added.
 
-The D70 speaker-character pass redesigned the 4-tap coefficient table
-for stronger model separation and Nyquist rejection, added a saturated
-body-resonance term in `fAcc3L`, and replaced the fixed `softClip` in
-`cabLevelMixFrame` with per-model `softClipK` knees for speaker
-compression. No new `mulS10` / `mulU8` / register / Pipeline.hs change.
+The D71 speaker-character pass extends D70 with a multi-band
+pseudo-IR blend: presence / cone breakup via `softClipK` on the
+early component, HF fizz suppression via `input - mainSat` residual
+subtraction, per-model mid-body emphasis, wider speaker-compression
+knee spread, and retuned FIR coefficients with stronger Nyquist
+rejection. No new `mulS10` / `mulU8` / register / Pipeline.hs change;
+one `softClipK` added (LUT-only, no DSP48).
 
 | Model | Target | DSP shape |
 | --- | --- | --- |
-| 0 | 1x12 open back (Fender-like) | Strong direct+early taps (c0+c1 = 188), light body (c2+c3 = 64), ratio 2.9:1. Nyquist rejection at air 0: -8 (3% of DC). Speaker knee 5.2M (most headroom). Body resonance boost `<<5` (subtle). |
-| 1 | 2x12 combo (Vox-like) | Balanced distribution (c0+c1 = 152, c2+c3 = 110), ratio 1.4:1. Nyquist rejection at air 0: -2 (1% of DC). Speaker knee 4.2M. Body resonance boost `<<6` (moderate). |
-| 2 | 4x12 closed back (Marshall/Mesa-like) | Heavy body (c0+c1 = 88, c2+c3 = 192), ratio 0.46:1. Nyquist rejection at air 0: -32 (11% of DC). Speaker knee 3.4M (tightest compression). Body resonance boost `<<7` (strong). |
+| 0 | 1x12 open back (Fender-like) | Strong direct (c0+c1 = 188, c2+c3 = 68), ratio 2.76:1. Sum 256, Nyquist -16 at air 0. Presence `softClipK(3.6M)` 25% mix. Fizz sub 12.5%. Body emphasis 0%. Speaker knee 5.6M. Body resonance `<<5`. |
+| 1 | 2x12 combo (Vox-like) | Balanced (c0+c1 = 144, c2+c3 = 116), ratio 1.24:1. Sum 260, Nyquist -24 at air 0. Presence `softClipK(3.0M)` 12.5%. Fizz sub 25%. Body emphasis 6.25%. Speaker knee 4.0M. Body resonance `<<6`. |
+| 2 | 4x12 closed back (Marshall/Mesa-like) | Heavy body (c0+c1 = 78, c2+c3 = 186), ratio 0.42:1. Sum 264, Nyquist -44 at air 0. Presence `softClipK(2.4M)` 12.5%. Fizz sub 50%. Body emphasis 12.5%. Speaker knee 2.8M. Body resonance `<<7`. |
 
-`air` still selects three variants per model, but the brightest row
-only restores a capped amount of direct tap. `air=100` therefore adds
-presence without reverting to raw line-direct tone. `mix=0` remains
-dry/raw and `mix=100` remains fully cabinet-shaped.
+`air` still selects three variants per model (0=off-axis / 1=balanced
+/ 2=on-axis). `mix=0` remains dry/raw, `mix=100` fully cab-shaped.
 
-The body-resonance term in `cabProductsFrame` routes the body products
-through `satShift8` -> `softClipK(cabBodyResKnee)` -> `resize << N`
-into `fAcc3L`. At normal playing levels this adds a proportional body
-boost; at high gain the `softClipK` saturates the boost, creating a
-speaker-cone-compression effect. The entire path uses only shifts,
-comparisons, and additions — no new DSP48. Per-model
-`cabSpeakerKnee` in `cabLevelMixFrame` replaces the former fixed
-`softClip` (knee 4,194,304) so model 0 has more headroom (5.2M) and
-model 2 compresses earlier (3.4M).
+Speaker target references: Celestion Vintage 30 70 Hz -- 5 kHz /
+Fs 75 Hz; Eminence Man O War 80 Hz -- 5 kHz / Fs 91 Hz. Guitar
+speakers roll off sharply above 5 kHz; the cab's FIR + fizz
+subtraction approximates this without IR convolution or BRAM.
+
+`cabProductsFrame` computes 4 `mulS10` products (unchanged count)
+split into "early" (fAccL) and "body" (fAcc2L). Body resonance
+routes through `satShift8` -> `softClipK(cabBodyResKnee)` ->
+`resize << N` into fAcc3L. Presence routes through `satShift8` ->
+`softClipK(cabPresenceKnee)` -> per-model shift into fEqLowL
+(transient carrier, overwritten by EQ downstream).
+
+`cabIrFrame` blends: mainSat (FIR sum of all 3 accumulators) +
+presenceS (from fEqLowL) + bodyAdd (per-model extra body) - fizzSub
+(per-model fraction of `input - mainSat` residual). The fizz
+subtraction creates an effective transfer function
+`H_eff(f) = H(f) + fraction * (H(f) - 1)` that deepens the FIR's
+HF rejection without new multipliers (model 2 gets a near-null at
+~12 kHz).
+
+`cabLevelMixFrame` applies per-model `softClipK(cabSpeakerKnee)`
+with wider spread (5.6M / 4.0M / 2.8M) for more differentiated
+speaker compression.
 
 ## Adding a new effect
 

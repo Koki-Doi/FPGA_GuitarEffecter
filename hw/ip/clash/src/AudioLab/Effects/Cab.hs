@@ -9,14 +9,19 @@ import AudioLab.FixedPoint
 import AudioLab.Types
 
 cabSpeakerKnee :: Unsigned 2 -> Sample
-cabSpeakerKnee 0 = 5_200_000
-cabSpeakerKnee 1 = 4_200_000
-cabSpeakerKnee _ = 3_400_000
+cabSpeakerKnee 0 = 5_600_000
+cabSpeakerKnee 1 = 4_000_000
+cabSpeakerKnee _ = 2_800_000
 
 cabBodyResKnee :: Unsigned 2 -> Sample
-cabBodyResKnee 0 = 2_200_000
-cabBodyResKnee 1 = 1_800_000
-cabBodyResKnee _ = 1_400_000
+cabBodyResKnee 0 = 2_400_000
+cabBodyResKnee 1 = 1_600_000
+cabBodyResKnee _ = 1_200_000
+
+cabPresenceKnee :: Unsigned 2 -> Sample
+cabPresenceKnee 0 = 3_600_000
+cabPresenceKnee 1 = 3_000_000
+cabPresenceKnee _ = 2_400_000
 
 cabCoeff :: Unsigned 8 -> Unsigned 8 -> Unsigned 2 -> Signed 10
 cabCoeff model air index =
@@ -31,54 +36,54 @@ cabCoeff model air index =
   openBack i =
     case airSel of
       0 -> case i of
-        0 -> 76
-        1 -> 112
-        2 -> 46
-        _ -> 18
+        0 -> 72
+        1 -> 116
+        2 -> 48
+        _ -> 20
       1 -> case i of
-        0 -> 88
-        1 -> 106
-        2 -> 36
-        _ -> 14
+        0 -> 82
+        1 -> 114
+        2 -> 42
+        _ -> 18
       _ -> case i of
-        0 -> 100
-        1 -> 100
-        2 -> 28
-        _ -> 12
+        0 -> 90
+        1 -> 116
+        2 -> 34
+        _ -> 16
   british i =
     case airSel of
       0 -> case i of
-        0 -> 48
-        1 -> 104
+        0 -> 36
+        1 -> 108
         2 -> 82
-        _ -> 28
+        _ -> 34
       1 -> case i of
-        0 -> 56
-        1 -> 100
+        0 -> 46
+        1 -> 106
         2 -> 76
-        _ -> 24
+        _ -> 32
       _ -> case i of
-        0 -> 64
-        1 -> 96
+        0 -> 54
+        1 -> 106
         2 -> 70
-        _ -> 20
+        _ -> 30
   closedBack i =
     case airSel of
       0 -> case i of
-        0 -> 20
+        0 -> 10
         1 -> 68
-        2 -> 104
-        _ -> 88
-      1 -> case i of
-        0 -> 28
-        1 -> 72
         2 -> 100
-        _ -> 78
-      _ -> case i of
-        0 -> 36
-        1 -> 76
+        _ -> 86
+      1 -> case i of
+        0 -> 18
+        1 -> 70
         2 -> 96
-        _ -> 68
+        _ -> 80
+      _ -> case i of
+        0 -> 26
+        1 -> 72
+        2 -> 92
+        _ -> 74
 
 cabProductsFrame ::
   Sample -> Sample -> Sample ->
@@ -91,6 +96,8 @@ cabProductsFrame d1 d2 d3 f =
     , fAcc2R = 0
     , fAcc3L = if on then bodyRes else 0
     , fAcc3R = 0
+    , fEqLowL = if on then presenceAmount else 0
+    , fEqLowR = 0
     }
  where
   on = flag7 (fGate f)
@@ -110,13 +117,38 @@ cabProductsFrame d1 d2 d3 f =
     0 -> resize bodyClipped `shiftL` 5
     1 -> resize bodyClipped `shiftL` 6
     _ -> resize bodyClipped `shiftL` 7
+  earlySample = satShift8 early
+  presenceClipped = softClipK (cabPresenceKnee modelSel) earlySample
+  presenceAmount = case modelSel of
+    0 -> presenceClipped `shiftR` 2
+    1 -> presenceClipped `shiftR` 3
+    _ -> presenceClipped `shiftR` 3
 
 cabIrFrame :: Frame -> Frame
 cabIrFrame f =
   setMonoWet (if on then wet else monoSample f) f
  where
   on = flag7 (fGate f)
-  wet = satShift8 (fAccL f + fAcc2L f + fAcc3L f)
+  model = ctrlC (fCab f)
+  modelSel :: Unsigned 2
+  modelSel = resize (model `shiftR` 6)
+  mainSat = satShift8 (fAccL f + fAcc2L f + fAcc3L f)
+  bodySat = satShift8 (fAcc2L f)
+  presenceS = fEqLowL f
+  hfResWide :: Wide
+  hfResWide = resize (monoSample f) - resize mainSat
+  hfResSat = satWide hfResWide
+  bodyAdd = case modelSel of
+    0 -> 0
+    1 -> bodySat `shiftR` 4
+    _ -> bodySat `shiftR` 3
+  fizzSub = case modelSel of
+    0 -> hfResSat `shiftR` 3
+    1 -> hfResSat `shiftR` 2
+    _ -> hfResSat `shiftR` 1
+  blendWide :: Wide
+  blendWide = resize mainSat + resize bodyAdd + resize presenceS - resize fizzSub
+  wet = satWide blendWide
 
 cabLevelMixFrame :: Frame -> Frame
 cabLevelMixFrame f =
