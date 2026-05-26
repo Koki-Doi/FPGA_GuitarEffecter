@@ -72,59 +72,55 @@ ampModelDarken idx = case idx of
 -- | Per-model extra darken to add only in Drive mode. Stacked on top of
 -- ``ampModelDarken`` so each model's Drive-mode tone is darker than
 -- its own Clean-mode tone (otherwise harder clipping just brightens).
--- D58.2 (vs D55): +1..+4 to absorb the extra harmonics from the larger
--- Drive-mode knee deltas without re-introducing D57's pre-clip push.
+-- D69: Drive-mode-only retune. Keep Clean mode unchanged, but absorb
+-- the extra harmonics from the stronger Drive-mode knee deltas.
 ampPreLpfDriveDarken :: Unsigned 3 -> Unsigned 8
 ampPreLpfDriveDarken idx = case idx of
-  0 ->  3    -- JC-120: keep Drive from sounding warm/fuzzy
+  0 ->  6    -- JC-120: light fizz guard
   1 ->  8    -- Twin: glassy tube breakup
-  2 ->  8    -- AC30: jangly crunch
-  3 -> 22    -- Rockerverb: dark thick saturation
-  4 -> 13    -- JCM800: less darken in Drive → upper-mid bark / presence
+  2 -> 12    -- AC30: jangly crunch
+  3 -> 20    -- Rockerverb: thick saturation without excess fizz
+  4 -> 20    -- JCM800: classic-rock drive, controlled top
   5 -> 30    -- TriAmp Mk3: modern HG, kill fizz
-  _ ->  3
+  _ ->  6
 
 -- | Per-model second-stage gain bonus in Drive mode.
--- D58.2 (vs D55): lifted into 14..56 so each model's second-stage push
--- is audibly stronger than D55's 8..44, but the highest entry sits well
--- below the D57 overshoot. Stays a simple per-model adder (no DSP cost).
+-- D69: raised only in Drive mode so the second clipper gets a real
+-- saturation push instead of a master-volume lift. Stays a simple
+-- per-model adder (no DSP cost).
 ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
 ampSecondStageDriveBonus idx = case idx of
-  0 ->  8    -- JC-120: very light bonus, SS feel
-  1 -> 14    -- Twin: light push
-  2 -> 34    -- AC30: harmonic bloom
-  3 -> 48    -- Rockerverb: thick push
-  4 -> 54    -- JCM800: stronger cascaded crunch
-  5 -> 68    -- TriAmp Mk3: modern HG sustain
-  _ ->  8
+  0 -> 22    -- JC-120: hard-edged light drive
+  1 -> 30    -- Twin: breakup / light OD
+  2 -> 42    -- AC30: clear crunch
+  3 -> 62    -- Rockerverb: thick push
+  4 -> 74    -- JCM800: classic-rock cascaded crunch
+  5 -> 88    -- TriAmp Mk3: strongest modern HG sustain
+  _ -> 22
 
 -- | Per-model positive-side asym-clip knee delta in Drive mode.
 -- Signed 25 fits the existing arithmetic in ``ampAsymClip``.
 --
--- D58.2 uses **per-model fixed scalars** (no ch dependency) sized to
--- approximate D58's first-stage `ch * factor` evaluated at each model's
--- own ``ampCharForModel`` peak value. The previous D58 attempt at
--- proportional ``ch * factor`` deltas added four new multiplier
+-- D69 keeps the D58.2 **per-model fixed scalar** shape (no runtime ch
+-- dependency), but raises the values to approximate the requested
+-- Drive-mode factors evaluated against each model's current
+-- ``ampCharForModel`` value. The previous D58 attempt at proportional
+-- ``ch * factor`` deltas added four new multiplier
 -- instantiations (DSP48E1 count 83 -> 87), and the resulting Vivado
 -- P&R shift introduced an audible high-frequency saturation noise on
 -- the ADC -> DAC bypass path (Amp OFF + safe bypass still glitched
 -- under the D58 bit, even though the affected stage was nominally
 -- dead code). The fixed-scalar form lands at the same DSP count as
--- D55 (83) so the bypass path P&R stays the same, while still giving
--- a Drive-mode knee shrink comparable to D58 at the first stage. The
--- second stage receives the same fixed value -- it ends up slightly
--- tighter than D58 on the high-gain voicings (D58 also halved its ch
--- there), but stays well above ``softClipK 3_300_000`` so the safety
--- clip is not over-tripped.
+-- D55/D68 (83), while still giving a stronger Drive-mode knee shrink.
 ampDrivePosDelta :: Unsigned 3 -> Signed 25
 ampDrivePosDelta idx = case idx of
-  0 ->   6_000   -- JC-120
-  1 ->  38_000   -- Twin Reverb
-  2 -> 155_000   -- AC30
-  3 -> 240_000   -- Rockerverb
-  4 -> 264_000   -- JCM800
-  5 -> 400_000   -- TriAmp Mk3
-  _ ->   6_000
+  0 ->  16_200   -- JC-120       : 18 * 900
+  1 ->  85_800   -- Twin Reverb  : 78 * 1100
+  2 -> 232_400   -- AC30         : 166 * 1400
+  3 -> 374_400   -- Rockerverb   : 208 * 1800
+  4 -> 462_000   -- JCM800       : 220 * 2100
+  5 -> 615_000   -- TriAmp Mk3   : 246 * 2500
+  _ ->  16_200
 
 -- | Per-model negative-side asym-clip knee delta in Drive mode.
 -- Slightly smaller than ``ampDrivePosDelta`` so the asymmetric
@@ -132,13 +128,13 @@ ampDrivePosDelta idx = case idx of
 -- preserved.
 ampDriveNegDelta :: Unsigned 3 -> Signed 25
 ampDriveNegDelta idx = case idx of
-  0 ->   5_000   -- JC-120
-  1 ->  34_000   -- Twin Reverb
-  2 -> 132_000   -- AC30
-  3 -> 220_000   -- Rockerverb
-  4 -> 200_000   -- JCM800: shallower neg clip → more asymmetry
-  5 -> 360_000   -- TriAmp Mk3
-  _ ->   5_000
+  0 ->  13_500   -- JC-120       : 18 * 750
+  1 ->  74_100   -- Twin Reverb  : 78 * 950
+  2 -> 199_200   -- AC30         : 166 * 1200
+  3 -> 322_400   -- Rockerverb   : 208 * 1550
+  4 -> 407_000   -- JCM800       : 220 * 1850
+  5 -> 541_200   -- TriAmp Mk3   : 246 * 2200
+  _ ->  13_500
 
 ampHighpassFrame :: Sample -> Sample -> Frame -> Frame
 ampHighpassFrame prevIn prevOut f =
