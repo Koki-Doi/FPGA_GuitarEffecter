@@ -4154,3 +4154,65 @@ not get removed even when superseded — they get updated.
   is not broken, Drive Mode is audibly stronger on all six models,
   TriAmp Mk3 does not produce pops, and CLIP_COUNT remains normal.
   Until then, D68 remains the accepted rollback baseline.
+
+## D70 -- Cabinet speaker character improvement (bench candidate)
+
+- **Decision.** Deploy a bench candidate that improves cabinet simulator
+  resonance, model separation, and speaker compression in
+  `hw/ip/clash/src/AudioLab/Effects/Cab.hs`. This is not accepted yet;
+  external-instrument bench decides whether it becomes the baseline.
+- **Scope.** Functional edits are `Cab.hs` only (coefficient table
+  redesign + body-resonance term in `fAcc3L` + per-model `softClipK`
+  speaker knee). A secondary fix patches the missing D54 BRAM wrapper
+  for `trueDualPortBlockRamWrapper_0.vhdl` (unrelated to Cab; enables
+  fresh Vivado builds after `make clean`). No `Pipeline.hs`,
+  `LowPassFir.hs`, `Amp.hs`, `Overdrive.hs`, `Distortion.hs`, GUI,
+  HDMI, Encoder, Pmod RTL, or `block_design.tcl` change. No new GPIO,
+  register, IIR, DSP48, or BRAM.
+- **Cab coefficient redesign.** The 4-tap FIR table was rebuilt for
+  stronger model separation and Nyquist rejection:
+
+  | Model | c0+c1 : c2+c3 (air 0) | Nyquist resp | Speaker knee |
+  | --- | --- | --- | --- |
+  | 0 (1×12 open) | 188 : 64 (2.9:1) | -8 (3%) | 5,200,000 |
+  | 1 (2×12 combo) | 152 : 110 (1.4:1) | -2 (1%) | 4,200,000 |
+  | 2 (4×12 closed) | 88 : 192 (0.46:1) | -32 (11%) | 3,400,000 |
+
+  Previous D69 ratios were 2.2:1 / 1.3:1 / 0.69:1 with Nyquist
+  responses of 28 / 20 / -20. All models now have better HF rejection.
+- **Body resonance.** `cabProductsFrame` routes body products through
+  `satShift8` → `softClipK(cabBodyResKnee)` → `resize << N` into
+  `fAcc3L`. At normal levels this is a proportional body boost; at high
+  gain the `softClipK` saturates, creating a speaker-cone-compression
+  effect. Per-model shift: open `<<5` (subtle), combo `<<6` (moderate),
+  closed `<<7` (strong). No new DSP48 — only shifts, comparisons, and
+  additions.
+- **Speaker saturation.** `cabLevelMixFrame` replaces the fixed
+  `softClip` (knee 4,194,304) with per-model `softClipK`: open
+  5,200,000 (most headroom), combo 4,200,000, closed 3,400,000
+  (tightest compression).
+- **BRAM wrapper fix.** `ADAU1761_topEntity_trueDualPortBlockRamWrapper_0.vhdl`
+  received the same D54 patch (shared variable → signal + `ram_style
+  "distributed"`) that the non-`_0` variant already had. Without this
+  patch, `make clean` + fresh rebuild fails with `Unsupported Dual Port
+  Block-RAM template`. This is a pre-existing build-infrastructure bug
+  unrelated to Cab.
+- **Build result.** Clash VHDL regenerated; Vivado completed with
+  `write_bitstream completed successfully` and `0 Errors`. Routed
+  timing: WNS `-9.413 ns`, TNS `-10233.182 ns`, WHS `+0.051 ns`, THS
+  `0.000 ns`; design summary failing endpoints `3219 / 60414`.
+  Utilization: LUT `19956`, FF `22260`, BRAM `6`, DSP `83`.
+- **WNS delta.** -1.302 ns vs D69 (-8.111). The delta includes both
+  the Cab combinational-logic addition and the i2s_to_stream BRAM
+  wrapper change (shared variable → signal alters the P&R landscape).
+  Bypass-path bench is required before acceptance.
+- **Deployment record.** bit/hwh md5 are
+  `aab907a4e56260543dc48adb35a3f09f` /
+  `f28f08674d25c65a48cd240ae31a578a`; board copies md5-matched.
+  `AudioLabOverlay(download=True)` programmed the PL, ADC HPF True.
+  `diagnose_pmod_loopback.py` PASS: no QUANT! / STAIR!, CLIP_COUNT 0.
+- **Acceptance gate.** Adopt only if the external-instrument bench
+  confirms: all_off bypass is D69-clean, Cab model difference is
+  clearly audible, high-gain fizz is reduced, low-end is not muddy,
+  and CLIP_COUNT remains normal. D69 remains the rollback baseline
+  until bench result is reported.

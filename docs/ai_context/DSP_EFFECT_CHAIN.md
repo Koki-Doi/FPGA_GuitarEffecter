@@ -365,23 +365,32 @@ stage is still the existing 4-tap FIR split over `cabProductsFrame`,
 `cabIrFrame`, and `cabLevelMixFrame`; no long IR loader and no extra
 AXI GPIO were added.
 
-The audio-analysis pass rebuilt the 4-tap coefficient table again:
+The D70 speaker-character pass redesigned the 4-tap coefficient table
+for stronger model separation and Nyquist rejection, added a saturated
+body-resonance term in `fAcc3L`, and replaced the fixed `softClip` in
+`cabLevelMixFrame` with per-model `softClipK` knees for speaker
+compression. No new `mulS10` / `mulU8` / register / Pipeline.hs change.
 
 | Model | Target | DSP shape |
 | --- | --- | --- |
-| 0 | 1x12 open back style | Lower total body, lighter low end, enough mid/air for clean and crunch, but less direct tap than the previous table. |
-| 1 | 2x12 combo style | Balanced response for Tube Screamer Lead / RAT Rhythm; highs are rolled off more than model 0 but not as dark as model 2. |
-| 2 | 4x12 closed back style | Lowest direct tap and strongest delayed-body taps for DS-1 / Metal / Big Muff / Fuzz Face; strongest high-fizz damping. |
+| 0 | 1x12 open back (Fender-like) | Strong direct+early taps (c0+c1 = 188), light body (c2+c3 = 64), ratio 2.9:1. Nyquist rejection at air 0: -8 (3% of DC). Speaker knee 5.2M (most headroom). Body resonance boost `<<5` (subtle). |
+| 1 | 2x12 combo (Vox-like) | Balanced distribution (c0+c1 = 152, c2+c3 = 110), ratio 1.4:1. Nyquist rejection at air 0: -2 (1% of DC). Speaker knee 4.2M. Body resonance boost `<<6` (moderate). |
+| 2 | 4x12 closed back (Marshall/Mesa-like) | Heavy body (c0+c1 = 88, c2+c3 = 192), ratio 0.46:1. Nyquist rejection at air 0: -32 (11% of DC). Speaker knee 3.4M (tightest compression). Body resonance boost `<<7` (strong). |
 
 `air` still selects three variants per model, but the brightest row
 only restores a capped amount of direct tap. `air=100` therefore adds
 presence without reverting to raw line-direct tone. `mix=0` remains
-dry/raw and `mix=100` remains fully cabinet-shaped; `level` still runs
-through the existing `softClip` in the post-Cab mix stage. The May 7
-analysis build briefly tried a lower `softClipK 3_400_000` knee here,
-but that path pushed WNS outside the deployable range; the deployed
-voicing keeps the timing-friendly `softClip` and puts the audible
-high-frequency roll-off in the Cab tap table instead.
+dry/raw and `mix=100` remains fully cabinet-shaped.
+
+The body-resonance term in `cabProductsFrame` routes the body products
+through `satShift8` -> `softClipK(cabBodyResKnee)` -> `resize << N`
+into `fAcc3L`. At normal playing levels this adds a proportional body
+boost; at high gain the `softClipK` saturates the boost, creating a
+speaker-cone-compression effect. The entire path uses only shifts,
+comparisons, and additions — no new DSP48. Per-model
+`cabSpeakerKnee` in `cabLevelMixFrame` replaces the former fixed
+`softClip` (knee 4,194,304) so model 0 has more headroom (5.2M) and
+model 2 compresses earlier (3.4M).
 
 ## Adding a new effect
 
