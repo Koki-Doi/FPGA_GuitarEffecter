@@ -4265,8 +4265,19 @@ not get removed even when superseded — they get updated.
   Utilization: LUT `19956`, FF `22260`, BRAM `6`, DSP `83`.
 - **WNS delta.** 0.000 ns vs D70 (-9.413). The incremental build
   reused D70 placement; P&R converged to the same timing.
+- **D71.1 retune.** Grid-search optimization of fizz / presence / body
+  fractions against user-supplied per-model target dB tables. Changes:
+  M0 presence >>2 -> >>2+>>4 (31.25%), M1 presence >>3 -> 0, M1 fizz
+  >>2 -> >>4, M2 fizz >>1 -> >>4, M1 body >>4 -> >>3, M2 body >>3 -> 0.
+  Achievable response at Air Mid (1 kHz = 0 dB): M0 5k -1.3 / 8k -3.5 /
+  12k -7.8; M1 5k -1.6 / 8k -4.3 / 12k -10.7; M2 5k -1.6 / 8k -4.3 /
+  12k -11.1. 8 kHz and 12 kHz match targets within 0.6 dB. 5 kHz for
+  M1/M2 is limited by the 4-tap FIR physics (~-1.5 dB max with
+  all-positive coefficients at 48 kHz). 250 Hz model differentiation and
+  2-3 kHz presence boost require IIR state (Pipeline.hs change,
+  currently prohibited).
 - **Deployment record.** bit/hwh md5 are
-  `a6d98c0dfcada3211630f4ef0773029d` /
+  `8827f2f20f78a32c7389f7fc85abc29c` /
   `f28f08674d25c65a48cd240ae31a578a`; board copies md5-matched.
   `AudioLabOverlay(download=True)` programmed the PL, ADC HPF True.
   `diagnose_pmod_loopback.py` PASS: no QUANT! / STAIR!, CLIP_COUNT 0.
