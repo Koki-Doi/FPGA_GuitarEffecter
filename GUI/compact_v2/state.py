@@ -77,9 +77,9 @@ except ImportError:
 
 @dataclass
 class AppState:
-    preset_id: str   = "02A"
-    preset_name: str = "BASIC  CLEAN"
-    preset_idx: int  = 1     # index into CHAIN_PRESETS (0..12)
+    preset_id: str   = "04A"
+    preset_name: str = "LIGHT CRUNCH"
+    preset_idx: int  = 3     # index into CHAIN_PRESETS (0..12)
     bpm: int         = 120
     key: str         = "E"
 
@@ -87,7 +87,7 @@ class AppState:
     chain: List[int] = field(default_factory=lambda: list(range(8)))
     # ON/OFF per effect (indexed by chain position == EFFECTS index in default order)
     effect_on: List[bool] = field(default_factory=lambda:
-        [True,  True, False, False, True, True, True, True])
+        [True,  True, True, False, True, True, False, True])
     selected_effect: int  = 4   # Amp Sim
 
     # per-effect independent knob storage (effect name → list of floats)
@@ -96,16 +96,16 @@ class AppState:
     selected_knob: int = 0
 
     # model-pick indices for the model-driven effects
-    dist_model_idx: int = 1   # Tube Screamer
-    amp_model_idx:  int = 2   # AC30 (D55 default, replaces "British Crunch")
-    cab_model_idx:  int = 2   # 4x12 British
+    dist_model_idx: int = 3   # DS-1
+    amp_model_idx:  int = 3   # Rockerverb
+    cab_model_idx:  int = 2   # 4x12 CLOSED
     # Overdrive model select (DECISIONS.md D45). 0..5 maps to
     # OVERDRIVE_MODELS in GUI/compact_v2/knobs.py; default = TS9.
-    overdrive_model_idx: int = 0
+    overdrive_model_idx: int = 2   # BD-2
     # Amp Sim binary drive mode (DECISIONS.md D53). 0 = current/normal
     # voicing, 1 = higher-drive voicing (same amp model). Mirrors
     # all_knob_values["Amp Sim"][7] which is the renderer-visible slot.
-    amp_drive_mode: int = 0
+    amp_drive_mode: int = 1
 
     # footswitches
     fs_states: List[bool] = field(default_factory=lambda:

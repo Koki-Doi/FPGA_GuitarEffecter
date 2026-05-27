@@ -15,16 +15,16 @@ EFFECTS_SHORT = ["NS", "CMP", "OD", "DIST", "AMP", "CAB", "EQ", "RVB"]
 # Per-effect knob assignments (label, default 0..100).
 # Amp Sim has 8 params (4x2 grid); all others have ≤6.
 EFFECT_KNOBS = {
-    "Noise Sup":  [("THRESH", 35),  ("DECAY",  45),  ("DAMP",   80)],
-    "Compressor": [("THRESH", 50),  ("RATIO",  45),  ("RESP",   40),  ("MAKEUP", 55)],
-    "Overdrive":  [("TONE",   60),  ("LEVEL",  60),  ("DRIVE",  35)],
-    "Distortion": [("TONE",   55),  ("LEVEL",  35),  ("DRIVE",  50),
+    "Noise Sup":  [("THRESH", 20),  ("DECAY",  90),  ("DAMP",  100)],
+    "Compressor": [("THRESH", 30),  ("RATIO",  70),  ("RESP",   85),  ("MAKEUP", 55)],
+    "Overdrive":  [("TONE",   35),  ("LEVEL",  50),  ("DRIVE",  55)],
+    "Distortion": [("TONE",   50),  ("LEVEL",  35),  ("DRIVE",  50),
                    ("BIAS",   50),  ("TIGHT",  60),  ("MIX",   100)],
-    "Amp Sim":    [("GAIN",   45),  ("BASS",   55),  ("MID",    60),  ("TREB",  50),
-                   ("PRES",   50),  ("RES",    50),  ("MSTR",   70),  ("DRV MODE", 0)],
-    "Cab IR":     [("MIX",   100),  ("LEVEL",  70),  ("MODEL",  33),  ("AIR",   35)],
-    "EQ":         [("LOW",    50),  ("MID",    55),  ("HIGH",   55)],
-    "Reverb":     [("DECAY",  30),  ("TONE",   65),  ("MIX",    25)],
+    "Amp Sim":    [("GAIN",   80),  ("BASS",   95),  ("MID",    70),  ("TREB",  20),
+                   ("PRES",   70),  ("RES",    70),  ("MSTR",   70),  ("DRV MODE", 1)],
+    "Cab IR":     [("MIX",   100),  ("LEVEL",  70),  ("MODEL",  33),  ("AIR",  100)],
+    "EQ":         [("LOW",    50),  ("MID",    50),  ("HIGH",   50)],
+    "Reverb":     [("DECAY",  30),  ("TONE",   65),  ("MIX",    65)],
 }
 
 # Pre-computed default knob values for per-effect initialisation.

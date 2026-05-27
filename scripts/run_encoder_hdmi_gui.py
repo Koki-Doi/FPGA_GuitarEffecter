@@ -348,10 +348,8 @@ def main(argv=None):
         dry_run=bool(args.dry_run or args.no_audio_apply),
         skip_rat=bool(args.skip_rat),
     )
-    applier.apply_safe_bypass()
-    for i in range(len(state.effect_on)):
-        state.effect_on[i] = False
-    print("[gui] startup safe-bypass applied (all effects OFF)")
+    applier.apply_appstate(state, force=True)
+    print("[gui] startup state applied (AppState defaults)")
     state.live_apply = bool(args.live_apply)
     state.apply_interval_ms = int(args.apply_interval_ms)
 
