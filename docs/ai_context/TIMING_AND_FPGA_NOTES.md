@@ -15,6 +15,7 @@
 
 | Build | WNS | TNS | Notes |
 | --- | --- | --- | --- |
+| **Cabinet multi-band pseudo-IR speaker character candidate (May 27, deployed for bench, D71)** | **-9.413 ns** | -10233.182 ns | D71 extends D70 with multi-band pseudo-IR blend in `AudioLab/Effects/Cab.hs`: (1) FIR coefficients redesigned with sums 256/260/264 and stronger Nyquist rejection (model 0: -16, model 1: -24, model 2: -44 at air 0); (2) presence/cone breakup via `softClipK(cabPresenceKnee)` on early component (open 25%, combo 12.5%, closed 12.5%); (3) HF fizz suppression via `input - mainSat` residual subtraction (open 12.5%, combo 25%, closed 50%); (4) per-model mid-body emphasis (open 0%, combo 6.25%, closed 12.5%); (5) speaker compression knees widened to 5.6M/4.0M/2.8M; (6) body resonance knees retuned to 2.4M/1.6M/1.2M. One `softClipK` added (LUT-only, no DSP48). WNS delta 0.000 ns vs D70 (incremental build reused D70 placement). D71.1 retune (fizz/presence/body fraction grid-search) and D71.2 (20 kHz non-monotonic fix + 8 kHz rolloff deepening) applied on top. Routed WHS `+0.051 ns`, THS `0.000 ns`; design summary failing endpoints `3219 / 60414`. Slice LUTs `19956`, Slice Registers `22260`, BRAM `6`, DSPs `83`. bit/hwh md5 `9a739f904aef0955b7e59837a2c33d41` / `f28f08674d25c65a48cd240ae31a578a` deployed (after D71.2). Deploy checks PASS: board md5 matches local, `AudioLabOverlay(download=True)`, ADC HPF True. `scripts/diagnose_pmod_loopback.py` PASS with no `QUANT!` / `STAIR!` and CLIP_COUNT 0. External-instrument bench is pending; D70 is the rollback baseline until D71 is auditioned. |
 | **Cabinet speaker character improvement candidate (May 26, deployed for bench, D70)** | **-9.413 ns** | -10233.182 ns | D70 improves cabinet simulator in `AudioLab/Effects/Cab.hs`: FIR coefficient table redesign (model 0 direct:body 2.9:1, model 2 0.46:1; Nyquist rejection improved from 28/20/-20 to -8/-2/-32), saturated body-resonance term in `fAcc3L` via `satShift8 -> softClipK -> resize << N` (no new DSP48), per-model `softClipK` speaker knee in `cabLevelMixFrame` (open 5.2M / combo 4.2M / closed 3.4M). Secondary fix: D54 BRAM patch applied to `trueDualPortBlockRamWrapper_0.vhdl` (shared variable -> signal + `ram_style "distributed"`). WNS delta -1.302 ns vs D69; includes both Cab combinational-logic addition and i2s_to_stream BRAM wrapper P&R change. Routed WHS `+0.051 ns`, THS `0.000 ns`; design summary failing endpoints `3219 / 60414`. Slice LUTs `19956`, Slice Registers `22260`, BRAM `6`, DSPs `83`. bit/hwh md5 `aab907a4e56260543dc48adb35a3f09f` / `f28f08674d25c65a48cd240ae31a578a` deployed. Deploy checks PASS: board md5 matches local, `AudioLabOverlay(download=True)`, ADC HPF True. `scripts/diagnose_pmod_loopback.py` PASS with no `QUANT!` / `STAIR!` and CLIP_COUNT 0. External-instrument bench is pending; D69 remains the rollback baseline until D70 is auditioned. |
 | **Amp Drive Mode saturation candidate (May 26, deployed for bench, D69)** | **-8.111 ns** | -9246.014 ns | D69 strengthens only Amp Sim Drive Mode in `AudioLab/Effects/Amp.hs` by retuning existing Drive-mode constants. `ampPreLpfDriveDarken` is `6 / 8 / 12 / 20 / 20 / 30`, `ampSecondStageDriveBonus` is `22 / 30 / 42 / 62 / 74 / 88`, `ampDrivePosDelta` is `16_200 / 85_800 / 232_400 / 374_400 / 462_000 / 615_000`, and `ampDriveNegDelta` is `13_500 / 74_100 / 199_200 / 322_400 / 407_000 / 541_200` for JC-120 / Twin Reverb / AC30 / Rockerverb / JCM800 / TriAmp Mk3. The Drive deltas remain per-model fixed scalars (`Unsigned 3 -> Signed 25`) evaluated from the current `ampCharForModel` values; no runtime multiplier, model-index change, GPIO change, helper addition, register, IIR, DSP operation, `Pipeline.hs`, `LowPassFir.hs`, GUI, HDMI, Pmod RTL, or `block_design.tcl` edit was introduced. Routed WHS `+0.052 ns`, THS `0.000 ns`; design summary failing endpoints `3157 / 60278`. Slice LUTs `19717`, Slice Registers `22156`, BRAM `6`, DSPs `83`. bit/hwh md5 `6a1834b7f66693f82663c2c8a2fda28b` / `927191b506c68588eaae286f4ccce112` deployed 5-site for bench. Deploy checks PASS: board md5 matches local, `AudioLabOverlay(download=True)`, ADC HPF True, R19 `0x23`, VERSION `0x00480001`, MODE 3 mute. `scripts/diagnose_pmod_loopback.py` PASS with no `QUANT!` / `STAIR!`; DMA-sine Amp-state smoke at 1 kHz / `-12 dBFS` had `clip_d=0` for all_off, Amp OFF, JC-120 Clean/Drive, AC30 Drive, Rockerverb Drive, JCM800 Drive, and TriAmp Drive. External-instrument bench is pending; D68 remains the accepted rollback baseline until D69 is auditioned. |
 | **Global Amp / Distortion / Overdrive real-pedal constants retune (May 25, deployed, branch `feature/global-amp-dist-od-real-pedal-retune-20260525-192457`, D68)** | **-7.333 ns** | -9235.637 ns | D68 bulk-retunes existing constants only in `Amp.hs`, `Distortion.hs`, and `Overdrive.hs` after explicit user risk acceptance and with rollback to D67 recorded. No model index, GPIO mapping, AXI address, helper topology, pipeline shape, `Pipeline.hs`, `LowPassFir.hs`, GUI, HDMI, Pmod RTL, or `block_design.tcl` changed; no register, IIR, helper, cascade, or DSP operation was added. Routed WHS `+0.051 ns`, THS `0.000 ns`; design summary failing endpoints `3595 / 60350`, worst endpoint `compLevelPipe_reg[638]/C -> compGain_reg[7]/D`. Slice LUTs `19842`, Slice Registers `22246`, BRAM `6`, DSPs `83`. bit/hwh md5 `cabb9bca3fbcc41f06f8b9fe8301cff1` / `299485480dcc46aa0c679cef8f1a048a` deployed 5-site. Deploy checks PASS: board md5 matches local, `AudioLabOverlay(download=True)`, ADC HPF True, R19 `0x23`, VERSION `0x00480001`, MODE 3 mute, CLIP_COUNT 0. `scripts/diagnose_pmod_loopback.py` PASS with no `QUANT!` / `STAIR!`; user-reported external bench PASS for all_off bypass and all Amp / Distortion / Overdrive models. D68 is accepted and becomes the deployed baseline. |
@@ -179,3 +180,58 @@ typically:
 These do not show up in passthrough mode but appear once an effect that
 exercises a slow path is enabled, which makes them hard to debug from
 inside Jupyter.
+
+## Timing candidate: Compressor + Cab pipeline split v2
+
+Branch: `timing/comp-cab-split-v2`
+Commit: `24fa72b`
+
+This candidate keeps the audio voicing constants unchanged and only
+splits timing-heavy stages:
+
+- Compressor target-gain calculation and gain smoothing are separated
+  using `Maybe CompTarget`. `Nothing` cycles hold the previous
+  compressor gain and do not reset gain to unity.
+- Cab products and cab saturation / softClip processing are separated
+  by `cabSatPipe`.
+- No new AXI GPIO, no block design change, no DSP48 increase, no BRAM
+  increase. `Makefile` remains environment-independent.
+
+Timing comparison (all clean / non-incremental builds):
+
+| Build | WNS | TNS | Notes |
+| --- | ---: | ---: | --- |
+| D71 clean default | -10.854 ns | -11045 ns | Fresh P&R baseline |
+| Comp+Cab v2 default | -10.687 ns | -10314 ns | WNS +0.167 ns, TNS +731 ns |
+| Comp+Cab v2 Performance_Explore | -9.972 ns | -10138 ns | WNS +0.882 ns vs D71 clean |
+
+Top-100 worst-path distribution:
+
+| Source | D71 clean | Comp+Cab v2 Explore |
+| --- | ---: | ---: |
+| Compressor | 23 | 0 |
+| Amp | 28 | 0 |
+| DS-1 | 24 | 76 |
+
+Conclusion: Comp+Cab v2 is a timing candidate and should be kept on the
+branch, but it is not timing-closed and should not be merged to main
+until bench checks are complete.
+
+## Rejected DS-1 split attempt
+
+A DS-1 timing split was attempted by separating `satShift8(fAccL)` from
+`asymSoftClip` using a new `ds1BoostFrame` stage in `Distortion.hs` and
+a `ds1BoostPipe` register in `Pipeline.hs`.
+
+| Build | WNS |
+| --- | ---: |
+| Comp+Cab v2 default | -10.687 ns |
+| Comp+Cab+DS1 split default | -11.378 ns |
+
+The DS-1 split degraded WNS by about 0.691 ns relative to Comp+Cab v2
+default. The code was reverted and is not committed.
+
+Conclusion: do not retry this exact `ds1BoostFrame -> ds1ClipFrame`
+split. The DS-1 bottleneck appears to be dominated by routing / `Maybe
+Frame` mux / CARRY4 / fanout pressure rather than only local
+`satShift8 + asymSoftClip` combinational depth.
