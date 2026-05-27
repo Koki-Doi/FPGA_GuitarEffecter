@@ -46,13 +46,17 @@ pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
 The latest accepted DSP baseline is D68 (2026-05-25), the global
 Amp / Distortion / Overdrive constants retune. The currently deployed
-bench candidate is D69 (2026-05-26), which changes only Amp Sim
-Drive-mode constants in `AudioLab.Effects.Amp` and leaves Clean Mode,
-Amp OFF, GPIOs, `Pipeline.hs`, `LowPassFir.hs`, and the other effects
-unchanged. The fixed-scalar constant-table approach is load-bearing:
-D58 / D59 / D60 / D61 v2 showed that adding DSP48 multipliers or new
-feedback state can perturb Vivado P&R enough to make the safe-bypass
-path audibly noisy even when CLIP_COUNT and WNS look acceptable.
+bench candidate is D71 (2026-05-27), the cabinet multi-band pseudo-IR
+speaker character pass in `AudioLab.Effects.Cab` (extends D70's FIR
+redesign + speaker compression with presence/cone breakup, fizz
+suppression, per-model body emphasis, wider speaker-knee spread, and
+retuned body resonance). D69 (Amp Drive Mode saturation) and D70
+(initial cabinet speaker character) are superseded by D71 but remain
+the rollback chain (D70 -> D69 -> D68). The fixed-scalar
+constant-table approach is load-bearing: D58 / D59 / D60 / D61 v2
+showed that adding DSP48 multipliers or new feedback state can perturb
+Vivado P&R enough to make the safe-bypass path audibly noisy even when
+CLIP_COUNT and WNS look acceptable.
 
 ## Core types
 
@@ -324,7 +328,7 @@ was added.
 
 Per-model voicing tables (`docs/ai_context/AMP_MODEL_RESEARCH_D55.md`
 section 6 carries the original per-model rationale; values here are
-the current D69 Amp Drive Mode candidate):
+the current deployed D69+ Amp Drive Mode values, unchanged since D69):
 
 | idx | model        | modelDarken | trebleTrim | presenceTrim | drivePosDelta | driveNegDelta | preLpfDriveDarken | secondStageDriveBonus |
 | --- | ------------ | ----------- | ---------- | ------------ | ------------- | ------------- | ----------------- | --------------------- |

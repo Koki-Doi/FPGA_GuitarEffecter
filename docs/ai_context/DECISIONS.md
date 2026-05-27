@@ -4276,8 +4276,12 @@ not get removed even when superseded — they get updated.
   all-positive coefficients at 48 kHz). 250 Hz model differentiation and
   2-3 kHz presence boost require IIR state (Pipeline.hs change,
   currently prohibited).
-- **Deployment record.** bit/hwh md5 are
-  `8827f2f20f78a32c7389f7fc85abc29c` /
+- **D71.2 retune.** Body darkening (extra body in FIR sum) fixes the
+  16-20 kHz non-monotonic bump while maintaining model ordering at
+  8 kHz. Air Mid response: M0 -4.4 / M1 -4.7 / M2 -5.1 at 8 kHz;
+  all models monotonically decrease through 20 kHz.
+- **Deployment record.** bit/hwh md5 after D71.2 are
+  `9a739f904aef0955b7e59837a2c33d41` /
   `f28f08674d25c65a48cd240ae31a578a`; board copies md5-matched.
   `AudioLabOverlay(download=True)` programmed the PL, ADC HPF True.
   `diagnose_pmod_loopback.py` PASS: no QUANT! / STAIR!, CLIP_COUNT 0.

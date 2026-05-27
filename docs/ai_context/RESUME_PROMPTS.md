@@ -114,9 +114,11 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。Vivado 実装で WNS が現行 D62 deploy (`-8.497 ns`) より
-> 明らかに悪い bitstream、または safe-bypass で高域ノイズが出る
-> bitstream は deploy しないでください。
+> してください。Vivado 実装で WNS が現行 accepted baseline D68
+> (`-7.333 ns`) より明らかに悪い bitstream、または safe-bypass で高域
+> ノイズが出る bitstream は deploy しないでください。現在 deployed 中の
+> bench candidate は D71 (`-9.413 ns`) ですが、D71 は bench 未通過の
+> ため accepted ではありません。
 
 ## Adding a new effect
 
