@@ -164,7 +164,12 @@ def _bring_up_overlay():
     if loaded_basename == "audio_lab.bit":
         print("[gui] audio_lab.bit already loaded; "
               "attaching with download=False to preserve rgb2dvi PLL lock.")
-        overlay = AudioLabOverlay(download=False)
+        try:
+            overlay = AudioLabOverlay(download=False)
+        except RuntimeError:
+            print("[gui] download=False failed (stale PL record from another "
+                  "process); falling back to download=True.")
+            overlay = AudioLabOverlay()
     else:
         print("[gui] PL.bitfile_name=%r; loading audio_lab.bit (download=True)."
               % (loaded_basename or "<none>",))
@@ -343,6 +348,10 @@ def main(argv=None):
         dry_run=bool(args.dry_run or args.no_audio_apply),
         skip_rat=bool(args.skip_rat),
     )
+    applier.apply_safe_bypass()
+    for i in range(len(state.effect_on)):
+        state.effect_on[i] = False
+    print("[gui] startup safe-bypass applied (all effects OFF)")
     state.live_apply = bool(args.live_apply)
     state.apply_interval_ms = int(args.apply_interval_ms)
 

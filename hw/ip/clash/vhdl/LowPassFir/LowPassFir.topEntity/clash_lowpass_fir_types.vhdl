@@ -14,12 +14,6 @@ package clash_lowpass_fir_types is
     AxisOut_sel1_oValid : boolean;
     AxisOut_sel2_oLast : boolean;
   end record;
-  type CompTarget is record
-    CompTarget_sel0_ctOn : boolean;
-    CompTarget_sel1_ctTarget : unsigned(11 downto 0);
-    CompTarget_sel2_ctStep : unsigned(11 downto 0);
-  end record;
-  subtype Maybe_1 is std_logic_vector(25 downto 0);
 
   type Tuple4 is record
     Tuple4_sel0_std_logic_vector : std_logic_vector(47 downto 0);
@@ -90,8 +84,6 @@ package clash_lowpass_fir_types is
   function dataToTag (b : in boolean) return signed;
   function toSLV (p : AxisOut) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return AxisOut;
-  function toSLV (p : CompTarget) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return CompTarget;
   function toSLV (sl : in std_logic) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return std_logic;
   function toSLV (p : Tuple4) return std_logic_vector;
@@ -189,15 +181,6 @@ package body clash_lowpass_fir_types is
   alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
     return (fromSLV(islv(0 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 49)));
-  end;
-  function toSLV (p : CompTarget) return std_logic_vector is
-  begin
-    return (toSLV(p.CompTarget_sel0_ctOn) & toSLV(p.CompTarget_sel1_ctTarget) & toSLV(p.CompTarget_sel2_ctStep));
-  end;
-  function fromSLV (slv : in std_logic_vector) return CompTarget is
-  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
-  begin
-    return (fromSLV(islv(0 to 0)),fromSLV(islv(1 to 12)),fromSLV(islv(13 to 24)));
   end;
   function toSLV (sl : in std_logic) return std_logic_vector is
   begin
