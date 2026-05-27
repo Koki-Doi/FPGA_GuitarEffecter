@@ -1,12 +1,22 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NumericUnderscores #-}
 
 module AudioLab.Effects.Compressor where
 
 import Clash.Prelude
+import GHC.Generics (Generic)
 
 import AudioLab.Control
 import AudioLab.FixedPoint
 import AudioLab.Types
+
+data CompTarget = CompTarget
+  { ctOn :: Bool
+  , ctTarget :: GateGain
+  , ctStep :: GateGain
+  }
+  deriving (Generic, NFDataX)
 
 -- ---- Compressor (THRESHOLD / RATIO / RESPONSE / MAKEUP) --------------
 --
@@ -91,30 +101,15 @@ compEnvNext env (Just f)
     in if raw == 0 then 1 else resize (asSigned9 raw) :: Sample
   releaseStep = responseStep + envStep
 
--- Stage 2 target gain (lives inside the gain-smoother, not its own
--- pipeline stage). unity when env <= softThreshold; otherwise reduced
--- linearly with the excess and the ratio. ratio=0 -> almost no
--- compression; ratio=255 -> strong reduction.
---
--- Real-pedal voicing pass: introduced a small soft-knee offset and a
--- gentler per-dB reduction slope so the engagement is more gradual.
--- Recording analysis then showed the live presets barely changed crest
--- factor, so this widens the knee and adds a modest amount of reduction
--- slope back without returning to the abrupt hard-knee feel.
---
---   * softThreshold = threshold - (threshold >> 3) -- ~12% below the
---     user threshold, so engagement starts earlier
---     instead of as a brick wall at exactly threshold.
---   * excessShifted = (excess >> 12) + (excess >> 14), about 1.25x the
---     previous reduction slope. Combined with the ratio byte this is
---     audible at ratio=25..45 while still avoiding over-compression.
-compTargetGain :: Frame -> Sample -> GateGain
-compTargetGain f env
-  | not (compOn f)         = gateUnity
-  | env <= softThreshold   = gateUnity
-  | reduction >= gateUnity = 0
-  | otherwise              = gateUnity - reduction
+-- Stage 2a: target gain + smoothing step, registered as Maybe CompTarget.
+-- Nothing cycles (idle pipeline slots between valid I2S frames) produce
+-- Nothing so the downstream smoother holds the previous gain -- no
+-- spurious reset to unity between valid samples.
+compTargetNext :: Sample -> Maybe Frame -> Maybe CompTarget
+compTargetNext _ Nothing = Nothing
+compTargetNext env (Just f) = Just (CompTarget on target step)
  where
+  on = compOn f
   threshold      = compThresholdSample (fComp f)
   softThreshold  = threshold - (threshold `shiftR` 3)
   excess         = env - softThreshold
@@ -133,25 +128,27 @@ compTargetGain f env
   reduction
     | reduction24 >= unityU24 = gateUnity
     | otherwise               = resize reduction24
-
--- Stage 3 gain smoother: a single integer step per sample toward the
--- target. Both attack and release use the same step, controlled by
--- compResponse (faster at low values, slower at high values).
-compGainNext :: GateGain -> Sample -> Maybe Frame -> GateGain
-compGainNext gain _ Nothing = gain
-compGainNext gain env (Just f)
-  | not (compOn f) = gateUnity
-  | gain < target =
-      if target - gain < step then target else gain + step
-  | gain > target =
-      if gain - target < step then target else gain - step
-  | otherwise     = gain
- where
-  target = compTargetGain f env
+  target
+    | not on               = gateUnity
+    | env <= softThreshold = gateUnity
+    | reduction >= gateUnity = 0
+    | otherwise            = gateUnity - reduction
   responseByte = compResponseByte (fComp f)
   responseDistance = (255 :: Unsigned 8) - responseByte
   raw = (responseDistance `shiftR` 3) + (responseDistance `shiftR` 5)
   step = if raw == 0 then 1 else resize raw :: GateGain
+
+-- Stage 2b: gain smoother. Nothing holds gain unchanged; Just steps
+-- toward the registered target.
+compGainSmooth :: GateGain -> Maybe CompTarget -> GateGain
+compGainSmooth gain Nothing = gain
+compGainSmooth gain (Just (CompTarget on target step))
+  | not on    = gateUnity
+  | gain < target =
+      if target - gain < step then target else gain + step
+  | gain > target =
+      if gain - target < step then target else gain - step
+  | otherwise = gain
 
 -- Stage 4 apply: one register stage of multiply + saturating shift.
 -- Same arithmetic shape as nsApplyFrame so timing remains comparable.

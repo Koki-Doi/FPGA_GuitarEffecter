@@ -99,15 +99,14 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   nsGain = register gateUnity (nsGainNext <$> nsGain <*> nsEnv <*> nsLevelPipe)
   nsPipe = register Nothing (mapPipe <$> (nsApplyFrame <$> nsGain) <*> nsLevelPipe)
 
-  -- Compressor pipeline. Sits between the noise suppressor and the
-  -- overdrive: tightens picking before the gain stages. Same shape as
-  -- the noise suppressor (one envelope-input register stage, two
-  -- feedback registers, one apply stage) plus a separate makeup
-  -- multiply stage so each register stage holds a single multiply.
-  -- Bit-exact bypass when the enable bit (fComp ctrlD bit 7) is clear.
+  -- Compressor pipeline. The target-gain computation (threshold decode +
+  -- 24-bit multiply + clamp) is registered separately from the gain
+  -- smoother (compare + step) via Maybe CompTarget. Nothing cycles pass
+  -- through without resetting gain to unity.
   compLevelPipe = register Nothing (mapPipe gateLevelFrame <$> nsPipe)
   compEnv = register 0 (compEnvNext <$> compEnv <*> compLevelPipe)
-  compGain = register gateUnity (compGainNext <$> compGain <*> compEnv <*> compLevelPipe)
+  compTarget = register Nothing (compTargetNext <$> compEnv <*> compLevelPipe)
+  compGain = register gateUnity (compGainSmooth <$> compGain <*> compTarget)
   compApplyPipe = register Nothing (mapPipe <$> (compApplyFrame <$> compGain) <*> compLevelPipe)
   compMakeupPipe = register Nothing (mapPipe compMakeupFrame <$> compApplyPipe)
 
@@ -262,7 +261,8 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   cabProductsPipe =
     register Nothing $
       mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampMasterPipe
-  cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabProductsPipe)
+  cabSatPipe = register Nothing (mapPipe cabSatFrame <$> cabProductsPipe)
+  cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
 
   eqLowPrev = register 0 (frameOr monoEqLow <$> eqLowPrev <*> eqFilterPipe)

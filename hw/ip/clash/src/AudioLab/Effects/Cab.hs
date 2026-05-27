@@ -94,30 +94,43 @@ cabProductsFrame d1 d2 d3 f =
     , fAccR = 0
     , fAcc2L = if on then body else 0
     , fAcc2R = 0
-    , fAcc3L = if on then bodyRes else 0
+    , fAcc3L = 0
     , fAcc3R = 0
-    , fEqLowL = if on then presenceAmount else 0
+    , fEqLowL = 0
     , fEqLowR = 0
     }
  where
   on = flag7 (fGate f)
   model = ctrlC (fCab f)
   air = ctrlD (fCab f)
-  modelSel :: Unsigned 2
-  modelSel = resize (model `shiftR` 6)
   c0 = cabCoeff model air 0
   c1 = cabCoeff model air 1
   c2 = cabCoeff model air 2
   c3 = cabCoeff model air 3
   early = mulS10 (monoSample f) c0 + mulS10 d1 c1
   body = mulS10 d2 c2 + mulS10 d3 c3
-  bodySample = satShift8 body
+
+cabSatFrame :: Frame -> Frame
+cabSatFrame f =
+  f
+    { fAccL = fAccL f
+    , fAcc2L = fAcc2L f
+    , fAcc3L = if on then bodyRes else 0
+    , fEqLowL = if on then presenceAmount else 0
+    , fEqLowR = 0
+    }
+ where
+  on = flag7 (fGate f)
+  model = ctrlC (fCab f)
+  modelSel :: Unsigned 2
+  modelSel = resize (model `shiftR` 6)
+  bodySample = satShift8 (fAcc2L f)
   bodyClipped = softClipK (cabBodyResKnee modelSel) bodySample
   bodyRes = case modelSel of
     0 -> resize bodyClipped `shiftL` 5
     1 -> resize bodyClipped `shiftL` 6
     _ -> resize bodyClipped `shiftL` 7
-  earlySample = satShift8 early
+  earlySample = satShift8 (fAccL f)
   presenceClipped = softClipK (cabPresenceKnee modelSel) earlySample
   presenceAmount = case modelSel of
     0 -> 0
