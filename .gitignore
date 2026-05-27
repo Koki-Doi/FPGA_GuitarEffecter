@@ -1,10 +1,16 @@
 hw/Pynq-Z2/audio_lab/
 hw/Pynq-Z2/NA
 hw/Pynq-Z2/bitstreams
+hw/Pynq-Z2/timing_reports/
 .Xil
 vivado.jou
 vivado.log
 build_logs/
+/NA/
+/xsim.dir/
+/xvlog.pb
+/PCM5102
+/existing
 
 *.log
 *.jou
