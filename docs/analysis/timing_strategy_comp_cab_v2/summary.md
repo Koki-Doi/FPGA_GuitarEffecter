@@ -90,23 +90,28 @@ The worst path family is not one uniform shape:
 
 ## Decision
 
-Recommended RTL-free strategy candidate:
+**First candidate: `Performance_ExplorePostRoutePhysOpt`**
 
-- `Performance_ExplorePostRoutePhysOpt`
+- Best TNS (-9377.188 ns) and lowest failing endpoint count (3132) of all tested strategies.
+- WNS -9.832 ns, a 0.140 ns improvement over `Performance_Explore`.
+- WHS/THS clean, no DSP or BRAM increase.
 
-Reason:
+**Second candidate (not recommended): `Performance_NetDelay_high`**
 
-- It has the best TNS and lowest failing endpoint count of the tested runs.
-- It still improves WNS over `Performance_Explore` by 0.140 ns.
-- It keeps WHS/THS clean and does not add DSP or BRAM.
+- Best single-path WNS at -9.729 ns.
+- However, worst TNS (-10498.312 ns) and highest failing endpoint count (3534) of all tested strategies.
+- The WNS gain does not justify the broad timing quality regression. Not recommended for deploy.
 
-Not recommended as the next deploy candidate:
+Not recommended:
 
 - `default`: baseline only.
 - `Performance_Explore`: current candidate, but worse than post-route physopt in WNS/TNS/failing endpoints.
 - `Performance_WLBlockPlacement`: good WNS, but less balanced than post-route physopt.
-- `Performance_NetDelay_high`: best WNS, but worse TNS, more failing endpoints, and longer runtime.
 - `phys_opt_AggressiveExplore`: route result regressed versus `Performance_Explore`.
+
+**Dominant remaining bottleneck: DS-1 section**
+
+All six strategies show 100/100 top worst paths in the DS-1 family. The DS-1 section is the sole timing bottleneck after the Comp+Cab split. The rejected `ds1BoostFrame -> ds1ClipFrame` split must not be retried — it did not improve timing and introduced risk.
 
 ## Next RTL analysis, if needed
 
@@ -118,3 +123,17 @@ Do not start with the rejected `satShift8` plus `asymSoftClip` split. The next D
 - Limited synthesis attributes or hierarchy controls while preserving pedal order and placement hierarchy.
 
 Any DS-1 RTL change still requires a Vivado bit/hwh rebuild and a fresh timing summary before deployment.
+
+## Recommended next phase
+
+Use `Performance_ExplorePostRoutePhysOpt` as the preferred implementation strategy for the current Comp+Cab v2 timing candidate.
+
+Do not merge to main yet. Before merge, run:
+- PYNQ deploy
+- Pmod I2S2 self-loopback
+- all_off bypass bench
+- Compressor ON/OFF bench
+- Cab ON/OFF bench
+- DS-1 / distortion sanity bench
+
+The remaining dominant timing bottleneck is the DS-1 section. However, the rejected `ds1BoostFrame -> ds1ClipFrame` split showed that the DS-1 issue is not solved by a simple local register insertion. Further DS-1 work must start from full timing path analysis, especially logic/route delay, CARRY4 depth, DSP48 involvement, fanout, and `Maybe Frame` mux contribution.
