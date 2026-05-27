@@ -120,9 +120,8 @@ cabProductsFrame d1 d2 d3 f =
   earlySample = satShift8 early
   presenceClipped = softClipK (cabPresenceKnee modelSel) earlySample
   presenceAmount = case modelSel of
-    0 -> (presenceClipped `shiftR` 2) + (presenceClipped `shiftR` 4)
-    1 -> 0
-    _ -> presenceClipped `shiftR` 3
+    0 -> 0
+    _ -> presenceClipped `shiftR` 4
 
 cabIrFrame :: Frame -> Frame
 cabIrFrame f =
@@ -132,22 +131,21 @@ cabIrFrame f =
   model = ctrlC (fCab f)
   modelSel :: Unsigned 2
   modelSel = resize (model `shiftR` 6)
-  mainSat = satShift8 (fAccL f + fAcc2L f + fAcc3L f)
-  bodySat = satShift8 (fAcc2L f)
+  bodyExtra = case modelSel of
+    0 -> fAcc2L f `shiftR` 3
+    1 -> fAcc2L f
+    _ -> 0
+  mainDark = satShift8 (fAccL f + fAcc2L f + fAcc3L f + bodyExtra)
   presenceS = fEqLowL f
   hfResWide :: Wide
-  hfResWide = resize (monoSample f) - resize mainSat
+  hfResWide = resize (monoSample f) - resize mainDark
   hfResSat = satWide hfResWide
-  bodyAdd = case modelSel of
-    0 -> 0
-    1 -> bodySat `shiftR` 3
-    _ -> 0
   fizzSub = case modelSel of
     0 -> hfResSat `shiftR` 3
-    1 -> hfResSat `shiftR` 4
-    _ -> hfResSat `shiftR` 4
+    1 -> hfResSat `shiftR` 3
+    _ -> (hfResSat `shiftR` 3) + (hfResSat `shiftR` 4)
   blendWide :: Wide
-  blendWide = resize mainSat + resize bodyAdd + resize presenceS - resize fizzSub
+  blendWide = resize mainDark + resize presenceS - resize fizzSub
   wet = satWide blendWide
 
 cabLevelMixFrame :: Frame -> Frame
