@@ -20,19 +20,29 @@ import AudioLab.Types
 --   fWah ctrlB = wahQByte          (resonance / sharpness, 0..255;
 --                                   higher = narrower / more vocal)
 --   fWah ctrlC = wahVolumeByte     (ON-gain compensation, 0..255;
---                                   128 ~= unity)
+--                                   byte 128 ~= unity, byte 255 ~= +6 dB)
 --   fWah ctrlD bit 7      = wahEnable
 --   fWah ctrlD bits[6:0]  = wahBiasByte (0..127, 64 = centred)
 --
--- Bit-exact bypass when wahEnable is clear. State registers (posSmooth,
--- fByteR, qBand, low, band) are pipeline-level so idle Nothing cycles
--- preserve the SVF state and the smoothed pedal position.
+-- Value-preserving bypass with added pipeline latency when wahEnable is
+-- clear: the wahApplyFrame branch returns the input frame unchanged
+-- sample-for-sample, but the surrounding register-stage chain
+-- (wahPosSmooth, wahFByteR, wahQBandR, wahLow, wahBand, wahApplyPipe)
+-- still costs a few extra pipeline cycles vs the pre-D72 baseline.
+-- Latency-aligned diff checks against the D71.2 build will show the
+-- same sample values offset by that latency; sample-by-sample diff
+-- against the same wall-clock buffer will NOT be bit-identical.
+-- State registers (posSmooth, fByteR, qBandR, low, band) are
+-- pipeline-level so idle Nothing cycles preserve the SVF state and
+-- the smoothed pedal position; Just-frame cycles with wahOn=False
+-- zero the SVF state (low / band / qBandR / fByteR) so OFF -> ON has
+-- no stale energy.
 --
 -- Topology: Chamberlin parallel-update state-variable filter where
 --
---   high(n) = in - low(n-1) - qCoef * band(n-2)        (uses qBand_reg)
---   band(n) = band(n-1) + fCoef * high(n)              (uses fByte_reg)
---   low(n)  = low(n-1)  + fCoef * band(n-1)
+--   high(n) = in - low(n-1) - qBandR(n-1)              (no multiply)
+--   band(n) = band(n-1) + fByteR(n-1) * high(n)
+--   low(n)  = low(n-1)  + fByteR(n-1) * band(n-1)
 --   wahOut  = band(n)                                  (BPF output)
 --   final   = applyVolume(wahOut, volume_byte)
 --
@@ -41,7 +51,8 @@ import AudioLab.Types
 -- positionToFByte and the q*band products are pre-registered into
 -- `wahFByteR` and `wahQBandR` so the band/low updates never see two
 -- multiplies in series (which is what regressed WNS by ~9.5 ns when
--- the chain was fused into a single combinational block).
+-- the chain was fused into a single combinational block in the first
+-- D72 build).
 
 -- ---- Field accessors -------------------------------------------------
 
@@ -66,20 +77,28 @@ wahBiasByte c = wahEnableBiasByte c .&. 0x7F
 wahOn :: Frame -> Bool
 wahOn f = wahEnabled (fWah f)
 
--- ---- Coefficient mapping ---------------------------------------------
+-- ---- Coefficient mapping (D73 Cry Baby GCB-95 retune) -----------------
 --
--- Position-to-f mapping target (spec, fs = 48 kHz):
---   pos 0   -> ~350 Hz   (f_coef ~0.046 -> f_byte ~12)
---   pos 64  -> ~600 Hz   (f_coef ~0.078 -> f_byte ~20)
---   pos 128 -> ~1000 Hz  (f_coef ~0.130 -> f_byte ~33)
---   pos 192 -> ~1600 Hz  (f_coef ~0.208 -> f_byte ~53)
---   pos 255 -> ~2400 Hz  (f_coef ~0.312 -> f_byte ~80)
+-- Position-to-f mapping target (fs = 48 kHz), centred on the GCB-95
+-- mechanical sweep range so the effect lands closer to the classic
+-- Cry Baby vocal voicing than the wider initial D72 mapping:
+--
+--   pos 0   -> ~450 Hz   (f_coef ~0.0589 -> f_byte ~15)
+--   pos 64  -> ~700 Hz   (f_coef ~0.0916 -> f_byte ~24)
+--   pos 128 -> ~1100 Hz  (f_coef ~0.1437 -> f_byte ~37)
+--   pos 192 -> ~1600 Hz  (f_coef ~0.2088 -> f_byte ~53)
+--   pos 255 -> ~2200 Hz  (f_coef ~0.2865 -> f_byte ~73)
 --
 -- f_byte is a u8 where 256 == f_coef 1.0; the SVF update shifts
 -- right by 8 so mulU8 x f_byte / 256 gives f_coef * x. Four-segment
--- piecewise linear fit between the spec anchor points. All
--- multiplications use a wider Unsigned 16 intermediate so the
--- arithmetic does not wrap.
+-- piecewise linear fit between the anchor points. All multiplications
+-- use a wider Unsigned 16 intermediate so the arithmetic does not wrap.
+--
+-- D72 baseline anchors were 12/20/33/53/80 (~350/600/1000/1600/2400 Hz)
+-- -- wider range, less Cry Baby-like. D73 narrows heel a bit (450 Hz
+-- vs 350), keeps the mid the same (1600 Hz at pos 192), and lowers
+-- toe (2200 vs 2400) so the upper end stays in the vocal "wah / yeah"
+-- formant region rather than tipping into ice-picky 2.4 kHz territory.
 basePositionToFByte :: Unsigned 8 -> Unsigned 8
 basePositionToFByte pos = resize wide
  where
@@ -87,10 +106,10 @@ basePositionToFByte pos = resize wide
   pos16 = resize pos
   wide  :: Unsigned 16
   wide
-    | pos < 64  = 12 + ((pos16              * 8)  `shiftR` 6)
-    | pos < 128 = 20 + (((pos16 - 64)       * 13) `shiftR` 6)
-    | pos < 192 = 33 + (((pos16 - 128)      * 20) `shiftR` 6)
-    | otherwise = 53 + (((pos16 - 192)      * 27) `shiftR` 6)
+    | pos < 64  = 15 + ((pos16              * 9)  `shiftR` 6)
+    | pos < 128 = 24 + (((pos16 - 64)       * 13) `shiftR` 6)
+    | pos < 192 = 37 + (((pos16 - 128)      * 16) `shiftR` 6)
+    | otherwise = 53 + (((pos16 - 192)      * 20) `shiftR` 6)
 
 -- Bias modulates the position->freq mapping. Centre at byte 64 (the
 -- ctrlD bits[6:0] mid-point), so bias bytes 0/64/127 produce roughly
@@ -128,18 +147,27 @@ qCoefByte qByte
  where
   raw = 128 - (qByte `shiftR` 1)
 
--- Volume byte -> Q8 makeup factor in [64, 256]. Byte 0 -> 64 (-12 dB
--- taper), byte 128 -> ~192 (~-2.5 dB), byte 255 -> 256 (unity boost
--- cap). The wah ON path can compensate ON-gain variation without ever
--- doubling input level. The output saturating multiply uses
--- satShift8 so out-of-range materials clip rather than wrap.
-wahVolumeFactor :: Unsigned 8 -> Unsigned 9
-wahVolumeFactor volByte = 64 + factor
- where
-  scaled :: Unsigned 16
-  scaled = (resize volByte * 192) `shiftR` 8
-  factor :: Unsigned 9
-  factor = resize scaled
+-- Volume byte -> Q8 makeup factor (Unsigned 10) in [128, ~510]. D73
+-- spec re-aligns the curve so that UI 50 % (byte 128) is unity and
+-- UI 100 % (byte 255) is +6 dB (2.0x). Two-segment piecewise linear:
+--   byte 0   -> factor 128  (~0.5x, -6 dB taper)
+--   byte 128 -> factor 256  (1.0x  unity)
+--   byte 255 -> factor 510  (~2.0x, +6 dB boost cap)
+-- The output saturating multiply uses satShift8 (mulU10 sample factor)
+-- so out-of-range materials clip rather than wrap; the cap of ~2.0x
+-- means a unity-peak input cannot overflow Signed 24 by more than 1
+-- bit, which the satWide() inside satShift8 covers.
+--
+-- D72 used a single segment with factor in [64, ~256] which made
+-- byte 128 land at ~0.625x (~-4 dB) -- the GUI VOLUME=50 was NOT
+-- unity, contradicting the spec. D73 fixes that and also widens the
+-- top end up to +6 dB so Cry Baby 95Q "Volume Boost" style ON-gain
+-- compensation is reachable.
+wahVolumeFactor :: Unsigned 8 -> Unsigned 10
+wahVolumeFactor volByte
+  | volByte <= 128 = 128 + (resize volByte :: Unsigned 10)
+  | otherwise      = let d = volByte - 128
+                     in 256 + ((resize d :: Unsigned 10) `shiftL` 1)
 
 -- ---- Position smoothing ----------------------------------------------
 --
@@ -177,11 +205,13 @@ wahPosSmoothNext prev (Just f)
 --
 -- Each of these consumes one DSP at most. They feed the band / low
 -- updates with already-registered values so the band/low combinational
--- chains never see two multiplies in series.
+-- chains never see two multiplies in series. Just-frame cycles with
+-- wahOn=False zero the registers so OFF -> ON does not surface stale
+-- coefficients or SVF energy at re-enable time.
 
--- Frequency byte register: positionToFByte(posSmooth, biasByte). Off
--- cycles preserve the value; off-state snaps to 0 so a re-enable
--- starts clean.
+-- Frequency byte register: positionToFByte(posSmooth, biasByte).
+-- Off cycles preserve the value (idle Nothing); Just-frame with
+-- wahOn=False snaps to 0 so re-enable starts clean.
 wahFByteRNext :: Unsigned 8 -> Unsigned 8 -> Maybe Frame -> Unsigned 8
 wahFByteRNext prev _ Nothing = prev
 wahFByteRNext _ posSmooth (Just f)
@@ -206,6 +236,12 @@ wahQBandRNext _ oldBand (Just f)
 -- other's new value. fByte and qBand are pre-registered (1-cycle lag)
 -- so the combinational chain in each state update is at most one
 -- multiply.
+--
+-- D73 explicitly zeros the SVF state (low / band) when a Just frame
+-- arrives with wahOn=False. Combined with wahFByteRNext / wahQBandRNext
+-- doing the same, this guarantees that an OFF -> ON transition starts
+-- from rest -- no decayed-but-non-zero filter ring surfacing as a pop
+-- on re-enable.
 
 -- band(n) = satWide (band(n-1) + f * high(n))
 --   high(n) = input(n) - low(n-1) - qBandR(n-1)        (no multiply)
@@ -251,16 +287,17 @@ wahLowNext oldLow oldBand fByteR (Just f)
 -- ---- Apply stage -----------------------------------------------------
 --
 -- One register stage of multiply + saturating shift, same arithmetic
--- shape as compMakeupFrame so Vivado can keep the inferred DSP usage
--- consistent with the surrounding stages. Bit-exact bypass when the
--- wah is disabled. Uses the REGISTERED `wahBand` state (the value
--- written one clock earlier), which costs a single-sample group delay
--- that is inaudible for a guitar wah.
+-- shape as compMakeupFrame but with a wider Unsigned 10 factor so the
+-- D73 +6 dB volume boost fits without wrap. Value-preserving bypass
+-- (output sample == input sample) when the wah is disabled. Uses the
+-- REGISTERED `wahBand` state (the value written one clock earlier),
+-- which costs a single-sample group delay that is inaudible for a
+-- guitar wah.
 wahApplyFrame :: Sample -> Frame -> Frame
 wahApplyFrame band f
   | not (wahOn f) = f
   | otherwise     = setMonoSample wahed f
  where
-  factor :: Unsigned 9
+  factor :: Unsigned 10
   factor = wahVolumeFactor (wahVolumeByte (fWah f))
-  wahed  = satShift8 (mulU9 band factor)
+  wahed  = satShift8 (mulU10 band factor)

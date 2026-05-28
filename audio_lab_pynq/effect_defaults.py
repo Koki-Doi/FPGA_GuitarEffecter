@@ -86,7 +86,8 @@ COMPRESSOR_DEFAULTS = {
 # the GPIO byte layout.
 WAH_DEFAULTS = {
     "enabled": False,
-    "position": 0,
+    "position": 0,         # GUI percent 0..100 (used when position_raw is None)
+    "position_raw": None,  # FP02M / Arduino A0 raw byte 0..255 (D73 split)
     "q": 50,
     "volume": 50,
     "bias": 50,
@@ -268,6 +269,7 @@ SAFE_BYPASS_DEFAULTS = {
     "compressor_makeup": 50,
     "wah_enabled": False,
     "wah_position": 0,
+    "wah_position_raw": None,
     "wah_q": 50,
     "wah_volume": 50,
     "wah_bias": 50,

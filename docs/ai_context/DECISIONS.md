@@ -4462,3 +4462,137 @@ not get removed even when superseded — they get updated.
   DSP all-off MM2S sweep `uniq1k` 996-1000 `maxRun=2` everywhere with
   no QUANT! / STAIR! flag). **Structural smoke: PASS.** External-
   instrument bench audition is still required for full acceptance.
+
+## D73 - Wah Cry Baby retune + position API split + volume curve fix
+
+- **Decision.** Refine the D72 Wah effect to be closer to a Cry Baby
+  GCB-95 / 95Q character without touching the DSP topology, the
+  axi_gpio_wah layout, or any other effect. Three independent changes
+  ship together so we only pay one Vivado rebuild:
+  1. **Sweep range retune.** `basePositionToFByte` anchors shift from
+     `12 / 20 / 33 / 53 / 80` (the wider D72 ~350..2400 Hz mapping) to
+     `15 / 24 / 37 / 53 / 73` (~450..2200 Hz at fs = 48 kHz). The toe
+     end drops to 2200 Hz so the upper peak stays in the vocal /
+     formant region rather than tipping into ice-picky territory; the
+     heel end rises to 450 Hz so the low position is still warm but
+     not muddy. Mid-position (pos 192) stays at 1600 Hz so existing
+     `BIAS = 50` chain presets still land in roughly the same place.
+  2. **Volume curve fix.** D72's `wahVolumeFactor = 64 + (volByte *
+     192 >> 8)` produced factor 160 at byte 128 (~0.625x, -4 dB) --
+     UI VOLUME=50 was NOT unity, contradicting the spec. D73 replaces
+     it with a two-segment piecewise linear curve in an `Unsigned 10`
+     factor: byte 0 -> 128 (0.5x, -6 dB taper), byte 128 (UI 50 %) ->
+     256 (1.0x unity, the GUI anchor), byte 255 (UI 100 %) -> 510
+     (~2.0x, +6 dB boost cap). `wahApplyFrame` switches from `mulU9`
+     to a new `mulU10` helper (added to `AudioLab.FixedPoint`).
+  3. **Position API split.** D72's `wah_position_byte(value)` used a
+     magnitude-based scale detection (`value <= 100` -> percent,
+     otherwise raw byte). That breaks the moment a real FP02M /
+     Arduino A0 raw byte happens to land in 0..100. D73 splits the
+     API into `wah_position_byte(percent)` (always percent) and
+     `wah_position_raw_byte(byte)` (always raw); `wah_word`,
+     `AudioLabOverlay.set_wah_settings`, and the `set_guitar_effects`
+     facade learn `position=` / `position_raw=` as mutually exclusive
+     keyword arguments and raise `ValueError` if both are supplied.
+     `WAH_DEFAULTS` and `SAFE_BYPASS_DEFAULTS` gain a
+     `position_raw: None` entry so the default path stays GUI percent.
+- **Why.**
+  - User asked for Cry Baby-style focused high end / aggressive,
+    vocal-like peak, with a heel that is warm but not muddy and a toe
+    that is bright without ice-pick. The D72 mapping landed too wide
+    at both ends; the D73 anchors centre the sweep on the Cry Baby
+    formant region.
+  - User flagged that UI VOLUME=50 was not unity in D72; D73 fixes
+    the spec mismatch and widens the top end up to +6 dB so 95Q
+    "Volume Boost" style ON-gain compensation is reachable.
+  - User flagged that the magnitude-based position API would break
+    once FP02M is wired in; D73 separates the percent and raw paths
+    so future Pedal input lands on `wah_position_raw` and the GUI
+    keeps using `wah_position` cleanly.
+- **Boundaries (intentionally NOT touched).**
+  - Existing Cab / Compressor / Distortion / Amp / EQ / Reverb voicing
+    is byte-exact preserved. `Pipeline.hs` only changes the import
+    list (no new stage). `LowPassFir.hs` topEntity signature is
+    unchanged.
+  - No new GPIO. `axi_gpio_wah` layout, address, and ctrlA..ctrlD
+    semantics are byte-exact preserved.
+  - No `block_design.tcl` edit. `wah_integration.tcl` is unchanged.
+  - DS-1 split / comp-cab-split-v2 are NOT re-introduced.
+  - No new DSP48E1: the volume widening from `mulU9` to `mulU10`
+    re-uses the existing DSP slice; the position anchor change is
+    constants only.
+- **Trade-offs not taken.**
+  - No envelope-driven auto-wah (would need extra state + DSP).
+  - No vintage / modern model selector (would need another byte in
+    `axi_gpio_wah.ctrlD`, and bit 7 / 6:0 are already used for enable
+    / BIAS).
+  - No tone-shaping pre / post the SVF -- the band-pass is still the
+    only filter stage in the wah block.
+  - The volume cap stays at +6 dB. The user asked the spec allow up
+    to +15 dB; D73 deliberately starts at the safer +6 dB because the
+    fixed-point Sample range can only absorb 1 bit of overshoot before
+    `satWide` starts clipping. A future `wah_boost_range` byte (e.g.
+    in a yet-unused part of ctrlD) could widen this without changing
+    the multiply width.
+- **State reset on OFF (no new code, verified D72 already does it).**
+  `wahLowNext`, `wahBandNext`, `wahFByteRNext`, `wahQBandRNext` all
+  return 0 when they see a `Just f` with `wahOn=False`. Combined with
+  `wahPosSmoothNext` snapping to the target on the same condition,
+  an OFF -> ON transition starts from rest -- no filter ring carries
+  over from a previous ON cycle.
+- **Bypass language softened.** D72 docs claimed "bit-exact bypass
+  when the flag is clear." That is misleading because the new
+  pipeline registers (`wahPosSmooth`, `wahFByteR`, `wahQBandR`,
+  `wahLow`, `wahBand`, `wahApplyPipe`) cost extra cycles vs the
+  pre-D72 baseline even when the wah is off. D73 rewrites the
+  Wah.hs comments and the DSP_EFFECT_CHAIN.md notes to say
+  "value-preserving bypass with added pipeline latency" -- the
+  output sample equals the input sample, but only after a
+  latency-aligned re-index against the D71.2 reference.
+- **How to apply.**
+  - Future Cry Baby retunes (vintage / modern band-bias, narrower
+    Q sweep, asymmetric heel / toe response) edit the constant tables
+    in `Wah.hs` (`basePositionToFByte`, `qCoefByte`, `wahVolumeFactor`).
+    Adding a new arithmetic op inside `wahBandNext` / `wahLowNext`
+    must re-check WNS -- the D72 first pass regressed by ~9.5 ns
+    when the chain accumulated three DSP48E1 in series, and the
+    fix was the pipeline split into `wahFByteR` / `wahQBandR`.
+  - The Python `set_wah_settings` API is the source of truth; keep
+    notebook / GUI / encoder / tests in lock-step.
+
+- **Build / deploy result.** Clash VHDL regenerated; Vivado completed
+  with `write_bitstream completed successfully` and `0 Errors`.
+  Routed timing: WNS `-10.910 ns`, TNS `-11052.431 ns`, WHS `+0.022 ns`,
+  THS `0.000 ns`; failing endpoints `3397 / 61312`. Utilization: LUT
+  `20920` (delta `-103` vs D72), FF `22672` (delta `-19`), BRAM `6`
+  (unchanged), DSP `89` (**unchanged** -- the `mulU9 -> mulU10`
+  widening re-used an existing DSP slice as planned). WNS delta vs
+  D72 (-10.387 ns) is `-0.523 ns` -- inside the acceptance band. New
+  top-100 worst paths sit inside the existing DS-1 distortion section
+  (`ds1_7_reg[784]/C -> ARG__2__2__0_i_1_psdsp/D`); no Wah state
+  register chain appears in the top-100, so the D72 pipeline split
+  continues to hold with the D73 widened multiply. bit/hwh md5
+  `d1343291184d8e3465f735bef8856d38` /
+  `aad985fe57b0ff263efc8fc5e09c3c3e`. `scripts/deploy_to_pynq.sh`
+  5-site sync md5-matched; `AudioLabOverlay(download=True)`
+  programmed PL; ADC HPF True / R19 `0x23`; `set_wah_settings`
+  round-trip exercised both paths (`position=50` -> byte 128,
+  `volume_byte=128`; `position_raw=200` -> byte 200 with cached
+  percent preserved at 50; `position=25 + enabled=False` -> byte 64
+  with `position_raw=None` cleared) and the both-paths case raised
+  `ValueError` as required. `scripts/diagnose_pmod_loopback.py`
+  **VERDICT: PASS** (no bit-crusher / quantization signature in any
+  phase). Python 92 tests run with the same 3 pre-existing failures
+  + 1 pre-existing error as master; 8 new D73 tests added.
+- **Acceptance gate.** External-instrument bench audition is still
+  required for full acceptance. Criteria: (a) all_off bypass D72-clean
+  (no new artefact vs D72); (b) Wah OFF value-preserving bypass on
+  the cable-loop self-test (already passed by `diagnose_pmod_loopback`);
+  (c) Wah ON sweep audibly lands inside the Cry Baby GCB-95 mechanical
+  range (heel warm but not muddy, mid in the vocal formant region,
+  toe focused but not ice-picky); (d) Q 0/50/100 audibly changes
+  peak width with the high-Q peak vocal-like; (e) UI VOLUME=50
+  audibly unity (no perceptible Wah ON/OFF level jump in mid-range
+  picking); (f) UI VOLUME=100 audibly +6 dB without breakup; (g) BIAS
+  0/50/100 audibly shifts the sweep range; (h) no pop / click on
+  Wah OFF -> ON / ON -> OFF transitions.
