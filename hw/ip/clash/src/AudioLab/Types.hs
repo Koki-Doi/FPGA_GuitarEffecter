@@ -31,6 +31,7 @@ data Frame = Frame
   , fReverb :: Ctrl
   , fNs :: Ctrl
   , fComp :: Ctrl
+  , fWah :: Ctrl
   , fAddr :: ReverbAddr
   , fDryL :: Sample
   , fDryR :: Sample

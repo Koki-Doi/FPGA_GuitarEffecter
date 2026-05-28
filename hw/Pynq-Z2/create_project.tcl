@@ -69,6 +69,10 @@ source ./encoder_integration.tcl
 # longer touches them. PCM5102 / PCM1808 jumper wiring is removed from
 # PMOD JB on the bench and Pmod I2S2 is plugged in directly.
 source ./pmod_i2s2_integration.tcl
+# Wah integration. Adds axi_gpio_wah at 0x43D30000 (M19) and wires it to
+# clash_lowpass_fir_0/wah_control. block_design.tcl is not edited; the
+# Wah GPIO is purely additive via NUM_MI bump from 19 to 20.
+source ./wah_integration.tcl
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1

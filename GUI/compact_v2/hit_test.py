@@ -52,9 +52,13 @@ def hit_test_compact_v2(x: int, y: int, state: AppState,
 
     # Model dropdown (DIST, OD, AMP, CAB). The OD slot was added in
     # DECISIONS.md D45 when the generic Overdrive was retired in favour
-    # of six selectable models.
+    # of six selectable models. WAH does not have a clickable model
+    # dropdown but does render a SOURCE label that shifts the knob
+    # grid by the same amount, so ``has_source_strip`` mirrors that
+    # for the hit-test grid_y0 below.
     selected_short = EFFECTS_SHORT[state.selected_effect]
     has_model = selected_short in ("DIST", "OD", "AMP", "CAB")
+    has_source_strip = selected_short == "WAH"
     if has_model:
         dd_y0 = fy0 + 36
         dd_y1 = fy0 + 66
@@ -87,7 +91,7 @@ def hit_test_compact_v2(x: int, y: int, state: AppState,
     row_gap = 14
     grid_x0 = fx0 + 20
     grid_x1 = fx1 - 20
-    grid_y0 = fy0 + 72 if has_model else fy0 + 64
+    grid_y0 = fy0 + 72 if (has_model or has_source_strip) else fy0 + 64
     grid_y1 = fy1 - 14
     col_w = (grid_x1 - grid_x0 - col_gap * (cols - 1)) // cols
     row_h = (grid_y1 - grid_y0 - row_gap * (rows - 1)) // rows

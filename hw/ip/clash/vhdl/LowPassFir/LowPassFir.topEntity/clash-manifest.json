@@ -42,18 +42,18 @@
         },
         {
             "name": "clash_lowpass_fir_types.vhdl",
-            "sha256": "a71c578692c1fe40fad8dfd1c33df6224362c10def31686901a1918b7d9a2990"
+            "sha256": "58efbda0ca0c1bf80aad6d156cb640cb3869cfe4e0d1fd64a86a70d836be432e"
         },
         {
             "name": "clash_lowpass_fir.vhdl",
-            "sha256": "1745a0423b11f5f1b9afb6b59e1f3aa3ff5c90a0b6770bfce18cdcc6924e0605"
+            "sha256": "5c06411a75166cb59aead79a1b952de86d71cca3da1dd5afbff62adb81aeb79b"
         }
     ],
     "flags": [
         20,
         20
     ],
-    "hash": "4b44dd47f9a596641ffdb357a6e3d046e780a596d2f91f2b0498ec157d6d61c9",
+    "hash": "f5ede6e57e7b373788ed80c9ee07750d86f3bcaf6705f575641097ad959864e1",
     "top_component": {
         "name": "clash_lowpass_fir",
         "ports_flat": [
@@ -147,6 +147,13 @@
                 "direction": "in",
                 "is_clock": false,
                 "name": "compressor_control",
+                "type_name": "std_logic_vector(31 downto 0)",
+                "width": 32
+            },
+            {
+                "direction": "in",
+                "is_clock": false,
+                "name": "wah_control",
                 "type_name": "std_logic_vector(31 downto 0)",
                 "width": 32
             },

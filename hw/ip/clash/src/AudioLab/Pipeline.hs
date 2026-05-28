@@ -13,6 +13,7 @@ import AudioLab.Effects.Eq
 import AudioLab.Effects.NoiseSuppressor
 import AudioLab.Effects.Overdrive
 import AudioLab.Effects.Reverb
+import AudioLab.Effects.Wah
 import AudioLab.FixedPoint
 import AudioLab.Types
 
@@ -39,6 +40,7 @@ fxPipeline
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain (BitVector 48)
   -> Signal AudioDomain Bool
   -> Signal AudioDomain Bool
@@ -48,7 +50,7 @@ fxPipeline
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl samples validIn lastIn readyOut =
+fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl wahControl samples validIn lastIn readyOut =
   pipeline
  where
   pipeline =
@@ -82,6 +84,7 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
         <*> reverbControl
         <*> nsControl
         <*> compControl
+        <*> wahControl
         <*> samples
         <*> acceptedIn
         <*> lastIn
@@ -110,7 +113,24 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   compApplyPipe = register Nothing (mapPipe <$> (compApplyFrame <$> compGain) <*> compLevelPipe)
   compMakeupPipe = register Nothing (mapPipe compMakeupFrame <$> compApplyPipe)
 
-  odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> compMakeupPipe)
+  -- Wah pipeline. Resonant band-pass between Compressor and Overdrive
+  -- (the classic pre-distortion wah position). Driven by wah_control
+  -- (POSITION / Q / VOLUME / BIAS + enable). State registers
+  -- (posSmooth, fByteR, qBandR, low, band) are pipeline-level so idle
+  -- Nothing cycles preserve the SVF state and the smoothed pedal
+  -- position. fByteR (= positionToFByte) and qBandR (= q * oldBand)
+  -- are pre-registered so the band / low updates never see two
+  -- multiplies in series -- this is the timing-friendly version of
+  -- the parallel Chamberlin update. Bit-exact bypass when the wah
+  -- enable bit is clear.
+  wahPosSmooth = register 0 (wahPosSmoothNext <$> wahPosSmooth <*> compMakeupPipe)
+  wahFByteR    = register 0 (wahFByteRNext <$> wahFByteR <*> wahPosSmooth <*> compMakeupPipe)
+  wahQBandR    = register 0 (wahQBandRNext <$> wahQBandR <*> wahBand     <*> compMakeupPipe)
+  wahBand      = register 0 (wahBandNext <$> wahBand <*> wahLow <*> wahQBandR <*> wahFByteR <*> compMakeupPipe)
+  wahLow       = register 0 (wahLowNext  <$> wahLow  <*> wahBand <*> wahFByteR <*> compMakeupPipe)
+  wahApplyPipe = register Nothing (mapPipe <$> (wahApplyFrame <$> wahBand) <*> compMakeupPipe)
+
+  odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> wahApplyPipe)
   odDriveBoostPipe = register Nothing (mapPipe overdriveDriveBoostFrame <$> odDriveMulPipe)
   odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odDriveBoostPipe)
 

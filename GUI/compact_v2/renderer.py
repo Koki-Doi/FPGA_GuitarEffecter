@@ -873,6 +873,12 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
         selected_short = EFFECTS_SHORT[state.selected_effect]
         selected_on = bool(state.effect_on[state.selected_effect])
         model_label = None
+        # Wah does not pick a model but does show a SOURCE: MANUAL label
+        # so future FP02M / Arduino A0 work has a UI affordance to flip
+        # without touching the GPIO layout. ``source_label`` is rendered
+        # as a static text strip in the same row as the model dropdown
+        # would have been; the knob grid shifts down the same amount.
+        source_label = None
         if selected_short == "DIST":
             idx = max(0, min(len(DIST_MODELS) - 1,
                              int(getattr(state, "dist_model_idx", 0) or 0)))
@@ -891,6 +897,11 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             idx = max(0, min(len(CAB_MODELS) - 1,
                              int(getattr(state, "cab_model_idx", 0) or 0)))
             model_label = CAB_MODELS[idx]
+        elif selected_short == "WAH":
+            # SOURCE label only; today's build supports MANUAL only.
+            # FP02M / Arduino A0 future input will flip this to PEDAL.
+            src = str(getattr(state, "wah_source", "manual") or "manual")
+            source_label = "SOURCE: " + src.upper()
         draw_text(img, (fx0 + 16, fy0 + 10), "> FX MODULE",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
         d.line((fx0 + 14, fy0 + 24, fx1 - 14, fy0 + 24),
@@ -945,6 +956,17 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                                     (dd_y0 + dd_y1) // 2),
                              model_label, size=_model_size,
                              fill=LED + (255,), anchor="mm")
+        if model_label is None and source_label is not None:
+            # Render the SOURCE label in the same row the model
+            # dropdown would otherwise occupy, but as plain text (no
+            # chip / no arrows) -- the source is informational today
+            # and only flips automatically once FP02M / Arduino A0
+            # input is wired. Left-align right after the FX module
+            # title so it does not collide with the ON/BYPASS chip.
+            sl_x = fx0 + 250
+            sl_y = fy0 + 51
+            draw_smooth_text(img, (sl_x, sl_y), source_label, size=20,
+                             fill=LED_DIM + (255,), anchor="lm")
         knobs = [k for k in state.knobs() if k[0]]
         n_knobs = len(knobs)
         # Grid layout per effect (knob count -> cols, rows):
@@ -962,7 +984,9 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
 
         grid_x0 = fx0 + 20
         grid_x1 = fx1 - 20
-        grid_y0 = fy0 + 72 if model_label is not None else fy0 + 64
+        # Shift the knob grid down the same amount whether the FX panel
+        # is showing a model dropdown or the WAH SOURCE strip.
+        grid_y0 = fy0 + 72 if (model_label is not None or source_label is not None) else fy0 + 64
         grid_y1 = fy1 - 14
         col_gap = 16 if cols == 4 else 28
         row_gap = 14

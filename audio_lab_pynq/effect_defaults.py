@@ -74,6 +74,25 @@ COMPRESSOR_DEFAULTS = {
     "makeup": 50,
 }
 
+# Wah. Resonant band-pass wah on its own axi_gpio_wah at 0x43D30000.
+# Sits between the Compressor and the Overdrive (the classic
+# pre-distortion wah position). enabled=False so loading the overlay
+# never produces an unexpected filter sweep; ``position`` defaults to
+# 0 (heel-down, ~350 Hz centre); Q / VOLUME / BIAS default to the
+# mid-range 50 so the initial sound is a mild / wide / centred BPF.
+# ``source`` is a Python-side field ("manual" / "pedal") that holds
+# where POSITION is being driven from -- "manual" today; FP02M /
+# Arduino A0 future work will flip it to "pedal" without touching
+# the GPIO byte layout.
+WAH_DEFAULTS = {
+    "enabled": False,
+    "position": 0,
+    "q": 50,
+    "volume": 50,
+    "bias": 50,
+    "source": "manual",
+}
+
 # Overdrive section. ``model`` is one of OVERDRIVE_MODELS (0..5);
 # the generic single-character overdrive was retired in D45 and every
 # load now picks one of the six selectable models. Default = TS9.
@@ -247,6 +266,11 @@ SAFE_BYPASS_DEFAULTS = {
     "compressor_ratio": 35,
     "compressor_response": 45,
     "compressor_makeup": 50,
+    "wah_enabled": False,
+    "wah_position": 0,
+    "wah_q": 50,
+    "wah_volume": 50,
+    "wah_bias": 50,
 }
 
 
@@ -256,6 +280,7 @@ __all__ = [
     "DISTORTION_PEDALS_IMPLEMENTED",
     "NOISE_SUPPRESSOR_DEFAULTS",
     "COMPRESSOR_DEFAULTS",
+    "WAH_DEFAULTS",
     "OVERDRIVE_DEFAULTS",
     "OVERDRIVE_MODELS",
     "OVERDRIVE_MODEL_LABELS",

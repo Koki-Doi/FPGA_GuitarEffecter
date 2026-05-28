@@ -8,7 +8,7 @@ renderer can ignore them.
 """
 
 GUI_EFFECTS = [
-    "Noise Sup", "Compressor", "Overdrive", "Distortion",
+    "Noise Sup", "Compressor", "Wah", "Overdrive", "Distortion",
     "Amp Sim", "Cab IR", "EQ", "Reverb",
 ]
 
@@ -23,6 +23,8 @@ GUI_EFFECT_KNOBS = {
                    ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
     "Compressor": [("THRESHOLD", 50), ("RATIO", 45), ("RESPONSE", 40),
                    ("MAKEUP", 55), ("", 0), ("", 0), ("", 0), ("", 0)],
+    "Wah":        [("POSITION", 0), ("Q", 50), ("VOLUME", 50),
+                   ("BIAS", 50), ("", 0), ("", 0), ("", 0), ("", 0)],
     "Overdrive":  [("DRIVE", 35), ("TONE", 60), ("LEVEL", 60),
                    ("", 0), ("", 0), ("", 0), ("", 0), ("", 0)],
     "Distortion": [("DRIVE", 50), ("TONE", 55), ("LEVEL", 35),

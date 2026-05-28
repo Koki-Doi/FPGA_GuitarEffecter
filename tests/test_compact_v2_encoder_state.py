@@ -204,8 +204,9 @@ def test_renderer_covers_all_six_amp_models_and_both_drive_modes():
     """D55 / D57 regression guard: render_frame must complete for every
     (amp_model_idx, amp_drive_mode) combination so a future six-pack
     rename or DRV MODE rework cannot silently blank the HDMI GUI.
-    Also walks every selected_effect index 0..7 so a per-effect render
-    branch (e.g. the Amp Sim knob grid) cannot regress unnoticed."""
+    Also walks every selected_effect index 0..len(EFFECTS)-1 so a
+    per-effect render branch (e.g. the Amp Sim knob grid or the WAH
+    SOURCE strip) cannot regress unnoticed."""
     try:
         from compact_v2.renderer import render_frame_800x480_compact_v2
         from compact_v2.knobs import AMP_MODELS, EFFECTS

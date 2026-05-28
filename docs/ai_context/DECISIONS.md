@@ -4291,3 +4291,174 @@ not get removed even when superseded — they get updated.
   high-gain fizz is reduced, low-end is not muddy, 5 kHz+ rolloff is
   sharper than D70, and CLIP_COUNT remains normal. D70 is the rollback
   baseline until bench result is reported.
+
+
+## D72 - Wah effect on its own AXI GPIO (axi_gpio_wah @ 0x43D30000)
+
+- **Decision.** A dedicated `axi_gpio_wah` IP at `0x43D30000` carries
+  POSITION / Q / VOLUME / BIAS + enable for a resonant band-pass wah.
+  The Clash side adds a new `wah_control` topEntity port and an SVF
+  block between the Compressor output and the Overdrive input. Enable
+  lives **inside this GPIO** (`ctrlD` bit 7), not on
+  `gate_control.ctrlA` (same convention as the Compressor section,
+  `DECISIONS.md` D14).
+- **Why.**
+  - The Wah needed five distinct knobs (POSITION / Q / VOLUME / BIAS /
+    ENABLE). The two currently free bytes in the existing GPIO map
+    (`axi_gpio_eq.ctrlD`, `axi_gpio_noise_suppressor.ctrlD`) are
+    reserved for future EQ / NS features (`DECISIONS.md` D11), so
+    repurposing them would violate D12 ("never repurpose a reserved
+    byte for a different feature").
+  - `gate_control.ctrlA` (the master flag byte) is already full and
+    adding a Wah bit there would change the meaning of an `active`
+    byte, which D12 forbids.
+  - The Wah benefits from being able to flip its own enable without
+    read-modify-write on a shared flag byte; keeping the enable inside
+    its own GPIO makes the section fully self-contained.
+- **Block-design boundary.** `hw/Pynq-Z2/block_design.tcl` is **not
+  edited**. The new GPIO lands via a new `hw/Pynq-Z2/wah_integration.tcl`
+  that is sourced from `create_project.tcl` after
+  `pmod_i2s2_integration.tcl`, mirroring the additive pattern used
+  by `hdmi_integration.tcl`, `encoder_integration.tcl`, and
+  `pmod_i2s2_integration.tcl`. The integration script bumps
+  `ps7_0_axi_periph/NUM_MI` from 19 to 20 to expose `M19_AXI` for the
+  new GPIO, adds the IP at offset `0x43D30000` / range `0x10000`, and
+  wires `axi_gpio_wah/gpio_io_o` to `clash_lowpass_fir_0/wah_control`.
+- **Topology.** Chamberlin parallel-update state-variable filter
+  inside `hw/ip/clash/src/AudioLab/Effects/Wah.hs`:
+
+  ```
+    high(n) = in - low(n-1) - qBand(n-1)
+    band(n) = band(n-1) + fByte * high(n)
+    low(n)  = low(n-1)  + fByte * band(n-1)
+    wahOut  = band(n)
+    final   = applyVolume(wahOut, volume_byte)
+  ```
+
+  Pipeline-level state registers: `wahPosSmooth`, `wahFByteR`,
+  `wahQBandR`, `wahLow`, `wahBand`. `wahFByteR` (the `positionToFByte`
+  product) and `wahQBandR` (the `q * oldBand` product) are
+  pre-registered intermediates; without them the band/low update
+  chain contained three DSP48E1 multiplies in series and WNS regressed
+  from `-9.413 ns` (D71.2 baseline) to `-18.966 ns` on the first
+  Vivado pass. Splitting `positionToFByte` and the q*band product into
+  their own register stages restored each subsequent register update
+  to one DSP + small adders.
+- **Position smoothing.** `wahPosSmoothNext` runs
+  `posSmooth + ((target - posSmooth) >> 4)` per audio frame with a
+  1-step nudge so a single-byte step still converges. ~0.3 ms per tick
+  at fs = 48 kHz; a 64-byte sweep settles in ~20 ms. Off-cycles snap
+  to target so a re-enable starts from the visible pedal position.
+- **Frequency / Q mapping.** `basePositionToFByte` is a 4-segment
+  piecewise linear fit between the spec anchors (pos 0/64/128/192/255
+  -> ~350 / 600 / 1000 / 1600 / 2400 Hz at fs = 48 kHz). `qCoefByte`
+  maps the UI byte to a damping coefficient in `[16, 128] / 256`
+  (~0.063..0.5) with a floor of 16 so the BPF cannot run away at
+  maximum Q. `wahVolumeFactor` is a Q8 makeup factor in `[64, 256]`
+  (byte 0 -> -12 dB, byte 128 -> ~-2.5 dB, byte 255 -> unity boost
+  cap). All arithmetic is fixed-point; no Float / Double, no large
+  table -- spec rules followed.
+- **Trade-offs not taken.**
+  - **No** copying of source code from commercial wah pedals
+    (CryBaby GCB-95, Vox V846, Dunlop / Morley Maxon variants),
+    schematic-exact coefficient tables, or GPL DSP code (`DECISIONS.md`
+    D7 / D11 / D14). Algorithmic structure (resonant band-pass,
+    position-driven centre frequency, Q damping, output makeup) is the
+    only thing taken from references.
+  - **No** large look-up table for position -> frequency. The
+    piecewise linear table is 4 segments.
+  - **No** FP02M / Arduino A0 wired-in source for POSITION (the
+    `wah_source` field is `"manual"` today). The data structure is
+    designed so flipping to `"pedal"` is a Python state change with
+    no GPIO byte layout impact.
+  - **No** C++ DSP prototype as a stepping stone (`DECISIONS.md` D13).
+    Implementation went Python API + GUI reservation -> Clash stage
+    -> new GPIO directly.
+- **Pipeline placement.** Wah sits between `compMakeupPipe` (Compressor
+  output) and `odDriveMulPipe` (Overdrive first stage). The chain order
+  matches the spec request: Noise Gate -> Compressor -> Wah -> Overdrive
+  -> Distortion -> RAT / Pedals -> Amp -> Cab -> EQ -> Reverb.
+- **GUI placement.** The compact-v2 800x480 GUI inserts `"Wah"` into
+  `EFFECTS` between `"Compressor"` and `"Overdrive"` so the visible
+  chain order matches the Clash order. The new `EFFECT_KNOBS["Wah"]`
+  has four knobs (POS / Q / VOL / BIAS) arranged in a 2x2 grid. When
+  WAH is selected the FX panel renders a `SOURCE: MANUAL` strip
+  (instead of a model dropdown) inline at the position where DIST /
+  OD / AMP / CAB show their model chip. `AppState.wah_source` is
+  persisted in the JSON state file.
+- **Python API.** `AudioLabOverlay.set_wah_settings(position=, q=,
+  volume=, bias=, enabled=, source=)` is the canonical setter; the
+  position scale is dual-mode (0..100 percent -> 0..255 byte for GUI /
+  encoder, 101..255 raw passes through for the FP02M future input).
+  `set_guitar_effects(wah_enabled=, wah_position=, wah_q=, wah_volume=,
+  wah_bias=)` is a convenience facade that delegates to
+  `set_wah_settings` so chain-preset callers can flip the wah in the
+  same call. The dedicated GPIO word is NOT part of
+  `guitar_effect_control_words` -- the wah lives on its own AXI GPIO.
+- **Encoder applier.** `EncoderEffectApplier` adds `EFFECT_WAH` to its
+  effect dispatch and an `_apply_wah` path that reads
+  `AppState.all_knob_values["Wah"]` + `effect_on[2]` and calls
+  `overlay.set_wah_settings(...)`. Goes through the public setter
+  only -- no raw GPIO writes (D37 rule preserved).
+- **HDMI state mirror.** `GUI_EFFECTS` adds `"Wah"` and `GUI_EFFECT_KNOBS`
+  gets a `"Wah"` row; `EFFECT_INDEX_BY_SELECTED_FX` adds `"WAH": 2`
+  and shifts the other entries (Overdrive 2->3, Distortion 3->4, Amp
+  Sim 4->5, Cab IR 5->6, EQ 6->7, Reverb 7->8). The kwarg-prefix
+  router learns `("wah_", "WAH")`.
+- **How to apply.**
+  - When changing the wah voicing, edit the `wah*` block in
+    `hw/ip/clash/src/AudioLab/Effects/Wah.hs`. Do not move or rename
+    the block; `axi_gpio_wah` and the `wah_control` port are pinned
+    by `wah_integration.tcl` and the deployed `.hwh`.
+  - Reserved knobs (auto-wah envelope, vintage / modern model select,
+    additional bias modes) should land on a new GPIO via a new ADR
+    rather than steal bytes from existing GPIOs.
+  - The Python `set_wah_settings(...)` API and the byte encoding in
+    `control_maps.wah_word` are the source of truth; keep
+    notebook / GUI / tests in lock-step.
+
+- **Build / deploy record (after refactor).** Clash VHDL was
+  regenerated; Vivado completed with `write_bitstream completed
+  successfully` and `0 Errors`. Routed timing: WNS `-10.387 ns`,
+  TNS `-12177.222 ns`, WHS `+0.052 ns`, THS `0.000 ns`; design
+  summary failing endpoints `3877 / 61321`. Utilization: LUT `21023`
+  (+1067 vs D71.2), FF `22691` (+431), BRAM `6` (unchanged), DSP `89`
+  (+6 vs D71.2). New top-100 worst paths sit inside the existing DS-1
+  distortion section (`ds1_7_reg[154]/C -> ARG__4__0__0_i_4_psdsp/D`);
+  no Wah state register chain appears in the top-100. bit/hwh md5
+  `eacc4f35bd81c3afcdbb808baa4c8d47` /
+  `eaa888985c319841147d1ce73d6601b5`. Python `tests/test_overlay_controls.py`
+  passes (22 new Wah tests added); the full `python3 -m unittest
+  discover -s tests` count is 92 with the same 3 pre-existing failures
+  + 1 pre-existing error as master (no Wah-introduced regressions).
+- **Deploy + bench gate.** PYNQ-Z2 at 192.168.1.9 was unreachable
+  (ping / ssh timeout) at deploy time, so the 5-site bit/hwh sync,
+  `scripts/diagnose_pmod_loopback.py` smoke check, and external-
+  instrument bench audition are deferred. D71.2
+  (`9a739f904aef0955b7e59837a2c33d41` /
+  `f28f08674d25c65a48cd240ae31a578a`, WNS `-9.413 ns`) is the rollback
+  baseline until the deploy + bench cycle confirms acceptance.
+  Acceptance criteria: (a) all_off bypass D69-clean, (b) Wah OFF
+  bit-exact bypass on the cable-loop self-test, (c) Wah ON sweep
+  audibly moves the BPF centre frequency, (d) Q 0/50/100 audibly
+  changes peak width, (e) VOLUME 50 ~= unity / 100 boosted without
+  breakup, (f) BIAS audibly shifts the sweep range,
+  (g) `scripts/diagnose_pmod_loopback.py` PASS with no QUANT! /
+  STAIR! and CLIP_COUNT 0.
+
+- **Deploy + structural smoke result (D72).** `scripts/deploy_to_pynq.sh`
+  pushed the build to all four PYNQ board copies; md5 matched local at
+  every site. `AudioLabOverlay(download=True)` programmed the PL,
+  ADC HPF reads True (R19 `0x23`), `hasattr(ovl, "axi_gpio_wah")` is
+  True. Round-trip `set_wah_settings(enabled=True, position=128, q=60,
+  volume=50, bias=55)` produced `word=0xc6809980` with the documented
+  per-byte values (`position_byte=128`, `q_byte=153`, `volume_byte=128`,
+  `bias_u7=70`, `enable_bias_byte=0xc6`). `set_wah_settings(enabled=False)`
+  cleared the enable bit but preserved the other bytes
+  (`word=0x46809980`). `scripts/diagnose_pmod_loopback.py` PASS across
+  every phase (MUTE / TONE / LOOP / DSP / MUTE all `clip_d=0`; Phase 3
+  MODE 0 FFT clean 1 kHz peak with mute at codec noise floor; Phase 5
+  DSP-bypass MM2S sweep `uniq1k=1000 maxRun=1` everywhere; Phase B
+  DSP all-off MM2S sweep `uniq1k` 996-1000 `maxRun=2` everywhere with
+  no QUANT! / STAIR! flag). **Structural smoke: PASS.** External-
+  instrument bench audition is still required for full acceptance.

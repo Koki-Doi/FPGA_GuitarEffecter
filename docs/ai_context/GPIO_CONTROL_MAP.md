@@ -48,6 +48,7 @@ read-back from hardware.
 | `axi_gpio_cab` | `0x43CB0000` | cab IR | mix | level | model (0/85/170 = 3 presets) | air | active / active / active / active | `ctrlC` is quantised: 0, 85, 170 select the three preset IRs. Do not treat it as a free byte. |
 | `axi_gpio_noise_suppressor` | `0x43CC0000` | noise suppressor | NS threshold | NS decay | NS damp | mode (reserved) | active / active / active / reserved | `ctrlD` is reserved for future NS-2 vs NS-1X mode, attack / hold knobs. The byte is sent (Python clamps to `[0,255]`) but the live Clash side does nothing with it yet. |
 | `axi_gpio_compressor` | `0x43CD0000` | compressor | comp threshold | comp ratio | comp response | enable (bit 7) + makeup u7 (bits[6:0]) | active / active / active / active | Stereo-linked feed-forward peak compressor. Bit 7 of `ctrlD` is the section enable; bits[6:0] are the Q7 makeup byte (`makeup_to_u7`). The compressor is **not** gated by `gate_control.ctrlA` -- enable lives entirely inside this GPIO. Sits between the noise suppressor and the overdrive in the Clash pipeline. |
+| `axi_gpio_wah` | `0x43D30000` | wah | wah POSITION (u8 0..255) | wah Q (u8 0..255) | wah VOLUME (u8 0..255, 128 ~= unity) | enable (bit 7) + wah BIAS u7 (bits[6:0], 64 = centred) | active / active / active / active | Resonant band-pass wah (D72). Bit 7 of `ctrlD` is the section enable; bits[6:0] are the BIAS byte. The Wah is **not** gated by `gate_control.ctrlA` -- enable lives entirely inside this GPIO (same convention as the Compressor). Sits between the Compressor and the Overdrive in the Clash pipeline (classic pre-distortion wah). POSITION is the pedal-sweep parameter; today it is GUI / encoder driven (SOURCE = MANUAL), and the FP02M / Arduino A0 future input will feed the same byte without changing the GPIO layout. Added via `hw/Pynq-Z2/wah_integration.tcl` (source from `create_project.tcl` after `pmod_i2s2_integration.tcl`); `block_design.tcl` is **not** edited. The integration script bumps `ps7_0_axi_periph/NUM_MI` from 19 to 20 to expose M19_AXI for this GPIO. See `DECISIONS.md` D72. |
 
 ### Free / reserved bytes summary (for new-effect planning)
 
@@ -62,6 +63,7 @@ read-back from hardware.
 | `axi_gpio_overdrive.ctrlD[7:3]` | active | `distTight` byte, top 5 bits. Every Clash consumer of `distTight` uses `>> 3` or `>> 4`, so only these 5 bits carry information. |
 | `axi_gpio_noise_suppressor.ctrlD` | reserved | Future NS mode / attack / hold byte. Bytes 0..255 already pass through Python. |
 | `axi_gpio_compressor.ctrlD[6:0]` | active | Compressor `MAKEUP` (u7). Bit 7 of `ctrlD` is the compressor enable flag. Do not repurpose. |
+| `axi_gpio_wah.ctrlD[6:0]` | active (D72) | Wah `BIAS` (u7 0..127, 64 = centred). Bit 7 of `ctrlD` is the wah enable flag. Do not repurpose. |
 | `axi_gpio_gate.ctrlB` | legacy mirror (dead in live bitstream) | Do **not** reuse for a new feature; older bitstreams still depend on it. |
 
 ## Noise Suppressor (deployed)

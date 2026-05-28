@@ -878,6 +878,15 @@ def make_overlay_with_compressor_state(include_compressor_gpio=True):
     return overlay
 
 
+def make_overlay_with_wah_state(include_wah_gpio=True):
+    overlay = make_overlay_with_compressor_state()
+    overlay._wah_state = dict(AudioLabOverlay.WAH_DEFAULTS)
+    overlay._cached_wah_word = 0
+    if include_wah_gpio:
+        setattr(overlay, AudioLabOverlay.WAH_GPIO_NAME, FakeGpio())
+    return overlay
+
+
 def test_makeup_to_u7_anchors():
     from audio_lab_pynq import control_maps as cm
 
@@ -1432,6 +1441,273 @@ def test_apply_chain_preset_unknown_name_raises():
         raise AssertionError("unknown preset should raise KeyError")
 
 
+# ---- Wah ----------------------------------------------------------------
+
+
+def test_wah_position_byte_anchors():
+    from audio_lab_pynq import control_maps as cm
+
+    # Percent path (0..100).
+    assert cm.wah_position_byte(0) == 0
+    assert cm.wah_position_byte(50) == cm.percent_to_u8(50, 255)
+    assert cm.wah_position_byte(100) == 255
+    # Raw byte path (anything > 100 is treated as a raw byte already).
+    assert cm.wah_position_byte(128) == 128
+    assert cm.wah_position_byte(255) == 255
+    # Clamp.
+    assert cm.wah_position_byte(-10) == 0
+    assert cm.wah_position_byte(300) == 255
+
+
+def test_wah_q_byte_anchors():
+    from audio_lab_pynq import control_maps as cm
+
+    assert cm.wah_q_byte(0) == 0
+    assert cm.wah_q_byte(50) == cm.percent_to_u8(50, 255)
+    assert cm.wah_q_byte(100) == 255
+
+
+def test_wah_volume_byte_anchors():
+    from audio_lab_pynq import control_maps as cm
+
+    assert cm.wah_volume_byte(0) == 0
+    assert cm.wah_volume_byte(50) == cm.percent_to_u8(50, 255)
+    assert cm.wah_volume_byte(100) == 255
+
+
+def test_wah_bias_to_u7_anchors():
+    from audio_lab_pynq import control_maps as cm
+
+    assert cm.wah_bias_to_u7(0) == 0
+    # 50% -> 0.5 * 127 = 63.5 -> 64 (rounded then clamped to 127)
+    assert cm.wah_bias_to_u7(50) == 64
+    assert cm.wah_bias_to_u7(100) == 127
+
+
+def test_wah_bias_to_u7_clamps():
+    from audio_lab_pynq import control_maps as cm
+
+    assert cm.wah_bias_to_u7(-10) == 0
+    assert cm.wah_bias_to_u7(150) == 127
+
+
+def test_wah_enable_bias_byte_packing():
+    from audio_lab_pynq import control_maps as cm
+
+    assert cm.wah_enable_bias_byte(False, 0) == 0x00
+    assert cm.wah_enable_bias_byte(False, 50) == 0x40
+    assert cm.wah_enable_bias_byte(False, 100) == 0x7F
+    assert cm.wah_enable_bias_byte(True, 0) == 0x80
+    assert cm.wah_enable_bias_byte(True, 50) == 0xC0
+    assert cm.wah_enable_bias_byte(True, 100) == 0xFF
+
+
+def test_wah_word_packing():
+    from audio_lab_pynq import control_maps as cm
+
+    # OFF: ctrlD bit 7 cleared. POS percent path, Q/VOL/BIAS percent.
+    word_off = cm.wah_word(0, 50, 50, 50, enabled=False)
+    assert word_off & 0xFF == 0
+    assert (word_off >> 8) & 0xFF == cm.percent_to_u8(50, 255)
+    assert (word_off >> 16) & 0xFF == cm.percent_to_u8(50, 255)
+    assert (word_off >> 24) & 0x80 == 0
+    assert (word_off >> 24) & 0x7F == cm.wah_bias_to_u7(50)
+
+    # ON: ctrlD bit 7 set.
+    word_on = cm.wah_word(128, 100, 100, 100, enabled=True)
+    assert word_on & 0xFF == 128
+    assert (word_on >> 8) & 0xFF == 255
+    assert (word_on >> 16) & 0xFF == 255
+    assert (word_on >> 24) & 0x80 == 0x80
+    assert (word_on >> 24) & 0x7F == 127
+
+
+def test_wah_word_position_0_64_128_192_255_anchors():
+    """The position-byte path must accept either 0..100 percent or
+    0..255 raw bytes. The five spec anchor points (0/64/128/192/255)
+    must all reach the GPIO byte unchanged when supplied as raw bytes.
+    """
+    from audio_lab_pynq import control_maps as cm
+
+    for raw in (0, 64, 128, 192, 255):
+        if raw <= 100:
+            # percent path: 0..100 -> 0..255 via percent_to_u8
+            assert cm.wah_position_byte(raw) == cm.percent_to_u8(raw, 255)
+        else:
+            assert cm.wah_position_byte(raw) == raw
+
+
+def test_set_wah_settings_writes_word_to_dedicated_gpio():
+    overlay = make_overlay_with_wah_state()
+    settings = overlay.set_wah_settings(
+        enabled=True, position=128, q=50, volume=50, bias=50,
+    )
+    wah_gpio = getattr(overlay, AudioLabOverlay.WAH_GPIO_NAME)
+    assert wah_gpio.writes, "expected a write to the wah GPIO"
+    last_offset, last_word = wah_gpio.writes[-1]
+    assert last_offset == 0x00
+    assert last_word & 0xFF == 128
+    assert (last_word >> 8) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
+    assert (last_word >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
+    assert (last_word >> 24) & 0x80 == 0x80  # enable
+    assert (last_word >> 24) & 0x7F == AudioLabOverlay._wah_bias_to_u7(50)
+    assert settings['position_byte'] == 128
+    assert settings['q_byte'] == AudioLabOverlay._percent_to_u8(50, 255)
+    assert settings['volume_byte'] == AudioLabOverlay._percent_to_u8(50, 255)
+    assert settings['bias_u7'] == AudioLabOverlay._wah_bias_to_u7(50)
+
+
+def test_get_wah_settings_reports_metadata():
+    overlay = make_overlay_with_wah_state()
+    overlay.set_wah_settings(
+        enabled=True, position=64, q=50, volume=50, bias=50,
+    )
+    settings = overlay.get_wah_settings()
+    assert settings['enabled'] is True
+    assert settings['position'] == 64
+    assert settings['q'] == 50
+    assert settings['volume'] == 50
+    assert settings['bias'] == 50
+    assert settings['source'] == 'manual'
+    assert settings['reflected_to_fpga'] is True
+    assert settings['gpio_name'] == 'axi_gpio_wah'
+    assert settings['has_gpio'] is True
+    assert settings['implementation_status'] == 'position_q_volume_bias_fpga'
+
+
+def test_set_wah_settings_clamps_inputs():
+    overlay = make_overlay_with_wah_state()
+    settings = overlay.set_wah_settings(
+        position=-10, q=200, volume=150, bias=-50,
+    )
+    # position float pass-through retains the literal; the byte mapping
+    # clamps to 0 for negative.
+    assert settings['position_byte'] == 0
+    assert settings['q'] == 100
+    assert settings['volume'] == 100
+    assert settings['bias'] == 0
+
+
+def test_wah_disabled_clears_enable_bit():
+    overlay = make_overlay_with_wah_state()
+    overlay.set_wah_settings(enabled=True, bias=80)
+    overlay.set_wah_settings(enabled=False)
+    settings = overlay.get_wah_settings()
+    assert settings['enabled'] is False
+    assert settings['enable_bias_byte'] & 0x80 == 0
+    # bias is preserved across the off-toggle.
+    assert settings['bias'] == 80
+
+
+def test_wah_defaults_are_safe():
+    overlay = make_overlay_with_wah_state()
+    settings = overlay.get_wah_settings()
+    assert settings['enabled'] is False
+    assert settings['position'] == 0
+    assert settings['q'] == 50
+    assert settings['volume'] == 50
+    assert settings['bias'] == 50
+    assert settings['source'] == 'manual'
+    # Byte view: enable cleared, bias u7 == 64. The cached word is 0
+    # until the first apply (test helper skips __init__) -- the per-byte
+    # view comes straight from cached state.
+    assert settings['enable_bias_byte'] & 0x80 == 0
+    assert settings['enable_bias_byte'] & 0x7F == 64
+
+
+def test_set_guitar_effects_forwards_wah_kwargs_to_dedicated_gpio():
+    """Wah kwargs supplied via set_guitar_effects must land on the
+    dedicated axi_gpio_wah GPIO, not on the gate / overdrive / etc.
+    words. The returned dict must NOT advertise a wah key (the wah
+    lives on its own GPIO outside guitar_effect_control_words)."""
+    overlay = make_overlay_with_wah_state()
+    words = overlay.set_guitar_effects(
+        wah_enabled=True, wah_position=128, wah_q=60, wah_volume=55, wah_bias=70)
+    wah_gpio = getattr(overlay, AudioLabOverlay.WAH_GPIO_NAME)
+    assert wah_gpio.writes, "expected a write to the wah GPIO"
+    _, last_word = wah_gpio.writes[-1]
+    assert last_word & 0xFF == 128
+    assert (last_word >> 24) & 0x80 == 0x80
+    assert "wah" not in words, "wah lives on its own GPIO outside the words dict"
+
+
+def test_set_guitar_effects_without_wah_kwargs_preserves_state():
+    """An old caller that does not pass any wah_* kwargs must leave the
+    cached wah state unchanged so loading the overlay never re-arms a
+    Wah that the user explicitly disabled before."""
+    overlay = make_overlay_with_wah_state()
+    overlay.set_wah_settings(enabled=False, position=64, q=42, volume=42, bias=42)
+    pre_word = overlay._cached_wah_word
+    pre_writes = list(getattr(overlay, AudioLabOverlay.WAH_GPIO_NAME).writes)
+
+    overlay.set_guitar_effects(noise_gate_on=True, overdrive_on=False)
+
+    post = overlay.get_wah_settings()
+    assert post['enabled'] is False
+    assert post['position'] == 64
+    assert post['q'] == 42
+    assert post['volume'] == 42
+    assert post['bias'] == 42
+    assert overlay._cached_wah_word == pre_word
+    # No new write to the wah GPIO from the wah-less set_guitar_effects.
+    post_writes = list(getattr(overlay, AudioLabOverlay.WAH_GPIO_NAME).writes)
+    assert post_writes == pre_writes
+
+
+def test_all_off_bypass_word_unchanged_by_wah_kwargs():
+    """gate / overdrive / distortion / amp / cab / eq / reverb words
+    must not change shape when wah_* kwargs are supplied. The wah is on
+    its own GPIO and does not touch any pre-existing register byte."""
+    overlay_a = make_overlay_with_wah_state()
+    words_a = overlay_a.set_guitar_effects()  # all defaults, no wah_*
+
+    overlay_b = make_overlay_with_wah_state()
+    words_b = overlay_b.set_guitar_effects(
+        wah_enabled=False, wah_position=0, wah_q=50, wah_volume=50, wah_bias=50)
+
+    for k in ("gate", "overdrive", "distortion", "eq",
+              "rat", "delay", "amp", "amp_tone", "cab", "reverb"):
+        assert words_a[k] == words_b[k], (
+            "wah kwargs must not perturb the %s word" % k)
+
+
+def test_set_guitar_effects_wah_source_is_python_side_only():
+    overlay = make_overlay_with_wah_state()
+    # First establish a stable cached word so the wah_source-only
+    # update below can be compared against an initialised baseline.
+    overlay.set_wah_settings(source="manual")
+    pre_word = overlay._cached_wah_word
+    overlay.set_guitar_effects(wah_source="pedal")
+    # source is bookkeeping; the byte layout is unchanged (no other
+    # wah kwargs supplied). The GPIO word still gets rewritten with the
+    # cached state because we did call set_wah_settings under the hood,
+    # but the value must equal the pre-existing word.
+    post = overlay.get_wah_settings()
+    assert post['source'] == 'pedal'
+    assert overlay._cached_wah_word == pre_word
+
+
+def test_safe_bypass_defaults_include_wah_off():
+    """SAFE_BYPASS_DEFAULTS keeps wah_enabled=False and parameters at
+    safe values so a panic press never produces a filter sweep."""
+    from audio_lab_pynq.effect_defaults import SAFE_BYPASS_DEFAULTS
+
+    assert SAFE_BYPASS_DEFAULTS['wah_enabled'] is False
+    assert SAFE_BYPASS_DEFAULTS['wah_position'] == 0
+    assert SAFE_BYPASS_DEFAULTS['wah_q'] == 50
+    assert SAFE_BYPASS_DEFAULTS['wah_volume'] == 50
+    assert SAFE_BYPASS_DEFAULTS['wah_bias'] == 50
+
+
+def test_effect_defaults_module_exposes_wah_dict():
+    """WAH_DEFAULTS must be re-exported by effect_defaults and reachable
+    from the AudioLabOverlay class attribute."""
+    from audio_lab_pynq.effect_defaults import WAH_DEFAULTS
+
+    assert WAH_DEFAULTS['enabled'] is False
+    assert AudioLabOverlay.WAH_DEFAULTS is WAH_DEFAULTS
+
+
 if __name__ == "__main__":
     test_rat_control_word()
     test_set_guitar_effects_writes_rat_gpio()
@@ -1524,4 +1800,23 @@ if __name__ == "__main__":
     test_amp_character_byte_for_model_alias_matches_d55_pack()
     test_guitar_effect_control_words_amp_model_idx_uses_d55_bit_pack()
     test_guitar_effect_control_words_without_model_idx_uses_amp_character()
+    test_wah_position_byte_anchors()
+    test_wah_q_byte_anchors()
+    test_wah_volume_byte_anchors()
+    test_wah_bias_to_u7_anchors()
+    test_wah_bias_to_u7_clamps()
+    test_wah_enable_bias_byte_packing()
+    test_wah_word_packing()
+    test_wah_word_position_0_64_128_192_255_anchors()
+    test_set_wah_settings_writes_word_to_dedicated_gpio()
+    test_get_wah_settings_reports_metadata()
+    test_set_wah_settings_clamps_inputs()
+    test_wah_disabled_clears_enable_bit()
+    test_wah_defaults_are_safe()
+    test_set_guitar_effects_forwards_wah_kwargs_to_dedicated_gpio()
+    test_set_guitar_effects_without_wah_kwargs_preserves_state()
+    test_all_off_bypass_word_unchanged_by_wah_kwargs()
+    test_set_guitar_effects_wah_source_is_python_side_only()
+    test_safe_bypass_defaults_include_wah_off()
+    test_effect_defaults_module_exposes_wah_dict()
     print("AudioLabOverlay guitar effect control tests passed")

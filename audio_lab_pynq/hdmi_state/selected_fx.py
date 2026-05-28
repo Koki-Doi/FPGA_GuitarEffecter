@@ -82,6 +82,7 @@ CANONICAL_SELECTED_FX = {
     "SAFE BYPASS": "SAFE BYPASS",
     "NOISE SUPPRESSOR": "NOISE SUPPRESSOR",
     "COMPRESSOR": "COMPRESSOR",
+    "WAH": "WAH",
     "OVERDRIVE": "OVERDRIVE",
     "DISTORTION": "DISTORTION",
     "CLEAN BOOST": "CLEAN BOOST",
@@ -106,6 +107,9 @@ SELECTED_FX_ALIASES = {
     "COMP": "COMPRESSOR",
     "CMP": "COMPRESSOR",
     "COMPRESSOR": "COMPRESSOR",
+    "WAH": "WAH",
+    "WAH WAH": "WAH",
+    "WAHWAH": "WAH",
     "OD": "OVERDRIVE",
     "OVER DRIVE": "OVERDRIVE",
     "OVERDRIVE": "OVERDRIVE",
@@ -147,19 +151,20 @@ SELECTED_FX_ALIASES = {
 EFFECT_INDEX_BY_SELECTED_FX = {
     "NOISE SUPPRESSOR": 0,
     "COMPRESSOR": 1,
-    "OVERDRIVE": 2,
-    "DISTORTION": 3,
-    "CLEAN BOOST": 3,
-    "TUBE SCREAMER": 3,
-    "RAT": 3,
-    "DS-1": 3,
-    "BIG MUFF": 3,
-    "FUZZ FACE": 3,
-    "METAL": 3,
-    "AMP SIM": 4,
-    "CAB": 5,
-    "EQ": 6,
-    "REVERB": 7,
+    "WAH": 2,
+    "OVERDRIVE": 3,
+    "DISTORTION": 4,
+    "CLEAN BOOST": 4,
+    "TUBE SCREAMER": 4,
+    "RAT": 4,
+    "DS-1": 4,
+    "BIG MUFF": 4,
+    "FUZZ FACE": 4,
+    "METAL": 4,
+    "AMP SIM": 5,
+    "CAB": 6,
+    "EQ": 7,
+    "REVERB": 8,
 }
 
 METHOD_SELECTED_FX = {
@@ -167,6 +172,7 @@ METHOD_SELECTED_FX = {
     "apply_chain_preset": "PRESET",
     "set_noise_suppressor_settings": "NOISE SUPPRESSOR",
     "set_compressor_settings": "COMPRESSOR",
+    "set_wah_settings": "WAH",
     "set_distortion_settings": "DISTORTION",
     "clear_distortion_pedals": "DISTORTION",
 }
@@ -174,6 +180,8 @@ METHOD_SELECTED_FX = {
 GUITAR_KWARG_PREFIX_TO_SELECTED_FX = (
     ("noise_gate_", "NOISE SUPPRESSOR"),
     ("noise_gate", "NOISE SUPPRESSOR"),
+    ("wah_", "WAH"),
+    ("wah", "WAH"),
     ("overdrive_", "OVERDRIVE"),
     ("overdrive", "OVERDRIVE"),
     ("distortion_", "DISTORTION"),
@@ -192,7 +200,7 @@ GUITAR_KWARG_PREFIX_TO_SELECTED_FX = (
 
 GUITAR_CATEGORY_PRIORITY = (
     "REVERB", "CAB", "AMP SIM", "EQ", "RAT", "OVERDRIVE",
-    "DISTORTION", "COMPRESSOR", "NOISE SUPPRESSOR",
+    "DISTORTION", "WAH", "COMPRESSOR", "NOISE SUPPRESSOR",
 )
 
 
