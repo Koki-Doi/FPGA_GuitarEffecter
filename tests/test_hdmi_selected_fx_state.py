@@ -25,9 +25,12 @@ class FakeAppState(object):
         self.preset_id = "02A"
         self.preset_name = "BASIC CLEAN"
         self.preset_idx = 1
-        self.chain = list(range(8))
-        self.effect_on = [True, True, False, False, True, True, True, True]
-        self.selected_effect = 4
+        # 9-effect layout post-Wah:
+        # 0=Noise Sup, 1=Compressor, 2=Wah, 3=Overdrive, 4=Distortion,
+        # 5=Amp Sim, 6=Cab IR, 7=EQ, 8=Reverb
+        self.chain = list(range(9))
+        self.effect_on = [True, True, False, True, False, True, True, True, True]
+        self.selected_effect = 5  # Amp Sim
         self.selected_fx = None
         self.knob_values = [45, 55, 60, 50, 70, 60]
         self.selected_knob = 0
@@ -184,7 +187,8 @@ def test_method_mapping_and_history_order():
         "REVERB",
     ]
     assert mirror.get_selected_fx_actual() == "REVERB"
-    assert mirror.app_state.selected_effect == 7
+    # 9-effect layout post-Wah: Reverb is at index 8.
+    assert mirror.app_state.selected_effect == 8
     assert mirror.last_render_info["expected_selected_fx"] == "REVERB"
 
 

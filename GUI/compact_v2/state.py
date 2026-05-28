@@ -83,12 +83,13 @@ class AppState:
     bpm: int         = 120
     key: str         = "E"
 
-    # signal-chain (indices into EFFECTS — drag-reorder writes into this list)
-    chain: List[int] = field(default_factory=lambda: list(range(8)))
+    # signal-chain (indices into EFFECTS - drag-reorder writes into this list)
+    chain: List[int] = field(default_factory=lambda: list(range(9)))
     # ON/OFF per effect (indexed by chain position == EFFECTS index in default order)
+    # Order: Noise Sup, Compressor, Wah, Overdrive, Distortion, Amp Sim, Cab IR, EQ, Reverb
     effect_on: List[bool] = field(default_factory=lambda:
-        [True,  True, True, False, True, True, False, True])
-    selected_effect: int  = 4   # Amp Sim
+        [True,  True, False, True, False, True, True, False, True])
+    selected_effect: int  = 5   # Amp Sim
 
     # per-effect independent knob storage (effect name → list of floats)
     all_knob_values: dict = field(default_factory=lambda: {
@@ -106,6 +107,12 @@ class AppState:
     # voicing, 1 = higher-drive voicing (same amp model). Mirrors
     # all_knob_values["Amp Sim"][7] which is the renderer-visible slot.
     amp_drive_mode: int = 1
+    # Wah POSITION source. "manual" today (GUI / encoder); "pedal" once
+    # FP02M / Arduino A0 is wired. The GPIO byte layout is identical in
+    # both modes -- this field only affects what UI / runtime updates
+    # POSITION between encoder ticks. Renderer shows "SOURCE: MANUAL"
+    # or "SOURCE: PEDAL" in the FX panel for the WAH effect.
+    wah_source: str = "manual"
 
     # footswitches
     fs_states: List[bool] = field(default_factory=lambda:
@@ -131,7 +138,7 @@ class AppState:
     # apply / source bookkeeping for the EncoderUiController. Defaults are
     # chosen so existing renderers and notebooks that ignore them keep
     # rendering identically (focus_* equal to selected_*, edit modes off).
-    focus_effect_index: int   = 4    # tracks selected_effect by default
+    focus_effect_index: int   = 5    # tracks selected_effect by default
     focus_param_index:  int   = 0
     edit_mode:          bool  = False
     model_select_mode:  bool  = False
@@ -172,7 +179,7 @@ _STATE_KEYS = ("preset_id", "preset_name", "preset_idx",
                "selected_effect", "selected_knob",
                "effect_on", "all_knob_values", "chain", "display_mode",
                "dist_model_idx", "amp_model_idx", "cab_model_idx",
-               "overdrive_model_idx", "amp_drive_mode",
+               "overdrive_model_idx", "amp_drive_mode", "wah_source",
                "fs_states", "fs_selected")
 
 def save_state_json(state: AppState, path: str = STATE_FILE) -> None:

@@ -11,8 +11,8 @@ unpackChan bv = (unpack (slice d23 d0 bv), unpack (slice d47 d24 bv))
 
 packChan :: Sample -> Sample -> BitVector 48
 packChan left right = pack right ++# pack left
-makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
-makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl noiseSuppressorControl compressorControl samples validIn lastIn =
+makeInput :: Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> Ctrl -> BitVector 48 -> Bool -> Bool -> Maybe Frame
+makeInput gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl noiseSuppressorControl compressorControl wahControl samples validIn lastIn =
   if validIn
     then
       let (left, _) = unpackChan samples
@@ -36,6 +36,7 @@ makeInput gateControl odControl distControl eqControl ratControl ampControl ampT
               , fReverb = reverbControl
               , fNs = noiseSuppressorControl
               , fComp = compressorControl
+              , fWah = wahControl
               , fAddr = 0
               , fDryL = mono
               , fDryR = mono

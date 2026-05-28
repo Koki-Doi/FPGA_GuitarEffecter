@@ -215,6 +215,98 @@ def compressor_word(threshold, ratio, response, makeup, enabled=False):
     )
 
 
+# ---- Wah --------------------------------------------------------------
+#
+# Drives the dedicated ``axi_gpio_wah`` at ``0x43D30000``. Bytes:
+# ``ctrlA`` = POSITION (0..255 u8; the 0..100 UI scale is mapped onto
+# 0..255), ``ctrlB`` = Q (0..100 UI -> 0..255 u8), ``ctrlC`` = VOLUME
+# (0..100 UI -> 0..255 u8 with 128 ~= unity), ``ctrlD`` bit 7 = enable,
+# ``ctrlD`` bits[6:0] = BIAS (0..100 UI -> 0..127 u7 with 64 = centred).
+# The Wah enable lives inside this GPIO (same convention as
+# ``axi_gpio_compressor`` ctrlD bit 7); it is NOT carried in
+# ``gate_control.ctrlA``.
+
+def wah_position_byte(value):
+    """Map a Wah POSITION value to a byte in [0, 255].
+
+    The Wah position is the pedal-sweep parameter. It is accepted in two
+    scales:
+
+    - 0..255 raw u8 (passed through after clamping). This is the FP02M
+      future input path: the rotary / Arduino A0 read returns a raw byte.
+    - 0..100 percent (scaled to 0..255). This is the GUI / encoder path:
+      every other knob in the project uses a 0..100 scale.
+
+    Both modes round-trip cleanly: values <= 100 are interpreted as the
+    percent scale; values > 100 are treated as raw bytes already. Values
+    outside ``[0, 255]`` are clamped.
+    """
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return 0
+    if v <= 100.0:
+        return percent_to_u8(v, 255)
+    return clamp_u8(v)
+
+
+def wah_q_byte(value):
+    """Map a Wah Q UI value (0..100) to a byte in [0, 255]."""
+    return percent_to_u8(value, 255)
+
+
+def wah_volume_byte(value):
+    """Map a Wah VOLUME UI value (0..100) to a byte in [0, 255].
+
+    50 -> ~128 -> unity on the Clash side (``wahVolumeFactor`` yields a
+    Q8 factor of 256 at byte 255 with linear interpolation from 64 at
+    byte 0; byte 128 sits at the unity-ish mid-point).
+    """
+    return percent_to_u8(value, 255)
+
+
+def wah_bias_to_u7(value):
+    """Map a Wah BIAS UI value (0..100) to a u7 byte in [0, 127].
+
+    50 -> ~64 -> Clash interprets as "centred / no bias shift".
+    The result lives in the low 7 bits of ``axi_gpio_wah.ctrlD``; the
+    top bit of that byte carries the Wah enable flag.
+    """
+    return clamp_int(percent_to_u8(value, 127), 0, 127)
+
+
+def wah_enable_bias_byte(enabled, bias):
+    """Pack the Wah enable bit and BIAS percent into one byte.
+
+    Bit 7 carries the enable flag; bits[6:0] carry :func:`wah_bias_to_u7`
+    of ``bias``. The Clash side reads this as ``wahEnabled`` /
+    ``wahBiasByte``.
+    """
+    byte = wah_bias_to_u7(bias)
+    if enabled:
+        byte |= 0x80
+    return byte & 0xFF
+
+
+def wah_word(position, q, volume, bias, enabled=False):
+    """Build the 32-bit word for ``axi_gpio_wah``.
+
+    Bytes:
+
+    - ``ctrlA`` = POSITION via :func:`wah_position_byte`
+    - ``ctrlB`` = Q via :func:`wah_q_byte`
+    - ``ctrlC`` = VOLUME via :func:`wah_volume_byte`
+    - ``ctrlD`` bit 7 = ``enabled``;
+      ``ctrlD`` bits[6:0] = :func:`wah_bias_to_u7` of ``bias``
+    """
+    return pack_u8x4(
+        wah_position_byte(position),
+        wah_q_byte(q),
+        wah_volume_byte(volume),
+        wah_enable_bias_byte(enabled, bias),
+    )
+
+
 __all__ = [
     "clamp_int",
     "clamp_percent",
@@ -232,4 +324,10 @@ __all__ = [
     "makeup_to_u7",
     "compressor_enable_makeup_byte",
     "compressor_word",
+    "wah_position_byte",
+    "wah_q_byte",
+    "wah_volume_byte",
+    "wah_bias_to_u7",
+    "wah_enable_bias_byte",
+    "wah_word",
 ]

@@ -308,7 +308,8 @@ def test_encoder_overdrive_model_cycle_uses_dedicated_index():
     from audio_lab_pynq.encoder_ui import EncoderUiController
 
     state = AppState()
-    state.selected_effect = 2          # Overdrive
+    # 9-effect layout post-Wah: Overdrive lives at index 3 (was 2).
+    state.selected_effect = 3          # Overdrive
 
     initial_dist = state.dist_model_idx
     initial_od = state.overdrive_model_idx

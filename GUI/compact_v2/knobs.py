@@ -8,15 +8,16 @@ names so existing notebook / script imports keep working.
 
 from typing import List, Tuple  # noqa: F401  -- referenced by external callers
 
-EFFECTS = ["Noise Sup", "Compressor", "Overdrive", "Distortion",
+EFFECTS = ["Noise Sup", "Compressor", "Wah", "Overdrive", "Distortion",
            "Amp Sim", "Cab IR", "EQ", "Reverb"]
-EFFECTS_SHORT = ["NS", "CMP", "OD", "DIST", "AMP", "CAB", "EQ", "RVB"]
+EFFECTS_SHORT = ["NS", "CMP", "WAH", "OD", "DIST", "AMP", "CAB", "EQ", "RVB"]
 
 # Per-effect knob assignments (label, default 0..100).
-# Amp Sim has 8 params (4x2 grid); all others have ≤6.
+# Amp Sim has 8 params (4x2 grid); all others have <=6.
 EFFECT_KNOBS = {
     "Noise Sup":  [("THRESH", 20),  ("DECAY",  90),  ("DAMP",  100)],
     "Compressor": [("THRESH", 30),  ("RATIO",  70),  ("RESP",   85),  ("MAKEUP", 55)],
+    "Wah":        [("POS",     0),  ("Q",      50),  ("VOL",    50),  ("BIAS",   50)],
     "Overdrive":  [("TONE",   35),  ("LEVEL",  50),  ("DRIVE",  55)],
     "Distortion": [("TONE",   50),  ("LEVEL",  35),  ("DRIVE",  50),
                    ("BIAS",   50),  ("TIGHT",  60),  ("MIX",   100)],

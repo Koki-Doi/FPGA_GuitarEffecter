@@ -19,10 +19,13 @@ except Exception:
             self.preset_id = "02A"
             self.preset_name = "BASIC  CLEAN"
             self.preset_idx = 1
-            self.chain = list(range(8))
+            # 9-effect layout post-Wah:
+            # 0=Noise Sup, 1=Compressor, 2=Wah, 3=Overdrive,
+            # 4=Distortion, 5=Amp Sim, 6=Cab IR, 7=EQ, 8=Reverb
+            self.chain = list(range(9))
             self.effect_on = [
-                True, True, False, False, True, True, True, True]
-            self.selected_effect = 4
+                True, True, False, True, False, True, True, True, True]
+            self.selected_effect = 5  # Amp Sim
             self.knob_values = [45, 55, 60, 50, 70, 60]
             self.dist_model_idx = 1
             self.amp_model_idx = 2
@@ -112,7 +115,8 @@ def test_safe_bypass_uses_existing_safe_api_sequence():
 
 def test_eq_knobs_map_gui_percent_to_overlay_level_range():
     state = AppState()
-    state.selected_effect = 6
+    # 9-effect layout post-Wah: EQ is at index 7 (was 6).
+    state.selected_effect = 7
     state.knob_values = [50, 55, 60, 0, 0, 0]
 
     sections = app_state_to_audio_lab_sections(state)

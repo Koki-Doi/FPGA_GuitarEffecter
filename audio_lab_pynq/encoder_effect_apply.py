@@ -20,12 +20,27 @@ import time
 
 EFFECT_NOISE_SUP  = "Noise Sup"
 EFFECT_COMPRESSOR = "Compressor"
+EFFECT_WAH        = "Wah"
 EFFECT_OVERDRIVE  = "Overdrive"
 EFFECT_DISTORTION = "Distortion"
 EFFECT_AMP        = "Amp Sim"
 EFFECT_CAB        = "Cab IR"
 EFFECT_EQ         = "EQ"
 EFFECT_REVERB     = "Reverb"
+
+# Index map mirrors GUI/compact_v2/knobs.py::EFFECTS. Used to read
+# effect_on flags by effect name without depending on a list scan.
+_EFFECT_ON_INDEX = {
+    EFFECT_NOISE_SUP:  0,
+    EFFECT_COMPRESSOR: 1,
+    EFFECT_WAH:        2,
+    EFFECT_OVERDRIVE:  3,
+    EFFECT_DISTORTION: 4,
+    EFFECT_AMP:        5,
+    EFFECT_CAB:        6,
+    EFFECT_EQ:         7,
+    EFFECT_REVERB:     8,
+}
 
 # Default throttle: at most one set_guitar_effects burst per 100 ms while
 # encoder 3 is being turned continuously.
@@ -38,6 +53,9 @@ RAT_PEDAL_INDEX = 2
 # AppState all_knob_values ordering (mirrors GUI/compact_v2/knobs.py).
 #   "Noise Sup":  [THRESH, DECAY, DAMP]
 #   "Compressor": [THRESH, RATIO, RESP, MAKEUP]
+#   "Wah":        [POS, Q, VOL, BIAS]   (POS is the spec POSITION knob;
+#       it accepts 0..100 here and is mapped to the overlay 0..255 byte
+#       by AudioLabOverlay.set_wah_settings.)
 #   "Overdrive":  [TONE, LEVEL, DRIVE]
 #   "Distortion": [TONE, LEVEL, DRIVE, BIAS, TIGHT, MIX]
 #   "Amp Sim":    [GAIN, BASS, MID, TREB, PRES, RES, MSTR, DRV MODE]
@@ -161,6 +179,13 @@ class EncoderEffectApplier(object):
                 self.overlay.set_noise_suppressor_settings(enabled=enabled)
             elif effect_name == EFFECT_COMPRESSOR:
                 self.overlay.set_compressor_settings(enabled=enabled)
+            elif effect_name == EFFECT_WAH:
+                if hasattr(self.overlay, "set_wah_settings"):
+                    self.overlay.set_wah_settings(enabled=enabled)
+                else:
+                    self._mark_unsupported(EFFECT_WAH)
+                    self._record_err("on/off Wah: overlay missing set_wah_settings")
+                    return False
             elif effect_name == EFFECT_OVERDRIVE:
                 self.overlay.set_guitar_effects(overdrive_on=enabled)
             elif effect_name == EFFECT_DISTORTION:
@@ -200,6 +225,8 @@ class EncoderEffectApplier(object):
                 ovl.set_noise_suppressor_settings(enabled=False)
             if hasattr(ovl, "set_compressor_settings"):
                 ovl.set_compressor_settings(enabled=False)
+            if hasattr(ovl, "set_wah_settings"):
+                ovl.set_wah_settings(enabled=False)
             ovl.set_guitar_effects(
                 noise_gate_on=False, overdrive_on=False, distortion_on=False,
                 rat_on=False, amp_on=False, cab_on=False, eq_on=False,
@@ -229,6 +256,7 @@ class EncoderEffectApplier(object):
         try:
             ns  = _knob_list(state, EFFECT_NOISE_SUP,  [35, 45, 80])
             cmp_ = _knob_list(state, EFFECT_COMPRESSOR, [50, 45, 40, 55])
+            wah = _knob_list(state, EFFECT_WAH,        [0,  50, 50, 50])
             od  = _knob_list(state, EFFECT_OVERDRIVE,  [60, 60, 35])
             dst = _knob_list(state, EFFECT_DISTORTION, [55, 35, 50, 50, 60, 100])
             amp = _knob_list(state, EFFECT_AMP,
@@ -276,29 +304,39 @@ class EncoderEffectApplier(object):
                 amp_drive_mode = 1
             amp_drive_mode = 1 if amp_drive_mode >= 1 else 0
 
-            # The dedicated noise-suppressor + compressor GPIOs each take
-            # their own setter so the cached state stays consistent.
+            # The dedicated noise-suppressor + compressor + wah GPIOs each
+            # take their own setter so the cached state stays consistent.
             self.overlay.set_noise_suppressor_settings(
                 threshold=_clamp_percent(ns[0]),
                 decay=_clamp_percent(ns[1]),
                 damp=_clamp_percent(ns[2]),
-                enabled=_effect_on(state, 0, True))
+                enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_NOISE_SUP], True))
             self.overlay.set_compressor_settings(
                 threshold=_clamp_percent(cmp_[0]),
                 ratio=_clamp_percent(cmp_[1]),
                 response=_clamp_percent(cmp_[2]),
                 makeup=_clamp_percent(cmp_[3]),
-                enabled=_effect_on(state, 1, True))
+                enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_COMPRESSOR], True))
+            if hasattr(self.overlay, "set_wah_settings"):
+                self.overlay.set_wah_settings(
+                    position=_clamp_percent(wah[0]),
+                    q=_clamp_percent(wah[1]),
+                    volume=_clamp_percent(wah[2]),
+                    bias=_clamp_percent(wah[3]),
+                    enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_WAH], False),
+                    source=str(getattr(state, "wah_source", "manual") or "manual"))
+            else:
+                self._mark_unsupported(EFFECT_WAH)
 
             kwargs = dict(
-                noise_gate_on=_effect_on(state, 0, True),
-                overdrive_on=_effect_on(state, 2, False),
-                distortion_on=_effect_on(state, 3, False),
+                noise_gate_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_NOISE_SUP], True),
+                overdrive_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_OVERDRIVE], False),
+                distortion_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_DISTORTION], False),
                 rat_on=False,
-                amp_on=_effect_on(state, 4, True),
-                cab_on=_effect_on(state, 5, True),
-                eq_on=_effect_on(state, 6, True),
-                reverb_on=_effect_on(state, 7, True),
+                amp_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_AMP], True),
+                cab_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_CAB], True),
+                eq_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_EQ], True),
+                reverb_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_REVERB], True),
 
                 overdrive_drive=_clamp_percent(od[2]),
                 overdrive_tone=_clamp_percent(od[0]),

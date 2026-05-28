@@ -23,6 +23,7 @@ import AudioLab.Types
                  , PortName "reverb_control"
                  , PortName "noise_suppressor_control"
                  , PortName "compressor_control"
+                 , PortName "wah_control"
                  , PortName "axis_in_tdata"
                  , PortName "axis_in_tvalid"
                  , PortName "axis_in_tlast"
@@ -48,6 +49,7 @@ topEntity
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
   -> Signal AudioDomain Ctrl
+  -> Signal AudioDomain Ctrl
   -> Signal AudioDomain (BitVector 48)
   -> Signal AudioDomain Bool
   -> Signal AudioDomain Bool
@@ -57,6 +59,6 @@ topEntity
      , Signal AudioDomain Bool
      , Signal AudioDomain Bool
      )
-topEntity clk rst gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl samples validIn lastIn readyOut =
+topEntity clk rst gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl wahControl samples validIn lastIn readyOut =
   withClockResetEnable clk rst enableGen $
-    fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl samples validIn lastIn readyOut
+    fxPipeline gateControl odControl distControl eqControl ratControl ampControl ampToneControl cabControl reverbControl nsControl compControl wahControl samples validIn lastIn readyOut

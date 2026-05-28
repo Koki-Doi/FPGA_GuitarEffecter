@@ -10,6 +10,7 @@ from .effect_defaults import (
     DISTORTION_PEDALS_IMPLEMENTED as _DISTORTION_PEDALS_IMPLEMENTED,
     NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
     COMPRESSOR_DEFAULTS as _COMPRESSOR_DEFAULTS,
+    WAH_DEFAULTS as _WAH_DEFAULTS,
     AMP_MODELS as _AMP_MODELS,
     AMP_MODEL_LABELS as _AMP_MODEL_LABELS,
     AMP_MODELS_LEGACY_PERCENT as _AMP_MODELS_LEGACY_PERCENT,
@@ -75,6 +76,19 @@ class AudioLabOverlay(Overlay):
     # Sits between the noise suppressor and the overdrive in the chain.
     COMPRESSOR_DEFAULTS = _COMPRESSOR_DEFAULTS
     COMPRESSOR_GPIO_NAME = 'axi_gpio_compressor'
+
+    # Wah (resonant band-pass, all-FPGA). Driven by the dedicated
+    # axi_gpio_wah at 0x43D30000:
+    #   ctrlA = position byte   (pedal sweep, 0..255; FP02M future input)
+    #   ctrlB = q byte          (resonance / sharpness, 0..255)
+    #   ctrlC = volume byte     (ON-gain compensation, 0..255; 128 ~= unity)
+    #   ctrlD bit 7 = enable; ctrlD bits[6:0] = bias (u7 0..127, 64 = centred)
+    # Sits between the compressor and the overdrive in the Clash chain
+    # (classic pre-distortion wah position). The Wah enable lives inside
+    # this GPIO -- it is NOT carried in gate_control.ctrlA (same
+    # convention as the Compressor section, DECISIONS.md D14).
+    WAH_DEFAULTS = _WAH_DEFAULTS
+    WAH_GPIO_NAME = 'axi_gpio_wah'
 
     # Amp Simulator models (D55). The 6 voicings are JC-120 / Twin Reverb /
     # AC30 / Rockerverb / JCM800 / TriAmp Mk3 -- inspired-by, not
@@ -172,6 +186,15 @@ class AudioLabOverlay(Overlay):
         self._cached_compressor_word = 0
         if hasattr(self, self.COMPRESSOR_GPIO_NAME):
             self._apply_compressor_state_to_word()
+        # Wah cache. Output-only GPIO; hold the last word and the
+        # per-parameter ints. Defaults keep the wah off so loading the
+        # overlay never produces an unexpected filter sweep. The
+        # ``source`` field is Python-side bookkeeping ("manual" / "pedal");
+        # it does NOT travel to the GPIO.
+        self._wah_state = dict(self.WAH_DEFAULTS)
+        self._cached_wah_word = 0
+        if hasattr(self, self.WAH_GPIO_NAME):
+            self._apply_wah_state_to_word()
 
     @property
     def adc_hpf_enabled(self):
@@ -857,6 +880,129 @@ class AudioLabOverlay(Overlay):
             'implementation_status': 'threshold_ratio_response_makeup_fpga',
         }
 
+    # ---- Wah public API ------------------------------------------------
+    #
+    # Drives the dedicated ``axi_gpio_wah`` (0x43D30000). Bytes:
+    # ctrlA = position, ctrlB = q, ctrlC = volume, ctrlD bit 7 = enable,
+    # ctrlD bits[6:0] = bias (u7 0..127). The Wah sits between the
+    # Compressor and the Overdrive (classic pre-distortion wah). FP02M /
+    # Arduino A0 hardware feed is NOT implemented yet -- ``source``
+    # stays "manual" today; the Python helpers below leave that field
+    # as bookkeeping so the FP02M switch is a single-line state update.
+
+    @staticmethod
+    def _wah_position_byte(value):
+        return _cm.wah_position_byte(value)
+
+    @staticmethod
+    def _wah_q_byte(value):
+        return _cm.wah_q_byte(value)
+
+    @staticmethod
+    def _wah_volume_byte(value):
+        return _cm.wah_volume_byte(value)
+
+    @staticmethod
+    def _wah_bias_to_u7(value):
+        return _cm.wah_bias_to_u7(value)
+
+    @staticmethod
+    def _wah_word(position, q, volume, bias, enabled=False):
+        return _cm.wah_word(position, q, volume, bias, enabled)
+
+    def _apply_wah_state_to_word(self):
+        """Recompute the wah 32-bit word from cached state and write it
+        to the dedicated GPIO. No mirror to legacy GPIOs -- the wah is
+        a brand-new section with no historical slot.
+        """
+        s = self._wah_state
+        word = self._wah_word(
+            position=s['position'],
+            q=s['q'],
+            volume=s['volume'],
+            bias=s['bias'],
+            enabled=s['enabled'],
+        )
+        self._cached_wah_word = word
+        gpio = getattr(self, self.WAH_GPIO_NAME, None)
+        if gpio is not None:
+            self._write_gpio(gpio, word)
+
+    def set_wah_position(self, value):
+        return self.set_wah_settings(position=value)
+
+    def set_wah_q(self, value):
+        return self.set_wah_settings(q=value)
+
+    def set_wah_volume(self, value):
+        return self.set_wah_settings(volume=value)
+
+    def set_wah_bias(self, value):
+        return self.set_wah_settings(bias=value)
+
+    def set_wah_settings(self, position=None, q=None, volume=None,
+                         bias=None, enabled=None, source=None):
+        """Update any subset of the Wah parameters.
+
+        ``position`` accepts either a 0..100 percent (GUI / encoder
+        path) or a 0..255 raw byte (FP02M future input path). The
+        helper :func:`control_maps.wah_position_byte` picks the right
+        scale by inspecting the magnitude. ``q`` / ``volume`` / ``bias``
+        are all on the 0..100 scale. ``enabled`` is a bool that flips
+        the ``ctrlD`` bit 7 enable flag inside the wah GPIO -- the wah
+        section does not share a flag bit with ``gate_control``.
+        ``source`` is Python-side bookkeeping ("manual" / "pedal") and
+        does not change the GPIO bytes. Unspecified parameters keep
+        their cached values; the full 32-bit word is rewritten.
+        """
+        s = self._wah_state
+        if position is not None:
+            try:
+                s['position'] = float(position)
+            except (TypeError, ValueError):
+                s['position'] = 0
+        if q is not None:
+            s['q'] = self._clamp_percent(q)
+        if volume is not None:
+            s['volume'] = self._clamp_percent(volume)
+        if bias is not None:
+            s['bias'] = self._clamp_percent(bias)
+        if enabled is not None:
+            s['enabled'] = bool(enabled)
+        if source is not None:
+            s['source'] = str(source)
+        self._apply_wah_state_to_word()
+        return self.get_wah_settings()
+
+    def get_wah_settings(self):
+        """Return the cached Wah state plus the byte view of every
+        parameter and a pointer to the GPIO that backs it.
+        """
+        s = self._wah_state
+        position_byte = self._wah_position_byte(s['position'])
+        q_byte = self._wah_q_byte(s['q'])
+        volume_byte = self._wah_volume_byte(s['volume'])
+        bias_u7 = self._wah_bias_to_u7(s['bias'])
+        enable_bias_byte = _cm.wah_enable_bias_byte(s['enabled'], s['bias'])
+        return {
+            'enabled': bool(s['enabled']),
+            'position': s['position'],
+            'position_byte': position_byte,
+            'q': s['q'],
+            'q_byte': q_byte,
+            'volume': s['volume'],
+            'volume_byte': volume_byte,
+            'bias': s['bias'],
+            'bias_u7': bias_u7,
+            'enable_bias_byte': enable_bias_byte,
+            'source': str(s.get('source', 'manual')),
+            'word': self._cached_wah_word,
+            'reflected_to_fpga': True,
+            'gpio_name': self.WAH_GPIO_NAME,
+            'has_gpio': hasattr(self, self.WAH_GPIO_NAME),
+            'implementation_status': 'position_q_volume_bias_fpga',
+        }
+
     # ---- Amp Simulator named models (D55) ------------------------------
     #
     # The Amp Simulator section selects one of six researched voicings
@@ -1117,6 +1263,11 @@ class AudioLabOverlay(Overlay):
                 state["compressor"] = self.get_compressor_settings()
             except Exception:
                 pass
+        if hasattr(self, "_wah_state"):
+            try:
+                state["wah"] = self.get_wah_settings()
+            except Exception:
+                pass
         if hasattr(self, "_noise_suppressor_state"):
             try:
                 state["noise_suppressor"] = self.get_noise_suppressor_settings()
@@ -1144,6 +1295,7 @@ class AudioLabOverlay(Overlay):
             ("_cached_distortion_word", "distortion_word"),
             ("_cached_noise_suppressor_word", "noise_suppressor_word"),
             ("_cached_compressor_word", "compressor_word"),
+            ("_cached_wah_word", "wah_word"),
         ):
             if hasattr(self, attr):
                 cached[key] = getattr(self, attr)
@@ -1485,6 +1637,33 @@ class AudioLabOverlay(Overlay):
         else:
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)
 
+    # Wah kwargs handled by ``set_guitar_effects`` are split from the
+    # other section kwargs at dispatch time; the wah lives on its own
+    # AXI GPIO (axi_gpio_wah at 0x43D30000) and so does not affect any
+    # word built by ``guitar_effect_control_words``. Pulled out so a
+    # caller can ``set_guitar_effects(wah_enabled=True, wah_position=128)``
+    # in the same call that flips the rest of the chain.
+    _WAH_KWARGS = (
+        ('wah_enabled', 'enabled'),
+        ('wah_position', 'position'),
+        ('wah_q', 'q'),
+        ('wah_volume', 'volume'),
+        ('wah_bias', 'bias'),
+        ('wah_source', 'source'),
+    )
+
+    def _pop_wah_kwargs(self, kwargs):
+        """Strip and translate wah-related kwargs in place; return the
+        ``set_wah_settings`` kwargs ready for delegation. Returns
+        ``None`` when no wah kwargs were supplied so callers can skip
+        the dedicated GPIO write.
+        """
+        wah_kwargs = {}
+        for src, dst in self._WAH_KWARGS:
+            if src in kwargs:
+                wah_kwargs[dst] = kwargs.pop(src)
+        return wah_kwargs if wah_kwargs else None
+
     def set_guitar_effects(self, sink=XbarSink.headphone, **kwargs):
         """Apply a full effect-chain state in one call.
 
@@ -1503,7 +1682,15 @@ class AudioLabOverlay(Overlay):
           ``passthrough``.
         - Returns the same ``{section: word}`` dict
           ``guitar_effect_control_words`` produces.
+
+        Wah extension: ``wah_*`` kwargs (``wah_enabled`` / ``wah_position``
+        / ``wah_q`` / ``wah_volume`` / ``wah_bias`` / ``wah_source``)
+        are split off and forwarded to :meth:`set_wah_settings`. The
+        wah lives on its own AXI GPIO so it does not appear in the
+        returned ``{section: word}`` dict; the cached word and
+        ``get_wah_settings()`` reflect the new state instead.
         """
+        wah_kwargs = self._pop_wah_kwargs(kwargs)
         self._require_effect_gpios()
         self._merge_cached_distortion_state(kwargs)
         self._merge_cached_noise_suppressor_state(kwargs)
@@ -1518,6 +1705,12 @@ class AudioLabOverlay(Overlay):
         # word was already written by ``_write_effect_gpios``.
         if hasattr(self, '_noise_suppressor_state'):
             self._apply_noise_suppressor_state_to_word(mirror_to_gate=False)
+
+        # Mirror any wah_* kwargs into the dedicated wah GPIO. No-op
+        # on overlays without the new GPIO and a no-op when no wah_*
+        # kwargs were supplied.
+        if wah_kwargs is not None and hasattr(self, '_wah_state'):
+            self.set_wah_settings(**wah_kwargs)
 
         self._route_effect_chain(sink, words['gate'])
         return words

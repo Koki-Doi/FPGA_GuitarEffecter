@@ -112,6 +112,7 @@ makeInput
   -- ADC Left becomes the mono source; ADC Right is discarded
   -> nsLevel -> nsApply                                 (noise suppressor envelope + apply, replaces the legacy hard gate)
   -> compLevel -> compApply -> compMakeup               (stereo-linked feed-forward peak compressor; bit-exact bypass when off)
+  -> wah (posSmooth + fByteR + qBandR feed SVF low/band; band -> volume) -- D72 resonant band-pass; pre-distortion position; bit-exact bypass when off
   -> overdrive (drive mul -> boost -> clip -> tone -> level)
   -> legacy distortion (drive mul -> boost -> clip -> tone -> level)
   -> RAT (HPF -> drive -> opamp LPF -> hard clip -> post LPF -> tone -> level -> mix)
@@ -217,6 +218,79 @@ able to flip its own enable without read-modify-write on a shared
 flag byte. So a new `axi_gpio_compressor` IP was added at
 `0x43CD0000` and a new `compressor_control` port was added to the
 Clash top entity. See `DECISIONS.md` D14.
+
+## Wah section (D72)
+
+Resonant band-pass wah on its own `axi_gpio_wah` GPIO at
+`0x43D30000`, carried in `fWah` (POSITION / Q / VOLUME bytes + a
+packed enable+BIAS byte). Sits between the Compressor and the
+Overdrive (the classic pre-distortion wah position). Enable lives on
+`fWah ctrlD` bit 7 (not on `gate_control.ctrlA` -- same convention as
+the Compressor). Bit-exact bypass when the flag is clear. Lives in
+`hw/ip/clash/src/AudioLab/Effects/Wah.hs`.
+
+Topology is a Chamberlin parallel-update state-variable filter:
+
+```
+high(n) = in - low(n-1) - qBand(n-1)
+band(n) = band(n-1) + fByte * high(n)
+low(n)  = low(n-1)  + fByte * band(n-1)
+wahOut  = band(n)                                  (BPF output)
+final   = applyVolume(wahOut, volume_byte)
+```
+
+The wiring lives in `fxPipeline` as `wahPosSmooth + wahFByteR +
+wahQBandR -> wahLow + wahBand -> wahApplyPipe -> odDriveMulPipe`.
+
+| Stage | What it does |
+| --- | --- |
+| `wahPosSmooth` (`wahPosSmoothNext` register feedback) | Pedal-position zipper smoother. `posSmooth' = posSmooth + ((target - posSmooth) >> 4)` per audio frame, with a 1-step nudge so single-byte targets still converge. ~0.3 ms per byte at 48 kHz. Snaps to target on off-cycles so re-enable is clean. |
+| `wahFByteR` (`wahFByteRNext` register feedback) | Pre-registered `positionToFByte(posSmooth, biasByte)` so the band / low updates never see two multiplies in series. One DSP for the `base * biasSigned` product inside the helper. |
+| `wahQBandR` (`wahQBandRNext` register feedback) | Pre-registered `satShift8(mulU8 oldBand qCoefByte)` so the high computation in the band update is mul-free. One DSP. |
+| `wahLow` (`wahLowNext` register feedback) | SVF low state. Updates as `low + (oldBand * fByteR) >> 8`, saturating. One DSP. |
+| `wahBand` (`wahBandNext` register feedback) | SVF band state and the BPF output. Computes `high = input - oldLow - qBandR` (no multiply, three adders), then `band + (high * fByteR) >> 8`, saturating. One DSP. |
+| `wahApplyPipe` (`wahApplyFrame`) | Output stage. Applies a Q8 volume factor (`wahVolumeFactor` in `[64, 256]`) to `band` and saturates. Bit-exact bypass when `wahEnabled` is clear. |
+
+### Parameter mappings
+
+| Knob | Python | byte (ctrl byte of fWah) | DSP effect |
+| --- | --- | --- | --- |
+| POSITION | 0..100 percent (GUI/encoder path) OR 0..255 raw byte (FP02M future input path); the helper picks the scale by magnitude | `ctrlA` = position byte | After `wahPosSmoothNext` smooths the byte, `basePositionToFByte` maps it through a 4-segment piecewise linear fit between the spec anchors (`pos 0/64/128/192/255 -> ~350 / 600 / 1000 / 1600 / 2400 Hz` at `fs = 48 kHz`). All multiplications use `Unsigned 16` intermediates so the arithmetic does not wrap. |
+| Q | 0..100 | `ctrlB = round(q * 255 / 100)` | `qCoefByte = 128 - (qByte >> 1)` with a floor of 16 so the BPF cannot run away. Higher UI Q -> lower damping coefficient -> sharper peak. |
+| VOLUME | 0..100 | `ctrlC = round(volume * 255 / 100)` | `wahVolumeFactor = 64 + (volByte * 192 >> 8)` -> Q8 factor in `[64, 256]`. Byte 0 -> -12 dB taper, byte 128 -> ~-2.5 dB, byte 255 -> unity boost cap. |
+| BIAS | 0..100 | `ctrlD[6:0] = round(bias * 127 / 100)` (u7 0..127, 64 = centred) | `biasSigned = bias_u7 - 64` (-64..+63). `positionToFByte` adds `(baseFByte * biasSigned) >> 6` to the base, then clamps to `[4, 200]`. Lower bias shifts the sweep down, higher bias shifts it up. |
+| ENABLE | bool | `ctrlD[7]` | Section gate. Bit-exact bypass when clear. |
+
+`wah_source` (`AppState.wah_source`) is a Python-side bookkeeping field
+(`"manual"` today, `"pedal"` once FP02M / Arduino A0 is wired). It
+controls UI / runtime POSITION wiring; the GPIO byte layout is
+unchanged in either mode.
+
+### Why a new GPIO
+
+The wah needed five distinct knobs (POSITION / Q / VOLUME / BIAS /
+ENABLE). The two currently free bytes in the existing GPIO map
+(`axi_gpio_eq.ctrlD`, `axi_gpio_noise_suppressor.ctrlD`) are reserved
+for future EQ / NS features, so repurposing them would violate D12
+("never repurpose a reserved byte for a different feature"); and
+`gate_control.ctrlA` is full. So a new `axi_gpio_wah` IP was added at
+`0x43D30000` and a new `wah_control` port was added to the Clash top
+entity. The block design itself was not edited: a new
+`hw/Pynq-Z2/wah_integration.tcl` is sourced from `create_project.tcl`
+after `pmod_i2s2_integration.tcl`, mirroring the additive pattern used
+by `hdmi_integration.tcl`, `encoder_integration.tcl`, and
+`pmod_i2s2_integration.tcl`. See `DECISIONS.md` D72.
+
+### Timing-friendly pipeline split
+
+`positionToFByte` and the `q * oldBand` product live in their own
+register stages (`wahFByteR`, `wahQBandR`). The first Vivado pass
+inlined them inside the `wahBandNext` combinational block and the
+worst path picked up three DSP48E1 multiplies in series, regressing
+WNS from `-9.413 ns` (D71.2 baseline) to `-18.966 ns`. Splitting them
+into separate registers brought the worst-stage combinational depth
+back to one DSP + small adders. The 1-2 sample group delay this adds
+is inaudible for a guitar wah.
 
 ## Overdrive section
 

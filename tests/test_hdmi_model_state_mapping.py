@@ -31,9 +31,12 @@ class FakeAppState(object):
         self.preset_id = "02A"
         self.preset_name = "BASIC CLEAN"
         self.preset_idx = 1
-        self.chain = list(range(8))
-        self.effect_on = [False] * 8
-        self.selected_effect = 4
+        # 9-effect layout post-Wah:
+        # 0=Noise Sup, 1=Compressor, 2=Wah, 3=Overdrive, 4=Distortion,
+        # 5=Amp Sim, 6=Cab IR, 7=EQ, 8=Reverb
+        self.chain = list(range(9))
+        self.effect_on = [False] * 9
+        self.selected_effect = 5  # Amp Sim
         self.selected_fx = None
         self.knob_values = [45, 55, 60, 50, 70, 60]
         self.selected_knob = 0
@@ -179,8 +182,9 @@ def test_pedal_model_updates_selected_fx_and_app_state():
     assert mirror.app_state.pedal_model == "tube_screamer"
     assert mirror.app_state.pedal_model_label == "TUBE SCREAMER"
     assert mirror.app_state.dist_model_idx == 1
-    assert mirror.app_state.selected_effect == 3
-    assert mirror.app_state.effect_on[3] is True
+    # 9-effect layout post-Wah: Distortion lives at index 4 (was 3).
+    assert mirror.app_state.selected_effect == 4
+    assert mirror.app_state.effect_on[4] is True
     assert mirror.app_state.active_pedals == ["tube_screamer"]
 
 
@@ -195,8 +199,9 @@ def test_amp_model_updates_selected_fx_and_app_state():
     assert mirror.app_state.amp_model == "jc_120"
     assert mirror.app_state.amp_model_label == "JC-120"
     assert mirror.app_state.amp_model_idx == 0
-    assert mirror.app_state.selected_effect == 4
-    assert mirror.app_state.effect_on[4] is True
+    # 9-effect layout post-Wah: Amp Sim lives at index 5 (was 4).
+    assert mirror.app_state.selected_effect == 5
+    assert mirror.app_state.effect_on[5] is True
 
 
 def test_cab_model_updates_selected_fx_and_app_state():
@@ -208,8 +213,9 @@ def test_cab_model_updates_selected_fx_and_app_state():
     assert mirror.app_state.cab_model == "2x12"
     assert mirror.app_state.cab_model_label == "2x12 COMBO"
     assert mirror.app_state.cab_model_idx == 1
-    assert mirror.app_state.selected_effect == 5
-    assert mirror.app_state.effect_on[5] is True
+    # 9-effect layout post-Wah: Cab IR lives at index 6 (was 5).
+    assert mirror.app_state.selected_effect == 6
+    assert mirror.app_state.effect_on[6] is True
 
 
 def test_selected_fx_history_for_models():
