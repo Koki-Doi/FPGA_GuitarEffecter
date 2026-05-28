@@ -4596,3 +4596,30 @@ not get removed even when superseded — they get updated.
   picking); (f) UI VOLUME=100 audibly +6 dB without breakup; (g) BIAS
   0/50/100 audibly shifts the sweep range; (h) no pop / click on
   Wah OFF -> ON / ON -> OFF transitions.
+
+- **Bench audition: PASS (2026-05-29).** External-instrument bench
+  audition confirmed every D73 acceptance criterion:
+  - all_off bypass D72-clean (no new artefact vs D72)
+  - Wah OFF value-preserving bypass (already passed structurally by
+    `diagnose_pmod_loopback`, confirmed audibly clean)
+  - Wah ON sweep audibly lands inside the Cry Baby GCB-95 mechanical
+    range: focused high end, warm-but-not-muddy heel, bright-but-not-
+    painful toe
+  - Q sweep produces a vocal-like peak at high Q
+  - UI VOLUME=50 audibly unity (no Wah ON/OFF level jump)
+  - UI VOLUME=100 audibly +6 dB without breakup
+  - BIAS audibly shifts the sweep range
+  - No pop / click on Wah OFF -> ON / ON -> OFF transitions
+- **D73 is now the accepted deployed baseline.** D72 (`eacc4f35...` /
+  `eaa88898...`, WNS `-10.387 ns`) is the immediate rollback
+  baseline; D71.2 remains the deeper known-good rollback reference.
+- **Deploy-time side note (not a D73 source change).** During the
+  D73 structural smoke, repeated `AudioLabOverlay(download=True)`
+  calls re-tripped the rgb2dvi v1.4 PLL 40 MHz VCO lower-bound
+  failure documented in user-memory `project_rgb2dvi_pll_edge_at_40mhz`
+  and the LCD went black mid-session. A physical cold power-cycle
+  of the PYNQ-Z2 restored HDMI; the audio / DSP path was unaffected
+  the whole time. Smoke procedure now treats `download=True` as a
+  fuse: one call per session, all subsequent attaches use
+  `download=False`. The rule is recorded as user-memory
+  `feedback_deploy_smoke_avoid_repeated_download`.
