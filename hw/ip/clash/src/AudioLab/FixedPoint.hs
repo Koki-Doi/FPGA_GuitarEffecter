@@ -12,6 +12,9 @@ asSigned9 x = unpack ((0 :: BitVector 1) ++# pack x)
 asSigned10 :: Unsigned 9 -> Signed 10
 asSigned10 x = unpack ((0 :: BitVector 1) ++# pack x)
 
+asSigned11 :: Unsigned 10 -> Signed 11
+asSigned11 x = unpack ((0 :: BitVector 1) ++# pack x)
+
 asSigned13 :: Unsigned 12 -> Signed 13
 asSigned13 x = unpack ((0 :: BitVector 1) ++# pack x)
 
@@ -26,6 +29,9 @@ mulU8 x gain = resize x * resize (asSigned9 gain)
 
 mulU9 :: Sample -> Unsigned 9 -> Wide
 mulU9 x gain = resize x * resize (asSigned10 gain)
+
+mulU10 :: Sample -> Unsigned 10 -> Wide
+mulU10 x gain = resize x * resize (asSigned11 gain)
 
 mulU12 :: Sample -> Unsigned 12 -> Wide
 mulU12 x gain = resize x * resize (asSigned13 gain)

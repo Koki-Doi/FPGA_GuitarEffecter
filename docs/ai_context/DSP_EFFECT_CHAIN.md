@@ -219,14 +219,21 @@ flag byte. So a new `axi_gpio_compressor` IP was added at
 `0x43CD0000` and a new `compressor_control` port was added to the
 Clash top entity. See `DECISIONS.md` D14.
 
-## Wah section (D72)
+## Wah section (D72; D73 Cry Baby retune)
 
 Resonant band-pass wah on its own `axi_gpio_wah` GPIO at
 `0x43D30000`, carried in `fWah` (POSITION / Q / VOLUME bytes + a
 packed enable+BIAS byte). Sits between the Compressor and the
 Overdrive (the classic pre-distortion wah position). Enable lives on
 `fWah ctrlD` bit 7 (not on `gate_control.ctrlA` -- same convention as
-the Compressor). Bit-exact bypass when the flag is clear. Lives in
+the Compressor). **Value-preserving bypass with added pipeline
+latency** when the flag is clear: `wahApplyFrame` returns the input
+frame unchanged sample-for-sample, but the surrounding register
+stages (`wahPosSmooth`, `wahFByteR`, `wahQBandR`, `wahLow`, `wahBand`,
+`wahApplyPipe`) still cost a few extra pipeline cycles vs the pre-D72
+baseline, so sample-by-sample diffs against the same wall-clock buffer
+will NOT be bit-identical even with the wah disabled -- they are
+identical after a latency-aligned re-index. Lives in
 `hw/ip/clash/src/AudioLab/Effects/Wah.hs`.
 
 Topology is a Chamberlin parallel-update state-variable filter:
@@ -255,11 +262,11 @@ wahQBandR -> wahLow + wahBand -> wahApplyPipe -> odDriveMulPipe`.
 
 | Knob | Python | byte (ctrl byte of fWah) | DSP effect |
 | --- | --- | --- | --- |
-| POSITION | 0..100 percent (GUI/encoder path) OR 0..255 raw byte (FP02M future input path); the helper picks the scale by magnitude | `ctrlA` = position byte | After `wahPosSmoothNext` smooths the byte, `basePositionToFByte` maps it through a 4-segment piecewise linear fit between the spec anchors (`pos 0/64/128/192/255 -> ~350 / 600 / 1000 / 1600 / 2400 Hz` at `fs = 48 kHz`). All multiplications use `Unsigned 16` intermediates so the arithmetic does not wrap. |
+| POSITION | D73 split: 0..100 percent via `position=` (GUI / encoder path) OR raw 0..255 byte via `position_raw=` (FP02M future input path); the two arguments are mutually exclusive and `set_wah_settings` raises `ValueError` if both are supplied. | `ctrlA` = position byte | After `wahPosSmoothNext` smooths the byte, `basePositionToFByte` maps it through a 4-segment piecewise linear fit between the D73 Cry Baby anchors (`pos 0/64/128/192/255 -> ~450 / 700 / 1100 / 1600 / 2200 Hz` at `fs = 48 kHz`; f_byte anchors 15 / 24 / 37 / 53 / 73). All multiplications use `Unsigned 16` intermediates so the arithmetic does not wrap. |
 | Q | 0..100 | `ctrlB = round(q * 255 / 100)` | `qCoefByte = 128 - (qByte >> 1)` with a floor of 16 so the BPF cannot run away. Higher UI Q -> lower damping coefficient -> sharper peak. |
-| VOLUME | 0..100 | `ctrlC = round(volume * 255 / 100)` | `wahVolumeFactor = 64 + (volByte * 192 >> 8)` -> Q8 factor in `[64, 256]`. Byte 0 -> -12 dB taper, byte 128 -> ~-2.5 dB, byte 255 -> unity boost cap. |
+| VOLUME | 0..100 | `ctrlC = round(volume * 255 / 100)` | D73 two-segment piecewise Q8 factor in `[128, ~510]`: byte 0 -> 128 (~0.5x, -6 dB taper), byte 128 (UI 50 %) -> 256 (1.0x unity), byte 255 (UI 100 %) -> 510 (~2.0x, +6 dB boost cap). Uses a `mulU10` saturating multiply (`Wide * Unsigned 11`) so even the +6 dB ceiling clips at `±Sample_max` rather than wrapping. |
 | BIAS | 0..100 | `ctrlD[6:0] = round(bias * 127 / 100)` (u7 0..127, 64 = centred) | `biasSigned = bias_u7 - 64` (-64..+63). `positionToFByte` adds `(baseFByte * biasSigned) >> 6` to the base, then clamps to `[4, 200]`. Lower bias shifts the sweep down, higher bias shifts it up. |
-| ENABLE | bool | `ctrlD[7]` | Section gate. Bit-exact bypass when clear. |
+| ENABLE | bool | `ctrlD[7]` | Section gate. Value-preserving bypass with added pipeline latency when clear (see top-of-section note for the latency caveat). |
 
 `wah_source` (`AppState.wah_source`) is a Python-side bookkeeping field
 (`"manual"` today, `"pedal"` once FP02M / Arduino A0 is wired). It

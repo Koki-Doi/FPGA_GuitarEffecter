@@ -227,26 +227,29 @@ def compressor_word(threshold, ratio, response, makeup, enabled=False):
 # ``gate_control.ctrlA``.
 
 def wah_position_byte(value):
-    """Map a Wah POSITION value to a byte in [0, 255].
+    """Map a Wah POSITION UI percent (0..100) to a byte in [0, 255].
 
-    The Wah position is the pedal-sweep parameter. It is accepted in two
-    scales:
+    D73 split: this is now the GUI / encoder path **only** and treats
+    its argument as a 0..100 percent value. For the FP02M / Arduino A0
+    future-input path (raw 0..255 byte), use
+    :func:`wah_position_raw_byte` instead -- the previous
+    magnitude-based scale auto-detection caused raw 0..100 values to
+    be mis-interpreted as percentages.
+    """
+    return percent_to_u8(value, 255)
 
-    - 0..255 raw u8 (passed through after clamping). This is the FP02M
-      future input path: the rotary / Arduino A0 read returns a raw byte.
-    - 0..100 percent (scaled to 0..255). This is the GUI / encoder path:
-      every other knob in the project uses a 0..100 scale.
 
-    Both modes round-trip cleanly: values <= 100 are interpreted as the
-    percent scale; values > 100 are treated as raw bytes already. Values
-    outside ``[0, 255]`` are clamped.
+def wah_position_raw_byte(value):
+    """Clamp a raw Wah POSITION byte (0..255) for the FP02M / Arduino A0
+    future-input path.
+
+    No percent scaling. Out-of-range inputs are clamped to ``[0, 255]``;
+    non-numeric inputs return 0.
     """
     try:
-        v = float(value)
+        v = int(round(float(value)))
     except (TypeError, ValueError):
         return 0
-    if v <= 100.0:
-        return percent_to_u8(v, 255)
     return clamp_u8(v)
 
 
@@ -288,19 +291,35 @@ def wah_enable_bias_byte(enabled, bias):
     return byte & 0xFF
 
 
-def wah_word(position, q, volume, bias, enabled=False):
+def wah_word(position=None, q=0, volume=0, bias=0, enabled=False,
+             position_raw=None):
     """Build the 32-bit word for ``axi_gpio_wah``.
 
     Bytes:
 
-    - ``ctrlA`` = POSITION via :func:`wah_position_byte`
+    - ``ctrlA`` = POSITION:
+        ``wah_position_byte(position)`` when ``position`` is a 0..100
+        percent (GUI / encoder path), OR ``wah_position_raw_byte(position_raw)``
+        when ``position_raw`` is the FP02M / Arduino A0 raw byte. The
+        two arguments are mutually exclusive; supplying both raises
+        ``ValueError``. Supplying neither yields 0 (heel).
     - ``ctrlB`` = Q via :func:`wah_q_byte`
     - ``ctrlC`` = VOLUME via :func:`wah_volume_byte`
     - ``ctrlD`` bit 7 = ``enabled``;
       ``ctrlD`` bits[6:0] = :func:`wah_bias_to_u7` of ``bias``
     """
+    if position is not None and position_raw is not None:
+        raise ValueError(
+            "wah_word: pass position (percent) OR position_raw (byte), "
+            "not both")
+    if position_raw is not None:
+        position_byte = wah_position_raw_byte(position_raw)
+    elif position is not None:
+        position_byte = wah_position_byte(position)
+    else:
+        position_byte = 0
     return pack_u8x4(
-        wah_position_byte(position),
+        position_byte,
         wah_q_byte(q),
         wah_volume_byte(volume),
         wah_enable_bias_byte(enabled, bias),
@@ -325,6 +344,7 @@ __all__ = [
     "compressor_enable_makeup_byte",
     "compressor_word",
     "wah_position_byte",
+    "wah_position_raw_byte",
     "wah_q_byte",
     "wah_volume_byte",
     "wah_bias_to_u7",

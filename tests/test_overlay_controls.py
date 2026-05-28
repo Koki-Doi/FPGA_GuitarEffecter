@@ -1444,19 +1444,37 @@ def test_apply_chain_preset_unknown_name_raises():
 # ---- Wah ----------------------------------------------------------------
 
 
-def test_wah_position_byte_anchors():
+def test_wah_position_byte_percent_only():
+    """D73 split: wah_position_byte is the percent path only (0..100).
+    No magnitude-based auto-detection; raw byte values go through
+    :func:`wah_position_raw_byte` instead.
+    """
     from audio_lab_pynq import control_maps as cm
 
-    # Percent path (0..100).
     assert cm.wah_position_byte(0) == 0
     assert cm.wah_position_byte(50) == cm.percent_to_u8(50, 255)
     assert cm.wah_position_byte(100) == 255
-    # Raw byte path (anything > 100 is treated as a raw byte already).
-    assert cm.wah_position_byte(128) == 128
-    assert cm.wah_position_byte(255) == 255
-    # Clamp.
+    # Out-of-percent-range clamps (percent_to_u8 clamps to 100 first
+    # then maps to 0..255).
     assert cm.wah_position_byte(-10) == 0
-    assert cm.wah_position_byte(300) == 255
+    assert cm.wah_position_byte(150) == 255
+
+
+def test_wah_position_raw_byte():
+    """D73 split: wah_position_raw_byte takes a raw 0..255 byte (FP02M
+    future-input path). No percent scaling. Clamps out-of-range
+    inputs to ``[0, 255]``.
+    """
+    from audio_lab_pynq import control_maps as cm
+
+    assert cm.wah_position_raw_byte(0) == 0
+    assert cm.wah_position_raw_byte(50) == 50
+    assert cm.wah_position_raw_byte(128) == 128
+    assert cm.wah_position_raw_byte(255) == 255
+    assert cm.wah_position_raw_byte(-10) == 0
+    assert cm.wah_position_raw_byte(300) == 255
+    # Non-numeric -> 0.
+    assert cm.wah_position_raw_byte(None) == 0
 
 
 def test_wah_q_byte_anchors():
@@ -1502,56 +1520,90 @@ def test_wah_enable_bias_byte_packing():
     assert cm.wah_enable_bias_byte(True, 100) == 0xFF
 
 
-def test_wah_word_packing():
+def test_wah_word_packing_percent_path():
+    """D73: wah_word accepts a percent path via ``position=...``."""
     from audio_lab_pynq import control_maps as cm
 
-    # OFF: ctrlD bit 7 cleared. POS percent path, Q/VOL/BIAS percent.
-    word_off = cm.wah_word(0, 50, 50, 50, enabled=False)
+    # OFF: ctrlD bit 7 cleared.
+    word_off = cm.wah_word(position=0, q=50, volume=50, bias=50,
+                           enabled=False)
     assert word_off & 0xFF == 0
     assert (word_off >> 8) & 0xFF == cm.percent_to_u8(50, 255)
     assert (word_off >> 16) & 0xFF == cm.percent_to_u8(50, 255)
     assert (word_off >> 24) & 0x80 == 0
     assert (word_off >> 24) & 0x7F == cm.wah_bias_to_u7(50)
 
-    # ON: ctrlD bit 7 set.
-    word_on = cm.wah_word(128, 100, 100, 100, enabled=True)
-    assert word_on & 0xFF == 128
+    # ON: ctrlD bit 7 set. position=100 percent -> byte 255.
+    word_on = cm.wah_word(position=100, q=100, volume=100, bias=100,
+                          enabled=True)
+    assert word_on & 0xFF == 255
     assert (word_on >> 8) & 0xFF == 255
     assert (word_on >> 16) & 0xFF == 255
     assert (word_on >> 24) & 0x80 == 0x80
     assert (word_on >> 24) & 0x7F == 127
 
 
-def test_wah_word_position_0_64_128_192_255_anchors():
-    """The position-byte path must accept either 0..100 percent or
-    0..255 raw bytes. The five spec anchor points (0/64/128/192/255)
-    must all reach the GPIO byte unchanged when supplied as raw bytes.
+def test_wah_word_packing_raw_path():
+    """D73: wah_word accepts a raw byte path via ``position_raw=...``."""
+    from audio_lab_pynq import control_maps as cm
+
+    # Raw byte 128 -> ctrlA = 128 directly (not percent_to_u8(128) = 255).
+    word = cm.wah_word(position_raw=128, q=0, volume=0, bias=0,
+                       enabled=True)
+    assert word & 0xFF == 128
+    word2 = cm.wah_word(position_raw=255, q=0, volume=0, bias=0,
+                        enabled=False)
+    assert word2 & 0xFF == 255
+
+
+def test_wah_word_both_position_paths_raises():
+    """D73: supplying both position and position_raw must raise."""
+    from audio_lab_pynq import control_maps as cm
+
+    try:
+        cm.wah_word(position=50, position_raw=128, q=0, volume=0,
+                    bias=0, enabled=False)
+    except ValueError as exc:
+        assert "position" in str(exc).lower()
+    else:
+        raise AssertionError("wah_word should raise when both are set")
+
+
+def test_wah_word_position_spec_anchors():
+    """The five spec anchor points (pos byte 0/64/128/192/255) must
+    reach the GPIO byte unchanged when supplied as raw bytes.
     """
     from audio_lab_pynq import control_maps as cm
 
     for raw in (0, 64, 128, 192, 255):
-        if raw <= 100:
-            # percent path: 0..100 -> 0..255 via percent_to_u8
-            assert cm.wah_position_byte(raw) == cm.percent_to_u8(raw, 255)
-        else:
-            assert cm.wah_position_byte(raw) == raw
+        word = cm.wah_word(position_raw=raw, q=0, volume=0, bias=0)
+        assert word & 0xFF == raw, (
+            "raw {} should round-trip to ctrlA byte {}, got {}".format(
+                raw, raw, word & 0xFF))
 
 
 def test_set_wah_settings_writes_word_to_dedicated_gpio():
+    """D73: set_wah_settings with position= takes the GUI percent path
+    (50 -> byte 128). Raw byte 128 is reachable via set_wah_position_raw
+    or position_raw=, exercised by other tests.
+    """
     overlay = make_overlay_with_wah_state()
     settings = overlay.set_wah_settings(
-        enabled=True, position=128, q=50, volume=50, bias=50,
+        enabled=True, position=50, q=50, volume=50, bias=50,
     )
     wah_gpio = getattr(overlay, AudioLabOverlay.WAH_GPIO_NAME)
     assert wah_gpio.writes, "expected a write to the wah GPIO"
     last_offset, last_word = wah_gpio.writes[-1]
     assert last_offset == 0x00
-    assert last_word & 0xFF == 128
+    expected_position = AudioLabOverlay._percent_to_u8(50, 255)
+    assert last_word & 0xFF == expected_position
     assert (last_word >> 8) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
     assert (last_word >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
     assert (last_word >> 24) & 0x80 == 0x80  # enable
     assert (last_word >> 24) & 0x7F == AudioLabOverlay._wah_bias_to_u7(50)
-    assert settings['position_byte'] == 128
+    assert settings['position_byte'] == expected_position
+    assert settings['position'] == 50
+    assert settings['position_raw'] is None
     assert settings['q_byte'] == AudioLabOverlay._percent_to_u8(50, 255)
     assert settings['volume_byte'] == AudioLabOverlay._percent_to_u8(50, 255)
     assert settings['bias_u7'] == AudioLabOverlay._wah_bias_to_u7(50)
@@ -1565,6 +1617,7 @@ def test_get_wah_settings_reports_metadata():
     settings = overlay.get_wah_settings()
     assert settings['enabled'] is True
     assert settings['position'] == 64
+    assert settings['position_raw'] is None
     assert settings['q'] == 50
     assert settings['volume'] == 50
     assert settings['bias'] == 50
@@ -1572,7 +1625,7 @@ def test_get_wah_settings_reports_metadata():
     assert settings['reflected_to_fpga'] is True
     assert settings['gpio_name'] == 'axi_gpio_wah'
     assert settings['has_gpio'] is True
-    assert settings['implementation_status'] == 'position_q_volume_bias_fpga'
+    assert settings['implementation_status'] == 'position_q_volume_bias_fpga_d73'
 
 
 def test_set_wah_settings_clamps_inputs():
@@ -1599,6 +1652,109 @@ def test_wah_disabled_clears_enable_bit():
     assert settings['bias'] == 80
 
 
+# ---- D73 follow-ups ------------------------------------------------------
+
+
+def test_set_wah_settings_position_raw_takes_priority():
+    """D73 split: when position_raw is set, the resolved byte must come
+    from the raw byte, not from the percent path."""
+    overlay = make_overlay_with_wah_state()
+    overlay.set_wah_settings(position=10)  # percent path -> byte 26
+    overlay.set_wah_settings(position_raw=200, enabled=True)
+    settings = overlay.get_wah_settings()
+    assert settings['position_raw'] == 200
+    assert settings['position_byte'] == 200
+    # cached percent stays untouched for back-compat display.
+    assert settings['position'] == 10
+
+
+def test_set_wah_settings_percent_clears_raw_override():
+    """D73 split: supplying position=... clears the cached position_raw
+    so the next write goes through the percent path."""
+    overlay = make_overlay_with_wah_state()
+    overlay.set_wah_settings(position_raw=200, enabled=True)
+    overlay.set_wah_settings(position=25)
+    settings = overlay.get_wah_settings()
+    assert settings['position'] == 25
+    assert settings['position_raw'] is None
+    assert settings['position_byte'] == AudioLabOverlay._percent_to_u8(25, 255)
+
+
+def test_set_wah_settings_both_position_paths_raises():
+    """D73 split: passing both position and position_raw in the same call
+    must raise ValueError (no silent precedence)."""
+    overlay = make_overlay_with_wah_state()
+    try:
+        overlay.set_wah_settings(position=50, position_raw=128)
+    except ValueError as exc:
+        assert "position" in str(exc).lower()
+    else:
+        raise AssertionError("expected ValueError when both set")
+
+
+def test_set_wah_position_raw_helper():
+    """D73 split: set_wah_position_raw(value) sets the raw byte and
+    leaves the cached percent untouched."""
+    overlay = make_overlay_with_wah_state()
+    overlay.set_wah_settings(position=40)  # cached percent
+    overlay.set_wah_position_raw(255)
+    settings = overlay.get_wah_settings()
+    assert settings['position'] == 40
+    assert settings['position_raw'] == 255
+    assert settings['position_byte'] == 255
+
+
+def test_wah_volume_curve_anchors_d73():
+    """D73 volume curve (Q8 factor exposed at byte level, computed by
+    Wah.hs::wahVolumeFactor):
+        UI byte 0   -> factor 128  (~0.5x)
+        UI byte 128 -> factor 256  (1.0x  unity)
+        UI byte 255 -> factor 510  (~2.0x, +6 dB)
+    The Python side only checks that UI percent 50 maps to byte 128 so
+    the Clash factor lands at unity. The Clash function itself is
+    exercised by the Vivado / bench step.
+    """
+    from audio_lab_pynq import control_maps as cm
+
+    # UI percent 50 must map to byte 128 (the unity anchor on the Clash side).
+    assert cm.wah_volume_byte(50) == 128, (
+        "UI percent 50 must map to byte 128 (the Clash unity anchor)")
+    # UI percent 100 must map to byte 255 (the +6 dB anchor).
+    assert cm.wah_volume_byte(100) == 255
+    # UI percent 0 must map to byte 0 (the 0.5x anchor).
+    assert cm.wah_volume_byte(0) == 0
+
+
+def test_set_guitar_effects_forwards_wah_position_raw():
+    """D73 split: set_guitar_effects(wah_position_raw=...) must reach
+    the dedicated GPIO via set_wah_settings(position_raw=...)."""
+    overlay = make_overlay_with_wah_state()
+    overlay.set_guitar_effects(wah_enabled=True, wah_position_raw=192)
+    settings = overlay.get_wah_settings()
+    assert settings['enabled'] is True
+    assert settings['position_raw'] == 192
+    assert settings['position_byte'] == 192
+
+
+def test_safe_bypass_defaults_include_wah_position_raw_none():
+    """SAFE_BYPASS_DEFAULTS keeps the raw override cleared so a panic
+    press cannot pin POSITION to a residual raw byte."""
+    from audio_lab_pynq.effect_defaults import SAFE_BYPASS_DEFAULTS
+
+    assert SAFE_BYPASS_DEFAULTS['wah_enabled'] is False
+    assert SAFE_BYPASS_DEFAULTS['wah_position'] == 0
+    assert SAFE_BYPASS_DEFAULTS['wah_position_raw'] is None
+
+
+def test_wah_defaults_include_position_raw_none():
+    """WAH_DEFAULTS exposes the new position_raw=None entry alongside
+    the existing percent fields."""
+    from audio_lab_pynq.effect_defaults import WAH_DEFAULTS
+
+    assert WAH_DEFAULTS['position_raw'] is None
+    assert WAH_DEFAULTS['position'] == 0
+
+
 def test_wah_defaults_are_safe():
     overlay = make_overlay_with_wah_state()
     settings = overlay.get_wah_settings()
@@ -1619,14 +1775,19 @@ def test_set_guitar_effects_forwards_wah_kwargs_to_dedicated_gpio():
     """Wah kwargs supplied via set_guitar_effects must land on the
     dedicated axi_gpio_wah GPIO, not on the gate / overdrive / etc.
     words. The returned dict must NOT advertise a wah key (the wah
-    lives on its own GPIO outside guitar_effect_control_words)."""
+    lives on its own GPIO outside guitar_effect_control_words).
+
+    D73: wah_position is the percent path (0..100); pass wah_position=50
+    here, expecting byte 128 on the GPIO. The raw byte path is exercised
+    separately by test_set_guitar_effects_forwards_wah_position_raw.
+    """
     overlay = make_overlay_with_wah_state()
     words = overlay.set_guitar_effects(
-        wah_enabled=True, wah_position=128, wah_q=60, wah_volume=55, wah_bias=70)
+        wah_enabled=True, wah_position=50, wah_q=60, wah_volume=55, wah_bias=70)
     wah_gpio = getattr(overlay, AudioLabOverlay.WAH_GPIO_NAME)
     assert wah_gpio.writes, "expected a write to the wah GPIO"
     _, last_word = wah_gpio.writes[-1]
-    assert last_word & 0xFF == 128
+    assert last_word & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
     assert (last_word >> 24) & 0x80 == 0x80
     assert "wah" not in words, "wah lives on its own GPIO outside the words dict"
 
@@ -1800,14 +1961,17 @@ if __name__ == "__main__":
     test_amp_character_byte_for_model_alias_matches_d55_pack()
     test_guitar_effect_control_words_amp_model_idx_uses_d55_bit_pack()
     test_guitar_effect_control_words_without_model_idx_uses_amp_character()
-    test_wah_position_byte_anchors()
+    test_wah_position_byte_percent_only()
+    test_wah_position_raw_byte()
     test_wah_q_byte_anchors()
     test_wah_volume_byte_anchors()
     test_wah_bias_to_u7_anchors()
     test_wah_bias_to_u7_clamps()
     test_wah_enable_bias_byte_packing()
-    test_wah_word_packing()
-    test_wah_word_position_0_64_128_192_255_anchors()
+    test_wah_word_packing_percent_path()
+    test_wah_word_packing_raw_path()
+    test_wah_word_both_position_paths_raises()
+    test_wah_word_position_spec_anchors()
     test_set_wah_settings_writes_word_to_dedicated_gpio()
     test_get_wah_settings_reports_metadata()
     test_set_wah_settings_clamps_inputs()
@@ -1819,4 +1983,13 @@ if __name__ == "__main__":
     test_set_guitar_effects_wah_source_is_python_side_only()
     test_safe_bypass_defaults_include_wah_off()
     test_effect_defaults_module_exposes_wah_dict()
+    # D73
+    test_set_wah_settings_position_raw_takes_priority()
+    test_set_wah_settings_percent_clears_raw_override()
+    test_set_wah_settings_both_position_paths_raises()
+    test_set_wah_position_raw_helper()
+    test_wah_volume_curve_anchors_d73()
+    test_set_guitar_effects_forwards_wah_position_raw()
+    test_safe_bypass_defaults_include_wah_position_raw_none()
+    test_wah_defaults_include_position_raw_none()
     print("AudioLabOverlay guitar effect control tests passed")

@@ -895,6 +895,10 @@ class AudioLabOverlay(Overlay):
         return _cm.wah_position_byte(value)
 
     @staticmethod
+    def _wah_position_raw_byte(value):
+        return _cm.wah_position_raw_byte(value)
+
+    @staticmethod
     def _wah_q_byte(value):
         return _cm.wah_q_byte(value)
 
@@ -907,8 +911,23 @@ class AudioLabOverlay(Overlay):
         return _cm.wah_bias_to_u7(value)
 
     @staticmethod
-    def _wah_word(position, q, volume, bias, enabled=False):
-        return _cm.wah_word(position, q, volume, bias, enabled)
+    def _wah_word(position=None, q=0, volume=0, bias=0, enabled=False,
+                  position_raw=None):
+        return _cm.wah_word(
+            position=position, q=q, volume=volume, bias=bias,
+            enabled=enabled, position_raw=position_raw)
+
+    def _wah_position_byte_for_state(self):
+        """Resolve which of ``position`` (percent) / ``position_raw``
+        (byte) wins for the next GPIO write. ``position_raw`` wins
+        when it is set (not None); otherwise the percent path is used.
+        Single source of truth for the byte resolution rule (D73).
+        """
+        s = self._wah_state
+        raw = s.get('position_raw')
+        if raw is not None:
+            return self._wah_position_raw_byte(raw)
+        return self._wah_position_byte(s.get('position', 0))
 
     def _apply_wah_state_to_word(self):
         """Recompute the wah 32-bit word from cached state and write it
@@ -916,13 +935,23 @@ class AudioLabOverlay(Overlay):
         a brand-new section with no historical slot.
         """
         s = self._wah_state
-        word = self._wah_word(
-            position=s['position'],
-            q=s['q'],
-            volume=s['volume'],
-            bias=s['bias'],
-            enabled=s['enabled'],
-        )
+        raw = s.get('position_raw')
+        if raw is not None:
+            word = self._wah_word(
+                position_raw=raw,
+                q=s['q'],
+                volume=s['volume'],
+                bias=s['bias'],
+                enabled=s['enabled'],
+            )
+        else:
+            word = self._wah_word(
+                position=s.get('position', 0),
+                q=s['q'],
+                volume=s['volume'],
+                bias=s['bias'],
+                enabled=s['enabled'],
+            )
         self._cached_wah_word = word
         gpio = getattr(self, self.WAH_GPIO_NAME, None)
         if gpio is not None:
@@ -930,6 +959,9 @@ class AudioLabOverlay(Overlay):
 
     def set_wah_position(self, value):
         return self.set_wah_settings(position=value)
+
+    def set_wah_position_raw(self, value):
+        return self.set_wah_settings(position_raw=value)
 
     def set_wah_q(self, value):
         return self.set_wah_settings(q=value)
@@ -941,26 +973,35 @@ class AudioLabOverlay(Overlay):
         return self.set_wah_settings(bias=value)
 
     def set_wah_settings(self, position=None, q=None, volume=None,
-                         bias=None, enabled=None, source=None):
-        """Update any subset of the Wah parameters.
+                         bias=None, enabled=None, source=None,
+                         position_raw=None):
+        """Update any subset of the Wah parameters (D73 API split).
 
-        ``position`` accepts either a 0..100 percent (GUI / encoder
-        path) or a 0..255 raw byte (FP02M future input path). The
-        helper :func:`control_maps.wah_position_byte` picks the right
-        scale by inspecting the magnitude. ``q`` / ``volume`` / ``bias``
-        are all on the 0..100 scale. ``enabled`` is a bool that flips
-        the ``ctrlD`` bit 7 enable flag inside the wah GPIO -- the wah
-        section does not share a flag bit with ``gate_control``.
-        ``source`` is Python-side bookkeeping ("manual" / "pedal") and
-        does not change the GPIO bytes. Unspecified parameters keep
-        their cached values; the full 32-bit word is rewritten.
+        ``position`` is the GUI / encoder pedal position as a 0..100
+        percent. ``position_raw`` is the FP02M / Arduino A0 raw byte
+        in 0..255. The two are mutually exclusive; supplying both
+        raises ``ValueError``. Supplying ``position=...`` (percent)
+        clears the cached raw override so subsequent reads come from
+        the percent value. ``q`` / ``volume`` / ``bias`` are all on
+        the 0..100 scale -- D73 retunes the VOLUME curve so byte 128
+        (UI 50 %) lands at unity and byte 255 (UI 100 %) lands at
+        +6 dB. ``enabled`` is a bool that flips the ``ctrlD`` bit 7
+        enable flag inside the wah GPIO -- the wah section does not
+        share a flag bit with ``gate_control``. ``source`` is
+        Python-side bookkeeping ("manual" / "pedal") and does not
+        change the GPIO bytes. Unspecified parameters keep their
+        cached values; the full 32-bit word is rewritten.
         """
+        if position is not None and position_raw is not None:
+            raise ValueError(
+                "set_wah_settings: pass position (percent) OR "
+                "position_raw (byte), not both")
         s = self._wah_state
         if position is not None:
-            try:
-                s['position'] = float(position)
-            except (TypeError, ValueError):
-                s['position'] = 0
+            s['position'] = self._clamp_percent(position)
+            s['position_raw'] = None
+        if position_raw is not None:
+            s['position_raw'] = self._wah_position_raw_byte(position_raw)
         if q is not None:
             s['q'] = self._clamp_percent(q)
         if volume is not None:
@@ -977,16 +1018,24 @@ class AudioLabOverlay(Overlay):
     def get_wah_settings(self):
         """Return the cached Wah state plus the byte view of every
         parameter and a pointer to the GPIO that backs it.
+
+        D73 split: the dict exposes BOTH ``position`` (the cached
+        percent, used when ``position_raw`` is None) and
+        ``position_raw`` (the cached FP02M-style byte, or None).
+        ``position_byte`` is the canonical resolved byte that just got
+        written to the GPIO -- equal to ``percent_to_u8(position, 255)``
+        when ``position_raw`` is None, or to ``position_raw`` otherwise.
         """
         s = self._wah_state
-        position_byte = self._wah_position_byte(s['position'])
+        position_byte = self._wah_position_byte_for_state()
         q_byte = self._wah_q_byte(s['q'])
         volume_byte = self._wah_volume_byte(s['volume'])
         bias_u7 = self._wah_bias_to_u7(s['bias'])
         enable_bias_byte = _cm.wah_enable_bias_byte(s['enabled'], s['bias'])
         return {
             'enabled': bool(s['enabled']),
-            'position': s['position'],
+            'position': s.get('position', 0),
+            'position_raw': s.get('position_raw'),
             'position_byte': position_byte,
             'q': s['q'],
             'q_byte': q_byte,
@@ -1000,7 +1049,7 @@ class AudioLabOverlay(Overlay):
             'reflected_to_fpga': True,
             'gpio_name': self.WAH_GPIO_NAME,
             'has_gpio': hasattr(self, self.WAH_GPIO_NAME),
-            'implementation_status': 'position_q_volume_bias_fpga',
+            'implementation_status': 'position_q_volume_bias_fpga_d73',
         }
 
     # ---- Amp Simulator named models (D55) ------------------------------
@@ -1646,6 +1695,7 @@ class AudioLabOverlay(Overlay):
     _WAH_KWARGS = (
         ('wah_enabled', 'enabled'),
         ('wah_position', 'position'),
+        ('wah_position_raw', 'position_raw'),
         ('wah_q', 'q'),
         ('wah_volume', 'volume'),
         ('wah_bias', 'bias'),
