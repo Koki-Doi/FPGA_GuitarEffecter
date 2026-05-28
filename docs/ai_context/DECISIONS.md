@@ -4445,3 +4445,20 @@ not get removed even when superseded — they get updated.
   breakup, (f) BIAS audibly shifts the sweep range,
   (g) `scripts/diagnose_pmod_loopback.py` PASS with no QUANT! /
   STAIR! and CLIP_COUNT 0.
+
+- **Deploy + structural smoke result (D72).** `scripts/deploy_to_pynq.sh`
+  pushed the build to all four PYNQ board copies; md5 matched local at
+  every site. `AudioLabOverlay(download=True)` programmed the PL,
+  ADC HPF reads True (R19 `0x23`), `hasattr(ovl, "axi_gpio_wah")` is
+  True. Round-trip `set_wah_settings(enabled=True, position=128, q=60,
+  volume=50, bias=55)` produced `word=0xc6809980` with the documented
+  per-byte values (`position_byte=128`, `q_byte=153`, `volume_byte=128`,
+  `bias_u7=70`, `enable_bias_byte=0xc6`). `set_wah_settings(enabled=False)`
+  cleared the enable bit but preserved the other bytes
+  (`word=0x46809980`). `scripts/diagnose_pmod_loopback.py` PASS across
+  every phase (MUTE / TONE / LOOP / DSP / MUTE all `clip_d=0`; Phase 3
+  MODE 0 FFT clean 1 kHz peak with mute at codec noise floor; Phase 5
+  DSP-bypass MM2S sweep `uniq1k=1000 maxRun=1` everywhere; Phase B
+  DSP all-off MM2S sweep `uniq1k` 996-1000 `maxRun=2` everywhere with
+  no QUANT! / STAIR! flag). **Structural smoke: PASS.** External-
+  instrument bench audition is still required for full acceptance.
