@@ -146,6 +146,10 @@ def _build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--wah-pedal-hz", type=float, default=100.0,
                    help="FP02M read/write rate cap in Hz (default 100). The "
                         "effective rate is min(this, active poll rate).")
+    p.add_argument("--wah-pedal-debug", action="store_true",
+                   help="Print a [wah-pedal] status line ~1/s (reader, "
+                        "available, source, raw, u8, writes, gpio_pos) to "
+                        "diagnose the pedal path.")
     return p
 
 
@@ -393,23 +397,26 @@ def main(argv=None):
             # On the AudioLab overlay A0 is read from the PL xadc_wiz_a0 via
             # MMIO (the PL XADC is not an IIO channel). Fall back to the IIO
             # reader only when the overlay has no XADC Wizard.
-            if overlay is not None and hasattr(overlay, "xadc_wiz_a0"):
+            _has_xadc = overlay is not None and hasattr(overlay, "xadc_wiz_a0")
+            if _has_xadc:
                 reader = Fp02mXadcMmioReader.from_overlay(overlay)
             else:
                 reader = Fp02mA0Reader()
             wah_pedal = Fp02mWahController(reader, cal)
             state.wah_pedal_available = bool(wah_pedal.available)
-            if wah_pedal.available:
-                print("[gui] FP02M pedal ready (cal=%s)" % cal_path)
-            else:
-                print("[gui] FP02M pedal unavailable: %s (staying MANUAL)"
-                      % wah_pedal.unavailable_reason)
+            print("[gui] FP02M pedal init: cal=%s cal_loaded=%s reader=%s "
+                  "has_xadc=%s available=%s reason=%s"
+                  % (cal_path, cal is not None,
+                     getattr(reader, "read_path", "?"), _has_xadc,
+                     wah_pedal.available, wah_pedal.unavailable_reason or "-"))
         except Exception as exc:
             print("[gui] FP02M pedal init failed: %r (staying MANUAL)" % (exc,))
             wah_pedal = None
             state.wah_pedal_available = False
     wah_pedal_period = 1.0 / max(1.0, float(args.wah_pedal_hz))
     last_wah_poll_t = 0.0
+    last_wah_dbg_t = 0.0
+    wah_writes = 0
 
     stop_flag = {"stop": False}
 
@@ -475,6 +482,7 @@ def main(argv=None):
                     if overlay is not None and not args.no_audio_apply:
                         try:
                             overlay.set_wah_settings(position_raw=int(u8))
+                            wah_writes += 1
                         except Exception as exc:
                             print("[gui] wah pedal write failed: %r" % (exc,))
                     last_event_t = loop_t
@@ -483,6 +491,37 @@ def main(argv=None):
                     state.wah_source = "manual"
                     print("[gui] FP02M pedal fell back to MANUAL: %s"
                           % wah_pedal.unavailable_reason)
+
+            # D74 pedal debug line (~1/s) -- diagnose available / source /
+            # reader / raw / u8 / writes / gpio position byte.
+            if (args.wah_pedal_debug
+                    and (loop_t - last_wah_dbg_t) >= 1.0):
+                last_wah_dbg_t = loop_t
+                _rp = getattr(getattr(wah_pedal, "reader", None),
+                              "read_path", "none")
+                _raw = None
+                try:
+                    if wah_pedal is not None and wah_pedal.available:
+                        _raw = wah_pedal.reader.read_raw()
+                except Exception:
+                    _raw = None
+                _gpio_pos = None
+                try:
+                    if overlay is not None and hasattr(overlay, "get_wah_settings"):
+                        _gpio_pos = overlay.get_wah_settings().get("position_byte")
+                except Exception:
+                    _gpio_pos = None
+                _has_x = overlay is not None and hasattr(overlay, "xadc_wiz_a0")
+                print("[wah-pedal] available=%s source=%s selected=%s "
+                      "reader=%s has_xadc=%s raw=%s u8=%s writes=%d "
+                      "display=%s gpio_pos=%s"
+                      % ((wah_pedal.available if wah_pedal else None),
+                         getattr(state, "wah_source", None),
+                         state.selected_effect, _rp, _has_x, _raw,
+                         (wah_pedal.last_u8 if wah_pedal else None),
+                         wah_writes,
+                         (wah_pedal.display_pct() if wah_pedal else None),
+                         _gpio_pos))
 
             sig = _render_signature(state)
             if sig != last_sig and (loop_t - last_render_t) >= min_render_period:
