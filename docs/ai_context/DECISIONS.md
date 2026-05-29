@@ -4623,3 +4623,46 @@ not get removed even when superseded — they get updated.
   fuse: one call per session, all subsequent attaches use
   `download=False`. The rule is recorded as user-memory
   `feedback_deploy_smoke_avoid_repeated_download`.
+
+## D74 - FP02M expression pedal -> Wah POSITION (software + docs; XADC rebuild deferred)
+
+- **Decision.** Add the software + docs to drive Wah POSITION from a
+  ZOOM FP02M TRS expression pedal on Arduino A0, reusing the D73
+  `position_raw` byte API. Q / VOLUME / BIAS stay GUI / encoder driven.
+  The Wah DSP voicing (D73 Cry Baby), the axi_gpio_wah layout, and every
+  other effect are untouched. No timing/comp-cab-split-v2, no DS-1 split.
+- **A0 read-path finding (load-bearing).** The deployed overlay has no
+  XADC / sysmon IP. The Zynq PS-XADC IIO device (`iio:device0`, driver
+  `xadc`) exposes only on-chip rails (vccint/vccaux/vccbram/vccpint/
+  vccpaux/vccoddr/vrefp/vrefn + temp) -- no external VAUX, no VP/VN. On
+  Zynq-7000 Arduino A0 (Y11) reaches the XADC only as VAUX1 routed
+  through the PL. So Linux-IIO (option A) and the existing PYNQ XADC API
+  (option B) are both dead on this overlay; reading A0 requires adding an
+  AXI XADC Wizard (option C) via an additive `xadc_integration.tcl` +
+  Vivado bit/hwh rebuild + timing review. Option D (external MCP3008 over
+  Arduino SPI) is the last resort and not pursued.
+- **Scope of this pass (approved 2026-05-29).** Ship the software layer
+  + docs only; defer the XADC Wizard Vivado rebuild to a separate
+  explicit approval. Landed: `audio_lab_pynq/fp02m.py` (calibration /
+  IIO reader returning `unavailable` on this overlay / mock reader /
+  position mapper / wah controller), `scripts/probe_fp02m_a0.py`,
+  `scripts/calibrate_fp02m.py`, `scripts/run_fp02m_wah_test.py`, the GUI
+  SOURCE=MANUAL/PEDAL switch + non-blocking pedal update loop in
+  `scripts/run_encoder_hdmi_gui.py`, hardware-free unit tests, and the
+  `docs/ai_context/FP02M_PEDAL_INTEGRATION.md` /
+  `docs/ai_context/XADC_INTEGRATION_DESIGN.md` docs.
+- **Deferred (NOT built).** `hw/Pynq-Z2/xadc_integration.tcl` is committed
+  as a guarded PROPOSAL (hard-errors unless `XADC_INTEGRATION_APPROVED=1`)
+  and is NOT sourced by `create_project.tcl`. No Vivado run, no bit/hwh
+  change, no `block_design.tcl` edit. A0 = VAUX1, xadc_wiz proposed at
+  `0x43D40000` (M20), clear of the fixed map. See `XADC_INTEGRATION_DESIGN.md`
+  for the diff / timing risk before that rebuild is approved.
+- **PEDAL-mode correctness rule.** When `wah_source == "pedal"` the
+  encoder applier (`encoder_effect_apply.py::_apply_wah`) must NOT pass
+  `position=` to `set_wah_settings` (that would clear the cached
+  `position_raw`); the pedal controller is the only writer of
+  `position_raw`. Q / VOL / BIAS are never overwritten by the pedal path.
+- **Safety.** Pedal unconnected / A0 unreadable -> GUI boots MANUAL, no
+  crash. PEDAL with no/invalid calibration -> refuse to map, stay MANUAL
+  with a warning (no silent fake range). Repeated read errors in PEDAL ->
+  auto fall back to MANUAL.
