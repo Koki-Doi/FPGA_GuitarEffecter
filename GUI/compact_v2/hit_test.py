@@ -73,6 +73,10 @@ def hit_test_compact_v2(x: int, y: int, state: AppState,
                 return ('prev_model', None)
             if dd_x1 - arr_w <= x <= dd_x1:
                 return ('next_model', None)
+    # WAH SOURCE strip click toggles MANUAL <-> PEDAL (D74). The strip is
+    # plain text drawn around (fx0+250, fy0+51); accept a generous row.
+    if has_source_strip and (fy0 + 36 <= y <= fy0 + 66) and (x >= fx0 + 250):
+        return ('toggle_wah_source', None)
 
     # Knob grid
     knobs = state.knobs()

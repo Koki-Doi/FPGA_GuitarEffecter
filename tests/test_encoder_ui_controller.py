@@ -595,7 +595,47 @@ def test_enc2_rotate_on_continuous_knob_still_steps():
     assert s.all_knob_values["Amp Sim"][0] == 55.0
 
 
+# ---- D74 Encoder 2 button = Wah SOURCE toggle ----------------------------
+
+def test_enc2_button_toggles_wah_source_when_wah_selected():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Wah")
+    s.wah_source = "manual"
+    ctl = EncoderUiController(s)
+    ctl.process_button_state([False, False, False])  # seed
+    ctl.process_button_state([False, False, True])   # enc2 rising edge
+    assert s.wah_source == "pedal"
+    ctl.process_button_state([False, False, False])  # release
+    ctl.process_button_state([False, False, True])   # toggle back
+    assert s.wah_source == "manual"
+
+
+def test_enc2_button_noop_when_not_wah():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Amp Sim")
+    s.wah_source = "manual"
+    ctl = EncoderUiController(s)
+    ctl.process_button_state([False, False, False])
+    ctl.process_button_state([False, False, True])
+    assert s.wah_source == "manual"  # unchanged
+
+
+def test_enc2_button_hold_does_not_repeat_toggle():
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Wah")
+    s.wah_source = "manual"
+    ctl = EncoderUiController(s)
+    ctl.process_button_state([False, False, False])
+    ctl.process_button_state([False, False, True])   # toggle -> pedal
+    for _ in range(5):
+        ctl.process_button_state([False, False, True])  # held, no repeat
+    assert s.wah_source == "pedal"
+
+
 _TEST_FUNCTIONS = [
+    test_enc2_button_toggles_wah_source_when_wah_selected,
+    test_enc2_button_noop_when_not_wah,
+    test_enc2_button_hold_does_not_repeat_toggle,
     test_appstate_defaults_have_encoder_fields,
     # Encoder 0
     test_enc0_rotate_only_changes_selected_effect,

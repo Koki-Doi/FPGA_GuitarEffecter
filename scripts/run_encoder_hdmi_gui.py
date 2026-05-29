@@ -133,6 +133,19 @@ def _build_argparser() -> argparse.ArgumentParser:
                         "ADC -> AudioLab DSP -> DAC path (mode 2). On exit "
                         "the runner mutes (MODE=3) if a non-keep mode was "
                         "set, so Ctrl+C / SIGTERM produce a clean shutdown.")
+    # D74 FP02M expression pedal -> Wah POSITION.
+    p.add_argument("--wah-pedal", action="store_true",
+                   help="Enable the FP02M A0 pedal controller for Wah "
+                        "POSITION. Reads the calibration JSON and streams "
+                        "position_raw into set_wah_settings while "
+                        "AppState.wah_source == 'pedal'. Stays MANUAL if A0 "
+                        "is unreadable (no XADC channel) or no calibration.")
+    p.add_argument("--wah-calibration", default=None,
+                   help="FP02M calibration JSON (default "
+                        "~/.config/audio_lab/fp02m_calibration.json).")
+    p.add_argument("--wah-pedal-hz", type=float, default=100.0,
+                   help="FP02M read/write rate cap in Hz (default 100). The "
+                        "effective rate is min(this, active poll rate).")
     return p
 
 
@@ -276,6 +289,10 @@ def _render_signature(s):
         str(getattr(s, "last_apply_message", "")),
         id(getattr(s, "last_encoder_event", None)),
         tuple(bool(v) for v in (getattr(s, "effect_on", []) or [])),
+        # D74: SOURCE strip + live pedal POS bar must re-render on change.
+        str(getattr(s, "wah_source", "manual")),
+        bool(getattr(s, "wah_pedal_available", False)),
+        int(getattr(s, "wah_position_pedal_u8", 0)),
         knobs,
     )
 
@@ -362,6 +379,32 @@ def main(argv=None):
         apply_on_value_change=False,
     )
 
+    # D74 FP02M expression pedal -> Wah POSITION (optional). The controller
+    # stays unavailable (and the GUI stays MANUAL) if A0 cannot be read on
+    # this overlay or no calibration exists -- nothing crashes.
+    wah_pedal = None
+    if args.wah_pedal:
+        try:
+            from audio_lab_pynq.fp02m import (  # type: ignore
+                Fp02mA0Reader, Fp02mWahController, load_calibration,
+                DEFAULT_CALIBRATION_PATH)
+            cal_path = args.wah_calibration or DEFAULT_CALIBRATION_PATH
+            cal = load_calibration(cal_path)
+            reader = Fp02mA0Reader()
+            wah_pedal = Fp02mWahController(reader, cal)
+            state.wah_pedal_available = bool(wah_pedal.available)
+            if wah_pedal.available:
+                print("[gui] FP02M pedal ready (cal=%s)" % cal_path)
+            else:
+                print("[gui] FP02M pedal unavailable: %s (staying MANUAL)"
+                      % wah_pedal.unavailable_reason)
+        except Exception as exc:
+            print("[gui] FP02M pedal init failed: %r (staying MANUAL)" % (exc,))
+            wah_pedal = None
+            state.wah_pedal_available = False
+    wah_pedal_period = 1.0 / max(1.0, float(args.wah_pedal_hz))
+    last_wah_poll_t = 0.0
+
     stop_flag = {"stop": False}
 
     def _on_sigint(*_):
@@ -410,6 +453,30 @@ def main(argv=None):
                 n_events = 0
             if n_events:
                 last_event_t = loop_t
+
+            # D74 FP02M pedal step (non-blocking; main-thread overlay write,
+            # so no GPIO race with the encoder applier). Only active when
+            # SOURCE=PEDAL and the controller is available; a new byte marks
+            # the loop active so the POS bar re-renders. Repeated read errors
+            # auto-fall back to MANUAL without crashing audio / HDMI.
+            if (wah_pedal is not None and wah_pedal.available
+                    and str(getattr(state, "wah_source", "manual")) == "pedal"
+                    and (loop_t - last_wah_poll_t) >= wah_pedal_period):
+                last_wah_poll_t = loop_t
+                u8 = wah_pedal.poll_once()
+                if u8 is not None:
+                    state.wah_position_pedal_u8 = int(u8)
+                    if overlay is not None and not args.no_audio_apply:
+                        try:
+                            overlay.set_wah_settings(position_raw=int(u8))
+                        except Exception as exc:
+                            print("[gui] wah pedal write failed: %r" % (exc,))
+                    last_event_t = loop_t
+                if not wah_pedal.available:
+                    state.wah_pedal_available = False
+                    state.wah_source = "manual"
+                    print("[gui] FP02M pedal fell back to MANUAL: %s"
+                          % wah_pedal.unavailable_reason)
 
             sig = _render_signature(state)
             if sig != last_sig and (loop_t - last_render_t) >= min_render_period:

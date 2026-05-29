@@ -113,6 +113,13 @@ class AppState:
     # POSITION between encoder ticks. Renderer shows "SOURCE: MANUAL"
     # or "SOURCE: PEDAL" in the FX panel for the WAH effect.
     wah_source: str = "manual"
+    # D74 live FP02M readback (runtime only; NOT persisted). The GUI
+    # runner's pedal loop updates these each poll. ``wah_position_pedal_u8``
+    # is the last POSITION byte (0..255) written to hardware in PEDAL mode;
+    # ``wah_pedal_available`` drives the SOURCE strip MANUAL / PEDAL /
+    # PEDAL(UNAVAIL) hint and whether the POS knob shows the live value.
+    wah_position_pedal_u8: int = 0
+    wah_pedal_available: bool = False
 
     # footswitches
     fs_states: List[bool] = field(default_factory=lambda:
@@ -159,6 +166,10 @@ class AppState:
         spec = EFFECT_KNOBS[name]
         vals = self.all_knob_values.get(name, [float(k[1]) for k in spec])
         return [(label, val) for (label, _), val in zip(spec, vals)]
+
+    def wah_position_display_pct(self) -> float:
+        """Live FP02M POSITION as a 0..100 percent for the GUI POS knob."""
+        return round(self.wah_position_pedal_u8 * 100.0 / 255.0, 1)
 
     def set_knob(self, knob_idx: int, value: float) -> None:
         name = EFFECTS[self.selected_effect]

@@ -181,7 +181,11 @@ class EncoderUiController:
         prev = self._prev_pressed
         if (not prev[0]) and cur[0] and not self._enc0_toggle_consumed_this_tick:
             self._enc0_button_down_edge()
-        # Encoder 1 / Encoder 2 button: no-op.
+        # Encoder 2 button-down edge toggles the Wah POSITION SOURCE
+        # (MANUAL <-> PEDAL) when WAH is the selected effect; otherwise
+        # it stays a no-op (D74). Encoder 1 button remains a no-op.
+        if (not prev[2]) and cur[2]:
+            self._enc2_button_down_edge()
         # No short_press / long_press / click handling on any encoder.
 
         self._prev_pressed = list(cur)
@@ -224,6 +228,21 @@ class EncoderUiController:
             self._propagate_applier_status()
             if ok:
                 self._maybe_live_apply(force=True)
+
+    def _enc2_button_down_edge(self) -> None:
+        """Toggle wah_source MANUAL <-> PEDAL when WAH is selected (D74)."""
+        idx = int(getattr(self.state, "selected_effect", 0))
+        if not EFFECTS or not (0 <= idx < len(EFFECTS)):
+            return
+        if EFFECTS[idx] != "Wah":
+            return
+        cur = str(getattr(self.state, "wah_source", "manual") or "manual")
+        self.state.wah_source = "pedal" if cur != "pedal" else "manual"
+        self.state.value_dirty = True
+        self.state.apply_pending = True
+        self.state.last_control_source = "encoder"
+        if self.applier is not None and self.live_apply:
+            self._maybe_live_apply(force=True)
 
     # -- event dispatch --------------------------------------------------------
 

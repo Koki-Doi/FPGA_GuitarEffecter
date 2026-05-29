@@ -898,10 +898,14 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                              int(getattr(state, "cab_model_idx", 0) or 0)))
             model_label = CAB_MODELS[idx]
         elif selected_short == "WAH":
-            # SOURCE label only; today's build supports MANUAL only.
-            # FP02M / Arduino A0 future input will flip this to PEDAL.
+            # SOURCE strip: MANUAL (GUI / encoder) or PEDAL (FP02M / A0).
+            # In PEDAL mode without an available reader, show UNAVAIL so the
+            # user knows POSITION is not being driven (D74).
             src = str(getattr(state, "wah_source", "manual") or "manual")
-            source_label = "SOURCE: " + src.upper()
+            if src == "pedal" and not bool(getattr(state, "wah_pedal_available", False)):
+                source_label = "SOURCE: PEDAL (UNAVAIL)"
+            else:
+                source_label = "SOURCE: " + src.upper()
         draw_text(img, (fx0 + 16, fy0 + 10), "> FX MODULE",
                   fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
         d.line((fx0 + 14, fy0 + 24, fx1 - 14, fy0 + 24),
@@ -968,6 +972,14 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
             draw_smooth_text(img, (sl_x, sl_y), source_label, size=20,
                              fill=LED_DIM + (255,), anchor="lm")
         knobs = [k for k in state.knobs() if k[0]]
+        # D74: in WAH PEDAL mode with an available reader, the POS knob
+        # (index 0) displays the live FP02M value rather than the stored
+        # manual percent. The manual value is still kept in all_knob_values
+        # so flipping back to MANUAL restores it.
+        if (selected_short == "WAH" and knobs
+                and str(getattr(state, "wah_source", "manual") or "manual") == "pedal"
+                and bool(getattr(state, "wah_pedal_available", False))):
+            knobs[0] = (knobs[0][0], state.wah_position_display_pct())
         n_knobs = len(knobs)
         # Grid layout per effect (knob count -> cols, rows):
         #   3 knobs (NS, OD, EQ, RVB): 3 cols x 1 row
