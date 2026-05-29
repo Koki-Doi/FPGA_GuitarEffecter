@@ -247,8 +247,35 @@ PL Wah already smooths POSITION.
 - Calibration drift over temperature / pedal wear -> re-calibrate.
 - Future XADC Wizard add changes the PL -> timing must be re-reviewed.
 
+## 10. Bench result (2026-05-29)
+
+- **TRS wiring adopted: candidate 1** -- Tip (tip) -> A0, Ring (middle) ->
+  3.3 V (J7), Sleeve (base) -> GND. Confirmed by sweep, not assumed.
+- **A0 sweep (probe `--mmio`, pedal swept heel<->toe):** raw_min `16`,
+  raw_max `4068`, **span `4052`** (>= the 2000 "good" bar), continuous
+  variation, no stuck-0 / stuck-4095. Heel = low raw, toe = high raw, so
+  **invert = false** (heel -> Wah POSITION 0 = low freq, matches the
+  D73 Wah default).
+- **A0 single-pin:** open ~6..10 (~0.007 V). A0=GND / A0=3.3 V jumper
+  checks are optional once the pedal sweep already covers the full range.
+- **Calibration saved:** `/root/.config/audio_lab/fp02m_calibration.json`
+  (sudo HOME) -- raw_min 16, raw_max 4068, invert false, deadband 2,
+  smoothing_alpha 0.25. Written directly from the sweep endpoints (the
+  interactive `calibrate_fp02m.py --mmio` is equivalent but needs
+  heel/toe Enter presses at the bench).
+- **Read path is AXI MMIO** via `Fp02mXadcMmioReader` (overlay
+  `xadc_wiz_a0` register `0x244` = VAUX1 / A0) -- NOT IIO.
+- **Controller -> overlay confirmed:** `run_fp02m_wah_test.py --no-download`
+  reports the MMIO reader available, maps the pedal to a POSITION byte,
+  and writes `set_wah_settings(position_raw=...)`.
+- **Pending (user, audio bench):** `run_encoder_hdmi_gui.py --pmod-mode dsp
+  --wah-pedal --live-apply --skip-rat` -> encoder-2 toggles SOURCE=PEDAL,
+  POS bar follows the pedal, Wah ON sweep audibly moves the centre
+  frequency, Q/VOL/BIAS stay independent, no pop/click/zipper, all_off and
+  Wah-OFF bypass clean. **bit/hwh are committed only after this passes.**
+
 ## See also
 
-- `XADC_INTEGRATION_DESIGN.md` -- the deferred XADC-Wizard proposal.
+- `XADC_INTEGRATION_DESIGN.md` -- the built XADC-Wizard integration (MMIO).
 - `GPIO_CONTROL_MAP.md` -- `axi_gpio_wah` row (POSITION / `position_raw`).
 - `DECISIONS.md` D72 / D73 (Wah) and D74 (this FP02M pass).
