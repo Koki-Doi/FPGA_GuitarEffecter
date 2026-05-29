@@ -19,12 +19,56 @@ _pynq_mock.install()
 from audio_lab_pynq.fp02m import (  # noqa: E402
     Fp02mCalibration,
     Fp02mA0Reader,
+    Fp02mXadcMmioReader,
     MockFp02mReader,
     Fp02mPositionMapper,
     Fp02mWahController,
     MIN_CALIBRATION_SPAN,
+    XADC_REG_VAUX1,
     load_calibration,
 )
+
+
+class _FakeXadcRegs(object):
+    """Minimal stand-in for overlay.xadc_wiz_a0 (.read(offset))."""
+
+    def __init__(self, regs):
+        self.regs = dict(regs)
+
+    def read(self, offset):
+        return self.regs.get(offset, 0)
+
+
+class XadcMmioReaderTests(unittest.TestCase):
+    def test_available_and_reads_vaux1(self):
+        # 12-bit codes shifted into the top 12 bits of the 16-bit word.
+        regs = {0x204: 1395 << 4, XADC_REG_VAUX1: 2048 << 4}
+        r = Fp02mXadcMmioReader(_FakeXadcRegs(regs))
+        self.assertTrue(r.available())
+        self.assertEqual(r.read_raw(), 2048)
+        v = r.read_voltage()
+        self.assertTrue(1.5 < v < 1.8)  # ~half of 3.3 V
+
+    def test_unavailable_when_vccint_out_of_band(self):
+        r = Fp02mXadcMmioReader(_FakeXadcRegs({0x204: 0, XADC_REG_VAUX1: 100 << 4}))
+        self.assertFalse(r.available())
+
+    def test_unavailable_when_no_source(self):
+        self.assertFalse(Fp02mXadcMmioReader(None).available())
+
+    def test_from_overlay_missing_ip(self):
+        class _Ovl(object):
+            pass
+        r = Fp02mXadcMmioReader.from_overlay(_Ovl())
+        self.assertFalse(r.available())
+
+    def test_controller_drives_from_mmio(self):
+        regs = {0x204: 1395 << 4, XADC_REG_VAUX1: 4095 << 4}
+        r = Fp02mXadcMmioReader(_FakeXadcRegs(regs))
+        cal = Fp02mCalibration(0, 4095, smoothing_alpha=1.0)
+        ctrl = Fp02mWahController(r, cal, deadband=1)
+        self.assertTrue(ctrl.available)
+        self.assertEqual(ctrl.poll_once(), 255)
 
 
 class CalibrationTests(unittest.TestCase):

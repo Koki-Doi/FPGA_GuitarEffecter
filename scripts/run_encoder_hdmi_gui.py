@@ -386,11 +386,17 @@ def main(argv=None):
     if args.wah_pedal:
         try:
             from audio_lab_pynq.fp02m import (  # type: ignore
-                Fp02mA0Reader, Fp02mWahController, load_calibration,
-                DEFAULT_CALIBRATION_PATH)
+                Fp02mA0Reader, Fp02mXadcMmioReader, Fp02mWahController,
+                load_calibration, DEFAULT_CALIBRATION_PATH)
             cal_path = args.wah_calibration or DEFAULT_CALIBRATION_PATH
             cal = load_calibration(cal_path)
-            reader = Fp02mA0Reader()
+            # On the AudioLab overlay A0 is read from the PL xadc_wiz_a0 via
+            # MMIO (the PL XADC is not an IIO channel). Fall back to the IIO
+            # reader only when the overlay has no XADC Wizard.
+            if overlay is not None and hasattr(overlay, "xadc_wiz_a0"):
+                reader = Fp02mXadcMmioReader.from_overlay(overlay)
+            else:
+                reader = Fp02mA0Reader()
             wah_pedal = Fp02mWahController(reader, cal)
             state.wah_pedal_available = bool(wah_pedal.available)
             if wah_pedal.available:

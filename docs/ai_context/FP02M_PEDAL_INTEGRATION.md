@@ -41,14 +41,16 @@ Arduino MicroBlaze. Our custom overlay has no such IP, so:
 
 | Candidate path | Verdict |
 | --- | --- |
-| A. Linux IIO / sysfs (`iio:device0`) | **Unavailable** for A0 -- internal rails only, no VAUX. |
-| B. Existing PYNQ XADC API | **Unavailable** -- depends on a PL XADC that this overlay does not instantiate. |
-| C. Add AXI XADC Wizard (additive integration `.tcl`) | **Required** to read A0. Needs a Vivado bit/hwh rebuild + timing review. Designed in `XADC_INTEGRATION_DESIGN.md` (proposal only; not built). |
+| A. Linux IIO / sysfs (`iio:device0`) | **Unavailable** for A0 -- the PS-XADC IIO shows only internal rails, and the PL `xadc_wiz` is NOT exposed as an IIO channel even after the D74 bit loads. |
+| B. Existing PYNQ XADC API | **Unavailable** -- the base overlay's XADC path is not present here. |
+| C. Add AXI XADC Wizard (additive `.tcl`) + read via **AXI MMIO** | **DONE (D74).** `xadc_wiz_a0 @ 0x43D40000` reads VAUX1; `Fp02mXadcMmioReader` reads `overlay.xadc_wiz_a0` register `0x244`. |
 | D. External SPI ADC (MCP3008) on Arduino SPI | Last resort; not pursued. |
 
-**Conclusion:** reading A0 requires option C. Until that rebuild lands,
-`Fp02mA0Reader.available()` returns `False` and the GUI stays in
-SOURCE=MANUAL; nothing crashes.
+**Conclusion:** A0 is read via the PL XADC Wizard over **AXI MMIO** (not
+IIO -- the PL XADC does not appear in `/sys/bus/iio`). See
+`XADC_INTEGRATION_DESIGN.md`. If the XADC Wizard is ever absent,
+`Fp02mXadcMmioReader.available()` / `Fp02mA0Reader.available()` return
+`False` and the GUI stays in SOURCE=MANUAL; nothing crashes.
 
 ---
 
@@ -169,8 +171,12 @@ of `position_raw`.
 
 - `Fp02mCalibration` -- dataclass (raw_min, raw_max, invert, deadband,
   smoothing_alpha) + validation + JSON load/save.
-- `Fp02mA0Reader` -- XADC-IIO backend. `available()`, `read_raw()`,
-  `read_voltage()`. Returns unavailable on the current overlay (no VAUX).
+- `Fp02mXadcMmioReader` -- **the working backend on the AudioLab overlay.**
+  Reads the PL `xadc_wiz_a0` VAUX1 register (`0x244`) via AXI MMIO through
+  `overlay.xadc_wiz_a0`. `from_overlay(ovl)` builds it; `available()`
+  sanity-checks VCCINT so an unprogrammed PL reads unavailable.
+- `Fp02mA0Reader` -- XADC-IIO backend (off-board / legacy). The PL XADC is
+  not an IIO channel, so this stays unavailable on the AudioLab overlay.
 - `MockFp02mReader` -- deterministic test reader (sequence / noise /
   stuck / exception modes).
 - `Fp02mPositionMapper` -- `raw_to_u8(raw)`, `update_smoothed(raw)`
@@ -215,11 +221,14 @@ PL Wah already smooths POSITION.
 
 ## 8. Real-hardware test procedure (to run once wired + XADC built)
 
-1. `python3 scripts/probe_fp02m_a0.py --duration 10 --rate 100` -- must
-   not crash; reports read path, raw min/max seen, voltage, position_u8.
-   - A0 to GND -> low raw; A0 to 3.3 V -> high raw.
+1. `python3 scripts/probe_fp02m_a0.py --mmio --duration 10 --rate 100`
+   (add `--download` only on the first overlay load of the session) --
+   must not crash; reports read path, raw min/max seen, voltage,
+   position_u8.
+   - A0 open -> ~0 raw (confirmed: raw ~8). A0 to GND -> low raw; A0 to
+     3.3 V -> high raw (~4095); midpoint -> ~2048.
    - FP02M heel vs toe -> distinct raw; smooth sweep moves continuously.
-2. `python3 scripts/calibrate_fp02m.py` -- save heel/toe -> JSON.
+2. `python3 scripts/calibrate_fp02m.py --mmio` -- save heel/toe -> JSON.
 3. `python3 scripts/run_fp02m_wah_test.py --calibration ...` -- sweep ->
    POSITION byte changes; no zipper noise.
 4. GUI: select WAH, encoder-2 button -> SOURCE=PEDAL, Wah ON, sweep the

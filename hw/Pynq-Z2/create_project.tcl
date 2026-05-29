@@ -36,6 +36,8 @@ update_ip_catalog
 # accept `if` in `.xdc`, hence the two-file split.
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_pmod_i2s2.xdc
+# D74: Arduino A0 analog input (XADC VAUX1 = E17/D18) for the FP02M pedal.
+add_files -fileset constrs_1 -norecurse $origin_dir/xadc_a0.xdc
 
 # Phase 7F/7G: add the rotary-encoder input RTL as a regular source before
 # the block design references it via `create_bd_cell -type module -reference
@@ -73,6 +75,11 @@ source ./pmod_i2s2_integration.tcl
 # clash_lowpass_fir_0/wah_control. block_design.tcl is not edited; the
 # Wah GPIO is purely additive via NUM_MI bump from 19 to 20.
 source ./wah_integration.tcl
+# D74: XADC Wizard reading Arduino A0 (VAUX1) for the FP02M expression
+# pedal. Additive only (NUM_MI 20 -> 21, M20 = xadc_wiz_a0 @ 0x43D40000);
+# block_design.tcl is not edited and clash_lowpass_fir_0 is unchanged, so
+# the DSP voicing is byte-identical.
+source ./xadc_integration.tcl
 make_wrapper -files [get_files ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/block_design.bd] -top
 add_files -norecurse ./${proj_name}/${proj_name}.srcs/sources_1/bd/block_design/hdl/block_design_wrapper.vhd
 update_compile_order -fileset sources_1

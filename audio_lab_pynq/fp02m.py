@@ -32,11 +32,22 @@ import re
 import time
 from typing import List, Optional
 
-# A0 (3.3 V) is divided down to the XADC 0..1 V unipolar range on the
-# PYNQ-Z2 anti-alias front end; voltage reporting multiplies the XADC
-# volts back up. Calibration works in raw counts, so this only affects
-# the informational ``read_voltage``.
-A0_INPUT_DIVIDER = 3.0
+# A0 (0..3.3 V) is divided down to the XADC 0..1 V unipolar range on the
+# PYNQ-Z2 analog front end; voltage reporting multiplies the XADC volts
+# back up. Calibration works in raw counts, so this only affects the
+# informational ``read_voltage``.
+A0_INPUT_DIVIDER = 3.3
+
+# AXI register offsets in the xadc_wiz (v3.3) memory map. The XADC status
+# registers mirror the DRP space at AXI base + 0x200; each channel is one
+# 16-bit value in the top 12 bits (>> 4 for the 12-bit code).
+XADC_REG_TEMP = 0x200
+XADC_REG_VCCINT = 0x204
+XADC_REG_VAUX1 = 0x244   # Arduino A0 = VAUX1 (DRP 0x11)
+# Plausible VCCINT 12-bit band (~0.78..1.27 V on the 0..1 V * 3 internal
+# scale) used to confirm the PL XADC core is actually converting.
+_XADC_VCCINT_MIN = 600
+_XADC_VCCINT_MAX = 1700
 
 # IIO channels whose mid-token names one of these is an internal PS-XADC
 # rail, NOT the external A0 (VAUX1) channel. Used to recognise that the
@@ -272,6 +283,61 @@ class Fp02mA0Reader(Fp02mReaderBase):
         return xadc_volts * A0_INPUT_DIVIDER
 
 
+class Fp02mXadcMmioReader(Fp02mReaderBase):
+    """Read Arduino A0 (VAUX1) from the PL ``xadc_wiz_a0`` via AXI MMIO.
+
+    This is the path that actually works on the AudioLab overlay: the PL
+    XADC Wizard is a separate access path from the PS-XADC that backs the
+    Linux IIO ``xadc`` device, and it is NOT exposed as an IIO channel, so
+    :class:`Fp02mA0Reader` (IIO) stays unavailable for VAUX1. The wizard's
+    AXI status registers are read directly instead (D74).
+
+    ``reg_source`` is any object with a ``read(offset)`` method returning
+    the 16-bit register value -- typically ``overlay.xadc_wiz_a0`` (a PYNQ
+    ``DefaultIP``) or a ``pynq.MMIO``. ``available()`` confirms the core is
+    converting by sanity-checking the on-chip VCCINT register, so a stale
+    or unprogrammed PL reads as unavailable rather than feeding garbage to
+    the Wah.
+    """
+
+    read_path = "xadc-mmio"
+
+    def __init__(self, reg_source, vaux_offset=XADC_REG_VAUX1):
+        self.reg_source = reg_source
+        self.vaux_offset = vaux_offset
+
+    @classmethod
+    def from_overlay(cls, overlay, ip_name="xadc_wiz_a0",
+                     vaux_offset=XADC_REG_VAUX1):
+        """Build a reader from a loaded overlay, or an unavailable reader
+        (reg_source=None) if the overlay has no XADC Wizard."""
+        reg = getattr(overlay, ip_name, None) if overlay is not None else None
+        return cls(reg, vaux_offset=vaux_offset)
+
+    def _read_reg(self, offset):
+        return int(self.reg_source.read(offset)) & 0xFFFF
+
+    def available(self):
+        if self.reg_source is None or not hasattr(self.reg_source, "read"):
+            return False
+        try:
+            vccint = self._read_reg(XADC_REG_VCCINT) >> 4
+        except Exception:
+            return False
+        return _XADC_VCCINT_MIN <= vccint <= _XADC_VCCINT_MAX
+
+    def read_raw(self):
+        # 12-bit code in the top 12 bits of the 16-bit status word.
+        return (self._read_reg(self.vaux_offset) >> 4) & 0x0FFF
+
+    def read_voltage(self):
+        try:
+            raw = self.read_raw()
+        except Exception:
+            return None
+        return (raw / 4096.0) * A0_INPUT_DIVIDER
+
+
 class MockFp02mReader(Fp02mReaderBase):
     """Deterministic test reader.
 
@@ -443,6 +509,8 @@ __all__ = [
     "Fp02mCalibration",
     "Fp02mReaderBase",
     "Fp02mA0Reader",
+    "Fp02mXadcMmioReader",
+    "XADC_REG_VAUX1",
     "MockFp02mReader",
     "Fp02mPositionMapper",
     "Fp02mWahController",

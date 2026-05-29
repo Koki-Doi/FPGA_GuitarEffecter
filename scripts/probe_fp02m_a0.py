@@ -43,6 +43,7 @@ def _load_fp02m():
 
 _fp = _load_fp02m()
 Fp02mA0Reader = _fp.Fp02mA0Reader
+Fp02mXadcMmioReader = _fp.Fp02mXadcMmioReader
 Fp02mCalibration = _fp.Fp02mCalibration
 Fp02mPositionMapper = _fp.Fp02mPositionMapper
 
@@ -55,24 +56,45 @@ def _build_argparser():
                    help="Read rate in Hz (default 100).")
     p.add_argument("--iio-root", default="/sys/bus/iio/devices",
                    help="IIO devices root (override for testing).")
+    p.add_argument("--mmio", action="store_true",
+                   help="Read A0 from the PL xadc_wiz_a0 via AXI MMIO "
+                        "(REQUIRED on the AudioLab overlay -- the PL XADC "
+                        "is not exposed as an IIO channel). Loads "
+                        "AudioLabOverlay.")
+    p.add_argument("--download", action="store_true",
+                   help="With --mmio, program the PL (download=True). Use "
+                        "ONCE per session; otherwise attach (download=False).")
     p.add_argument("--quiet", action="store_true",
                    help="Only print the summary, not every sample.")
     return p
 
 
+def _make_mmio_reader(download):
+    from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay  # board-only
+    ovl = AudioLabOverlay(download=download)
+    return Fp02mXadcMmioReader.from_overlay(ovl)
+
+
 def main(argv=None):
     args = _build_argparser().parse_args(argv)
-    reader = Fp02mA0Reader(iio_root=args.iio_root)
+    if args.mmio:
+        reader = _make_mmio_reader(args.download)
+    else:
+        reader = Fp02mA0Reader(iio_root=args.iio_root)
 
     print("A0 read path: %s" % reader.read_path)
     if not reader.available():
         print("A0 read path: UNAVAILABLE")
-        print("  No external XADC (VAUX1) channel is exposed on this overlay.")
-        print("  The deployed AudioLab overlay has no XADC IP; add the XADC")
-        print("  Wizard (docs/ai_context/XADC_INTEGRATION_DESIGN.md) to read A0.")
+        if args.mmio:
+            print("  xadc_wiz_a0 is not converting (VCCINT out of band). Make")
+            print("  sure the D74 bit is loaded (download=True once this session).")
+        else:
+            print("  No external XADC (VAUX1) channel is exposed via IIO. On the")
+            print("  AudioLab overlay the PL XADC is read via MMIO -- re-run with")
+            print("  --mmio (see docs/ai_context/XADC_INTEGRATION_DESIGN.md).")
         return 2
 
-    print("A0 channel: %s" % reader.channel_path)
+    print("A0 channel: %s" % getattr(reader, "channel_path", reader.read_path))
     period = 1.0 / max(1.0, float(args.rate))
     # Provisional full-range mapper just so we can print a position_u8;
     # NOT a calibration. raw range is observed, not assumed.

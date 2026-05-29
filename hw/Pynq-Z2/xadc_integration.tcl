@@ -1,28 +1,18 @@
-# XADC Wizard integration extension for the AudioLab block design.
+# XADC Wizard integration extension for the AudioLab block design (D74).
 #
-# *** PROPOSAL -- NOT YET APPROVED / NOT YET BUILT ***
+# Sourced from create_project.tcl AFTER wah_integration.tcl. Adds an AXI
+# XADC Wizard reading Arduino A0 so the FP02M expression pedal can drive
+# Wah POSITION. A0 on the PYNQ-Z2 is the XADC auxiliary channel VAUX1
+# (dedicated analog pins VAUXP1 = E17 / VAUXN1 = D18, bank 35); the
+# Arduino "arduino_a0 = Y11" board entry is the DIGITAL view of the same
+# header pin and is NOT XADC-capable, so the analog feed uses E17/D18 via
+# hw/Pynq-Z2/xadc_a0.xdc.
 #
-# This script is intentionally NOT sourced by create_project.tcl. It is the
-# concrete artifact behind docs/ai_context/XADC_INTEGRATION_DESIGN.md, kept
-# in-tree so the future Vivado rebuild is a review-and-source step rather
-# than a from-scratch write. Building it is a separate, explicitly-approved
-# step (PL change + timing review per CLAUDE.md). To prevent an accidental
-# Vivado run from picking it up, it hard-errors unless the operator opts in:
-#
-#     set ::env(XADC_INTEGRATION_APPROVED) 1   ;# only when approved
-#
-if {![info exists ::env(XADC_INTEGRATION_APPROVED)] || \
-        $::env(XADC_INTEGRATION_APPROVED) ne "1"} {
-    error "xadc_integration.tcl is a PROPOSAL and is not approved to run. \
-See docs/ai_context/XADC_INTEGRATION_DESIGN.md. Set \
-env(XADC_INTEGRATION_APPROVED)=1 only after explicit approval."
-}
-#
-# Purpose: add an AXI XADC Wizard reading Arduino A0 (= VAUX1, Zynq Y11/Y12)
-# so the FP02M expression pedal can drive Wah POSITION. block_design.tcl is
-# NOT edited; clash_lowpass_fir_0 is NOT modified (no new Clash port, DSP
-# voicing byte-identical). Pairs with hw/Pynq-Z2/xadc_a0.xdc (VAUXP1/VAUXN1
-# -> Y11/Y12 constraint), add_files-d from create_project.tcl when approved.
+# block_design.tcl is NOT edited. clash_lowpass_fir_0 is NOT modified (no
+# new Clash port) so the DSP voicing is byte-identical. This is purely
+# additive: ps7_0_axi_periph NUM_MI 20 -> 21 (adds M20), new xadc_wiz_a0
+# AXI-Lite slave at 0x43D40000, and the Vaux1 analog interface exported as
+# a top-level port.
 #
 # AXI master allocation (post XADC integration):
 #   M00..M19  : existing (see wah_integration.tcl; M19 = axi_gpio_wah).
@@ -39,14 +29,14 @@ puts "XADC: starting A0 (VAUX1) XADC integration at $XADC_AXI_OFFSET on [current
 # 1. Expand ps7_0_axi_periph from NUM_MI=20 to NUM_MI=21 (adds M20)
 set_property -dict [list CONFIG.NUM_MI {21}] [get_bd_cells ps7_0_axi_periph]
 
-# 2. xadc_wiz in AXI4-Lite mode, single VAUX1 channel, unipolar.
+# 2. xadc_wiz in AXI4-Lite mode, channel-sequencer continuous, VAUX1 only.
+#    On-chip alarms disabled (we only want the external analog channel).
 set xadc [create_bd_cell -type ip -vlnv xilinx.com:ip:xadc_wiz xadc_wiz_a0]
 set_property -dict [list \
     CONFIG.INTERFACE_SELECTION {Enable_AXI} \
     CONFIG.XADC_STARUP_SELECTION {channel_sequencer} \
-    CONFIG.CHANNEL_ENABLE_VAUXP1_VAUXN1 {true} \
-    CONFIG.AVERAGE_ENABLE_VAUXP1_VAUXN1 {true} \
     CONFIG.SEQUENCER_MODE {Continuous} \
+    CONFIG.CHANNEL_ENABLE_VAUXP1_VAUXN1 {true} \
     CONFIG.OT_ALARM {false} \
     CONFIG.USER_TEMP_ALARM {false} \
     CONFIG.VCCINT_ALARM {false} \
@@ -54,7 +44,6 @@ set_property -dict [list \
     CONFIG.ENABLE_VCCPINT_ALARM {false} \
     CONFIG.ENABLE_VCCPAUX_ALARM {false} \
     CONFIG.ENABLE_VCCDDRO_ALARM {false} \
-    CONFIG.ENABLE_RESET {false} \
 ] $xadc
 
 # 3. AXI-Lite from ps7_0_axi_periph/M20 to the XADC slave
@@ -69,8 +58,8 @@ connect_bd_net [get_bd_pins xadc_wiz_a0/s_axi_aclk]    \
 connect_bd_net [get_bd_pins xadc_wiz_a0/s_axi_aresetn] \
                [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
 
-# 4. Expose the VAUX1 differential analog interface as an external port.
-#    The XDC (xadc_a0.xdc) constrains VAUXP1/VAUXN1 to Y11/Y12.
+# 4. Export the VAUX1 differential analog interface as a top-level port.
+#    The XDC (xadc_a0.xdc) constrains Vaux1_v_p / Vaux1_v_n to E17 / D18.
 make_bd_intf_pins_external [get_bd_intf_pins xadc_wiz_a0/Vaux1]
 set_property name Vaux1 [get_bd_intf_ports Vaux1_0]
 

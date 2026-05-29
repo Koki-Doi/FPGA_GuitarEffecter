@@ -1,9 +1,12 @@
-# XADC Wizard integration design (PROPOSAL -- NOT built)
+# XADC Wizard integration (BUILT + deployed; A0 MMIO read confirmed)
 
-Status: **design only.** No Vivado run, no bit/hwh change, `create_project.tcl`
-does **not** source the proposal tcl yet. Building this requires a separate
-explicit approval (PL change + timing review). See `DECISIONS.md` D74 and
-`FP02M_PEDAL_INTEGRATION.md` section 1.
+Status: **built and deployed** (2026-05-29). `create_project.tcl` sources
+`xadc_integration.tcl` + adds `xadc_a0.xdc`; Vivado rebuilt the bit/hwh
+(WNS `-11.361 ns`, delta `-0.451 ns` vs D73; Wah not the worst path; XADC
+adds 0 critical paths). The PL `xadc_wiz_a0` reads Arduino A0 via **AXI
+MMIO** (not IIO -- see below). bit/hwh are deployed to the board but **not
+committed until bench audition passes** (per the D74 acceptance gate).
+See `DECISIONS.md` D74 and `FP02M_PEDAL_INTEGRATION.md` section 1.
 
 ## Why
 
@@ -46,21 +49,34 @@ Only **VAUX1** is needed for A0.
 - Clock the XADC `s_axi_aclk` from the existing 100 MHz PS AXI clock; DRP
   clock from the same domain (xadc_wiz handles internal division).
 
-## Read path after build
+## Read path after build -- MMIO, NOT IIO (load-bearing)
 
-Two equivalent options; the Python `Fp02mA0Reader` already prefers IIO:
+**Confirmed on the board:** the PL `xadc_wiz_a0` does **not** appear in the
+Linux IIO tree. `/sys/bus/iio/devices/iio:device0` (driver `xadc`) is the
+**PS-XADC** and still shows only the eight internal rails after the D74 bit
+is loaded -- it is a separate access path from the PL XADC Wizard, and PYNQ
+does not auto-generate a device-tree node for a custom PL `xadc_wiz`. So
+`Fp02mA0Reader` (IIO) stays unavailable for VAUX1.
 
-1. **IIO (preferred):** the `xadc_wiz` exposes the VAUX1 sample to the
-   Linux `xadc` driver as a new non-rail channel
-   (`/sys/bus/iio/devices/iio:device0/in_voltage*_vaux1_raw`). The reader
-   auto-discovers it (any `in_voltage*` channel that is not one of the
-   eight internal rails). 16-bit raw; volts = raw * scale / 1000; A0 volts
-   = xadc volts * 3.3 (PYNQ-Z2 anti-alias divider). Calibration absorbs
-   the exact scale, so the reader only needs raw counts.
-2. **MMIO fallback:** read the xadc_wiz VAUX1 data register at
-   `0x43D40000 + offset` via `pynq.MMIO`. Only after the overlay is
-   loaded (PL MMIO before a successful `download=True` crashes the
-   kernel -- see user-memory `project_pynq_mmio_before_overlay_kills_kernel`).
+The working path is **AXI MMIO** via `Fp02mXadcMmioReader`:
+
+- Read the `xadc_wiz_a0` status registers through `overlay.xadc_wiz_a0`
+  (a PYNQ `DefaultIP`), only **after** the overlay is loaded (PL MMIO
+  before a successful `download=True` crashes the kernel -- user-memory
+  `project_pynq_mmio_before_overlay_kills_kernel`).
+- Register map (xadc_wiz v3.3, AXI base + 0x200 mirrors the DRP space;
+  each value is a 12-bit code in the top 12 bits of the 16-bit word):
+  `0x200` TEMP, `0x204` VCCINT, **`0x244` VAUX1 = A0**. `read_raw()`
+  returns `(reg >> 4) & 0xFFF` (0..4095); `read_voltage()` =
+  `raw/4096 * 3.3`. Calibration absorbs the exact scale.
+- `available()` sanity-checks VCCINT (0x204) is in a plausible band so a
+  stale / unprogrammed PL reads as unavailable rather than feeding garbage
+  to the Wah.
+
+Bench confirmation (A0 floating): `TEMP` 12-bit `2702` (~59 C die),
+`VCCINT` 12-bit `1395` (~1.02 V -- both sane), `VAUX1` raw `~8` (~0.006 V,
+correct for an open input). `probe_fp02m_a0.py --mmio` returns raw values
+(not unavailable).
 
 ## Diff / risk for the future Vivado rebuild
 
@@ -81,8 +97,22 @@ Two equivalent options; the Python `Fp02mA0Reader` already prefers IIO:
   significantly worse than D73; `diagnose_pmod_loopback.py` PASS; A0 probe
   reads a moving value on pedal sweep; bench audio unchanged on all_off.
 
-## Proposal artifact
+## Build result (2026-05-29)
 
-`hw/Pynq-Z2/xadc_integration.tcl` is committed as a **proposal** with a
-guard header; it is intentionally NOT sourced by `create_project.tcl`.
-Wiring it in + running Vivado is the deferred step.
+- `create_project.tcl` sources `xadc_integration.tcl` after
+  `wah_integration.tcl` and `add_files` `xadc_a0.xdc`. `block_design.tcl`
+  untouched; `clash_lowpass_fir_0` unchanged (DSP voicing byte-identical).
+- `validate_bd_design` passed (only a benign BD 41-927 aclk-property
+  warning). `write_bitstream completed successfully`, 0 Errors.
+- Routed timing: WNS `-11.361 ns`, TNS `-11083.667 ns`, WHS `+0.051 ns`,
+  THS `0.000 ns`; setup failing endpoints `3565 / 61840`. Delta vs D73
+  (`-10.910 ns`) is `-0.451 ns` -- inside the accepted band. Worst path
+  `clash_lowpass_fir_0/U0/ds1_7_reg[784]/C -> ...psdsp/D` (DS-1 distortion,
+  same section as D73); no Wah or XADC net in the worst path.
+- Utilization: LUT `21123` (+203 vs D73), FF `22863` (+191), BRAM `6`
+  (unchanged), DSP `89` (unchanged) -- the XADC adds ~200 LUT / ~190 FF,
+  no DSP / BRAM.
+- bit/hwh md5 `dd3fc09994902abcf34f8819d054205b` /
+  `ef094d0e1a6158a94fc75bb297adfa6b`. HWH contains `xadc_wiz_a0` and
+  `axi_gpio_wah`. Deployed 5-site (board bit md5 matches). bit/hwh are
+  **not committed** until bench audition passes (D74 gate).

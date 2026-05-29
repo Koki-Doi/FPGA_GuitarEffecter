@@ -42,6 +42,7 @@ def _load_fp02m():
 
 _fp = _load_fp02m()
 Fp02mA0Reader = _fp.Fp02mA0Reader
+Fp02mXadcMmioReader = _fp.Fp02mXadcMmioReader
 Fp02mCalibration = _fp.Fp02mCalibration
 Fp02mWahController = _fp.Fp02mWahController
 DEFAULT_CALIBRATION_PATH = _fp.DEFAULT_CALIBRATION_PATH
@@ -75,14 +76,20 @@ def main(argv=None):
         print("No calibration at %s. Run scripts/calibrate_fp02m.py first."
               % args.calibration)
         return 2
-    reader = Fp02mA0Reader(iio_root=args.iio_root)
+
+    from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay  # noqa: E402
+    ovl = AudioLabOverlay(download=not args.no_download)
+    # A0 is read from the PL xadc_wiz_a0 via MMIO (not IIO). Fall back to
+    # the IIO reader only if the overlay has no XADC Wizard.
+    if hasattr(ovl, "xadc_wiz_a0"):
+        reader = Fp02mXadcMmioReader.from_overlay(ovl)
+    else:
+        reader = Fp02mA0Reader(iio_root=args.iio_root)
     ctrl = Fp02mWahController(reader, cal)
     if not ctrl.available:
         print("Pedal controller unavailable: %s" % ctrl.unavailable_reason)
         return 2
 
-    from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay  # noqa: E402
-    ovl = AudioLabOverlay(download=not args.no_download)
     # Fixed Q / VOLUME / BIAS; enable the Wah. POSITION comes from the pedal.
     ovl.set_wah_settings(enabled=True, q=args.q, volume=args.volume,
                          bias=args.bias, source="pedal")

@@ -38,6 +38,7 @@ def _load_fp02m():
 
 _fp = _load_fp02m()
 Fp02mA0Reader = _fp.Fp02mA0Reader
+Fp02mXadcMmioReader = _fp.Fp02mXadcMmioReader
 Fp02mCalibration = _fp.Fp02mCalibration
 DEFAULT_CALIBRATION_PATH = _fp.DEFAULT_CALIBRATION_PATH
 MIN_CALIBRATION_SPAN = _fp.MIN_CALIBRATION_SPAN
@@ -56,6 +57,12 @@ def _build_argparser():
     p.add_argument("--notes", default="",
                    help="Free text (e.g. measured TRS pinout).")
     p.add_argument("--iio-root", default="/sys/bus/iio/devices")
+    p.add_argument("--mmio", action="store_true",
+                   help="Read A0 from the PL xadc_wiz_a0 via MMIO (REQUIRED "
+                        "on the AudioLab overlay). Loads AudioLabOverlay.")
+    p.add_argument("--download", action="store_true",
+                   help="With --mmio, program the PL (download=True). Use "
+                        "ONCE per session; otherwise attach (download=False).")
     return p
 
 
@@ -78,15 +85,23 @@ def _sample_mean(reader, n, rate):
 
 def main(argv=None):
     args = _build_argparser().parse_args(argv)
-    reader = Fp02mA0Reader(iio_root=args.iio_root)
+    if args.mmio:
+        from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay  # board-only
+        ovl = AudioLabOverlay(download=args.download)
+        reader = Fp02mXadcMmioReader.from_overlay(ovl)
+    else:
+        reader = Fp02mA0Reader(iio_root=args.iio_root)
     if not reader.available():
         print("A0 read path UNAVAILABLE -- cannot calibrate.")
-        print("The deployed overlay has no XADC channel for A0 (VAUX1).")
-        print("Build the XADC Wizard first (XADC_INTEGRATION_DESIGN.md).")
+        if args.mmio:
+            print("xadc_wiz_a0 not converting; load the D74 bit (download=True).")
+        else:
+            print("On the AudioLab overlay the PL XADC is read via MMIO; "
+                  "re-run with --mmio.")
         return 2
 
     print("FP02M calibration. Read path: %s (%s)"
-          % (reader.read_path, reader.channel_path))
+          % (reader.read_path, getattr(reader, "channel_path", reader.read_path)))
     try:
         input("Set the pedal to the HEEL position, then press Enter...")
     except EOFError:

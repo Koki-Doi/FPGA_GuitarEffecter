@@ -4666,3 +4666,48 @@ not get removed even when superseded — they get updated.
   crash. PEDAL with no/invalid calibration -> refuse to map, stay MANUAL
   with a warning (no silent fake range). Repeated read errors in PEDAL ->
   auto fall back to MANUAL.
+
+### D74 XADC Wizard build (approved 2026-05-29; built + deployed; pending bench)
+
+- **Decision.** Activate the XADC Wizard so A0 is readable. `create_project.tcl`
+  now sources `xadc_integration.tcl` after `wah_integration.tcl` and
+  `add_files` `xadc_a0.xdc`. `block_design.tcl` is NOT edited and
+  `clash_lowpass_fir_0` is NOT modified (no new Clash port) -- the DSP
+  voicing is byte-identical. Additive only: `ps7_0_axi_periph` NUM_MI
+  20 -> 21 (M20 = `xadc_wiz_a0 @ 0x43D40000`), VAUX1 enabled, the Vaux1
+  analog interface exported and constrained to E17/D18.
+- **A0 = VAUX1 = E17(VAUXP1)/D18(VAUXN1), bank 35** -- verified against the
+  part (Y11/Y12 are bank-13 digital pins with NO `_AD` XADC capability, so
+  the "arduino_a0 = Y11" board entry is the *digital* view only; the analog
+  feed uses the dedicated VAUX1 pins). E17/D18 confirmed free (only
+  B19/B20 = AD8/AD0 used, for encoder switches).
+- **Read path is AXI MMIO, NOT IIO (load-bearing).** The PL `xadc_wiz` is a
+  separate access path from the PS-XADC that backs the Linux IIO `xadc`
+  device; the PL XADC is not exposed as an IIO channel (still internal
+  rails only after the bit loads). So `Fp02mA0Reader` (IIO) stays
+  unavailable and a new `Fp02mXadcMmioReader` reads `overlay.xadc_wiz_a0`
+  register `0x244` (VAUX1; 12-bit in the top 12 bits). The probe /
+  calibrate / runner / bench scripts use the MMIO reader on-board
+  (`--mmio`); the runner auto-selects it when `overlay.xadc_wiz_a0` exists.
+- **Vivado result.** `write_bitstream` PASS, 0 Errors. WNS `-11.361 ns`
+  (delta `-0.451 ns` vs D73 `-10.910 ns`, inside the accepted band),
+  TNS `-11083.667 ns`, WHS `+0.051 ns`, THS `0.000 ns`, failing endpoints
+  `3565 / 61840`. Worst path `clash_lowpass_fir_0/U0/ds1_7_reg[784]/C ->
+  ...psdsp/D` (DS-1 distortion, same section as D73); Wah is NOT the worst
+  path and the XADC adds 0 critical paths. Util LUT `21123` (+203), FF
+  `22863` (+191), BRAM `6` (unchanged), DSP `89` (unchanged). bit/hwh md5
+  `dd3fc09994902abcf34f8819d054205b` / `ef094d0e1a6158a94fc75bb297adfa6b`.
+- **Deploy + bench probe.** Deployed 5-site (board bit md5 matches).
+  `AudioLabOverlay(download=True)` programmed the PL; ADC HPF True;
+  `axi_gpio_wah` and `xadc_wiz_a0` both visible. MMIO sanity: TEMP 12-bit
+  `2702` (~59 C), VCCINT `1395` (~1.02 V); VAUX1 raw `~8` with A0 floating
+  (~0.006 V -- correct open-input read). `probe_fp02m_a0.py --mmio` returns
+  raw values (not unavailable). The A0=GND / A0=3.3V / midpoint checks and
+  the FP02M TRS measurement + connection are the user's physical next step.
+- **bit/hwh NOT committed** until the bench audition passes (D74 gate):
+  all_off bypass clean, Wah OFF clean, Wah ON pedal sweep audibly moves
+  the centre frequency, no pop/click/noise, and the existing Cab /
+  Compressor / Distortion / Amp voicing unchanged. D73 (`d1343291...` /
+  `aad985fe...`) remains the committed rollback baseline (D73 bit backed
+  up at `/tmp/d73_backup/`); the D74 build (`dd3fc099...`) is the deployed
+  candidate held out of git until bench acceptance.
