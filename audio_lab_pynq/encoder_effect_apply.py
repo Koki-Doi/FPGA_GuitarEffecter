@@ -318,13 +318,21 @@ class EncoderEffectApplier(object):
                 makeup=_clamp_percent(cmp_[3]),
                 enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_COMPRESSOR], True))
             if hasattr(self.overlay, "set_wah_settings"):
-                self.overlay.set_wah_settings(
-                    position=_clamp_percent(wah[0]),
+                # D74: in SOURCE=PEDAL mode the FP02M controller is the sole
+                # writer of POSITION (position_raw). Do NOT pass position=
+                # here -- it would clear the cached position_raw and snap the
+                # sweep back to the manual knob. Q / VOL / BIAS / enable /
+                # source are always pushed; only POSITION is withheld.
+                wah_source = str(getattr(state, "wah_source", "manual") or "manual")
+                wah_kwargs = dict(
                     q=_clamp_percent(wah[1]),
                     volume=_clamp_percent(wah[2]),
                     bias=_clamp_percent(wah[3]),
                     enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_WAH], False),
-                    source=str(getattr(state, "wah_source", "manual") or "manual"))
+                    source=wah_source)
+                if wah_source != "pedal":
+                    wah_kwargs["position"] = _clamp_percent(wah[0])
+                self.overlay.set_wah_settings(**wah_kwargs)
             else:
                 self._mark_unsupported(EFFECT_WAH)
 

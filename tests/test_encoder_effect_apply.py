@@ -38,6 +38,10 @@ class FakeOverlay(object):
         self._rec("set_compressor_settings", kwargs)
         return {"ok": True}
 
+    def set_wah_settings(self, **kwargs):
+        self._rec("set_wah_settings", kwargs)
+        return {"ok": True}
+
     def set_guitar_effects(self, **kwargs):
         self._rec("set_guitar_effects", kwargs)
         return {"ok": True}
@@ -284,6 +288,63 @@ def test_apply_appstate_honours_overlay_amp_idx_max():
     assert kw.get("amp_model_idx") == 3
 
 
+# ---- D74 Wah SOURCE = MANUAL / PEDAL ------------------------------------
+
+def _wah_index():
+    from compact_v2.knobs import EFFECTS as _E
+    return _E.index("Wah")
+
+
+def test_apply_wah_manual_sends_position():
+    """SOURCE=MANUAL pushes the POS knob percent to set_wah_settings."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.wah_source = "manual"
+    state.effect_on[_wah_index()] = True
+    state.all_knob_values["Wah"] = [70.0, 50.0, 50.0, 50.0]
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_wah_settings")
+    assert kw is not None
+    assert kw.get("position") == 70
+    assert kw.get("source") == "manual"
+    assert "position_raw" not in kw
+
+
+def test_apply_wah_pedal_omits_position():
+    """SOURCE=PEDAL must NOT pass position= (would clear position_raw);
+    the FP02M controller is the sole POSITION writer."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.wah_source = "pedal"
+    state.effect_on[_wah_index()] = True
+    state.all_knob_values["Wah"] = [70.0, 60.0, 55.0, 45.0]
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_wah_settings")
+    assert kw is not None
+    assert "position" not in kw          # withheld in pedal mode
+    assert "position_raw" not in kw      # applier never writes raw
+    assert kw.get("source") == "pedal"
+
+
+def test_apply_wah_pedal_still_sends_q_vol_bias():
+    """Q / VOL / BIAS / enable are still applied in PEDAL mode."""
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.wah_source = "pedal"
+    state.effect_on[_wah_index()] = True
+    state.all_knob_values["Wah"] = [70.0, 60.0, 55.0, 45.0]
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_wah_settings")
+    assert kw is not None
+    assert kw.get("q") == 60
+    assert kw.get("volume") == 55
+    assert kw.get("bias") == 45
+    assert kw.get("enabled") is True
+
+
 _TEST_FUNCTIONS = [
     test_dry_run_does_not_call_overlay,
     test_apply_appstate_calls_three_overlay_methods,
@@ -302,6 +363,9 @@ _TEST_FUNCTIONS = [
     test_apply_appstate_forwards_six_amp_models,
     test_apply_appstate_clamps_amp_model_idx_above_max,
     test_apply_appstate_honours_overlay_amp_idx_max,
+    test_apply_wah_manual_sends_position,
+    test_apply_wah_pedal_omits_position,
+    test_apply_wah_pedal_still_sends_q_vol_bias,
 ]
 
 
