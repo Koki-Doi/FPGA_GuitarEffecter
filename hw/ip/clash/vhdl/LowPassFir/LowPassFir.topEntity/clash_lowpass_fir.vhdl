@@ -1965,13 +1965,139 @@ architecture structural of clash_lowpass_fir is
   signal mono_0                                      : signed(23 downto 0);
   signal result_346                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal acceptReady                                 : boolean;
-  -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$reverbAddr_case_alt\                     : clash_lowpass_fir_types.index_1024;
-  -- src/AudioLab/Pipeline.hs:53:1-10
-  signal paceCount                                   : unsigned(3 downto 0) := to_unsigned(0,4);
-  -- src/AudioLab/Pipeline.hs:53:1-10
-  signal \c$paceCount_app_arg\                       : unsigned(3 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal stable                                      : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2                                         : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b                                           : boolean;
+  signal result_347                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg\                               : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_0                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_0                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_0                                         : boolean;
+  signal result_348                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_0\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_0\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_1                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_1                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_1                                         : boolean;
+  signal result_349                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_1\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_1\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_2                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_2                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_2                                         : boolean;
+  signal result_350                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_2\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_2\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_3                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_3                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_3                                         : boolean;
+  signal result_351                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_3\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_3\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_4                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_4                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_4                                         : boolean;
+  signal result_352                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_4\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_4\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_5                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_5                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_5                                         : boolean;
+  signal result_353                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_5\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_5\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_6                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_6                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_6                                         : boolean;
+  signal result_354                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_6\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_6\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_7                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_7                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_7                                         : boolean;
+  signal result_355                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_7\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_7\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_8                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_8                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_8                                         : boolean;
+  signal result_356                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_8\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_8\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_9                                    : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_9                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_9                                         : boolean;
+  signal result_357                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_9\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_9\                           : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal stable_10                                   : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal ff2_10                                      : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal b_10                                        : boolean;
+  signal result_358                                  : std_logic_vector(31 downto 0);
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$b_app_arg_10\                            : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
+  -- src/LowPassFir.hs:80:1-8
+  signal \c$ff2_app_arg_10\                          : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   signal result_selection_res                        : boolean;
   signal \c$app_arg_selection_res\                   : std_logic_vector(0 downto 0);
   signal \c$bv\                                      : std_logic_vector(31 downto 0);
@@ -2645,7 +2771,7 @@ begin
   result <= ( Tuple4_sel0_std_logic_vector => outReg.AxisOut_sel0_oData
             , Tuple4_sel1_boolean_0 => outReg.AxisOut_sel1_oValid
             , Tuple4_sel2_boolean_1 => outReg.AxisOut_sel2_oLast
-            , Tuple4_sel3_boolean_2 => acceptReady );
+            , Tuple4_sel3_boolean_2 => axis_out_tready );
 
   result_selection_res <= \new\ and ((not outReg.AxisOut_sel1_oValid) or consumed);
 
@@ -18478,7 +18604,7 @@ begin
   end process;
   -- register end
 
-  validIn <= axis_in_tvalid and acceptReady;
+  validIn <= axis_in_tvalid and axis_out_tready;
 
   result_345 <= ( Tuple2_1_sel0_signed_0 => signed((\c$app_arg_182\(23 downto 0)))
                 , Tuple2_1_sel1_signed_1 => signed((\c$app_arg_182\(47 downto 24))) );
@@ -18490,18 +18616,18 @@ begin
   result_346 <= std_logic_vector'("1" & ((std_logic_vector(mono_0)
                  & std_logic_vector(mono_0)
                  & clash_lowpass_fir_types.toSLV(axis_in_tlast)
-                 & gate_control
-                 & overdrive_control
-                 & distortion_control
-                 & eq_control
-                 & delay_control
-                 & amp_control
-                 & amp_tone_control
-                 & cab_control
-                 & reverb_control
-                 & noise_suppressor_control
-                 & compressor_control
-                 & wah_control
+                 & stable_10
+                 & stable_9
+                 & stable_8
+                 & stable_7
+                 & stable_6
+                 & stable_5
+                 & stable_4
+                 & stable_3
+                 & stable_2
+                 & stable_1
+                 & stable_0
+                 & stable
                  & std_logic_vector(to_unsigned(0,10))
                  & std_logic_vector(mono_0)
                  & std_logic_vector(mono_0)
@@ -18525,27 +18651,598 @@ begin
                  & std_logic_vector(to_signed(0,48))))) when validIn else
                 std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
 
-  acceptReady <= axis_out_tready and (paceCount = to_unsigned(0,4));
-
   \c$reverbAddr_case_alt_selection_res\ <= reverbAddr = to_unsigned(1023,10);
 
   \c$reverbAddr_case_alt\ <= to_unsigned(0,10) when \c$reverbAddr_case_alt_selection_res\ else
                              reverbAddr + to_unsigned(1,10);
 
   -- register begin
-  paceCount_register : process(clk,aresetn)
+  stable_register : process(clk,aresetn)
   begin
     if aresetn =  '0'  then
-      paceCount <= to_unsigned(0,4);
+      stable <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      paceCount <= \c$paceCount_app_arg\;
+      stable <= result_347;
     end if;
   end process;
   -- register end
 
-  with (paceCount) select
-    \c$paceCount_app_arg\ <= to_unsigned(15,4) when x"0",
-                             paceCount - to_unsigned(1,4) when others;
+  -- register begin
+  ff2_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2 <= \c$ff2_app_arg\;
+    end if;
+  end process;
+  -- register end
+
+  b <= ff2 = \c$b_app_arg\;
+
+  result_347 <= ff2 when b else
+                stable;
+
+  -- register begin
+  cb_app_arg_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg\ <= ff2;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg\ <= wah_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_0_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_0 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_0 <= result_348;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_0_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_0 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_0 <= \c$ff2_app_arg_0\;
+    end if;
+  end process;
+  -- register end
+
+  b_0 <= ff2_0 = \c$b_app_arg_0\;
+
+  result_348 <= ff2_0 when b_0 else
+                stable_0;
+
+  -- register begin
+  cb_app_arg_0_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_0\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_0\ <= ff2_0;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_0_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_0\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_0\ <= compressor_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_1_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_1 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_1 <= result_349;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_1_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_1 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_1 <= \c$ff2_app_arg_1\;
+    end if;
+  end process;
+  -- register end
+
+  b_1 <= ff2_1 = \c$b_app_arg_1\;
+
+  result_349 <= ff2_1 when b_1 else
+                stable_1;
+
+  -- register begin
+  cb_app_arg_1_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_1\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_1\ <= ff2_1;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_1_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_1\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_1\ <= noise_suppressor_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_2_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_2 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_2 <= result_350;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_2_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_2 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_2 <= \c$ff2_app_arg_2\;
+    end if;
+  end process;
+  -- register end
+
+  b_2 <= ff2_2 = \c$b_app_arg_2\;
+
+  result_350 <= ff2_2 when b_2 else
+                stable_2;
+
+  -- register begin
+  cb_app_arg_2_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_2\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_2\ <= ff2_2;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_2_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_2\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_2\ <= reverb_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_3_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_3 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_3 <= result_351;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_3_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_3 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_3 <= \c$ff2_app_arg_3\;
+    end if;
+  end process;
+  -- register end
+
+  b_3 <= ff2_3 = \c$b_app_arg_3\;
+
+  result_351 <= ff2_3 when b_3 else
+                stable_3;
+
+  -- register begin
+  cb_app_arg_3_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_3\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_3\ <= ff2_3;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_3_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_3\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_3\ <= cab_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_4_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_4 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_4 <= result_352;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_4_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_4 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_4 <= \c$ff2_app_arg_4\;
+    end if;
+  end process;
+  -- register end
+
+  b_4 <= ff2_4 = \c$b_app_arg_4\;
+
+  result_352 <= ff2_4 when b_4 else
+                stable_4;
+
+  -- register begin
+  cb_app_arg_4_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_4\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_4\ <= ff2_4;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_4_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_4\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_4\ <= amp_tone_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_5_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_5 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_5 <= result_353;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_5_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_5 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_5 <= \c$ff2_app_arg_5\;
+    end if;
+  end process;
+  -- register end
+
+  b_5 <= ff2_5 = \c$b_app_arg_5\;
+
+  result_353 <= ff2_5 when b_5 else
+                stable_5;
+
+  -- register begin
+  cb_app_arg_5_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_5\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_5\ <= ff2_5;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_5_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_5\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_5\ <= amp_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_6_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_6 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_6 <= result_354;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_6_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_6 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_6 <= \c$ff2_app_arg_6\;
+    end if;
+  end process;
+  -- register end
+
+  b_6 <= ff2_6 = \c$b_app_arg_6\;
+
+  result_354 <= ff2_6 when b_6 else
+                stable_6;
+
+  -- register begin
+  cb_app_arg_6_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_6\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_6\ <= ff2_6;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_6_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_6\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_6\ <= delay_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_7_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_7 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_7 <= result_355;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_7_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_7 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_7 <= \c$ff2_app_arg_7\;
+    end if;
+  end process;
+  -- register end
+
+  b_7 <= ff2_7 = \c$b_app_arg_7\;
+
+  result_355 <= ff2_7 when b_7 else
+                stable_7;
+
+  -- register begin
+  cb_app_arg_7_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_7\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_7\ <= ff2_7;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_7_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_7\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_7\ <= eq_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_8_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_8 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_8 <= result_356;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_8_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_8 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_8 <= \c$ff2_app_arg_8\;
+    end if;
+  end process;
+  -- register end
+
+  b_8 <= ff2_8 = \c$b_app_arg_8\;
+
+  result_356 <= ff2_8 when b_8 else
+                stable_8;
+
+  -- register begin
+  cb_app_arg_8_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_8\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_8\ <= ff2_8;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_8_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_8\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_8\ <= distortion_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_9_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_9 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_9 <= result_357;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_9_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_9 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_9 <= \c$ff2_app_arg_9\;
+    end if;
+  end process;
+  -- register end
+
+  b_9 <= ff2_9 = \c$b_app_arg_9\;
+
+  result_357 <= ff2_9 when b_9 else
+                stable_9;
+
+  -- register begin
+  cb_app_arg_9_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_9\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_9\ <= ff2_9;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_9_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_9\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_9\ <= overdrive_control;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  stable_10_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      stable_10 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      stable_10 <= result_358;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  ff2_10_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ff2_10 <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      ff2_10 <= \c$ff2_app_arg_10\;
+    end if;
+  end process;
+  -- register end
+
+  b_10 <= ff2_10 = \c$b_app_arg_10\;
+
+  result_358 <= ff2_10 when b_10 else
+                stable_10;
+
+  -- register begin
+  cb_app_arg_10_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$b_app_arg_10\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$b_app_arg_10\ <= ff2_10;
+    end if;
+  end process;
+  -- register end
+
+  -- register begin
+  cff2_app_arg_10_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      \c$ff2_app_arg_10\ <= std_logic_vector'(x"00000000");
+    elsif rising_edge(clk) then
+      \c$ff2_app_arg_10\ <= gate_control;
+    end if;
+  end process;
+  -- register end
 
   axis_out_tdata <= result.Tuple4_sel0_std_logic_vector;
 

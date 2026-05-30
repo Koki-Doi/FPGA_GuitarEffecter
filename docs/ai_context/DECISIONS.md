@@ -4732,3 +4732,57 @@ not get removed even when superseded — they get updated.
   re-add must protect the audio AXIS placement (pblock/constraints) or use
   a different ADC route (external SPI ADC). Full write-up in
   `D74_XADC_NOISE_INVESTIGATION.md`.
+
+## D75 - DSP clock-domain island: clash @ 50 MHz, WNS -10.387 -> -0.706 ns
+
+Accepted 2026-05-31 (external-instrument bench: 完璧). Branch
+`feature/dsp-multicycle`. Full design record in
+`DSP_ISLAND_CLOCK_DESIGN.md`.
+
+- **Problem.** `fxPipeline` (`clash_lowpass_fir_0`) outgrew 100 MHz: a
+  45-logic-level CARRY4×36 arithmetic chain in the DS-1 distortion section,
+  Data Path ~20.1 ns vs the 10 ns period (WNS -10.387 ns at D72). Every
+  other block closes fine at 100 MHz; only the DSP fails.
+- **Rejected first.** Stage-splitting the DS-1 chain (WNS unchanged,
+  route-dominated) and Frame-width reduction (1067->731 bits, WNS slightly
+  worse) do nothing -- logic reduction does not help a route-bound path.
+  Global `FCLK0 = 50 MHz` improved WNS to -4.6 ns but **corrupted the
+  I2S/Pmod CDCs** (continuous bypass buzz): lowering the whole fabric clock
+  breaks the existing clock-domain crossings.
+- **Solution (island).** Run **only the DSP at FCLK_CLK1 = 50 MHz**, keep
+  everything else (i2s_to_stream / AXIS / DMA / GPIO / Pmod / HDMI) at
+  **FCLK_CLK0 = 100 MHz** so the I2S/Pmod CDCs are byte-identical to D72.
+  `hw/Pynq-Z2/island_integration.tcl` (additive, sourced after
+  `wah_integration.tcl`; `block_design.tcl` NOT edited) enables FCLK1,
+  adds `rst_island_50M`, inserts two `axis_clock_converter` (`cc_dsp_in`
+  100->50, `cc_dsp_out` 50->100) around the DSP AXIS, and moves
+  `clash_lowpass_fir_0/clk` + `aresetn` onto the 50 MHz domain.
+- **Two required supporting changes.** (1) `paceCount` removed in
+  `AudioLab/Pipeline.hs` (`acceptReady = readyOut`) -- the 16-cycle pace was
+  the only frequency-dependent term in the AXIS handshake. (2)
+  Control-word CDC synchroniser `syncCtrl` in `LowPassFir.hs` (two FFs +
+  2-cycle stability filter) on all 12 control words -- without it, an
+  effect/knob write makes the 50 MHz side latch a transient mixed value for
+  one sample = **audible click on every switch**. Mandatory.
+- **clock_groups.** `audio_lab.xdc` replaces the bclk-only `set_false_path`
+  with `set_clock_groups -asynchronous` over all seven domains
+  (clk_fpga_0 / clk_fpga_1 / clk 48 MHz Pmod / bclk / mclk 24 / audio_ext
+  12.288 / pixel 40). Removes the spurious inter-clock paths -- notably the
+  `rst_ps7_0_100M -> pmod_master` reset (`clk_fpga_0 -> audio_ext`) that
+  was the -4.2 ns worst path. Known harmless `CRITICAL WARNING [Vivado
+  12-4739]` (BD-generated clocks undefined at synth elaboration; applied at
+  impl -- confirmed by the worst path moving inter->intra).
+- **Result.** WNS **-0.706 ns** (worst now an intra-`clk_fpga_0` AXI-Lite
+  GPIO write, harmless, always present under the DSP path), WHS +0.052 ns,
+  THS 0; LUT 21286, FF 23968, BRAM 6. bit/hwh md5
+  `4a0b3dae1e56574ad596dbd6a3f0c98f` / `347d3e553a8ca96733ee27e904a1d25f`.
+  Deployed 5-site; `download=True` after power-cycle PASS; ADC HPF True;
+  `axi_gpio_wah` present, `xadc_wiz_a0` absent. **Bench (Pmod mode 2
+  ADC->DSP->DAC): all_off bypass clean, no click on effect/knob switching,
+  pitch correct, every effect works, GUI + HDMI healthy -- 完璧.**
+- **XADC dropped.** `create_project.tcl` xadc lines (xadc_a0.xdc add_files,
+  xadc_integration.tcl source) are commented -- D74 XADC put a bitcrusher on
+  the ADC path. The DSP voicing (Clash) is unchanged from D73 (Cry Baby
+  Wah), so this is a pure clocking/CDC change, not a voicing change.
+- **Rollback.** D73 (`d1343291` / `aad985fe`) and D72 (`eacc4f35` /
+  `eaa88898`) are full-100 MHz builds recoverable from git history.

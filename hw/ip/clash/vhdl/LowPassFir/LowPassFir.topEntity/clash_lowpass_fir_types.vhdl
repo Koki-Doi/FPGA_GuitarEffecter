@@ -5,8 +5,8 @@ use IEEE.NUMERIC_STD.ALL;
 package clash_lowpass_fir_types is
 
 
-
   subtype index_1024 is unsigned(9 downto 0);
+
   type array_of_signed_24 is array (integer range <>) of signed(23 downto 0);
   type Tuple2_0 is record
     Tuple2_0_sel0_unsigned_0 : unsigned(15 downto 0);
@@ -83,10 +83,10 @@ package clash_lowpass_fir_types is
   subtype Maybe is std_logic_vector(1067 downto 0);
   function toSLV (s : in signed) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return signed;
-  function toSLV (u : in unsigned) return std_logic_vector;
-  function fromSLV (slv : in std_logic_vector) return unsigned;
   function toSLV (slv : in std_logic_vector) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return std_logic_vector;
+  function toSLV (u : in unsigned) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return unsigned;
   function toSLV (value :  array_of_signed_24) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return array_of_signed_24;
   function toSLV (p : Tuple2_0) return std_logic_vector;
@@ -121,6 +121,14 @@ package body clash_lowpass_fir_types is
   begin
     return signed(islv);
   end;
+  function toSLV (slv : in std_logic_vector) return std_logic_vector is
+  begin
+    return slv;
+  end;
+  function fromSLV (slv : in std_logic_vector) return std_logic_vector is
+  begin
+    return slv;
+  end;
   function toSLV (u : in unsigned) return std_logic_vector is
   begin
     return std_logic_vector(u);
@@ -129,14 +137,6 @@ package body clash_lowpass_fir_types is
     alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
     return unsigned(islv);
-  end;
-  function toSLV (slv : in std_logic_vector) return std_logic_vector is
-  begin
-    return slv;
-  end;
-  function fromSLV (slv : in std_logic_vector) return std_logic_vector is
-  begin
-    return slv;
   end;
   function toSLV (value :  array_of_signed_24) return std_logic_vector is
     alias ivalue    : array_of_signed_24(1 to value'length) is value;

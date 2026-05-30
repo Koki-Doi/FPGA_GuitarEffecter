@@ -10,9 +10,31 @@
 set_property -quiet CLOCK_DEDICATED_ROUTE FALSE [get_nets -quiet bclk_IBUF]
 create_clock -add -name bclk -period 325 -waveform {0 162.5} [get_ports bclk]
 
-## Ignore inter clock paths in timing analysis
-set_false_path -from [get_clocks bclk] -to [get_clocks clk_fpga_0]
-set_false_path -from [get_clocks clk_fpga_0] -to [get_clocks bclk]
+## Asynchronous clock groups (supersedes the bclk-only false_path).
+## These are all independent clock domains, crossed only through
+## synchronised CDCs (i2s_to_stream BCLK<->fabric, axi_pmod_i2s2_status
+## slave for the Pmod 48 MHz / audio_ext words, and the DSP-island
+## axis_clock_converter for clk_fpga_0<->clk_fpga_1). Declaring them
+## asynchronous removes the spurious inter-clock paths that STA would
+## otherwise flag with a near-zero requirement -- notably the
+## rst_ps7_0_100M -> pmod_master reset (clk_fpga_0 -> audio_ext) that was
+## the -4.2 ns WNS worst path. -quiet tolerates a clock being absent in a
+## future build variant.
+##   clk_fpga_0  : 100 MHz fabric / AXI / DMA / GPIO / i2s_to_stream / pmod
+##   clk_fpga_1  :  50 MHz DSP island (clash_lowpass_fir_0)
+##   clk         :  48 MHz Pmod master internal
+##   bclk        :   3 MHz I2S bit clock
+##   clk_wiz_0   :  24 MHz codec mclk
+##   audio_ext   :  12.288 MHz Pmod I2S master clock
+##   clk_wiz_hdmi:  40 MHz HDMI pixel clock
+set_clock_groups -asynchronous \
+  -group [get_clocks -quiet clk_fpga_0] \
+  -group [get_clocks -quiet clk_fpga_1] \
+  -group [get_clocks -quiet clk] \
+  -group [get_clocks -quiet bclk] \
+  -group [get_clocks -quiet clk_out1_block_design_clk_wiz_0_0] \
+  -group [get_clocks -quiet clk_out1_block_design_clk_wiz_audio_ext_0] \
+  -group [get_clocks -quiet clk_out1_block_design_clk_wiz_hdmi_0]
 
 ## Audio
 

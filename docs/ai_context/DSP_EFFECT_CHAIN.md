@@ -44,19 +44,29 @@ measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
-The latest accepted DSP baseline is D68 (2026-05-25), the global
-Amp / Distortion / Overdrive constants retune. The currently deployed
-bench candidate is D71 (2026-05-27), the cabinet multi-band pseudo-IR
-speaker character pass in `AudioLab.Effects.Cab` (extends D70's FIR
-redesign + speaker compression with presence/cone breakup, fizz
-suppression, per-model body emphasis, wider speaker-knee spread, and
-retuned body resonance). D69 (Amp Drive Mode saturation) and D70
-(initial cabinet speaker character) are superseded by D71 but remain
-the rollback chain (D70 -> D69 -> D68). The fixed-scalar
-constant-table approach is load-bearing: D58 / D59 / D60 / D61 v2
-showed that adding DSP48 multipliers or new feedback state can perturb
-Vivado P&R enough to make the safe-bypass path audibly noisy even when
-CLIP_COUNT and WNS look acceptable.
+The latest accepted baseline is **D75 (2026-05-31), the DSP clock-domain
+island**: `clash_lowpass_fir_0` now runs at `FCLK_CLK1 = 50 MHz` while the
+rest of the fabric stays at `FCLK_CLK0 = 100 MHz`, bridged by
+`axis_clock_converter` (`cc_dsp_in` / `cc_dsp_out`) added in
+`hw/Pynq-Z2/island_integration.tcl`. This closed the DSP timing (WNS
+-10.387 -> -0.706 ns) without touching the I2S/Pmod CDCs. It also removed
+the `paceCount` (AXIS pacing) from `fxPipeline`, added a `syncCtrl`
+control-word CDC synchroniser in `LowPassFir.hs` (2-FF + stability on all
+12 control words -- required so effect/knob switches do not click), and a
+`set_clock_groups -asynchronous` in `audio_lab.xdc`. **The DSP voicing
+(Clash effect math) is unchanged from D73** -- D75 is a pure clocking/CDC
+change. Full record in `DSP_ISLAND_CLOCK_DESIGN.md` / `DECISIONS.md` D75.
+Do not lower the whole fabric to 50 MHz (global-50 MHz corrupts the
+I2S/Pmod CDCs = bypass buzz).
+
+The previous DSP-voicing baseline is D68 (2026-05-25), the global
+Amp / Distortion / Overdrive constants retune, with D71 (2026-05-27)
+cabinet multi-band pseudo-IR and D73 (Cry Baby Wah) on top -- all carried
+unchanged into D75. The fixed-scalar constant-table approach is
+load-bearing: D58 / D59 / D60 / D61 v2 showed that adding DSP48
+multipliers or new feedback state can perturb Vivado P&R enough to make
+the safe-bypass path audibly noisy even when CLIP_COUNT and WNS look
+acceptable.
 
 ## Core types
 

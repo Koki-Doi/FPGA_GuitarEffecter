@@ -77,6 +77,24 @@ When a previous turn stopped mid-implementation:
   rebuild and a timing-summary check. A bitstream with significantly worse
   WNS than the previous deployed build must not be deployed (latest
   baseline is recorded in `docs/ai_context/TIMING_AND_FPGA_NOTES.md`).
+- The DSP runs in a **50 MHz clock-domain island** (`DECISIONS.md` D75,
+  full record `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md`). Only
+  `clash_lowpass_fir_0` is clocked by `FCLK_CLK1` (50 MHz); the rest of the
+  fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays on `FCLK_CLK0`
+  (100 MHz), bridged by `axis_clock_converter` `cc_dsp_in` / `cc_dsp_out`
+  added in `hw/Pynq-Z2/island_integration.tcl` (additive, sourced from
+  `create_project.tcl` after `wah_integration.tcl`; `block_design.tcl` is
+  NOT edited). **Do not lower the whole fabric to 50 MHz** -- it corrupts
+  the I2S/Pmod clock-domain crossings (audible bypass buzz, proven). Three
+  pieces are load-bearing and must not be reverted: the `paceCount` removal
+  in `Pipeline.hs` (`acceptReady = readyOut`), the `syncCtrl` control-word
+  CDC in `LowPassFir.hs` (2-FF + 2-cycle stability on all 12 control words;
+  without it every effect/knob switch clicks), and the
+  `set_clock_groups -asynchronous` over all 7 clock domains in
+  `audio_lab.xdc`. XADC stays dropped (`create_project.tcl` xadc lines
+  commented; D74 put a bitcrusher on the ADC path). A `CRITICAL WARNING
+  12-4739` on the `set_clock_groups` line is expected and harmless (BD
+  clocks undefined at synth elaboration, applied at impl).
 - Notebook-only edits do **not** rebuild the bitstream. Update the
   notebook, run `bash scripts/deploy_to_pynq.sh`, done.
 - HDMI GUI runtime uses the integrated AudioLab overlay. Load

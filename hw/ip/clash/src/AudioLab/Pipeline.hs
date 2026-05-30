@@ -60,14 +60,16 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
     , acceptReady
     )
 
-  -- The DSP core is a fixed-latency register pipeline, not a fully
-  -- stallable AXI pipeline. Pace back-to-back DMA input so the one-beat
-  -- output register can ride through short S2MM ready deassertions
-  -- without dropping an in-flight frame or its TLAST. Live I2S samples
-  -- are much sparser than this clock-domain pacing.
+  -- DSP island build: clash runs on FCLK_CLK1 = 50 MHz behind AXIS clock
+  -- converters (see hw/Pynq-Z2/island_integration.tcl); everything else
+  -- stays 100 MHz so the I2S/Pmod CDCs are untouched. The 16-cycle
+  -- paceCount was the only frequency-dependent term in the AXIS handshake
+  -- (it paced DMA bursts at 100 MHz); on the island it is removed so the
+  -- DSP uses pure readyOut flow control. paceCount/paceReady/nextPace are
+  -- now unused and the synthesiser drops them.
   paceCount = register (0 :: Unsigned 4) (nextPace <$> paceCount)
   paceReady = (== 0) <$> paceCount
-  acceptReady = (&&) <$> readyOut <*> paceReady
+  acceptReady = readyOut
   acceptedIn = (&&) <$> validIn <*> acceptReady
 
   inPipe =
