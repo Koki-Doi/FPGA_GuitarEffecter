@@ -5,6 +5,58 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — NEXT TASK
+
+> D75 の DSP island baseline (main, bit `4a0b3dae`) の上に、FP02M
+> エクスプレッションペダル → Wah POSITION を実装してください。FP02M は
+> 実機 Arduino A0 に **直接接続済み (3.3V 電源、電圧安全、wiper 直結)**。
+> リポジトリ全体を再調査せず、まず `CLAUDE.md`、
+> `docs/ai_context/CURRENT_STATE.md`、`DECISIONS.md` (D74 + D75)、
+> `FP02M_PEDAL_INTEGRATION.md`、`XADC_INTEGRATION_DESIGN.md`、
+> `DSP_ISLAND_CLOCK_DESIGN.md` を読んでください。
+>
+> 状況: ソフト層 (`audio_lab_pynq/fp02m.py` + `scripts/probe_fp02m_a0.py` /
+> `calibrate_fp02m.py` / `run_fp02m_wah_test.py` + GUI SOURCE=PEDAL +
+> `run_encoder_hdmi_gui.py --wah-pedal`) は D74 で完成・コミット済み。
+> **ソフトは原則変更不要**。唯一の作業は A0 (VAUX1) を読む XADC Wizard の
+> 再追加で、`hw/Pynq-Z2/create_project.tcl` の XADC 2行 (`add_files ...
+> xadc_a0.xdc` と `source ./xadc_integration.tcl`) が今コメントアウト
+> されているので再有効化します。D74 で XADC は audio bitcrusher で却下
+> されましたが、原因は当時の WNS -11ns / 100MHz のタイトな audio AXIS
+> datapath の P&R 劣化で、**ペダル接続とは無関係** (D74調査 + ユーザー確認)。
+> **D75 で DSP は50MHz島・WNS -0.7ns と余裕があるので bitcrusher 再発しない
+> 見込み** — これが唯一の関門。
+>
+> 手順:
+> 1. `create_project.tcl` の XADC 2行を再有効化 (Clash/DSP は無変更=island維持)。
+> 2. `cd hw/Pynq-Z2 && make clean && make` (~15分)。WNS確認、hwh に
+>    `xadc_wiz_a0` が出ること、island (`cc_dsp_in`/`cc_dsp_out`,
+>    FCLK0=100/FCLK1=50, `set_clock_groups`) が維持されることを確認。
+> 3. `bash scripts/deploy_to_pynq.sh` で5サイト同期 (md5一致確認)。
+> 4. **PYNQ を cold power-cycle した後 `download=True` を1回だけ**
+>    (`feedback_deploy_smoke_avoid_repeated_download` 厳守、同一セッション
+>    2回目はハングし cold power-cycle でしか回復しない)。smoke で
+>    `xadc_wiz_a0` present / ADC HPF True / `axi_gpio_wah` present を確認。
+> 5. **audio bench で bitcrusher が出ないか確認 (D74 却下基準、all_off
+>    bypass がクリーンか、Pmod mode 2 ADC->DSP->DAC)** — 最重要関門。
+>    クリーンなら続行。bitcrusher なら XADC配置の Pblock 保護 か 外部SPI
+>    ADC (MCP3008) を提案してユーザーに報告し、勝手に進めない。
+> 6. `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3
+>    scripts/calibrate_fp02m.py` でキャリブレーション (FP02M 実測 raw
+>    16..4068 が D74 実績) → `~/.config/audio_lab/fp02m_calibration.json`。
+> 7. `scripts/run_fp02m_wah_test.py --mmio` または GUI
+>    `run_encoder_hdmi_gui.py --pmod-mode dsp --wah-pedal --live-apply
+>    --skip-rat` で、ペダルを踏むと SOURCE=PEDAL の POS bar が追従し、Wah ON
+>    で sweep が聞こえること、Q/VOL/BIAS は独立、no pop/click を実機確認。
+> 8. 全PASS なら commit + main マージ (D76 として `DECISIONS.md` /
+>    `CURRENT_STATE.md` / `TIMING_AND_FPGA_NOTES.md` /
+>    `FP02M_PEDAL_INTEGRATION.md` を更新)。
+>
+> 制約: `download=True` は1セッション1回。`block_design.tcl` 本体は編集
+> しない (XADC は `xadc_integration.tcl` の additive)。D75 island の
+> `paceCount` 削除 / `syncCtrl` 制御word CDC / `set_clock_groups` は維持・
+> 復活させない。`git push` / `pull` / `fetch` 禁止。ADC HPF デフォルトON維持。
+
 ## General resume
 
 > 前回の作業は途中停止しました。リポジトリ全体を再調査しないでください。
