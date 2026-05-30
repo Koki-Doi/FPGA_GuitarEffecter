@@ -765,21 +765,105 @@ bit / hwh をビルドして PL 側で動かしています。
 Python 側 (`AudioLabOverlay.py`) は AXI GPIO への制御 word を書き出す
 役割で、音そのものは PL で処理しています。
 
-2026-05-31 の **D75** で **DSP クロックドメイン島** を導入し、肥大化した
-DSP の routed WNS を `-10.387 ns` → `-0.706 ns` に改善しました。DSP
-(`clash_lowpass_fir_0`) だけを `FCLK_CLK1 = 50 MHz` で動かし、それ以外の
-fabric(AXI / DMA / `i2s_to_stream` / Pmod / HDMI)は `FCLK_CLK0 = 100 MHz`
-のまま維持します。両者は `axis_clock_converter` (`cc_dsp_in` / `cc_dsp_out`、
-`hw/Pynq-Z2/island_integration.tcl`、additive で `block_design.tcl` は非編集)
-で橋渡しし、既存の I2S/Pmod クロックドメイン跨ぎ (CDC) には一切触れません
-(fabric 全体を 50 MHz に下げると CDC が壊れて bypass がザラつくため、島
-だけを下げるのが要点)。あわせて `Pipeline.hs` の `paceCount` 除去
-(`acceptReady = readyOut`)、`LowPassFir.hs` の制御 word 用 2-FF + 安定化
-CDC (`syncCtrl`、effect/knob 切替時のクリックノイズ対策)、`audio_lab.xdc`
-の `set_clock_groups -asynchronous` を入れています。DSP の音色(Clash 係数)
-は D73 から不変で、これはクロック/CDC のみの変更です。実機 bench で
-all_off bypass クリーン / 切替ノイズなし / 全 effect・GUI・HDMI 健全を確認。
-詳細は `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md` / `DECISIONS.md` D75。
+### DSP クロックドメイン島 (D75, 2026-05-31)
+
+エフェクト(Wah / Compressor / Noise Suppressor / 6 種の distortion pedal /
+Amp / Cab / EQ / Reverb)を盛り続けた結果、DSP
+(`fxPipeline` / `clash_lowpass_fir_0`)が 100 MHz で timing を閉じられなく
+なりました。worst path は DS-1 distortion 内の **45 論理段・CARRY4×36 の
+算術チェーン**で、Data Path 約 `20.1 ns` に対しクロック周期は `10 ns`
+(routed WNS `-10.387 ns` @ D72)。一方、他の block(AXI / DMA /
+`i2s_to_stream` / Pmod / HDMI)は 100 MHz で問題なく閉じており、ボトル
+ネックは DSP だけでした。
+
+**解決策:DSP だけを 50 MHz の別クロック「島 (island)」にする。**
+
+```
+              FCLK_CLK0 = 100 MHz (fabric, 据え置き)
+  PS ─┬─ AXI-Lite GPIO / AXI-DMA / i2s_to_stream / Pmod / HDMI(VDMA,v_tc) ...
+      │
+      │     ┌──────────── DSP island : FCLK_CLK1 = 50 MHz ────────────┐
+  axis_data_fifo ─► cc_dsp_in ─► clash_lowpass_fir_0 ─► cc_dsp_out ─► axis_switch_sink
+      │   (100 MHz)  (100→50)     (50 MHz / fxPipeline)   (50→100)      (100 MHz)
+      │             ▲ axis_clock_converter            axis_clock_converter ▲
+      └─ rst_island_50M が 50 MHz 側の proc_sys_reset。mclk(24)/Pmod(12.288)/
+         pixel(40)を作る MMCM 群は FCLK_CLK0 入力のまま不変。
+```
+
+- `clash_lowpass_fir_0` だけ `FCLK_CLK1 = 50 MHz`(PS の FCLK1 を 1000 MHz
+  IO PLL ÷5 ÷4 で生成)。これで DSP 各段は `20 ns` の budget を得て閉じます。
+- それ以外の fabric は `FCLK_CLK0 = 100 MHz` のまま。**既存の I2S/Pmod
+  クロックドメイン跨ぎ (CDC) を一切変えない**のが最重要点です。
+- DSP の AXI-Stream 入出力は `axis_clock_converter`(`cc_dsp_in` が 100→50、
+  `cc_dsp_out` が 50→100)で 2 ドメインを安全に橋渡しします。
+- 以上は `hw/Pynq-Z2/island_integration.tcl`(additive。`hdmi/encoder/pmod/
+  wah_integration.tcl` と同じく `create_project.tcl` から source、
+  `block_design.tcl` 本体は非編集)が構築します。
+
+**なぜ fabric 全体を 50 MHz にしないのか:** 最初に試した「全系 50 MHz」は
+WNS を `-4.6 ns` まで改善しましたが、I2S/Pmod の CDC(100 MHz 前提で
+成立していた位相関係)が壊れ、**bypass で常時ザラザラ**になりました。
+クロックを下げてよいのは DSP 島の内側だけ、という切り分けが肝です。
+
+**島に伴う 3 つの必須変更(いずれも load-bearing):**
+
+1. **`paceCount` 除去**(`AudioLab/Pipeline.hs`、`acceptReady = readyOut`)。
+   16 サイクルの pace は DMA バーストを 100 MHz で間引くためのもので、AXIS
+   handshake 内で唯一クロック周波数に依存する項でした。50 MHz では frame
+   受付間隔が倍になり不整合の元になるため、純粋な `readyOut` フロー制御に
+   します。
+2. **制御 word の CDC 同期**(`LowPassFir.hs` の `syncCtrl`)。12 本の
+   32-bit 制御 word は 100 MHz GPIO ドメインから 50 MHz DSP へ跨ぎます。
+   同期なしだと effect/knob を変えた瞬間に複数 bit が同時遷移し、50 MHz
+   側が遷移途中の中間値を 1 サンプルだけ取り込んで **切替時にプチノイズ**
+   が出ます(bypass は固定値なので無音、鳴るのは切替の瞬間だけ)。
+   `syncCtrl` は 2-FF(metastability 対策)+ 2 サイクル安定検出(値が
+   安定するまで採用しない)で、制御 word が準静的なことを利用して中間値を
+   弾きます。**これが無いと bypass はクリーンでも切替で鳴ります。**
+3. **`set_clock_groups -asynchronous`**(`audio_lab.xdc`)。7 つの独立
+   クロック(`clk_fpga_0` 100 / `clk_fpga_1` 50 / `clk` 48 MHz Pmod /
+   `bclk` 3 MHz I2S / mclk 24 / audio_ext 12.288 / pixel 40)を非同期
+   グループとして宣言し、STA が無関係な inter-clock パスを検証しない
+   ようにします(各跨ぎは `i2s_to_stream` / `axi_pmod_i2s2_status` slave /
+   `axis_clock_converter` で同期化済み)。これで
+   `rst_ps7_0_100M → pmod_master` の非同期リセットパス
+   (`clk_fpga_0 → audio_ext`、それまでの `-4.2 ns` worst path)が除外され、
+   WNS が `-0.706 ns` になりました。
+
+**結果:**
+
+| | D72 / D73 (100 MHz) | D75 (island) |
+| --- | --- | --- |
+| routed WNS | `-10.387` / `-10.910 ns` | **`-0.706 ns`** |
+| WHS / THS | `+0.02` / `0` | `+0.052` / `0` |
+| LUT / FF / BRAM | ~20.9k / ~22.7k / 6 | `21286` / `23968` / `6` |
+| bit / hwh md5 | `eacc4f35` / … | `4a0b3dae` / `347d3e55` |
+
+残る worst path は `clk_fpga_0` 内の AXI-Lite GPIO 書き込み(`-0.706 ns`)
+で、稀なアクセス・100 MHz・typical silicon で閉じるため実害はありません
+(D72 でも DSP の影に存在していました)。DSP の音色(Clash の係数)は
+**D73 から完全に不変**で、D75 はクロック/CDC のみの変更です。実機 bench
+(Pmod mode 2 = ADC→DSP→DAC)で all_off bypass クリーン / effect・knob
+切替ノイズなし / 音程正常(サンプルレート維持) / 全 effect・GUI・HDMI
+健全を確認しました。
+
+回り道として、**DS-1 段分割**と **Frame 幅削減(1067→731 bit)**も試し
+ましたが、worst path が配線支配のためどちらも WNS を改善しませんでした
+(この知見も `TIMING_AND_FPGA_NOTES.md` に記録)。
+
+**ビルド時の既知の警告:** `set_clock_groups` の各 `get_clocks` に対して
+`CRITICAL WARNING [Vivado 12-4739] No valid object(s) found` が出ますが
+無害です。block-design 生成クロック(PS/MMCM)は top-level synth の
+elaboration 時点では未定義のため bind できず、impl 時に再評価されて適用
+されます(worst path が inter-clock → intra-clock に移ったことで適用を
+確認済み)。消すには制約を implementation スコープ専用の xdc に分ける
+必要があります。
+
+**ロールバック:** D73 (`d1343291` / `aad985fe`) と D72 (`eacc4f35` /
+`eaa88898`) は island の無い全系 100 MHz build で、git 履歴から復元
+できます(bit/hwh を 5 サイトへ戻して power-cycle)。詳細設計は
+`docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md`、決定記録は `DECISIONS.md`
+D75、タイミング履歴は `TIMING_AND_FPGA_NOTES.md`。
 
 2026-05-08 の LowPassFir split refactor で、挙動を変えずに
 `LowPassFir.hs` を薄い top module (`topEntity` と外部 interface) にし、
