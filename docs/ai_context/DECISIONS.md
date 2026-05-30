@@ -4711,3 +4711,24 @@ not get removed even when superseded — they get updated.
   `aad985fe...`) remains the committed rollback baseline (D73 bit backed
   up at `/tmp/d73_backup/`); the D74 build (`dd3fc099...`) is the deployed
   candidate held out of git until bench acceptance.
+
+### D74 XADC bitstream REJECTED on audio (2026-05-30)
+
+- **Outcome.** The D74 XADC build is **not adopted.** FP02M functional path
+  works (A0 via MMIO, calibration, `position_raw` write), but bench audio
+  showed a **bitcrusher-like distortion in the ADC -> DSP input path**:
+  mute clean / tone clean / `dsp all_off` bitcrusher; no output with
+  line-in unplugged. Continuous XADC conversion ruled out by the runtime
+  CFR1 sequencer-stop test (`xadc_quiet_test.py`; no change in mute).
+  Prime suspect = the D74 P&R/placement shift breaking the audio AXIS
+  datapath (the D63 pattern), but the decisive D73-vs-D74 `dsp all_off`
+  ear A/B was not completed.
+- **Engineering note.** DMA bit-capture (`capture_adc_analyze.py`) was
+  unreliable here -- re-confirms D65: the loopback/DMA self-test is not a
+  substitute for the bench ear for subtle HF/bitcrusher noise.
+- **Disposition.** bit/hwh never committed; D73 stays the committed
+  baseline. The FP02M software/docs/diagnostic scripts are kept (they are
+  bitstream-independent; `position_raw` is Python-side). A future XADC
+  re-add must protect the audio AXIS placement (pblock/constraints) or use
+  a different ADC route (external SPI ADC). Full write-up in
+  `D74_XADC_NOISE_INVESTIGATION.md`.
