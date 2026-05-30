@@ -52,11 +52,31 @@ Bench matrix on D74, GUI-less / pedal-less / FP02M disconnected
    produced a bit-crusher-like artifact ... AXIS-stream sample
    quantisation / glitching" from a placement shift). WNS worsened
    `-0.451 ns` and the XADC IP + routing perturbs placement.
-3. **Pre-existing input-path issue (level / cable / codec)** -> open.
-   D73 also had *some* HF noise earlier in the session, but the refined
-   "true mute" matrix was not completed on D73, so D73-vs-D74 on
-   `dsp all_off` (bitcrusher or clean?) is the **decisive unfinished
-   test**.
+3. **Pre-existing input-path issue (level / cable / codec)** -> **OPEN /
+   UNTESTED.** See the load-site confound below: the "D73" comparison runs
+   actually loaded D74, so D73's `dsp all_off` behaviour (bitcrusher or
+   clean?) was **never actually measured**. This is the decisive
+   unfinished test.
+
+## LOAD-SITE CONFOUND (important)
+
+`AudioLabOverlay`, when run as `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ
+python3 ...`, loads the bit/hwh from the **repo package dir**
+`/home/xilinx/Audio-Lab-PYNQ/audio_lab_pynq/bitstreams/` (PYTHONPATH puts
+the repo's `audio_lab_pynq` first), NOT from `hw/Pynq-Z2/bitstreams/` or
+the dist-packages copy. There are **five** bit sites (CLAUDE.md HDMI note);
+the repo-package one is the load path for these scripts.
+
+During this session the manual D73<->D74 swaps updated only 4 sites and
+**missed the repo-package site**, which stayed at D74. So every
+`scripts/...` run (including the "D73 mute/tone/dsp matrix") actually
+loaded **D74**. Consequence: the entire D73-vs-D74 audio A/B was
+**D74-vs-D74** -- the differences heard between "D73" and "D74" runs were
+condition/volume/state, not the bitstream. The bitcrusher / mute-clean /
+tone-clean findings are all valid **for D74**; D73's audio under the same
+matrix is genuinely untested. The next session MUST update all five sites
+(or use `deploy_to_pynq.sh`, which does) and re-run the D73-vs-D74 A/B
+before concluding D74-specific vs pre-existing.
 
 ## DMA capture caveat (D65 lesson re-confirmed)
 
