@@ -178,6 +178,7 @@ Then read whatever is topical for the task at hand:
 | [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) | The playbook for adding a new effect (decision flow, GPIO rules, Clash rules, Python rules, deploy checklist). |
 | [`EFFECT_STAGE_TEMPLATE.md`](EFFECT_STAGE_TEMPLATE.md) | Fillable spec sheet for a new effect; submit alongside the implementation PR. |
 | [`DSP_EFFECT_CHAIN.md`](DSP_EFFECT_CHAIN.md) | Editing `LowPassFir.hs`, adding a new Clash stage. |
+| [`DSP_ISLAND_CLOCK_DESIGN.md`](DSP_ISLAND_CLOCK_DESIGN.md) | DSP 50 MHz clock-domain island (D75): clash @ FCLK_CLK1 + axis_clock_converter, paceCount removal, `syncCtrl` control-word CDC, `set_clock_groups`. Read before any WNS / DSP-timing work. |
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |

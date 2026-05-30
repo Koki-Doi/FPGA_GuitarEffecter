@@ -765,6 +765,22 @@ bit / hwh をビルドして PL 側で動かしています。
 Python 側 (`AudioLabOverlay.py`) は AXI GPIO への制御 word を書き出す
 役割で、音そのものは PL で処理しています。
 
+2026-05-31 の **D75** で **DSP クロックドメイン島** を導入し、肥大化した
+DSP の routed WNS を `-10.387 ns` → `-0.706 ns` に改善しました。DSP
+(`clash_lowpass_fir_0`) だけを `FCLK_CLK1 = 50 MHz` で動かし、それ以外の
+fabric(AXI / DMA / `i2s_to_stream` / Pmod / HDMI)は `FCLK_CLK0 = 100 MHz`
+のまま維持します。両者は `axis_clock_converter` (`cc_dsp_in` / `cc_dsp_out`、
+`hw/Pynq-Z2/island_integration.tcl`、additive で `block_design.tcl` は非編集)
+で橋渡しし、既存の I2S/Pmod クロックドメイン跨ぎ (CDC) には一切触れません
+(fabric 全体を 50 MHz に下げると CDC が壊れて bypass がザラつくため、島
+だけを下げるのが要点)。あわせて `Pipeline.hs` の `paceCount` 除去
+(`acceptReady = readyOut`)、`LowPassFir.hs` の制御 word 用 2-FF + 安定化
+CDC (`syncCtrl`、effect/knob 切替時のクリックノイズ対策)、`audio_lab.xdc`
+の `set_clock_groups -asynchronous` を入れています。DSP の音色(Clash 係数)
+は D73 から不変で、これはクロック/CDC のみの変更です。実機 bench で
+all_off bypass クリーン / 切替ノイズなし / 全 effect・GUI・HDMI 健全を確認。
+詳細は `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md` / `DECISIONS.md` D75。
+
 2026-05-08 の LowPassFir split refactor で、挙動を変えずに
 `LowPassFir.hs` を薄い top module (`topEntity` と外部 interface) にし、
 型定義、固定小数点 helper、制御 word helper、AXIS helper、各 effect
