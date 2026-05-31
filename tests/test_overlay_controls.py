@@ -743,6 +743,17 @@ def test_high_gain_chain_presets_use_closed_back_cab():
 # bits that reach the FPGA. If a snapshot fails because you intended
 # to change the encoding, update the snapshot in the same commit and
 # describe the audio impact in the commit message.
+#
+# #3 note: the no-distortion-arg scenarios now snapshot the distortion
+# word as 0x00332d80 (tone=50/level=35/drive=20 = DISTORTION_DEFAULTS),
+# not the old 0x004080a6 (65/100/25). guitar_effect_control_words now
+# sources its distortion defaults from DISTORTION_DEFAULTS. This has NO
+# production audio impact: set_guitar_effects always cache-merges the
+# distortion bytes from _dist_state (= DISTORTION_DEFAULTS) before
+# calling the packer, and set_reverb discards the distortion word -- so
+# the old 65/100/25 signature defaults only ever surfaced on a direct
+# no-arg packer call (i.e. in this snapshot). The snapshot now matches
+# the value a user actually gets.
 
 
 SCENARIO_KWARGS = {
@@ -769,17 +780,17 @@ SCENARIO_KWARGS = {
 
 SCENARIO_SNAPSHOTS = {
     "defaults": {
-        "gate": 0xff800200, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "gate": 0xff800200, "overdrive": 0x804c80a6, "distortion": 0x00332d80,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "ns2_style": {
-        "gate": 0xff800901, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "gate": 0xff800901, "overdrive": 0x804c80a6, "distortion": 0x00332d80,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "high_gain_tight": {
-        "gate": 0xff800e01, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "gate": 0xff800e01, "overdrive": 0x804c80a6, "distortion": 0x00332d80,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
@@ -809,17 +820,17 @@ SCENARIO_SNAPSHOTS = {
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "distortion_all_off": {
-        "gate": 0xff800200, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "gate": 0xff800200, "overdrive": 0x804c80a6, "distortion": 0x00332d80,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "reverb_basic": {
-        "gate": 0xff800220, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "gate": 0xff800220, "overdrive": 0x804c80a6, "distortion": 0x00332d80,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
     "amp_cab_basic": {
-        "gate": 0xff8002c0, "overdrive": 0x804c80a6, "distortion": 0x004080a6,
+        "gate": 0xff8002c0, "overdrive": 0x804c80a6, "distortion": 0x00332d80,
         "eq": 0x00808080, "rat": 0xff8c8059, "amp": 0x59736659,
         "amp_tone": 0x59808080, "cab": 0x805580ff, "reverb": 0x0026a642,
     },
@@ -1893,6 +1904,32 @@ def test_guitar_effect_control_words_reverb_uses_reverb_word():
     assert words['reverb'] == cm.reverb_word(30, 65, 20)
 
 
+def test_guitar_effect_control_words_defaults_match_effect_defaults():
+    """#3: the packer signature defaults are sourced from the
+    effect_defaults dicts (single source of truth), so a partial /
+    no-arg call agrees with the cached _dist_state and the documented
+    AudioLabOverlay.<EFFECT>_DEFAULTS."""
+    import inspect
+    from audio_lab_pynq.effect_defaults import (
+        DISTORTION_DEFAULTS, OVERDRIVE_DEFAULTS, RAT_DEFAULTS, AMP_DEFAULTS,
+        CAB_DEFAULTS, EQ_DEFAULTS, REVERB_DEFAULTS)
+    sig = inspect.signature(
+        AudioLabOverlay.guitar_effect_control_words.__func__)
+    d = {n: p.default for n, p in sig.parameters.items()}
+    assert d["distortion_tone"] == DISTORTION_DEFAULTS["tone"]
+    assert d["distortion_level"] == DISTORTION_DEFAULTS["level"]
+    assert d["distortion"] == DISTORTION_DEFAULTS["drive"]
+    assert d["distortion_bias"] == DISTORTION_DEFAULTS["bias"]
+    assert d["distortion_tight"] == DISTORTION_DEFAULTS["tight"]
+    assert d["distortion_mix"] == DISTORTION_DEFAULTS["mix"]
+    assert d["overdrive_drive"] == OVERDRIVE_DEFAULTS["drive"]
+    assert d["rat_drive"] == RAT_DEFAULTS["drive"]
+    assert d["amp_master"] == AMP_DEFAULTS["master"]
+    assert d["cab_model"] == CAB_DEFAULTS["model"]
+    assert d["eq_low"] == EQ_DEFAULTS["low"]
+    assert d["reverb_decay"] == REVERB_DEFAULTS["decay"]
+
+
 def test_reverb_control_word_uses_clash_layout_not_enable_in_ctrla():
     """The legacy fallback packer now delegates to reverb_word.
 
@@ -2035,4 +2072,6 @@ if __name__ == "__main__":
     test_reverb_word_matches_clash_layout()
     test_guitar_effect_control_words_reverb_uses_reverb_word()
     test_reverb_control_word_uses_clash_layout_not_enable_in_ctrla()
+    # #3 defaults sourced from effect_defaults
+    test_guitar_effect_control_words_defaults_match_effect_defaults()
     print("AudioLabOverlay guitar effect control tests passed")
