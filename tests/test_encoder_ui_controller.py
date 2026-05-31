@@ -257,6 +257,27 @@ def test_enc1_hold_rotate_on_cab_cycles_cab_model_only():
     assert s.amp_model_idx == snap["amp_model_idx"]
 
 
+def test_enc1_hold_rotate_on_wah_cycles_source_manual_pedal():
+    # D76: Wah's "model" is the POSITION SOURCE; encoder-1 hold + rotate
+    # flips MANUAL <-> PEDAL just like a model dropdown.
+    s = _new_state()
+    s.selected_effect = EFFECTS.index("Wah")
+    s.wah_source = "manual"
+    s.selected_knob = 0
+    snap = _snapshot(s)
+    ctl = EncoderUiController(s)
+    ctl.set_button_state([False, True, False])
+    ctl.handle_event(EncoderEvent("rotate", 1, 1, 4))
+    assert s.wah_source == "pedal"
+    # Knob selection and other model indices untouched.
+    assert s.selected_knob == snap["selected_knob"]
+    assert s.dist_model_idx == snap["dist_model_idx"]
+    assert s.all_knob_values == snap["all_knob_values"]
+    # Rotate again -> back to manual (2-value cycle).
+    ctl.handle_event(EncoderEvent("rotate", 1, 1, 4))
+    assert s.wah_source == "manual"
+
+
 def test_enc1_hold_rotate_on_non_model_effect_is_noop():
     s = _new_state()
     s.selected_effect = EFFECTS.index("Reverb")  # no model

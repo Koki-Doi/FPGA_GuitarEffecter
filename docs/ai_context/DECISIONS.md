@@ -4843,6 +4843,18 @@ D75 (DSP clock-domain island).
   (no stuck), invert false, deadband 2, smoothing_alpha 0.25. Saved at
   `/root/.config/audio_lab/fp02m_calibration.json` (sudo HOME, on-board
   only, not in the repo).
+- **GUI follow-ups (bench, Python-only).** (1) **SOURCE now cycles like a
+  model.** The encoder-2 button toggle for Wah SOURCE (MANUAL/PEDAL) was not
+  reliable/discoverable, so "Wah" joined `MODEL_EFFECTS` in
+  `encoder_ui.py` and `_cycle_model_index` cycles `wah_source` manual/pedal
+  -- encoder-1-hold + rotate flips SOURCE with the exact same gesture as an
+  amp/cab/pedal model dropdown. The encoder-2 button toggle stays as a
+  secondary path. (2) **PEDAL no longer shows UNAVAIL in the Pmod HDMI GUI.**
+  `PmodI2S2HdmiGuiOneCell.ipynb` spawned the runner without `--wah-pedal`, so
+  the FP02M controller was never created and `wah_pedal_available` stayed
+  False; the notebook's `RUNNER_CMD` now includes `--wah-pedal` (the runner
+  smart-attaches with `download=False`, so restart does not knock the rgb2dvi
+  PLL). User bench: SOURCE cycles, PEDAL drives POSITION, no UNAVAIL.
 - **Deploy.** bit/hwh `9fdecae0...` / `a9fd7408...` synced 5-site (md5
   match). `download=True` once after a cold power-cycle (memory
   `feedback_deploy_smoke_avoid_repeated_download`); further attaches use
