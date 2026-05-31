@@ -80,6 +80,36 @@ def _clamp_u8(value):
     return _clamp(v, 0, 255)
 
 
+# Pedal-position taper. Real wah / expression pedals use a non-linear pot
+# taper so the sweep "feels" right. The default here is a "C" (anti-log /
+# reverse-audio) taper: the centre frequency rises quickly off the heel and
+# fine-resolves toward the toe. It is the mirror of an "a" (audio / log)
+# taper: c(x) = 1 - (1 - x)**gamma. gamma > 1 deepens the curve (gamma 2.5
+# puts the midpoint of pedal travel at ~0.82 of the sweep).
+WAH_C_CURVE_GAMMA = 2.5
+
+
+def _apply_position_curve(frac, curve):
+    """Shape a 0..1 pedal-travel fraction by a pot-style taper.
+
+    ``"c"`` (default, anti-log / reverse-audio): ``1 - (1 - x)**gamma``.
+    ``"linear"`` / ``"b"``: identity. ``"a"`` / ``"log"`` / ``"audio"``:
+    ``x**gamma``. Endpoints (0 and 1) are fixed points for every taper, so
+    the calibrated heel/toe still map to POSITION 0 / 255.
+    """
+    try:
+        x = float(frac)
+    except (TypeError, ValueError):
+        return 0.0
+    x = _clamp(x, 0.0, 1.0)
+    c = str(curve or "c").strip().lower()
+    if c in ("c", "anti-log", "antilog", "reverse", "rev"):
+        return 1.0 - (1.0 - x) ** WAH_C_CURVE_GAMMA
+    if c in ("a", "log", "audio"):
+        return x ** WAH_C_CURVE_GAMMA
+    return x
+
+
 class Fp02mCalibration(object):
     """Heel/toe raw range + smoothing/deadband for the FP02M wiper.
 
@@ -92,7 +122,7 @@ class Fp02mCalibration(object):
 
     def __init__(self, raw_min, raw_max, invert=False, deadband=1,
                  smoothing_alpha=0.25, read_path="iio", created_at=None,
-                 notes=""):
+                 notes="", position_curve="c"):
         lo = int(raw_min)
         hi = int(raw_max)
         if hi < lo:
@@ -109,6 +139,10 @@ class Fp02mCalibration(object):
         self.read_path = str(read_path)
         self.created_at = created_at
         self.notes = str(notes or "")
+        # Pedal-position taper applied in Fp02mPositionMapper.raw_to_u8.
+        # Default "c" (anti-log) -- see _apply_position_curve. Persisted so a
+        # rig can pick "linear" / "a" without touching code.
+        self.position_curve = str(position_curve or "c").strip().lower()
 
     @property
     def span(self):
@@ -127,6 +161,7 @@ class Fp02mCalibration(object):
             "created_at": self.created_at,
             "read_path": self.read_path,
             "notes": self.notes,
+            "position_curve": self.position_curve,
         }
 
     @classmethod
@@ -140,6 +175,7 @@ class Fp02mCalibration(object):
             read_path=data.get("read_path", "iio"),
             created_at=data.get("created_at"),
             notes=data.get("notes", ""),
+            position_curve=data.get("position_curve", "c"),
         )
 
     def save(self, path=DEFAULT_CALIBRATION_PATH):
@@ -164,9 +200,9 @@ class Fp02mCalibration(object):
 
     def __repr__(self):
         return ("Fp02mCalibration(raw_min=%d, raw_max=%d, invert=%r, "
-                "deadband=%d, smoothing_alpha=%.3f)" % (
+                "deadband=%d, smoothing_alpha=%.3f, position_curve=%r)" % (
                     self.raw_min, self.raw_max, self.invert,
-                    self.deadband, self.smoothing_alpha))
+                    self.deadband, self.smoothing_alpha, self.position_curve))
 
 
 class Fp02mReaderBase(object):
@@ -409,6 +445,7 @@ class Fp02mPositionMapper(object):
         frac = (r - cal.raw_min) / float(span)
         if cal.invert:
             frac = 1.0 - frac
+        frac = _apply_position_curve(frac, getattr(cal, "position_curve", "c"))
         return _clamp_u8(round(frac * 255.0))
 
     def update_smoothed(self, raw):
@@ -506,6 +543,7 @@ __all__ = [
     "A0_INPUT_DIVIDER",
     "DEFAULT_CALIBRATION_PATH",
     "MIN_CALIBRATION_SPAN",
+    "WAH_C_CURVE_GAMMA",
     "Fp02mCalibration",
     "Fp02mReaderBase",
     "Fp02mA0Reader",

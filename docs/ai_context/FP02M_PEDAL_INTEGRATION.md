@@ -291,6 +291,14 @@ PL Wah already smooths POSITION.
 - **Calibration saved:** `/root/.config/audio_lab/fp02m_calibration.json`
   (sudo HOME) -- raw_min 8, raw_max 2847, invert false, deadband 2,
   smoothing_alpha 0.25. Calibrated min-then-max-then-sweep.
+- **Pedal "C" taper (bench "完璧").** `Fp02mCalibration.position_curve`
+  (default `"c"`) shapes the pedal-travel fraction in
+  `Fp02mPositionMapper.raw_to_u8` via `_apply_position_curve`: `"c"` =
+  anti-log `1 - (1 - x)**WAH_C_CURVE_GAMMA` (gamma 2.5) so the wah rises fast
+  off the heel and fine-resolves toward the toe (endpoints fixed 0/255).
+  `"linear"`/`"a"` selectable; persisted in the JSON; a legacy JSON without
+  the field defaults to `"c"`. FP02M pedal path only (GUI / encoder POS stay
+  linear); Clash DSP untouched.
 - **Wah-only crossbar routing fix (load-bearing).** The AXIS source crossbar
   (`_route_effect_chain`) only switched to `guitar_chain` (the DSP) when the
   `gate_word` low byte was non-zero, but the Wah enable lives on

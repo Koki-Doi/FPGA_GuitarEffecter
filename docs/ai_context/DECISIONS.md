@@ -4879,6 +4879,18 @@ D75 (DSP clock-domain island).
   compose cost) but the audio follows in ~20 ms. A LUT rewrite of the
   scanline/vignette kernels was tried and **reverted** -- numpy fancy-index
   gathers were slower than the float path on the Cortex-A9.
+- **Wah pedal "C" taper (bench, "完璧"). Python-only.** The FP02M pedal sweep
+  felt wrong with a linear position map. `Fp02mCalibration` gained a
+  `position_curve` field (default `"c"`) and `Fp02mPositionMapper.raw_to_u8`
+  applies `_apply_position_curve` so the pedal-travel fraction is shaped by a
+  pot-style taper before scaling to the POSITION byte. `"c"` = anti-log /
+  reverse-audio = `1 - (1 - x)**WAH_C_CURVE_GAMMA` (gamma 2.5): the centre
+  frequency rises fast off the heel then fine-resolves toward the toe (heel/toe
+  endpoints stay 0/255). `"linear"`/`"a"` also selectable; the field persists
+  in the calibration JSON and a legacy JSON without it defaults to `"c"`, so
+  the existing on-board calibration (raw 8..2847) picks up the curve with no
+  re-cal. Scope: the FP02M pedal path only -- the GUI POS knob / encoder stay
+  linear. The Clash Wah DSP is untouched (no bit rebuild).
 - **Deploy.** bit/hwh `9fdecae0...` / `a9fd7408...` synced 5-site (md5
   match). `download=True` once after a cold power-cycle (memory
   `feedback_deploy_smoke_avoid_repeated_download`); further attaches use

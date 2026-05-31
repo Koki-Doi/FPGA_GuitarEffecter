@@ -108,7 +108,10 @@ class CalibrationTests(unittest.TestCase):
 
 class MapperTests(unittest.TestCase):
     def setUp(self):
-        self.cal = Fp02mCalibration(raw_min=0, raw_max=4095, smoothing_alpha=1.0)
+        # Linear taper for the endpoint/clamp/invert/smoothing checks; the
+        # "c" curve is exercised separately in CurveTests.
+        self.cal = Fp02mCalibration(raw_min=0, raw_max=4095, smoothing_alpha=1.0,
+                                    position_curve="linear")
 
     def test_endpoints_and_clamp(self):
         m = Fp02mPositionMapper(self.cal)
@@ -116,14 +119,33 @@ class MapperTests(unittest.TestCase):
         self.assertEqual(m.raw_to_u8(4095), 255)
         self.assertEqual(m.raw_to_u8(-100), 0)     # below range clamps
         self.assertEqual(m.raw_to_u8(99999), 255)  # above range clamps
-        self.assertEqual(m.raw_to_u8(2048), 128)   # midpoint
+        self.assertEqual(m.raw_to_u8(2048), 128)   # midpoint (linear)
 
     def test_invert(self):
         cal = Fp02mCalibration(raw_min=0, raw_max=4095, invert=True,
-                               smoothing_alpha=1.0)
+                               smoothing_alpha=1.0, position_curve="linear")
         m = Fp02mPositionMapper(cal)
         self.assertEqual(m.raw_to_u8(0), 255)
         self.assertEqual(m.raw_to_u8(4095), 0)
+
+    def test_c_curve_default(self):
+        # Default taper is "c" (anti-log): endpoints fixed, midpoint pulled
+        # up toward the toe (fast rise off the heel). gamma 2.5 -> ~210.
+        cal = Fp02mCalibration(raw_min=0, raw_max=4095, smoothing_alpha=1.0)
+        self.assertEqual(cal.position_curve, "c")
+        m = Fp02mPositionMapper(cal)
+        self.assertEqual(m.raw_to_u8(0), 0)        # heel fixed
+        self.assertEqual(m.raw_to_u8(4095), 255)   # toe fixed
+        self.assertEqual(m.raw_to_u8(2048), 210)   # midpoint raised by C taper
+        self.assertGreater(m.raw_to_u8(1024), 128)  # quarter travel already past half
+
+    def test_c_curve_persists(self):
+        cal = Fp02mCalibration(raw_min=8, raw_max=2847, position_curve="c")
+        back = Fp02mCalibration.from_dict(cal.to_dict())
+        self.assertEqual(back.position_curve, "c")
+        # Legacy JSON without the field defaults to "c".
+        legacy = Fp02mCalibration.from_dict({"raw_min": 0, "raw_max": 100})
+        self.assertEqual(legacy.position_curve, "c")
 
     def test_zero_span_safe(self):
         m = Fp02mPositionMapper(Fp02mCalibration(500, 500))
@@ -191,6 +213,10 @@ class ControllerTests(unittest.TestCase):
         kw.setdefault("raw_min", 0)
         kw.setdefault("raw_max", 4095)
         kw.setdefault("smoothing_alpha", 1.0)  # no smoothing lag in tests
+        # Controller tests exercise deadband / stuck / fallback logic, which
+        # is independent of the pedal taper -- pin linear so the expected u8
+        # values stay the simple midpoints.
+        kw.setdefault("position_curve", "linear")
         return Fp02mCalibration(**kw)
 
     def test_sweep_0_to_255(self):
