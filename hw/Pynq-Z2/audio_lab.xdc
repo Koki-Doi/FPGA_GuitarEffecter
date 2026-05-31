@@ -183,6 +183,43 @@ set_property PACKAGE_PIN B19 [get_ports {enc2_sw_i}]
 set_property IOSTANDARD LVCMOS33 [get_ports {enc2_sw_i}]
 
 ###################################################
+## Footswitch feature: 3 guitar-pedal 3PDT footswitches on the Raspberry Pi
+## header (user-requested). These use the spare RP GPIO reserved for
+## footswitches in IO_PIN_RESERVATION.md section 4A.3
+## (raspberry_pi_tri_i_15/16/17 = U7 / C20 / Y8); they do not share with PMOD
+## JA/JB (section 4.6) or the encoder pins. The first RP build confirmed
+## PULLUP true holds all three high when open (unwired read = 1,1,1).
+##
+##   fsw0_i = FX toggle    -> U7  = Sch rpio_17_r = GPIO17 = RP header pin 11
+##   fsw1_i = preset next  -> C20 = Sch rpio_18_r = GPIO18 = RP header pin 12
+##   fsw2_i = preset prev  -> Y8  = Sch rpio_19_r = GPIO19 = RP header pin 35
+##
+## Physical pin numbers verified from the official PYNQ-Z2 master XDC
+## schematic net names (Sch=rpio_NN_r, NN = Raspberry Pi BCM GPIO number;
+## cross-checked against rpio_02/03 = I2C GPIO2/3 and rpio_sd/sc = Y16/Y17).
+## The RP header BCM "GPIOxx" silk / v1.0 manual are error-prone, so count
+## physical pin positions (pin 1 = corner pad; odd 1..39 / even 2..40). To
+## double-check on the loaded bit, ground a pin and watch
+## FootswitchInput.read_levels() flip the channel (ch0=FS1/ch1=FS2/ch2=FS3).
+##
+## Wiring per switch: common -> the RP header signal pin, one throw -> a GND
+## header pin, the other throw left open. PULLUP true makes the open position
+## read high; the grounded position reads low. The 3PDT is an
+## alternate-action (latching) switch, so each stomp flips the level;
+## axi_footswitch_input latches one press_event per edge (either direction).
+## Never wire these to 5V (DECISIONS.md D31).
+###################################################
+set_property PACKAGE_PIN U7  [get_ports {fsw0_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {fsw0_i}]
+set_property PULLUP true [get_ports {fsw0_i}]
+set_property PACKAGE_PIN C20 [get_ports {fsw1_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {fsw1_i}]
+set_property PULLUP true [get_ports {fsw1_i}]
+set_property PACKAGE_PIN Y8  [get_ports {fsw2_i}]
+set_property IOSTANDARD LVCMOS33 [get_ports {fsw2_i}]
+set_property PULLUP true [get_ports {fsw2_i}]
+
+###################################################
 ## PMOD JB pin constraints live in `audio_lab_pmod_i2s2.xdc`. The
 ## Digilent Pmod I2S2 module (CS4344 DAC + CS5343 ADC) is the active
 ## external audio path on PMOD JB (`DECISIONS.md` D48); the legacy
