@@ -5,8 +5,19 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — NEXT TASK
+## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
 
+> **完了。** XADC を D75 island 上で再有効化 (`create_project.tcl` の2行を
+> un-comment、Clash/island 無変更)。rebuild WNS `-0.368 ns` (100 MHz audio
+> fabric は +0.614 ns / 失敗0、bitcrusher 再発せず)。bit/hwh md5
+> `9fdecae0...` / `a9fd7408...` を 5-site deploy。bench PASS: all_off bypass
+> クリーン、FP02M sweep span ~2999、ペダル→Wah POSITION 追従、Q=100+toe で
+> 発振なし。**bench で見つけた Python 修正2件** (bit 再ビルド不要): (1)
+> Wah-only クロスバールーティング (`_route_effect_chain` が Wah enable を
+> gate に含めず passthrough で DSP をバイパスしていた)、(2) Wah Q 発振キャップ
+> (`WAH_Q_BYTE_MAX = 80`)。詳細は `DECISIONS.md` D76 /
+> `FP02M_PEDAL_INTEGRATION.md` section 11。以下は当時の手順 (履歴参照用):
+>
 > D75 の DSP island baseline (main, bit `4a0b3dae`) の上に、FP02M
 > エクスプレッションペダル → Wah POSITION を実装してください。FP02M は
 > 実機 Arduino A0 に **直接接続済み (3.3V 電源、電圧安全、wiper 直結)**。

@@ -4786,3 +4786,82 @@ Accepted 2026-05-31 (external-instrument bench: 完璧). Branch
   Wah), so this is a pure clocking/CDC change, not a voicing change.
 - **Rollback.** D73 (`d1343291` / `aad985fe`) and D72 (`eacc4f35` /
   `eaa88898`) are full-100 MHz builds recoverable from git history.
+
+## D76 - FP02M expression pedal -> Wah POSITION: XADC re-add on the D75 island (accepted on bench)
+
+Accepted 2026-05-31 (external-instrument bench). Branch
+`feature/fp02m-xadc-island-readd`. Builds on D74 (FP02M software/docs) and
+D75 (DSP clock-domain island).
+
+- **Decision.** Re-enable the XADC Wizard so Arduino A0 (VAUX1) is readable
+  for the FP02M pedal, this time on the D75 50 MHz DSP island. The only
+  Vivado change is un-commenting the two `create_project.tcl` lines
+  (`add_files xadc_a0.xdc` and `source xadc_integration.tcl`); the Clash
+  DSP is NOT touched (voicing byte-identical to D73/D75) and the island
+  (`cc_dsp_in`/`cc_dsp_out`, FCLK0=100/FCLK1=50, `set_clock_groups`,
+  `paceCount` removal, `syncCtrl` CDC) is preserved. `xadc_integration.tcl`
+  is sourced after `wah_integration.tcl` (NUM_MI 20 -> 21, M20 =
+  `xadc_wiz_a0 @ 0x43D40000`) and before `island_integration.tcl`; the two
+  are independent (island only touches clash / FCLK / axis_clock_converter).
+  `block_design.tcl` is NOT edited.
+- **D74 bitcrusher did NOT recur (the load-bearing result).** The D74 XADC
+  rejection was a bitcrusher on the ADC->DSP input path; the cause was the
+  D74 -11 ns / 100 MHz audio-AXIS P&R degradation, not the XADC itself. On
+  the D75 island the 100 MHz `clk_fpga_0` fabric (the entire audio AXIS
+  datapath) closes with **WNS +0.614 ns and 0 failing endpoints**; the only
+  22 failing endpoints are intra-`clk_fpga_1` (50 MHz DSP island, the DS-1
+  distortion arithmetic, where D75 already had slack). Overall routed WNS
+  `-0.368 ns` (better than D75 `-0.706 ns`), WHS `+0.045 ns`, THS `0`.
+  bit/hwh md5 `9fdecae0c7d7cf3c59422cec2b30368f` /
+  `a9fd74082482aa1b074fc3c31ccd6283`. **Bench (Pmod mode 2 ADC->DSP->DAC):
+  all_off bypass clean -- NO bitcrusher.**
+- **Wah-only crossbar routing fix (Python, load-bearing).** The FP02M Wah
+  path exposed a latent gap: the AXIS source crossbar
+  (`_route_effect_chain`) only switches to `guitar_chain` (the clash DSP)
+  when the `gate_word` low byte is non-zero, but the Wah enable lives on its
+  own `axi_gpio_wah` ctrlD bit and never reaches `gate_word`. So a Wah-only
+  state (every other effect off, the FP02M driving POSITION) left the
+  crossbar on `passthrough` and bypassed the whole DSP -- the Wah included
+  (clean sound, no wah). Fix in `AudioLabOverlay.py`: (1)
+  `_route_effect_chain` treats an enabled Wah as "an effect is on", and (2)
+  `set_wah_settings` re-routes the crossbar when (and only when) it toggles
+  the Wah enable (not on the 100 Hz `position_raw` stream). Python-only, no
+  bit rebuild. This was never caught before because D74's XADC bit was
+  rejected on audio before the Wah-sweep audio test was completed.
+- **Wah Q self-oscillation cap (Python).** At high Q the resonant band-pass
+  self-oscillates near full POSITION (toe). Bench: Q byte 89 (old UI 35 %)
+  clean at the toe extreme, byte 128 still howled, byte 166 (UI 65 %)
+  howled hard. `control_maps.wah_q_byte` now caps the UI Q range at
+  `WAH_Q_BYTE_MAX = 80` (UI keeps 0..100; only the top of the dial is
+  tamed) -- below the proven-clean byte-89 point with margin. Bench: Q = 100
+  + full toe no longer self-oscillates. The Clash Wah voicing is unchanged
+  (this is purely the UI->byte map). `tests/test_overlay_controls.py`
+  anchors updated.
+- **Calibration (bench).** TRS candidate 1 (Tip->A0, Ring->3.3V,
+  Sleeve->GND). FP02M A0 via `Fp02mXadcMmioReader` (overlay `xadc_wiz_a0`
+  register `0x244` = VAUX1). heel raw ~8, toe raw ~2847, sweep span ~2999
+  (no stuck), invert false, deadband 2, smoothing_alpha 0.25. Saved at
+  `/root/.config/audio_lab/fp02m_calibration.json` (sudo HOME, on-board
+  only, not in the repo).
+- **GUI follow-ups (bench, Python-only).** (1) **SOURCE now cycles like a
+  model.** The encoder-2 button toggle for Wah SOURCE (MANUAL/PEDAL) was not
+  reliable/discoverable, so "Wah" joined `MODEL_EFFECTS` in
+  `encoder_ui.py` and `_cycle_model_index` cycles `wah_source` manual/pedal
+  -- encoder-1-hold + rotate flips SOURCE with the exact same gesture as an
+  amp/cab/pedal model dropdown. The encoder-2 button toggle stays as a
+  secondary path. (2) **PEDAL no longer shows UNAVAIL in the Pmod HDMI GUI.**
+  `PmodI2S2HdmiGuiOneCell.ipynb` spawned the runner without `--wah-pedal`, so
+  the FP02M controller was never created and `wah_pedal_available` stayed
+  False; the notebook's `RUNNER_CMD` now includes `--wah-pedal` (the runner
+  smart-attaches with `download=False`, so restart does not knock the rgb2dvi
+  PLL). User bench: SOURCE cycles, PEDAL drives POSITION, no UNAVAIL.
+- **Deploy.** bit/hwh `9fdecae0...` / `a9fd7408...` synced 5-site (md5
+  match). `download=True` once after a cold power-cycle (memory
+  `feedback_deploy_smoke_avoid_repeated_download`); further attaches use
+  `download=False`. Smoke: `xadc_wiz_a0` present, ADC HPF True,
+  `axi_gpio_wah` present, HDMI VTC present. New committed baseline,
+  superseding D75.
+- **Rollback.** D75 (`4a0b3dae` / `347d3e55`, no-XADC island) and D73
+  (`d1343291` / `aad985fe`, full-100 MHz) recoverable from git history. To
+  drop the XADC again, re-comment the two `create_project.tcl` lines and
+  rebuild.

@@ -253,9 +253,24 @@ def wah_position_raw_byte(value):
     return clamp_u8(v)
 
 
+# D76: the Wah resonance self-oscillates near full POSITION (toe) once the
+# Q byte gets sharp enough. Bench (FP02M pedal at the toe extreme): Q byte
+# 89 (old UI 35 %) was clean, byte 128 (this cap's first try) still howled,
+# byte 166 (UI 65 %) howled hard. Cap the UI Q range so even UI Q = 100 %
+# lands at byte 80 -- just below the proven-clean byte-89 point, with margin
+# for pedal/position variance -- giving a mild-medium resonance (q_coef
+# ~0.34) that does not self-oscillate anywhere on the POSITION sweep. The UI
+# keeps its 0..100 scale; only the top of the dial is tamed.
+WAH_Q_BYTE_MAX = 80
+
+
 def wah_q_byte(value):
-    """Map a Wah Q UI value (0..100) to a byte in [0, 255]."""
-    return percent_to_u8(value, 255)
+    """Map a Wah Q UI value (0..100) to a byte in [0, WAH_Q_BYTE_MAX].
+
+    D76: the upper end is capped at ``WAH_Q_BYTE_MAX`` (was 255) to keep the
+    resonant band-pass below its self-oscillation onset at high POSITION.
+    """
+    return percent_to_u8(value, WAH_Q_BYTE_MAX)
 
 
 def wah_volume_byte(value):
@@ -346,6 +361,7 @@ __all__ = [
     "wah_position_byte",
     "wah_position_raw_byte",
     "wah_q_byte",
+    "WAH_Q_BYTE_MAX",
     "wah_volume_byte",
     "wah_bias_to_u7",
     "wah_enable_bias_byte",

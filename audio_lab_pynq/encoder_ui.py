@@ -46,7 +46,10 @@ from audio_lab_pynq.encoder_effect_apply import RAT_PEDAL_INDEX
 
 
 # Effects whose top chip shows a model dropdown (per Phase 6H spec, DECISIONS D24).
-MODEL_EFFECTS = {"Overdrive", "Distortion", "Amp Sim", "Cab IR"}
+# D76: "Wah" joins so its SOURCE (MANUAL / PEDAL) cycles with the same
+# encoder-1-hold + rotate gesture as a model dropdown -- the encoder-2 button
+# toggle alone was not discoverable / reliable on the bench.
+MODEL_EFFECTS = {"Overdrive", "Distortion", "Amp Sim", "Cab IR", "Wah"}
 
 # Per-rotate step size on a value knob (0..100 scale). Encoders typically
 # emit ~24 detents per revolution; 5 % per detent gives a full sweep in ~4
@@ -337,6 +340,22 @@ class EncoderUiController:
         self.state.focus_param_index = new_idx
 
     def _cycle_model_index(self, effect_name: str, delta: int) -> None:
+        # D76: "Wah" has no integer model index -- its "model" is the
+        # POSITION SOURCE (MANUAL / PEDAL). Cycle it with the same gesture
+        # so encoder-1-hold + rotate flips SOURCE just like a model dropdown.
+        if effect_name == "Wah":
+            step = int(delta)
+            if step == 0:
+                return
+            order = ("manual", "pedal")
+            cur = str(getattr(self.state, "wah_source", "manual") or "manual")
+            cur_idx = order.index(cur) if cur in order else 0
+            self.state.wah_source = order[(cur_idx + step) % len(order)]
+            self.state.value_dirty = True
+            self.state.apply_pending = True
+            self.state.last_control_source = "encoder"
+            self._maybe_live_apply(force=True)
+            return
         spec = {
             "Distortion": ("dist_model_idx", 7),
             # Overdrive owns ``overdrive_model_idx`` (D45 / D46). It does NOT
