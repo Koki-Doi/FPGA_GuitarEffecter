@@ -4972,3 +4972,87 @@ pre-existing 3 failures + 1 error baseline.
   not reprogrammed). On-board verified: `control_maps.reverb_word(30,65,20)
   == 0x0026a642`, `reverb_control_word` delegates, default distortion word
   `0x00332d80`, the new `control_maps` word builders present.
+
+## D78 — 3 footswitches for FX toggle + preset stepping (axi_footswitch_input)
+
+- **Decision (final).** Add three guitar-pedal 3PDT footswitches on the
+  **Raspberry Pi header**, read by a new self-contained PL IP
+  `axi_footswitch_input` at AXI-Lite base `0x43D50000` (M21). Roles / pins:
+  `fsw0_i` = FX toggle = `U7` = `rpio_17` = GPIO17 = **RP pin 11**; `fsw1_i` =
+  preset next = `C20` = `rpio_18` = GPIO18 = **RP pin 12**; `fsw2_i` = preset
+  prev = `Y8` = `rpio_19` = GPIO19 = **RP pin 35**. GND = any RP GND pin
+  (6/9/14/20/25/30/34/39). Physical pin numbers verified from the official
+  PYNQ-Z2 master XDC schematic net names (`Sch=rpio_NN_r`, NN = BCM GPIO; see
+  `project_pynqz2_rp_header_silk_not_package_pin` memory + FOOTSWITCH_INTEGRATION.md).
+  (An interim PMOD-JA placement `JA1/JA2/JA7` = Y18/Y19/U18 was built and
+  bench-validated, then moved to the RP header per user request.)
+- **Audio-integrity fix (load-bearing).** Adding the footswitch AXI master
+  (M21) perturbed the P&R of the 50 MHz DSP island and pushed the DS-1
+  distortion CARRY4 arithmetic from the D76 baseline (-0.368 ns) to ~-0.75 ns,
+  producing an **audible bitcrusher on the ADC->DSP->DAC path** (the D74-class
+  artifact) -- confirmed by an A/B: rolling the board back to D76 made the
+  noise vanish. Fix: enable post-place + post-route `phys_opt_design`
+  (AggressiveExplore) on `impl_1` in `create_project.tcl`. That clawed the
+  DS-1 island slack back to **-0.173 ns (better than D76)** with the 100 MHz
+  audio fabric still clean (+0.683 ns, 0 failing); bench audio then verified
+  clean. **Lesson:** an additive AXI master can degrade the DSP-island timing
+  enough to bitcrush even when static timing looks fine and the pin choice is
+  irrelevant; phys_opt recovers it. Accepted bit md5 `45e78763` (the RP-pin
+  build); the no-phys_opt builds (`e610dc58` PMOD-JA, `199d25ea` RP) bitcrush
+  and are rejected.
+- **Why a new IP / bit rebuild.** Hands-free live control. There is no spare
+  *input* path in the D76 bitstream (the encoder IP's 9 inputs are all
+  encoder-owned, every effect GPIO is output), so reading new physical pins
+  requires a bit rebuild regardless. (Interim PMOD-JA rationale, retained:
+  the PMOD silk `JA1/JA2/JA7`
+  names the exact pin and GND/3.3V sit on the connector. An earlier attempt
+  used the RP spares (`raspberry_pi_tri_i_15/16/17` = `U7/C20/Y8`), but the
+  RP 40-pin header's BCM "GPIOxx" silk does NOT match those package pins, and
+  a bench test wiring to silk "GPIO17" hit a wrong (LED-affecting) net. PMOD
+  JA is otherwise unused (encoders on RP `..._6..14`, PMOD JB = Pmod I2S2),
+  so no conflict; `JA3/JA4` (`Y16/Y17` = RP HAT-ID I2C) are avoided.
+- **Latching switch handling (load-bearing).** A true-bypass 3PDT is an
+  *alternate-action* (latching) switch -- each stomp flips the contact, so
+  the debounced logic level toggles 0<->1 per press. The IP therefore
+  latches one `press_event` on *either* edge of the debounced level; the
+  absolute level is irrelevant. This is the key difference from the encoder
+  SW path (momentary active-low). Wiring: common -> GPIO, one throw -> GND,
+  the other throw open with `set_property PULLUP true`. Never wire to 5V
+  (D31).
+- **Additive integration only.** `footswitch_integration.tcl` (modeled on
+  `encoder_integration.tcl`) bumps `ps7_0_axi_periph` NUM_MI 21 -> 22, adds
+  the module-reference cell `fsw_in_0`, wires AXI-Lite from M21 + the 3 ports,
+  and maps `0x43D50000 / 0x10000`. Sourced from `create_project.tcl` AFTER
+  `xadc_integration.tcl` and BEFORE `island_integration.tcl`. The IP lives on
+  the 100 MHz fabric (FCLK_CLK0), NOT the 50 MHz DSP island, so D75/D76 are
+  unaffected and `block_design.tcl` is not edited. Clash is unchanged, so the
+  DSP voicing stays byte-identical -- no Clash/Vivado DSP regeneration.
+- **FX-target binding.** FS1 toggles the effect bound in
+  `AppState.footswitch_fx_target` (persisted). To rebind, select the desired
+  effect in the GUI (encoder 0) and stomp FS1 5 times within 3 s; the burst
+  rebinds to `selected_effect` and leaves the old target's on/off unchanged
+  (5 is odd, the 4 prior toggles net back, the rebind press does not toggle).
+  Single press = immediate toggle (a stomp must feel instant), so a
+  deliberate rebind burst briefly flickers the old target -- accepted.
+- **Translation discipline.** FX toggle rides
+  `EncoderEffectApplier.apply_effect_on_off` (single-enable write -- preserves
+  a curated preset voicing, same applier the encoder uses). Preset stepping
+  calls `AudioLabOverlay.apply_chain_preset(name)` (the bench-tested notebook
+  path) for the authoritative audio write, then mirrors the preset into
+  `AppState` for the HDMI GUI via
+  `footswitch_control.apply_chain_preset_to_state`. Preset cycle = all
+  `CHAIN_PRESETS` in insertion order (wraps).
+- **Software.** `audio_lab_pynq/footswitch_input.py` (driver, mirrors
+  `encoder_input.py`), `audio_lab_pynq/footswitch_control.py`
+  (`FootswitchController` + preset->state mirror), `AppState.footswitch_fx_target`
+  (persisted, default Amp Sim=5), and a non-blocking footswitch poll in
+  `scripts/run_encoder_hdmi_gui.py` (`--footswitch` default on,
+  `--no-footswitch`, `--footswitch-debounce-ms`, `--footswitch-debug`) placed
+  next to the FP02M pedal poll so every overlay write stays single-threaded.
+- **Status.** Source landed on branch `feature/footswitch-preset-fxtoggle`.
+  21 new offline tests pass (`tests/test_footswitch_input_decode.py`,
+  `tests/test_footswitch_control.py`); no regression vs the pre-existing
+  2-failure baseline. **Vivado bit rebuild + WNS-vs-D76 review + on-board
+  bench are pending** -- the bit is NOT rebuilt yet. WNS must not be
+  significantly worse than the D76 baseline (-0.368 ns) or the bit is not
+  deployed. Full reference: `docs/ai_context/FOOTSWITCH_INTEGRATION.md`.

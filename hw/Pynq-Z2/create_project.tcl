@@ -56,6 +56,10 @@ add_files -norecurse $origin_dir/../ip/encoder_input/src/axi_encoder_input.v
 # reference but are not part of the deployed build any more.
 add_files -norecurse $origin_dir/../ip/pmod_i2s2/src/pmod_i2s2_master.v
 add_files -norecurse $origin_dir/../ip/pmod_i2s2/src/axi_pmod_i2s2_status.v
+# Footswitch input RTL added as a regular source before the block design
+# references it via `create_bd_cell -type module -reference
+# axi_footswitch_input` inside footswitch_integration.tcl.
+add_files -norecurse $origin_dir/../ip/footswitch_input/src/axi_footswitch_input.v
 update_compile_order -fileset sources_1
 
 # Generate block design
@@ -88,6 +92,13 @@ source ./wah_integration.tcl
 # island_integration only touches clash_lowpass_fir_0 / FCLK / axis_clock_converter,
 # so the two are independent; clash is unchanged so the DSP voicing stays byte-identical.
 source ./xadc_integration.tcl
+# Footswitch input IP. Adds axi_footswitch_input at 0x43D50000 (M21) reading
+# 3 guitar-pedal 3PDT footswitches on the RPi header. Additive only
+# (NUM_MI 21 -> 22); block_design.tcl is not edited, clash_lowpass_fir_0 is
+# unchanged, and the IP lives on the 100 MHz fabric (NOT the DSP island), so
+# the DSP voicing stays byte-identical. Sourced after xadc_integration.tcl
+# and BEFORE island_integration.tcl.
+source ./footswitch_integration.tcl
 # DSP island: run clash_lowpass_fir_0 at 50 MHz (FCLK_CLK1) behind AXIS clock
 # converters so its WNS closes while I2S/Pmod CDCs stay at 100 MHz untouched.
 source ./island_integration.tcl
@@ -110,6 +121,17 @@ generate_target {synthesis} \
 # one-shot relied on a populated audio_lab.cache from a prior build.
 launch_runs synth_1 -jobs 2
 wait_on_run synth_1
+# D78 footswitch build: adding the footswitch AXI master perturbed the P&R of
+# the 50 MHz DSP island and pushed the DS-1 distortion CARRY4 arithmetic chain
+# from the D76 baseline (-0.368 ns) to ~-0.75 ns, which produced an audible
+# bitcrusher on the ADC->DSP->DAC path (D74-class artifact). Enable post-place
+# and post-route phys_opt_design (AggressiveExplore) to claw the DS-1 island
+# slack back toward the D76 level so the audio path stays clean. This only
+# tightens timing; the 100 MHz audio fabric already closes with margin.
+set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
+set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
+set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
+set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 launch_runs impl_1 -to_step write_bitstream -jobs 2
 wait_on_run impl_1
 

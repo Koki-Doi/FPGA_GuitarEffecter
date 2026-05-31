@@ -121,10 +121,15 @@ class AppState:
     wah_position_pedal_u8: int = 0
     wah_pedal_available: bool = False
 
-    # footswitches
+    # footswitches (legacy Pip-Boy mock row; not wired to hardware)
     fs_states: List[bool] = field(default_factory=lambda:
         [False, False, True, False, False, True, False, False])
     fs_selected: int = 0
+
+    # Physical footswitch feature (axi_footswitch_input). FS1 toggles the
+    # effect bound here (index into EFFECTS); FS2/FS3 step the chain preset.
+    # Persisted so the FS1 binding survives a kernel restart.
+    footswitch_fx_target: int = 5   # Amp Sim by default
 
     # visualizer mode: 'wave' | 'spectrum' | 'both'
     display_mode: str = "both"
@@ -191,7 +196,7 @@ _STATE_KEYS = ("preset_id", "preset_name", "preset_idx",
                "effect_on", "all_knob_values", "chain", "display_mode",
                "dist_model_idx", "amp_model_idx", "cab_model_idx",
                "overdrive_model_idx", "amp_drive_mode", "wah_source",
-               "fs_states", "fs_selected")
+               "fs_states", "fs_selected", "footswitch_fx_target")
 
 def save_state_json(state: AppState, path: str = STATE_FILE) -> None:
     try:
@@ -241,6 +246,11 @@ def load_state_json(path: str = STATE_FILE) -> AppState:
             state.amp_drive_mode = int(_binary)
         state.selected_effect = max(0, min(len(EFFECTS) - 1,
                                            state.selected_effect))
+        try:
+            state.footswitch_fx_target = max(0, min(len(EFFECTS) - 1,
+                                                    int(state.footswitch_fx_target)))
+        except Exception:
+            state.footswitch_fx_target = 5
         _n_knobs = len(EFFECT_KNOBS.get(EFFECTS[state.selected_effect], []))
         state.selected_knob = max(0, min(max(0, _n_knobs - 1),
                                          state.selected_knob))

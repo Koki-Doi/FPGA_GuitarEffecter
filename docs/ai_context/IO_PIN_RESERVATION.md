@@ -502,3 +502,22 @@ SPARE_GPIO0..3 (将来のフットスイッチ / LED)
   `scripts/test_pmod_i2s2.py` から操作する。
 - `hw/Pynq-Z2/block_design.tcl` は変更なし。Pmod I2S2 追加・reroute は
   `hw/Pynq-Z2/pmod_i2s2_integration.tcl` で行う。
+- **Footswitch (D78, deployed, audio clean):** 3 個の 3PDT footswitch を
+  **Raspberry Pi ヘッダ**に配置。**物理ピンは公式 PYNQ-Z2 master XDC の
+  schematic net 名 (`Sch=rpio_NN_r`, NN = BCM GPIO) で確定:**
+  `fsw0_i`=FX=`U7`=`rpio_17`=GPIO17=**RP pin 11**,
+  `fsw1_i`=next=`C20`=`rpio_18`=GPIO18=**RP pin 12**,
+  `fsw2_i`=prev=`Y8`=`rpio_19`=GPIO19=**RP pin 35**。GND は RP の
+  6/9/14/20/25/30/34/39 のいずれか。すべて `LVCMOS33` + `PULLUP true`
+  (3PDT は common→RP信号pin / 一方 throw→GND / 他方 open)。RP 40pin の BCM
+  "GPIOxx" シルク / v1.0 マニュアルは誤り易いので物理ピン位置で数えること
+  (確認は loaded bit で `FootswitchInput.read_levels()`)。新 IP
+  `axi_footswitch_input` は base `0x43D50000` (M21)、
+  `footswitch_integration.tcl`、NUM_MI 21→22、`block_design.tcl` 不編集、
+  DSP island 不変。**ビットクラッシャー対策**: AXI マスタ追加で 50MHz DSP島
+  の DS-1 演算タイミングが悪化し ADC→DSP→DAC にビットクラッシャーが出たため、
+  `create_project.tcl` の impl_1 に post-place/post-route `phys_opt_design`
+  (AggressiveExplore) を追加し島 WNS を -0.173ns (D76 超え) に回復、音声クリーン
+  確認。accepted bit `45e78763`。中間で PMOD JA (Y18/Y19/U18) 版も bench 済だが
+  RP へ移行。詳細は `FOOTSWITCH_INTEGRATION.md` / `DECISIONS.md` D78 /
+  [[project_pynqz2_rp_header_silk_not_package_pin]]。

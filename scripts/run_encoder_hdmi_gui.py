@@ -155,6 +155,20 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Print a [wah-pedal] status line ~1/s (reader, "
                         "available, source, raw, u8, writes, gpio_pos) to "
                         "diagnose the pedal path.")
+    # Footswitch feature (axi_footswitch_input @ 0x43D50000).
+    p.add_argument("--footswitch", dest="footswitch", action="store_true",
+                   default=True,
+                   help="Enable the 3 footswitches (FS1=FX toggle, "
+                        "FS2=preset next, FS3=preset prev). Default on; "
+                        "silently no-ops if the IP is absent (older bit).")
+    p.add_argument("--no-footswitch", dest="footswitch", action="store_false",
+                   help="Disable footswitch polling.")
+    p.add_argument("--footswitch-debounce-ms", type=int, default=None,
+                   help="Override the footswitch IP debounce window in ms "
+                        "(default 5).")
+    p.add_argument("--footswitch-debug", action="store_true",
+                   help="Print a [footswitch] status line on each event "
+                        "(channel, action, bound FX target, preset).")
     return p
 
 
@@ -281,6 +295,10 @@ def _render_signature(s):
         str(getattr(s, "wah_source", "manual")),
         bool(getattr(s, "wah_pedal_available", False)),
         int(getattr(s, "wah_position_pedal_u8", 0)),
+        # Footswitch: header preset + bound FX target must re-render on a stomp.
+        str(getattr(s, "preset_name", "")),
+        int(getattr(s, "preset_idx", 0) or 0),
+        int(getattr(s, "footswitch_fx_target", 0) or 0),
         knobs,
     )
 
@@ -409,6 +427,41 @@ def main(argv=None):
     last_wah_dbg_t = 0.0
     wah_writes = 0
 
+    # Footswitch feature (FS1=FX toggle, FS2=preset next, FS3=preset prev).
+    # Non-blocking poll on the main thread, alongside the encoder/pedal, so
+    # every overlay write stays single-threaded (no GPIO race). The FX toggle
+    # rides the same EncoderEffectApplier; preset switching uses
+    # overlay.apply_chain_preset + an AppState mirror for the HDMI GUI.
+    footswitch = None
+    fsw_controller = None
+    if args.footswitch and overlay is not None:
+        try:
+            from audio_lab_pynq.footswitch_input import FootswitchInput  # type: ignore
+            from audio_lab_pynq.footswitch_control import FootswitchController  # type: ignore
+            try:
+                from GUI.compact_v2.knobs import EFFECTS  # type: ignore
+            except Exception:
+                from compact_v2.knobs import EFFECTS  # type: ignore
+            footswitch = FootswitchInput.from_overlay(overlay)
+            if args.footswitch_debounce_ms is not None:
+                footswitch.configure(
+                    debounce_ms=int(args.footswitch_debounce_ms),
+                    clear_on_read=True)
+            else:
+                footswitch.configure(clear_on_read=True)
+            fsw_controller = FootswitchController(
+                applier=applier, state=state, effects=EFFECTS,
+                overlay=(None if args.no_audio_apply else overlay),
+                dry_run=bool(args.no_audio_apply))
+            print("[gui] footswitch ready: VERSION=0x%08X FX-target=%s presets=%d"
+                  % (footswitch.read_version(),
+                     EFFECTS[state.footswitch_fx_target],
+                     len(fsw_controller.preset_names)))
+        except Exception as exc:
+            print("[gui] footswitch init failed (continuing without): %r" % (exc,))
+            footswitch = None
+            fsw_controller = None
+
     stop_flag = {"stop": False}
 
     def _on_sigint(*_):
@@ -494,6 +547,23 @@ def main(argv=None):
                 n_events = 0
             if n_events:
                 last_event_t = loop_t
+
+            # Footswitch poll (non-blocking; main-thread overlay writes, so no
+            # GPIO race with the encoder applier / pedal). FX toggle and preset
+            # step both mutate the shared AppState that the render thread reads.
+            if footswitch is not None and fsw_controller is not None:
+                try:
+                    n_fsw = fsw_controller.tick(footswitch, timestamp=loop_t - t0)
+                except Exception as exc:
+                    print("[gui] footswitch tick failed: %r" % (exc,))
+                    n_fsw = 0
+                if n_fsw:
+                    last_event_t = loop_t
+                    if args.footswitch_debug:
+                        print("[footswitch] %s | FX-target=%s preset=%s(%d)"
+                              % (fsw_controller.last_action,
+                                 fsw_controller.effects[state.footswitch_fx_target],
+                                 state.preset_name, state.preset_idx))
 
             # D74 FP02M pedal step (non-blocking; main-thread overlay write,
             # so no GPIO race with the encoder applier). Only active when
