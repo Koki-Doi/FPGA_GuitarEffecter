@@ -150,6 +150,14 @@ class AudioLabOverlay(Overlay):
             this_dir = os.path.dirname(__file__)
             bitfile_name = os.path.join(this_dir, 'bitstreams', 'audio_lab.bit')
         super().__init__(bitfile_name, **kwargs)
+        # D76 performance: cache every IP handle before anything else touches
+        # one. pynq's Overlay.__getattr__ runs is_loaded() -> bitfile_name on
+        # each IP attribute access, which is a multiprocessing IPC to the PL
+        # server (~50 ms each on the PYNQ-Z2). The live-GUI hot paths hit it
+        # repeatedly -- set_guitar_effects ~12 accesses (~940 ms/call) and the
+        # FP02M pedal's set_wah_settings ~2 (~100 ms/call) -- which made knobs
+        # and the pedal feel laggy. Caching drops them to ~2.5 ms / ~0.5 ms.
+        self._cache_ip_handles()
         self.x_source = self.axis_switch_source
         self.x_sink = self.axis_switch_sink
         self.codec = ADAU1761()
@@ -195,6 +203,38 @@ class AudioLabOverlay(Overlay):
         self._cached_wah_word = 0
         if hasattr(self, self.WAH_GPIO_NAME):
             self._apply_wah_state_to_word()
+
+    def _cache_ip_handles(self):
+        """Resolve every top-level IP once and stash the handle in __dict__.
+
+        D76 performance fix. pynq's ``Overlay.__getattr__`` calls
+        ``is_loaded()`` -> ``bitfile_name`` on every IP attribute access,
+        which is a multiprocessing IPC round-trip to the PL server (~50 ms
+        each on the PYNQ-Z2). The live GUI hot paths access IP handles many
+        times per call (``set_guitar_effects`` writes ~12 GPIOs,
+        ``set_wah_settings`` touches the wah GPIO), so the apply path cost
+        ~0.9 s and the FP02M pedal write ~0.1 s -- the dominant source of the
+        sluggish UI/audio response. Once a handle is in ``self.__dict__`` the
+        normal attribute lookup finds it first and ``__getattr__`` (and its
+        IPC) is never invoked. Measured on board: ``set_guitar_effects``
+        941 ms -> 2.5 ms, ``set_wah_settings`` 99 ms -> 0.5 ms. The raw MMIO
+        ``gpio.write`` was already ~0.03 ms, confirming the IPC was the cost.
+
+        Hierarchical entries (e.g. ``enc_in_0/s_axi``) are skipped -- they are
+        not reachable as ``self.<name>`` anyway. Missing IPs are ignored so a
+        minimal bitstream still constructs.
+        """
+        try:
+            ip_names = list(self.ip_dict.keys())
+        except Exception:
+            return
+        for name in ip_names:
+            if "/" in name or name in self.__dict__:
+                continue
+            try:
+                self.__dict__[name] = getattr(self, name)
+            except Exception:
+                pass
 
     @property
     def adc_hpf_enabled(self):

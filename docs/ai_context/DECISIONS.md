@@ -4855,6 +4855,30 @@ D75 (DSP clock-domain island).
   False; the notebook's `RUNNER_CMD` now includes `--wah-pedal` (the runner
   smart-attaches with `download=False`, so restart does not knock the rgb2dvi
   PLL). User bench: SOURCE cycles, PEDAL drives POSITION, no UNAVAIL.
+- **Live-GUI latency fix (bench, "かなりいい"). Root cause: pynq IP-attr IPC.**
+  The encoder/pedal UI felt very sluggish (both the on-screen value and the
+  audio). Profiling on the board (`cProfile`) showed the cost was NOT MMIO
+  (a raw `gpio.write` is ~0.03 ms) but **pynq's `Overlay.__getattr__`**, which
+  runs `is_loaded()` -> `bitfile_name` -- a multiprocessing IPC to the PL
+  server -- on EVERY `self.<ip>` access (~50 ms each on the PYNQ-Z2).
+  `set_guitar_effects` touches ~12 IP handles = **~940 ms/call**;
+  `set_wah_settings` ~2 = **~100 ms/call**. Fix: `AudioLabOverlay.__init__`
+  now calls `_cache_ip_handles()`, which resolves every top-level IP once and
+  stashes the handle in `self.__dict__` so later reads hit normal attribute
+  lookup and never invoke `__getattr__`/IPC. Measured: `set_guitar_effects`
+  941 -> **2.6 ms**, `set_wah_settings` 99 -> **0.5 ms**. Secondary GUI
+  changes in `run_encoder_hdmi_gui.py`: (a) the HDMI render (~310 ms/frame on
+  the ARM) moved onto a **daemon thread** so it no longer blocks the
+  encoder/pedal/apply loop (PIL/numpy release the GIL during their C work, so
+  audio applies slip through); (b) a **persistent `make_pynq_static_render_cache()`**
+  is passed to every render -- glow off, text/gradient memoised, and the whole
+  frame returned from cache when the AppState signature is unchanged (idle
+  render 313 -> **0.5 ms**); (c) defaults `--poll-hz-active` 30 -> 60 and
+  `--apply-interval-ms` 50 -> 20. Net: audio/pedal response ~instant, idle UI
+  instant; a held continuous knob spin still repaints at ~6 fps (the ARM PIL
+  compose cost) but the audio follows in ~20 ms. A LUT rewrite of the
+  scanline/vignette kernels was tried and **reverted** -- numpy fancy-index
+  gathers were slower than the float path on the Cortex-A9.
 - **Deploy.** bit/hwh `9fdecae0...` / `a9fd7408...` synced 5-site (md5
   match). `download=True` once after a cold power-cycle (memory
   `feedback_deploy_smoke_avoid_repeated_download`); further attaches use
