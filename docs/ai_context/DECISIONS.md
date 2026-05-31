@@ -5049,10 +5049,12 @@ pre-existing 3 failures + 1 error baseline.
   `scripts/run_encoder_hdmi_gui.py` (`--footswitch` default on,
   `--no-footswitch`, `--footswitch-debounce-ms`, `--footswitch-debug`) placed
   next to the FP02M pedal poll so every overlay write stays single-threaded.
-- **Status.** Source landed on branch `feature/footswitch-preset-fxtoggle`.
-  21 new offline tests pass (`tests/test_footswitch_input_decode.py`,
-  `tests/test_footswitch_control.py`); no regression vs the pre-existing
-  2-failure baseline. **Vivado bit rebuild + WNS-vs-D76 review + on-board
-  bench are pending** -- the bit is NOT rebuilt yet. WNS must not be
-  significantly worse than the D76 baseline (-0.368 ns) or the bit is not
-  deployed. Full reference: `docs/ai_context/FOOTSWITCH_INTEGRATION.md`.
+- **Status (ACCEPTED 2026-06-01).** Built (bit `45e78763` with the phys_opt
+  fix), deployed 5-site, and **bench-accepted by the user**: footswitches on
+  RP pins 11/12/35 work (FS1 FX toggle, FS2/FS3 preset stepping) and the
+  ADC->DSP->DAC audio is clean. 21 new offline tests pass (no regression vs
+  the pre-existing 2-failure baseline). Merged to `main` (`feat(#D78)`
+  813029b + merge aa4080f). **D78 (`45e78763`) is the new accepted deployed
+  bitstream baseline, superseding D76** (`9fdecae0`, the rollback baseline).
+  The two pre-phys_opt builds (`199d25ea` RP, `e610dc58` PMOD-JA) bitcrush
+  and are rejected. Full reference: `docs/ai_context/FOOTSWITCH_INTEGRATION.md`.
