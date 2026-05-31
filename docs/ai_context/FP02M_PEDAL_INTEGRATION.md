@@ -1,8 +1,10 @@
 # FP02M expression pedal -> Wah POSITION integration
 
-Status: **software + docs landed; A0 read path NOT yet available on the
-deployed overlay; Vivado XADC-Wizard rebuild deferred (separate approval).**
-See `DECISIONS.md` D74.
+Status: **DONE / accepted on bench (D76, 2026-05-31).** The XADC Wizard is
+re-enabled on the D75 DSP island, A0 reads via `xadc_wiz_a0` MMIO, the FP02M
+pedal drives Wah POSITION with an audible sweep, the D74 bitcrusher did NOT
+recur, and two bench fixes (Wah-only crossbar routing + Q self-oscillation
+cap) are in. See `DECISIONS.md` D76 (and D74 for the original software pass).
 
 The goal is to drive the Wah POSITION byte (`axi_gpio_wah.ctrlA`) from a
 ZOOM **FP02M** TRS expression pedal connected to the PYNQ-Z2 Arduino **A0**
@@ -273,6 +275,43 @@ PL Wah already smooths POSITION.
   POS bar follows the pedal, Wah ON sweep audibly moves the centre
   frequency, Q/VOL/BIAS stay independent, no pop/click/zipper, all_off and
   Wah-OFF bypass clean. **bit/hwh are committed only after this passes.**
+
+## 11. Bench result (2026-05-31, D76 -- XADC re-add on the D75 island)
+
+- **XADC re-enabled on the island.** Un-commented the two
+  `create_project.tcl` lines (`add_files xadc_a0.xdc`,
+  `source xadc_integration.tcl`); Clash DSP untouched, island preserved.
+  Rebuild WNS `-0.368 ns` (100 MHz `clk_fpga_0` fabric = audio AXIS closes
+  at +0.614 ns / 0 failing endpoints; the 22 failures are intra-50 MHz DSP).
+  **The D74 bitcrusher did NOT recur** -- proving the D74 cause was the
+  -11 ns audio-AXIS P&R degradation, not the XADC.
+- **A0 sweep (probe `--mmio`):** heel raw ~8, toe raw ~2847, sweep span
+  ~2999 (>= the 2000 good bar), continuous, no stuck-0/stuck-4095. Note
+  this rig's toe tops out ~2847 (vs D74's 4068) -- still a wide span.
+- **Calibration saved:** `/root/.config/audio_lab/fp02m_calibration.json`
+  (sudo HOME) -- raw_min 8, raw_max 2847, invert false, deadband 2,
+  smoothing_alpha 0.25. Calibrated min-then-max-then-sweep.
+- **Wah-only crossbar routing fix (load-bearing).** The AXIS source crossbar
+  (`_route_effect_chain`) only switched to `guitar_chain` (the DSP) when the
+  `gate_word` low byte was non-zero, but the Wah enable lives on
+  `axi_gpio_wah` ctrlD and is NOT in `gate_word`. So a Wah-only state (every
+  other effect off, the FP02M driving POSITION) stayed on `passthrough` and
+  bypassed the whole DSP -- the Wah included, giving a clean (no-wah) sound.
+  Fix in `AudioLabOverlay.py`: `_route_effect_chain` treats an enabled Wah
+  as "an effect is on", and `set_wah_settings` re-routes the crossbar when
+  it toggles the enable (not on the 100 Hz `position_raw` stream).
+  Python-only, no bit rebuild. This gap was invisible in D74 because the
+  XADC bit was rejected on audio before the Wah-sweep test was reached.
+- **Wah Q self-oscillation cap.** At high Q the resonant band-pass
+  self-oscillates near full POSITION (toe). Bench: Q byte 89 (UI 35 %) clean,
+  byte 128 still howled, byte 166 (UI 65 %) howled hard.
+  `control_maps.wah_q_byte` now caps the UI Q range at `WAH_Q_BYTE_MAX = 80`
+  (UI keeps 0..100; only the dial top is tamed; Clash voicing unchanged).
+  Bench: Q = 100 + full toe no longer oscillates.
+- **Functional + audio PASS:** `run_fp02m_wah_test.py --no-download` writes
+  `position_raw` continuously; with the routing fix the Wah filter sweep
+  audibly follows the pedal; with the Q cap there is no self-oscillation at
+  the extremes. User verdict: 問題なし.
 
 ## See also
 

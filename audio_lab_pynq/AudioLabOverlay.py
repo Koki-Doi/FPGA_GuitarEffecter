@@ -1013,6 +1013,17 @@ class AudioLabOverlay(Overlay):
         if source is not None:
             s['source'] = str(source)
         self._apply_wah_state_to_word()
+        # D76: a standalone set_wah_settings (the FP02M pedal path, the
+        # encoder applier, a notebook) must re-route the AXIS crossbar
+        # when it toggles the Wah enable -- the Wah enable is not in the
+        # gate word, so without this a Wah-only state would stay on
+        # passthrough and never reach the DSP. Only on an explicit enable
+        # toggle, so the 100 Hz position_raw stream does not thrash the
+        # crossbar.
+        if enabled is not None:
+            self._route_effect_chain(
+                XbarSink.headphone,
+                getattr(self, '_cached_gate_word', 0) & 0xFF)
         return self.get_wah_settings()
 
     def get_wah_settings(self):
@@ -1680,8 +1691,17 @@ class AudioLabOverlay(Overlay):
         Phase 2: the per-bit flag layout is encoded in
         ``guitar_effect_control_words`` (`gate_word` low byte). A
         non-zero low byte means "at least one effect is on".
+
+        D76: the Wah enable lives on its own ``axi_gpio_wah`` ctrlD bit
+        and never reaches ``gate_word``, so a Wah-only state (every
+        other effect off, e.g. the FP02M pedal driving POSITION) would
+        otherwise leave the crossbar on passthrough and bypass the whole
+        DSP -- the Wah stage included. Treat an enabled Wah as "an effect
+        is on" so the chain is routed through ``guitar_chain``.
         """
-        if gate_word & 0xFF:
+        wah_on = bool(getattr(self, '_wah_state', {}).get('enabled')) \
+            if hasattr(self, '_wah_state') else False
+        if (gate_word & 0xFF) or wah_on:
             self.route(XbarSource.line_in, XbarEffect.guitar_chain, sink)
         else:
             self.route(XbarSource.line_in, XbarEffect.passthrough, sink)

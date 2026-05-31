@@ -36,9 +36,12 @@ update_ip_catalog
 # accept `if` in `.xdc`, hence the two-file split.
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_pmod_i2s2.xdc
-# D74: Arduino A0 analog input (XADC VAUX1 = E17/D18) for the FP02M pedal.
-# DISABLED for the DSP-island build (XADC D74 rejected = bitcrusher on ADC path).
-# add_files -fileset constrs_1 -norecurse $origin_dir/xadc_a0.xdc
+# D74/D76: Arduino A0 analog input (XADC VAUX1 = E17/D18) for the FP02M pedal.
+# Re-enabled on the D75 DSP-island build: the D74 rejection (bitcrusher on the
+# ADC path) was caused by the -11 ns / 100 MHz audio-AXIS P&R degradation, not
+# by the XADC itself. The DSP now runs on the 50 MHz island (WNS -0.7 ns), so
+# the audio datapath has slack and the bitcrusher is not expected to recur.
+add_files -fileset constrs_1 -norecurse $origin_dir/xadc_a0.xdc
 
 # Phase 7F/7G: add the rotary-encoder input RTL as a regular source before
 # the block design references it via `create_bd_cell -type module -reference
@@ -80,8 +83,11 @@ source ./wah_integration.tcl
 # pedal. Additive only (NUM_MI 20 -> 21, M20 = xadc_wiz_a0 @ 0x43D40000);
 # block_design.tcl is not edited and clash_lowpass_fir_0 is unchanged, so
 # the DSP voicing is byte-identical.
-# DISABLED for the DSP-island build (XADC D74 rejected, bitcrusher on ADC path):
-# source ./xadc_integration.tcl
+# D76: re-enabled on the D75 DSP-island build. Sourced after wah_integration.tcl
+# (NUM_MI 20 -> 21, M20 = xadc_wiz_a0 @ 0x43D40000) and BEFORE island_integration.tcl.
+# island_integration only touches clash_lowpass_fir_0 / FCLK / axis_clock_converter,
+# so the two are independent; clash is unchanged so the DSP voicing stays byte-identical.
+source ./xadc_integration.tcl
 # DSP island: run clash_lowpass_fir_0 at 50 MHz (FCLK_CLK1) behind AXIS clock
 # converters so its WNS closes while I2S/Pmod CDCs stay at 100 MHz untouched.
 source ./island_integration.tcl

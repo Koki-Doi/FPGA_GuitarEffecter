@@ -1480,9 +1480,10 @@ def test_wah_position_raw_byte():
 def test_wah_q_byte_anchors():
     from audio_lab_pynq import control_maps as cm
 
+    # D76: Q byte capped at WAH_Q_BYTE_MAX to tame self-oscillation.
     assert cm.wah_q_byte(0) == 0
-    assert cm.wah_q_byte(50) == cm.percent_to_u8(50, 255)
-    assert cm.wah_q_byte(100) == 255
+    assert cm.wah_q_byte(50) == cm.percent_to_u8(50, cm.WAH_Q_BYTE_MAX)
+    assert cm.wah_q_byte(100) == cm.WAH_Q_BYTE_MAX
 
 
 def test_wah_volume_byte_anchors():
@@ -1528,7 +1529,7 @@ def test_wah_word_packing_percent_path():
     word_off = cm.wah_word(position=0, q=50, volume=50, bias=50,
                            enabled=False)
     assert word_off & 0xFF == 0
-    assert (word_off >> 8) & 0xFF == cm.percent_to_u8(50, 255)
+    assert (word_off >> 8) & 0xFF == cm.wah_q_byte(50)  # D76: capped Q
     assert (word_off >> 16) & 0xFF == cm.percent_to_u8(50, 255)
     assert (word_off >> 24) & 0x80 == 0
     assert (word_off >> 24) & 0x7F == cm.wah_bias_to_u7(50)
@@ -1537,7 +1538,7 @@ def test_wah_word_packing_percent_path():
     word_on = cm.wah_word(position=100, q=100, volume=100, bias=100,
                           enabled=True)
     assert word_on & 0xFF == 255
-    assert (word_on >> 8) & 0xFF == 255
+    assert (word_on >> 8) & 0xFF == cm.wah_q_byte(100)  # D76: == WAH_Q_BYTE_MAX
     assert (word_on >> 16) & 0xFF == 255
     assert (word_on >> 24) & 0x80 == 0x80
     assert (word_on >> 24) & 0x7F == 127
@@ -1597,14 +1598,14 @@ def test_set_wah_settings_writes_word_to_dedicated_gpio():
     assert last_offset == 0x00
     expected_position = AudioLabOverlay._percent_to_u8(50, 255)
     assert last_word & 0xFF == expected_position
-    assert (last_word >> 8) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
+    assert (last_word >> 8) & 0xFF == AudioLabOverlay._wah_q_byte(50)  # D76 cap
     assert (last_word >> 16) & 0xFF == AudioLabOverlay._percent_to_u8(50, 255)
     assert (last_word >> 24) & 0x80 == 0x80  # enable
     assert (last_word >> 24) & 0x7F == AudioLabOverlay._wah_bias_to_u7(50)
     assert settings['position_byte'] == expected_position
     assert settings['position'] == 50
     assert settings['position_raw'] is None
-    assert settings['q_byte'] == AudioLabOverlay._percent_to_u8(50, 255)
+    assert settings['q_byte'] == AudioLabOverlay._wah_q_byte(50)  # D76 cap
     assert settings['volume_byte'] == AudioLabOverlay._percent_to_u8(50, 255)
     assert settings['bias_u7'] == AudioLabOverlay._wah_bias_to_u7(50)
 
