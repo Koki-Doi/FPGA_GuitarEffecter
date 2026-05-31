@@ -40,6 +40,7 @@ import argparse
 import os
 import signal
 import sys
+import threading
 import time
 from typing import Optional
 
@@ -69,8 +70,10 @@ def _build_argparser() -> argparse.ArgumentParser:
     apply_group.add_argument("--no-live-apply", dest="live_apply",
                              action="store_false",
                              help="Only apply on encoder-3 short press.")
-    p.add_argument("--apply-interval-ms", type=int, default=50,
-                   help="Throttle (ms) between live-apply pushes. Default 50.")
+    p.add_argument("--apply-interval-ms", type=int, default=20,
+                   help="Throttle (ms) between live-apply pushes. Default 20 "
+                        "(D76: HDMI render runs on a background thread now, so "
+                        "the apply path is no longer render-bound).")
     p.add_argument("--value-step", type=float, default=5.0,
                    help="Knob value step per encoder-3 detent (0..100 scale).")
     # RAT skip
@@ -110,8 +113,10 @@ def _build_argparser() -> argparse.ArgumentParser:
                           action="store_false",
                           help="Treat SW=HIGH as pressed (default for this rig).")
     # Loop pacing
-    p.add_argument("--poll-hz-active", type=float, default=30.0,
-                   help="Encoder poll rate while events are arriving.")
+    p.add_argument("--poll-hz-active", type=float, default=60.0,
+                   help="Encoder poll rate while events are arriving. "
+                        "D76: raised 30 -> 60 now that the render thread no "
+                        "longer blocks the encoder/pedal/apply loop.")
     p.add_argument("--poll-hz-idle", type=float, default=10.0,
                    help="Encoder poll rate after --idle-threshold-s of no "
                         "events. Kept >= short_press latch detection window "
@@ -351,10 +356,17 @@ def main(argv=None):
 
     try:
         from GUI.compact_v2.renderer import (  # type: ignore
-            render_frame_800x480_compact_v2)
+            render_frame_800x480_compact_v2, make_pynq_static_render_cache)
     except Exception:
         from compact_v2.renderer import (  # type: ignore
-            render_frame_800x480_compact_v2)
+            render_frame_800x480_compact_v2, make_pynq_static_render_cache)
+
+    # D76 perf: a persistent render cache makes the renderer use the PYNQ
+    # static fast path -- glow disabled, text/gradient memoised, and the WHOLE
+    # frame returned from cache when the AppState signature is unchanged
+    # (idle render drops from ~310 ms to ~0.5 ms on the board). Without a cache
+    # the renderer built a throwaway one per call, so none of that persisted.
+    render_cache = make_pynq_static_render_cache()
 
     from audio_lab_pynq.encoder_ui import EncoderUiController  # type: ignore
     from audio_lab_pynq.encoder_effect_apply import (  # type: ignore
@@ -436,13 +448,46 @@ def main(argv=None):
 
     t0 = time.time()
     last_event_t = t0
-    last_render_t = 0.0
-    last_sig = None
     last_status_t = 0.0
     last_status_frames = 0
     last_status_polls = 0
-    frames = 0
     polls = 0
+
+    # D76: the HDMI render (compose 800x480 + push the framebuffer) costs
+    # ~100-200 ms on the PYNQ-Z2 ARM. Running it inline in the main loop made
+    # it the bottleneck for EVERYTHING -- encoder apply and the FP02M pedal
+    # write were starved to the render rate (~5-10 Hz), so knobs and the pedal
+    # felt sluggish in both UI and audio. Move the render onto a daemon thread
+    # that reads the shared AppState and repaints at --max-render-fps, while
+    # the main loop polls the encoder, polls the pedal, and pushes audio GPIO
+    # writes at the full poll rate (no longer render-bound). The render thread
+    # only reads AppState and writes the HDMI framebuffer; every overlay /
+    # GPIO write stays on the main thread, so there is no GPIO race.
+    render_stats = {"frames": 0}
+
+    def _render_loop():
+        last_sig = None
+        last_render_t = 0.0
+        while not stop_flag["stop"]:
+            now = time.time()
+            sig = _render_signature(state)
+            if sig != last_sig and (now - last_render_t) >= min_render_period:
+                state.t = now - t0
+                try:
+                    frame = render_frame_800x480_compact_v2(
+                        state, cache=render_cache)
+                    if backend is not None:
+                        backend.write_frame(frame, placement="manual",
+                                            offset_x=0, offset_y=0)
+                    last_sig = sig
+                    last_render_t = now
+                    render_stats["frames"] += 1
+                except Exception as exc:
+                    print("[gui] HDMI render/write failed: %r" % (exc,))
+            # Short sleep so the thread is responsive to state changes without
+            # busy-spinning; the actual draw cadence is governed by
+            # min_render_period above.
+            time.sleep(0.005)
 
     print("[gui] live_apply=%s apply_interval_ms=%d skip_rat=%s "
           "no_audio_apply=%s" % (args.live_apply, args.apply_interval_ms,
@@ -451,6 +496,10 @@ def main(argv=None):
     print("[gui] Encoder1 rotate=knob select; hold+rotate=model select (OD/DIST/AMP/CAB)")
     print("[gui] Encoder2 rotate=value change; standalone button is no-op")
     print("[gui] RAT pedal model excluded from encoder control by default")
+
+    render_thread = threading.Thread(target=_render_loop, name="hdmi-render",
+                                     daemon=True)
+    render_thread.start()
 
     try:
         while not stop_flag["stop"]:
@@ -523,24 +572,15 @@ def main(argv=None):
                          (wah_pedal.display_pct() if wah_pedal else None),
                          _gpio_pos))
 
-            sig = _render_signature(state)
-            if sig != last_sig and (loop_t - last_render_t) >= min_render_period:
-                state.t = loop_t - t0
-                frame = render_frame_800x480_compact_v2(state)
-                if backend is not None:
-                    try:
-                        backend.write_frame(frame, placement="manual",
-                                            offset_x=0, offset_y=0)
-                    except Exception as exc:
-                        print("[gui] HDMI write_frame failed: %r" % (exc,))
-                last_sig = sig
-                last_render_t = loop_t
-                frames += 1
+            # D76: the actual HDMI repaint happens on the background render
+            # thread (see _render_loop); the main loop is now purely
+            # encoder + pedal + audio-apply so neither is render-bound.
 
             if (loop_t - last_status_t) >= status_interval_s:
                 r = sampler.sample()
                 dt = (loop_t - last_status_t) if last_status_t > 0 \
                     else max(1e-3, loop_t - t0)
+                frames = render_stats["frames"]
                 render_fps = (frames - last_status_frames) / dt
                 poll_hz = (polls - last_status_polls) / dt
                 rss_mb = int(r.get("proc_rss_kb", 0)) // 1024
@@ -586,6 +626,13 @@ def main(argv=None):
             if elapsed < period:
                 time.sleep(period - elapsed)
     finally:
+        # Stop the render thread first so it is not mid-write when the HDMI
+        # backend is torn down.
+        stop_flag["stop"] = True
+        try:
+            render_thread.join(timeout=1.0)
+        except Exception:
+            pass
         if pmod_mode_active and overlay is not None and args.pmod_mode != "mute":
             # Clean shutdown: mute the Pmod I2S2 DAC so SIGTERM / Ctrl+C does
             # not leave the external speakers driven. Skip when the user
