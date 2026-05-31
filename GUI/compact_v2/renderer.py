@@ -725,6 +725,158 @@ def _render_frame_800x480_logical(state: AppState, width: int = 800,
 
 
 
+def _draw_cv2_header(img, d, state, palette, boxes):
+    """Draw the compact-v2 PRESET header panel (`boxes["header"]`)."""
+    LED = palette["LED"]
+    SCR_TEXT_DIM = palette["SCR_TEXT_DIM"]
+    INK_HI = palette["INK_HI"]
+    bypass_color = palette["BYPASS_COL"]
+    active_n = sum(1 for v in state.effect_on if v)
+    bypassed = active_n == 0
+
+    header = boxes["header"]
+    hx0, hy0, hx1, hy1 = header
+    rounded_rect(d, header, 10, fill=palette["PANEL_HEADER_FILL"],
+                 outline=LED + (110,), width=2)
+    draw_text(img, (hx0 + 18, hy0 + 10), "> PRESET",
+              fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+    d.line((hx0 + 14, hy0 + 24, hx1 - 14, hy0 + 24),
+           fill=LED + (35,), width=1)
+    draw_smooth_text(img, (hx0 + 18, hy0 + 28),
+                     state.preset_id, size=44,
+                     fill=INK_HI + (255,), letter_spacing=1)
+    draw_smooth_text(img, ((hx0 + hx1) // 2, hy0 + 22),
+                     state.preset_name.replace("  ", " "),
+                     size=36, fill=INK_HI + (255,), anchor="mt")
+    if bypassed:
+        chip_w, chip_h = 158, 34
+        chip = (hx1 - 16 - chip_w, hy0 + 12,
+                hx1 - 16, hy0 + 12 + chip_h)
+        rounded_rect(d, chip, 8, fill=palette["HEADER_CHIP_FILL"],
+                     outline=bypass_color + (255,), width=2)
+        draw_text(img, ((chip[0] + chip[2]) // 2,
+                        (chip[1] + chip[3]) // 2),
+                  "BYPASS", fill=bypass_color + (255,), scale=2,
+                  anchor="mm", letter_spacing=2)
+    draw_text(img, (hx1 - 16, hy0 + 54),
+              "[{}/{}]  FX".format(active_n, len(EFFECTS)),
+              fill=LED + (255,), scale=2, anchor="rt",
+              letter_spacing=2)
+
+
+def _draw_cv2_chain(img, d, state, palette, boxes):
+    """Draw the compact-v2 EFFECT CHAIN strip (`boxes["chain"]`)."""
+    LED = palette["LED"]
+    SCR_TEXT_DIM = palette["SCR_TEXT_DIM"]
+
+    chain = boxes["chain"]
+    cx0, cy0, cx1, cy1 = chain
+    rounded_rect(d, chain, 10, fill=palette["PANEL_CHAIN_FILL"],
+                 outline=LED + (90,), width=2)
+    draw_text(img, (cx0 + 16, cy0 + 10), "> EFFECT CHAIN",
+              fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
+    d.line((cx0 + 14, cy0 + 26, cx1 - 14, cy0 + 26),
+           fill=LED + (35,), width=1)
+    n = max(1, len(EFFECTS))
+    gap = 8
+    inner_pad = 14
+    row_y0 = cy0 + 36
+    row_y1 = cy1 - 14
+    avail_w = (cx1 - cx0) - inner_pad * 2
+    cell_w = int((avail_w - gap * (n - 1)) / n)
+    for pos, eff_idx in enumerate(state.chain[:n]):
+        bx0 = cx0 + inner_pad + pos * (cell_w + gap)
+        bx1 = bx0 + cell_w
+        on = (bool(state.effect_on[eff_idx])
+              if eff_idx < len(state.effect_on) else False)
+        selected = eff_idx == state.selected_effect
+        if on:
+            fill = palette["CHAIN_ON_FILL"]
+            outline = LED + ((255,) if selected else (170,))
+            text_col = LED + (255,)
+        else:
+            fill = palette["CHAIN_OFF_FILL"]
+            outline = palette["CHAIN_OFF_OUTLINE"]
+            text_col = palette["CHAIN_OFF_TEXT"]
+        rounded_rect(d, (bx0, row_y0, bx1, row_y1), 8,
+                     fill=fill, outline=outline,
+                     width=3 if selected else 2)
+        draw_text(img, ((bx0 + bx1) // 2, (row_y0 + row_y1) // 2),
+                  EFFECTS_SHORT[eff_idx],
+                  fill=text_col, scale=2, anchor="mm",
+                  letter_spacing=2)
+
+
+def _draw_cv2_corner_markers(img, d, palette, Wv, Hv, placement_label):
+    """Draw the corner canvas markers + bottom variant label."""
+    LED = palette["LED"]
+    LED_SOFT = palette["LED_SOFT"]
+    marker = LED + (255,)
+    d.rectangle((2, 2, 18, 5), fill=marker)
+    d.rectangle((2, 2, 5, 18), fill=marker)
+    d.rectangle((Wv - 18, 2, Wv - 3, 5), fill=marker)
+    d.rectangle((Wv - 5, 2, Wv - 3, 18), fill=marker)
+    d.rectangle((2, Hv - 5, 18, Hv - 3), fill=marker)
+    d.rectangle((2, Hv - 18, 5, Hv - 3), fill=marker)
+    d.rectangle((Wv - 18, Hv - 5, Wv - 3, Hv - 3), fill=marker)
+    d.rectangle((Wv - 5, Hv - 18, Wv - 3, Hv - 3), fill=marker)
+    draw_text(img, (8, 8), "TL", fill=marker, scale=1, letter_spacing=1)
+    draw_text(img, (Wv - 8, 8), "TR", fill=marker, scale=1,
+              anchor="rt", letter_spacing=1)
+    draw_text(img, (8, Hv - 8), "BL", fill=marker, scale=1,
+              anchor="lb", letter_spacing=1)
+    draw_text(img, (Wv - 8, Hv - 8), "BR", fill=marker, scale=1,
+              anchor="rb", letter_spacing=1)
+
+    label_text = "DOY-FX  //  AUDIO.LAB  //  v2"
+    if placement_label:
+        label_text = "DOY-FX  //  AUDIO.LAB  //  " + str(placement_label)
+    draw_text(img, (Wv // 2, Hv - 4), label_text,
+              fill=LED_SOFT + (255,), scale=1, anchor="mb",
+              letter_spacing=2)
+
+
+def _draw_cv2_encoder_status(img, d, state, palette, Wv, Hv):
+    """Draw the Phase 7G+ encoder status strip (right edge, above BR).
+
+    Only appears when at least one optional encoder field is set, so
+    legacy AppState instances render identically.
+    """
+    LED = palette["LED"]
+    bypass_color = palette["BYPASS_COL"]
+    _enc_flags = []
+    if getattr(state, "edit_mode", False):
+        _enc_flags.append("EDIT")
+    if getattr(state, "model_select_mode", False):
+        _enc_flags.append("MODEL")
+    if getattr(state, "value_dirty", False):
+        _enc_flags.append("DIRTY")
+    if getattr(state, "apply_pending", False):
+        _enc_flags.append("APPLY?")
+    _src = getattr(state, "last_control_source", "notebook")
+    if _src == "encoder":
+        _enc_flags.append("ENC")
+        if getattr(state, "live_apply", False):
+            _enc_flags.append("LIVE")
+        if not bool(getattr(state, "last_apply_ok", True)):
+            _enc_flags.append("ERR")
+        elif getattr(state, "last_apply_message", ""):
+            _enc_flags.append("OK")
+        _unsupported = getattr(state, "last_unsupported_label", "") or ""
+        if "rat" in _unsupported.lower():
+            _enc_flags.append("RAT?")
+        elif _unsupported:
+            _enc_flags.append("UNSUP")
+    if _enc_flags:
+        _enc_text = " ".join(_enc_flags)
+        _flag_color = (
+            bypass_color if (not bool(getattr(state, "last_apply_ok", True)))
+            else LED)
+        draw_text(img, (Wv - 22, Hv - 24), _enc_text,
+                  fill=_flag_color + (255,), scale=1, anchor="rb",
+                  letter_spacing=2)
+
+
 def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                                      height: int = 480,
                                      cache: Optional[RenderCache] = None,
@@ -796,74 +948,8 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                      fill=palette["CHASSIS_INNER_FILL"],
                      outline=LED + (90,), width=2)
 
-        active_n = sum(1 for v in state.effect_on if v)
-        bypassed = active_n == 0
-
-        header = boxes["header"]
-        hx0, hy0, hx1, hy1 = header
-        rounded_rect(d, header, 10, fill=palette["PANEL_HEADER_FILL"],
-                     outline=LED + (110,), width=2)
-        draw_text(img, (hx0 + 18, hy0 + 10), "> PRESET",
-                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
-        d.line((hx0 + 14, hy0 + 24, hx1 - 14, hy0 + 24),
-               fill=LED + (35,), width=1)
-        draw_smooth_text(img, (hx0 + 18, hy0 + 28),
-                         state.preset_id, size=44,
-                         fill=INK_HI + (255,), letter_spacing=1)
-        draw_smooth_text(img, ((hx0 + hx1) // 2, hy0 + 22),
-                         state.preset_name.replace("  ", " "),
-                         size=36, fill=INK_HI + (255,), anchor="mt")
-        if bypassed:
-            chip_w, chip_h = 158, 34
-            chip = (hx1 - 16 - chip_w, hy0 + 12,
-                    hx1 - 16, hy0 + 12 + chip_h)
-            rounded_rect(d, chip, 8, fill=palette["HEADER_CHIP_FILL"],
-                         outline=bypass_color + (255,), width=2)
-            draw_text(img, ((chip[0] + chip[2]) // 2,
-                            (chip[1] + chip[3]) // 2),
-                      "BYPASS", fill=bypass_color + (255,), scale=2,
-                      anchor="mm", letter_spacing=2)
-        draw_text(img, (hx1 - 16, hy0 + 54),
-                  "[{}/{}]  FX".format(active_n, len(EFFECTS)),
-                  fill=LED + (255,), scale=2, anchor="rt",
-                  letter_spacing=2)
-
-        chain = boxes["chain"]
-        cx0, cy0, cx1, cy1 = chain
-        rounded_rect(d, chain, 10, fill=palette["PANEL_CHAIN_FILL"],
-                     outline=LED + (90,), width=2)
-        draw_text(img, (cx0 + 16, cy0 + 10), "> EFFECT CHAIN",
-                  fill=SCR_TEXT_DIM + (255,), scale=1, letter_spacing=3)
-        d.line((cx0 + 14, cy0 + 26, cx1 - 14, cy0 + 26),
-               fill=LED + (35,), width=1)
-        n = max(1, len(EFFECTS))
-        gap = 8
-        inner_pad = 14
-        row_y0 = cy0 + 36
-        row_y1 = cy1 - 14
-        avail_w = (cx1 - cx0) - inner_pad * 2
-        cell_w = int((avail_w - gap * (n - 1)) / n)
-        for pos, eff_idx in enumerate(state.chain[:n]):
-            bx0 = cx0 + inner_pad + pos * (cell_w + gap)
-            bx1 = bx0 + cell_w
-            on = (bool(state.effect_on[eff_idx])
-                  if eff_idx < len(state.effect_on) else False)
-            selected = eff_idx == state.selected_effect
-            if on:
-                fill = palette["CHAIN_ON_FILL"]
-                outline = LED + ((255,) if selected else (170,))
-                text_col = LED + (255,)
-            else:
-                fill = palette["CHAIN_OFF_FILL"]
-                outline = palette["CHAIN_OFF_OUTLINE"]
-                text_col = palette["CHAIN_OFF_TEXT"]
-            rounded_rect(d, (bx0, row_y0, bx1, row_y1), 8,
-                         fill=fill, outline=outline,
-                         width=3 if selected else 2)
-            draw_text(img, ((bx0 + bx1) // 2, (row_y0 + row_y1) // 2),
-                      EFFECTS_SHORT[eff_idx],
-                      fill=text_col, scale=2, anchor="mm",
-                      letter_spacing=2)
+        _draw_cv2_header(img, d, state, palette, boxes)
+        _draw_cv2_chain(img, d, state, palette, boxes)
 
         fx_box = boxes["fx"]
         fx0, fy0, fx1, fy1 = fx_box
@@ -1063,67 +1149,8 @@ def _render_frame_800x480_compact_v2(state: AppState, width: int = 800,
                     d.rectangle((sx0, bar_y0 + 1, sx1, bar_y1 - 1),
                                 fill=(LED if is_sel else LED_DIM) + (255,))
 
-        # Corner canvas markers + variant label.
-        marker = LED + (255,)
-        d.rectangle((2, 2, 18, 5), fill=marker)
-        d.rectangle((2, 2, 5, 18), fill=marker)
-        d.rectangle((Wv - 18, 2, Wv - 3, 5), fill=marker)
-        d.rectangle((Wv - 5, 2, Wv - 3, 18), fill=marker)
-        d.rectangle((2, Hv - 5, 18, Hv - 3), fill=marker)
-        d.rectangle((2, Hv - 18, 5, Hv - 3), fill=marker)
-        d.rectangle((Wv - 18, Hv - 5, Wv - 3, Hv - 3), fill=marker)
-        d.rectangle((Wv - 5, Hv - 18, Wv - 3, Hv - 3), fill=marker)
-        draw_text(img, (8, 8), "TL", fill=marker, scale=1, letter_spacing=1)
-        draw_text(img, (Wv - 8, 8), "TR", fill=marker, scale=1,
-                  anchor="rt", letter_spacing=1)
-        draw_text(img, (8, Hv - 8), "BL", fill=marker, scale=1,
-                  anchor="lb", letter_spacing=1)
-        draw_text(img, (Wv - 8, Hv - 8), "BR", fill=marker, scale=1,
-                  anchor="rb", letter_spacing=1)
-
-        label_text = "DOY-FX  //  AUDIO.LAB  //  v2"
-        if placement_label:
-            label_text = "DOY-FX  //  AUDIO.LAB  //  " + str(placement_label)
-        draw_text(img, (Wv // 2, Hv - 4), label_text,
-                  fill=LED_SOFT + (255,), scale=1, anchor="mb",
-                  letter_spacing=2)
-
-        # Phase 7G: tiny encoder status strip (right edge, above the BR
-        # corner marker). Only appears when at least one optional encoder
-        # field is set, so legacy AppState instances render identically.
-        # Phase 7G+: live_apply / OK / ERR / RAT? appended when the
-        # EncoderEffectApplier has run.
-        _enc_flags = []
-        if getattr(state, "edit_mode", False):
-            _enc_flags.append("EDIT")
-        if getattr(state, "model_select_mode", False):
-            _enc_flags.append("MODEL")
-        if getattr(state, "value_dirty", False):
-            _enc_flags.append("DIRTY")
-        if getattr(state, "apply_pending", False):
-            _enc_flags.append("APPLY?")
-        _src = getattr(state, "last_control_source", "notebook")
-        if _src == "encoder":
-            _enc_flags.append("ENC")
-            if getattr(state, "live_apply", False):
-                _enc_flags.append("LIVE")
-            if not bool(getattr(state, "last_apply_ok", True)):
-                _enc_flags.append("ERR")
-            elif getattr(state, "last_apply_message", ""):
-                _enc_flags.append("OK")
-            _unsupported = getattr(state, "last_unsupported_label", "") or ""
-            if "rat" in _unsupported.lower():
-                _enc_flags.append("RAT?")
-            elif _unsupported:
-                _enc_flags.append("UNSUP")
-        if _enc_flags:
-            _enc_text = " ".join(_enc_flags)
-            _flag_color = (
-                bypass_color if (not bool(getattr(state, "last_apply_ok", True)))
-                else LED)
-            draw_text(img, (Wv - 22, Hv - 24), _enc_text,
-                      fill=_flag_color + (255,), scale=1, anchor="rb",
-                      letter_spacing=2)
+        _draw_cv2_corner_markers(img, d, palette, Wv, Hv, placement_label)
+        _draw_cv2_encoder_status(img, d, state, palette, Wv, Hv)
 
         # Convert to a writable RGB ndarray *before* applying the
         # Pip-Boy-style scanline overlay so the blend is a single

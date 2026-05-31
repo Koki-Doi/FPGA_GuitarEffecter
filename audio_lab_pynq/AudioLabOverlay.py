@@ -11,6 +11,11 @@ from .effect_defaults import (
     NOISE_SUPPRESSOR_DEFAULTS as _NOISE_SUPPRESSOR_DEFAULTS,
     COMPRESSOR_DEFAULTS as _COMPRESSOR_DEFAULTS,
     WAH_DEFAULTS as _WAH_DEFAULTS,
+    RAT_DEFAULTS as _RAT_DEFAULTS,
+    AMP_DEFAULTS as _AMP_DEFAULTS,
+    CAB_DEFAULTS as _CAB_DEFAULTS,
+    EQ_DEFAULTS as _EQ_DEFAULTS,
+    REVERB_DEFAULTS as _REVERB_DEFAULTS,
     AMP_MODELS as _AMP_MODELS,
     AMP_MODEL_LABELS as _AMP_MODEL_LABELS,
     AMP_MODELS_LEGACY_PERCENT as _AMP_MODELS_LEGACY_PERCENT,
@@ -1405,69 +1410,78 @@ class AudioLabOverlay(Overlay):
 
     @classmethod
     def reverb_control_word(cls, enabled=True, reverb=35, tone=70, mix=25):
-        reverb = cls._clamp_percent(reverb)
-        tone = cls._clamp_percent(tone)
-        mix = cls._clamp_percent(mix)
+        """Build the ``axi_gpio_reverb`` word (DECAY / TONE / MIX).
 
-        enable_hw = 1 if enabled else 0
-        reverb_hw = int(round(reverb * 220 / 100))
-        tone_hw = int(round(tone * 255 / 100))
-        mix_hw = int(round(mix * 192 / 100))
+        Delegates to :func:`control_maps.reverb_word`, the single source
+        for the hardware layout: ``ctrlA`` = DECAY, ``ctrlB`` = TONE,
+        ``ctrlC`` = MIX, ``ctrlD`` unused. The reverb ENABLE is **not**
+        carried in this word -- the Clash stage gates on ``gate_control``
+        flag bit 5 -- so ``enabled`` does not affect the bytes here; the
+        caller toggles the gate flag / routing separately.
 
-        return (
-            (mix_hw << 24) |
-            (tone_hw << 16) |
-            (reverb_hw << 8) |
-            enable_hw
-        )
+        Note: on the deployed bitstream ``set_reverb`` reaches this method
+        only on the legacy fallback path for an overlay that lacks
+        ``axi_gpio_gate`` (when the gate GPIO is present it delegates to
+        ``set_guitar_effects``, which sets ``flag5`` and uses the same
+        ``reverb_word`` layout). The earlier implementation packed an
+        ``enable`` bit into ``ctrlA`` and shifted DECAY/TONE/MIX up one
+        byte each, which did not match the Clash reverb decode.
+        """
+        return _cm.reverb_word(reverb, tone, mix)
 
     @classmethod
     def guitar_effect_control_words(
         cls,
+        # Per-effect knob defaults are sourced from the effect_defaults
+        # dicts (single source of truth) so this signature cannot drift
+        # from AudioLabOverlay.<EFFECT>_DEFAULTS / the cached state.
+        # ``noise_gate_threshold`` keeps a literal: it is the legacy gate
+        # threshold (scaled by noise_threshold_to_u8), distinct from the
+        # noise-suppressor NS threshold in NOISE_SUPPRESSOR_DEFAULTS.
         noise_gate_on=False,
         noise_gate_threshold=8,
         overdrive_on=False,
-        overdrive_tone=65,
-        overdrive_level=100,
-        overdrive_drive=30,
-        overdrive_model=0,
+        overdrive_tone=_OVERDRIVE_DEFAULTS["tone"],
+        overdrive_level=_OVERDRIVE_DEFAULTS["level"],
+        overdrive_drive=_OVERDRIVE_DEFAULTS["drive"],
+        overdrive_model=_OVERDRIVE_DEFAULTS["model"],
         distortion_on=False,
-        distortion_tone=65,
-        distortion_level=100,
-        distortion=25,
-        distortion_pedal_mask=0,
-        distortion_bias=50,
-        distortion_tight=50,
-        distortion_mix=100,
+        distortion_tone=_DISTORTION_DEFAULTS["tone"],
+        distortion_level=_DISTORTION_DEFAULTS["level"],
+        distortion=_DISTORTION_DEFAULTS["drive"],
+        distortion_pedal_mask=_DISTORTION_DEFAULTS["pedal_mask"],
+        distortion_bias=_DISTORTION_DEFAULTS["bias"],
+        distortion_tight=_DISTORTION_DEFAULTS["tight"],
+        distortion_mix=_DISTORTION_DEFAULTS["mix"],
         rat_on=False,
-        rat_filter=35,
-        rat_level=100,
-        rat_drive=55,
-        rat_mix=100,
+        rat_filter=_RAT_DEFAULTS["filter"],
+        rat_level=_RAT_DEFAULTS["level"],
+        rat_drive=_RAT_DEFAULTS["drive"],
+        rat_mix=_RAT_DEFAULTS["mix"],
         amp_on=False,
-        amp_input_gain=35,
-        amp_bass=50,
-        amp_middle=50,
-        amp_treble=50,
-        amp_presence=45,
-        amp_resonance=35,
-        amp_master=80,
-        amp_character=35,
+        amp_input_gain=_AMP_DEFAULTS["input_gain"],
+        amp_bass=_AMP_DEFAULTS["bass"],
+        amp_middle=_AMP_DEFAULTS["middle"],
+        amp_treble=_AMP_DEFAULTS["treble"],
+        amp_presence=_AMP_DEFAULTS["presence"],
+        amp_resonance=_AMP_DEFAULTS["resonance"],
+        amp_master=_AMP_DEFAULTS["master"],
+        amp_character=_AMP_DEFAULTS["character"],
         amp_model_idx=None,
         amp_drive_mode=0,
         cab_on=False,
-        cab_mix=100,
-        cab_level=100,
-        cab_model=1,
-        cab_air=50,
+        cab_mix=_CAB_DEFAULTS["mix"],
+        cab_level=_CAB_DEFAULTS["level"],
+        cab_model=_CAB_DEFAULTS["model"],
+        cab_air=_CAB_DEFAULTS["air"],
         eq_on=False,
-        eq_low=100,
-        eq_mid=100,
-        eq_high=100,
+        eq_low=_EQ_DEFAULTS["low"],
+        eq_mid=_EQ_DEFAULTS["mid"],
+        eq_high=_EQ_DEFAULTS["high"],
         reverb_on=False,
-        reverb_decay=30,
-        reverb_tone=65,
-        reverb_mix=20,
+        reverb_decay=_REVERB_DEFAULTS["decay"],
+        reverb_tone=_REVERB_DEFAULTS["tone"],
+        reverb_mix=_REVERB_DEFAULTS["mix"],
         **unused,
     ):
         flags = 0
@@ -1516,17 +1530,8 @@ class AudioLabOverlay(Overlay):
             )
             | ((pedal_mask & 0x7F) << 24)
         )
-        eq_word = cls._pack3(
-            cls._level_to_q7(eq_low),
-            cls._level_to_q7(eq_mid),
-            cls._level_to_q7(eq_high),
-        )
-        rat_word = cls._pack4(
-            cls._percent_to_u8(rat_filter, 255),
-            cls._level_to_q7(cls._clamp_range(rat_level, 0, 150)),
-            cls._percent_to_u8(rat_drive, 255),
-            cls._percent_to_u8(rat_mix, 255),
-        )
+        eq_word = _cm.eq_word(eq_low, eq_mid, eq_high)
+        rat_word = _cm.rat_word(rat_filter, rat_level, rat_drive, rat_mix)
         amp_word = cls._pack4(
             cls._percent_to_u8(amp_input_gain, 255),
             cls._level_to_q7(cls._clamp_range(amp_master, 0, 150)),
@@ -1551,17 +1556,8 @@ class AudioLabOverlay(Overlay):
             cls._percent_to_u8(amp_treble, 255),
             character_byte,
         )
-        cab_word = cls._pack4(
-            cls._percent_to_u8(cab_mix, 255),
-            cls._level_to_q7(cls._clamp_range(cab_level, 0, 150)),
-            cls._clamp_range(cab_model, 0, 2) * 85,
-            cls._percent_to_u8(cab_air, 255),
-        )
-        reverb_word = cls._pack3(
-            cls._percent_to_u8(reverb_decay, 220),
-            cls._percent_to_u8(reverb_tone, 255),
-            cls._percent_to_u8(reverb_mix, 192),
-        )
+        cab_word = _cm.cab_word(cab_mix, cab_level, cab_model, cab_air)
+        reverb_word = _cm.reverb_word(reverb_decay, reverb_tone, reverb_mix)
 
         return {
             'gate': gate_word,

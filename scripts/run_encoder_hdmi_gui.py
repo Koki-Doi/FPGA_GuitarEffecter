@@ -200,50 +200,29 @@ def _bring_up_overlay():
     return overlay
 
 
-# Pmod I2S2 status (`axi_pmod_i2s2_status`) register map -- mirrors
-# `scripts/test_pmod_i2s2.py` and `PmodI2S2EffectControlOneCell.ipynb`.
-_PMOD_REG_MODE = 0x28
-_PMOD_REG_CLEAR = 0x2C
-_PMOD_MODE_INT = {"tone": 0, "loopback": 1, "dsp": 2, "mute": 3}
-
-
-def _find_pmod_status_mmio(overlay):
-    """Return a `pynq.MMIO` for the Pmod I2S2 status IP, or None."""
-    try:
-        from pynq import MMIO  # type: ignore
-    except Exception:  # pragma: no cover -- off-board
-        return None
-    ip_dict = getattr(overlay, "ip_dict", {}) or {}
-    for key in sorted(ip_dict):
-        if "pmod_status" in key or "pmod_i2s2_status" in key:
-            entry = ip_dict[key]
-            phys_addr = entry.get("phys_addr")
-            if phys_addr is None:
-                continue
-            rng = entry.get("addr_range", 0x10000)
-            try:
-                return MMIO(int(phys_addr), int(rng))
-            except Exception:
-                return None
-    return None
-
-
 def _write_pmod_mode(overlay, mode_name):
-    """Write the Pmod I2S2 MODE register; return True on success."""
+    """Write the Pmod I2S2 MODE register; return True on success.
+
+    Register map / mode table / IP discovery come from the shared
+    `audio_lab_pynq.pmod_i2s2_status` module (imported lazily so the
+    module-level CLI still works off-board).
+    """
     if overlay is None or mode_name in (None, "keep"):
         return False
-    if mode_name not in _PMOD_MODE_INT:
+    from audio_lab_pynq.pmod_i2s2_status import (  # type: ignore
+        MODE_INT, REG, find_status_mmio)
+    if mode_name not in MODE_INT:
         print("[gui] pmod-mode %r unrecognised; skipping." % (mode_name,))
         return False
-    mmio = _find_pmod_status_mmio(overlay)
+    mmio, _key = find_status_mmio(overlay=overlay)
     if mmio is None:
         print("[gui] pmod_status IP not found in overlay; "
               "--pmod-mode is a no-op on this bit.")
         return False
-    mode_int = _PMOD_MODE_INT[mode_name]
+    mode_int = MODE_INT[mode_name]
     try:
-        mmio.write(_PMOD_REG_MODE, mode_int & 0x3)
-        rb = mmio.read(_PMOD_REG_MODE) & 0x3
+        mmio.write(REG["MODE"], mode_int & 0x3)
+        rb = mmio.read(REG["MODE"]) & 0x3
         print("[gui] pmod_mode set to %d (%s); readback=%d"
               % (mode_int, mode_name, rb))
         return True

@@ -73,6 +73,15 @@ The renderer returns RGB `numpy.ndarray` frames. The HDMI backend packs
 the RGB888 frame into the deployed DDR framebuffer order expected by the
 VDMA / `v_axi4s_vid_out` / `rgb2dvi` path.
 
+The compact-v2 EFFECTS list is 9 entries (`Noise Sup / Compressor / Wah /
+Overdrive / Distortion / Amp Sim / Cab IR / EQ / Reverb`). When `Wah` is
+the selected effect the FX panel draws a `SOURCE: MANUAL / PEDAL` strip:
+`PEDAL` routes Wah POSITION from the ZOOM FP02M expression pedal
+(Arduino A0 = XADC VAUX1), while Q / VOLUME / BIAS stay knob-driven
+(D72 / D76). The renderer is split per-theme under `GUI/compact_v2/`
+(`knobs.py` / `state.py` / `layout.py` / `renderer.py` / `hit_test.py`);
+`pynq_multi_fx_gui.py` is a re-export shim (`DECISIONS.md` D26).
+
 ## Control Bridge
 
 `audio_lab_gui_bridge.py` is intentionally separated from drawing:

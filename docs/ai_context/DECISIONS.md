@@ -4901,3 +4901,74 @@ D75 (DSP clock-domain island).
   (`d1343291` / `aad985fe`, full-100 MHz) recoverable from git history. To
   drop the XADC again, re-comment the two `create_project.tcl` lines and
   rebuild.
+
+## D77 - Refactoring pass: control-maps word builders, Pmod-status helper, renderer split, defaults single-source (Python-only, byte-identical)
+
+Done 2026-05-31. Branch `refactor/guitar-effect-control-words` (built on the
+D76 doc-sync). A behaviour-preserving cleanup pass. **No bitstream rebuild,
+no GPIO address/layout change, no Clash voicing change; the deployed bit
+stays D76 (`9fdecae0` / `a9fd7408`).** Every byte that reaches the FPGA on
+the live path is unchanged, locked by the `test_overlay_controls`
+golden word-dict snapshots; the compact-v2 renderer output is pixel-identical
+(md5 over 14 `AppState` variants). The Python test suite stays at the
+pre-existing 3 failures + 1 error baseline.
+
+- **#5 Pmod status single source.** New `audio_lab_pynq/pmod_i2s2_status.py`
+  owns the `axi_pmod_i2s2_status` register map, the `MODE_INT` table,
+  `sign24`, and the `find_status_mmio(overlay=None)` IP-discovery dance.
+  `scripts/pmod_i2s2_mode.py` and `scripts/run_encoder_hdmi_gui.py` delegate
+  to it (lazy `pynq` import keeps the board-only CLIs importable off-board).
+  `scripts/test_pmod_i2s2.py` keeps its own semantically-named constants
+  (HW-only validation, not worth the churn).
+- **#4 compact-v2 renderer split.** Extracted `_draw_cv2_header` /
+  `_draw_cv2_chain` / `_draw_cv2_corner_markers` / `_draw_cv2_encoder_status`
+  from the 418-line `_render_frame_800x480_compact_v2` (now ~293 lines). The
+  complex FX panel (model dropdown + per-effect knob grid + WAH SOURCE strip)
+  stays inline.
+- **#7 retired PCM scripts.** Moved `test_pcm1808_adc_to_pcm5102.py` /
+  `test_pcm5102_dac_tone.py` / `test_pcm5102_dsp_output.py` to
+  `scripts/legacy/` (the PCM1808/PCM5102 path was retired at D48) and
+  documented them in the legacy README. Not staged by `deploy_to_pynq.sh`.
+- **#2 word-builder consolidation + reverb layout fix.**
+  `control_maps` gains `reverb_word` / `eq_word` / `rat_word` / `cab_word`;
+  `guitar_effect_control_words` delegates to them (the reverb / EQ / RAT /
+  cab GPIO words were packed inline before). **Reverb layout was verified
+  against the Clash source** (`AudioLab.Effects.Reverb`): the feedback
+  multiply is `mulU8(monoWet, ctrlA)`, tone reads `ctrlB`, mix reads
+  `ctrlC`, and on/off is `flag5(fGate)`. So the hardware word is
+  **ctrlA = DECAY, ctrlB = TONE, ctrlC = MIX, ctrlD unused, ENABLE on
+  gate_control flag5** -- which is exactly what the live
+  `set_guitar_effects` path (`_pack3(decay, tone, mix)` + gate flag5)
+  already wrote. The legacy `AudioLabOverlay.reverb_control_word` packed an
+  enable bit into ctrlA and shifted DECAY/TONE/MIX up one byte each -- a
+  layout that did NOT match the Clash decode. It is only reached on the
+  fallback path for an overlay WITHOUT `axi_gpio_gate` (the deployed bit
+  always has the gate, so `set_reverb` delegates to `set_guitar_effects`),
+  so this was a dead-path bug, not a live one; `reverb_control_word` now
+  delegates to `control_maps.reverb_word`. `GPIO_CONTROL_MAP.md` reverb row
+  corrected to match the Clash truth (it previously claimed ctrlA = enable).
+- **#3 defaults single-source.** `guitar_effect_control_words` now sources
+  every per-effect knob default from the `effect_defaults` dicts
+  (`_DISTORTION_DEFAULTS` / `_OVERDRIVE_DEFAULTS` / `_RAT_DEFAULTS` /
+  `_AMP_DEFAULTS` / `_CAB_DEFAULTS` / `_EQ_DEFAULTS` / `_REVERB_DEFAULTS`).
+  This fixed a latent mismatch: the distortion signature defaults were
+  `65/100/25` while `DISTORTION_DEFAULTS` (and the cached `_dist_state` the
+  live path uses) is `50/35/20`. **No production audio impact** --
+  `set_guitar_effects` always cache-merges the distortion bytes from
+  `_dist_state` before calling the packer, and `set_reverb` discards the
+  distortion word, so the old `65/100/25` only ever surfaced on a direct
+  no-arg packer call. The 6 no-distortion-arg golden snapshots were updated
+  (`distortion` `0x004080a6 -> 0x00332d80`) to reflect the value users
+  actually get. `noise_gate_threshold` keeps a literal (legacy gate
+  threshold, distinct from the NS threshold).
+- **Assessed, not actioned.** #1 (byte-helper dedup) was already done -- the
+  `AudioLabOverlay._percent_to_u8` / `_pack3` etc. already delegate to
+  `control_maps`. #6 (shared script bring-up helper) had insufficient real
+  duplication (3 divergent strategies) to justify migrating board-only
+  scripts that cannot be validated off-board.
+- **Tests.** New: 3 reverb-layout tests + a defaults==effect_defaults guard
+  in `test_overlay_controls.py`.
+- **Deploy.** Python-only; `deploy_to_pynq.sh` run (no `download=True`, PL
+  not reprogrammed). On-board verified: `control_maps.reverb_word(30,65,20)
+  == 0x0026a642`, `reverb_control_word` delegates, default distortion word
+  `0x00332d80`, the new `control_maps` word builders present.
