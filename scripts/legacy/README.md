@@ -1,5 +1,27 @@
 # scripts/legacy/
 
+Retired one-off scripts kept for archaeology only. They are not part of
+the deploy flow and `scripts/deploy_to_pynq.sh` does not stage them.
+
+## Retired external PCM1808 / PCM5102 audio (Phase 7C / 7D / 7E)
+
+The PCM5102 DAC + PCM1808 ADC PMOD JB path was retired when the build
+moved to the Digilent Pmod I2S2 (`DECISIONS.md` D48). `create_project.tcl`
+no longer sources the PCM integration Tcl and PMOD JB is owned by
+`audio_lab_pmod_i2s2.xdc`, so these bench scripts target a signal path
+that the deployed bit no longer drives.
+
+| Script | Notes |
+| --- | --- |
+| `test_pcm5102_dac_tone.py` | PCM5102 DAC tone-out smoke (retired output path). |
+| `test_pcm5102_dsp_output.py` | DSP -> PCM5102 output check (retired output path). |
+| `test_pcm1808_adc_to_pcm5102.py` | PCM1808 ADC -> PCM5102 DAC end-to-end (retired input + output path). |
+
+Re-enabling these requires a new hardware phase and a full
+rebuild / timing / bench review (see `EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`).
+
+## HDMI diagnostics (Phase 4D / 4F / 4H / 5A / 6F / 6H)
+
 One-off HDMI diagnostic scripts from the Phase 4D / 4F / 4H / 5A / 6F
 / 6H eras. They were useful at the time for narrowing down LCD output
 issues and were never intended for long-term operation. The Phase 6I

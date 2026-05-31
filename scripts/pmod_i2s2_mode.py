@@ -33,85 +33,34 @@ import argparse
 import os
 import sys
 
+# The register map / mode table / MMIO discovery live in the shared
+# `audio_lab_pynq.pmod_i2s2_status` module (single source of truth). It is
+# imported lazily inside the functions below so this board-only CLI still
+# imports off-board for `--help` / inspection (the package __init__ pulls
+# in pynq, which is absent on a dev host).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-PMOD_PHYS_ADDR_FALLBACK = 0x43D20000
-PMOD_ADDR_RANGE         = 0x10000
-
-REG = {
-    "VERSION":      0x00,
-    "STATUS":       0x04,
-    "FRAME":        0x08,
-    "NONZERO":      0x0C,
-    "SDOUT_XCOUNT": 0x10,
-    "CLIP":         0x14,
-    "LAST_LEFT":    0x18,
-    "LAST_RIGHT":   0x1C,
-    "PEAK_L":       0x20,
-    "PEAK_R":       0x24,
-    "MODE":         0x28,
-    "CLEAR":        0x2C,
-}
-EXPECTED_VERSION = 0x00480001
-
-MODE_INT = {"tone": 0, "loopback": 1, "dsp": 2, "mute": 3}
-MODE_LABEL = {v: k for k, v in MODE_INT.items()}
-
-
-def _sign24(x):
-    x = int(x) & 0xFFFFFFFF
-    if x & 0x80000000:
-        return x - (1 << 32)
-    return x
+# Mode names for argparse `choices` (the authoritative name->int mapping is
+# `pmod_i2s2_status.MODE_INT`; kept in lock-step with it).
+MODE_NAMES = ("tone", "loopback", "dsp", "mute")
 
 
 def _find_pmod_status_mmio():
     """Return a (mmio, key) tuple for the pmod_status IP, or (None, None).
 
     The PL must already have `audio_lab.bit` loaded by some other
-    process (e.g. the encoder HDMI GUI runner). We avoid re-downloading
-    by using `pynq.Overlay(... download=False)` purely for its ip_dict;
-    if even that fails (newer pynq behaviour, hwh missing, etc.) we
-    fall back to the documented physical address.
+    process (e.g. the encoder HDMI GUI runner). Delegates to the shared
+    no-overlay discovery path, which uses `pynq.Overlay(download=False)`
+    purely for its ip_dict and falls back to the documented physical
+    address.
     """
-    from pynq import PL, MMIO  # type: ignore
-    bitfile = (PL.bitfile_name or "")
-    if "audio_lab" not in os.path.basename(bitfile):
-        print("ERROR: audio_lab.bit not loaded on PL (PL.bitfile_name=%r). "
-              "Start the encoder runner first." % bitfile, file=sys.stderr)
-        return None, None
-
-    phys_addr = None
-    found_key = None
-    try:
-        from pynq import Overlay  # type: ignore
-        ovl = Overlay(bitfile, download=False)
-        ip_dict = getattr(ovl, "ip_dict", {}) or {}
-        for key in sorted(ip_dict):
-            if "pmod_status" in key or "pmod_i2s2_status" in key:
-                entry = ip_dict[key]
-                addr = entry.get("phys_addr")
-                if addr is not None:
-                    phys_addr = int(addr)
-                    found_key = key
-                    break
-    except Exception as exc:
-        print("WARN: Overlay(download=False) failed (%r); falling back to "
-              "hardcoded address 0x%08X."
-              % (exc, PMOD_PHYS_ADDR_FALLBACK), file=sys.stderr)
-
-    if phys_addr is None:
-        phys_addr = PMOD_PHYS_ADDR_FALLBACK
-        found_key = "fallback:0x%08X" % phys_addr
-
-    try:
-        return MMIO(phys_addr, PMOD_ADDR_RANGE), found_key
-    except Exception as exc:
-        print("ERROR: pynq.MMIO failed at 0x%08X: %r"
-              % (phys_addr, exc), file=sys.stderr)
-        return None, None
+    from audio_lab_pynq.pmod_i2s2_status import find_status_mmio
+    return find_status_mmio(overlay=None, require_loaded=True)
 
 
 def _print_status(mmio, key):
+    from audio_lab_pynq.pmod_i2s2_status import (
+        EXPECTED_VERSION, MODE_LABEL, REG, sign24 as _sign24)
     ver = mmio.read(REG["VERSION"]) & 0xFFFFFFFF
     st  = mmio.read(REG["STATUS"]) & 0xFFFFFFFF
     mode = (st >> 8) & 0x3
@@ -143,7 +92,7 @@ def _print_status(mmio, key):
 def main(argv=None):
     p = argparse.ArgumentParser()
     grp = p.add_mutually_exclusive_group(required=True)
-    grp.add_argument("--mode", choices=tuple(MODE_INT.keys()),
+    grp.add_argument("--mode", choices=MODE_NAMES,
                      help="Write MODE register to the given symbolic mode.")
     grp.add_argument("--read", action="store_true",
                      help="Print the live pmod_status snapshot.")
@@ -164,6 +113,8 @@ def main(argv=None):
     mmio, key = _find_pmod_status_mmio()
     if mmio is None:
         return 2
+
+    from audio_lab_pynq.pmod_i2s2_status import MODE_INT, REG
 
     if args.mode is not None:
         mode_int = MODE_INT[args.mode]
