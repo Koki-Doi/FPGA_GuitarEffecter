@@ -61,17 +61,41 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- The **BD-2 Overdrive coefficient-only retune shipped and is the
-  current deployed baseline** (D62, 2026-05-24). Only model index 2
-  constants in `AudioLab/Effects/Overdrive.hs` changed:
-  `odDriveK 2 = 7`, `odKneeP 2 = 2_400_000`,
-  `odKneeN 2 = 1_900_000`, `odSafetyKnee 2 = 3_400_000`.
-  `Pipeline.hs`, GPIO, `block_design.tcl`, multiplier count, and other
-  Overdrive models are unchanged. D62 timing is WNS `-8.497 ns`,
-  TNS `-5876.740 ns`, WHS `+0.053 ns`, THS `0`, with bit/hwh md5
-  `349ebbe609ac15f58d8b676d2dedee94` /
-  `3a90e966c5d76762b60ba3ab0e982685`. Bench audition accepted
-  safe-bypass quietness and BD-2 earlier/asymmetric breakup.
+- **Current deployed baseline = D76** (2026-05-31): the ZOOM FP02M
+  expression pedal drives Wah POSITION via a re-added `xadc_wiz_a0`
+  XADC Wizard (Arduino A0 = VAUX1, AXI MMIO) on top of the D75 50 MHz
+  DSP clock-domain island. bit/hwh md5
+  `9fdecae0c7d7cf3c59422cec2b30368f` /
+  `a9fd74082482aa1b074fc3c31ccd6283`; overall routed WNS `-0.368 ns`
+  (100 MHz audio fabric `+0.614 ns`, 0 failing). Two Python-only
+  bench fixes ride with it: Wah-only AXIS re-routing and a Wah Q
+  self-oscillation cap (`WAH_Q_BYTE_MAX = 80`). Rollback baselines:
+  D75 (`4a0b3dae...` / `347d3e55...`), then D73. See `DECISIONS.md`
+  D76, `DSP_ISLAND_CLOCK_DESIGN.md`, `FP02M_PEDAL_INTEGRATION.md`,
+  `XADC_INTEGRATION_DESIGN.md`.
+- The **Wah effect shipped** (D72, retuned to Cry Baby GCB-95 in D73)
+  on a dedicated `axi_gpio_wah` IP at `0x43D30000`, inserted between
+  the Compressor and the Overdrive in the Clash pipeline (chain is now
+  9 GUI effects). POSITION / Q / VOLUME on `ctrlA..C`; `ctrlD` bit 7 =
+  enable, bits[6:0] = BIAS. Added by `wah_integration.tcl`;
+  `block_design.tcl` not edited. See `DECISIONS.md` D72 / D73 and
+  `WAH_EFFECT_INTEGRATION_PLAN.md`.
+- The **DSP 50 MHz clock-domain island shipped** (D75). Only
+  `clash_lowpass_fir_0` runs at `FCLK_CLK1 = 50 MHz`; the rest of the
+  fabric stays at 100 MHz, bridged by `axis_clock_converter`
+  (`cc_dsp_in` / `cc_dsp_out`). This closed the DS-1 distortion timing
+  (WNS `-10.387 -> -0.706 ns`) without lowering the whole fabric
+  (which breaks the I2S/Pmod CDCs). Load-bearing supports: `paceCount`
+  removal in `Pipeline.hs`, `syncCtrl` control-word CDC in
+  `LowPassFir.hs`, `set_clock_groups` over 7 domains. See
+  `DECISIONS.md` D75 and `DSP_ISLAND_CLOCK_DESIGN.md`.
+- The **BD-2 Overdrive coefficient-only retune shipped** (D62,
+  2026-05-24; superseded as the deployed baseline by D72-D76 above).
+  Only model index 2 constants in `AudioLab/Effects/Overdrive.hs`
+  changed: `odDriveK 2 = 7`, `odKneeP 2 = 2_400_000`,
+  `odKneeN 2 = 1_900_000`, `odSafetyKnee 2 = 3_400_000`. Bench
+  audition accepted safe-bypass quietness and BD-2 earlier/asymmetric
+  breakup.
 - The **noise-suppressor refactor shipped** earlier (branch
   `feature/noise-suppressor-gpio-ui`, merged into `main`). A
   dedicated `axi_gpio_noise_suppressor` IP at `0x43CC0000` carries
@@ -185,6 +209,8 @@ Then read whatever is topical for the task at hand:
 | [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4 through Phase 6I status (Section 11 has the Phase 6I C2 SVGA 800x600 result). |
 | [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md) / [`ENCODER_INPUT_IMPLEMENTATION.md`](ENCODER_INPUT_IMPLEMENTATION.md) / [`ENCODER_INPUT_MAP.md`](ENCODER_INPUT_MAP.md) | Rotary encoder PL IP + Python driver + GUI live-apply (Phase 7F / 7G / 7G+). |
 | [`PMOD_I2S2_INTEGRATION_PLAN.md`](PMOD_I2S2_INTEGRATION_PLAN.md) | Current Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) PMOD JB audio implementation plus the original Phase Pmod-0 plan kept as history. |
+| [`WAH_EFFECT_INTEGRATION_PLAN.md`](WAH_EFFECT_INTEGRATION_PLAN.md) | Wah effect (`axi_gpio_wah` @ `0x43D30000`) design + Cry Baby GCB-95 voicing (D72 / D73). |
+| [`FP02M_PEDAL_INTEGRATION.md`](FP02M_PEDAL_INTEGRATION.md) / [`XADC_INTEGRATION_DESIGN.md`](XADC_INTEGRATION_DESIGN.md) | ZOOM FP02M expression pedal -> Wah POSITION via the `xadc_wiz_a0` XADC Wizard (Arduino A0 = VAUX1, AXI MMIO), accepted on the D75 island in D76. |
 | [`EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md`](EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md) / [`IO_PIN_RESERVATION.md`](IO_PIN_RESERVATION.md) | Retired PCM1808 ADC + PCM5102 DAC history, PMOD JB ownership migration to Pmod I2S2, and RPi/Arduino pin reservations. |
 | [`history/hdmi_phases/README.md`](history/hdmi_phases/README.md) | Per-phase HDMI GUI history index (Phase 1 -- Phase 6I), kept for archaeology. Read individual phase files only when you need contemporaneous detail. |
 | [`history/current_state/`](history/current_state/) | CURRENT_STATE-flavoured snapshots that were trimmed out of the live `CURRENT_STATE.md` (HDMI Phase 4/5 + Phase 1-3 prose, DSP / voicing arc, Phase 7A/7B/7F/7G planning, Phase 6F-6I dated detail). Read only when an old phase block is the load-bearing reference. |

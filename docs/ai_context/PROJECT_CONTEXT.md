@@ -32,6 +32,10 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 | `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}` | Built artefacts shipped to PYNQ. |
 | `hw/Pynq-Z2/pmod_i2s2_integration.tcl` | Sourced by `create_project.tcl` to add the current PMOD JB Pmod I2S2 path, reroute `i2s_to_stream_0` onto the Pmod ADC/clocks, instantiate `pmod_master_0` plus `pmod_status_0`, and map the status/control slave at `0x43D20000`. |
 | `hw/Pynq-Z2/audio_lab_pmod_i2s2.xdc` | PMOD JB constraints for Pmod I2S2 D/A and A/D sides (`JB1..JB4`, `JB7..JB10`). |
+| `hw/Pynq-Z2/wah_integration.tcl` | Sourced after `pmod_i2s2_integration.tcl` to add `axi_gpio_wah` at `0x43D30000` (bumps `NUM_MI` 19->20, M19) and wire it to `clash_lowpass_fir_0/wah_control` (D72/D73). `block_design.tcl` not edited. |
+| `hw/Pynq-Z2/xadc_integration.tcl` + `xadc_a0.xdc` | Sourced after `wah_integration.tcl` to add the `xadc_wiz_a0` XADC Wizard at `0x43D40000` (bumps `NUM_MI` 20->21, M20) reading Arduino A0 = VAUX1 (Y11/Y12) for the FP02M pedal (D76). `block_design.tcl` not edited. |
+| `hw/Pynq-Z2/island_integration.tcl` | Sourced last to build the D75 DSP clock-domain island: enables `FCLK_CLK1 = 50 MHz`, adds `rst_island_50M`, inserts `axis_clock_converter` `cc_dsp_in` (100->50) / `cc_dsp_out` (50->100) around the DSP AXIS, and moves `clash_lowpass_fir_0/clk` + `aresetn` onto FCLK1. `block_design.tcl` not edited. |
+| `audio_lab_pynq/fp02m.py` | ZOOM FP02M expression-pedal layer: `Fp02mCalibration` (JSON load/save), `Fp02mXadcMmioReader` (reads `xadc_wiz_a0` reg `0x244` = VAUX1 via AXI MMIO), `Fp02mPositionMapper` (raw->u8 with invert / deadband / EMA / "C" anti-log taper), `Fp02mWahController`. The pedal is the sole `position_raw` writer (D74/D76). |
 | `hw/ip/clash/src/LowPassFir.hs` | The full PL DSP pipeline. Real source of truth for every effect. |
 | `hw/ip/clash/vhdl/LowPassFir/` | Clash-generated VHDL plus packaged Vivado IP. |
 | `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` | FPGA-master I2S engine for the active Pmod I2S2 path. Generates 12.288 MHz MCLK, 3.072 MHz BCLK, 48 kHz LRCK, supports modes 0 tone / 1 loopback / 2 DSP / 3 mute, and mirrors mode-2 RIGHT slot to both DAC channels via `mode2_right_snapshot` (D50). |
@@ -75,9 +79,15 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
   G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
   via `mode2_right_snapshot` (D50).
-- The DSP pipeline runs on the FCLK0 100 MHz domain (`AudioDomain` in
-  Clash). Sample rate is 48 kHz, so the PL has ~2080 clock cycles per
-  audio frame for a single channel pair.
+- The DSP runs in a **50 MHz clock-domain island** (D75). Only
+  `clash_lowpass_fir_0` is clocked by `FCLK_CLK1 = 50 MHz`; the rest of the
+  fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays on
+  `FCLK_CLK0 = 100 MHz`, bridged by two `axis_clock_converter`
+  (`cc_dsp_in` / `cc_dsp_out`) added in `island_integration.tcl`. The 50 MHz
+  island is what closed the DS-1 distortion timing (WNS -10.387 -> -0.706 ns
+  at D75; -0.368 ns at D76). Sample rate is 48 kHz. The control-word CDC
+  (`syncCtrl` in `LowPassFir.hs`) and `paceCount` removal in `Pipeline.hs`
+  are load-bearing -- see `DSP_ISLAND_CLOCK_DESIGN.md` and `DECISIONS.md` D75.
 - The distortion section is built on a **pedal-mask design** (commit
   `baa97ff`, with the reserved-pedal implementation landed on
   `feature/add-reserved-distortion-pedals`, commit `c8f8d8c`).
@@ -96,6 +106,20 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   methods are intentionally **not** used. See
   `DSP_EFFECT_CHAIN.md` Noise Suppressor section and `DECISIONS.md`
   D11.
+- The Wah is a **Cry Baby GCB-95-style resonant band-pass** on a dedicated
+  `axi_gpio_wah` IP at `0x43D30000` (D72; retuned in D73). POSITION / Q /
+  VOLUME ride `ctrlA..C`; `ctrlD` bit 7 is the enable and bits[6:0] are
+  BIAS. It sits between the Compressor and the Overdrive in the Clash
+  pipeline. The chain is now 9 GUI effects: Noise Suppressor -> Compressor
+  -> Wah -> Overdrive -> Distortion -> RAT/Pedals -> Amp -> Cab -> EQ ->
+  Reverb. See `WAH_EFFECT_INTEGRATION_PLAN.md` and `DECISIONS.md` D72 / D73.
+- The **ZOOM FP02M expression pedal** can drive Wah POSITION (D76). It is
+  read from Arduino A0 = XADC VAUX1 through the `xadc_wiz_a0` Wizard
+  (`0x43D40000`) via **AXI MMIO** (register `0x244`), mapped by
+  `audio_lab_pynq/fp02m.py`. The pedal is the sole `position_raw` writer;
+  Q / VOLUME / BIAS stay GUI / encoder driven. Calibration lives at
+  `/root/.config/audio_lab/fp02m_calibration.json` on the board. See
+  `FP02M_PEDAL_INTEGRATION.md`, `XADC_INTEGRATION_DESIGN.md`, `DECISIONS.md` D76.
 - AXI GPIOs in the design are output-only; the Python side keeps a cache
   of the last word written to each GPIO so that read-modify-write on
   byte-fields is possible.

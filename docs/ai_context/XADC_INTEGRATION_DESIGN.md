@@ -1,12 +1,23 @@
-# XADC Wizard integration (BUILT + deployed; A0 MMIO read confirmed)
+# XADC Wizard integration (ACCEPTED + committed on the D75 island; D76 baseline)
 
-Status: **built and deployed** (2026-05-29). `create_project.tcl` sources
-`xadc_integration.tcl` + adds `xadc_a0.xdc`; Vivado rebuilt the bit/hwh
-(WNS `-11.361 ns`, delta `-0.451 ns` vs D73; Wah not the worst path; XADC
-adds 0 critical paths). The PL `xadc_wiz_a0` reads Arduino A0 via **AXI
-MMIO** (not IIO -- see below). bit/hwh are deployed to the board but **not
-committed until bench audition passes** (per the D74 acceptance gate).
-See `DECISIONS.md` D74 and `FP02M_PEDAL_INTEGRATION.md` section 1.
+Status: **accepted on bench and committed** as part of **D76**
+(2026-05-31). The D74 build (below) had been deployed but held out of git
+because of a bitcrusher on the ADC path; that defect was later proven to
+be the D74 100 MHz audio-AXIS P&R degradation, **not** the XADC. On the
+D75 50 MHz DSP island the same XADC re-add closes timing cleanly and the
+bitcrusher does not recur, so D76 re-enabled it and accepted it on the
+bench. `create_project.tcl` now sources `xadc_integration.tcl` after
+`wah_integration.tcl` and **before** `island_integration.tcl`, and adds
+`xadc_a0.xdc`. The PL `xadc_wiz_a0 @ 0x43D40000` reads Arduino A0 via
+**AXI MMIO** (not IIO -- see below) and drives Wah POSITION through the
+FP02M layer. D76 routed timing: overall WNS `-0.368 ns` (100 MHz audio
+fabric WNS `+0.614 ns`, 0 failing; the only 22 failures are intra-50 MHz
+DSP DS-1 arithmetic); bit/hwh md5 `9fdecae0c7d7cf3c59422cec2b30368f` /
+`a9fd74082482aa1b074fc3c31ccd6283`, deployed 5-site. See `DECISIONS.md`
+D76, `DSP_ISLAND_CLOCK_DESIGN.md`, and `FP02M_PEDAL_INTEGRATION.md`.
+
+The "Build result (2026-05-29)" section below is the original D74 build
+record (committed-baseline = D72/D73 at that time), retained for history.
 
 ## Why
 

@@ -48,7 +48,22 @@ read-back from hardware.
 | `axi_gpio_cab` | `0x43CB0000` | cab IR | mix | level | model (0/85/170 = 3 presets) | air | active / active / active / active | `ctrlC` is quantised: 0, 85, 170 select the three preset IRs. Do not treat it as a free byte. |
 | `axi_gpio_noise_suppressor` | `0x43CC0000` | noise suppressor | NS threshold | NS decay | NS damp | mode (reserved) | active / active / active / reserved | `ctrlD` is reserved for future NS-2 vs NS-1X mode, attack / hold knobs. The byte is sent (Python clamps to `[0,255]`) but the live Clash side does nothing with it yet. |
 | `axi_gpio_compressor` | `0x43CD0000` | compressor | comp threshold | comp ratio | comp response | enable (bit 7) + makeup u7 (bits[6:0]) | active / active / active / active | Stereo-linked feed-forward peak compressor. Bit 7 of `ctrlD` is the section enable; bits[6:0] are the Q7 makeup byte (`makeup_to_u7`). The compressor is **not** gated by `gate_control.ctrlA` -- enable lives entirely inside this GPIO. Sits between the noise suppressor and the overdrive in the Clash pipeline. |
-| `axi_gpio_wah` | `0x43D30000` | wah | wah POSITION (u8 0..255) | wah Q (u8 0..255) | wah VOLUME (u8 0..255, byte 128 ~= unity, byte 255 ~= +6 dB) | enable (bit 7) + wah BIAS u7 (bits[6:0], 64 = centred) | active / active / active / active | Resonant band-pass wah (D72; voicing retuned to Cry Baby GCB-95 sweep range in D73). Bit 7 of `ctrlD` is the section enable; bits[6:0] are the BIAS byte. The Wah is **not** gated by `gate_control.ctrlA` -- enable lives entirely inside this GPIO (same convention as the Compressor). Sits between the Compressor and the Overdrive in the Clash pipeline (classic pre-distortion wah). POSITION is the pedal-sweep parameter; today it is GUI / encoder driven (SOURCE = MANUAL), and the FP02M / Arduino A0 future input will feed the same byte through a separate `wah_position_raw` Python API (D73 split) without changing the GPIO layout. The D73 VOLUME curve is two-segment piecewise linear: byte 0 -> factor 128 (~0.5x), byte 128 -> factor 256 (1.0x unity, the GUI 50 % anchor), byte 255 -> factor 510 (~2.0x, +6 dB boost cap). Added via `hw/Pynq-Z2/wah_integration.tcl` (sourced from `create_project.tcl` after `pmod_i2s2_integration.tcl`); `block_design.tcl` is **not** edited. The integration script bumps `ps7_0_axi_periph/NUM_MI` from 19 to 20 to expose M19_AXI for this GPIO. See `DECISIONS.md` D72 / D73. |
+| `axi_gpio_wah` | `0x43D30000` | wah | wah POSITION (u8 0..255) | wah Q (u8 0..255) | wah VOLUME (u8 0..255, byte 128 ~= unity, byte 255 ~= +6 dB) | enable (bit 7) + wah BIAS u7 (bits[6:0], 64 = centred) | active / active / active / active | Resonant band-pass wah (D72; voicing retuned to Cry Baby GCB-95 sweep range in D73). Bit 7 of `ctrlD` is the section enable; bits[6:0] are the BIAS byte. The Wah is **not** gated by `gate_control.ctrlA` -- enable lives entirely inside this GPIO (same convention as the Compressor). Sits between the Compressor and the Overdrive in the Clash pipeline (classic pre-distortion wah). POSITION is the pedal-sweep parameter; it is GUI / encoder driven when SOURCE = MANUAL, and SOURCE = PEDAL feeds the same byte from the ZOOM FP02M expression pedal (Arduino A0 = XADC VAUX1 via `xadc_wiz_a0`) through the separate `wah_position_raw` Python API (D73 split, made active in D76) without changing the GPIO layout. The D73 VOLUME curve is two-segment piecewise linear: byte 0 -> factor 128 (~0.5x), byte 128 -> factor 256 (1.0x unity, the GUI 50 % anchor), byte 255 -> factor 510 (~2.0x, +6 dB boost cap). Added via `hw/Pynq-Z2/wah_integration.tcl` (sourced from `create_project.tcl` after `pmod_i2s2_integration.tcl`); `block_design.tcl` is **not** edited. The integration script bumps `ps7_0_axi_periph/NUM_MI` from 19 to 20 to expose M19_AXI for this GPIO. See `DECISIONS.md` D72 / D73. |
+
+### Companion non-GPIO IP: `xadc_wiz_a0` (read-only, D76)
+
+`xadc_wiz_a0` (Xilinx XADC Wizard) sits at **`0x43D40000`** and is the
+highest segment in the current map. It is **not** an `axi_gpio_*` and is
+not part of this output-only ledger -- it is a read-only AXI slave that
+samples Arduino A0 = **VAUX1** (Y11/Y12) for the ZOOM FP02M expression
+pedal. The Python side reads register `0x244` (12-bit code in the top
+12 bits) via `Fp02mXadcMmioReader` and maps it to Wah POSITION. Added by
+`hw/Pynq-Z2/xadc_integration.tcl` + `xadc_a0.xdc` (sourced from
+`create_project.tcl` after `wah_integration.tcl`, `NUM_MI` 20 -> 21,
+M20); `block_design.tcl` is **not** edited. The DSP `clash_lowpass_fir_0`
+top entity is unchanged (no new port), so voicing is byte-identical.
+See `XADC_INTEGRATION_DESIGN.md`, `FP02M_PEDAL_INTEGRATION.md`,
+`DECISIONS.md` D76.
 
 ### Free / reserved bytes summary (for new-effect planning)
 

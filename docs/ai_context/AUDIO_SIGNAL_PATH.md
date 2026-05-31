@@ -15,7 +15,8 @@ i2s_to_stream_0
 axis_switch_source  (1-of-N source select, controlled from PS via AXI-Lite)
   +-- M00 --> axis_switch_sink/S00 -> i2s_to_stream_0/axis_hp
   |
-  +-- M01 --> axis_data_fifo_0 -> clash_lowpass_fir_0 -> axis_switch_sink/S01 -> i2s_to_stream_0/axis_hp
+  +-- M01 --> axis_data_fifo_0 -> cc_dsp_in (100->50) -> clash_lowpass_fir_0 @ 50 MHz
+  |              -> cc_dsp_out (50->100) -> axis_switch_sink/S01 -> i2s_to_stream_0/axis_hp
   |
   +-- M0x --> axis_subset_converter_1 -> S2MM DMA  (capture; 24-bit -> 32-bit sign-extended per channel)
 
@@ -30,6 +31,23 @@ i2s_to_stream_0/so
 
 The reverse direction (PS-to-board playback) goes through the MM2S DMA, a
 sign-narrowing subset converter, and back into `axis_switch_sink`.
+
+`clash_lowpass_fir_0` is the only block on the **50 MHz DSP island**
+(`FCLK_CLK1`, D75). The two `axis_clock_converter` shown above
+(`cc_dsp_in` 100->50, `cc_dsp_out` 50->100, added by
+`island_integration.tcl`) bridge it to the 100 MHz fabric; everything else
+on this diagram (`i2s_to_stream_0`, `axis_switch_*`, the DMAs, Pmod) stays
+on `FCLK_CLK0 = 100 MHz`. The DSP effect order inside `guitar_chain` is
+Noise Suppressor -> Compressor -> Wah -> Overdrive -> Distortion ->
+RAT / pedals -> Amp -> Cab -> EQ -> Reverb. See
+`DSP_ISLAND_CLOCK_DESIGN.md` and `DSP_EFFECT_CHAIN.md`.
+
+Wah-only routing note (D76): the Wah enable lives on `axi_gpio_wah`
+`ctrlD` (not `gate_control`), so when only the Wah is on the AXIS source
+crossbar must still be moved off `passthrough` onto `guitar_chain` --
+`_route_effect_chain` treats an enabled Wah as "an effect is on", and
+`set_wah_settings` re-routes on an enable toggle. Otherwise a Wah-only
+state bypasses the DSP and the wah is inaudible.
 
 The onboard ADAU1761 is still configured over I2C and its ADC HPF is still
 default-on (`R19_ADC_CONTROL == 0x23`), but in the current Pmod I2S2 build
