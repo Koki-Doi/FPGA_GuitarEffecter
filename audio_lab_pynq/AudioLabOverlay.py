@@ -1405,21 +1405,24 @@ class AudioLabOverlay(Overlay):
 
     @classmethod
     def reverb_control_word(cls, enabled=True, reverb=35, tone=70, mix=25):
-        reverb = cls._clamp_percent(reverb)
-        tone = cls._clamp_percent(tone)
-        mix = cls._clamp_percent(mix)
+        """Build the ``axi_gpio_reverb`` word (DECAY / TONE / MIX).
 
-        enable_hw = 1 if enabled else 0
-        reverb_hw = int(round(reverb * 220 / 100))
-        tone_hw = int(round(tone * 255 / 100))
-        mix_hw = int(round(mix * 192 / 100))
+        Delegates to :func:`control_maps.reverb_word`, the single source
+        for the hardware layout: ``ctrlA`` = DECAY, ``ctrlB`` = TONE,
+        ``ctrlC`` = MIX, ``ctrlD`` unused. The reverb ENABLE is **not**
+        carried in this word -- the Clash stage gates on ``gate_control``
+        flag bit 5 -- so ``enabled`` does not affect the bytes here; the
+        caller toggles the gate flag / routing separately.
 
-        return (
-            (mix_hw << 24) |
-            (tone_hw << 16) |
-            (reverb_hw << 8) |
-            enable_hw
-        )
+        Note: on the deployed bitstream ``set_reverb`` reaches this method
+        only on the legacy fallback path for an overlay that lacks
+        ``axi_gpio_gate`` (when the gate GPIO is present it delegates to
+        ``set_guitar_effects``, which sets ``flag5`` and uses the same
+        ``reverb_word`` layout). The earlier implementation packed an
+        ``enable`` bit into ``ctrlA`` and shifted DECAY/TONE/MIX up one
+        byte each, which did not match the Clash reverb decode.
+        """
+        return _cm.reverb_word(reverb, tone, mix)
 
     @classmethod
     def guitar_effect_control_words(
@@ -1516,17 +1519,8 @@ class AudioLabOverlay(Overlay):
             )
             | ((pedal_mask & 0x7F) << 24)
         )
-        eq_word = cls._pack3(
-            cls._level_to_q7(eq_low),
-            cls._level_to_q7(eq_mid),
-            cls._level_to_q7(eq_high),
-        )
-        rat_word = cls._pack4(
-            cls._percent_to_u8(rat_filter, 255),
-            cls._level_to_q7(cls._clamp_range(rat_level, 0, 150)),
-            cls._percent_to_u8(rat_drive, 255),
-            cls._percent_to_u8(rat_mix, 255),
-        )
+        eq_word = _cm.eq_word(eq_low, eq_mid, eq_high)
+        rat_word = _cm.rat_word(rat_filter, rat_level, rat_drive, rat_mix)
         amp_word = cls._pack4(
             cls._percent_to_u8(amp_input_gain, 255),
             cls._level_to_q7(cls._clamp_range(amp_master, 0, 150)),
@@ -1551,17 +1545,8 @@ class AudioLabOverlay(Overlay):
             cls._percent_to_u8(amp_treble, 255),
             character_byte,
         )
-        cab_word = cls._pack4(
-            cls._percent_to_u8(cab_mix, 255),
-            cls._level_to_q7(cls._clamp_range(cab_level, 0, 150)),
-            cls._clamp_range(cab_model, 0, 2) * 85,
-            cls._percent_to_u8(cab_air, 255),
-        )
-        reverb_word = cls._pack3(
-            cls._percent_to_u8(reverb_decay, 220),
-            cls._percent_to_u8(reverb_tone, 255),
-            cls._percent_to_u8(reverb_mix, 192),
-        )
+        cab_word = _cm.cab_word(cab_mix, cab_level, cab_model, cab_air)
+        reverb_word = _cm.reverb_word(reverb_decay, reverb_tone, reverb_mix)
 
         return {
             'gate': gate_word,

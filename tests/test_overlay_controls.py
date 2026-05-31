@@ -1870,6 +1870,44 @@ def test_effect_defaults_module_exposes_wah_dict():
     assert AudioLabOverlay.WAH_DEFAULTS is WAH_DEFAULTS
 
 
+# Reverb word consolidation (#2): control_maps.reverb_word is the single
+# source for the axi_gpio_reverb layout, which is fixed by the Clash
+# reverb stage (AudioLab.Effects.Reverb): ctrlA=DECAY (feedback gain),
+# ctrlB=TONE, ctrlC=MIX, ctrlD unused; ENABLE rides on gate flag5, not
+# in this word.
+def test_reverb_word_matches_clash_layout():
+    from audio_lab_pynq import control_maps as cm
+    w = cm.reverb_word(30, 65, 20)
+    assert w == 0x0026a642, hex(w)
+    assert (w & 0xFF) == cm.percent_to_u8(30, 220)          # ctrlA = decay
+    assert ((w >> 8) & 0xFF) == cm.percent_to_u8(65, 255)   # ctrlB = tone
+    assert ((w >> 16) & 0xFF) == cm.percent_to_u8(20, 192)  # ctrlC = mix
+    assert ((w >> 24) & 0xFF) == 0                           # ctrlD unused
+
+
+def test_guitar_effect_control_words_reverb_uses_reverb_word():
+    """The full-build path packs the same reverb word as control_maps."""
+    from audio_lab_pynq import control_maps as cm
+    words = AudioLabOverlay.guitar_effect_control_words(
+        reverb_on=True, reverb_decay=30, reverb_tone=65, reverb_mix=20)
+    assert words['reverb'] == cm.reverb_word(30, 65, 20)
+
+
+def test_reverb_control_word_uses_clash_layout_not_enable_in_ctrla():
+    """The legacy fallback packer now delegates to reverb_word.
+
+    `enabled` must not change the bytes (enable rides on gate flag5),
+    and the old enable-in-ctrlA / byte-shifted layout must not return.
+    """
+    from audio_lab_pynq import control_maps as cm
+    assert AudioLabOverlay.reverb_control_word(True, 35, 70, 25) == \
+        cm.reverb_word(35, 70, 25)
+    assert AudioLabOverlay.reverb_control_word(False, 35, 70, 25) == \
+        AudioLabOverlay.reverb_control_word(True, 35, 70, 25)
+    w = AudioLabOverlay.reverb_control_word(True, 35, 70, 25)
+    assert (w & 0xFF) == cm.percent_to_u8(35, 220)  # ctrlA = decay, not enable=1
+
+
 if __name__ == "__main__":
     test_rat_control_word()
     test_set_guitar_effects_writes_rat_gpio()
@@ -1993,4 +2031,8 @@ if __name__ == "__main__":
     test_set_guitar_effects_forwards_wah_position_raw()
     test_safe_bypass_defaults_include_wah_position_raw_none()
     test_wah_defaults_include_position_raw_none()
+    # #2 reverb word consolidation
+    test_reverb_word_matches_clash_layout()
+    test_guitar_effect_control_words_reverb_uses_reverb_word()
+    test_reverb_control_word_uses_clash_layout_not_enable_in_ctrla()
     print("AudioLabOverlay guitar effect control tests passed")

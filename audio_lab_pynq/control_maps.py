@@ -215,6 +215,63 @@ def compressor_word(threshold, ratio, response, makeup, enabled=False):
     )
 
 
+def reverb_word(decay, tone, mix):
+    """Build the 32-bit word for ``axi_gpio_reverb``.
+
+    Hardware layout, fixed by the Clash reverb stage
+    (``AudioLab.Effects.Reverb``):
+
+    - ``ctrlA`` = DECAY / feedback gain, ``percent_to_u8(decay, 220)``
+      (the feedback multiply ``mulU8(monoWet, ctrlA)``)
+    - ``ctrlB`` = TONE, ``percent_to_u8(tone, 255)``
+    - ``ctrlC`` = MIX, ``percent_to_u8(mix, 192)``
+    - ``ctrlD`` is unused (kept 0)
+
+    The reverb ENABLE is **not** carried in this word -- the Clash stage
+    gates on ``flag5`` of ``gate_control`` (the ``reverb_on`` flag bit),
+    so this builder takes no ``enabled`` argument. The DECAY / TONE / MIX
+    maxima (220 / 255 / 192) match the legacy inline packing in
+    ``AudioLabOverlay.guitar_effect_control_words`` byte-for-byte.
+    """
+    return pack_u8x3(
+        percent_to_u8(decay, 220),
+        percent_to_u8(tone, 255),
+        percent_to_u8(mix, 192),
+    )
+
+
+def eq_word(low, mid, high):
+    """Build the ``axi_gpio_eq`` word: ctrlA/B/C = LOW/MID/HIGH bands as
+    Q7-style level bytes; ctrlD unused. Matches the legacy inline packing
+    in ``guitar_effect_control_words`` byte-for-byte."""
+    return pack_u8x3(level_to_q7(low), level_to_q7(mid), level_to_q7(high))
+
+
+def rat_word(filter_, level, drive, mix):
+    """Build the ``axi_gpio_delay`` (RAT) word: ctrlA=FILTER, ctrlB=LEVEL
+    (Q7, clamped to <=150 first), ctrlC=DRIVE, ctrlD=MIX. Matches the
+    legacy inline packing byte-for-byte."""
+    return pack_u8x4(
+        percent_to_u8(filter_, 255),
+        level_to_q7(clamp_int(level, 0, 150)),
+        percent_to_u8(drive, 255),
+        percent_to_u8(mix, 255),
+    )
+
+
+def cab_word(mix, level, model, air):
+    """Build the ``axi_gpio_cab`` word: ctrlA=MIX, ctrlB=LEVEL (Q7,
+    clamped to <=150 first), ctrlC=MODEL (0/85/170 = the three preset
+    IRs, from ``model`` 0..2), ctrlD=AIR. Matches the legacy inline
+    packing byte-for-byte."""
+    return pack_u8x4(
+        percent_to_u8(mix, 255),
+        level_to_q7(clamp_int(level, 0, 150)),
+        clamp_int(model, 0, 2) * 85,
+        percent_to_u8(air, 255),
+    )
+
+
 # ---- Wah --------------------------------------------------------------
 #
 # Drives the dedicated ``axi_gpio_wah`` at ``0x43D30000``. Bytes:
