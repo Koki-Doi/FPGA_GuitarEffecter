@@ -61,7 +61,8 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 | `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install/refresh package, mirror bit/hwh into PYNQ overlays registry, install notebooks, import sanity check. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |
 | `scripts/test_hdmi_800x480_frame.py` | 5-inch LCD smoke: compact 800x480 GUI at framebuffer `x=0,y=0`. Originally written for the Phase 5C `1280x720` signal; the same script also works against the Phase 6I `800x600` SVGA framebuffer because the renderer still emits an 800x480 frame and the backend composes it at `(0,0)`. |
-| `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. |
+| `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. Per-effect word builders live here (`noise_suppressor_word` / `compressor_word` / `wah_word` / `reverb_word` / `eq_word` / `rat_word` / `cab_word`, D77); `guitar_effect_control_words` delegates to them. |
+| `audio_lab_pynq/pmod_i2s2_status.py` | Single source for the `axi_pmod_i2s2_status` (`0x43D20000`) register map, the `MODE_INT` table (`tone`/`loopback`/`dsp`/`mute`), `sign24`, and `find_status_mmio(overlay=None)` IP discovery. Used by `pmod_i2s2_mode.py` and `run_encoder_hdmi_gui.py` (D77). |
 | `audio_lab_pynq/effect_defaults.py` | Per-effect default parameter dicts (re-exported as `AudioLabOverlay.DISTORTION_DEFAULTS` etc.). |
 | `audio_lab_pynq/effect_presets.py` | Notebook + API presets (Noise Suppressor / Distortion / Safe Bypass). |
 | `tests/` | Local Python tests for the control layer. The earlier C++ DSP prototypes were removed; the source of truth for DSP is `hw/ip/clash/src/LowPassFir.hs`. |
