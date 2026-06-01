@@ -124,17 +124,40 @@ overdriveDriveBoostFrame f =
  where
   on = flag1 (fGate f)
 
--- Per-model asymmetric soft clip. The shape of the stage is identical
--- to the prior generic Overdrive (single `asymSoftClip` call); only the
--- knee constants depend on the model select.
+-- | Per-model clip hardness class (realism item 4, D-pending). Selects the
+-- compression slope of the asymmetric soft clip per model so the six models
+-- differ in knee *hardness* (harmonic order), not just at what level they
+-- engage. Real op-amp clip (TS9) is soft; MOSFET (OCD) is harder; the
+-- germanium/clean-blend Klon stays smooth (its grit comes from the clean
+-- blend, item 5a). 0=softest .. 3=hardest; see FixedPoint asymSoftClip*.
+odClipHardness :: Unsigned 3 -> Unsigned 2
+odClipHardness m = case m of
+  0 -> 0   -- TS9      : op-amp soft clip
+  1 -> 1   -- OD-1     : medium (legacy 2/3 shape)
+  2 -> 1   -- BD-2     : medium, keep even-harmonic asym
+  3 -> 0   -- Jan Ray  : transparent / softest
+  4 -> 2   -- OCD      : harder MOSFET-style knee
+  5 -> 0   -- CENTAUR  : smooth (clean-blend voiced)
+  _ -> 0
+
+-- Per-model asymmetric soft clip. The knee constants (odKneeP/odKneeN) set
+-- where it engages; odClipHardness now also sets the compression slope per
+-- model. A 4:1 result mux of fixed-shift siblings -- no barrel shifter, no
+-- new DSP. Bit-exact bypass preserved (the `on` guard is unchanged).
 overdriveDriveClipFrame :: Frame -> Frame
 overdriveDriveClipFrame f =
-  setMonoSample (if on then asymSoftClip kneeP kneeN (monoWet f) else monoSample f) f
+  setMonoSample (if on then clipped else monoSample f) f
  where
   on = flag1 (fGate f)
   model = overdriveModel (fOd f)
   kneeP = odKneeP model
   kneeN = odKneeN model
+  x = monoWet f
+  clipped = case odClipHardness model of
+    0 -> asymSoftClipSoft kneeP kneeN x
+    1 -> asymSoftClip     kneeP kneeN x
+    2 -> asymSoftClipMed  kneeP kneeN x
+    _ -> asymSoftClipHard kneeP kneeN x
 
 overdriveToneMultiplyFrame :: Sample -> Frame -> Frame
 overdriveToneMultiplyFrame prev f =
