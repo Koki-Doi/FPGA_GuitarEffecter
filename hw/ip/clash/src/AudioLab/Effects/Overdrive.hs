@@ -140,13 +140,35 @@ odClipHardness m = case m of
   5 -> 0   -- CENTAUR  : smooth (clean-blend voiced)
   _ -> 0
 
+-- | Klon / CENTAUR clean-blend weight (realism item 5a). The real Klon mixes
+-- an unclipped clean path with a germanium hard-clipped path; its
+-- "transparency" is the parallel clean signal, and turning GAIN up raises the
+-- clipped proportion. `blend` is the clipped-path weight (0..255), rising with
+-- DRIVE; the clean weight is `255 - blend`. Floor ~64 so even DRIVE=0 has a
+-- little grit; capped below 255 (drive*3>>2 maxes at 255 only at drive=255,
+-- and the +64 floor with the Unsigned 8 wrap is avoided by the cap below) so a
+-- slice of clean always remains. Only model 5 uses this.
+odCleanBlend :: Unsigned 8 -> Unsigned 8
+odCleanBlend drive = 64 + resize (min 191 (resize drive * 3 `shiftR` 2) :: Unsigned 9)
+
+-- True when this Overdrive model uses the parallel clean-blend (Klon only).
+odUsesCleanBlend :: Unsigned 3 -> Bool
+odUsesCleanBlend m = m == 5
+
 -- Per-model asymmetric soft clip. The knee constants (odKneeP/odKneeN) set
 -- where it engages; odClipHardness now also sets the compression slope per
 -- model. A 4:1 result mux of fixed-shift siblings -- no barrel shifter, no
 -- new DSP. Bit-exact bypass preserved (the `on` guard is unchanged).
+--
+-- Item 5a: for the Klon model (5) we stash the *pre-clip clean* sample into
+-- fAcc3L so the level stage can blend it back in. fAcc3L is unused by the
+-- Overdrive tone stages (they write fAccL / fAcc2L), so it survives untouched
+-- through toneMul -> toneBlend -> level. For every other model fAcc3L stays 0
+-- and the level stage ignores it, so their output is byte-identical.
 overdriveDriveClipFrame :: Frame -> Frame
 overdriveDriveClipFrame f =
-  setMonoSample (if on then clipped else monoSample f) f
+  setMonoSample (if on then clipped else monoSample f)
+    f{fAcc3L = if on && odUsesCleanBlend model then resize x else 0, fAcc3R = 0}
  where
   on = flag1 (fGate f)
   model = overdriveModel (fOd f)
@@ -179,6 +201,10 @@ overdriveToneBlendFrame f =
   on = flag1 (fGate f)
   tone = satShift8 (fAccL f + fAcc2L f)
 
+-- Item 5a: for the Klon model the level input is a blend of the processed
+-- (clipped + tone) wet and the stashed pre-clip clean (fAcc3L). A single
+-- weighted sum reuses the existing mulU8 path; for every other model
+-- `wetForLevel = monoWet f` exactly as before, so they are byte-identical.
 overdriveLevelFrame :: Frame -> Frame
 overdriveLevelFrame f =
   setMonoSample (if on then out else monoSample f) f
@@ -186,5 +212,11 @@ overdriveLevelFrame f =
   on = flag1 (fGate f)
   level = ctrlB (fOd f)
   model = overdriveModel (fOd f)
-  out = softClipK safetyKnee (satShift7 (mulU8 (monoWet f) level))
+  drive = ctrlC (fOd f)
+  blend = odCleanBlend drive
+  cleanWeight = 255 - blend
+  clean = resize (fAcc3L f) :: Sample
+  blendedWet = satShift8 (mulU8 (monoWet f) blend + mulU8 clean cleanWeight)
+  wetForLevel = if odUsesCleanBlend model then blendedWet else monoWet f
+  out = softClipK safetyKnee (satShift7 (mulU8 wetForLevel level))
   safetyKnee = odSafetyKnee model
