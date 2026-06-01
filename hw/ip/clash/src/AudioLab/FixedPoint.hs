@@ -98,6 +98,41 @@ asymSoftClip kneeP kneeN x
  where
   negKneeN = negate kneeN
 
+-- | Per-model clip hardness siblings (realism item 4). Same asymmetric
+-- soft-clip shape as 'asymSoftClip' but with different compile-time-constant
+-- compression shifts, so each synthesises as fixed wiring. A per-model mux
+-- (see Overdrive.odClipHardness) selects one; the slope above the knee is
+-- 1 / 2^shift, so a smaller shift = harder knee (more odd harmonics, closer
+-- to a diode/MOSFET clip) and a larger shift = softer (gentle op-amp-style).
+--
+--   asymSoftClipSoft : pos>>3 neg>>4  -- softest (TS9 / Jan Ray / Klon)
+--   asymSoftClip     : pos>>2 neg>>3  -- medium  (OD-1 / BD-2, the legacy shape)
+--   asymSoftClipMed  : pos>>1 neg>>2  -- harder  (OCD MOSFET knee)
+--   asymSoftClipHard : pos>>1 neg>>1  -- hardest (reserved for near-hard clip)
+asymSoftClipSoft :: Sample -> Sample -> Sample -> Sample
+asymSoftClipSoft kneeP kneeN x
+  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 3) :: Signed 25)
+  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 4) :: Signed 25)
+  | otherwise = x
+ where
+  negKneeN = negate kneeN
+
+asymSoftClipMed :: Sample -> Sample -> Sample -> Sample
+asymSoftClipMed kneeP kneeN x
+  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 1) :: Signed 25)
+  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 2) :: Signed 25)
+  | otherwise = x
+ where
+  negKneeN = negate kneeN
+
+asymSoftClipHard :: Sample -> Sample -> Sample -> Sample
+asymSoftClipHard kneeP kneeN x
+  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 1) :: Signed 25)
+  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 1) :: Signed 25)
+  | otherwise = x
+ where
+  negKneeN = negate kneeN
+
 -- | Hard clip with independent positive/negative thresholds. Used by
 -- bias-shifted fuzz models where the waveform centre is offset.
 asymHardClip :: Sample -> Sample -> Sample -> Sample
