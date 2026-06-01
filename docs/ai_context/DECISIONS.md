@@ -5058,3 +5058,51 @@ pre-existing 3 failures + 1 error baseline.
   bitstream baseline, superseding D76** (`9fdecae0`, the rollback baseline).
   The two pre-phys_opt builds (`199d25ea` RP, `e610dc58` PMOD-JA) bitcrush
   and are rejected. Full reference: `docs/ai_context/FOOTSWITCH_INTEGRATION.md`.
+
+## D79 — Overdrive realism: per-model clip hardness (item 4) + Klon clean-blend (item 5a)
+
+- **Decision.** Two model-realism improvements to the dedicated Overdrive
+  effect, merged together (item 5a builds on item 4; both are CENTAUR/Klon and
+  per-model voicing work). From `MODEL_REALISM_GAP_ANALYSIS.md` /
+  `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`. Accepted bit md5 `f0cb0276` (hwh
+  `5fa0b84e`).
+- **Item 4 — per-model clip hardness.** The six Overdrive models now differ in
+  clip *hardness* (compression slope = harmonic order), not only in knee level.
+  `FixedPoint.asymSoftClipSoft/Med/Hard` are fixed-compile-time-shift siblings
+  of `asymSoftClip` (slopes 1/8..1/2); `Overdrive.odClipHardness` selects one
+  per model via a 4:1 result mux (TS9/JanRay/Klon soft, OD-1/BD-2 medium =
+  legacy shape, OCD harder MOSFET knee). Constant shifts are wiring — no new
+  DSP48, no barrel shifter, no register stage. Medium-class models stay
+  byte-identical; bit-exact bypass preserved.
+- **Item 5a — Klon/CENTAUR clean-blend.** Model 5 (CENTAUR) now mixes a parallel
+  unclipped clean path with the clipped path (the Klon's defining mechanism);
+  GAIN/DRIVE raises the clipped proportion. `overdriveDriveClipFrame` stashes
+  the pre-clip clean sample in `fAcc3L` (unused by the OD tone stages, survives
+  to the level stage); `overdriveLevelFrame` blends with a **two parallel
+  `mulU8`** weighted sum (`odCleanBlend`: clipped weight rises with DRIVE, floor
+  64, capped so a clean slice always remains). Other models keep `fAcc3L=0` /
+  `wetForLevel = monoWet` → byte-identical.
+- **Timing (load-bearing lesson).** Item 4 closes at island WNS **-0.173 ns**
+  (= D78, no cost). Item 5a's blend lands at **-0.496 ns** / 32 fail (all
+  intra-DS-1 CARRY4, audio fabric clean +0.532 / 0 fail) — worse than D78
+  (-0.173) but **better than the bench-"perfect" D75 (-0.706)**, and phys_opt
+  (D78) is already on. **A one-multiply LERP rewrite was built and REJECTED at
+  -3.627 ns / 117 fail**: the serial subtract→multiply→shift→add chain
+  lengthens the DS-1 path, whereas two *parallel* multiplies route better (same
+  rule as Wah — never serialise island multiplies). The committed 5a is the
+  2-mul parallel form.
+- **Build env note.** The dev `clash` fails standalone (stray
+  `clash-prelude-1.8.2` in the cabal store makes the package ambiguous); build
+  with `CLASH_FLAGS="-package-id clash-prelude-1.8.1-043657e6... -isrc --vhdl"
+  make Pynq-Z2`. `make clean` deletes the git-tracked `hw/ip/clash/vhdl/` +
+  `hw/Pynq-Z2/bitstreams/`; restore with `git checkout --`.
+- **GPIO / API.** None changed — re-voicing reuses existing OD knobs and the
+  model select. Python golden tests unchanged (same 3F+1E pre-existing baseline
+  as `main`, no regression).
+- **Status.** Built, deployed 5-site (`f0cb0276`), loaded on the board, Pmod
+  mode 2, **bench-accepted by the user** (all_off clean, no bitcrusher).
+  **D79 (`f0cb0276`) is the new accepted deployed bitstream baseline,
+  superseding D78** (`45e78763`, the rollback baseline). Items 5b (Fuzz/amp
+  bias-sag) and 3 (biquad tone stacks) remain spec-only in the guide. Branches:
+  `feature/realism-clip-hardness` (item 4) and `feature/realism-klon-clean-blend`
+  (item 4+5a, merged here).
