@@ -97,6 +97,9 @@ def apply_chain_preset_to_state(state, preset_name):
     left untouched, matching what ``apply_chain_preset`` writes.
 
     Knob-scale notes:
+      * D80 presets are user-facing physical knob positions. The audio write
+        path applies ``knob_tapers`` inside ``AudioLabOverlay.apply_chain_preset``;
+        this mirror intentionally keeps the raw positions for display.
       * EQ presets are on the overlay 0..200 scale (100 = unity); the GUI
         knob is 0..100 (50 = unity), so values are halved here.
       * Cab MODEL is carried by ``AppState.cab_model_idx`` (the applier

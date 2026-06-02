@@ -61,18 +61,38 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- **Current deployed baseline = D76** (2026-05-31): the ZOOM FP02M
-  expression pedal drives Wah POSITION via a re-added `xadc_wiz_a0`
-  XADC Wizard (Arduino A0 = VAUX1, AXI MMIO) on top of the D75 50 MHz
-  DSP clock-domain island. bit/hwh md5
-  `9fdecae0c7d7cf3c59422cec2b30368f` /
-  `a9fd74082482aa1b074fc3c31ccd6283`; overall routed WNS `-0.368 ns`
-  (100 MHz audio fabric `+0.614 ns`, 0 failing). Two Python-only
-  bench fixes ride with it: Wah-only AXIS re-routing and a Wah Q
-  self-oscillation cap (`WAH_Q_BYTE_MAX = 80`). Rollback baselines:
-  D75 (`4a0b3dae...` / `347d3e55...`), then D73. See `DECISIONS.md`
-  D76, `DSP_ISLAND_CLOCK_DESIGN.md`, `FP02M_PEDAL_INTEGRATION.md`,
-  `XADC_INTEGRATION_DESIGN.md`.
+- **Current deployed baseline = D79** (2026-06-01): Overdrive realism
+  item 4 + 5a are accepted on top of the D75/D76/D78 hardware stack.
+  bit/hwh md5
+  `f0cb0276f27187d72476a2e773dd9a6e` /
+  `5fa0b84e9fe852c68629c651f94e4a9d`; routed island WNS `-0.496 ns`
+  and 100 MHz audio fabric `+0.532 ns / 0 fail`. The board was deployed
+  5-site, loaded in Pmod mode 2, and user bench confirmed all_off clean /
+  no bitcrusher. Rollback baselines: D78 (`45e78763...`, footswitch +
+  phys_opt), D76 (`9fdecae0...`, FP02M XADC), then D75. See
+  `DECISIONS.md` D79, `CURRENT_STATE.md`, `MODEL_REALISM_GAP_ANALYSIS.md`,
+  and `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`.
+- The **Overdrive realism pass shipped** (D79). The six selectable OD
+  models now differ in clip hardness (`asymSoftClipSoft` / legacy medium /
+  harder fixed-shift siblings), and the CENTAUR/Klon model mixes a parallel
+  clean path into the level stage with two parallel `mulU8` operations. No
+  GPIO, API, `topEntity`, or `block_design.tcl` change.
+- The **Python-only knob taper / preset polish pass shipped** (D80). GUI /
+  encoder / chain-preset values are now treated as physical knob positions and
+  converted by `audio_lab_pynq/knob_tapers.py` before hitting the existing
+  linear overlay API. Low-level setter calls stay linear; no bitstream rebuild.
+- The **3PDT footswitch path shipped** (D78). `axi_footswitch_input`
+  lives at `0x43D50000` (M21), is added by `footswitch_integration.tcl`,
+  and reads RP pins 11 / 12 / 35. FS1 toggles the bound effect, FS2/FS3
+  step chain presets, and 5 FS1 stomps within 3 s rebind the target.
+  D78 also made `phys_opt_design` load-bearing for this design. See
+  `FOOTSWITCH_INTEGRATION.md` and `DECISIONS.md` D78.
+- The **ZOOM FP02M expression pedal path shipped** (D76): Wah POSITION is
+  driven by `xadc_wiz_a0` (Arduino A0 = VAUX1, AXI MMIO) on top of the
+  D75 50 MHz DSP island. Two Python-only bench fixes ride with it:
+  Wah-only AXIS re-routing and a Wah Q self-oscillation cap
+  (`WAH_Q_BYTE_MAX = 80`). See `DECISIONS.md` D76,
+  `FP02M_PEDAL_INTEGRATION.md`, and `XADC_INTEGRATION_DESIGN.md`.
 - The **Wah effect shipped** (D72, retuned to Cry Baby GCB-95 in D73)
   on a dedicated `axi_gpio_wah` IP at `0x43D30000`, inserted between
   the Compressor and the Overdrive in the Clash pipeline (chain is now
@@ -90,7 +110,7 @@ The current load-bearing facts:
   `LowPassFir.hs`, `set_clock_groups` over 7 domains. See
   `DECISIONS.md` D75 and `DSP_ISLAND_CLOCK_DESIGN.md`.
 - The **BD-2 Overdrive coefficient-only retune shipped** (D62,
-  2026-05-24; superseded as the deployed baseline by D72-D76 above).
+  2026-05-24; superseded as the deployed baseline by D72-D79 above).
   Only model index 2 constants in `AudioLab/Effects/Overdrive.hs`
   changed: `odDriveK 2 = 7`, `odKneeP 2 = 2_400_000`,
   `odKneeN 2 = 1_900_000`, `odSafetyKnee 2 = 3_400_000`. Bench
@@ -159,9 +179,10 @@ The current load-bearing facts:
   `encoder_effect_apply.py`) and the standalone runtime
   (`scripts/run_encoder_hdmi_gui.py`, `EncoderGuiSmoke.ipynb`) route
   every encoder-driven write through `EncoderEffectApplier` with a
-  100 ms throttle, `skip_rat=True` by default. No `block_design.tcl`
-  change; PMOD JA / JB are left reserved for the external codec
-  path. See `ENCODER_GUI_CONTROL_SPEC.md`, `ENCODER_INPUT_IMPLEMENTATION.md`,
+  throttle, `skip_rat=True` by default. No `block_design.tcl`
+  edit; PMOD JB is owned by the active Pmod I2S2 audio path and PMOD JA is
+  not used by the final encoder wiring. See `ENCODER_GUI_CONTROL_SPEC.md`,
+  `ENCODER_INPUT_IMPLEMENTATION.md`,
   `ENCODER_INPUT_MAP.md`.
 - The **Pmod I2S2 path is the current deployed external audio path** on
   PMOD JB (`DECISIONS.md` D48 / D49 / D50). `create_project.tcl`
@@ -206,8 +227,11 @@ Then read whatever is topical for the task at hand:
 | [`PYNQ_RUNTIME.md`](PYNQ_RUNTIME.md) | Anything that runs on the PYNQ-Z2 board. |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Generating a new bitstream, deploying to the board. |
 | [`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md) | Whenever a Clash change touches synthesis. |
+| [`REAL_HARDWARE_FIDELITY_ROADMAP.md`](REAL_HARDWARE_FIDELITY_ROADMAP.md) | Measurement-first roadmap for making AudioLab closer to real pedals / amps / cabs under the D79 timing and GPIO constraints. |
+| [`MODEL_REALISM_GAP_ANALYSIS.md`](MODEL_REALISM_GAP_ANALYSIS.md) / [`MODEL_REALISM_IMPLEMENTATION_GUIDE.md`](MODEL_REALISM_IMPLEMENTATION_GUIDE.md) | Overdrive realism pass (D79) and deferred model-realism items. |
 | [`HDMI_GUI_INTEGRATION_PLAN.md`](HDMI_GUI_INTEGRATION_PLAN.md) | HDMI GUI architecture, constraints, and Phase 4 through Phase 6I status (Section 11 has the Phase 6I C2 SVGA 800x600 result). |
 | [`ENCODER_GUI_CONTROL_SPEC.md`](ENCODER_GUI_CONTROL_SPEC.md) / [`ENCODER_INPUT_IMPLEMENTATION.md`](ENCODER_INPUT_IMPLEMENTATION.md) / [`ENCODER_INPUT_MAP.md`](ENCODER_INPUT_MAP.md) | Rotary encoder PL IP + Python driver + GUI live-apply (Phase 7F / 7G / 7G+). |
+| [`FOOTSWITCH_INTEGRATION.md`](FOOTSWITCH_INTEGRATION.md) | D78 3PDT footswitch input IP, RP-pin wiring, latching-switch semantics, phys_opt timing lesson, and FS1/FS2/FS3 runtime mapping. |
 | [`PMOD_I2S2_INTEGRATION_PLAN.md`](PMOD_I2S2_INTEGRATION_PLAN.md) | Current Digilent Pmod I2S2 (CS4344 DAC + CS5343 ADC) PMOD JB audio implementation plus the original Phase Pmod-0 plan kept as history. |
 | [`WAH_EFFECT_INTEGRATION_PLAN.md`](WAH_EFFECT_INTEGRATION_PLAN.md) | Wah effect (`axi_gpio_wah` @ `0x43D30000`) design + Cry Baby GCB-95 voicing (D72 / D73). |
 | [`FP02M_PEDAL_INTEGRATION.md`](FP02M_PEDAL_INTEGRATION.md) / [`XADC_INTEGRATION_DESIGN.md`](XADC_INTEGRATION_DESIGN.md) | ZOOM FP02M expression pedal -> Wah POSITION via the `xadc_wiz_a0` XADC Wizard (Arduino A0 = VAUX1, AXI MMIO), accepted on the D75 island in D76. |

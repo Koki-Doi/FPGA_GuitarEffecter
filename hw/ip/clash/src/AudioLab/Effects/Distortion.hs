@@ -127,6 +127,36 @@ tubeScreamerHpfFrame prevLp f =
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
 
+-- ~720 Hz mid-hump peaking biquad (realism item 3 / R3). Pre-clip mid
+-- emphasis is what gives the Tube Screamer its signature mid-focused drive:
+-- the boosted ~720 Hz band is pushed harder into the clip stage than the rest
+-- of the spectrum, so the saturation is mid-weighted rather than full-range.
+-- Direct-form-I with Q14 fixed coefficients, hand-designed for f0 = 720 Hz,
+-- fs = 48 kHz, Q = 0.8, +6 dB peak (a chosen target curve, NOT a
+-- schematic-derived table -- same inspired-by policy as the rest of the
+-- chain, D7/D45). The coefficients are unity at DC and Nyquist by
+-- construction, so the spectrum outside the hump is essentially unchanged.
+--   y[n]*2^14 = b0*x + b1*x1 + b2*x2 - a1*y1 - a2*y2  (a0 normalised to 2^14)
+--   b0=17036  b1=-31323  b2=14422  ;  a1=-31323  a2=15075  -> -a1 = +31323
+-- x1/x2/y1/y2 are pipeline-level state (threaded in Pipeline.hs) so idle
+-- Nothing cycles preserve the filter memory. Bit-exact bypass when the pedal
+-- is off (output = input). The five multiplies are computed in parallel and
+-- summed in an adder tree (no serial multiply chain -- the D79/Wah timing
+-- lesson on this island).
+tubeScreamerMidFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
+tubeScreamerMidFrame x1 x2 y1 y2 f =
+  setMonoSample (if on then y else x) f
+ where
+  on = tubeScreamerOn f
+  x = monoSample f
+  acc =
+    mulS16 x 17036
+      + mulS16 x1 (-31323)
+      + mulS16 x2 14422
+      + mulS16 y1 31323
+      - mulS16 y2 15075 :: Wide
+  y = satShift14 acc
+
 tubeScreamerMulFrame :: Frame -> Frame
 tubeScreamerMulFrame f =
   f { fAccL = if on then mulU12 (monoSample f) gain else 0

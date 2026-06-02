@@ -83,7 +83,7 @@ single-cell ipywidgets UI for the Pmod I2S2 mode-2 path (Pmod Line
 In → Pmod ADC → AudioLab DSP chain → Pmod DAC → Pmod Line Out). The
 cell loads `AudioLabOverlay`, finds the `pmod_status_0` MMIO from
 `ip_dict`, forces `cfg_mode = 2` (DSP) at startup, and exposes every
-effect (Noise Suppressor / Compressor / Overdrive / Distortion
+effect (Noise Suppressor / Compressor / Wah / Overdrive / Distortion
 pedal-mask / Amp Sim / Cab IR / EQ / Reverb) through ipywidgets
 checkboxes, sliders, and dropdowns. The Pmod status panel shows
 VERSION / STATUS / MODE / FRAME_COUNT / NONZERO_COUNT /
@@ -117,9 +117,9 @@ single-cell companion that drives the **HDMI GUI plus rotary
 encoders** on top of the same Pmod I2S2 mode-2 path. Instead of
 loading `AudioLabOverlay` inside the kernel, the cell spawns
 `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode
-dsp` as a sudo subprocess so the runner owns the overlay /
-HDMI VDMA / encoder polling loop and the Notebook stays
-interactive. Buttons:
+dsp --wah-pedal` as a sudo subprocess so the runner owns the overlay /
+HDMI VDMA / encoder polling loop / FP02M pedal polling / default-on
+footswitch polling and the Notebook stays interactive. Buttons:
 
 - `Start HDMI GUI + Pmod DSP` — spawn the runner (auto-fired on cell
   execution; subsequent presses stop and restart so only one runner is
@@ -144,8 +144,8 @@ Bench wiring (Pmod I2S2 mode 2):
 
 Open `http://192.168.1.9:9090/tree/audio_lab/PmodI2S2HdmiGuiOneCell.ipynb`
 in the browser; the cell auto-fires Start so the HDMI GUI is up
-within ~30..60 s and the rotary encoders drive the Pmod I2S2 mode-2
-audio chain.
+within ~30..60 s and the rotary encoders plus D78 footswitches drive the
+Pmod I2S2 mode-2 audio chain.
 
 ## Filesystem layout on the board
 

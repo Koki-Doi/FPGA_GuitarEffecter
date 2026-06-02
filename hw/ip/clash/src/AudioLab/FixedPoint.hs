@@ -39,6 +39,15 @@ mulU12 x gain = resize x * resize (asSigned13 gain)
 mulS10 :: Sample -> Signed 10 -> Wide
 mulS10 x gain = resize x * resize gain
 
+-- | Sample * Signed 16 -> Wide. Higher coefficient precision than mulS10,
+-- needed by the resonant biquad tone stages (realism item 3): a peaking /
+-- notch biquad at a low normalised frequency (e.g. the ~720 Hz Tube Screamer
+-- mid hump at 48 kHz) has feedforward/feedback coefficients near +-2 whose
+-- DC gain depends on tiny differences -- Q8 (mulS10) rounding collapses the
+-- passband, Q14 coefficients (range ~+-2 * 16384 < 32768) preserve it.
+mulS16 :: Sample -> Signed 16 -> Wide
+mulS16 x gain = resize x * resize gain
+
 satWide :: Wide -> Sample
 satWide x
   | x > 8_388_607 = maxBound
@@ -59,6 +68,10 @@ satShift10 = satWide . (`shiftR` 10)
 
 satShift12 :: Wide -> Sample
 satShift12 = satWide . (`shiftR` 12)
+
+-- | Q14 accumulator scale-back for the biquad tone stages (mulS16 coeffs).
+satShift14 :: Wide -> Sample
+satShift14 = satWide . (`shiftR` 14)
 
 softClip :: Sample -> Sample
 softClip x

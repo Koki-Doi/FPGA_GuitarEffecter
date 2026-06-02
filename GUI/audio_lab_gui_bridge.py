@@ -12,6 +12,31 @@ from __future__ import print_function
 import time
 
 try:
+    from audio_lab_pynq.knob_tapers import (
+        taper_distortion_kwargs,
+        taper_guitar_effects_kwargs,
+    )
+except Exception:  # pragma: no cover - supports flat /tmp copies on PYNQ.
+    try:
+        import importlib.util
+        import os
+        _kt_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "audio_lab_pynq", "knob_tapers.py")
+        _kt_spec = importlib.util.spec_from_file_location(
+            "_audio_lab_knob_tapers", _kt_path)
+        _kt_mod = importlib.util.module_from_spec(_kt_spec)
+        _kt_spec.loader.exec_module(_kt_mod)
+        taper_distortion_kwargs = _kt_mod.taper_distortion_kwargs
+        taper_guitar_effects_kwargs = _kt_mod.taper_guitar_effects_kwargs
+    except Exception:
+        def taper_distortion_kwargs(kwargs):
+            return dict(kwargs or {})
+
+        def taper_guitar_effects_kwargs(kwargs):
+            return dict(kwargs or {})
+
+try:
     from .pynq_multi_fx_gui import (
         AMP_MODELS,
         CAB_MODELS,
@@ -353,7 +378,7 @@ def _guitar_effects_kwargs(sections):
     eq = sections["eq"]
     rev = sections["reverb"]
     dist_on = bool(dist["enabled"] and dist.get("pedal"))
-    return {
+    return taper_guitar_effects_kwargs({
         "noise_gate_on": bool(ns["enabled"]),
         "noise_gate_threshold": ns["threshold"],
         "overdrive_on": bool(od["enabled"]),
@@ -390,7 +415,7 @@ def _guitar_effects_kwargs(sections):
         "reverb_decay": rev["decay"],
         "reverb_tone": rev["tone"],
         "reverb_mix": rev["mix"],
-    }
+    })
 
 
 def full_state_plan(state):
@@ -422,9 +447,10 @@ def full_state_plan(state):
         ops.append(BridgeOperation(
             "distortion",
             "set_distortion_settings",
-            dict(pedal=dist["pedal"], exclusive=True, drive=dist["drive"],
-                 tone=dist["tone"], level=dist["level"], bias=dist["bias"],
-                 tight=dist["tight"], mix=dist["mix"]),
+            taper_distortion_kwargs(
+                dict(pedal=dist["pedal"], exclusive=True, drive=dist["drive"],
+                     tone=dist["tone"], level=dist["level"], bias=dist["bias"],
+                     tight=dist["tight"], mix=dist["mix"])),
             reason="Distortion Pedalboard AppState section",
             throttle_key="distortion",
         ))
@@ -439,9 +465,10 @@ def full_state_plan(state):
         ops.append(BridgeOperation(
             "distortion",
             "set_distortion_settings",
-            dict(drive=dist["drive"], tone=dist["tone"],
-                 level=dist["level"], bias=dist["bias"],
-                 tight=dist["tight"], mix=dist["mix"]),
+            taper_distortion_kwargs(
+                dict(drive=dist["drive"], tone=dist["tone"],
+                     level=dist["level"], bias=dist["bias"],
+                     tight=dist["tight"], mix=dist["mix"])),
             reason="Keep disabled distortion parameters in cache",
             throttle_key="distortion",
         ))

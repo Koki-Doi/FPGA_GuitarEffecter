@@ -211,9 +211,10 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -8.497 ns (D62 BD-2 coefficient-only retune)
-> は D58.2 とほぼ同一で、運用上は動いていますが厳密にはまだ負です。
-> これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
+> 現状 deploy 済の WNS = -0.496 ns (D79 Overdrive realism / footswitch /
+> XADC / 50 MHz DSP island) です。100 MHz audio fabric は +0.532 ns / 0
+> fail で clean、残りの setup fail は 50 MHz DSP island 内の DS-1
+> arithmetic です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
 > 残った深い組合せブロックを register で分け、必要なら cab タップ
 > や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
 > 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
@@ -853,8 +854,10 @@ asking it to re-discover the project from scratch.
 >   `set_guitar_effects(**kwargs)` のみ呼ぶ。raw GPIO 書き込みなし。
 > - `EncoderUiController` に `applier=` / `live_apply=` / `skip_rat=`
 >   を追加。encoder3 short press は throttle を bypass して force apply、
->   encoder3 rotate は live\_apply=True のとき 100 ms throttle で
->   `apply_appstate` を呼ぶ。
+>   encoder3 rotate は live\_apply=True のとき throttled
+>   `apply_appstate` を呼ぶ。現行 runner 既定は 20 ms
+>   (`--apply-interval-ms 20`)。`EncoderEffectApplier` class 単体の
+>   fallback default は 100 ms。
 > - RAT (`distortion_pedal_mask` bit 2) は `skip_rat=True` (default) で
 >   encoder cycle / live apply の対象から除外。Clash / Notebook mirror は
 >   手付かず。

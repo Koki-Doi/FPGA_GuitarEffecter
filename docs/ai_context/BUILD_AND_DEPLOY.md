@@ -14,7 +14,7 @@ order, and what each layer needs), see
 | C++ DSP prototype removal (`src/effects/*.cpp`) | none — never on the live PL path | none on the FPGA side; `bash scripts/deploy_to_pynq.sh` only if Python or notebooks shipped alongside |
 | `hw/ip/clash/src/LowPassFir.hs` | Clash → VHDL → repackage IP → Vivado bit/hwh | review timing vs the deployed baseline; deploy only if not significantly worse |
 | `hw/Pynq-Z2/pmod_i2s2_integration.tcl`, `audio_lab_pmod_i2s2.xdc`, `hw/ip/pmod_i2s2/src/*.v` | full Vivado rebuild (Pmod I2S2 owns PMOD JB in the current build) | review timing + Pmod mode smoke, then deploy |
-| Additive `*_integration.tcl` (`wah_integration.tcl`, `xadc_integration.tcl` + `xadc_a0.xdc`, `island_integration.tcl`) | full Vivado rebuild; these are sourced from `create_project.tcl` **after** `pmod_i2s2_integration.tcl` in the order wah -> xadc -> island, and add IP / bump `NUM_MI` **without editing `block_design.tcl`** | review timing vs baseline + bench smoke, then deploy |
+| Additive `*_integration.tcl` (`wah_integration.tcl`, `xadc_integration.tcl` + `xadc_a0.xdc`, `footswitch_integration.tcl`, `island_integration.tcl`) | full Vivado rebuild; these are sourced from `create_project.tcl` **after** `pmod_i2s2_integration.tcl` in the order wah -> xadc -> footswitch -> island, and add IP / bump `NUM_MI` **without editing `block_design.tcl`** | review timing vs baseline + bench smoke, then deploy |
 | `hw/Pynq-Z2/block_design.tcl`, `audio_lab.xdc`, IP topology | full Vivado rebuild — **only with explicit user approval** | review timing, then deploy |
 
 When a `block_design.tcl` change adds a new `axi_gpio_*` IP (as the
@@ -51,13 +51,16 @@ address segment — leaving `block_design.tcl` byte-for-byte unchanged.
 Worked examples: `wah_integration.tcl` (`axi_gpio_wah` @ `0x43D30000`,
 `NUM_MI` 19 -> 20, wires `clash_lowpass_fir_0/wah_control`),
 `xadc_integration.tcl` + `xadc_a0.xdc` (`xadc_wiz_a0` @ `0x43D40000`,
-`NUM_MI` 20 -> 21, Arduino A0 = VAUX1), and `island_integration.tcl`
-(D75 DSP 50 MHz island: `FCLK_CLK1`, `rst_island_50M`, the
-`cc_dsp_in` / `cc_dsp_out` `axis_clock_converter` pair). This keeps the
+`NUM_MI` 20 -> 21, Arduino A0 = VAUX1), `footswitch_integration.tcl`
+(`axi_footswitch_input` @ `0x43D50000`, `NUM_MI` 21 -> 22, RP pins
+11/12/35), and `island_integration.tcl` (D75 DSP 50 MHz island:
+`FCLK_CLK1`, `rst_island_50M`, the `cc_dsp_in` / `cc_dsp_out`
+`axis_clock_converter` pair). This keeps the
 "`block_design.tcl` off-limits" rule intact while still adding hardware.
 Confirm the new IP landed with e.g.
 `grep -c axi_gpio_wah hw/Pynq-Z2/bitstreams/audio_lab.hwh` or
-`grep -c xadc_wiz hw/Pynq-Z2/bitstreams/audio_lab.hwh`.
+`grep -c xadc_wiz hw/Pynq-Z2/bitstreams/audio_lab.hwh` or
+`grep -c fsw_in hw/Pynq-Z2/bitstreams/audio_lab.hwh`.
 
 ## Clash → VHDL
 
@@ -103,6 +106,12 @@ make
 create_project.tcl`. Output lands in
 `hw/Pynq-Z2/bitstreams/audio_lab.{bit,hwh}`. The build is currently
 **~14 minutes** on the lab workstation.
+
+`create_project.tcl` enables post-place and post-route
+`phys_opt_design -directive AggressiveExplore` on `impl_1`. This is
+load-bearing since D78: adding the footswitch AXI master perturbed the
+50 MHz DSP-island placement enough to bitcrush before phys_opt, while
+the phys_opt build recovered island WNS and bench audio stayed clean.
 
 The `.bit` and `.hwh` filenames must be the same basename
 (`audio_lab.bit`, `audio_lab.hwh`); PYNQ's `Overlay()` expects them to

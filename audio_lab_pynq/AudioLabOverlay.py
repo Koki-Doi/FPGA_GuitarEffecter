@@ -4,6 +4,7 @@ import os
 from .AxisSwitch import AxisSwitch
 from .AudioCodec import ADAU1761
 from . import control_maps as _cm
+from . import knob_tapers as _kt
 from .effect_defaults import (
     DISTORTION_DEFAULTS as _DISTORTION_DEFAULTS,
     DISTORTION_PEDALS as _DISTORTION_PEDALS,
@@ -1269,7 +1270,9 @@ class AudioLabOverlay(Overlay):
         Returns the dict produced by ``get_current_pedalboard_state``
         after the writes, so callers can verify what landed.
         """
-        spec = self.get_chain_preset(name)
+        # CHAIN_PRESETS store user-facing knob positions. Convert only at the
+        # preset boundary so the public overlay percent API stays linear.
+        spec = _kt.taper_chain_preset_spec(self.get_chain_preset(name))
         comp = spec.get("compressor", {})
         ns = spec.get("noise_suppressor", {})
         od = spec.get("overdrive", {})

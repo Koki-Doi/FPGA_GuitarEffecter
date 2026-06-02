@@ -18,6 +18,7 @@ from audio_lab_pynq.encoder_effect_apply import (  # noqa: E402
     RAT_PEDAL_INDEX,
     is_rat_pedal_index,
 )
+from audio_lab_pynq.knob_tapers import gain_taper_percent, tone_taper_percent  # noqa: E402
 from compact_v2.state import AppState  # type: ignore  # noqa: E402
 
 
@@ -217,6 +218,22 @@ def test_apply_appstate_forwards_amp_model_idx_and_drive_mode():
         "encoder applier must not forward amp_character (D53)")
 
 
+def test_apply_appstate_tapers_gui_knobs_before_overlay():
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov)
+    state = AppState()
+    state.all_knob_values["Overdrive"] = [75.0, 80.0, 50.0]
+    state.all_knob_values["Distortion"] = [75.0, 35.0, 63.0, 50.0, 60.0, 100.0]
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+    assert kw is not None
+    assert kw["overdrive_drive"] == gain_taper_percent(50)
+    assert kw["overdrive_tone"] == tone_taper_percent(75)
+    assert kw["overdrive_level"] == 80
+    assert kw["distortion"] == gain_taper_percent(63)
+    assert kw["distortion_level"] == 35
+
+
 def test_apply_appstate_drive_mode_falls_back_to_knob_slot():
     """D53: if the AppState was mutated only via set_knob (so
     all_knob_values["Amp Sim"][7] = 1.0 but amp_drive_mode is 0 still),
@@ -358,6 +375,7 @@ _TEST_FUNCTIONS = [
     test_safe_bypass_clears_pedals_and_disables_all,
     test_apply_exception_does_not_propagate,
     test_apply_appstate_forwards_amp_model_idx_and_drive_mode,
+    test_apply_appstate_tapers_gui_knobs_before_overlay,
     test_apply_appstate_drive_mode_falls_back_to_knob_slot,
     test_apply_appstate_drive_mode_clamps_out_of_range,
     test_apply_appstate_forwards_six_amp_models,

@@ -9,6 +9,7 @@ from GUI.audio_lab_gui_bridge import (  # noqa: E402
     app_state_to_audio_lab_sections,
     chain_preset_name_from_state,
     safe_bypass_plan,
+    taper_guitar_effects_kwargs,
 )
 
 try:
@@ -115,15 +116,35 @@ def test_safe_bypass_uses_existing_safe_api_sequence():
 
 def test_eq_knobs_map_gui_percent_to_overlay_level_range():
     state = AppState()
-    # 9-effect layout post-Wah: EQ is at index 7 (was 6).
-    state.selected_effect = 7
-    state.knob_values = [50, 55, 60, 0, 0, 0]
+    if not hasattr(state, "all_knob_values"):
+        state.all_knob_values = {}
+    state.all_knob_values["EQ"] = [50, 55, 60]
 
     sections = app_state_to_audio_lab_sections(state)
 
     assert sections["eq"]["low"] == 100
     assert sections["eq"]["mid"] == 110
     assert sections["eq"]["high"] == 120
+
+
+def test_live_plan_tapers_gui_drive_but_keeps_levels():
+    state = AppState()
+    if not hasattr(state, "all_knob_values"):
+        state.all_knob_values = {}
+    # compact-v2 Overdrive order is TONE / LEVEL / DRIVE.
+    state.all_knob_values["Overdrive"] = [75.0, 80.0, 50.0]
+
+    plan = AudioLabGuiBridge().build_plan(state, force=True)
+    op = [op for op in plan.operations if op.method == "set_guitar_effects"][0]
+    expected = taper_guitar_effects_kwargs(dict(
+        overdrive_drive=50,
+        overdrive_tone=75,
+        overdrive_level=80,
+    ))
+
+    assert op.kwargs["overdrive_drive"] == expected["overdrive_drive"]
+    assert op.kwargs["overdrive_tone"] == expected["overdrive_tone"]
+    assert op.kwargs["overdrive_level"] == 80
 
 
 if __name__ == "__main__":
@@ -135,6 +156,7 @@ if __name__ == "__main__":
         test_chain_preset_alias_matches_overlay_name,
         test_safe_bypass_uses_existing_safe_api_sequence,
         test_eq_knobs_map_gui_percent_to_overlay_level_range,
+        test_live_plan_tapers_gui_drive_but_keeps_levels,
     ]
     for test in tests:
         test()

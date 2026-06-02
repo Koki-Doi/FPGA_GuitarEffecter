@@ -1,7 +1,8 @@
 # XADC Wizard integration (ACCEPTED + committed on the D75 island; D76 baseline)
 
 Status: **accepted on bench and committed** as part of **D76**
-(2026-05-31). The D74 build (below) had been deployed but held out of git
+(2026-05-31), and still present in the current D79 bitstream. The D74 build
+(below) had been deployed but held out of git
 because of a bitcrusher on the ADC path; that defect was later proven to
 be the D74 100 MHz audio-AXIS P&R degradation, **not** the XADC. On the
 D75 50 MHz DSP island the same XADC re-add closes timing cleanly and the
@@ -30,16 +31,18 @@ on-chip rails). To read A0 we must add an AXI XADC Wizard to the PL.
 
 | Arduino | Zynq pin | XADC channel |
 | --- | --- | --- |
-| **A0** | **Y11** (AD1P) / Y12 (AD1N) | **VAUX1** |
+| **A0** | header digital view `Y11`; XADC analog pins **E17/D18** | **VAUX1** |
 | A1 | W11 | VAUX9 |
 | A2 | V11 | VAUX6 |
 | A3 | T5  | VAUX15 |
 | A4 | U10 | VAUX5 |
 | A5 | U5  | VAUX13 |
 
-Source: `IO_PIN_RESERVATION.md` (arduino_a0 = Y11) and the reference
-`PYNQ_Z2-Audio/sources/AXIS_audio.tcl` XADC config (Vaux1/5/6/9/13/15).
-Only **VAUX1** is needed for A0.
+Source: `IO_PIN_RESERVATION.md` records the Arduino header's digital
+board entry (`arduino_a0 = Y11`), while `hw/Pynq-Z2/xadc_a0.xdc` constrains
+the PL XADC Wizard's VAUX1 analog interface to **E17/D18**. The Y11/Y12
+view is not XADC-capable for this overlay, so the accepted implementation
+uses E17/D18. Only **VAUX1** is needed for A0.
 
 ## Additive integration (follows the wah_integration.tcl pattern)
 
@@ -54,7 +57,7 @@ Only **VAUX1** is needed for A0.
   `0x43D30000`; propose `xadc_wiz` at **`0x43D40000`** (64 KiB), well
   clear of every current segment.
 - Connect the `Vaux1` `diff_analog_io` interface to a new top-level
-  external port pair; constrain VAUXP1/VAUXN1 to Y11/Y12 in a new
+  external port pair; constrain VAUXP1/VAUXN1 to E17/D18 in a new
   `hw/Pynq-Z2/xadc_a0.xdc` `add_files`-d from `create_project.tcl`
   (per the XDC-`if`-not-supported memory, no conditional pins).
 - Clock the XADC `s_axi_aclk` from the existing 100 MHz PS AXI clock; DRP
@@ -125,5 +128,6 @@ correct for an open input). `probe_fp02m_a0.py --mmio` returns raw values
   no DSP / BRAM.
 - bit/hwh md5 `dd3fc09994902abcf34f8819d054205b` /
   `ef094d0e1a6158a94fc75bb297adfa6b`. HWH contains `xadc_wiz_a0` and
-  `axi_gpio_wah`. Deployed 5-site (board bit md5 matches). bit/hwh are
-  **not committed** until bench audition passes (D74 gate).
+  `axi_gpio_wah`. Deployed 5-site (board bit md5 matches). This D74
+  build was held out at the time; the XADC path was later re-accepted and
+  committed in D76 on the 50 MHz DSP island, then carried forward into D79.

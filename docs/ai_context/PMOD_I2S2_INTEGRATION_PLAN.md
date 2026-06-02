@@ -4,7 +4,7 @@
 PMOD JB audio path について、最初の Phase Pmod-0 設計メモと、その後の
 実装・deploy 済み仕様をまとめる。
 
-## Current deployed status (D48 / D49 / D50 / D62)
+## Current deployed status (D48 / D49 / D50, active through D79)
 
 Pmod I2S2 は現行デプロイ済み build の **active audio path** です。
 `hw/Pynq-Z2/create_project.tcl` は `pmod_i2s2_integration.tcl` を
@@ -34,22 +34,24 @@ Current implementation:
   `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb`,
   `scripts/test_pmod_i2s2.py`, `scripts/pmod_i2s2_mode.py`,
   `scripts/pmod_i2s2_capture_probe.py`.
-- Latest deployed bitstream baseline is D62 BD-2 coefficient-only retune:
-  WNS `-8.497 ns`, TNS `-5876.740 ns`, WHS `+0.053 ns`, THS `0`,
-  bit/hwh md5 `349ebbe609ac15f58d8b676d2dedee94` /
-  `3a90e966c5d76762b60ba3ab0e982685`.
+- Latest deployed bitstream baseline is D79 Overdrive realism on the D75
+  DSP island: island WNS `-0.496 ns`, 100 MHz audio fabric `+0.532 ns /
+  0 fail`, bit/hwh md5 `f0cb0276f27187d72476a2e773dd9a6e` /
+  `5fa0b84e9fe852c68629c651f94e4a9d`. The Pmod I2S2 RTL / Tcl / XDC
+  path itself is unchanged from D48-D50; D79 only changes Clash Overdrive
+  math on the existing DSP path.
 
 The original Phase Pmod-0 planning text remains below as history. Any
 sections that say "planning only" or "do not change RTL/XDC/Tcl" describe
 that earlier docs-only phase, not the current repository state.
 
 関連:
-- `docs/ai_context/CURRENT_STATE.md` (current D62 / Pmod mode 2 state)
+- `docs/ai_context/CURRENT_STATE.md` (current D79 / Pmod mode 2 state)
 - `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (retired PCM5102 / PCM1808 history)
 - `docs/ai_context/IO_PIN_RESERVATION.md` (PMOD / RPi / Arduino header の pin 予約台帳)
 - `docs/ai_context/AUDIO_SIGNAL_PATH.md` (内部 AXIS DSP 経路と外付け codec 接続点)
 - `docs/ai_context/TIMING_AND_FPGA_NOTES.md` (deploy band と WNS baseline)
-- `docs/ai_context/DECISIONS.md` (D45 / D48 / D49 / D50 / D62)
+- `docs/ai_context/DECISIONS.md` (D45 / D48 / D49 / D50 / D75-D79)
 
 ---
 

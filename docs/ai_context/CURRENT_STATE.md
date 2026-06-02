@@ -1,5 +1,9 @@
 # Current state
 
+Latest work: **2026-06-03 (D81 resonant tone stack item 3 / R3: Tube Screamer ~720 Hz mid-hump biquad; built, deployed, bench-accepted; new bitstream baseline):** First resonant-biquad tone shape (realism roadmap item 3). A new pre-clip `tubeScreamerMidFrame` peaking biquad sits between the TS input HPF and the drive multiply (`tsHpfPipe -> tsMidPipe -> tsMulPipe`), so the boosted ~720 Hz band is driven harder into the clip = the TS mid-focused character a one-pole tilt cannot make. Direct-form-I, hand-designed target (f0=720 Hz, fs=48 kHz, Q=0.8, +6 dB; NOT a schematic table). New `FixedPoint.mulS16` + `satShift14`: at this low normalised frequency b1/a1~=-1.91 so **Q8 rounding collapses DC gain to 0.67x; Q14 coeffs hold it** (verified DC -0.06 dB / peak +6.01 dB @ 720 Hz / Nyquist 0 dB / pole 0.959 stable). Five multiplies summed in **parallel** (D79/Wah island lesson). `x1/x2/y1/y2` pipeline-level state (cab-tap / RAT prev idiom); **bit-exact bypass** when TS off; **no Frame slot, no GPIO, no API change** -> only TS voicing changes, all other pedals/models byte-identical, Python golden tests unchanged. **Timing: island (`clk_fpga_1`) WNS -0.193 ns / 36 fail (all intra-DS-1), audio fabric (`clk_fpga_0`) +0.657 ns / 0 fail**, WHS +0.036, THS 0; DSP 95 (+6), BRAM 6, LUT 22032, FF 24594 -- **better than D79** (-0.496), ~= D78 (-0.173); biquad added no meaningful timing cost. bit/hwh md5 `3a79745ffad8b72531a22587b5bcd3a1` / `a9b582634489170c16c2876388546aa4`, deployed 5-site (board md5 matched). **Bench (Pmod mode 2 ADC->DSP->DAC): all_off bypass clean / no bitcrusher, TS mid hump audible, other pedals unchanged -- user-confirmed accepted.** **D81 (`3a79745f`) is the new accepted bitstream baseline, superseding D79** (`f0cb0276`, rollback in git history + `/tmp/d79_backup`). `DECISIONS.md` D81; branch `feature/realism-tone-stack-biquad`. Next R3 targets (spec): Big Muff mid notch, Fender/Vox/Marshall amp stacks (one shared biquad, coeff mux per model).
+
+Latest work: **2026-06-01 (D80 Python-only real-hardware knob taper + preset polish; no bitstream rebuild):** Added `audio_lab_pynq/knob_tapers.py` as the boundary between user-facing knob positions and the linear overlay/GPIO API. Gain/drive-style controls now use a conservative audio taper in GUI/encoder/preset apply paths, tone-style controls get a mild centre-preserving taper, and level/mix/makeup/EQ values stay linear to preserve the existing safe-gain contracts. `AudioLabOverlay.apply_chain_preset(name)` now tapers `CHAIN_PRESETS` immediately before writing hardware while `get_chain_preset()` still returns raw knob positions for GUI mirroring. `EncoderEffectApplier` and `GUI/audio_lab_gui_bridge.py` apply the same taper for live knob movement; direct low-level `set_guitar_effects()` / `set_distortion_settings()` remain linear for scripts and golden byte tests. Chain and distortion preset drive positions were raised where needed so the tapered hardware values land near the previous practical voicings. Tests: `python3 tests/test_overlay_controls.py`, `python3 tests/test_encoder_effect_apply.py`, `python3 tests/test_hdmi_gui_bridge.py`, `python3 tests/test_footswitch_control.py` PASS. No Clash/VHDL/Tcl/XDC/bit/hwh change; D79 remains the deployed bitstream baseline.
+
 Latest work: **2026-06-01 (D79 Overdrive realism: per-model clip hardness + Klon clean-blend; built, deployed, bench-accepted):** Two model-realism improvements to the dedicated Overdrive effect (investigation in `MODEL_REALISM_GAP_ANALYSIS.md`, method in `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`). **Item 4 (per-model clip hardness):** the six OD models now differ in clip *hardness* (slope = harmonic order), not just knee level -- `FixedPoint.asymSoftClipSoft/Med/Hard` (fixed-shift siblings, no new DSP) + `Overdrive.odClipHardness` 4:1 mux (TS9/JanRay/Klon soft, OD-1/BD-2 medium=legacy shape, OCD harder MOSFET). Closes at island WNS **-0.173 ns (= D78, no cost)**; bit `e884360a`. **Item 5a (Klon/CENTAUR clean-blend):** model 5 now mixes a parallel unclipped clean path with the clipped path (the Klon's defining mechanism), DRIVE raising the clipped weight -- pre-clip clean stashed in `fAcc3L`, blended in the level stage with two *parallel* `mulU8`. Other models byte-identical. **A 1-mul LERP rewrite was built and REJECTED at -3.627 ns (serial subtract→mul→shift→add lengthens the DS-1 CARRY4 path; parallel multiplies route better -- same rule as Wah).** Committed 5a = 2-mul parallel form: island WNS **-0.496 ns** / 32 fail (all intra-DS-1, audio fabric clean +0.532 / 0 fail) -- worse than D78 (-0.173) but better than the bench-"perfect" D75 (-0.706); phys_opt already on. **Accepted bit `f0cb0276`** (hwh `5fa0b84e`), deployed 5-site, loaded, Pmod mode 2, **user bench-confirmed all_off clean / no bitcrusher.** No GPIO/API change; Python golden tests same 3F+1E baseline as main. Build env: dev `clash` needs `CLASH_FLAGS="-package-id clash-prelude-1.8.1-043657e6... -isrc --vhdl"` (stray clash-prelude-1.8.2 in the cabal store; `make clean` deletes tracked `hw/ip/clash/vhdl/` + bitstreams, restore via `git checkout --`). **D79 (`f0cb0276`) is the new accepted baseline, superseding D78** (`45e78763`, rollback). Items 5b (Fuzz/amp bias-sag) + 3 (biquad tone stacks) remain spec-only. `DECISIONS.md` D79; branches `feature/realism-clip-hardness` + `feature/realism-klon-clean-blend`.
 
 Latest work: **2026-05-31 (D78 footswitch -- 3x 3PDT for FX toggle + preset stepping; RP-header pins; phys_opt fixes the bitcrusher; deployed + bench audio CLEAN):** Branch `feature/footswitch-preset-fxtoggle`. Adds three guitar-pedal 3PDT footswitches on the **Raspberry Pi header**, read by a new self-contained PL IP `axi_footswitch_input` @ `0x43D50000` (M21). **Final pins (verified from the official PYNQ-Z2 master XDC `Sch=rpio_NN_r` net names, NN = BCM GPIO):** `fsw0_i`=FX toggle=`U7`=`rpio_17`=GPIO17=**RP pin 11**; `fsw1_i`=preset next=`C20`=`rpio_18`=GPIO18=**RP pin 12**; `fsw2_i`=preset prev=`Y8`=`rpio_19`=GPIO19=**RP pin 35**; GND = any RP GND pin. **Accepted bit md5 `45e78763`** (5-site deployed). **Bitcrusher root-cause + fix (load-bearing):** the first two footswitch bits (`199d25ea` RP-pin, `e610dc58` PMOD-JA) produced an audible **bitcrusher on the ADC->DSP->DAC path** -- adding the footswitch AXI master (M21) perturbed the 50 MHz DSP-island P&R and pushed the DS-1 distortion CARRY4 arithmetic from D76's -0.368 ns to ~-0.75 ns. Confirmed by A/B (rollback to D76 made it vanish; D76 stayed clean). **Fix:** enable post-place + post-route `phys_opt_design` (AggressiveExplore) on `impl_1` in `create_project.tcl` -> DS-1 island WNS recovered to **-0.173 ns (better than D76)**, 100 MHz audio fabric clean (+0.683 ns, 0 failing); **bench audio verified CLEAN by the user.** Pin choice was irrelevant to the bitcrusher (both RP and PMOD-JA bits bitcrushed pre-phys_opt). Interim history: the PMOD-JA bit was bench-validated end-to-end (FS1 toggle / FS2-FS3 preset / all 3 channels) before the move to RP pins + the audio fix. **Latching-switch handling:** a true-bypass 3PDT is alternate-action, so the debounced level toggles per stomp; the IP latches one `press_event` on *either* edge (PULLUP true; common→GPIO / one throw→GND / other open). **Additive only:** `footswitch_integration.tcl` (modeled on `encoder_integration.tcl`) bumps NUM_MI 21→22, sourced from `create_project.tcl` after `xadc_integration.tcl` and before `island_integration.tcl`; the IP is on the 100 MHz fabric (NOT the 50 MHz DSP island), `block_design.tcl` is not edited, and Clash is unchanged (DSP voicing byte-identical, no DSP regeneration). **FX-target binding:** FS1 toggles `AppState.footswitch_fx_target` (persisted, default Amp Sim); stomping FS1 5×/3s rebinds it to the GUI-selected effect, leaving the old target's on/off unchanged. **Translation discipline:** FX toggle rides `EncoderEffectApplier.apply_effect_on_off` (single-enable, preserves curated voicing); preset stepping calls `AudioLabOverlay.apply_chain_preset(name)` for audio then mirrors into `AppState` for the HDMI GUI via `footswitch_control.apply_chain_preset_to_state` (wraps over all `CHAIN_PRESETS`). New: `audio_lab_pynq/footswitch_input.py`, `audio_lab_pynq/footswitch_control.py`, `AppState.footswitch_fx_target`, a non-blocking footswitch poll in `scripts/run_encoder_hdmi_gui.py` (`--footswitch` default on / `--no-footswitch` / `--footswitch-debounce-ms` / `--footswitch-debug`) beside the FP02M pedal poll (single-threaded overlay writes). Tests: 21 new offline pass (`tests/test_footswitch_input_decode.py`, `tests/test_footswitch_control.py`); no regression vs the pre-existing 2-failure baseline; `py_compile` clean. **Status: bit `45e78763` deployed 5-site, footswitch IP live (VERSION `0x00F50001`, RP-pin pull-ups read (1,1,1)), bench audio CLEAN (user-confirmed), and the controller logic was bench-validated on the interim PMOD-JA bit (FS1 toggle via `apply_effect_on_off`, FS2/FS3 preset step via `apply_chain_preset`+AppState mirror, all 3 channels).** **ACCEPTED (2026-06-01):** the user wired the 3PDTs to RP pins 11/12/35 and confirmed FS function on the final bit -- footswitches work (FS1 FX toggle, FS2/FS3 preset stepping), audio clean. Merged to `main` (`feat(#D78)` 813029b + merge aa4080f). Full record: `FOOTSWITCH_INTEGRATION.md`, `DECISIONS.md` D78. **D78 (`45e78763`) is the new accepted deployed bitstream baseline, superseding D76.**
@@ -306,8 +310,9 @@ step at every commit boundary.
 Previous-pass header (refactor era, now reverted):
 **Phase 7G+ encoder GUI-first live apply added**
 (new module `audio_lab_pynq/encoder_effect_apply.py` translates the
-compact-v2 AppState into `AudioLabOverlay` public setters with a 100 ms
-default throttle; `EncoderUiController` gained `applier=` / `live_apply=`
+compact-v2 AppState into `AudioLabOverlay` public setters with a class
+default 100 ms throttle; the D76+ runner passes 20 ms by default.
+`EncoderUiController` gained `applier=` / `live_apply=`
 / `skip_rat=` kwargs; `scripts/run_encoder_hdmi_gui.py` and the
 single-cell `EncoderGuiSmoke.ipynb` were rewritten around the dirty-flag
 loop with the new applier; RAT pedal-mask bit 2 is excluded from
@@ -322,22 +327,21 @@ subpackage; `c7a8680` added the rotary encoder input IP and the
 follow-up deploy smoke added the encoder Notebook and PYNQ Python 3.6
 compatibility fixes. See `DECISIONS.md` D26 / D33 / D35).
 
-**Planning-only addition (2026-05-18, post Phase 7D close-out)**:
-Digilent **Pmod I2S2** (CS4344 stereo DAC + CS5343 stereo ADC on one
-PMOD board) has been ordered and will be evaluated as a stable external
-I2S I/O reference before any further PCM1808 work. The full design /
-phase / pin / test plan lives in
+**Superseded planning note (2026-05-18, post Phase 7D close-out; now
+implemented and active)**: Digilent **Pmod I2S2** (CS4344 stereo DAC +
+CS5343 stereo ADC on one PMOD board) was selected as the stable external
+I2S I/O reference and is now the current deployed PMOD JB audio path. The
+full design / phase / pin / test plan lives in
 `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`. The **PMOD JB pin
 mapping is now confirmed (2026-05-18)** against the Digilent Pmod I2S2
 reference manual: Pin 1..4 = D/A MCLK / LRCK / SCLK / SDIN on
 JB1..JB4, Pin 7..10 = A/D MCLK / LRCK / SCLK / SDOUT on JB7..JB10,
 Pin 5/11 = GND, Pin 6/12 = VCC 3.3V. FPGA 側は 1 系統の MCLK / LRCK
 / BCLK を生成して D/A 側と A/D 側に fanout する方針 (async-clocks
-を構造的に排除)。No RTL / XDC / Tcl / Vivado / bit/hwh / Python /
-Notebook change has been made for this; deployed bit is still the
-Phase 7D close-out `f502373` series. PCM5102 SCK = GND (D40 / D42),
-PCM1808 mux = ADAU (D43), Phase 7D close-out WNS `-7.931 ns`. See
-`DECISIONS.md` D45.
+を構造的に排除)。D48-D50 implemented the FPGA master + mode register;
+runtime mode 2 (`ADC -> DSP -> DAC`, RIGHT mirrored to both DAC slots) is
+the active external audio path. PCM5102/PCM1808 is retired reference only.
+See `DECISIONS.md` D45 / D48 / D49 / D50.
 
 ## Current load-bearing facts
 
@@ -371,17 +375,20 @@ PCM1808 mux = ADAU (D43), Phase 7D close-out WNS `-7.931 ns`. See
   smart-attach via `download=False` when bit already loaded —
   protects the rgb2dvi PLL at the 800 MHz VCO lower edge from
   re-`download=True` knock-outs in the same Jupyter session).
-- **Latest PL timing baseline**: D67 WNS `-8.204 ns`, TNS
-  `-9300.746 ns`, WHS `+0.034 ns`, THS `0.000 ns`; Slice LUTs
-  `19836`, Slice Registers `22174`, BRAM `6`, DSPs `83`. The older
-  Phase 6I HDMI-only timing baseline was WNS `-8.096 ns`; D67 is the
-  current deployed bit/hwh baseline. See `TIMING_AND_FPGA_NOTES.md`.
+- **Latest PL timing baseline**: D79 WNS `-0.496 ns`; the 100 MHz audio
+  fabric is clean at `+0.532 ns / 0 fail`, and the remaining 32 setup
+  failures are intra-50 MHz DSP-island DS-1 arithmetic. bit/hwh md5
+  `f0cb0276f27187d72476a2e773dd9a6e` /
+  `5fa0b84e9fe852c68629c651f94e4a9d`. Rollback: D78 (`45e78763...`,
+  footswitch + phys_opt), then D76 (`9fdecae0...`, FP02M XADC on the
+  D75 island). See `TIMING_AND_FPGA_NOTES.md`.
 - **Encoder GUI live apply (Phase 7G+)**: `EncoderEffectApplier` is the
   only Python object allowed to translate the compact-v2 `AppState`
   into `AudioLabOverlay` calls from the encoder runtime. It uses
   `set_noise_suppressor_settings`, `set_compressor_settings`, and a
   single `set_guitar_effects(**kwargs)` per push — no raw GPIO writes.
-  Throttle defaults to 100 ms (`--apply-interval-ms`); encoder 3 short
+  The standalone runner defaults to `--apply-interval-ms 20` (the
+  `EncoderEffectApplier` class fallback remains 100 ms); encoder 3 short
   press always force-applies regardless of the throttle. RAT
   (`distortion_pedal_mask` bit 2) is suppressed when `skip_rat=True`
   (default); pass `--include-rat` to override. EQ knob values are
@@ -391,10 +398,11 @@ PCM1808 mux = ADAU (D43), Phase 7D close-out WNS `-7.931 ns`. See
   the encoder loop refuses to touch it.
 - **Encoder GUI render loop**: `scripts/run_encoder_hdmi_gui.py` and
   `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` share a dirty-flag
-  loop — poll at 10 Hz while events are arriving, drop to 4 Hz after
+  loop — poll at 60 Hz while events are arriving, drop to 10 Hz after
   1 s of silence, render only when the AppState signature changes, cap
-  at 5 fps even under continuous rotation. Idle `proc_cpu` measured
-  at ~0–1% on the deployed PYNQ-Z2 image during the dry-run smoke.
+  at 20 fps even under continuous rotation. The same single-threaded
+  control loop also hosts the FP02M pedal poll and D78 footswitch poll;
+  HDMI rendering runs in a daemon thread after the D76 latency fix.
 
 ## Phase history (chronological)
 

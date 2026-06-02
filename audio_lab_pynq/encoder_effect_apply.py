@@ -18,6 +18,8 @@ This module is import-safe on workstations without ``pynq`` installed.
 
 import time
 
+from .knob_tapers import taper_guitar_effects_kwargs
+
 EFFECT_NOISE_SUP  = "Noise Sup"
 EFFECT_COMPRESSOR = "Compressor"
 EFFECT_WAH        = "Wah"
@@ -389,7 +391,7 @@ class EncoderEffectApplier(object):
                 reverb_tone=_clamp_percent(rv[1]),
                 reverb_mix=_clamp_percent(rv[2]),
             )
-            self.overlay.set_guitar_effects(**kwargs)
+            self.overlay.set_guitar_effects(**taper_guitar_effects_kwargs(kwargs))
             self._record_ok("state-push")
             return True
         except Exception as exc:

@@ -52,18 +52,29 @@ read-back from hardware.
 
 ### Companion non-GPIO IP: `xadc_wiz_a0` (read-only, D76)
 
-`xadc_wiz_a0` (Xilinx XADC Wizard) sits at **`0x43D40000`** and is the
-highest segment in the current map. It is **not** an `axi_gpio_*` and is
+`xadc_wiz_a0` (Xilinx XADC Wizard) sits at **`0x43D40000`**. It is **not**
+an `axi_gpio_*` and is
 not part of this output-only ledger -- it is a read-only AXI slave that
-samples Arduino A0 = **VAUX1** (Y11/Y12) for the ZOOM FP02M expression
-pedal. The Python side reads register `0x244` (12-bit code in the top
-12 bits) via `Fp02mXadcMmioReader` and maps it to Wah POSITION. Added by
+samples Arduino A0 = **VAUX1** (dedicated XADC analog pins **E17/D18**;
+the `Y11` Arduino board entry is only the digital header view) for the
+ZOOM FP02M expression pedal. The Python side reads register `0x244`
+(12-bit code in the top 12 bits) via `Fp02mXadcMmioReader` and maps it to
+Wah POSITION. Added by
 `hw/Pynq-Z2/xadc_integration.tcl` + `xadc_a0.xdc` (sourced from
 `create_project.tcl` after `wah_integration.tcl`, `NUM_MI` 20 -> 21,
 M20); `block_design.tcl` is **not** edited. The DSP `clash_lowpass_fir_0`
 top entity is unchanged (no new port), so voicing is byte-identical.
 See `XADC_INTEGRATION_DESIGN.md`, `FP02M_PEDAL_INTEGRATION.md`,
 `DECISIONS.md` D76.
+
+### Companion non-GPIO IP: `axi_footswitch_input` (read-only, D78)
+
+`axi_footswitch_input` sits at **`0x43D50000`** and is the current highest
+AXI slave segment. It is a 3-channel input IP for the external 3PDT
+footswitch bank (FS1 FX toggle, FS2 preset next, FS3 preset previous).
+It is added only by `hw/Pynq-Z2/footswitch_integration.tcl` (sourced after
+`xadc_integration.tcl` and before `island_integration.tcl`); `block_design.tcl`
+is **not** edited. See `FOOTSWITCH_INTEGRATION.md` and `DECISIONS.md` D78.
 
 ### Free / reserved bytes summary (for new-effect planning)
 

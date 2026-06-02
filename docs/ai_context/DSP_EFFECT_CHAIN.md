@@ -44,29 +44,37 @@ measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
-The latest accepted baseline is **D75 (2026-05-31), the DSP clock-domain
-island**: `clash_lowpass_fir_0` now runs at `FCLK_CLK1 = 50 MHz` while the
-rest of the fabric stays at `FCLK_CLK0 = 100 MHz`, bridged by
-`axis_clock_converter` (`cc_dsp_in` / `cc_dsp_out`) added in
-`hw/Pynq-Z2/island_integration.tcl`. This closed the DSP timing (WNS
--10.387 -> -0.706 ns) without touching the I2S/Pmod CDCs. It also removed
-the `paceCount` (AXIS pacing) from `fxPipeline`, added a `syncCtrl`
-control-word CDC synchroniser in `LowPassFir.hs` (2-FF + stability on all
-12 control words -- required so effect/knob switches do not click), and a
-`set_clock_groups -asynchronous` in `audio_lab.xdc`. **The DSP voicing
-(Clash effect math) is unchanged from D73** -- D75 is a pure clocking/CDC
-change. Full record in `DSP_ISLAND_CLOCK_DESIGN.md` / `DECISIONS.md` D75.
-Do not lower the whole fabric to 50 MHz (global-50 MHz corrupts the
-I2S/Pmod CDCs = bypass buzz).
+The latest accepted baseline is **D79 (2026-06-01), Overdrive realism on
+the DSP island**. The load-bearing clocking base is still D75:
+`clash_lowpass_fir_0` runs at `FCLK_CLK1 = 50 MHz` while the rest of the
+fabric stays at `FCLK_CLK0 = 100 MHz`, bridged by `axis_clock_converter`
+(`cc_dsp_in` / `cc_dsp_out`) added in `hw/Pynq-Z2/island_integration.tcl`.
+This closed the DSP timing (WNS -10.387 -> -0.706 ns) without touching the
+I2S/Pmod CDCs. It also removed the `paceCount` (AXIS pacing) from
+`fxPipeline`, added a `syncCtrl` control-word CDC synchroniser in
+`LowPassFir.hs` (2-FF + stability on all 12 control words -- required so
+effect/knob switches do not click), and a `set_clock_groups -asynchronous`
+in `audio_lab.xdc`. Do not lower the whole fabric to 50 MHz
+(global-50 MHz corrupts the I2S/Pmod CDCs = bypass buzz).
 
-The previous DSP-voicing baseline is D68 (2026-05-25), the global
-Amp / Distortion / Overdrive constants retune, with D71 (2026-05-27)
-cabinet multi-band pseudo-IR and D73 (Cry Baby Wah) on top -- all carried
-unchanged into D75. The fixed-scalar constant-table approach is
-load-bearing: D58 / D59 / D60 / D61 v2 showed that adding DSP48
-multipliers or new feedback state can perturb Vivado P&R enough to make
-the safe-bypass path audibly noisy even when CLIP_COUNT and WNS look
-acceptable.
+D76 re-added the FP02M XADC path on this island, D78 added the
+`axi_footswitch_input` IP plus load-bearing `phys_opt_design`, and D79
+adds the Overdrive realism changes described below. D79 routed island WNS
+is `-0.496 ns`, with the 100 MHz audio fabric clean at `+0.532 ns / 0
+fail`; user bench confirmed all_off clean / no bitcrusher. Full records:
+`DSP_ISLAND_CLOCK_DESIGN.md`, `FOOTSWITCH_INTEGRATION.md`,
+`MODEL_REALISM_IMPLEMENTATION_GUIDE.md`, and `DECISIONS.md` D75 / D78 /
+D79.
+
+The older DSP-voicing baselines are D68 (global Amp / Distortion /
+Overdrive constants retune), D71 (cabinet multi-band pseudo-IR), D73
+(Cry Baby Wah), D76 (Wah pedal path), and D79 (Overdrive clip hardness +
+Klon clean-blend). The fixed-scalar / timing-friendly constant-table
+approach is load-bearing: D58 / D59 / D60 / D61 v2 / D63 / D64 / D74 /
+D78 showed that adding DSP48 multipliers, new feedback state, helper
+cascades, or even an additive AXI master can perturb Vivado P&R enough to
+make the safe-bypass path audibly noisy even when CLIP_COUNT and headline
+timing look acceptable.
 
 ## Core types
 
@@ -105,6 +113,7 @@ Frame` is the pipeline type; `Nothing` means a slot is idle.
 | `softClip` | Symmetric soft clip with a fixed knee at `4_194_304`. |
 | `softClipK knee x` | Symmetric soft clip with a tunable knee. |
 | `asymSoftClip kneeP kneeN x` | Different knees and slopes for + and − half. |
+| `asymSoftClipSoft/Med/Hard` | D79 fixed-shift siblings for per-model Overdrive clip hardness. Compile-time shifts only; selected by `odClipHardness`. |
 | `asymHardClip kneeP kneeN x` | Hard clamp with independent thresholds. |
 | `hardClip x threshold` | Symmetric hard clip. |
 | `onePoleU8 alpha prev x` | `alpha/256 · x + (256-alpha)/256 · prev`; one-pole IIR. |
@@ -122,8 +131,8 @@ makeInput
   -- ADC Left becomes the mono source; ADC Right is discarded
   -> nsLevel -> nsApply                                 (noise suppressor envelope + apply, replaces the legacy hard gate)
   -> compLevel -> compApply -> compMakeup               (stereo-linked feed-forward peak compressor; bit-exact bypass when off)
-  -> wah (posSmooth + fByteR + qBandR feed SVF low/band; band -> volume) -- D72 resonant band-pass; pre-distortion position; bit-exact bypass when off
-  -> overdrive (drive mul -> boost -> clip -> tone -> level)
+  -> wah (posSmooth + fByteR + qBandR feed SVF low/band; band -> volume) -- D72 resonant band-pass; pre-distortion position; value-preserving bypass when off
+  -> overdrive (drive mul -> boost -> model-hardness clip -> tone -> level; Klon clean-blend on model 5)
   -> legacy distortion (drive mul -> boost -> clip -> tone -> level)
   -> RAT (HPF -> drive -> opamp LPF -> hard clip -> post LPF -> tone -> level -> mix)
   -> clean_boost          (3 stages: mul -> shift -> level + softClip safety)
@@ -324,22 +333,25 @@ wide 8-way mux of independent DSP blocks.
 
 | Model idx | User label | Current coefficient intent |
 | ---: | --- | --- |
-| 0 | TS9 | mid-focused mild asym clip |
-| 1 | OD-1 | simple early overdrive |
-| 2 | BD-2 | D62 retune: `odDriveK=7`, knees `2_400_000 / 1_900_000`, safety `3_400_000` |
-| 3 | Jan Ray | low-gain transparent style |
-| 4 | OCD | wider drive ceiling |
-| 5 | Centaur | polished low/mid gain |
+| 0 | TS9 | mid-focused, soft op-amp clip hardness |
+| 1 | OD-1 | simple early overdrive, legacy medium hardness |
+| 2 | BD-2 | D62 retune (`odDriveK=7`, knees `2_400_000 / 1_900_000`, safety `3_400_000`) with medium hardness |
+| 3 | Jan Ray | low-gain transparent style, softest hardness |
+| 4 | OCD | wider drive ceiling, harder MOSFET-style hardness |
+| 5 | Centaur | Klon-style smooth clip plus D79 parallel clean-blend |
 
-The stage shape is unchanged from the previous selectable-OD build:
+The register-stage shape is unchanged from the previous selectable-OD
+build. D79 changes only existing-stage arithmetic: a fixed-shift clip
+hardness mux in the clip stage, and a Klon-only clean blend in the level
+stage using a spare accumulator slot (`fAcc3L`) to carry pre-clip clean.
 
 | Stage | Current shape |
 | --- | --- |
 | `overdriveDriveMultiplyFrame` | Q8 pre-gain is `256 + drive * odDriveK model`, selected by a small constant table. |
 | `overdriveDriveBoostFrame` | Existing `satShift8` return to `Sample`. |
-| `overdriveDriveClipFrame` | `asymSoftClip (odKneeP model) (odKneeN model)`. D62 only changes the BD-2 row. |
+| `overdriveDriveClipFrame` | Selects `asymSoftClipSoft`, legacy `asymSoftClip`, `asymSoftClipMed`, or `asymSoftClipHard` by `odClipHardness model`; knees still come from `odKneeP` / `odKneeN`. For model 5 only, stashes the pre-clip clean sample in `fAcc3L`. |
 | `overdriveToneMultiplyFrame` -> `overdriveToneBlendFrame` | Existing one-pole tone blend; no GPIO topology change. |
-| `overdriveLevelFrame` | Existing Q7 level multiply with per-model `odSafetyKnee`. |
+| `overdriveLevelFrame` | Existing Q7 level multiply with per-model `odSafetyKnee`; for model 5 only, first blends tone-processed wet with the stashed clean path using two parallel `mulU8` operations (`odCleanBlend drive`). Do not rewrite this as a serial one-multiply LERP; that measured far worse timing in D79. |
 
 ## Legacy distortion section
 
@@ -530,7 +542,15 @@ existing per-section setters (`set_compressor_settings`,
 `set_noise_suppressor_settings`, `set_distortion_pedal` /
 `set_distortion_settings`, `set_guitar_effects`). No new GPIO, no
 new Clash stage -- the DSP pipeline is unchanged. See
-[`DECISIONS.md`](DECISIONS.md) D15.
+[`DECISIONS.md`](DECISIONS.md) D15 / D80.
+
+D80 update: preset numbers are now treated as user-facing **physical knob
+positions**. `apply_chain_preset()` deep-copies the preset and runs it through
+`audio_lab_pynq.knob_tapers` before writing the linear overlay API. Direct
+low-level calls to `set_guitar_effects()` / `set_distortion_settings()` remain
+linear for scripts and golden-byte tests; GUI / encoder live writes use the
+same taper at the bridge boundary. This is Python-only and does not imply a
+bitstream rebuild.
 
 Per-preset safety contract (enforced by `tests/test_overlay_controls.py`):
 
