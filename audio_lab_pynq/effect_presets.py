@@ -1,24 +1,25 @@
 """Shared presets for the Notebook UI and Python API.
 
-The Notebook (``GuitarPedalboardOneCell.ipynb``) imports these so the
-preset buttons match what someone driving the API directly would get.
-The notebook also keeps a fallback inline copy in case the import
-fails on an older deployed package — the values must stay byte-for-byte
-identical between the two sources of truth.
-
-If you change a number here, mirror it into the notebook's fallback
-block in the same commit.
+The Notebook (``GuitarPedalboardOneCell.ipynb``) imports these so preset
+buttons, chain presets, and GUI mirrors share the same user-facing knob
+positions.
+The notebook also keeps a minimal fallback inline copy in case the import
+fails on an older deployed package. The package module is the authoritative
+source for current values; deploy the package with the notebook so the
+fallback path is not used for normal operation.
 """
 
 
-# Distortion section presets. ``distortion_on`` toggles the section
-# master flag (``gate_control`` bit 2). ``pedal`` is the
-# pedal-mask name; the notebook applies it with ``exclusive=True``.
+# Distortion section presets. Values are user-facing knob positions; GUI /
+# preset apply paths pass gain and tone knobs through ``knob_tapers`` before
+# writing the linear overlay API. ``distortion_on`` toggles the section master
+# flag (``gate_control`` bit 2). ``pedal`` is the pedal-mask name; the notebook
+# applies it with ``exclusive=True``.
 DISTORTION_PRESETS = {
     "Clean Boost": dict(
         distortion_on=True,
         pedal="clean_boost",
-        drive=35,
+        drive=45,
         tone=50,
         level=45,
         bias=50,
@@ -28,19 +29,19 @@ DISTORTION_PRESETS = {
     "Tube Screamer Crunch": dict(
         distortion_on=True,
         pedal="tube_screamer",
-        drive=45,
-        tone=55,
+        drive=54,
+        tone=60,
         level=35,
         bias=50,
-        tight=60,
+        tight=65,
         mix=100,
     ),
     "RAT Distortion": dict(
         distortion_on=True,
         pedal="rat",
-        drive=55,
+        drive=63,
         tone=45,
-        level=35,
+        level=32,
         bias=50,
         tight=50,
         mix=100,
@@ -48,11 +49,11 @@ DISTORTION_PRESETS = {
     "Metal Tight": dict(
         distortion_on=True,
         pedal="metal",
-        drive=55,
+        drive=67,
         tone=55,
-        level=30,
+        level=28,
         bias=50,
-        tight=75,
+        tight=80,
         mix=100,
     ),
     # DS-1 style: bright, edgy crunch. DRIVE 45 / TONE 60 keeps the
@@ -60,7 +61,7 @@ DISTORTION_PRESETS = {
     "DS-1 Crunch": dict(
         distortion_on=True,
         pedal="ds1",
-        drive=45,
+        drive=54,
         tone=60,
         level=30,
         bias=50,
@@ -70,7 +71,7 @@ DISTORTION_PRESETS = {
     "DS-1 Lead": dict(
         distortion_on=True,
         pedal="ds1",
-        drive=60,
+        drive=67,
         tone=65,
         level=28,
         bias=50,
@@ -83,7 +84,7 @@ DISTORTION_PRESETS = {
     "Big Muff Sustain": dict(
         distortion_on=True,
         pedal="big_muff",
-        drive=60,
+        drive=67,
         tone=45,
         level=28,
         bias=50,
@@ -93,7 +94,7 @@ DISTORTION_PRESETS = {
     "Big Muff Wall": dict(
         distortion_on=True,
         pedal="big_muff",
-        drive=75,
+        drive=78,
         tone=55,
         level=25,
         bias=50,
@@ -105,7 +106,7 @@ DISTORTION_PRESETS = {
     "Fuzz Face": dict(
         distortion_on=True,
         pedal="fuzz_face",
-        drive=55,
+        drive=63,
         tone=55,
         level=28,
         bias=45,
@@ -115,7 +116,7 @@ DISTORTION_PRESETS = {
     "Fuzz Face Vintage": dict(
         distortion_on=True,
         pedal="fuzz_face",
-        drive=70,
+        drive=74,
         tone=45,
         level=25,
         bias=40,
@@ -200,7 +201,9 @@ SAFE_BYPASS_PRESET = "_safe_bypass"
 # These are designed to be playable in practice: makeup gain is held
 # at 45..60 (no surprise volume jumps), distortion ``level`` stays
 # below 35, NS / Comp settings are tuned not to fight each other,
-# and Reverb ``mix`` is conservative.
+# and Reverb ``mix`` is conservative. Numeric values are physical knob
+# positions; ``AudioLabOverlay.apply_chain_preset`` applies the conservative
+# gain / tone tapers in ``audio_lab_pynq.knob_tapers`` before writing GPIOs.
 #
 # Schema: each preset is a nested dict with one entry per section.
 # Sections that are absent or have ``enabled=False`` are bypassed.
@@ -229,7 +232,7 @@ CHAIN_PRESETS = {
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=False, pedal=None, drive=20, tone=50, level=35,
                         bias=50, tight=50, mix=100),
-        amp=dict(enabled=True, input_gain=25, bass=50, middle=55, treble=60,
+        amp=dict(enabled=True, input_gain=37, bass=50, middle=55, treble=60,
                  presence=42, resonance=30, master=75, character=22),
         cab=dict(enabled=True, mix=85, level=100, model=0, air=65),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -241,7 +244,7 @@ CHAIN_PRESETS = {
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=False, pedal=None, drive=20, tone=50, level=35,
                         bias=50, tight=50, mix=100),
-        amp=dict(enabled=True, input_gain=25, bass=50, middle=55, treble=58,
+        amp=dict(enabled=True, input_gain=37, bass=50, middle=55, treble=58,
                  presence=42, resonance=30, master=75, character=25),
         cab=dict(enabled=True, mix=85, level=100, model=0, air=60),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -250,10 +253,10 @@ CHAIN_PRESETS = {
     "Light Crunch": dict(
         compressor=dict(enabled=True, threshold=50, ratio=25, response=45, makeup=50),
         noise_suppressor=dict(enabled=False, threshold=35, decay=40, damp=70),
-        overdrive=dict(enabled=True, drive=30, tone=60, level=80),
+        overdrive=dict(enabled=True, drive=41, tone=60, level=80),
         distortion=dict(enabled=False, pedal=None, drive=20, tone=50, level=35,
                         bias=50, tight=50, mix=100),
-        amp=dict(enabled=True, input_gain=35, bass=55, middle=55, treble=55,
+        amp=dict(enabled=True, input_gain=45, bass=55, middle=55, treble=55,
                  presence=45, resonance=35, master=70, character=35),
         cab=dict(enabled=True, mix=100, level=100, model=0, air=60),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -264,8 +267,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=30, decay=55, damp=60),
         overdrive=dict(enabled=False, drive=0, tone=60, level=100),
         distortion=dict(enabled=True, pedal="tube_screamer",
-                        drive=50, tone=65, level=30, bias=50, tight=60, mix=100),
-        amp=dict(enabled=True, input_gain=40, bass=55, middle=60, treble=60,
+                        drive=58, tone=65, level=30, bias=50, tight=65, mix=100),
+        amp=dict(enabled=True, input_gain=49, bass=55, middle=60, treble=60,
                  presence=50, resonance=40, master=70, character=40),
         cab=dict(enabled=True, mix=100, level=100, model=1, air=55),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -276,8 +279,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=40, decay=40, damp=70),
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=True, pedal="rat",
-                        drive=50, tone=50, level=30, bias=50, tight=55, mix=80),
-        amp=dict(enabled=True, input_gain=35, bass=55, middle=55, treble=55,
+                        drive=58, tone=50, level=30, bias=50, tight=55, mix=80),
+        amp=dict(enabled=True, input_gain=45, bass=55, middle=55, treble=55,
                  presence=45, resonance=40, master=70, character=40),
         cab=dict(enabled=True, mix=100, level=100, model=1, air=50),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -288,8 +291,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=55, decay=20, damp=90),
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=True, pedal="metal",
-                        drive=55, tone=55, level=28, bias=50, tight=80, mix=100),
-        amp=dict(enabled=True, input_gain=42, bass=55, middle=50, treble=52,
+                        drive=67, tone=55, level=28, bias=50, tight=80, mix=100),
+        amp=dict(enabled=True, input_gain=51, bass=55, middle=50, treble=52,
                  presence=45, resonance=45, master=70, character=50),
         cab=dict(enabled=True, mix=100, level=100, model=2, air=35),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -312,8 +315,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=30, decay=55, damp=55),
         overdrive=dict(enabled=False, drive=0, tone=60, level=100),
         distortion=dict(enabled=True, pedal="tube_screamer",
-                        drive=45, tone=65, level=30, bias=50, tight=55, mix=100),
-        amp=dict(enabled=True, input_gain=40, bass=55, middle=60, treble=60,
+                        drive=54, tone=65, level=30, bias=50, tight=55, mix=100),
+        amp=dict(enabled=True, input_gain=49, bass=55, middle=60, treble=60,
                  presence=55, resonance=40, master=70, character=45),
         cab=dict(enabled=True, mix=100, level=100, model=1, air=55),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -324,8 +327,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=60, decay=30, damp=85),
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=True, pedal="metal",
-                        drive=55, tone=50, level=28, bias=50, tight=75, mix=100),
-        amp=dict(enabled=True, input_gain=42, bass=55, middle=50, treble=52,
+                        drive=67, tone=50, level=28, bias=50, tight=75, mix=100),
+        amp=dict(enabled=True, input_gain=51, bass=55, middle=50, treble=52,
                  presence=45, resonance=45, master=70, character=50),
         cab=dict(enabled=True, mix=100, level=100, model=2, air=35),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -339,8 +342,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=35, decay=40, damp=70),
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=True, pedal="ds1",
-                        drive=45, tone=60, level=30, bias=50, tight=50, mix=100),
-        amp=dict(enabled=True, input_gain=40, bass=55, middle=55, treble=60,
+                        drive=54, tone=60, level=30, bias=50, tight=50, mix=100),
+        amp=dict(enabled=True, input_gain=49, bass=55, middle=55, treble=60,
                  presence=50, resonance=40, master=70, character=40),
         cab=dict(enabled=True, mix=100, level=100, model=2, air=40),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -351,8 +354,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=40, decay=50, damp=70),
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=True, pedal="big_muff",
-                        drive=60, tone=45, level=28, bias=50, tight=35, mix=100),
-        amp=dict(enabled=True, input_gain=38, bass=58, middle=45, treble=52,
+                        drive=67, tone=45, level=28, bias=50, tight=35, mix=100),
+        amp=dict(enabled=True, input_gain=48, bass=58, middle=45, treble=52,
                  presence=42, resonance=48, master=70, character=45),
         cab=dict(enabled=True, mix=100, level=100, model=2, air=35),
         eq=dict(enabled=False, low=100, mid=100, high=100),
@@ -363,8 +366,8 @@ CHAIN_PRESETS = {
         noise_suppressor=dict(enabled=True, threshold=35, decay=45, damp=70),
         overdrive=dict(enabled=False, drive=0, tone=50, level=100),
         distortion=dict(enabled=True, pedal="fuzz_face",
-                        drive=55, tone=55, level=28, bias=45, tight=25, mix=100),
-        amp=dict(enabled=True, input_gain=35, bass=58, middle=50, treble=52,
+                        drive=63, tone=55, level=28, bias=45, tight=25, mix=100),
+        amp=dict(enabled=True, input_gain=45, bass=58, middle=50, treble=52,
                  presence=40, resonance=42, master=70, character=35),
         cab=dict(enabled=True, mix=90, level=100, model=2, air=35),
         eq=dict(enabled=False, low=100, mid=100, high=100),

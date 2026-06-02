@@ -683,6 +683,40 @@ def test_effect_presets_module_matches_notebook_values():
     assert ep.DISTORTION_PRESETS["Fuzz Face Vintage"]["pedal"] == "fuzz_face"
 
 
+def test_knob_tapers_shape_ui_knobs_without_touching_levels():
+    from audio_lab_pynq import knob_tapers as kt
+
+    assert kt.gain_taper_percent(0) == 0
+    assert kt.gain_taper_percent(100) == 100
+    assert kt.gain_taper_percent(50) < 50
+    assert kt.tone_taper_percent(50) == 50
+
+    kwargs = kt.taper_guitar_effects_kwargs(dict(
+        overdrive_drive=50,
+        overdrive_tone=75,
+        overdrive_level=80,
+        noise_gate_threshold=55,
+    ))
+    assert kwargs["overdrive_drive"] == kt.gain_taper_percent(50)
+    assert kwargs["overdrive_tone"] == kt.tone_taper_percent(75)
+    assert kwargs["overdrive_level"] == 80
+    assert kwargs["noise_gate_threshold"] == 55
+
+
+def test_chain_preset_apply_uses_user_knob_taper_for_drive():
+    from audio_lab_pynq import effect_presets as ep
+    from audio_lab_pynq import knob_tapers as kt
+
+    overlay = make_overlay_with_chain_state()
+    overlay.apply_chain_preset("Metal Tight")
+    dist = overlay.get_distortion_settings()
+    raw_drive = ep.CHAIN_PRESETS["Metal Tight"]["distortion"]["drive"]
+    assert dist["drive"] == kt.gain_taper_percent(raw_drive)
+    # Tight is deliberately left linear so existing high-gain safety voicings
+    # keep the same low-cut strength.
+    assert dist["tight"] == ep.CHAIN_PRESETS["Metal Tight"]["distortion"]["tight"]
+
+
 def test_new_distortion_presets_level_capped():
     """Newly-added distortion presets (DS-1 / Big Muff / Fuzz Face)
     must cap level at 35 so the post-distortion stages cannot be
@@ -1986,6 +2020,8 @@ if __name__ == "__main__":
     test_control_maps_pack_matches_legacy_pack()
     test_effect_defaults_module_exposes_canonical_dicts()
     test_effect_presets_module_matches_notebook_values()
+    test_knob_tapers_shape_ui_knobs_without_touching_levels()
+    test_chain_preset_apply_uses_user_knob_taper_for_drive()
     test_new_distortion_presets_level_capped()
     test_new_chain_presets_for_implemented_pedals()
     test_high_gain_chain_presets_use_closed_back_cab()

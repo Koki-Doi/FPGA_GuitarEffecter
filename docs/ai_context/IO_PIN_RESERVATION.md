@@ -388,12 +388,13 @@ PYNQ-Z2 の RPi header のうち、**JA と共有しない 19 pin** を encoder 
 | ADAU1761 (`U5, M17, M18, U9, T9, F17, G18, R18, T17`) | onboard codec | 既存 audio 経路を壊さない | do not use |
 | BTN / LED / SW / RGB LED 群 | board 既定 | Phase 7G で encoder と併用検討、Phase 7B では touch しない | do not use (Phase 7B) |
 
-### 4A.5 Arduino header — 予備 (Phase 7G 以降)
+### 4A.5 Arduino header — analog / spare (Phase 7G 以降)
 
 | Logical signal | Connector | Board pin | Package pin | IOSTANDARD | Notes | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | (footswitch / LED / spare) | Arduino digital | `arduino_a0_a13_tri_i_0..13` | `T14, U12, U13, V13, V15, T15, R16, U17, V17, V18, T16, R17, P18, N17` | LVCMOS33 | Phase 7G 以降の拡張用 | reserved |
-| (analog spare) | Arduino analog | `arduino_a0..a5` | `Y11, Y12, W11, V11, T5, U10` | LVCMOS33 | XADC 用途。Phase 7 では使わない | reserved |
+| A0 / FP02M pedal | Arduino analog | `arduino_a0` header signal / `Vaux1_v_p,n` | header digital view `Y11`; XADC analog pins `E17,D18` | analog VAUX1 | D76 accepted: `xadc_wiz_a0 @ 0x43D40000` reads FP02M Wah POSITION via AXI MMIO。`Y11` は board entry の digital view で、XDC は `E17/D18` を使う | in use |
+| (analog spare) | Arduino analog | `arduino_a1..a5` | `W11, V11, T5, U10, U5` | analog VAUX | 将来 XADC 用途 | reserved |
 
 ---
 

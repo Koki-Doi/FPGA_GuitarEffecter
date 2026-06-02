@@ -124,7 +124,7 @@ overdriveDriveBoostFrame f =
  where
   on = flag1 (fGate f)
 
--- | Per-model clip hardness class (realism item 4, D-pending). Selects the
+-- | Per-model clip hardness class (D79 realism item 4). Selects the
 -- compression slope of the asymmetric soft clip per model so the six models
 -- differ in knee *hardness* (harmonic order), not just at what level they
 -- engage. Real op-amp clip (TS9) is soft; MOSFET (OCD) is harder; the
@@ -202,9 +202,10 @@ overdriveToneBlendFrame f =
   tone = satShift8 (fAccL f + fAcc2L f)
 
 -- Item 5a: for the Klon model the level input is a blend of the processed
--- (clipped + tone) wet and the stashed pre-clip clean (fAcc3L). A single
--- weighted sum reuses the existing mulU8 path; for every other model
--- `wetForLevel = monoWet f` exactly as before, so they are byte-identical.
+-- (clipped + tone) wet and the stashed pre-clip clean (fAcc3L). The accepted
+-- D79 form uses two parallel mulU8 products; the one-multiply serial LERP
+-- variant measured much worse timing. For every other model `wetForLevel =
+-- monoWet f` exactly as before, so they are byte-identical.
 overdriveLevelFrame :: Frame -> Frame
 overdriveLevelFrame f =
   setMonoSample (if on then out else monoSample f) f

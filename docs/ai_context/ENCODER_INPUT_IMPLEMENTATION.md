@@ -109,8 +109,8 @@ Verilog file with:
   `EncoderEffectApplier` is wired, encoder 1 short press flips the
   effect via the applier, encoder 1 long press calls
   `applier.apply_safe_bypass()`, encoder 3 rotate runs a throttled
-  `apply_appstate()` (default 100 ms), and encoder 3 short press always
-  force-applies regardless of `live_apply`. The legacy
+  `apply_appstate()` (class default 100 ms; runner default 20 ms), and
+  encoder 3 short press always force-applies regardless of `live_apply`. The legacy
   `MirrorSpy` / `AudioLabGuiBridge` fall-through is preserved when no
   applier is supplied.
 * `audio_lab_pynq/encoder_effect_apply.py` (Phase 7G+) — single
@@ -141,7 +141,7 @@ Verilog file with:
 
 ```
 sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 \
-    scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp
+    scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode dsp --wah-pedal
 ```
 
 It loads `AudioLabOverlay`, optionally sets the Pmod I2S2 MODE register
@@ -160,7 +160,7 @@ if AppState signature changed AND >= 1/MAX_RENDER_FPS since last:
 CLI flags (Phase 7G+):
 
 * `--live-apply` / `--no-live-apply` — per-rotate auto apply (default on)
-* `--apply-interval-ms N` — throttle window (default 100)
+* `--apply-interval-ms N` — throttle window (default 20)
 * `--value-step N` — knob percent per detent (default 5.0)
 * `--skip-rat` / `--include-rat` — RAT pedal model exclusion (default skip)
 * `--no-audio-apply` — keep the GUI but skip every overlay write
@@ -168,9 +168,13 @@ CLI flags (Phase 7G+):
 * `--pmod-mode tone|loopback|dsp|mute|keep` — set Pmod I2S2 mode at
   startup (`dsp` is the current live audio path)
 * `--poll-hz-active N` / `--poll-hz-idle N` / `--idle-threshold-s N` —
-  dirty-flag loop pacing (defaults 10 / 4 / 1.0)
-* `--max-render-fps N` — render cap (default 5)
+  dirty-flag loop pacing (defaults 60 / 10 / 1.0)
+* `--max-render-fps N` — render cap (default 20)
 * `--status-interval-s N` — resource print cadence (default 2)
+* `--wah-pedal` / `--wah-calibration PATH` / `--wah-pedal-hz N` —
+  FP02M A0 pedal -> Wah POSITION controller (default read cap 100 Hz)
+* `--footswitch` / `--no-footswitch` / `--footswitch-debounce-ms N` —
+  D78 3PDT footswitch polling (default on, debounce default 5 ms)
 * `--reverse-encN` / `--swap-encN` / `--debounce-ms` — encoder CONFIG
   overrides (unchanged from Phase 7G)
 

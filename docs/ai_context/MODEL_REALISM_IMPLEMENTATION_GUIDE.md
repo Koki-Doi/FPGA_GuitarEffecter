@@ -1,16 +1,20 @@
 # Model realism — implementation guide (HOW to build each improvement)
 
-Companion to `MODEL_REALISM_GAP_ANALYSIS.md` (the WHAT/WHY). This file is the
-**HOW**: concrete Clash implementation methods for each prioritized realism
-item, with the exact helpers/slots to use, fixed-point math, FPGA cost, timing
-risk, GPIO impact, and the build/validation gate.
+Companion to `REAL_HARDWARE_FIDELITY_ROADMAP.md` (measurement-first phase
+strategy) and `MODEL_REALISM_GAP_ANALYSIS.md` (the WHAT/WHY). This file is
+the **HOW**: concrete Clash implementation methods for each prioritized
+realism item, with the exact helpers/slots to use, fixed-point math, FPGA
+cost, timing risk, GPIO impact, and the build/validation gate.
 
-## Implementation progress (2026-06-01) — item 4 & 5a built, BENCH PENDING
+## Implementation progress (2026-06-01) — item 4 & 5a accepted as D79
 
-> Items 1 & 2 skipped per request. Items implemented in priority order; each on
-> its own branch off `main`. **None deployed; `main` stays on D78 `45e78763`.**
-> A human must bench-audition each branch before merge (static timing is NOT
-> proof — D74/D78 lesson). Build env note: the dev `clash` fails standalone
+> Items 1 & 2 skipped per request. Items 4 and 5a were implemented in priority
+> order, built, deployed, bench-auditioned, and accepted as **D79**. `main`
+> now carries bit `f0cb0276f27187d72476a2e773dd9a6e` / hwh
+> `5fa0b84e9fe852c68629c651f94e4a9d`; D78 `45e78763...` is the rollback.
+> Static timing is still NOT proof by itself (D74/D78 lesson), but this pass
+> has the required bench result: all_off clean / no bitcrusher. Build env note:
+> the dev `clash` fails standalone
 > because cabal store has a stray `clash-prelude-1.8.2`; build with
 > `CLASH_FLAGS="-package-id clash-prelude-1.8.1-043657e64d575898396c414bafaea7f08fdd2ba6b4085ce0bd624cd91d00144c -isrc --vhdl" make Pynq-Z2`
 > (Makefile unedited). `make clean` deletes the git-tracked `hw/ip/clash/vhdl/`
@@ -18,8 +22,8 @@ risk, GPIO impact, and the build/validation gate.
 >
 > | Item | Branch | Clash | Vivado | Island WNS (clk_fpga_1) | Audio fabric (clk_fpga_0) | Verdict |
 > | --- | --- | --- | --- | --- | --- | --- |
-> | 4 clip hardness | `feature/realism-clip-hardness` | OK | OK | **-0.173 ns** (= D78) | +0.683 / 0 fail | timing clean; **bench pending**. bit `e884360a` (/tmp/item4_artifacts) |
-> | 5a Klon blend | `feature/realism-klon-clean-blend` (on item4) | OK | OK | **-0.496 ns**, 32 fail | +0.532 / 0 fail | worse than D78 (-0.173) but better than the bench-approved D75 (-0.706); phys_opt already on. **bench pending + see "item5a timing note" below.** bit `f0cb0276` (/tmp/item5a_artifacts) |
+> | 4 clip hardness | `feature/realism-clip-hardness` | OK | OK | **-0.173 ns** (= D78) | +0.683 / 0 fail | timing clean; bench accepted as part of D79. Intermediate bit `e884360a` |
+> | 5a Klon blend | `feature/realism-klon-clean-blend` (on item4) | OK | OK | **-0.496 ns**, 32 fail | +0.532 / 0 fail | accepted as D79. Worse than D78 (-0.173) but better than the bench-approved D75 (-0.706); phys_opt already on. bit `f0cb0276` |
 >
 > Baselines for comparison: D78 -0.173 (accepted), D76 -0.368 (accepted), D75
 > -0.706 (bench-"perfect"). All failures are intra-DS-1 CARRY4 (the perennial
@@ -35,25 +39,35 @@ risk, GPIO impact, and the build/validation gate.
 > path, whereas the two parallel multiplies route better (same lesson as Wah:
 > avoid two multiplies in series; parallel arithmetic is faster on this island).
 > So the committed 5a is the 2-mul parallel form (-0.496). Do NOT "optimise" it
-> to a single serial multiply. -0.496 is inside the historically bench-accepted
-> band (better than D75 -0.706), so 5a likely passes the bench as-is; if a human
+> to a single serial multiply. -0.496 passed the bench as D79. If a future pass
 > wants more island margin, recover it with placement/phys_opt directives or by
 > registering the blend into its own pipeline stage (a new `register` between
 > clip and level, carrying the clean in a slot), NOT by serialising the math.
 
 Read first: `MODEL_REALISM_GAP_ANALYSIS.md`, `DSP_EFFECT_CHAIN.md`,
 `Types.hs`, `FixedPoint.hs`, `TIMING_AND_FPGA_NOTES.md`,
-`DECISIONS.md` D13/D45/D55/D75/D76/D78.
+`DECISIONS.md` D13/D45/D55/D75/D76/D78/D79.
+
+## D80 Python-only control realism pass
+
+R0a (knob taper + preset polish) is now implemented without a bitstream
+rebuild. `audio_lab_pynq/knob_tapers.py` converts user-facing physical knob
+positions to the existing linear overlay percent API for GUI / encoder /
+chain-preset writes. Low-level `set_guitar_effects()` and
+`set_distortion_settings()` remain linear. Preset DRIVE / Amp GAIN positions
+were raised where needed so the tapered hardware values land near the previous
+practical voicings while the displayed settings feel closer to real pedals.
+This does not affect the D79 timing baseline.
 
 ---
 
-(Design spec for all items follows. Items 4/5a above are now built source on
-their branches; items 5b/3 below are spec-only — not yet written, deferred to a
-working-clash + bench session per the user's priorities.)
+(Design spec for all items follows. Items 4/5a above are now accepted in
+`main` as D79; items 5b/3 below are spec-only — not yet written, deferred to a
+future working-clash + bench session per the user's priorities.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),
-`DECISIONS.md` D13/D45/D55/D75/D76/D78.
+`DECISIONS.md` D13/D45/D55/D75/D76/D78/D79.
 
 ## 0. DSP environment recap (the constraints every item must fit)
 
@@ -65,7 +79,8 @@ From the source (verified):
   DS-1 CARRY4 arithmetic is the critical path; D78 showed adding *anything*
   (even an unrelated AXI master) can tip it into an audible bitcrusher.
   **Every item here must be followed by a WNS-vs-baseline review + bench
-  audio.** Current accepted baseline: D78 `45e78763` (island WNS -0.173 ns).
+  audio.** Current accepted baseline: D79 `f0cb0276` (island WNS -0.496 ns,
+  audio fabric +0.532 / 0 fail); D78 `45e78763` is the rollback.
 - **Helpers available** (`FixedPoint.hs`): `mulU8/9/10/12` (Sample×unsigned →
   Wide), `mulS10` (Sample×Signed10 → Wide), `satWide`, `satShift7..12`,
   `softClip`, `softClipK knee`, `asymSoftClip kneeP kneeN`,
@@ -341,12 +356,12 @@ must drop substantially vs the 1× version; bench A/B on high-gain models.
 
 ---
 
-## Recommended sequencing (each = its own branch + bitstream + WNS + bench gate)
+## Recommended sequencing (remaining work)
 
-1. **Item 4 (per-model clip hardness)** — cheap, high differentiation, ~no
-   timing risk. Best first step. No GPIO.
-2. **Item 5a (Klon blend)** + **Item 5b (Fuzz/amp sag)** — cheap, iconic,
-   model-local. No GPIO.
+1. **Done in D79: Item 4 (per-model clip hardness)** — cheap, high
+   differentiation, no GPIO.
+2. **Done in D79: Item 5a (Klon blend)**. **Still open: Item 5b
+   (Fuzz/amp sag)** — model-local, no GPIO.
 3. **Item 3 (biquad tone stacks)** — medium; share one biquad instance, watch
    DSP count. May need a small timing-headroom pass first. No GPIO if it
    replaces existing tone stages.
@@ -357,8 +372,10 @@ must drop substantially vs the 1× version; bench A/B on high-gain models.
 
 ### Universal gate for every item (from the D74/D78 bitcrusher lessons)
 - Vivado `write_bitstream` 0 errors.
-- Routed **island (clk_fpga_1) WNS not worse than the accepted baseline**
-  (D78 = -0.173 ns); if worse, apply phys_opt (D78) or do not deploy.
+- Routed **island (clk_fpga_1) WNS not worse than the accepted baseline by
+  an audibly meaningful margin** (D79 = -0.496 ns; D78 rollback = -0.173
+  ns; D75 bench-perfect = -0.706 ns). If worse, recover placement/phys_opt
+  headroom or do not deploy.
 - bit/hwh synced to the 5 sites; `download=True` once after power-cycle.
 - **Bench audio A/B is mandatory** — static timing passing is NOT sufficient
   proof (D65/D74/D78). Listen for bitcrusher/aliasing on all_off bypass +
@@ -367,7 +384,8 @@ must drop substantially vs the 1× version; bench A/B on high-gain models.
   `0x23`.
 
 ## Out of scope / not done
-- Nothing built. No Clash edits, no GPIO changes, no rebuild.
+- Items 5b and 3 remain spec-only.
+- No GPIO changes were made by D79.
 - Stereo/dual-mic/room and chorus (JC-120) not covered.
 - Exact new coefficient *values* are left to the implementation pass (this
   guide specifies method, slots, helpers, and cost — not final constants).

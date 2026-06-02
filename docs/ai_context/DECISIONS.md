@@ -1353,7 +1353,8 @@ not get removed even when superseded — they get updated.
   - raw GPIO write、`set_distortion_pedal*` ショートカット、
     `HdmiEffectStateMirror.render()` 経由の二重描画は encoder loop からは
     呼ばない。HDMI render は dirty-flag loop が単独で所有する。
-  - throttle (`apply_interval_s`、既定 100 ms) で連続回転中の AXI flood を
+  - throttle (`apply_interval_s`、`EncoderEffectApplier` class 既定 100 ms;
+    D76 以降の runner 既定は 20 ms) で連続回転中の AXI flood を
     抑える。encoder 3 short press は throttle を bypass して force apply。
     例外は `last_apply_ok=False` / `last_apply_message=<repr>` に保存し
     loop は落とさない。
@@ -5106,3 +5107,37 @@ pre-existing 3 failures + 1 error baseline.
   bias-sag) and 3 (biquad tone stacks) remain spec-only in the guide. Branches:
   `feature/realism-clip-hardness` (item 4) and `feature/realism-klon-clean-blend`
   (item 4+5a, merged here).
+
+## D80 — Python-only real-hardware knob taper + preset polish
+
+- **Decision.** Treat GUI / encoder / preset numbers as **physical knob
+  positions**, and convert them to the existing linear overlay/GPIO percent API
+  at the UI boundary. The low-level `AudioLabOverlay.set_guitar_effects()` and
+  `set_distortion_settings()` contracts stay linear and byte-compatible; the
+  new conversion lives in `audio_lab_pynq/knob_tapers.py`.
+- **Taper shape.** Gain/drive-style controls use a conservative audio taper
+  (`GAIN_TAPER_GAMMA = 1.45`), so noon is edge-of-breakup rather than already
+  high gain. Tone-style controls use a mild centre-preserving table
+  (`0 -> 0`, `25 -> 30`, `50 -> 50`, `75 -> 70`, `100 -> 100`). Level, mix,
+  compressor makeup, and EQ values remain linear so the existing preset safety
+  bands still mean what the tests and docs say.
+- **Where it applies.**
+  - `AudioLabOverlay.apply_chain_preset(name)` tapers a deep copy of
+    `effect_presets.CHAIN_PRESETS` immediately before writing hardware.
+    `get_chain_preset()` still returns the raw knob-position spec so GUI /
+    footswitch mirroring stays user-facing.
+  - `EncoderEffectApplier.apply_appstate()` and `GUI/audio_lab_gui_bridge.py`
+    taper live knob writes before calling the overlay.
+  - Direct API scripts that call low-level setters keep the old linear mapping.
+- **Preset retune.** Distortion / chain preset DRIVE and Amp GAIN positions were
+  raised where needed so their tapered hardware values land near the previously
+  practical voicing while the displayed knob positions feel closer to real
+  pedals. Distortion `level <= 35` and Compressor `makeup 45..60` contracts are
+  unchanged.
+- **Scope.** Python only. No Clash, VHDL, Tcl, XDC, `block_design.tcl`, bit, or
+  hwh change. D79 remains the deployed bitstream baseline; no timing summary is
+  required for D80.
+- **Tests.** `python3 tests/test_overlay_controls.py`,
+  `python3 tests/test_encoder_effect_apply.py`,
+  `python3 tests/test_hdmi_gui_bridge.py`, and
+  `python3 tests/test_footswitch_control.py` pass.

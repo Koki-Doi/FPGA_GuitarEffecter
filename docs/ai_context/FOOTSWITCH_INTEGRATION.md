@@ -5,11 +5,12 @@ by a new PL IP `axi_footswitch_input`. This is an **input** path that lives
 outside the `GPIO_CONTROL_MAP.md` effect-output ledger, same as the rotary
 encoder IP (`ENCODER_INPUT_MAP.md`). See `DECISIONS.md` D78.
 
-> Status: built + deployed (bit md5 `45e78763`, branch
-> `feature/footswitch-preset-fxtoggle`, **not committed**). Bench audio is
-> CLEAN after the phys_opt fix (see "Bitcrusher" below); the controller
-> logic was bench-validated on an interim PMOD-JA bit. Open item: the user
-> wires the 3PDTs to RP pins 11/12/35 and re-confirms FS function.
+> Status: **ACCEPTED and merged** as D78 (`feat(#D78)` 813029b + merge
+> aa4080f). The D78 accepted bit md5 is `45e78763...`; D79 later supersedes
+> it as the deployed baseline while keeping this footswitch IP. Bench audio
+> is CLEAN after the phys_opt fix (see "Bitcrusher" below), and the user
+> wired the final RP pins 11/12/35 and confirmed FS1 FX toggle plus FS2/FS3
+> preset stepping on the final bit.
 
 ## Roles (fixed by wiring / XDC)
 
@@ -222,14 +223,17 @@ fabric looks fine; phys_opt recovers the arithmetic slack.
    `/home/xilinx/jupyter_notebooks/audio_lab/*.ipynb` on a prior run -- those
    were repaired from the board repo copies).
 4. On board: `fsw_in_0` present, `VERSION=0x00F50001`, RP-pin pull-ups read
-   (1,1,1) unwired, ADC HPF True, audio clean. The controller logic
+   (1,1,1) before wiring, ADC HPF True, audio clean. The controller logic
    (FS1 toggle / FS2-FS3 preset / 5x rebind / all 3 channels) was
-   bench-validated on the interim PMOD-JA bit. **Open:** wire the 3PDTs to
-   RP pins 11/12/35 and re-confirm FS function on the final bit.
+   bench-validated on the interim PMOD-JA bit, then the user wired the final
+   RP pins 11/12/35 and confirmed FS1 / FS2 / FS3 function on the accepted
+   RP-pin bit.
 
 ## Rollback
 
-Remove the three source files (`hw/ip/footswitch_input/src/axi_footswitch_input.v`,
+To remove the feature from a future build, remove the three hardware-source
+pieces (`hw/ip/footswitch_input/src/axi_footswitch_input.v`,
 `hw/Pynq-Z2/footswitch_integration.tcl`, the `audio_lab.xdc` footswitch
-block) and revert the two `create_project.tcl` additions to return to the
-D76 build. The Python layer is bit-independent and can stay.
+block) and revert the two `create_project.tcl` additions, then rebuild on
+top of the desired current Clash source. The historical no-footswitch
+rollback baseline is D76; the Python layer is bit-independent and can stay.

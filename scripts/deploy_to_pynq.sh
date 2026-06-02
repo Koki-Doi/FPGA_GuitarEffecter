@@ -231,20 +231,40 @@ print("  decision table lines:", len(diagnostics.DECISION_TABLE.splitlines()))
 PY'
 
 # --- 7. Install notebooks via the package's own helper -------------------
+#
+# Most PYNQ images expose `/home/xilinx/jupyter_notebooks` as the notebook
+# root, but the lab board's Jupyter daemon currently starts with CWD
+# `/home/xilinx` and no explicit `--notebook-dir`. Install to the configured
+# location and, when the live daemon root differs, mirror to that root too so
+# the Notebook UI shows `audio_lab/` immediately after deploy.
 
-log "installing notebooks under $PYNQ_NB_DIR/audio_lab"
-ssh_remote "
-    set -e
-    $SUDO_PREFIX mkdir -p '$PYNQ_NB_DIR'
-    $SUDO_PREFIX env PYNQ_JUPYTER_NOTEBOOKS='$PYNQ_NB_DIR' python3 -c '
+REMOTE_JUPYTER_CWD=$(ssh_keyauth '
+pid=$(pgrep -f "jupyter-notebook --no-browser --allow-root" | head -n1)
+if [ -n "$pid" ]; then
+    sudo readlink "/proc/$pid/cwd" 2>/dev/null || true
+fi
+' || true)
+
+NB_INSTALL_DIRS=("$PYNQ_NB_DIR")
+if [[ -n "$REMOTE_JUPYTER_CWD" && "$REMOTE_JUPYTER_CWD" != "$PYNQ_NB_DIR" ]]; then
+    NB_INSTALL_DIRS+=("$REMOTE_JUPYTER_CWD")
+fi
+
+for NB_DIR in "${NB_INSTALL_DIRS[@]}"; do
+    log "installing notebooks under $NB_DIR/audio_lab"
+    ssh_remote "
+        set -e
+        $SUDO_PREFIX mkdir -p '$NB_DIR'
+        $SUDO_PREFIX env PYNQ_JUPYTER_NOTEBOOKS='$NB_DIR' python3 -c '
 from audio_lab_pynq import install_notebooks
-install_notebooks(\"$PYNQ_NB_DIR\")
-print(\"notebooks installed: $PYNQ_NB_DIR/audio_lab/\")
+install_notebooks(\"$NB_DIR\")
+print(\"notebooks installed: $NB_DIR/audio_lab/\")
 '
 "
 
-log "notebook placement on PYNQ:"
-ssh_remote "ls -1 '$PYNQ_NB_DIR/audio_lab' | sed 's/^/  /'"
+    log "notebook placement on PYNQ ($NB_DIR/audio_lab):"
+    ssh_remote "ls -1 '$NB_DIR/audio_lab' | sed 's/^/  /'"
+done
 
 # --- 8. Summary ----------------------------------------------------------
 

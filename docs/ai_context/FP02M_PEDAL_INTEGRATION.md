@@ -36,10 +36,12 @@ in_voltage6_vrefp_raw    in_voltage7_vrefn_raw
 
 There is **no external auxiliary (VAUX) channel** and no VP/VN channel.
 
-On Zynq-7000 the Arduino **A0** pin (J1 pin 6, Zynq **Y11**) reaches the
-XADC only as a **VAUX auxiliary channel routed through the PL**. PYNQ's
+On this overlay the Arduino **A0** header signal reaches the XADC through
+the PL-side **VAUX1** path. The board file's `arduino_a0 = Y11` entry is
+the digital header view; the accepted AudioLab XADC constraint uses the
+dedicated VAUX1 analog pins **E17/D18** (`hw/Pynq-Z2/xadc_a0.xdc`). PYNQ's
 own base overlay reads Arduino analog via a PL-side XADC driven by the
-Arduino MicroBlaze. Our custom overlay has no such IP, so:
+Arduino MicroBlaze. Our custom overlay had no such IP before D74/D76, so:
 
 | Candidate path | Verdict |
 | --- | --- |
@@ -62,7 +64,7 @@ IIO -- the PL XADC does not appear in `/sys/bus/iio`). See
 
 | Signal | PYNQ pin | Note |
 | --- | --- | --- |
-| A0 analog in | J1 pin 6 (Zynq Y11) | 0..3.3 V analog to XADC VAUX. Never drive >3.3 V. |
+| A0 analog in | J1 pin 6 (board header A0; VAUX1 E17/D18 in XDC) | 0..3.3 V analog to XADC VAUX. Never drive >3.3 V. |
 | 3.3 V | J7 pin 5 **or** J7 pin 7 | pedal pot supply. **Do NOT use 5 V.** |
 | GND | J7 pin 2 **or** J7 pin 3 | pedal pot ground + filter cap return. |
 
@@ -242,7 +244,8 @@ PL Wah already smooths POSITION.
 
 ## 9. Known risks
 
-- A0 read path unavailable until the XADC Wizard is built (current state).
+- Older / rollback bits without `xadc_wiz_a0` cannot read A0; the current
+  D79 bitstream includes the D76 XADC path.
 - Wrong TRS wiring -> stuck / inverted reading (measure first).
 - Noisy pedal value -> zipper noise (RC filter + deadband + smoothing).
 - GUI thread blocking if the read loop is mis-tuned (kept non-blocking).
@@ -270,11 +273,11 @@ PL Wah already smooths POSITION.
 - **Controller -> overlay confirmed:** `run_fp02m_wah_test.py --no-download`
   reports the MMIO reader available, maps the pedal to a POSITION byte,
   and writes `set_wah_settings(position_raw=...)`.
-- **Pending (user, audio bench):** `run_encoder_hdmi_gui.py --pmod-mode dsp
-  --wah-pedal --live-apply --skip-rat` -> encoder-2 toggles SOURCE=PEDAL,
-  POS bar follows the pedal, Wah ON sweep audibly moves the centre
-  frequency, Q/VOL/BIAS stay independent, no pop/click/zipper, all_off and
-  Wah-OFF bypass clean. **bit/hwh are committed only after this passes.**
+- **Superseded D74 gate:** `run_encoder_hdmi_gui.py --pmod-mode dsp
+  --wah-pedal --live-apply --skip-rat` still remains the right smoke
+  command, but the audio bench gate passed later in D76. POS bar follows
+  the pedal, Wah ON sweep is audible, Q/VOL/BIAS stay independent, and
+  all_off / Wah-OFF bypass stay clean on the accepted D76+ builds.
 
 ## 11. Bench result (2026-05-31, D76 -- XADC re-add on the D75 island)
 

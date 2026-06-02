@@ -15,6 +15,8 @@
 
 | Build | WNS | TNS | Notes |
 | --- | --- | --- | --- |
+| **Overdrive realism item 4 + 5a accepted on bench (Jun 1, branches `feature/realism-clip-hardness` / `feature/realism-klon-clean-blend`, D79)** | **-0.496 ns** | not recorded here | D79 keeps the D75 50 MHz DSP island, D76 XADC, and D78 footswitch + phys_opt stack, then changes only the dedicated Overdrive stage: fixed-shift per-model clip-hardness siblings selected by `odClipHardness`, and a model-5 CENTAUR/Klon clean-blend in `overdriveLevelFrame` using two parallel `mulU8` operations. No GPIO/API/topEntity/block-design change. Item 4 alone closed at `-0.173 ns` (= D78, no cost). The accepted item 5a bit has 32 failing endpoints, all intra-DS-1 CARRY4; the 100 MHz audio fabric is clean at **WNS +0.532 ns / 0 fail**. A one-multiply serial LERP rewrite was explicitly rejected at `-3.627 ns / 117 fail`; two parallel multiplies route better in this island. bit/hwh md5 `f0cb0276f27187d72476a2e773dd9a6e` / `5fa0b84e9fe852c68629c651f94e4a9d`. Deployed 5-site; user bench confirmed all_off clean / no bitcrusher. **Current accepted deployed baseline.** |
+| **3PDT footswitch input + phys_opt audio fix accepted on bench (Jun 1, branch `feature/footswitch-preset-fxtoggle`, D78)** | **-0.173 ns** | not recorded here | D78 adds `axi_footswitch_input @ 0x43D50000` (M21) via `footswitch_integration.tcl`, reading three latching 3PDT footswitches on RP pins 11/12/35. Clash DSP voicing is byte-identical to D76. Adding the AXI master perturbed P&R enough to produce a D74-class bitcrusher before phys_opt (`199d25ea` RP and `e610dc58` PMOD-JA rejected); enabling post-place + post-route `phys_opt_design` (`AggressiveExplore`) recovered the 50 MHz island slack to `-0.173 ns`, with 100 MHz audio fabric **+0.683 ns / 0 fail**, WHS `+0.014`. bit/hwh md5 `45e78763...` / `aa12a661...`. Bench audio clean and final RP-pin footswitch function accepted. Superseded as deployed baseline by D79, but phys_opt remains load-bearing. |
 | **FP02M XADC re-add on the D75 island, accepted on bench (May 31, branch `feature/fp02m-xadc-island-readd`, D76)** | **-0.368 ns** | -2.779 ns | D76 re-enables the XADC Wizard (`xadc_wiz_a0 @ 0x43D40000`, VAUX1 = A0 = E17/D18) on top of the D75 50 MHz DSP island by un-commenting the two `create_project.tcl` lines (`add_files xadc_a0.xdc`, `source xadc_integration.tcl`); the Clash DSP is untouched (voicing byte-identical to D73/D75) and the island (`cc_dsp_in`/`cc_dsp_out`, FCLK0=100/FCLK1=50, `set_clock_groups`) is preserved. The D74 XADC rejection (bitcrusher on the ADC path) did NOT recur: the cause was the D74 -11 ns / 100 MHz audio-AXIS P&R degradation, not the XADC. Here the 100 MHz `clk_fpga_0` fabric (the whole audio AXIS datapath) closes with **WNS +0.614 ns, 0 failing endpoints** -- the only 22 failing endpoints are intra-`clk_fpga_1` (50 MHz DSP island, the DS-1 distortion arithmetic, the same place D75 had slack). Overall routed WNS `-0.368 ns` (better than D75 `-0.706 ns`), WHS `+0.045 ns`, THS `0`. LUT `21286`-class, FF `~23968`, BRAM `6`, DSP `89`. bit/hwh md5 `9fdecae0c7d7cf3c59422cec2b30368f` / `a9fd74082482aa1b074fc3c31ccd6283`. **Bench (Pmod mode 2 ADC->DSP->DAC): all_off bypass clean (NO bitcrusher), FP02M A0 sweep span ~2999, pedal -> Wah POSITION audible sweep follows, no self-oscillation after the Q-cap (byte 80).** New deploy baseline. |
 | **DSP clock-domain island: clash @ 50 MHz (FCLK_CLK1), 100 MHz fabric, accepted on bench (May 31, branch `feature/dsp-multicycle`, D75)** | **-0.706 ns** | -15.826 ns | D75 runs ONLY `clash_lowpass_fir_0` at FCLK_CLK1 = 50 MHz; the fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays at FCLK_CLK0 = 100 MHz so the I2S/Pmod CDCs are byte-identical to D72 (the rejected global-50 MHz build buzzed because lowering the whole fabric broke those CDCs). `island_integration.tcl` (additive, `block_design.tcl` NOT edited) enables FCLK1, adds `rst_island_50M`, and inserts two `axis_clock_converter` (`cc_dsp_in` 100->50, `cc_dsp_out` 50->100) around the DSP AXIS. Two required supports: `paceCount` removed in `Pipeline.hs` (`acceptReady = readyOut`, the only frequency-dependent term in the AXIS handshake), and `syncCtrl` (2-FF + 2-cycle stability) CDC on the 12 control words in `LowPassFir.hs` (without it every effect/knob switch clicks, because 100 MHz GPIO words latch a transient mixed value on the 50 MHz side). `audio_lab.xdc` `set_clock_groups -asynchronous` over all 7 domains (clk_fpga_0 / clk_fpga_1 / clk 48 MHz Pmod / bclk / mclk 24 / audio_ext 12.288 / pixel 40) removes the `rst_ps7_0_100M -> pmod_master` inter-clock reset that was the -4.2 ns worst path (harmless `CRITICAL WARNING 12-4739`: BD clocks undefined at synth elaboration, applied at impl -- confirmed by the worst path moving inter->intra). Routed WNS `-0.706 ns` (worst now an intra-`clk_fpga_0` AXI-Lite GPIO write, harmless and always present under the DSP path), WHS `+0.052 ns`, THS `0`; failing endpoints `53 / 64479`. LUT `21286`, FF `23968`, BRAM `6`. bit/hwh md5 `4a0b3dae1e56574ad596dbd6a3f0c98f` / `347d3e553a8ca96733ee27e904a1d25f`. Stage-split (DS-1 boost/clip) and Frame-width reduction (1067->731 bits) were tried first and did NOT improve WNS (route-bound). XADC dropped (D74 bitcrusher); the Clash DSP voicing is unchanged from D73. **Bench (Pmod mode 2 ADC->DSP->DAC): all_off bypass clean, no switch click, pitch correct, all effects + GUI + HDMI healthy -- 完璧.** Full record in `DSP_ISLAND_CLOCK_DESIGN.md`. D73 / D72 are the 100 MHz rollback baselines. |
 | **Wah Cry Baby retune + position API split + volume curve fix accepted on bench (May 29, branch `feature/wah-cry-baby-d73`, D73)** | **-10.910 ns** | -11052.431 ns | D73 ships three refinements on top of D72: (1) Cry Baby GCB-95 sweep retune via `basePositionToFByte` anchor changes from `12 / 20 / 33 / 53 / 80` to `15 / 24 / 37 / 53 / 73` (~450..2200 Hz at fs = 48 kHz); (2) volume curve fix in `wahVolumeFactor` -- new two-segment piecewise linear `Unsigned 10` factor with byte 128 (UI 50 %) = factor 256 = unity, byte 255 (UI 100 %) = factor 510 = +6 dB. New `mulU10` helper in `AudioLab.FixedPoint` re-uses the existing DSP slice; (3) Python position API split into `wah_position_byte` (percent 0..100) + `wah_position_raw_byte` (raw 0..255). No new GPIO, no `block_design.tcl` edit, no new stage in `Pipeline.hs`. Routed WHS `+0.022 ns`, THS `0.000 ns`; failing endpoints `3397 / 61312`. Utilization: LUT `20920` (D72 `21023`, delta `-103`), FF `22672` (D72 `22691`, delta `-19`), BRAM `6` (unchanged), DSPs `89` (**unchanged** -- the mulU10 widening did re-use an existing DSP slice as planned). WNS delta vs D72 (-10.387) is `-0.523 ns` -- inside acceptance band. Worst path stays inside the existing DS-1 distortion section (`ds1_7_reg[784]/C -> ARG__2__2__0_i_1_psdsp/D`); no Wah state register chain appears in the top-100. bit/hwh md5 `d1343291184d8e3465f735bef8856d38` / `aad985fe57b0ff263efc8fc5e09c3c3e`. Deploy 5-site PASS (md5-matched); `AudioLabOverlay(download=True)` PASS; `set_wah_settings` percent + raw round-trip PASS (`position=50 -> byte 128`, `position_raw=200 -> byte 200` with percent cache preserved, both-paths set raises `ValueError`); `scripts/diagnose_pmod_loopback.py` PASS (no QUANT!/STAIR!, CLIP_COUNT 0). **External-instrument bench audition PASS:** focused high end, vocal-like peak with high Q, warm-but-not-muddy heel, bright-but-not-painful toe; UI VOLUME=50 audibly unity; UI VOLUME=100 audibly +6 dB without breakup; BIAS shifts the sweep range as expected; no pop / click on Wah OFF -> ON transitions. **D73 is the new accepted deployed baseline;** D72 (`eacc4f35...` / `eaa88898...`, WNS `-10.387 ns`) is the immediate rollback baseline. |
@@ -63,20 +65,15 @@
 | **Selectable Overdrive model build (May 18, deployed, D46)** | **-8.105 ns** | -6643.894 ns | D46: generic Overdrive retired and replaced by six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR). Implementation is constant-coefficient tables (`odDriveK / odKneeP / odKneeN / odSafetyKnee` in `AudioLab/Effects/Overdrive.hs`) selected by a 3-bit `overdriveModel` field that lives in `axi_gpio_overdrive.ctrlD[2:0]` -- the same byte as `distTight` (top 5 bits), because every Clash consumer of `distTight` shifts right by 3 or 4 and already discards the low 3 bits. No new register stage, no new multiplier, no `topEntity` port change, no `block_design.tcl` change, no new GPIO. WNS regresses by `0.174 ns` vs the Phase 7D close-out baseline (`-7.931 ns -> -8.105 ns`); still inside the historical `-7..-9 ns` deploy band and well clear of the rejected May 4 -15.067 ns `model_select` shape. Hold remains clean (`WHS = +0.044 ns`, `THS = 0.000 ns`). Utilization after place: Slice LUTs `19159` (`36.01%`), Slice Registers `21287` (`20.01%`), Block RAM Tile `9` (`6.43%`), DSPs `83` (`37.73%`); essentially identical to the Phase 7D close-out figure (delta of a handful of LUT/REG from the new constant LUT muxes). `ADAU1761` Clash IP was re-generated to bitwise-identical VHDL during the rebuild. PYNQ deploy + on-board smoke pending. |
 | **PCM5102 DAC-only bring-up (May 18, deployed)** | **-8.410 ns** | -7313.564 ns | Phase 7C: adds the free-running PCM5102 DAC tone path on PMOD JB. New RTL `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v` is a Verilog I2S master that divides MCLK by 4 (BCLK) and BCLK by 64 (LRCLK) and shifts a 48-entry / 24-bit quarter-scale sine ROM out as I2S Philips 32-bit slots. A new MMCM `clk_wiz_audio_ext` turns FCLK_CLK0 100 MHz into **12.288 MHz exact** via `DIVCLK_DIVIDE=5, MULT_F=48.0, CLKOUT0_DIVIDE_F=78.125, VCO=960 MHz`. Integration tcl `hw/Pynq-Z2/pcm5102_dac_integration.tcl` is sourced from `create_project.tcl` after `encoder_integration.tcl`. **No AXI-Lite slave**, **no new GPIO**, **no `block_design.tcl` direct edit**. XDC adds four LVCMOS33 outputs: `ext_audio_mclk_o W14 (JB1)`, `ext_audio_bclk_o Y14 (JB2)`, `ext_audio_lrclk_o T11 (JB3)`, `ext_dac_din_o V16 (JB7)`; no PULLUP. ADAU1761 path / HDMI integration / encoder integration / GPIO_CONTROL_MAP / LowPassFir DSP all untouched. **PCM1808 ADC is NOT added (Phase 7D).** The new 12.288 MHz domain (`clk_out1_block_design_clk_wiz_audio_ext_0`) reports WNS `+77.576 ns`, 0 setup or hold violations -- the new path is trivially met. The full-design WNS `-8.410 ns` lives on `clk_fpga_0` 100 MHz, the same failing domain as the existing baseline; it regresses by `0.314 ns` vs Phase 6I C2 (`-8.096 ns`) and stays inside the historical `-7..-9 ns` deploy band. Hold remains clean (`WHS = +0.052 ns`, `THS = 0.000 ns`). Utilization after place: Slice LUTs `19145` (`35.99%`), Slice Registers `21293` (`20.01%`), Block RAM Tile `9` (`6.43%`), DSPs `83` (`37.73%`). PYNQ-Z2 deploy completed; `scripts/test_pcm5102_dac_tone.py --duration 3` PASS (overlay loaded, ADAU1761 DMA / distortion GPIO / encoder `enc_in_0/s_axi` / HDMI VDMA / HDMI VTC all present; `pcm5102_dac_0` and `clk_wiz_audio_ext` correctly absent from `ip_dict` because they expose no AXI registers). Acoustic verification on PCM5102 line out is the next manual step. `DECISIONS.md` D38. |
 
-WHS = +0.052 ns / THS = 0.000 ns on the deployed D69 Amp Drive Mode
-candidate (WNS `-8.111 ns`, worse than D68 by `0.778 ns` but better
-than the accepted D67 `-8.204 ns` and inside the current deployed
-band). D60 Compressor split, D61 v1 / v2 BD-2 Overdrive structural
-attempts, D63 DS-1 Distortion two-stage clip cascade, and D64
-distortion-wide asymSoftClip knee-only retune were all
-deployed-or-attempted then audio-rejected for bypass-path noise; their
-sources were reverted in the corresponding rollback commits. D69 is the
-current bench candidate; D68 remains the accepted rollback baseline
-until external-instrument bench accepts D69; D62 remains the deeper
-rollback reference.
-WNS is still negative; treat any further timing slip or any audible
-bypass-path artifact as a regression unless the critical-path tradeoff
-is explicit.
+The current accepted baseline is D79: island WNS `-0.496 ns`, 100 MHz
+audio fabric WNS `+0.532 ns / 0 fail`, bit/hwh md5
+`f0cb0276f27187d72476a2e773dd9a6e` /
+`5fa0b84e9fe852c68629c651f94e4a9d`. D78 (`45e78763...`) is the immediate
+rollback baseline for the footswitch/phys_opt stack; D76
+(`9fdecae0...`) is the deeper rollback baseline for FP02M/XADC. WNS is
+still negative; treat any further timing slip or any audible bypass-path
+artifact as a regression unless the critical-path tradeoff is explicit
+and bench-accepted.
 
 **Revised engineering rule (D58 / D59 / D60 / D61 v2 / D63 / D64 all
 rejected, D62 accepted, ordered by structural distance from D62
@@ -89,21 +86,19 @@ rejected, D62 accepted, ordered by structural distance from D62
 | Subtle structural | "Pure constants only" but at multi-model / multi-constant scope | D64 (5 constants across 3 distortion pedals' existing `asymSoftClip` invocations) | rejected |
 | Reliably safe | "Pure constants only" at *minimal* scope (one model, <=3 constants) | D62 (3 constants in one Overdrive model `Overdrive.hs`), D66 (2 constants in one Distortion pedal), D67 (3 constants in one Amp model) | accepted |
 
-**Adding DSP48E1 multipliers OR new feedback state registers OR new
-helper invocations OR multi-pedal coefficient retunes -- even when DSP /
-BRAM / register count and WNS all look fine -- is enough to perturb
-Vivado P&R into leaking HF noise onto the safe-bypass path and
-sometimes onto other effect paths sharing the same axis_switch.** Only
-"single-model, few-constant" edits within existing table/helper
-structure are reliably safe; D62, D66, and D67 are the empirical proof
-of that pattern. The bench ear on safe-bypass plus an A/B against the
-prior baseline on every other effect that shares the axis_switch path
-remains the only
-sensor that has caught the structural-regression class across all six
-rejected attempts; macroscopic timing summary, CLIP_COUNT,
-FRAME_COUNT, DSP / BRAM / register counts, GUI smoke, programmatic
-deploy-time smoke -- none of them have caught the bypass regression on
-their own.
+**Adding DSP48E1 multipliers OR new feedback state registers OR new helper
+invocations OR multi-pedal coefficient retunes -- even when DSP / BRAM /
+register count and headline WNS look fine -- can perturb Vivado P&R into
+leaking HF noise onto the safe-bypass path and sometimes onto other effect
+paths sharing the same axis_switch.** D78 adds the related lesson that even
+an additive AXI master can perturb the DSP-island placement enough to
+bitcrush; phys_opt recovered it. D79 adds the arithmetic-shape lesson:
+parallel multiplies can route better than a "simpler" serial LERP on this
+island. The bench ear on safe-bypass plus an A/B against the prior baseline
+on every touched model remains the only sensor that has caught this
+regression class reliably; macroscopic timing summary, CLIP_COUNT,
+FRAME_COUNT, DSP / BRAM / register counts, GUI smoke, and programmatic
+deploy-time smoke are necessary but not sufficient.
 
 Phase 4C parsed the existing routed reports directly where available:
 `block_design_wrapper_timing_summary_routed.rpt`,
@@ -150,20 +145,15 @@ clock window, pushing WNS from −7.7 ns to −15.1 ns.
 
 A bitstream may be deployed only if the Vivado run prints
 `write_bitstream completed successfully`, the final WNS is no worse than
-the previous deployed build by an audibly meaningful margin, and the
-bench safe-bypass check does not reveal the high-frequency bypass-path
-artifact seen in D58 / D59 / D60 / D61 v2. The latest accepted
-baseline is D68: WNS `-7.333 ns`, TNS `-9235.637 ns`, WHS
-`+0.051 ns`, THS `0`, bit/hwh md5
-`cabb9bca3fbcc41f06f8b9fe8301cff1` /
-`299485480dcc46aa0c679cef8f1a048a`. The currently deployed bench
-candidate is D69: WNS `-8.111 ns`, TNS `-9246.014 ns`, WHS
-`+0.052 ns`, THS `0`, bit/hwh md5
-`6a1834b7f66693f82663c2c8a2fda28b` /
-`927191b506c68588eaae286f4ccce112`. If timing slips significantly or
+the previous deployed build by an audibly meaningful margin, the 100 MHz
+audio fabric remains clean, and the bench safe-bypass check does not
+reveal bitcrusher / HF bypass artifacts. The latest accepted baseline is
+D79: WNS `-0.496 ns`, audio fabric `+0.532 ns / 0 fail`, bit/hwh md5
+`f0cb0276f27187d72476a2e773dd9a6e` /
+`5fa0b84e9fe852c68629c651f94e4a9d`. If timing slips significantly or
 safe-bypass gets noisier, the change must be revisited (more pipeline
 stages, simpler mux structure, fewer features, or pure-constant retune
-only) before adoption; if D69 bench fails, restore D68.
+only) before adoption.
 
 When adding a new pedal or filter stage:
 
