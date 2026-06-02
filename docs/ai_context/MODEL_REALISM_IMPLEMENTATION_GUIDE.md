@@ -61,9 +61,17 @@ This does not affect the D79 timing baseline.
 
 ---
 
-(Design spec for all items follows. Items 4/5a above are now accepted in
-`main` as D79; items 5b/3 below are spec-only — not yet written, deferred to a
-future working-clash + bench session per the user's priorities.)
+(Design spec for all items follows. Items 4/5a are accepted as D79. **Item 3
+(resonant tone stacks) is now partially implemented as D81**: the Tube Screamer
+~720 Hz mid hump shipped as a pre-clip `tubeScreamerMidFrame` peaking biquad
+(direct-form-I, hand-designed f0=720 Hz / Q=0.8 / +6 dB, **Q14** coeffs via new
+`FixedPoint.mulS16` + `satShift14` — Q8/`mulS10` collapses the low-frequency DC
+gain, see below), five multiplies summed in parallel, pipeline-level
+`x1/x2/y1/y2` state, bit-exact bypass. Built / deployed / bench-accepted at
+island WNS -0.193 ns (better than D79), audio fabric +0.657 / 0 fail; no
+GPIO/API change. bit `3a79745f`. Remaining item-3 targets (Big Muff notch,
+amp stacks) and item 5b (Fuzz/amp sag) are still spec-only; reuse ONE shared
+biquad with per-model coefficient mux for the rest.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

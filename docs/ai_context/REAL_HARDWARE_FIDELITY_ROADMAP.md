@@ -1,9 +1,13 @@
 # Real-hardware fidelity roadmap
 
-Status: **R0a partially implemented (Python-only)**. D80 added
+Status: **R0a (Python taper, D80) + R3 first biquad (D81) done.** D80 added
 `audio_lab_pynq/knob_tapers.py`, updated live GUI/encoder/preset apply paths,
-and retuned the preset knob positions. No Clash, Tcl, XDC, bit, or HWH change
-is part of D80; D79 remains the deployed bitstream baseline.
+and retuned the preset knob positions (Python-only). **D81 then landed the
+first R3 resonant biquad: the Tube Screamer ~720 Hz mid hump** (Clash, built /
+deployed / bench-accepted; new bitstream baseline `3a79745f`, island WNS
+-0.193 ns). See the R3 section below. Full R0 reference capture is still
+pending and remains the recommended calibration step before further DSP
+retuning.
 
 This document answers the practical question: how do we move AudioLab closer
 to real pedals, amps, and cabinets **without** violating the current project
@@ -151,6 +155,16 @@ or stuck bias; bypass is unchanged.
 ### R3: resonant tone-stack phase
 
 This targets the "samey" model problem directly.
+
+Progress: **D81 landed the first resonant biquad** -- the Tube Screamer
+~720 Hz mid hump (a pre-clip `tubeScreamerMidFrame` peaking biquad, hand-designed
+f0=720 Hz / Q=0.8 / +6 dB, Q14 coeffs via new `mulS16`/`satShift14`, five
+multiplies summed in parallel, pipeline-level `x1/x2/y1/y2` state, bit-exact
+bypass). Built / deployed / bench-accepted at island WNS -0.193 ns (better than
+D79), audio fabric +0.657 / 0 fail; no GPIO/API change. This proved the
+shared-biquad infrastructure. Remaining R3 targets (Big Muff mid notch,
+Fender/Vox/Marshall amp stacks) should reuse ONE shared biquad with per-model
+coefficient mux -- do not instantiate one biquad per model (D58 lesson).
 
 Recommended start:
 

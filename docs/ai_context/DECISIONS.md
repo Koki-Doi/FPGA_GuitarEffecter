@@ -5141,3 +5141,52 @@ pre-existing 3 failures + 1 error baseline.
   `python3 tests/test_encoder_effect_apply.py`,
   `python3 tests/test_hdmi_gui_bridge.py`, and
   `python3 tests/test_footswitch_control.py` pass.
+
+## D81 — Resonant tone stack (item 3 / R3): Tube Screamer ~720 Hz mid-hump biquad
+
+- **Decision.** Land the first resonant-biquad tone shape (realism roadmap
+  item 3 / R3) on a single high-value target: the Tube Screamer's signature
+  ~720 Hz **mid hump**. A one-pole tilt (the only filter shape used so far)
+  cannot make a resonant mid peak; a 2nd-order peaking biquad can. This proves
+  the shared-biquad infrastructure before extending to Big Muff notch / amp
+  family stacks.
+- **Placement.** A new `tubeScreamerMidFrame` stage sits **pre-clip**, between
+  the existing input HPF and the drive multiply (Pipeline: `tsHpfPipe ->
+  tsMidPipe -> tsMulPipe`). Pre-clip emphasis is what makes the TS mid-focused:
+  the boosted ~720 Hz band is driven harder into the clip than the rest of the
+  spectrum. It is *added*, not a replacement — the dark post-LPF that tames
+  fizz is unchanged.
+- **Filter.** Direct-form-I peaking biquad, hand-designed target curve
+  (f0 = 720 Hz, fs = 48 kHz, Q = 0.8, +6 dB) — NOT a schematic-derived table
+  (D7/D45 policy). Unity at DC and Nyquist by construction, so the spectrum
+  outside the hump is essentially unchanged (verified: DC -0.06 dB, peak
+  +6.01 dB @ 720 Hz, Nyquist 0 dB, pole radius 0.959 = stable).
+- **Fixed-point.** New `FixedPoint.mulS16` (Sample x Signed 16 -> Wide) and
+  `satShift14`. A low normalised frequency makes b1/a1 ~= -1.91, whose DC gain
+  depends on tiny differences — **Q8 (mulS10) rounding collapses the passband
+  to 0.67x; Q14 holds it** (coeffs b0=17036 b1=-31323 b2=14422, a1=-31323
+  a2=15075). The five multiplies are summed in **parallel** (adder tree), not a
+  serial chain — the D79/Wah island-timing lesson.
+- **State.** `x1/x2/y1/y2` are pipeline-level registers (the cab delay-tap +
+  RAT prevIn/prevOut idiom), so idle `Nothing` cycles preserve filter memory.
+  **Bit-exact bypass** when the pedal is off (output = input). No Frame slot,
+  no GPIO, no API change — only the TS pedal voicing changes; all other
+  pedals/models are byte-identical, and Python golden tests are unchanged.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `3a79745ffad8b72531a22587b5bcd3a1`, hwh `a9b582634489170c16c2876388546aa4`.
+  Routed: island (`clk_fpga_1`) **WNS -0.193 ns** / 36 fail (all intra-DS-1
+  CARRY4, no biquad path in the top set), audio fabric (`clk_fpga_0`)
+  **+0.657 ns / 0 fail**, WHS +0.036, THS 0. DSP 95 (+6 ≈ the 5 biquad
+  multiplies), BRAM 6, LUT 22032, FF 24594. **Better than D79** (island
+  -0.496) and ~= D78 (-0.173) — the biquad added no meaningful timing cost.
+  `phys_opt_design AggressiveExplore` on as of D78.
+- **Bench.** Pmod mode 2 (ADC -> DSP -> DAC): all_off bypass clean (no
+  bitcrusher), Tube Screamer mid hump audible / mid-focused drive, other
+  pedals unchanged — **user-confirmed accepted**. D81 (`3a79745f`) is the new
+  accepted bitstream baseline, superseding D79 (`f0cb0276`, rollback at
+  `/tmp/d79_backup` and in git history).
+- **Files.** `hw/ip/clash/src/AudioLab/FixedPoint.hs`,
+  `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch
+  `feature/realism-tone-stack-biquad`.

@@ -183,12 +183,23 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   cleanBoostShiftPipe = register Nothing (mapPipe cleanBoostShiftFrame <$> cleanBoostMulPipe)
   cleanBoostLevelPipe = register Nothing (mapPipe cleanBoostLevelFrame <$> cleanBoostShiftPipe)
 
-  -- tube_screamer (5 stages with HPF + post-LPF state)
+  -- tube_screamer (6 stages: HPF, ~720 Hz mid-hump biquad, mul, clip,
+  -- post-LPF, level). The mid biquad (realism item 3) sits pre-clip so the
+  -- boosted mid band drives the clip harder. Its x1/x2 are a 2-tap delay of
+  -- the stage input and y1/y2 a 2-tap delay of the stage output -- the same
+  -- pipeline-state idiom as the cab delay taps and the RAT prevIn/prevOut.
   tsHpfLpPrev = register 0 (frameOr monoEqLow <$> tsHpfLpPrev <*> tsHpfPipe)
   tsHpfPipe =
     register Nothing $
       mapPipe <$> (tubeScreamerHpfFrame <$> tsHpfLpPrev) <*> cleanBoostLevelPipe
-  tsMulPipe = register Nothing (mapPipe tubeScreamerMulFrame <$> tsHpfPipe)
+  tsMidX1 = register 0 (delayNext <$> tsMidX1 <*> (frameOr monoSample 0 <$> tsHpfPipe) <*> tsHpfPipe)
+  tsMidX2 = register 0 (delayNext <$> tsMidX2 <*> tsMidX1 <*> tsHpfPipe)
+  tsMidY1 = register 0 (frameOr monoSample <$> tsMidY1 <*> tsMidPipe)
+  tsMidY2 = register 0 (delayNext <$> tsMidY2 <*> tsMidY1 <*> tsMidPipe)
+  tsMidPipe =
+    register Nothing $
+      mapPipe <$> (tubeScreamerMidFrame <$> tsMidX1 <*> tsMidX2 <*> tsMidY1 <*> tsMidY2) <*> tsHpfPipe
+  tsMulPipe = register Nothing (mapPipe tubeScreamerMulFrame <$> tsMidPipe)
   tsClipPipe = register Nothing (mapPipe tubeScreamerClipFrame <$> tsMulPipe)
   tsPostLpPrev = register 0 (frameOr monoEqHighLp <$> tsPostLpPrev <*> tsPostLpfPipe)
   tsPostLpfPipe =
