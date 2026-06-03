@@ -260,7 +260,7 @@ Runtime entries for the Pmod I2S2 path:
   exposes every effect plus mode 0/1/2/3 buttons + status panel.
 - `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` —
   single-cell Notebook that spawns
-  `scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat
+  `scripts/run_encoder_hdmi_gui.py --live-apply --include-rat
   --pmod-mode dsp` as a sudo subprocess so the HDMI GUI + rotary
   encoders drive the Pmod I2S2 mode-2 audio path. Stop / Panic-Mute
   SIGTERM the runner (runner mutes MODE=3 on shutdown); Set DSP /

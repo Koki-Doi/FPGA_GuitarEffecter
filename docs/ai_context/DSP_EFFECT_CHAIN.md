@@ -1,5 +1,21 @@
 # DSP effect chain
 
+> **Realism passes D81-D90 (2026-06-03) added DSP that is not reflected in the
+> older descriptions below.** Current additions: resonant tone-stack biquads
+> (TS9 hump D81 in the Distortion-pedalboard tube_screamer, Big Muff mid-scoop
+> notch D82, a shared amp tone-stack biquad with Fender/Vox/Marshall coeffs
+> D83/D84); dynamic behaviour (Fuzz Face level-dependent clip bias D85, power-amp
+> sag D86); a 15-tap symmetric cab speaker-rolloff FIR (D87, pipeline-split);
+> and **4x oversampling of the hard/cascade-clip aliasers Metal (D88), RAT
+> (D89), and Big Muff (D90)** -- linear-interp upsample + per-sub-sample clip +
+> 15-tap decimation FIR via the shared `os4x*` helpers in `Distortion.hs`, each
+> split products/mix (a FIR is feedforward -> pipelines freely; the IIR biquads
+> are NOT split across the feedback). The DSP island runs at **40 MHz** as of
+> D89 (was 50 MHz) for the headroom these add. Lessons: parallel multiplies beat
+> serial on this island; isolate a deep cascade (clip->mul->clip) in a
+> register-update path, not in series with a FIR mul (D90). See `DECISIONS.md`
+> D81-D90, `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`, and `DSP_ISLAND_CLOCK_DESIGN.md`.
+
 The PL DSP pipeline is written in Clash/Haskell under
 `hw/ip/clash/src/LowPassFir.hs` and `hw/ip/clash/src/AudioLab/`. The
 `LowPassFir.hs` file name is historical -- it has long since stopped

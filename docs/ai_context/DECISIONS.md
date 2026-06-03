@@ -5566,3 +5566,48 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-bigmuff-oversample`.
+
+## D91 — RAT selectable in the encoder GUI (Python-only; `skip_rat=False` default + RAT-stage knob routing)
+
+- **Problem.** RAT could not be selected from the encoder GUI's Distortion
+  model list. Two layers blocked it, both gated by `skip_rat=True` (the entry-
+  point default): `encoder_ui.py` skipped index 2 (RAT) when cycling
+  `dist_model_idx`, and `encoder_effect_apply.py` forced `pedal_mask=0` for RAT.
+  The two GUI entry points were also inconsistent -- `PmodI2S2HdmiGuiOneCell.ipynb`
+  passed `run_encoder_hdmi_gui.py --skip-rat` explicitly, so RAT stayed hidden
+  there even after other defaults changed.
+- **Mechanism (already present).** The pedalboard RAT slot
+  (`distortion_pedal_mask` bit 2) is a **DSP no-op**; the real RAT is the
+  dedicated upstream stage. `AudioLabOverlay.set_guitar_effects` already forces
+  `rat_on=True` whenever the rat pedal bit is in the mask -- so selecting RAT
+  only needs the bit set, and the dedicated stage (4x-oversampled since D89)
+  processes audio.
+- **Fix (Python only, no bitstream change).**
+  (1) `EncoderEffectApplier`: when RAT is the selected model, set
+  `distortion_pedal_mask` bit 2 (auto-asserts `rat_on`) and **route the GUI
+  Distortion knobs to the RAT stage** -- TONE -> `rat_filter`, LEVEL ->
+  `rat_level`, DRIVE -> `rat_drive`, the 6th knob -> `rat_mix` (these pass
+  through the existing knob taper, so FILTER/DRIVE are tapered like other
+  tone/gain knobs). (2) Entry-point defaults flipped to **`skip_rat=False`**:
+  `run_encoder_hdmi_gui.py` (`--include-rat` now default, `--skip-rat` still
+  available), `EncoderGuiSmoke.ipynb` / `Pcm5102DspOutputCheck.ipynb`
+  (`SKIP_RAT=False`), and `PmodI2S2HdmiGuiOneCell.ipynb` (spawns
+  `--include-rat`). (3) The `EncoderEffectApplier` / `EncoderUiController`
+  *constructor* defaults stay `skip_rat=True` (library-safe) -- only the entry
+  points opt in. `encoder_ui.py`'s RAT-skip-while-cycling logic is unchanged
+  and simply no longer triggers when `skip_rat=False`.
+- **Scope / validation.** No Clash/VHDL/Tcl/bit/hwh change; deployed bitstream
+  stays **D90** (`93e8b220`). `tests/test_encoder_effect_apply.py` pass
+  (`test_include_rat_sets_bit_2` / `test_skip_rat_excludes_pedal_mask_bit`
+  both still hold); offline check confirms RAT selection sets mask 0x04 and
+  routes `rat_filter`/`rat_level`/`rat_drive`/`rat_mix`. Deployed Python-only
+  (`scripts/deploy_to_pynq.sh`); **user-confirmed RAT now selectable + audible
+  in the GUI.** `CLAUDE.md` encoder constraint + `ENCODER_GUI_CONTROL_SPEC.md`
+  updated (the old "do not silently flip skip_rat" note is superseded -- this
+  was an explicit, documented change).
+- **Files.** `audio_lab_pynq/encoder_effect_apply.py`,
+  `scripts/run_encoder_hdmi_gui.py`, `audio_lab_pynq/notebooks/`
+  (`EncoderGuiSmoke.ipynb`, `PmodI2S2HdmiGuiOneCell.ipynb`,
+  `Pcm5102DspOutputCheck.ipynb`), `CLAUDE.md`,
+  `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`. Branch
+  `feature/rat-gui-and-stage-docs`.

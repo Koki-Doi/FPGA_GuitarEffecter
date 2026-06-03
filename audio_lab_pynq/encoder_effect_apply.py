@@ -267,15 +267,22 @@ class EncoderEffectApplier(object):
             eq  = _knob_list(state, EFFECT_EQ,         [50, 55, 55])
             rv  = _knob_list(state, EFFECT_REVERB,     [30, 65, 25])
 
-            # Distortion pedal-mask: from AppState.dist_model_idx, skipping
-            # RAT (bit 2) when skip_rat is True.
+            # Distortion pedal-mask: from AppState.dist_model_idx. RAT (bit 2)
+            # is the pedalboard's no-op slot -- the *real* RAT is the dedicated
+            # upstream stage, which AudioLabOverlay.set_guitar_effects asserts
+            # automatically when the rat pedal bit is in the mask (it forces
+            # rat_on=True). So selecting RAT just needs the bit set; the GUI
+            # Distortion knobs are routed to the RAT stage (rat_filter / level
+            # / drive / mix) below. When skip_rat is True the slot is refused.
             dist_idx = int(getattr(state, "dist_model_idx", 1) or 0)
             dist_idx = max(0, min(6, dist_idx))
+            rat_selected = False
             if dist_idx == RAT_PEDAL_INDEX and self.skip_rat:
                 self._mark_unsupported("Distortion:rat")
                 pedal_mask = 0
             else:
                 pedal_mask = (1 << dist_idx) & 0x7F
+                rat_selected = (dist_idx == RAT_PEDAL_INDEX)
 
             cab_idx = int(getattr(state, "cab_model_idx", 1) or 1)
             cab_idx = max(0, min(2, cab_idx))
@@ -391,6 +398,14 @@ class EncoderEffectApplier(object):
                 reverb_tone=_clamp_percent(rv[1]),
                 reverb_mix=_clamp_percent(rv[2]),
             )
+            # RAT model selected: route the GUI Distortion knobs to the
+            # dedicated RAT stage (set_guitar_effects forces rat_on from the
+            # pedal bit). TONE -> FILTER, LEVEL, DRIVE, and the 6th knob -> MIX.
+            if rat_selected:
+                kwargs["rat_filter"] = _clamp_percent(dst[0])
+                kwargs["rat_level"] = _clamp_percent(dst[1])
+                kwargs["rat_drive"] = _clamp_percent(dst[2])
+                kwargs["rat_mix"] = _clamp_percent(dst[5])
             self.overlay.set_guitar_effects(**taper_guitar_effects_kwargs(kwargs))
             self._record_ok("state-push")
             return True

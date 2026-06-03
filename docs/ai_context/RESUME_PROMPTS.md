@@ -5,6 +5,21 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## Current status (2026-06-03, after the realism passes D81-D91)
+
+> Accepted deployed bitstream baseline is **D90** (`93e8b220`): the realism
+> roadmap items are largely done -- resonant tone-stack biquads (D81-D84),
+> dynamic bias/sag (D85-D86), cab speaker-rolloff FIR (D87), and 4x
+> oversampling of Metal/RAT/Big Muff (D88-D90) on the **40 MHz DSP island**
+> (D89 lowered it from 50 MHz for headroom; the island is now near-full, 33 MHz
+> is the next step down). **D91** is a Python-only fix making RAT selectable in
+> the GUI (`skip_rat=False` default + Distortion-knob routing to the RAT stage).
+> Remaining realism work and the prioritised structural candidates (JC-120
+> clean path, TS9 Overdrive mid-hump biquad, Klon refine, AC30 sag, and the
+> cab IR step B 128-256-tap MAC convolution) are in
+> `DEDICATED_STAGE_CANDIDATES.md` + `REAL_HARDWARE_FIDELITY_ROADMAP.md`. Read
+> `CURRENT_STATE.md` + `DECISIONS.md` (D81-D91) first.
+
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
 
 > **完了。** XADC を D75 island 上で再有効化 (`create_project.tcl` の2行を
