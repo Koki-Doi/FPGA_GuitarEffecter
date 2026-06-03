@@ -213,7 +213,16 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
     register Nothing $
       mapPipe <$> (metalHpfFrame <$> metalHpfLpPrev) <*> tsLevelPipe
   metalMulPipe = register Nothing (mapPipe metalMulFrame <$> metalHpfPipe)
-  metalClipPipe = register Nothing (mapPipe metalClipFrame <$> metalMulPipe)
+  -- 4x oversampled hard clip (item 2 / R5): metalClipInPrev = previous clip
+  -- input (boosted = satShift8 fAccL) for the linear-interp upsample;
+  -- metalClipHist = 12-deep clipped 4x sub-sample history. The 15-tap
+  -- decimation FIR is split products/mix (feedforward FIR pipelines freely).
+  metalClipInPrev = register 0 (frameOr (satShift8 . fAccL) <$> metalClipInPrev <*> metalMulPipe)
+  metalClipHist = register (repeat 0) (metalClipHistNext <$> metalClipHist <*> metalClipInPrev <*> metalMulPipe)
+  metalClipProductsPipe =
+    register Nothing $
+      mapPipe <$> (metalClipProductsFrame <$> metalClipInPrev <*> metalClipHist) <*> metalMulPipe
+  metalClipPipe = register Nothing (mapPipe metalClipMixFrame <$> metalClipProductsPipe)
   metalPostLpPrev = register 0 (frameOr monoEqHighLp <$> metalPostLpPrev <*> metalPostLpfPipe)
   metalPostLpfPipe =
     register Nothing $

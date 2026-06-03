@@ -119,8 +119,15 @@ and a mix stage recovered to -0.476 ns. Does NOT touch the accepted D71
 nonlinear cab core. bit `8a3754c1`. **step B = the real 128-256-tap MAC
 convolution** (time-mux MAC + BRAM + handshake) remains the next phase.
 
-**item 2 (oversampling) investigated + deferred:** a DSP-free 2x gave only
-~-2.8 dB alias reduction offline; real benefit needs 4x + steep DSP filters.)
+**item 2 (oversampling) in progress (D88):** Metal MT-2 hard clip now runs 4x
+oversampled -- linear-interp upsample (shifts/adds, no mult; band-limited input
+makes it == a full anti-image FIR), 4 hard clips, 15-tap symmetric anti-alias
+decimation FIR (Q9, 8 folded mulS10), pipeline-split products/mix. Offline +
+bench ~-12 dB inharmonic-fizz reduction. (DSP-free 2x only -2.8 dB; proper 2x
+plateaus -5.8 dB since >48 kHz still folds; 4x is the worthwhile rate.) Island
+WNS -0.496 ns (worst path still DS-1). bit `d4c250be`. **Extend the same 4x
+oversampler to RAT, then Big Muff -- one model/phase; DS-1 excluded (critical
+path).**)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

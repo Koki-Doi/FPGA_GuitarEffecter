@@ -221,17 +221,73 @@ metalMulFrame f =
   -- below keep the result aggressive without fizzing out.
   gain = resize (768 + (resize drive * 13 :: Unsigned 12)) :: Unsigned 12
 
-metalClipFrame :: Frame -> Frame
-metalClipFrame f =
-  setMonoSample (if on then hardClip boosted threshold else monoSample f) f
+-- 4x oversampled hard clip (realism item 2 / R5) for Metal MT-2, the worst
+-- aliaser. A static 48 kHz hard clip generates harmonics far above Nyquist
+-- that fold back as inharmonic "digital fizz"; running the clip at 4x and
+-- steeply decimating pushes those products out before the fold (offline:
+-- ~-12 dB inharmonic energy vs 1x; 2x only reaches ~-6 dB because >48 kHz
+-- harmonics still fold).
+--
+-- Structure (DSP only in the decimation FIR): linear-interp upsample 4x (the
+-- input is already band-limited, so linear interp's images are negligible --
+-- offline-confirmed equal to a full anti-image FIR -- and the 0/1/4/1/2/3/4
+-- weights are shifts/adds, no multiply) -> hard clip the 4 sub-samples ->
+-- 15-tap symmetric anti-alias decimation FIR over the 192 kHz clipped stream
+-- (Q9, sum=512 = unity DC, -7.5 dB @ 24 kHz / -48 dB @ 48 kHz; folds to 8
+-- multiplies). The clipped sub-sample history lives in a Vec 12 pipeline
+-- register. The FIR is split products/mix (a FIR is feedforward, pipelines
+-- freely; the D87 lesson) to keep the 50 MHz island path short. Bit-exact
+-- bypass when the pedal is off.
+metalClipThreshold :: Frame -> Sample
+metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
+ where
+  driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
+  rawT = 3_300_000 - driveS * 6_000 :: Signed 25
+
+-- the 4 clipped 4x sub-samples for the interval [x1 -> xn] (chronological:
+-- q0 oldest at x1, q3 newest near xn). Linear interp weights, then hard clip.
+metalOsSubSamples :: Sample -> Sample -> Sample -> (Sample, Sample, Sample, Sample)
+metalOsSubSamples thr x1 xn = (q0, q1, q2, q3)
+ where
+  x1w = resize x1 :: Wide
+  xnw = resize xn :: Wide
+  p1 = satWide (((x1w `shiftL` 1) + x1w + xnw) `shiftR` 2)   -- (3*x1 + xn)/4
+  p2 = satWide ((x1w + xnw) `shiftR` 1)                       -- (x1 + xn)/2
+  p3 = satWide ((x1w + (xnw `shiftL` 1) + xnw) `shiftR` 2)    -- (x1 + 3*xn)/4
+  q0 = hardClip x1 thr
+  q1 = hardClip p1 thr
+  q2 = hardClip p2 thr
+  q3 = hardClip p3 thr
+
+metalClipProductsFrame :: Sample -> Vec 12 Sample -> Frame -> Frame
+metalClipProductsFrame x1 hist f =
+  f { fAccL = if on then s0 else 0, fAccR = 0
+    , fAcc2L = if on then s1 else 0, fAcc2R = 0
+    , fAcc3L = if on then s2 else 0, fAcc3R = 0 }
  where
   on = metalDistortionOn f
-  drive = ctrlC (fDist f)
-  driveS = resize (asSigned9 drive) :: Signed 25
-  -- Deeper hard clip than DS-1, held above the bit-crusher danger zone.
-  rawT = 3_300_000 - driveS * 6_000 :: Signed 25
-  threshold = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
-  boosted = satShift8 (fAccL f)
+  thr = metalClipThreshold f
+  xn = satShift8 (fAccL f)
+  (q0, q1, q2, q3) = metalOsSubSamples thr x1 xn
+  -- 15 taps newest-first: q3 q2 q1 q0 hist0..hist10 ; symmetric coeffs
+  -- c = [-2,-3,-4,5,29,68,104,118,104,68,29,5,-4,-3,-2], folded.
+  pm :: Sample -> Sample -> Signed 10 -> Wide
+  pm a b g = (resize a + resize b) * resize g
+  s0 = pm q3 (hist !! 10) (-2) + pm q2 (hist !! 9) (-3) + pm q1 (hist !! 8) (-4)
+  s1 = pm q0 (hist !! 7) 5 + pm (hist !! 0) (hist !! 6) 29 + pm (hist !! 1) (hist !! 5) 68
+  s2 = pm (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
+
+metalClipMixFrame :: Frame -> Frame
+metalClipMixFrame f =
+  setMonoSample (if on then satShift9 (fAccL f + fAcc2L f + fAcc3L f) else monoSample f) f
+ where
+  on = metalDistortionOn f
+
+metalClipHistNext :: Vec 12 Sample -> Sample -> Maybe Frame -> Vec 12 Sample
+metalClipHistNext hist _ Nothing = hist
+metalClipHistNext hist x1 (Just f) = q3 +>> q2 +>> q1 +>> q0 +>> hist
+ where
+  (q0, q1, q2, q3) = metalOsSubSamples (metalClipThreshold f) x1 (satShift8 (fAccL f))
 
 metalPostLpfFrame :: Sample -> Frame -> Frame
 metalPostLpfFrame prevLp f =
