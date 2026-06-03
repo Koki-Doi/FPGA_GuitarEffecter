@@ -1,5 +1,14 @@
 # Dedicated-stage candidates — which models need structural DSP, ranked
 
+> **Implementation status (D92, 2026-06-04, built + timing-clean, bench PENDING):**
+> All four ranked candidates landed as the recommended shared-stage extensions
+> (NOT full dedicated datapaths): #1 JC-120 clean channel (high-knee softClipK
+> mux on idx 0), #2 Overdrive per-model pre-clip tone biquad (TS9 +6 dB @ 720 Hz
+> + BD-2 +3 dB @ 1500 Hz, others flat), #3 Klon wet-path germanium refine +
+> clean-blend cap, #4 AC30 ~1.5x deeper class-A sag. Whole design met timing
+> (island +0.155 ns / 0 fail, DSP 133). Deployed baseline still D90 until bench.
+> See `DECISIONS.md` D92.
+
 Companion to `MODEL_REALISM_GAP_ANALYSIS.md` (the WHAT/WHY per model) and
 `MODEL_REALISM_IMPLEMENTATION_GUIDE.md` (the HOW). This file answers one
 question: **of the currently-implemented models, which ones are poorly served

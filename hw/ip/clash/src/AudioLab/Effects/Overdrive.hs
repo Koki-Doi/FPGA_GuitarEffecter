@@ -68,7 +68,13 @@ odKneeP m = case m of
                    -- N knee for strong even-harmonic asymmetry.
   3 -> 3_600_000   -- Jan Ray: transparent
   4 -> 2_450_000   -- OCD: open hard-clip-leaning drive
-  5 -> 3_100_000   -- CENTAUR: smooth, clean-blend-like
+  5 -> 2_400_000   -- CENTAUR/Klon: germanium-leaning wet path (refined). Lowered
+                   -- from 3_100_000 so the wet (clipped) path engages earlier --
+                   -- germanium diodes have a low forward voltage, so the Klon's
+                   -- clipped path bites sooner than a silicon op-amp soft clip.
+                   -- The parallel clean blend (odCleanBlend) keeps the overall
+                   -- "transparency"; this only changes the grit-over-clean wet
+                   -- texture. Only model 5 uses this value.
   _ -> 2_950_000
 
 -- | Per-model negative-half soft-clip knee. `kneeN < kneeP` adds even
@@ -87,7 +93,10 @@ odKneeN m = case m of
                    -- breakup the real pedal is known for.
   3 -> 3_450_000   -- Jan Ray: barely asymmetric
   4 -> 2_150_000   -- OCD: firm but more open than BD-2
-  5 -> 2_900_000   -- CENTAUR: gentle asym
+  5 -> 2_050_000   -- CENTAUR/Klon: germanium asym (refined, was 2_900_000). The
+                   -- 350k P/N gap (2_400k vs 2_050k) gives the wet path a stronger
+                   -- even-harmonic germanium colour; the clean blend keeps it
+                   -- transparent overall.
   _ -> 2_850_000
 
 -- | Per-model output safety knee. Caps the level stage so a hot LEVEL
@@ -137,7 +146,9 @@ odClipHardness m = case m of
   2 -> 1   -- BD-2     : medium, keep even-harmonic asym
   3 -> 0   -- Jan Ray  : transparent / softest
   4 -> 2   -- OCD      : harder MOSFET-style knee
-  5 -> 0   -- CENTAUR  : smooth (clean-blend voiced)
+  5 -> 1   -- CENTAUR/Klon : germanium wet path now firmer (was 0). Medium knee
+           -- (pos>>2 neg>>3) on the wet path; the clean blend supplies the
+           -- transparency, the wet path supplies the germanium grit (refined).
   _ -> 0
 
 -- | Klon / CENTAUR clean-blend weight (realism item 5a). The real Klon mixes
@@ -145,15 +156,83 @@ odClipHardness m = case m of
 -- "transparency" is the parallel clean signal, and turning GAIN up raises the
 -- clipped proportion. `blend` is the clipped-path weight (0..255), rising with
 -- DRIVE; the clean weight is `255 - blend`. Floor ~64 so even DRIVE=0 has a
--- little grit; capped below 255 (drive*3>>2 maxes at 255 only at drive=255,
--- and the +64 floor with the Unsigned 8 wrap is avoided by the cap below) so a
--- slice of clean always remains. Only model 5 uses this.
+-- little grit; the cap (176) holds the clipped weight at 240 max so the clean
+-- weight never drops below 15 (~6%) -- the Klon's defining always-present
+-- parallel clean path (refined: the old cap of 191 let blend reach 255 at
+-- DRIVE=255, which fully removed the clean signal and contradicted the
+-- "slice of clean always remains" intent). Only model 5 uses this.
 odCleanBlend :: Unsigned 8 -> Unsigned 8
-odCleanBlend drive = 64 + resize (min 191 (resize drive * 3 `shiftR` 2) :: Unsigned 9)
+odCleanBlend drive = 64 + resize (min 176 (resize drive * 3 `shiftR` 2) :: Unsigned 9)
 
 -- True when this Overdrive model uses the parallel clean-blend (Klon only).
 odUsesCleanBlend :: Unsigned 3 -> Bool
 odUsesCleanBlend m = m == 5
+
+-- ---- Per-model pre-clip tone biquad (realism item 3) ------------------
+-- The dedicated Overdrive effect previously shared one tone *tilt* across all
+-- six models; a one-pole tilt cannot make a resonant peak, so models whose
+-- identity is a resonant pre-clip shape (TS9's ~720 Hz mid hump, BD-2's bright
+-- upper-mid bite) sounded like the others with a different knee. This ONE
+-- shared peaking biquad, with coefficients muxed by overdriveModel, adds that
+-- resonant shape PRE-CLIP so the emphasised band is driven harder into the clip
+-- stage (mid-weighted saturation) -- the same pattern as the distortion-
+-- pedalboard tube_screamer (D81) and the amp tone-stack scoop (D83/D84).
+--
+-- This is a DIFFERENT block from the distortion-pedalboard tube_screamer biquad:
+-- that one shapes the `tube_screamer` *pedal* (distortion_control mask bit 1);
+-- this one shapes the dedicated *Overdrive* model 0 (overdrive_control model
+-- select). They are independent stages.
+--
+-- Filled models (hand-designed target curves at fs = 48 kHz, NOT schematic
+-- tables -- D7/D45):
+--   0 TS9  : +6 dB @ 720 Hz, Q 0.8 (reuses the proven D81 Q14 coeffs)
+--   2 BD-2 : +3 dB @ 1500 Hz, Q 0.7 (bright upper-mid bite)
+-- Every other model (1/3/4/5) stays FLAT (b0 = 2^14, rest 0 -> exact unity
+-- passthrough = byte-identical). All models share this ONE biquad via the
+-- coefficient mux -- do NOT instantiate a second biquad (D58 lesson).
+--
+-- Direct-form-I, Q14 coefficients (a0 normalised to 2^14):
+--   y*2^14 = b0*x + b1*x1 + b2*x2 - a1*y1 - a2*y2
+-- Pipeline-split like D82/D83: the feedforward sum (b0*x + b1*x1 + b2*x2) is
+-- precomputed one stage earlier into fAccL, and the recursive stage closes the
+-- loop with only -a1*y1 - a2*y2 (two multiplies, short single-cycle feedback
+-- path) -- the timing-friendly form on the tight DS-1 island.
+odMidFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
+odMidFeedforwardCoeffs m = case m of
+  0 -> (17036, -31323, 14422)   -- TS9  : +6 dB @ 720 Hz  (D81 proven coeffs)
+  2 -> (17093, -28766, 12236)   -- BD-2 : +3 dB @ 1500 Hz (upper-mid bite)
+  _ -> (16384, 0, 0)            -- flat (unity, b0 = 2^14)
+
+odMidFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
+odMidFeedbackCoeffs m = case m of
+  0 -> (-31323, 15075)          -- TS9
+  2 -> (-28766, 12945)          -- BD-2
+  _ -> (0, 0)                   -- flat (no feedback)
+
+-- Feedforward stage: precompute b0*x + b1*x1 + b2*x2 into fAccL (no feedback,
+-- pipelines freely). fAccL is free between the drive-boost stage (which reads
+-- it then writes monoWet) and the clip stage (which reads monoWet), so reusing
+-- it here is safe. Writes 0 when the overdrive is off so bypass stays exact.
+overdriveMidFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
+overdriveMidFeedforwardFrame x1 x2 f =
+  setMonoAcc (if on then ff else 0) f
+ where
+  on = flag1 (fGate f)
+  (b0, b1, b2) = odMidFeedforwardCoeffs (overdriveModel (fOd f))
+  x = monoWet f
+  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
+
+-- Recursive stage: close the loop with -a1*y1 - a2*y2 and scale back by 2^14.
+-- For the flat models (1/3/4/5) fAccL = x*2^14 and a1 = a2 = 0, so
+-- y = satShift14 (x*2^14) = x exactly -> byte-identical passthrough.
+-- Bit-exact bypass when the overdrive is off (output = monoWet unchanged).
+overdriveMidRecursiveFrame :: Sample -> Sample -> Frame -> Frame
+overdriveMidRecursiveFrame y1 y2 f =
+  setMonoWet (if on then y else monoWet f) f
+ where
+  on = flag1 (fGate f)
+  (a1, a2) = odMidFeedbackCoeffs (overdriveModel (fOd f))
+  y = satShift14 (fAccL f - mulS16 y1 a1 - mulS16 y2 a2)
 
 -- Per-model asymmetric soft clip. The knee constants (odKneeP/odKneeN) set
 -- where it engages; odClipHardness now also sets the compression slope per

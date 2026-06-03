@@ -134,7 +134,27 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
 
   odDriveMulPipe = register Nothing (mapPipe overdriveDriveMultiplyFrame <$> wahApplyPipe)
   odDriveBoostPipe = register Nothing (mapPipe overdriveDriveBoostFrame <$> odDriveMulPipe)
-  odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odDriveBoostPipe)
+
+  -- Per-model pre-clip tone biquad (realism item 3) for the dedicated
+  -- Overdrive effect: TS9 (model 0) ~720 Hz mid hump, BD-2 (model 2) ~1500 Hz
+  -- upper-mid bite, every other model flat (byte-identical). Sits between the
+  -- drive-boost and the clip so the emphasised band is driven harder into the
+  -- clipper. Pipeline-split like the amp scoop (D83): x1/x2 a 2-tap delay of the
+  -- boost-stage monoWet, y1/y2 a 2-tap delay of the recursive output;
+  -- feedforward sum precomputed into fAccL one stage earlier. Flat models pass
+  -- through bit-exact (y = satShift14 (x*2^14) = x).
+  odMidX1 = register 0 (delayNext <$> odMidX1 <*> (frameOr monoWet 0 <$> odDriveBoostPipe) <*> odDriveBoostPipe)
+  odMidX2 = register 0 (delayNext <$> odMidX2 <*> odMidX1 <*> odDriveBoostPipe)
+  odMidFfPipe =
+    register Nothing $
+      mapPipe <$> (overdriveMidFeedforwardFrame <$> odMidX1 <*> odMidX2) <*> odDriveBoostPipe
+  odMidY1 = register 0 (frameOr monoWet <$> odMidY1 <*> odMidRecPipe)
+  odMidY2 = register 0 (delayNext <$> odMidY2 <*> odMidY1 <*> odMidRecPipe)
+  odMidRecPipe =
+    register Nothing $
+      mapPipe <$> (overdriveMidRecursiveFrame <$> odMidY1 <*> odMidY2) <*> odMidFfPipe
+
+  odDrivePipe = register Nothing (mapPipe overdriveDriveClipFrame <$> odMidRecPipe)
 
   odTonePrev = register 0 (frameOr monoWet <$> odTonePrev <*> odToneBlendPipe)
   odToneMulPipe = register Nothing (mapPipe <$> (overdriveToneMultiplyFrame <$> odTonePrev) <*> odDrivePipe)
