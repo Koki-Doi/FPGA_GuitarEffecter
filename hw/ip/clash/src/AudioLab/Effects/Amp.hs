@@ -192,14 +192,28 @@ ampAsymClip modelIdx intensity drive x
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
 
+-- | JC-120 clean-channel ceiling. The real JC-120 is a solid-state, hi-fi
+-- *clean* amp that does not clip in normal playing; the shared waveshaper
+-- colours a signal it should leave clean. For model 0 we replace the asym
+-- soft clip with a very-high-knee symmetric soft clip that only catches
+-- extreme peaks (>~89 % FS) -- a clean channel with a safety ceiling, no
+-- waveshaper colour in the normal range. No new DSP (softClipK is compare +
+-- shift, like ampAsymClip). Only model 0 is affected; every other model keeps
+-- ampAsymClip byte-for-byte.
+ampJc120CleanKnee :: Sample
+ampJc120CleanKnee = 7_500_000
+
 ampWaveshapeFrame :: Frame -> Frame
 ampWaveshapeFrame f =
-  setMonoWet (if on then ampAsymClip idx intensity drive (monoWet f) else monoSample f) f
+  setMonoWet (if on then shaped else monoSample f) f
  where
   on = flag6 (fGate f)
   idx = ampModelIdxF f
   drive = ampDriveModeF f
   intensity = ampCharForModel idx
+  shaped
+    | idx == 0  = softClipK ampJc120CleanKnee (monoWet f)  -- JC-120: clean SS channel
+    | otherwise = ampAsymClip idx intensity drive (monoWet f)
 
 ampPreLowpassFrame :: Sample -> Frame -> Frame
 ampPreLowpassFrame prev f =
@@ -238,7 +252,7 @@ ampSecondStageMultiplyFrame f =
 
 ampSecondStageFrame :: Frame -> Frame
 ampSecondStageFrame f =
-  setMonoWet (if on then ampAsymClip idx intensity drive (satShift7 (fAccL f)) else monoSample f) f
+  setMonoWet (if on then shaped else monoSample f) f
  where
   on = flag6 (fGate f)
   idx = ampModelIdxF f
@@ -246,6 +260,11 @@ ampSecondStageFrame f =
   -- Softer than the first clip stage; keeps low-gain response
   -- touch-sensitive by halving the per-model intensity.
   intensity = ampCharForModel idx `shiftR` 1
+  s2in = satShift7 (fAccL f)
+  -- JC-120 stays clean here too (same high-knee ceiling as stage 1).
+  shaped
+    | idx == 0  = softClipK ampJc120CleanKnee s2in
+    | otherwise = ampAsymClip idx intensity drive s2in
 
 -- Per-amp-family resonant tone-stack biquad (realism item 3 / R3, D83).
 -- The existing 3-band difference EQ (ampToneFilterFrame / ampToneBandFrame
@@ -456,7 +475,13 @@ ampMasterFrame env f =
   -- choke) and DISABLED for JC-120 (idx 0, solid-state = stiff supply, no
   -- sag). Reuses the existing master multiply -> no new DSP. sagRaw takes bits
   -- 22..17 of the (non-negative) envelope = a 0..63 magnitude.
-  sagRaw = resize (unpack (slice d22 d17 (pack env)) :: Unsigned 6) :: Unsigned 8
+  sagRaw0 = resize (unpack (slice d22 d17 (pack env)) :: Unsigned 6) :: Unsigned 8
+  -- Per-model sag depth. AC30 (idx 2) is class-A with cathode-bias sag and
+  -- early compression, so its supply sags ~1.5x deeper than the other tube
+  -- amps (shift+add, no DSP). Every other model keeps sagRaw0 byte-for-byte.
+  sagRaw = case idx of
+    2 -> sagRaw0 + (sagRaw0 `shiftR` 1)   -- AC30: deeper class-A sag
+    _ -> sagRaw0
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
   effLevel = level - sagByte

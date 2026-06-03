@@ -5611,3 +5611,82 @@ pre-existing 3 failures + 1 error baseline.
   `Pcm5102DspOutputCheck.ipynb`), `CLAUDE.md`,
   `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`. Branch
   `feature/rat-gui-and-stage-docs`.
+
+## D92 — Dedicated-stage voicings: JC-120 clean / OD per-model tone biquad (TS9+BD-2) / Klon wet-path refine / AC30 sag
+
+- **Scope.** Five model-realism changes from `DEDICATED_STAGE_CANDIDATES.md`,
+  implemented as **shared-stage extensions / model-gated sub-paths**, NOT new
+  full dedicated datapaths (the user asked for "dedicated stages" but accepted
+  the recommended cheaper/timing-safe approach; a per-model always-on datapath
+  is area- and DS-1-island-timing-prohibitive). All five ride existing GPIO
+  bytes / model selectors -- **no new GPIO, no `block_design.tcl` change, no
+  Python API change, no new control bit.**
+- **1. JC-120 clean channel (Amp model 0).** The shared Amp stage ran two
+  always-on asymmetric soft-clip stages (`ampWaveshapeFrame` +
+  `ampSecondStageFrame`) for every model, colouring the JC-120's solid-state
+  *clean* channel. For `idx == 0` both stages now route through a high-knee
+  symmetric `softClipK ampJc120CleanKnee` (7_500_000, ~89 % FS) that only
+  catches extreme peaks -- a clean channel with a safety ceiling, no waveshaper
+  colour in the normal range. **No new DSP** (softClipK = compare+shift, like
+  ampAsymClip). Every other amp model keeps `ampAsymClip` byte-for-byte.
+- **2. Overdrive per-model pre-clip tone biquad (TS9 model 0 + BD-2 model 2).**
+  The dedicated Overdrive effect shared one tone *tilt* across all six models; a
+  one-pole tilt cannot make a resonant peak. Added **ONE shared peaking biquad**
+  pre-clip (between `overdriveDriveBoostFrame` and `overdriveDriveClipFrame`),
+  coefficients muxed by `overdriveModel`: TS9 = +6 dB @ 720 Hz Q0.8 (reuses the
+  proven D81 Q14 coeffs), BD-2 = +3 dB @ 1500 Hz Q0.7 (bright upper-mid bite,
+  hand-designed, DC/Nyquist unity verified). Every other model (1/3/4/5) stays
+  **flat** (b0 = 2^14, rest 0 -> `satShift14(x*2^14) = x` exact passthrough =
+  byte-identical). Pipeline-split like D82/D83 (feedforward sum into `fAccL` one
+  stage earlier, recursive stage closes the loop with two muls). This is a
+  **different** block from the distortion-pedalboard `tube_screamer` biquad
+  (D81) -- that shapes the pedal-mask bit-1 pedal; this shapes the dedicated
+  Overdrive model 0. **+5 DSP** (3 ff + 2 rec). Mid-emphasised band is driven
+  harder into the clip -> mid-weighted saturation.
+- **3. Klon / CENTAUR wet-path refine (Overdrive model 5).** D79 gave model 5 a
+  parallel clean-blend; this refines the *wet* path to germanium character:
+  knees lowered (`odKneeP` 3_100_000 -> 2_400_000, `odKneeN` 2_900_000 ->
+  2_050_000, germanium low forward voltage = earlier clip + stronger even-
+  harmonic asym) and `odClipHardness` 0 -> 1 (medium knee). `odCleanBlend` cap
+  176 (was 191) so the clipped weight tops out at 240 and the **clean weight
+  never drops below 15 (~6 %)** -- the Klon's defining always-present parallel
+  clean path (the old cap let blend reach 255 at DRIVE=255, fully removing the
+  clean signal). Constants only, **no new DSP**; only model 5 changes.
+- **4. AC30 power-amp sag tuning (Amp model 2).** The D86 power-amp sag applied
+  uniformly to all tube amps. AC30 is class-A with deeper cathode-bias sag, so
+  for `idx == 2` the sag magnitude is scaled ~1.5x (`sagRaw0 + sagRaw0>>1`,
+  shift+add) before the half-level cap. Every other model keeps `sagRaw0`
+  byte-for-byte; JC-120 stays sag-disabled. **No new DSP.**
+- **Build / timing (FULLY TIMING-CLEAN -- like D89).** `clash --vhdl` regen +
+  Vivado: **whole design WNS +0.145 ns / WHS +0.016 / THS 0 -- meets timing**
+  (post-route physopt skipped because WNS >= 0). **Island `clk_fpga_1`
+  (40 MHz) WNS +0.155 ns / 0 fail; audio fabric `clk_fpga_0` (100 MHz) +0.417 /
+  0 fail.** Worst MET path is the HDMI v_tc (harmless). DSP **133** (+5 vs D90's
+  128, all from the OD biquad), BRAM 6 (unchanged), LUT 27281, FF 26735. The
+  +5-DSP biquad did NOT blow the razor-thin D90 island (-0.036) -- the island
+  came back POSITIVE (+0.155): the OD biquad is upstream of the DS-1 critical
+  path and the JC-120 clean mux relieved some idx-0 clip pressure (plus P&R
+  variance). No island clock drop to 33 MHz was needed.
+- **Validation.** Clash 15-module typecheck clean; generated VHDL carries the
+  new coeffs (BD-2 17093). Python golden tests unchanged (no byte-layout change:
+  `tests/test_overlay_controls.py`, `tests/test_encoder_effect_apply.py` pass).
+  bit/hwh md5 `5e6aebe4345f4c403fd7ba432e495ba6` /
+  `61510d58c21fc264a958c4b5b1625367`. **Deployed 5-site (`scripts/deploy_to_pynq.sh`;
+  board md5 matched `5e6aebe4` at repo / `audio_lab_pynq` package / site-packages
+  / pynq-overlays registry / notebooks-dir). D92 is the new deployed bitstream
+  baseline, superseding D90** (`93e8b220`, backed up at `/tmp/d90_backup`).
+  Merged to main. The deploy syncs bit/hwh only (no `download=True`), so the FPGA
+  reprograms on the next notebook/script load (first `download=True` of the
+  session, per the once-per-session rule). **Bench-audio listening confirmation
+  still pending** (Pmod mode 2 ADC->DSP->DAC: all_off clean / no bitcrusher,
+  JC-120 truly clean, TS9 mid hump + BD-2 bite audible, Klon clean-blend grit,
+  AC30 deeper sag, other models + pitch unchanged) -- the D74/D78 lesson is that
+  static timing is necessary but not sufficient; roll back to D90 if the bench
+  rejects.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Overdrive.hs` (knee/hardness/
+  blend tables + `odMidFeedforwardCoeffs` / `odMidFeedbackCoeffs` +
+  `overdriveMidFeedforwardFrame` / `overdriveMidRecursiveFrame`),
+  `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampJc120CleanKnee` + clean mux in
+  both clip stages, per-model AC30 sag), `hw/ip/clash/src/AudioLab/Pipeline.hs`
+  (OD biquad 2 stages + `odMidX1/X2/Y1/Y2` state), regenerated Clash VHDL/IP.
+  Branch `feature/dedicated-stage-voicings-jc120-od-amp`.
