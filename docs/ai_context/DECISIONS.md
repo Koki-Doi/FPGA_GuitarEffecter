@@ -5360,3 +5360,38 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-fuzzface-bias`.
+
+## D86 — Dynamic behaviour (item 5b / R2, part 2): power-amp sag
+
+- **Decision.** Complete item 5b with **power-amp sag** -- loud passages pull
+  the amp master gain down a touch and recover after the transient (tube
+  power-supply sag). One new envelope path, per the roadmap rule.
+- **Envelope.** `ampSagEnvNext` -- a slow peak-follower of the master-input
+  level (`abs24 (monoWet f)` at `ampResPresencePipe`); instant attack, slow
+  linear release `ampSagReleaseStep = 1024` (~170 ms recovery), reset to 0 when
+  the amp is off. Threaded as pipeline register `ampSagEnv`.
+- **Application (DSP-free).** `ampMasterFrame` already had a
+  `mulU8 (monoWet f) level`; sag reuses it by lowering the level operand:
+  `sagRaw = bits 22..17 of the envelope (0..63)`, `sagByte = min(sagRaw,
+  level>>1)`, `effLevel = level - sagByte`. Bounded to **at most half the
+  level** (no choke). **Disabled for JC-120 (idx 0)** -- solid-state, stiff
+  supply, no sag. No new multiply -> **DSP unchanged (106)**.
+- **Bit-exact bypass.** Amp off -> master passes through, env = 0; at low
+  level sagByte = 0 so the amp is identical to D85. Only loud-passage amp
+  behaviour changes; all pedals + JC-120 byte-identical; Python golden tests
+  unchanged. No GPIO/API/Frame change.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `1ab991c7a406e8ec3ba72cdfa42eb347`, hwh `3e47884cff493c6d06068ec91cd512c6`.
+  Island (`clk_fpga_1`) **WNS -0.397 ns** / 44 fail (all DS-1; `sag` 0x in the
+  worst-100), audio fabric (`clk_fpga_0`) **+0.418 ns / 0 fail**, WHS +0.052,
+  THS 0. DSP **106 (unchanged)**, BRAM 6. The -0.122 (D85) -> -0.397 swing is
+  pure P&R run-to-run variance on the DS-1 path (DSP-free change), well inside
+  the accepted-clean band. Deployed 5-site (board md5 matched). Bench (Pmod
+  mode 2): all_off clean / no bitcrusher, tube amps sag + recover on loud
+  chords with no pumping, JC-120 does not sag, other effects unchanged --
+  user-confirmed accepted. **D86 (`1ab991c7`) is the new accepted bitstream
+  baseline, superseding D85** (`b2d8a41b`, rollback in git history +
+  `/tmp/d85_backup`). **item 5b (dynamic behaviour) complete.**
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-amp-sag`.
