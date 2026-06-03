@@ -5671,12 +5671,18 @@ pre-existing 3 failures + 1 error baseline.
   new coeffs (BD-2 17093). Python golden tests unchanged (no byte-layout change:
   `tests/test_overlay_controls.py`, `tests/test_encoder_effect_apply.py` pass).
   bit/hwh md5 `5e6aebe4345f4c403fd7ba432e495ba6` /
-  `61510d58c21fc264a958c4b5b1625367`. **NOT yet deployed / bench acceptance
-  PENDING** -- deployed baseline stays **D90** (`93e8b220`, backed up at
-  `/tmp/d90_backup`) until the user benches (Pmod mode 2 ADC->DSP->DAC: all_off
-  clean / no bitcrusher, JC-120 truly clean, TS9 mid hump + BD-2 bite audible,
-  Klon clean-blend grit, AC30 deeper sag, other models unchanged). The D74/D78
-  lesson: static timing is necessary but not sufficient.
+  `61510d58c21fc264a958c4b5b1625367`. **Deployed 5-site (`scripts/deploy_to_pynq.sh`;
+  board md5 matched `5e6aebe4` at repo / `audio_lab_pynq` package / site-packages
+  / pynq-overlays registry / notebooks-dir). D92 is the new deployed bitstream
+  baseline, superseding D90** (`93e8b220`, backed up at `/tmp/d90_backup`).
+  Merged to main. The deploy syncs bit/hwh only (no `download=True`), so the FPGA
+  reprograms on the next notebook/script load (first `download=True` of the
+  session, per the once-per-session rule). **Bench-audio listening confirmation
+  still pending** (Pmod mode 2 ADC->DSP->DAC: all_off clean / no bitcrusher,
+  JC-120 truly clean, TS9 mid hump + BD-2 bite audible, Klon clean-blend grit,
+  AC30 deeper sag, other models + pitch unchanged) -- the D74/D78 lesson is that
+  static timing is necessary but not sufficient; roll back to D90 if the bench
+  rejects.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Overdrive.hs` (knee/hardness/
   blend tables + `odMidFeedforwardCoeffs` / `odMidFeedbackCoeffs` +
   `overdriveMidFeedforwardFrame` / `overdriveMidRecursiveFrame`),
