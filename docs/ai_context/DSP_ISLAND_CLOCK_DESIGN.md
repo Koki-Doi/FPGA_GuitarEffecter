@@ -1,5 +1,19 @@
 # DSP island clock-domain design (D75)
 
+> **Update (D89, 2026-06-03): the island clock is now 40 MHz, not 50 MHz.**
+> `island_integration.tcl` sets `PCW_FPGA1_PERIPHERAL_FREQMHZ {40}` (divisors
+> `5/5` = 1000 MHz IO PLL / 5 / 5). It was lowered from the original 50 MHz to
+> give the DS-1 CARRY4 critical path a 25 ns (was 20 ns) budget so that the
+> D88-D90 4x oversamplers fit. The island is the only consumer of FCLK_CLK1,
+> runs 1 sample/cycle, and is frequency-independent (paceCount removed), so
+> 40 MHz still vastly exceeds the 48 kHz throughput need; **pitch is set by the
+> I2S/Pmod sample clock, not this clock**. With the oversamplers the whole
+> design meets timing at D89 (island WNS +1.846 ns) / is essentially clean at
+> D90 (-0.036 ns). If the island tightens again, 33 MHz (1000/5/6) is the next
+> step down. Everything below describes the original 50 MHz design and its
+> rationale (still accurate except for the clock value); see `DECISIONS.md`
+> D89 and `TIMING_AND_FPGA_NOTES.md`.
+
 This is the design record for the **DSP clock-domain island** that brought
 the routed WNS from `-10.387 ns` (D72/D73) to `-0.706 ns` while keeping the
 live audio path, GUI, and HDMI fully healthy. It is the accepted baseline

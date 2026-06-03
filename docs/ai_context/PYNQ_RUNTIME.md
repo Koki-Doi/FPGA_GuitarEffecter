@@ -116,7 +116,7 @@ write_mode(2) → apply_effects → refresh_status` at the bottom so
 single-cell companion that drives the **HDMI GUI plus rotary
 encoders** on top of the same Pmod I2S2 mode-2 path. Instead of
 loading `AudioLabOverlay` inside the kernel, the cell spawns
-`scripts/run_encoder_hdmi_gui.py --live-apply --skip-rat --pmod-mode
+`scripts/run_encoder_hdmi_gui.py --live-apply --include-rat --pmod-mode
 dsp --wah-pedal` as a sudo subprocess so the runner owns the overlay /
 HDMI VDMA / encoder polling loop / FP02M pedal polling / default-on
 footswitch polling and the Notebook stays interactive. Buttons:

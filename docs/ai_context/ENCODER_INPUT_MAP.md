@@ -136,9 +136,11 @@ The applier translates the compact-v2 `AppState` through
 `set_noise_suppressor_settings`, `set_compressor_settings`, and
 `set_guitar_effects(**kwargs)` only — no raw GPIO writes, no
 `set_distortion_pedal*` shortcuts. Default throttle is 100 ms;
-encoder 3 short press force-applies regardless. RAT
-(`distortion_pedal_mask` bit 2) is excluded from cycling / live apply
-while `skip_rat=True` (default). The legacy
+encoder 3 short press force-applies regardless. RAT is selectable from the
+Distortion model list as of D91 (`skip_rat=False` is now the entry-point
+default; selecting RAT drives the dedicated RAT stage and routes the
+Distortion knobs to it). `skip_rat=True` (CLI `--skip-rat`) still excludes RAT
+from cycling / live apply. The legacy
 `GUI/audio_lab_gui_bridge.py` dry-run / mirror fall-through is
 preserved when no applier is supplied; dry-run tests can still inject
 a mirror object with `update_from_appstate(state)` / `update(state)`.

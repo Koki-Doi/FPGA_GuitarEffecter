@@ -78,15 +78,16 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Knob value step per encoder-3 detent (0..100 scale).")
     # RAT skip
     rat_group = p.add_mutually_exclusive_group()
-    rat_group.add_argument("--skip-rat", dest="skip_rat",
-                           action="store_true", default=True,
-                           help="Exclude RAT (Distortion pedal-mask bit 2) "
-                                "from encoder model cycling and live apply. "
-                                "Default.")
     rat_group.add_argument("--include-rat", dest="skip_rat",
-                           action="store_false",
+                           action="store_false", default=False,
                            help="Allow encoder cycling and live apply to "
-                                "touch the RAT pedal model.")
+                                "select the RAT model (drives the dedicated "
+                                "RAT stage + routes the Distortion knobs to "
+                                "it). Default.")
+    rat_group.add_argument("--skip-rat", dest="skip_rat",
+                           action="store_true",
+                           help="Exclude RAT (Distortion pedal-mask bit 2) "
+                                "from encoder model cycling and live apply.")
     # Encoder driver
     p.add_argument("--encoder-ip-name", default=None,
                    help="Override the encoder IP name in the overlay.")

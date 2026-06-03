@@ -164,11 +164,19 @@ When a previous turn stopped mid-implementation:
   `set_noise_suppressor_settings`, `set_compressor_settings`, and
   `set_guitar_effects(**kwargs)` — **no raw GPIO writes**, no
   `set_distortion_pedal*` shortcut. Default throttle is 50 ms (D51);
-  encoder 2 force-apply path is preserved. RAT (`distortion_pedal_mask`
-  bit 2) is excluded from encoder cycling and live apply while
-  `skip_rat=True` (default); the Clash stage and
-  `HdmiEffectStateMirror.rat()` are untouched and notebooks can still
-  drive RAT. EQ knobs are mapped GUI `0..100` -> overlay `0..200`
+  encoder 2 force-apply path is preserved. RAT is selectable from the
+  Distortion model list as of D91 (`skip_rat=False` is now the default at
+  the entry points: `run_encoder_hdmi_gui.py --include-rat`,
+  `EncoderGuiSmoke.ipynb` `SKIP_RAT=False`). The pedalboard RAT slot
+  (`distortion_pedal_mask` bit 2) is a DSP no-op; the *real* RAT is the
+  dedicated upstream stage, which `set_guitar_effects` auto-asserts
+  (`rat_on=True`) whenever the rat pedal bit is in the mask. When RAT is the
+  selected Distortion model the applier routes the GUI Distortion knobs to the
+  RAT stage (TONE->`rat_filter`, LEVEL->`rat_level`, DRIVE->`rat_drive`, the
+  6th knob->`rat_mix`). `skip_rat=True` still works (CLI `--skip-rat`) and
+  excludes RAT from cycling/apply; the `EncoderEffectApplier`/`EncoderUiController`
+  constructor default stays `skip_rat=True` (library-safe) -- only the entry
+  points opt in. EQ knobs are mapped GUI `0..100` -> overlay `0..200`
   (`50` is unity); the Cab IR `MODEL` knob is overridden by
   `AppState.cab_model_idx`. `scripts/run_encoder_hdmi_gui.py` and
   `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell) share
@@ -179,7 +187,8 @@ When a previous turn stopped mid-implementation:
   double-toggling in the same tick (D51 fallback for taps shorter
   than the poll period). Do not re-introduce per-loop render or
   per-loop overlay write, do not add a second translation layer
-  beside the applier, do not silently flip `skip_rat=False`, and do
+  beside the applier, keep the RAT routing correct (pedal bit 2 ->
+  `rat_on` + Distortion knobs -> `rat_*`, D91), and do
   not drop the short_press fallback (the level-edge path alone misses
   taps shorter than the poll period).
 - Pmod I2S2 PMOD JB audio is the current external audio path
