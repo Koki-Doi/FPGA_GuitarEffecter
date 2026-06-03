@@ -5280,3 +5280,38 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-amp-fender-scoop`.
+
+## D84 — Resonant tone stack (item 3 / R3): AC30 chime + JCM800 mid into the shared amp biquad
+
+- **Decision.** Fill the remaining amp-family coefficients into the D83 shared
+  amp tone-stack biquad mux. **Coefficient-only** -- no new biquad, no new
+  structure; just two more cases in `ampScoopFeedforwardCoeffs` /
+  `ampScoopFeedbackCoeffs`. This essentially completes item 3 (resonant tone
+  stacks).
+- **Coefficients (hand-designed targets, NOT schematic tables, D7/D45; Q14).**
+  AC30 (idx 2) = Vox chime upper-mid peak f0=2200 Hz / Q=1.0 / **+4 dB**
+  (b0=17355 b1=-28234 b2=12091, a1=-28234 a2=13062; verified +4.00 dB @
+  2200 Hz, pole 0.893, DC 1.000 -- high f0 = excellent Q14 precision).
+  JCM800 (idx 4) = Marshall mid peak f0=650 Hz / Q=0.8 / **+4 dB** (b0=16772
+  b1=-31328 b2=14670, a1=-31328 a2=15057; +4.00 dB @ 650 Hz, pole 0.959, DC
+  +0.08 dB -- inaudible). Rockerverb (idx 3) and TriAmp (idx 5) stay **flat**
+  (unity, byte-identical) -- the gap analysis rated them already reasonable.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `dc030473688a456eae7239f6e5e55741`, hwh `d981ffc3fec170d620ecdb50cc2ed7da`.
+  Island (`clk_fpga_1`) **WNS -0.472 ns** / 49 fail (all DS-1; `scoop` 0x in
+  the worst-100), audio fabric (`clk_fpga_0`) **+0.582 ns / 0 fail**, WHS
+  +0.011, THS 0. DSP 106 (+1 vs D83 -- the larger/more-varied mux constants
+  shifted Vivado's DSP inference; coefficient-only otherwise), BRAM 6. -0.472
+  is in the accepted-clean band (better than D79's bench-clean -0.496).
+  Deployed 5-site (board md5 matched). Bench (Pmod mode 2): all_off clean / no
+  bitcrusher, AC30 chime + JCM800 mid audible, Fender/Rockerverb/TriAmp + other
+  effects unchanged -- user-confirmed accepted. **D84 (`dc030473`) is the new
+  accepted bitstream baseline, superseding D83** (`cef494cb`, rollback in git
+  history + `/tmp/d83_backup`).
+- **item 3 status.** Resonant tone stacks now cover TS mid hump (D81), Big Muff
+  notch (D82), and the Fender/Vox/Marshall amp families (D83/D84) -- the
+  "samey models" gap is substantially closed. Remaining realism work: item 5b
+  (Fuzz/amp dynamic sag), item 1 (cab IR), item 2 (oversampling).
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs`; regenerated
+  `vhdl/LowPassFir`; `bitstreams/audio_lab.{bit,hwh}`. Branch
+  `feature/realism-amp-vox-marshall`.

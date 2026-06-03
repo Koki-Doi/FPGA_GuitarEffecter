@@ -174,11 +174,15 @@ This phase filled the Fender blackface mid scoop (JC-120 + Twin, ~400 Hz,
 -5 dB); models 2-5 use flat coeffs (exact unity = byte-identical). Island WNS
 -0.381 ns -- the +5 DSP did NOT bust the budget (it actually beat D82's -0.534;
 the per-biquad cost estimate is P&R-variable, not a fixed -0.3 ns).
-**Remaining R3 work: fill the AC30 chime (upper-mid peak) and JCM800/Marshall
-mid (mid peak) coefficients into the SAME amp-scoop mux** -- coefficient-only,
-no new DSP, timing essentially unchanged (a coeff change still needs a build +
-bench). After that, item 3 is essentially complete; item 5b (Fuzz/amp sag),
-item 1 (cab IR), and item 2 (oversampling) remain.
+**D84 filled AC30 chime (idx 2, +4 dB @ 2200 Hz) and JCM800 mid (idx 4, +4 dB
+@ 650 Hz) into the same amp-scoop mux** (coefficient-only; Rockerverb/TriAmp
+stay flat). Island WNS -0.472 ns, bench-accepted. **item 3 (resonant tone
+stacks) is now substantially complete** -- TS hump, Big Muff notch, and the
+Fender/Vox/Marshall amp families all have their signature resonant shapes.
+Remaining realism work: **item 5b** (Fuzz/amp dynamic bias-sag, R2 -- the next
+phase), then item 1 (cab IR) and item 2 (oversampling). Note the island sits at
+~-0.47 ns after four biquads; item 1/2 (heavier DSP) need a timing-headroom
+plan first.
 
 Recommended start:
 
