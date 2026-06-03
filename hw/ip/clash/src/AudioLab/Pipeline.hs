@@ -288,11 +288,28 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampStage2MulPipe = register Nothing (mapPipe ampSecondStageMultiplyFrame <$> ampPreLowpassPipe)
   ampStage2Pipe = register Nothing (mapPipe ampSecondStageFrame <$> ampStage2MulPipe)
 
+  -- Per-amp-family resonant tone-stack biquad (realism item 3, D83), inserted
+  -- before the 3-band difference EQ. Operates on monoWet (the amp signal).
+  -- Coeffs muxed by ampModelIdxF; this phase = Fender blackface mid scoop on
+  -- idx 0/1, flat (unity) on the others. Pipeline-split like D82: x1/x2 a
+  -- 2-tap delay of the stage-2 monoWet, y1/y2 a 2-tap delay of the recursive
+  -- output; feedforward sum precomputed into fAccL one stage earlier.
+  ampScoopX1 = register 0 (delayNext <$> ampScoopX1 <*> (frameOr monoWet 0 <$> ampStage2Pipe) <*> ampStage2Pipe)
+  ampScoopX2 = register 0 (delayNext <$> ampScoopX2 <*> ampScoopX1 <*> ampStage2Pipe)
+  ampScoopFfPipe =
+    register Nothing $
+      mapPipe <$> (ampToneScoopFeedforwardFrame <$> ampScoopX1 <*> ampScoopX2) <*> ampStage2Pipe
+  ampScoopY1 = register 0 (frameOr monoWet <$> ampScoopY1 <*> ampScoopRecPipe)
+  ampScoopY2 = register 0 (delayNext <$> ampScoopY2 <*> ampScoopY1 <*> ampScoopRecPipe)
+  ampScoopRecPipe =
+    register Nothing $
+      mapPipe <$> (ampToneScoopRecursiveFrame <$> ampScoopY1 <*> ampScoopY2) <*> ampScoopFfPipe
+
   ampToneLowPrev = register 0 (frameOr monoEqLow <$> ampToneLowPrev <*> ampToneFilterPipe)
   ampToneHighPrev = register 0 (frameOr monoEqHighLp <$> ampToneHighPrev <*> ampToneFilterPipe)
   ampToneFilterPipe =
     register Nothing $
-      mapPipe <$> (ampToneFilterFrame <$> ampToneLowPrev <*> ampToneHighPrev) <*> ampStage2Pipe
+      mapPipe <$> (ampToneFilterFrame <$> ampToneLowPrev <*> ampToneHighPrev) <*> ampScoopRecPipe
   ampToneBandPipe = register Nothing (mapPipe ampToneBandFrame <$> ampToneFilterPipe)
   ampToneProductsPipe = register Nothing (mapPipe ampToneProductsFrame <$> ampToneBandPipe)
   ampToneMixPipe = register Nothing (mapPipe ampToneMixFrame <$> ampToneProductsPipe)
