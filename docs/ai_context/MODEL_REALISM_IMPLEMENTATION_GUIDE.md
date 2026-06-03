@@ -92,8 +92,18 @@ This does not affect the D79 timing baseline.
   bit `dc030473`.
 
 All four bench-accepted, no GPIO/API change. **item 3 (resonant tone stacks) is
-substantially complete.** Item 5b (Fuzz/amp dynamic bias-sag) is the next phase
-(below); item 1 (cab IR) and item 2 (oversampling) remain after.)
+substantially complete.**
+
+**Item 5b (dynamic behaviour, R2) is now in progress:**
+- **D85 — Fuzz Face dynamic bias (part 1):** a playing-level peak-follower
+  envelope (`fuzzFaceBiasEnvNext`, instant attack / ~43 ms release / reset-0 on
+  bypass) drifts the clip knees -- soft = cleaner asymmetric Ge knees, hard =
+  knees pull together (sputter). DSP-free (abs+shift+compare), bit-exact bypass.
+  Island WNS -0.122 ns (best of the run). bit `b2d8a41b`. **Part 2 = amp sag**
+  is the next phase: reuse the same envelope pattern after the 2nd amp gain
+  stage to scale power/master gain down on loud passages.
+
+item 1 (cab IR) and item 2 (oversampling) remain after item 5b.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

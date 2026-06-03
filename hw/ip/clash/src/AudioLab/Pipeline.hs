@@ -262,9 +262,13 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrev) <*> bigMuffScoopRecPipe
   bigMuffLevelPipe = register Nothing (mapPipe bigMuffLevelFrame <$> bigMuffTonePipe)
 
-  -- fuzz_face (4 stages: pre, asym clip, tone+state, level)
+  -- fuzz_face (4 stages: pre, asym clip with dynamic bias, tone+state, level).
+  -- ffBiasEnv (realism item 5b) is a peak-follower of the post-pre-gain level,
+  -- fed into the clip so the knees drift with how hard you play. Resets to 0
+  -- on bypass (bit-exact OFF). No multiply -> no new DSP.
   fuzzFacePrePipe = register Nothing (mapPipe fuzzFacePreFrame <$> bigMuffLevelPipe)
-  fuzzFaceClipPipe = register Nothing (mapPipe fuzzFaceClipFrame <$> fuzzFacePrePipe)
+  ffBiasEnv = register 0 (fuzzFaceBiasEnvNext <$> ffBiasEnv <*> fuzzFacePrePipe)
+  fuzzFaceClipPipe = register Nothing (mapPipe <$> (fuzzFaceClipFrame <$> ffBiasEnv) <*> fuzzFacePrePipe)
   fuzzFaceTonePrev = register 0 (frameOr monoEqHighLp <$> fuzzFaceTonePrev <*> fuzzFaceTonePipe)
   fuzzFaceTonePipe =
     register Nothing $

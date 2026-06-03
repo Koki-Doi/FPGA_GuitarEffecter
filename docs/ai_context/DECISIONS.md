@@ -5315,3 +5315,48 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs`; regenerated
   `vhdl/LowPassFir`; `bitstreams/audio_lab.{bit,hwh}`. Branch
   `feature/realism-amp-vox-marshall`.
+
+## D85 — Dynamic behaviour (item 5b / R2, part 1): Fuzz Face dynamic bias
+
+- **Decision.** First **dynamic / level-dependent** DSP change (realism item
+  5b, roadmap R2). Static waveshapers cannot do what makes a Ge Fuzz Face
+  iconic: cleanup with playing level / guitar volume, and sputter under load.
+  Add a playing-level envelope to the Fuzz Face and drift its clip knees with
+  it. Per the roadmap rule "at most one new envelope path per phase," this
+  phase is Fuzz Face only; **amp sag is part 2 (a later phase)**.
+- **Envelope.** `fuzzFaceBiasEnvNext` is a peak-follower on the post-pre-gain
+  ("boosted") level -- the same shape as the Compressor / NoiseSuppressor
+  envelopes (instant attack, linear release `ffBiasReleaseStep = 4096` ≈ 43 ms
+  at 48 kHz, **reset to 0 when the pedal is off**). Threaded as a pipeline
+  register `ffBiasEnv` (feedforward into the clip, one-sample lag like the
+  compressor gain).
+- **Knee modulation.** `fuzzFaceClipFrame` now takes the envelope: `biasShift =
+  min(env >> 4, 500_000)`, `kneeP = 2_100_000 - biasShift`, `kneeN =
+  1_150_000 + (biasShift >> 1)`. Soft playing / rolled-back volume -> low env ->
+  the base asymmetric Ge knees (cleaner, open); hard picking -> high env ->
+  knees pull together (harder, more symmetric compression / sputter). Bounded
+  (shift capped) and clamped (kneeP never collapses). **No multiply** (abs +
+  shift + compare only) -> **no new DSP**.
+- **Bit-exact bypass.** When the pedal is off the clip stage passes the sample
+  through unchanged and the envelope holds 0, so OFF is bit-exact. Only the
+  Fuzz Face voicing changes; all other pedals/models byte-identical, Python
+  golden tests unchanged. No GPIO/API/Frame change.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `b2d8a41b0f8389ca2ec851a2d267a7e6`, hwh `e5efc8ca4241d99f3b2778ad9f7ba620`.
+  Island (`clk_fpga_1`) **WNS -0.122 ns** / only **3 fail**, TNS -0.160 (the
+  **best of the whole R3/R2 run** -- the DSP-free change added no DS-1
+  placement pressure and the P&R nearly closed the island), audio fabric
+  (`clk_fpga_0`) **+0.543 ns / 0 fail**, WHS +0.006, THS 0. DSP **106
+  (unchanged** -- no multiply added), BRAM 6. Deployed 5-site (board md5
+  matched). Bench (Pmod mode 2): all_off clean / no bitcrusher, Fuzz Face
+  cleans up soft / sputters under hard picking with no zipper, other
+  pedals/amps unchanged -- user-confirmed accepted. **D85 (`b2d8a41b`) is the
+  new accepted bitstream baseline, superseding D84** (`dc030473`, rollback in
+  git history + `/tmp/d84_backup`).
+- **Pattern for reuse.** Envelope-modulated parameters (no new DSP) are timing
+  cheap on this island. The amp-sag part 2 will reuse this pattern (a slower
+  envelope after the second gain stage scaling the power/master gain down on
+  loud passages); keep it bounded and reset-on-bypass.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-fuzzface-bias`.

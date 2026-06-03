@@ -179,10 +179,15 @@ the per-biquad cost estimate is P&R-variable, not a fixed -0.3 ns).
 stay flat). Island WNS -0.472 ns, bench-accepted. **item 3 (resonant tone
 stacks) is now substantially complete** -- TS hump, Big Muff notch, and the
 Fender/Vox/Marshall amp families all have their signature resonant shapes.
-Remaining realism work: **item 5b** (Fuzz/amp dynamic bias-sag, R2 -- the next
-phase), then item 1 (cab IR) and item 2 (oversampling). Note the island sits at
-~-0.47 ns after four biquads; item 1/2 (heavier DSP) need a timing-headroom
-plan first.
+**D85 started item 5b / R2 (dynamic behaviour): Fuzz Face dynamic bias** -- a
+playing-level envelope drifts the clip knees (cleanup soft / sputter hard),
+DSP-free, bench-accepted at island WNS -0.122 ns (the best of the run, since
+no multiply = no DS-1 placement pressure). **Remaining: item 5b part 2 = amp
+sag** (a slower envelope after the 2nd gain stage scaling power/master gain
+down on loud passages -- same DSP-free envelope pattern), then item 1 (cab IR)
+and item 2 (oversampling). Envelope-modulated params are cheap here; item 1/2
+(heavier DSP) still need a timing-headroom plan, though the island is currently
+healthy at -0.122 ns.
 
 Recommended start:
 

@@ -434,16 +434,42 @@ fuzzFacePreFrame f =
   -- Lower ceiling and hot asymmetry preserve cleanup without gating out.
   gain = resize (448 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
 
-fuzzFaceClipFrame :: Frame -> Frame
-fuzzFaceClipFrame f =
+-- Fuzz Face dynamic bias envelope (realism item 5b / R2). A peak-follower on
+-- the post-pre-gain ("boosted") level, same shape as the Compressor /
+-- NoiseSuppressor envelopes (instant attack, linear release, reset to 0 when
+-- the pedal is off so OFF stays bit-exact). The clip stage uses it to drift
+-- the knees with the playing level -- the level-dependent behaviour a static
+-- waveshaper lacks. No multiply (abs + shift + compare only), so no new DSP.
+ffBiasReleaseStep :: Sample
+ffBiasReleaseStep = 4096
+
+fuzzFaceBiasEnvNext :: Sample -> Maybe Frame -> Sample
+fuzzFaceBiasEnvNext env Nothing = env
+fuzzFaceBiasEnvNext env (Just f)
+  | not (fuzzFaceOn f)        = 0
+  | level > env               = level
+  | env > ffBiasReleaseStep   = env - ffBiasReleaseStep
+  | otherwise                 = 0
+ where
+  level = abs24 (satShift8 (fAccL f))
+
+fuzzFaceClipFrame :: Sample -> Frame -> Frame
+fuzzFaceClipFrame env f =
   setMonoSample (if on then asymSoftClip kneeP kneeN boosted else monoSample f) f
  where
   on = fuzzFaceOn f
   boosted = satShift8 (fAccL f)
-  -- Strong asymmetry: the negative half compresses harder, but the
-  -- positive side keeps enough room for cleanup.
-  kneeP = 2_100_000 :: Sample
-  kneeN = 1_150_000 :: Sample
+  -- Dynamic bias (item 5b): the knees drift with the playing-level envelope.
+  -- Soft playing / rolled-back guitar volume -> low env -> the base
+  -- asymmetric Ge knees (cleaner, more open); hard picking -> high env ->
+  -- knees pull together (harder, more symmetric compression / sputter under
+  -- load). Bounded (biasShift capped) and clamped so kneeP never collapses;
+  -- env = 0 on bypass keeps OFF bit-exact.
+  rawShift = env `shiftR` 4
+  biasShift = if rawShift > 500_000 then 500_000 else rawShift
+  -- Base asymmetry: negative half compresses harder, positive keeps cleanup room.
+  kneeP = 2_100_000 - biasShift :: Sample
+  kneeN = 1_150_000 + (biasShift `shiftR` 1) :: Sample
 
 fuzzFaceToneFrame :: Sample -> Frame -> Frame
 fuzzFaceToneFrame prevLp f =
