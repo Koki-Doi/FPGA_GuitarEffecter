@@ -5485,3 +5485,48 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-metal-oversample2x`.
+
+## D89 — DSP island clock 50 -> 40 MHz (headroom) + RAT 4x oversampling
+
+- **Problem.** Adding a 2nd 4x oversampler (RAT, on top of Metal D88) at the
+  50 MHz island blew the DS-1 path to **WNS -1.276 ns** -- not from DSP count
+  (+1 only) but from routing/placement congestion near the DS-1 CARRY4
+  arithmetic. The island had run out of headroom.
+- **Decision (headroom lever).** **Lower the DSP island clock FCLK_CLK1 from
+  50 MHz to 40 MHz** in `island_integration.tcl` (`PCW_FPGA1_PERIPHERAL_FREQMHZ
+  50->40`, divisors `5/4 -> 5/5`, = 1000 MHz IO PLL / 5 / 5). This is the
+  reliable headroom lever (NOT a DS-1 pipeline split -- that was already tried
+  and failed in D75, route-bound). The island is the **only** consumer of
+  FCLK_CLK1, runs 1 sample/cycle, and is frequency-independent (paceCount
+  removed, D75), so 40 MHz still hugely exceeds the 48 kHz throughput need
+  while giving the DS-1 path a **25 ns** (was 20 ns) budget. The two
+  `axis_clock_converter`s bridge 100 <-> 40 exactly as they did 100 <-> 50.
+  **Pitch is set by the I2S/Pmod sample clock, not this island clock, so it is
+  unaffected** (bench-confirmed). Only `island_integration.tcl` changed;
+  `block_design.tcl` untouched; the fabric stays 100 MHz (lowering the *fabric*
+  is still forbidden -- it corrupts the I2S/Pmod CDCs).
+- **Result -- first fully-timing-clean build since D72.** Island
+  (`clk_fpga_1`, now 25 ns / 40 MHz) **WNS +1.846 ns, 0 failing endpoints**
+  (the DS-1 path, negative since D72, is finally positive); audio fabric
+  (`clk_fpga_0`) **+0.551 ns / 0 fail** (the overall worst path is now a PS7
+  AXI clock, MET); WHS +0.024, THS 0. **Whole design meets timing.** This
+  bundle also lands **RAT 4x oversampling** (the change that needed the
+  headroom) and a refactor of the oversampler into shared helpers
+  (`os4xSubSamples` / `os4xDecimProducts` / `os4xHistShift`) reused by Metal +
+  RAT. DSP 124, BRAM 6.
+- **bit/hwh** md5 `1e9eb9ac589e9647e699f6e2a16f27d5` /
+  `ef17fe68e53af0ea8a8e6b6c77b859f7`. Deployed 5-site (board md5 matched).
+  Bench (Pmod mode 2): all_off clean / no bitcrusher, **pitch correct**, all
+  effects healthy with no switch click (the syncCtrl CDC works at 40 MHz),
+  Metal + RAT alias fizz reduced -- user-confirmed accepted. No GPIO/API/Frame
+  change; Python golden tests unchanged. **D89 (`1e9eb9ac`) is the new accepted
+  bitstream baseline, superseding D88** (`d4c250be`, rollback in git history +
+  `/tmp/d88_backup`; D88 is the 50 MHz-island rollback).
+- **Headroom opened.** The island now has **+1.846 ns** of slack, so further
+  oversamplers (Big Muff next; even DS-1 itself, previously excluded) and other
+  DSP additions now fit. If a future build tightens up again, 33 MHz
+  (1000/5/6) is the next step down.
+- **Files.** `hw/Pynq-Z2/island_integration.tcl`,
+  `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-rat-oversample`.

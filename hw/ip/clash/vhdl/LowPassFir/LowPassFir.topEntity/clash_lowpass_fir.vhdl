@@ -938,7 +938,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_20                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_124                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:542:1-18
+  -- src/AudioLab/Effects/Distortion.hs:561:1-18
   signal \c$x_app_arg_28\                            : signed(47 downto 0);
   signal \c$case_alt_56\                             : signed(23 downto 0);
   signal result_125                                  : signed(23 downto 0);
@@ -952,7 +952,7 @@ architecture structural of clash_lowpass_fir is
   signal result_128                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_10                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:542:1-18
+  -- src/AudioLab/Effects/Distortion.hs:561:1-18
   signal x_61                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal fuzzFaceTonePipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -967,9 +967,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_11                                     : unsigned(7 downto 0);
   signal \c$case_alt_58\                             : signed(23 downto 0);
   signal result_132                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:531:1-17
+  -- src/AudioLab/Effects/Distortion.hs:550:1-17
   signal x_62                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:531:1-17
+  -- src/AudioLab/Effects/Distortion.hs:550:1-17
   signal \c$lp_app_arg\                              : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal fuzzFaceTonePrev                            : signed(23 downto 0) := to_signed(0,24);
@@ -983,9 +983,9 @@ architecture structural of clash_lowpass_fir is
   signal ds1_21                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_133                                  : clash_lowpass_fir_types.Maybe;
   signal result_134                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:513:1-17
+  -- src/AudioLab/Effects/Distortion.hs:532:1-17
   signal \c$x_app_arg_29\                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:513:1-17
+  -- src/AudioLab/Effects/Distortion.hs:532:1-17
   signal \c$x_app_arg_30\                            : signed(47 downto 0);
   signal \c$case_alt_59\                             : signed(23 downto 0);
   signal result_135                                  : signed(23 downto 0);
@@ -1005,22 +1005,22 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_72\                              : std_logic;
   signal result_138                                  : boolean;
   signal result_139                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:513:1-17
+  -- src/AudioLab/Effects/Distortion.hs:532:1-17
   signal x_65                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:513:1-17
+  -- src/AudioLab/Effects/Distortion.hs:532:1-17
   signal rawShift                                    : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ffBiasEnv                                   : signed(23 downto 0) := to_signed(0,24);
   signal \c$app_arg_73\                              : std_logic;
   signal result_140                                  : boolean;
-  -- src/AudioLab/Effects/Distortion.hs:503:1-19
+  -- src/AudioLab/Effects/Distortion.hs:522:1-19
   signal \c$level_app_arg\                           : signed(47 downto 0);
   signal \c$case_alt_60\                             : signed(23 downto 0);
   signal result_141                                  : signed(23 downto 0);
   signal \c$case_alt_61\                             : signed(23 downto 0);
   signal result_142                                  : signed(23 downto 0);
   signal \c$case_alt_62\                             : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:503:1-19
+  -- src/AudioLab/Effects/Distortion.hs:522:1-19
   signal f_4                                         : clash_lowpass_fir_types.Frame;
   signal \c$case_alt_63\                             : signed(23 downto 0);
   signal result_143                                  : signed(23 downto 0);
@@ -1041,7 +1041,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_22                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_147                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:463:1-17
+  -- src/AudioLab/Effects/Distortion.hs:482:1-17
   signal \c$x_app_arg_31\                            : signed(47 downto 0);
   signal \c$case_alt_65\                             : signed(23 downto 0);
   signal result_148                                  : signed(23 downto 0);
@@ -1055,7 +1055,7 @@ architecture structural of clash_lowpass_fir is
   signal result_151                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_13                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:463:1-17
+  -- src/AudioLab/Effects/Distortion.hs:482:1-17
   signal x_68                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffTonePipe                             : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -1070,9 +1070,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_14                                     : unsigned(7 downto 0);
   signal \c$case_alt_67\                             : signed(23 downto 0);
   signal result_155                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:452:1-16
+  -- src/AudioLab/Effects/Distortion.hs:471:1-16
   signal x_69                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:452:1-16
+  -- src/AudioLab/Effects/Distortion.hs:471:1-16
   signal \c$lp_app_arg_0\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffTonePrev                             : signed(23 downto 0) := to_signed(0,24);
@@ -1083,14 +1083,14 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffScoopRecPipe                         : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_156                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:444:1-26
+  -- src/AudioLab/Effects/Distortion.hs:463:1-26
   signal \c$x_app_arg_32\                            : signed(47 downto 0);
   signal \c$app_arg_82\                              : std_logic;
   signal result_157                                  : boolean;
   signal \c$case_alt_68\                             : signed(23 downto 0);
   signal result_158                                  : signed(23 downto 0);
   signal result_159                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:444:1-26
+  -- src/AudioLab/Effects/Distortion.hs:463:1-26
   signal x_71                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bmScoopY2                                   : signed(23 downto 0) := to_signed(0,24);
@@ -1126,7 +1126,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffClip2Pipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_163                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:404:1-17
+  -- src/AudioLab/Effects/Distortion.hs:423:1-17
   signal \c$x_app_arg_33\                            : signed(47 downto 0);
   signal \c$case_alt_69\                             : signed(23 downto 0);
   signal result_164                                  : signed(23 downto 0);
@@ -1138,14 +1138,14 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_87\                              : signed(24 downto 0);
   signal \c$app_arg_88\                              : signed(24 downto 0);
   signal result_167                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:404:1-17
+  -- src/AudioLab/Effects/Distortion.hs:423:1-17
   signal x_75                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_76                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_24                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_168                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:395:1-17
+  -- src/AudioLab/Effects/Distortion.hs:414:1-17
   signal \c$x_app_arg_34\                            : signed(47 downto 0);
   signal \c$case_alt_71\                             : signed(23 downto 0);
   signal result_169                                  : signed(23 downto 0);
@@ -1157,7 +1157,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_91\                              : signed(24 downto 0);
   signal \c$app_arg_92\                              : signed(24 downto 0);
   signal result_172                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:395:1-17
+  -- src/AudioLab/Effects/Distortion.hs:414:1-17
   signal x_77                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_78                                        : clash_lowpass_fir_types.Frame;
@@ -1175,7 +1175,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_26                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_175                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:365:1-13
+  -- src/AudioLab/Effects/Distortion.hs:384:1-13
   signal \c$x_app_arg_35\                            : signed(47 downto 0);
   signal \c$case_alt_74\                             : signed(23 downto 0);
   signal result_176                                  : signed(23 downto 0);
@@ -1189,7 +1189,7 @@ architecture structural of clash_lowpass_fir is
   signal result_179                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_16                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:365:1-13
+  -- src/AudioLab/Effects/Distortion.hs:384:1-13
   signal x_80                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1TonePipe                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -1204,9 +1204,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_17                                     : unsigned(7 downto 0);
   signal \c$case_alt_76\                             : signed(23 downto 0);
   signal result_183                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:354:1-12
+  -- src/AudioLab/Effects/Distortion.hs:373:1-12
   signal x_81                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:354:1-12
+  -- src/AudioLab/Effects/Distortion.hs:373:1-12
   signal \c$lp_app_arg_1\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1TonePrev                                 : signed(23 downto 0) := to_signed(0,24);
@@ -1219,7 +1219,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_27                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_184                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:342:1-12
+  -- src/AudioLab/Effects/Distortion.hs:361:1-12
   signal \c$x_app_arg_36\                            : signed(47 downto 0);
   signal \c$case_alt_77\                             : signed(23 downto 0);
   signal result_185                                  : signed(23 downto 0);
@@ -1231,7 +1231,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_103\                             : signed(24 downto 0);
   signal \c$app_arg_104\                             : signed(24 downto 0);
   signal result_188                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:342:1-12
+  -- src/AudioLab/Effects/Distortion.hs:361:1-12
   signal x_84                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_85                                        : clash_lowpass_fir_types.Frame;
@@ -1261,9 +1261,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_19                                     : unsigned(7 downto 0);
   signal \c$case_alt_81\                             : signed(23 downto 0);
   signal result_195                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:321:1-11
+  -- src/AudioLab/Effects/Distortion.hs:340:1-11
   signal x_87                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:321:1-11
+  -- src/AudioLab/Effects/Distortion.hs:340:1-11
   signal \c$lp_app_arg_2\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1HpfLpPrev                                : signed(23 downto 0) := to_signed(0,24);
@@ -1276,7 +1276,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_29                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_196                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:304:1-15
+  -- src/AudioLab/Effects/Distortion.hs:323:1-15
   signal \c$x_app_arg_37\                            : signed(47 downto 0);
   signal \c$case_alt_82\                             : signed(23 downto 0);
   signal result_197                                  : signed(23 downto 0);
@@ -1290,7 +1290,7 @@ architecture structural of clash_lowpass_fir is
   signal result_200                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_20                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:304:1-15
+  -- src/AudioLab/Effects/Distortion.hs:323:1-15
   signal x_90                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalPostLpfPipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -1305,9 +1305,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_21                                     : unsigned(7 downto 0);
   signal \c$case_alt_84\                             : signed(23 downto 0);
   signal result_204                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:293:1-17
+  -- src/AudioLab/Effects/Distortion.hs:312:1-17
   signal x_91                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:293:1-17
+  -- src/AudioLab/Effects/Distortion.hs:312:1-17
   signal \c$lp_app_arg_3\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalPostLpPrev                             : signed(23 downto 0) := to_signed(0,24);
@@ -1320,14 +1320,14 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_30                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_205                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:281:1-17
+  -- src/AudioLab/Effects/Distortion.hs:300:1-17
   signal \c$x_app_arg_38\                            : signed(47 downto 0);
   signal \c$app_arg_115\                             : std_logic;
   signal result_206                                  : boolean;
   signal \c$case_alt_85\                             : signed(23 downto 0);
   signal result_207                                  : signed(23 downto 0);
   signal result_208                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:281:1-17
+  -- src/AudioLab/Effects/Distortion.hs:300:1-17
   signal x_94                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_95                                        : clash_lowpass_fir_types.Frame;
@@ -1340,63 +1340,64 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Distortion.hs:242:1-18
   signal rawT                                        : signed(24 downto 0);
   signal result_211                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal \c$ds36_app_arg\                            : signed(47 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:290:1-22
+  signal \c$ds37_app_arg\                            : signed(47 downto 0);
   signal \c$case_alt_86\                             : signed(23 downto 0);
   signal result_212                                  : signed(23 downto 0);
-  signal \c$app_arg_116\                             : signed(47 downto 0);
-  signal \c$app_arg_117\                             : signed(47 downto 0);
-  signal \c$app_arg_118\                             : signed(23 downto 0);
-  signal \c$app_arg_119\                             : signed(47 downto 0);
-  signal result_213                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
+  signal \c$app_arg_116\                             : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
   signal a                                           : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
   signal b                                           : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal b_0                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal b_1                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal b_2                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal b_3                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal b_4                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
-  signal b_5                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
   signal a_0                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:263:1-22
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_0                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
   signal a_1                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_1                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_2                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_3                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_4                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_5                                         : signed(23 downto 0);
+  signal result_213                                  : clash_lowpass_fir_types.Tuple3_0;
+  signal \c$app_arg_117\                             : signed(47 downto 0);
+  signal \c$app_arg_118\                             : signed(47 downto 0);
+  signal \c$app_arg_119\                             : signed(47 downto 0);
+  signal result_214                                  : clash_lowpass_fir_types.Frame;
   signal \c$app_arg_120\                             : std_logic;
-  signal result_214                                  : boolean;
-  -- src/AudioLab/Effects/Distortion.hs:250:1-17
+  signal result_215                                  : boolean;
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
   signal xnw                                         : signed(47 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:250:1-17
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
   signal x1w                                         : signed(47 downto 0);
-  signal result_215                                  : clash_lowpass_fir_types.Tuple4;
-  signal result_216                                  : signed(23 downto 0);
+  signal result_216                                  : clash_lowpass_fir_types.Tuple4;
+  signal result_217                                  : signed(23 downto 0);
   signal \c$case_alt_87\                             : signed(23 downto 0);
   signal \c$app_arg_121\                             : signed(23 downto 0);
   signal \c$case_alt_88\                             : signed(23 downto 0);
-  signal result_217                                  : signed(23 downto 0);
+  signal result_218                                  : signed(23 downto 0);
   signal \c$app_arg_122\                             : signed(47 downto 0);
   signal \c$app_arg_123\                             : signed(47 downto 0);
-  signal result_218                                  : signed(23 downto 0);
+  signal result_219                                  : signed(23 downto 0);
   signal \c$case_alt_89\                             : signed(23 downto 0);
   signal \c$app_arg_124\                             : signed(23 downto 0);
   signal \c$case_alt_90\                             : signed(23 downto 0);
-  signal result_219                                  : signed(23 downto 0);
-  signal \c$app_arg_125\                             : signed(47 downto 0);
   signal result_220                                  : signed(23 downto 0);
+  signal \c$app_arg_125\                             : signed(47 downto 0);
+  signal result_221                                  : signed(23 downto 0);
   signal \c$case_alt_91\                             : signed(23 downto 0);
   signal \c$app_arg_126\                             : signed(23 downto 0);
   signal \c$case_alt_92\                             : signed(23 downto 0);
-  signal result_221                                  : signed(23 downto 0);
+  signal result_222                                  : signed(23 downto 0);
   signal \c$app_arg_127\                             : signed(47 downto 0);
   signal \c$app_arg_128\                             : signed(47 downto 0);
-  signal result_222                                  : signed(23 downto 0);
+  signal result_223                                  : signed(23 downto 0);
   signal \c$case_alt_93\                             : signed(23 downto 0);
   signal \c$app_arg_129\                             : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -1412,83 +1413,84 @@ architecture structural of clash_lowpass_fir is
                                            , to_signed(0,24)
                                            , to_signed(0,24)
                                            , to_signed(0,24) );
-  signal result_223                                  : signed(24 downto 0);
+  signal result_224                                  : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
   signal x_97                                        : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:242:1-18
   signal rawT_0                                      : signed(24 downto 0);
-  signal result_224                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:287:1-17
+  signal result_225                                  : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:306:1-17
   signal \c$ds2_app_arg\                             : signed(47 downto 0);
   signal \c$case_alt_94\                             : signed(23 downto 0);
-  signal result_225                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:287:1-17
+  signal result_226                                  : signed(23 downto 0);
+  signal result_227                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
+  -- src/AudioLab/Effects/Distortion.hs:306:1-17
   signal f_5                                         : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:250:1-17
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
   signal xnw_0                                       : signed(47 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:250:1-17
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
   signal x1w_0                                       : signed(47 downto 0);
-  signal result_226                                  : clash_lowpass_fir_types.Tuple4;
-  signal result_227                                  : signed(23 downto 0);
+  signal result_228                                  : clash_lowpass_fir_types.Tuple4;
+  signal result_229                                  : signed(23 downto 0);
   signal \c$case_alt_95\                             : signed(23 downto 0);
   signal \c$app_arg_130\                             : signed(23 downto 0);
   signal \c$case_alt_96\                             : signed(23 downto 0);
-  signal result_228                                  : signed(23 downto 0);
+  signal result_230                                  : signed(23 downto 0);
   signal \c$app_arg_131\                             : signed(47 downto 0);
   signal \c$app_arg_132\                             : signed(47 downto 0);
-  signal result_229                                  : signed(23 downto 0);
+  signal result_231                                  : signed(23 downto 0);
   signal \c$case_alt_97\                             : signed(23 downto 0);
   signal \c$app_arg_133\                             : signed(23 downto 0);
   signal \c$case_alt_98\                             : signed(23 downto 0);
-  signal result_230                                  : signed(23 downto 0);
+  signal result_232                                  : signed(23 downto 0);
   signal \c$app_arg_134\                             : signed(47 downto 0);
-  signal result_231                                  : signed(23 downto 0);
+  signal result_233                                  : signed(23 downto 0);
   signal \c$case_alt_99\                             : signed(23 downto 0);
   signal \c$app_arg_135\                             : signed(23 downto 0);
   signal \c$case_alt_100\                            : signed(23 downto 0);
-  signal result_232                                  : signed(23 downto 0);
+  signal result_234                                  : signed(23 downto 0);
   signal \c$app_arg_136\                             : signed(47 downto 0);
   signal \c$app_arg_137\                             : signed(47 downto 0);
-  signal result_233                                  : signed(23 downto 0);
+  signal result_235                                  : signed(23 downto 0);
   signal \c$case_alt_101\                            : signed(23 downto 0);
   signal \c$app_arg_138\                             : signed(23 downto 0);
-  signal result_234                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
+  signal result_236                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalClipInPrev                             : signed(23 downto 0) := to_signed(0,24);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$metalClipInPrev_app_arg\                 : signed(23 downto 0);
   signal \c$case_alt_102\                            : signed(23 downto 0);
-  signal result_235                                  : signed(23 downto 0);
+  signal result_237                                  : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$metalClipInPrev_app_arg_0\               : signed(47 downto 0);
   -- src/AudioLab/Types.hs:77:1-7
   signal x_98                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalMulPipe                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_236                                  : clash_lowpass_fir_types.Maybe;
+  signal result_238                                  : clash_lowpass_fir_types.Maybe;
   signal \c$app_arg_139\                             : std_logic;
-  signal result_237                                  : boolean;
+  signal result_239                                  : boolean;
   signal \c$app_arg_140\                             : signed(47 downto 0);
   signal \c$case_alt_103\                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_22                                     : unsigned(11 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalHpfPipe                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_238                                  : clash_lowpass_fir_types.Maybe;
-  signal result_239                                  : clash_lowpass_fir_types.Frame;
+  signal result_240                                  : clash_lowpass_fir_types.Maybe;
+  signal result_241                                  : clash_lowpass_fir_types.Frame;
   signal \c$app_arg_141\                             : std_logic;
-  signal result_240                                  : boolean;
+  signal result_242                                  : boolean;
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_99                                        : signed(47 downto 0);
   signal \c$case_alt_104\                            : signed(23 downto 0);
-  signal result_241                                  : signed(23 downto 0);
+  signal result_243                                  : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:91:1-9
   signal alpha_5                                     : unsigned(7 downto 0);
   signal \c$app_arg_142\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_23                                     : unsigned(7 downto 0);
   signal \c$case_alt_105\                            : signed(23 downto 0);
-  signal result_242                                  : signed(23 downto 0);
+  signal result_244                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:203:1-13
   signal x_100                                       : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:203:1-13
@@ -1503,36 +1505,36 @@ architecture structural of clash_lowpass_fir is
   signal x_102                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_32                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_243                                  : clash_lowpass_fir_types.Maybe;
+  signal result_245                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion.hs:192:1-22
   signal \c$x_app_arg_39\                            : signed(47 downto 0);
   signal \c$case_alt_106\                            : signed(23 downto 0);
-  signal result_244                                  : signed(23 downto 0);
-  signal \c$app_arg_143\                             : std_logic;
-  signal result_245                                  : boolean;
   signal result_246                                  : signed(23 downto 0);
+  signal \c$app_arg_143\                             : std_logic;
+  signal result_247                                  : boolean;
+  signal result_248                                  : signed(23 downto 0);
   signal \c$case_alt_107\                            : signed(23 downto 0);
   signal \c$app_arg_144\                             : signed(24 downto 0);
   signal \c$app_arg_145\                             : signed(24 downto 0);
   signal \c$app_arg_146\                             : signed(24 downto 0);
-  signal result_247                                  : clash_lowpass_fir_types.Frame;
+  signal result_249                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_24                                     : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:192:1-22
   signal x_103                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal tsPostLpfPipe                               : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_248                                  : clash_lowpass_fir_types.Maybe;
-  signal result_249                                  : clash_lowpass_fir_types.Frame;
+  signal result_250                                  : clash_lowpass_fir_types.Maybe;
+  signal result_251                                  : clash_lowpass_fir_types.Frame;
   signal \c$app_arg_147\                             : std_logic;
-  signal result_250                                  : boolean;
+  signal result_252                                  : boolean;
   -- src/AudioLab/FixedPoint.hs:91:1-9
   signal alpha_6                                     : unsigned(7 downto 0);
   signal \c$app_arg_148\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_25                                     : unsigned(7 downto 0);
   signal \c$case_alt_108\                            : signed(23 downto 0);
-  signal result_251                                  : signed(23 downto 0);
+  signal result_253                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:181:1-24
   signal x_104                                       : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:181:1-24
@@ -1547,42 +1549,42 @@ architecture structural of clash_lowpass_fir is
   signal x_106                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_33                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_252                                  : clash_lowpass_fir_types.Maybe;
+  signal result_254                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion.hs:171:1-21
   signal \c$x_app_arg_40\                            : signed(47 downto 0);
   signal \c$case_alt_109\                            : signed(23 downto 0);
-  signal result_253                                  : signed(23 downto 0);
-  signal \c$app_arg_149\                             : std_logic;
-  signal result_254                                  : boolean;
   signal result_255                                  : signed(23 downto 0);
+  signal \c$app_arg_149\                             : std_logic;
+  signal result_256                                  : boolean;
+  signal result_257                                  : signed(23 downto 0);
   signal \c$case_alt_110\                            : signed(23 downto 0);
   signal \c$app_arg_150\                             : signed(24 downto 0);
   signal \c$app_arg_151\                             : signed(24 downto 0);
   signal \c$app_arg_152\                             : signed(24 downto 0);
-  signal result_256                                  : clash_lowpass_fir_types.Frame;
+  signal result_258                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion.hs:171:1-21
   signal x_107                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_108                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_34                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_257                                  : clash_lowpass_fir_types.Maybe;
+  signal result_259                                  : clash_lowpass_fir_types.Maybe;
   signal \c$app_arg_153\                             : std_logic;
-  signal result_258                                  : boolean;
+  signal result_260                                  : boolean;
   signal \c$app_arg_154\                             : signed(47 downto 0);
   signal \c$case_alt_111\                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_26                                     : unsigned(11 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal tsMidPipe                                   : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_259                                  : clash_lowpass_fir_types.Maybe;
+  signal result_261                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion.hs:147:1-20
   signal \c$x_app_arg_41\                            : signed(47 downto 0);
   signal \c$app_arg_155\                             : std_logic;
-  signal result_260                                  : boolean;
+  signal result_262                                  : boolean;
   signal \c$case_alt_112\                            : signed(23 downto 0);
-  signal result_261                                  : signed(23 downto 0);
-  signal result_262                                  : clash_lowpass_fir_types.Frame;
+  signal result_263                                  : signed(23 downto 0);
+  signal result_264                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion.hs:147:1-20
   signal x_109                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -1607,21 +1609,21 @@ architecture structural of clash_lowpass_fir is
   signal x_110                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal tsHpfPipe                                   : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_263                                  : clash_lowpass_fir_types.Maybe;
-  signal result_264                                  : clash_lowpass_fir_types.Frame;
+  signal result_265                                  : clash_lowpass_fir_types.Maybe;
+  signal result_266                                  : clash_lowpass_fir_types.Frame;
   signal \c$app_arg_156\                             : std_logic;
-  signal result_265                                  : boolean;
+  signal result_267                                  : boolean;
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_111                                       : signed(47 downto 0);
   signal \c$case_alt_113\                            : signed(23 downto 0);
-  signal result_266                                  : signed(23 downto 0);
+  signal result_268                                  : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:91:1-9
   signal alpha_7                                     : unsigned(7 downto 0);
   signal \c$app_arg_157\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_27                                     : unsigned(7 downto 0);
   signal \c$case_alt_114\                            : signed(23 downto 0);
-  signal result_267                                  : signed(23 downto 0);
+  signal result_269                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:120:1-20
   signal x_112                                       : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:120:1-20
@@ -1636,19 +1638,19 @@ architecture structural of clash_lowpass_fir is
   signal x_114                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_35                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_268                                  : clash_lowpass_fir_types.Maybe;
+  signal result_270                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion.hs:108:1-20
   signal \c$x_app_arg_42\                            : signed(47 downto 0);
   signal \c$case_alt_115\                            : signed(23 downto 0);
-  signal result_269                                  : signed(23 downto 0);
-  signal \c$app_arg_158\                             : std_logic;
-  signal result_270                                  : boolean;
   signal result_271                                  : signed(23 downto 0);
+  signal \c$app_arg_158\                             : std_logic;
+  signal result_272                                  : boolean;
+  signal result_273                                  : signed(23 downto 0);
   signal \c$case_alt_116\                            : signed(23 downto 0);
   signal \c$app_arg_159\                             : signed(24 downto 0);
   signal \c$app_arg_160\                             : signed(24 downto 0);
   signal \c$app_arg_161\                             : signed(24 downto 0);
-  signal result_272                                  : clash_lowpass_fir_types.Frame;
+  signal result_274                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_28                                     : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:108:1-20
@@ -1657,23 +1659,23 @@ architecture structural of clash_lowpass_fir is
   signal x_116                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_36                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_273                                  : clash_lowpass_fir_types.Maybe;
+  signal result_275                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion.hs:102:1-20
   signal \c$x_app_arg_43\                            : signed(47 downto 0);
   signal \c$app_arg_162\                             : std_logic;
-  signal result_274                                  : boolean;
+  signal result_276                                  : boolean;
   signal \c$case_alt_117\                            : signed(23 downto 0);
-  signal result_275                                  : signed(23 downto 0);
-  signal result_276                                  : clash_lowpass_fir_types.Frame;
+  signal result_277                                  : signed(23 downto 0);
+  signal result_278                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion.hs:102:1-20
   signal x_117                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_118                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_37                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_277                                  : clash_lowpass_fir_types.Maybe;
+  signal result_279                                  : clash_lowpass_fir_types.Maybe;
   signal \c$app_arg_163\                             : std_logic;
-  signal result_278                                  : boolean;
+  signal result_280                                  : boolean;
   signal \c$app_arg_164\                             : signed(47 downto 0);
   signal \c$case_alt_118\                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
@@ -1682,41 +1684,41 @@ architecture structural of clash_lowpass_fir is
   signal x_119                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_38                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_279                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:618:1-11
+  signal result_281                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Distortion.hs:660:1-11
   signal \c$x_app_arg_44\                            : signed(47 downto 0);
   signal \c$case_alt_119\                            : signed(23 downto 0);
-  signal result_280                                  : signed(23 downto 0);
-  signal result_281                                  : signed(23 downto 0);
+  signal result_282                                  : signed(23 downto 0);
+  signal result_283                                  : signed(23 downto 0);
   signal \c$case_alt_120\                            : signed(23 downto 0);
   signal \c$app_arg_165\                             : signed(24 downto 0);
   signal \c$app_arg_166\                             : signed(24 downto 0);
   signal \c$app_arg_167\                             : signed(24 downto 0);
-  signal result_282                                  : clash_lowpass_fir_types.Frame;
+  signal result_284                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_30                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:618:1-11
+  -- src/AudioLab/Effects/Distortion.hs:660:1-11
   signal x_120                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:618:1-11
+  -- src/AudioLab/Effects/Distortion.hs:660:1-11
   signal mix_0                                       : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_121                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_39                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_283                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:610:1-13
+  signal result_285                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Distortion.hs:652:1-13
   signal \c$x_app_arg_45\                            : signed(47 downto 0);
   signal \c$case_alt_121\                            : signed(23 downto 0);
-  signal result_284                                  : signed(23 downto 0);
-  signal result_285                                  : clash_lowpass_fir_types.Frame;
+  signal result_286                                  : signed(23 downto 0);
+  signal result_287                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_31                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:610:1-13
+  -- src/AudioLab/Effects/Distortion.hs:652:1-13
   signal x_122                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratTonePipe                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_286                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:601:1-12
+  signal result_288                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Distortion.hs:643:1-12
   signal \c$x_app_arg_46\                            : unsigned(9 downto 0);
   -- src/AudioLab/FixedPoint.hs:91:1-9
   signal alpha_8                                     : unsigned(7 downto 0);
@@ -1724,9 +1726,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_32                                     : unsigned(7 downto 0);
   signal \c$case_alt_122\                            : signed(23 downto 0);
-  signal result_287                                  : signed(23 downto 0);
-  signal result_288                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:601:1-12
+  signal result_289                                  : signed(23 downto 0);
+  signal result_290                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:643:1-12
   signal x_123                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratTonePrev                                 : signed(23 downto 0) := to_signed(0,24);
@@ -1736,12 +1738,12 @@ architecture structural of clash_lowpass_fir is
   signal x_124                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratPostPipe                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_289                                  : clash_lowpass_fir_types.Maybe;
+  signal result_291                                  : clash_lowpass_fir_types.Maybe;
   signal \c$app_arg_169\                             : signed(47 downto 0);
   signal \c$case_alt_123\                            : signed(23 downto 0);
-  signal result_290                                  : signed(23 downto 0);
-  signal result_291                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:595:1-19
+  signal result_292                                  : signed(23 downto 0);
+  signal result_293                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:637:1-19
   signal x_125                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratPostPrev                                 : signed(23 downto 0) := to_signed(0,24);
@@ -1753,70 +1755,188 @@ architecture structural of clash_lowpass_fir is
   signal x_127                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
   signal ds1_40                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_292                                  : clash_lowpass_fir_types.Maybe;
-  signal result_293                                  : signed(24 downto 0);
-  signal result_294                                  : signed(23 downto 0);
+  signal result_294                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Distortion.hs:623:1-15
+  signal \c$x_app_arg_47\                            : signed(47 downto 0);
   signal \c$case_alt_124\                            : signed(23 downto 0);
-  signal \c$app_arg_170\                             : signed(23 downto 0);
-  signal result_295                                  : clash_lowpass_fir_types.Frame;
+  signal result_295                                  : signed(23 downto 0);
+  signal result_296                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:623:1-15
+  signal x_128                                       : signed(23 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal x_129                                       : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal ds1_41                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_297                                  : clash_lowpass_fir_types.Maybe;
+  signal result_298                                  : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
-  signal x_128                                       : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:582:1-12
-  signal x_129                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:582:1-12
+  signal x_130                                       : unsigned(7 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:606:1-16
   signal rawThreshold                                : signed(24 downto 0);
+  signal result_299                                  : signed(23 downto 0);
+  signal \c$app_arg_170\                             : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal a_2                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_6                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal a_3                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_7                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal a_4                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_8                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_9                                         : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_10                                        : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_11                                        : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:275:1-17
+  signal b_12                                        : signed(23 downto 0);
+  signal result_300                                  : clash_lowpass_fir_types.Tuple3_0;
+  signal \c$app_arg_171\                             : signed(47 downto 0);
+  signal \c$app_arg_172\                             : signed(47 downto 0);
+  signal \c$app_arg_173\                             : signed(47 downto 0);
+  signal result_301                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:613:1-20
+  signal \on_6\                                      : boolean;
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
+  signal xnw_1                                       : signed(47 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
+  signal x1w_1                                       : signed(47 downto 0);
+  signal result_302                                  : clash_lowpass_fir_types.Tuple4;
+  signal result_303                                  : signed(23 downto 0);
+  signal \c$case_alt_125\                            : signed(23 downto 0);
+  signal \c$app_arg_174\                             : signed(23 downto 0);
+  signal \c$case_alt_126\                            : signed(23 downto 0);
+  signal result_304                                  : signed(23 downto 0);
+  signal \c$app_arg_175\                             : signed(47 downto 0);
+  signal \c$app_arg_176\                             : signed(47 downto 0);
+  signal result_305                                  : signed(23 downto 0);
+  signal \c$case_alt_127\                            : signed(23 downto 0);
+  signal \c$app_arg_177\                             : signed(23 downto 0);
+  signal \c$case_alt_128\                            : signed(23 downto 0);
+  signal result_306                                  : signed(23 downto 0);
+  signal \c$app_arg_178\                             : signed(47 downto 0);
+  signal result_307                                  : signed(23 downto 0);
+  signal \c$case_alt_129\                            : signed(23 downto 0);
+  signal \c$app_arg_179\                             : signed(23 downto 0);
+  signal \c$case_alt_130\                            : signed(23 downto 0);
+  signal result_308                                  : signed(23 downto 0);
+  signal \c$app_arg_180\                             : signed(47 downto 0);
+  signal \c$app_arg_181\                             : signed(47 downto 0);
+  signal result_309                                  : signed(23 downto 0);
+  signal \c$case_alt_131\                            : signed(23 downto 0);
+  signal \c$app_arg_182\                             : signed(23 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal ratClipHist                                 : clash_lowpass_fir_types.array_of_signed_24(0 to 11) := clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24) );
+  signal result_310                                  : signed(24 downto 0);
+  -- src/AudioLab/FixedPoint.hs:10:1-9
+  signal x_131                                       : unsigned(7 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:606:1-16
+  signal rawThreshold_0                              : signed(24 downto 0);
+  signal result_311                                  : signed(23 downto 0);
+  signal result_312                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
+  -- src/AudioLab/Effects/Distortion.hs:629:1-15
+  signal f_6                                         : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
+  signal xnw_2                                       : signed(47 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:256:1-14
+  signal x1w_2                                       : signed(47 downto 0);
+  signal result_313                                  : clash_lowpass_fir_types.Tuple4;
+  signal result_314                                  : signed(23 downto 0);
+  signal \c$case_alt_132\                            : signed(23 downto 0);
+  signal \c$app_arg_183\                             : signed(23 downto 0);
+  signal \c$case_alt_133\                            : signed(23 downto 0);
+  signal result_315                                  : signed(23 downto 0);
+  signal \c$app_arg_184\                             : signed(47 downto 0);
+  signal \c$app_arg_185\                             : signed(47 downto 0);
+  signal result_316                                  : signed(23 downto 0);
+  signal \c$case_alt_134\                            : signed(23 downto 0);
+  signal \c$app_arg_186\                             : signed(23 downto 0);
+  signal \c$case_alt_135\                            : signed(23 downto 0);
+  signal result_317                                  : signed(23 downto 0);
+  signal \c$app_arg_187\                             : signed(47 downto 0);
+  signal result_318                                  : signed(23 downto 0);
+  signal \c$case_alt_136\                            : signed(23 downto 0);
+  signal \c$app_arg_188\                             : signed(23 downto 0);
+  signal \c$case_alt_137\                            : signed(23 downto 0);
+  signal result_319                                  : signed(23 downto 0);
+  signal \c$app_arg_189\                             : signed(47 downto 0);
+  signal \c$app_arg_190\                             : signed(47 downto 0);
+  signal result_320                                  : signed(23 downto 0);
+  signal \c$case_alt_138\                            : signed(23 downto 0);
+  signal \c$app_arg_191\                             : signed(23 downto 0);
+  signal result_321                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal ratClipInPrev                               : signed(23 downto 0) := to_signed(0,24);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal \c$ratClipInPrev_app_arg\                   : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratOpAmpPipe                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_296                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:574:1-20
-  signal \c$x_app_arg_47\                            : unsigned(7 downto 0);
+  signal result_322                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Distortion.hs:593:1-20
+  signal \c$x_app_arg_48\                            : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:91:1-9
   signal alpha_9                                     : unsigned(7 downto 0);
-  signal \c$app_arg_171\                             : signed(47 downto 0);
+  signal \c$app_arg_192\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_33                                     : unsigned(7 downto 0);
-  signal \c$case_alt_125\                            : signed(23 downto 0);
-  signal result_297                                  : signed(23 downto 0);
-  signal result_298                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:574:1-20
-  signal x_130                                       : signed(23 downto 0);
+  signal \c$case_alt_139\                            : signed(23 downto 0);
+  signal result_323                                  : signed(23 downto 0);
+  signal result_324                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:593:1-20
+  signal x_132                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratOpAmpPrev                                : signed(23 downto 0) := to_signed(0,24);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$ratOpAmpPrev_app_arg\                    : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_131                                       : clash_lowpass_fir_types.Frame;
+  signal x_133                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_132                                       : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Types.hs:77:1-7
-  signal ds1_41                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_299                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion.hs:568:1-18
-  signal \c$x_app_arg_48\                            : signed(47 downto 0);
-  signal \c$case_alt_126\                            : signed(23 downto 0);
-  signal result_300                                  : signed(23 downto 0);
-  signal result_301                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:568:1-18
-  signal x_133                                       : signed(23 downto 0);
-  -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_134                                       : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Pipeline.hs:53:1-10
+  -- src/AudioLab/Types.hs:77:1-7
   signal ds1_42                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_302                                  : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_172\                             : signed(47 downto 0);
-  signal \c$case_alt_127\                            : clash_lowpass_fir_types.Frame;
+  signal result_325                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Distortion.hs:587:1-18
+  signal \c$x_app_arg_49\                            : signed(47 downto 0);
+  signal \c$case_alt_140\                            : signed(23 downto 0);
+  signal result_326                                  : signed(23 downto 0);
+  signal result_327                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:587:1-18
+  signal x_135                                       : signed(23 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal x_136                                       : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal ds1_43                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_328                                  : clash_lowpass_fir_types.Maybe;
+  signal \c$app_arg_193\                             : signed(47 downto 0);
+  signal \c$case_alt_141\                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_34                                     : unsigned(11 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratHighpassPipe                             : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_303                                  : clash_lowpass_fir_types.Maybe;
+  signal result_329                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/FixedPoint.hs:52:1-7
-  signal x_135                                       : signed(47 downto 0);
-  signal \c$case_alt_128\                            : signed(23 downto 0);
-  signal result_304                                  : signed(23 downto 0);
-  signal result_305                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:552:1-16
-  signal x_136                                       : signed(23 downto 0);
+  signal x_137                                       : signed(47 downto 0);
+  signal \c$case_alt_142\                            : signed(23 downto 0);
+  signal result_330                                  : signed(23 downto 0);
+  signal result_331                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:571:1-16
+  signal x_138                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratHpOutPrev                                : signed(23 downto 0) := to_signed(0,24);
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -1826,45 +1946,45 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$ratHpInPrev_app_arg\                     : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_137                                       : clash_lowpass_fir_types.Frame;
+  signal x_139                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_138                                       : clash_lowpass_fir_types.Frame;
+  signal x_140                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal ds1_43                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_306                                  : clash_lowpass_fir_types.Maybe;
-  signal result_307                                  : clash_lowpass_fir_types.Frame;
+  signal ds1_44                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_332                                  : clash_lowpass_fir_types.Maybe;
+  signal result_333                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion.hs:70:1-20
-  signal x_139                                       : signed(23 downto 0);
-  signal \c$case_alt_129\                            : signed(23 downto 0);
-  signal result_308                                  : signed(23 downto 0);
+  signal x_141                                       : signed(23 downto 0);
+  signal \c$case_alt_143\                            : signed(23 downto 0);
+  signal result_334                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:70:1-20
-  signal \c$x_app_arg_49\                            : signed(47 downto 0);
+  signal \c$x_app_arg_50\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_35                                     : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:70:1-20
-  signal \c$x_app_arg_50\                            : std_logic_vector(31 downto 0);
+  signal \c$x_app_arg_51\                            : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal distToneBlendPipe                           : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_309                                  : clash_lowpass_fir_types.Maybe;
-  signal result_310                                  : clash_lowpass_fir_types.Frame;
+  signal result_335                                  : clash_lowpass_fir_types.Maybe;
+  signal result_336                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion.hs:63:1-24
-  signal x_140                                       : signed(23 downto 0);
-  signal \c$case_alt_130\                            : signed(23 downto 0);
-  signal result_311                                  : signed(23 downto 0);
+  signal x_142                                       : signed(23 downto 0);
+  signal \c$case_alt_144\                            : signed(23 downto 0);
+  signal result_337                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:63:1-24
-  signal \c$x_app_arg_51\                            : signed(47 downto 0);
+  signal \c$x_app_arg_52\                            : signed(47 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_141                                       : clash_lowpass_fir_types.Frame;
+  signal x_143                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_44                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_312                                  : clash_lowpass_fir_types.Maybe;
-  signal result_313                                  : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_173\                             : signed(47 downto 0);
+  signal ds1_45                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_338                                  : clash_lowpass_fir_types.Maybe;
+  signal result_339                                  : clash_lowpass_fir_types.Frame;
+  signal \c$app_arg_194\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_36                                     : unsigned(7 downto 0);
-  signal \c$app_arg_174\                             : signed(47 downto 0);
+  signal \c$app_arg_195\                             : signed(47 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:50:1-27
-  signal \on_6\                                      : boolean;
+  signal \on_7\                                      : boolean;
   -- src/AudioLab/Effects/Distortion.hs:50:1-27
   signal tone_0                                      : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:50:1-27
@@ -1874,40 +1994,40 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$distTonePrev_app_arg\                    : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_142                                       : clash_lowpass_fir_types.Frame;
+  signal x_144                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_143                                       : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Types.hs:77:1-7
-  signal ds1_45                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_314                                  : clash_lowpass_fir_types.Maybe;
-  signal result_315                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:43:1-24
-  signal x_144                                       : signed(23 downto 0);
-  signal result_316                                  : signed(23 downto 0);
-  signal \c$case_alt_131\                            : signed(23 downto 0);
-  signal \c$app_arg_175\                             : signed(23 downto 0);
-  -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_145                                       : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Pipeline.hs:53:1-10
+  -- src/AudioLab/Types.hs:77:1-7
   signal ds1_46                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_317                                  : clash_lowpass_fir_types.Maybe;
-  signal result_318                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion.hs:37:1-25
+  signal result_340                                  : clash_lowpass_fir_types.Maybe;
+  signal result_341                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:43:1-24
   signal x_146                                       : signed(23 downto 0);
-  signal \c$case_alt_132\                            : signed(23 downto 0);
-  signal result_319                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion.hs:37:1-25
-  signal \c$x_app_arg_52\                            : signed(47 downto 0);
+  signal result_342                                  : signed(23 downto 0);
+  signal \c$case_alt_145\                            : signed(23 downto 0);
+  signal \c$app_arg_196\                             : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_147                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_47                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_320                                  : clash_lowpass_fir_types.Maybe;
-  signal result_321                                  : clash_lowpass_fir_types.Frame;
-  signal result_322                                  : signed(24 downto 0);
+  signal result_343                                  : clash_lowpass_fir_types.Maybe;
+  signal result_344                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Distortion.hs:37:1-25
+  signal x_148                                       : signed(23 downto 0);
+  signal \c$case_alt_146\                            : signed(23 downto 0);
+  signal result_345                                  : signed(23 downto 0);
+  -- src/AudioLab/Effects/Distortion.hs:37:1-25
+  signal \c$x_app_arg_53\                            : signed(47 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal x_149                                       : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal ds1_48                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_346                                  : clash_lowpass_fir_types.Maybe;
+  signal result_347                                  : clash_lowpass_fir_types.Frame;
+  signal result_348                                  : signed(24 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:22:1-28
-  signal rawThreshold_0                              : signed(24 downto 0);
-  signal \c$app_arg_176\                             : signed(47 downto 0);
+  signal rawThreshold_1                              : signed(24 downto 0);
+  signal \c$app_arg_197\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_37                                     : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Distortion.hs:22:1-28
@@ -1915,68 +2035,68 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Distortion.hs:22:1-28
   signal \c$amount_app_arg\                          : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_148                                       : clash_lowpass_fir_types.Frame;
+  signal x_150                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_48                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_323                                  : clash_lowpass_fir_types.Maybe;
-  signal result_324                                  : clash_lowpass_fir_types.Frame;
+  signal ds1_49                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_349                                  : clash_lowpass_fir_types.Maybe;
+  signal result_350                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Overdrive.hs:210:1-19
-  signal x_149                                       : signed(23 downto 0);
-  signal result_325                                  : signed(23 downto 0);
-  signal \c$app_arg_177\                             : signed(24 downto 0);
-  signal \c$app_arg_178\                             : signed(24 downto 0);
-  signal result_326                                  : signed(23 downto 0);
-  signal \c$app_arg_179\                             : signed(24 downto 0);
-  signal \c$app_arg_180\                             : signed(24 downto 0);
-  signal \c$app_arg_181\                             : signed(24 downto 0);
+  signal x_151                                       : signed(23 downto 0);
+  signal result_351                                  : signed(23 downto 0);
+  signal \c$app_arg_198\                             : signed(24 downto 0);
+  signal \c$app_arg_199\                             : signed(24 downto 0);
+  signal result_352                                  : signed(23 downto 0);
+  signal \c$app_arg_200\                             : signed(24 downto 0);
+  signal \c$app_arg_201\                             : signed(24 downto 0);
+  signal \c$app_arg_202\                             : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:96:1-9
   signal negKnee_4                                   : signed(23 downto 0);
-  signal \c$case_alt_133\                            : signed(23 downto 0);
-  signal result_327                                  : signed(23 downto 0);
+  signal \c$case_alt_147\                            : signed(23 downto 0);
+  signal result_353                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:210:1-19
-  signal \c$x_app_arg_53\                            : signed(47 downto 0);
+  signal \c$x_app_arg_54\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_38                                     : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
-  signal x_150                                       : signed(23 downto 0);
-  signal \c$case_alt_134\                            : signed(23 downto 0);
-  signal result_328                                  : signed(23 downto 0);
+  signal x_152                                       : signed(23 downto 0);
+  signal \c$case_alt_148\                            : signed(23 downto 0);
+  signal result_354                                  : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
-  signal \c$x_app_arg_54\                            : signed(47 downto 0);
+  signal \c$x_app_arg_55\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_39                                     : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:152:1-12
   signal y_0                                         : unsigned(8 downto 0);
-  signal result_329                                  : unsigned(8 downto 0);
-  signal result_330                                  : unsigned(7 downto 0);
+  signal result_355                                  : unsigned(8 downto 0);
+  signal result_356                                  : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:210:1-19
-  signal \c$x_app_arg_55\                            : signed(23 downto 0);
+  signal \c$x_app_arg_56\                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:210:1-19
   signal model_0                                     : unsigned(2 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:210:1-19
   signal \c$model_app_arg\                           : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal odToneBlendPipe                             : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_331                                  : clash_lowpass_fir_types.Maybe;
+  signal result_357                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Overdrive.hs:198:1-23
-  signal \c$x_app_arg_56\                            : signed(47 downto 0);
-  signal \c$case_alt_135\                            : signed(23 downto 0);
-  signal result_332                                  : signed(23 downto 0);
-  signal result_333                                  : clash_lowpass_fir_types.Frame;
+  signal \c$x_app_arg_57\                            : signed(47 downto 0);
+  signal \c$case_alt_149\                            : signed(23 downto 0);
+  signal result_358                                  : signed(23 downto 0);
+  signal result_359                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Overdrive.hs:198:1-23
-  signal x_151                                       : signed(23 downto 0);
+  signal x_153                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_152                                       : clash_lowpass_fir_types.Frame;
+  signal x_154                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_49                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_334                                  : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_182\                             : signed(47 downto 0);
-  signal \c$app_arg_183\                             : signed(47 downto 0);
-  signal result_335                                  : clash_lowpass_fir_types.Frame;
+  signal ds1_50                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_360                                  : clash_lowpass_fir_types.Maybe;
+  signal \c$app_arg_203\                             : signed(47 downto 0);
+  signal \c$app_arg_204\                             : signed(47 downto 0);
+  signal result_361                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_40                                     : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:185:1-26
-  signal \on_7\                                      : boolean;
+  signal \on_8\                                      : boolean;
   -- src/AudioLab/Effects/Overdrive.hs:185:1-26
   signal tone_1                                      : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -1984,80 +2104,80 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$odTonePrev_app_arg\                      : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_153                                       : clash_lowpass_fir_types.Frame;
+  signal x_155                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_154                                       : clash_lowpass_fir_types.Frame;
+  signal x_156                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal ds1_50                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_336                                  : clash_lowpass_fir_types.Maybe;
+  signal ds1_51                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_362                                  : clash_lowpass_fir_types.Maybe;
   signal \c$odKneePOut\                              : signed(23 downto 0);
   signal \c$odKneeNOut\                              : signed(23 downto 0);
-  signal result_337                                  : signed(23 downto 0);
-  signal \c$app_arg_184\                             : signed(24 downto 0);
-  signal \c$app_arg_185\                             : signed(24 downto 0);
-  signal result_338                                  : signed(23 downto 0);
-  signal \c$app_arg_186\                             : signed(24 downto 0);
-  signal \c$app_arg_187\                             : signed(24 downto 0);
-  signal \c$app_arg_188\                             : signed(24 downto 0);
+  signal result_363                                  : signed(23 downto 0);
+  signal \c$app_arg_205\                             : signed(24 downto 0);
+  signal \c$app_arg_206\                             : signed(24 downto 0);
+  signal result_364                                  : signed(23 downto 0);
+  signal \c$app_arg_207\                             : signed(24 downto 0);
+  signal \c$app_arg_208\                             : signed(24 downto 0);
+  signal \c$app_arg_209\                             : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:142:1-16
   signal negKneeN_0                                  : signed(23 downto 0);
-  signal result_339                                  : signed(23 downto 0);
-  signal \c$app_arg_189\                             : signed(24 downto 0);
-  signal \c$app_arg_190\                             : signed(24 downto 0);
-  signal result_340                                  : signed(23 downto 0);
-  signal \c$app_arg_191\                             : signed(24 downto 0);
-  signal \c$app_arg_192\                             : signed(24 downto 0);
-  signal \c$app_arg_193\                             : signed(24 downto 0);
+  signal result_365                                  : signed(23 downto 0);
+  signal \c$app_arg_210\                             : signed(24 downto 0);
+  signal \c$app_arg_211\                             : signed(24 downto 0);
+  signal result_366                                  : signed(23 downto 0);
+  signal \c$app_arg_212\                             : signed(24 downto 0);
+  signal \c$app_arg_213\                             : signed(24 downto 0);
+  signal \c$app_arg_214\                             : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:126:1-16
   signal negKneeN_1                                  : signed(23 downto 0);
-  signal result_341                                  : signed(23 downto 0);
-  signal \c$app_arg_194\                             : signed(24 downto 0);
-  signal \c$app_arg_195\                             : signed(24 downto 0);
-  signal result_342                                  : signed(23 downto 0);
-  signal \c$app_arg_196\                             : signed(24 downto 0);
-  signal \c$app_arg_197\                             : signed(24 downto 0);
-  signal \c$app_arg_198\                             : signed(24 downto 0);
+  signal result_367                                  : signed(23 downto 0);
+  signal \c$app_arg_215\                             : signed(24 downto 0);
+  signal \c$app_arg_216\                             : signed(24 downto 0);
+  signal result_368                                  : signed(23 downto 0);
+  signal \c$app_arg_217\                             : signed(24 downto 0);
+  signal \c$app_arg_218\                             : signed(24 downto 0);
+  signal \c$app_arg_219\                             : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:107:1-12
   signal negKneeN_2                                  : signed(23 downto 0);
-  signal result_343                                  : signed(23 downto 0);
-  signal \c$app_arg_199\                             : signed(24 downto 0);
-  signal \c$app_arg_200\                             : signed(24 downto 0);
-  signal result_344                                  : signed(23 downto 0);
-  signal \c$app_arg_201\                             : signed(24 downto 0);
-  signal \c$app_arg_202\                             : signed(24 downto 0);
-  signal \c$app_arg_203\                             : signed(24 downto 0);
+  signal result_369                                  : signed(23 downto 0);
+  signal \c$app_arg_220\                             : signed(24 downto 0);
+  signal \c$app_arg_221\                             : signed(24 downto 0);
+  signal result_370                                  : signed(23 downto 0);
+  signal \c$app_arg_222\                             : signed(24 downto 0);
+  signal \c$app_arg_223\                             : signed(24 downto 0);
+  signal \c$app_arg_224\                             : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:134:1-15
   signal negKneeN_3                                  : signed(23 downto 0);
-  signal result_345                                  : signed(23 downto 0);
-  signal \c$app_arg_204\                             : signed(47 downto 0);
-  signal result_346                                  : clash_lowpass_fir_types.Frame;
+  signal result_371                                  : signed(23 downto 0);
+  signal \c$app_arg_225\                             : signed(47 downto 0);
+  signal result_372                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Overdrive.hs:169:1-23
-  signal x_155                                       : signed(23 downto 0);
+  signal x_157                                       : signed(23 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:169:1-23
-  signal \on_8\                                      : boolean;
+  signal \on_9\                                      : boolean;
   -- src/AudioLab/Effects/Overdrive.hs:169:1-23
   signal model_1                                     : unsigned(2 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:169:1-23
   signal ds36                                        : unsigned(1 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_156                                       : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_51                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_347                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Overdrive.hs:122:1-24
-  signal \c$x_app_arg_57\                            : signed(47 downto 0);
-  signal \c$case_alt_136\                            : signed(23 downto 0);
-  signal result_348                                  : signed(23 downto 0);
-  signal result_349                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Overdrive.hs:122:1-24
-  signal x_157                                       : signed(23 downto 0);
-  -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_158                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_52                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_350                                  : clash_lowpass_fir_types.Maybe;
-  signal \c$case_alt_137\                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_205\                             : signed(47 downto 0);
+  signal result_373                                  : clash_lowpass_fir_types.Maybe;
+  -- src/AudioLab/Effects/Overdrive.hs:122:1-24
+  signal \c$x_app_arg_58\                            : signed(47 downto 0);
+  signal \c$case_alt_150\                            : signed(23 downto 0);
+  signal result_374                                  : signed(23 downto 0);
+  signal result_375                                  : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Effects/Overdrive.hs:122:1-24
+  signal x_159                                       : signed(23 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal x_160                                       : clash_lowpass_fir_types.Frame;
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal ds1_53                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_376                                  : clash_lowpass_fir_types.Maybe;
+  signal \c$case_alt_151\                            : clash_lowpass_fir_types.Frame;
+  signal \c$app_arg_226\                             : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_41                                     : unsigned(11 downto 0);
   -- src/AudioLab/FixedPoint.hs:37:1-6
@@ -2065,87 +2185,87 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal \c$gain_app_arg_13\                         : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_159                                       : clash_lowpass_fir_types.Frame;
+  signal x_161                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_53                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_351                                  : clash_lowpass_fir_types.Maybe;
-  signal result_352                                  : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_138\                            : signed(23 downto 0);
-  signal result_353                                  : signed(23 downto 0);
+  signal ds1_54                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_377                                  : clash_lowpass_fir_types.Maybe;
+  signal result_378                                  : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_152\                            : signed(23 downto 0);
+  signal result_379                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Wah.hs:297:1-13
-  signal \c$x_app_arg_58\                            : signed(47 downto 0);
-  signal \c$app_arg_206\                             : unsigned(9 downto 0);
-  signal result_354                                  : unsigned(9 downto 0);
-  signal \c$app_arg_207\                             : std_logic;
-  signal \c$app_arg_208\                             : std_logic_vector(31 downto 0);
+  signal \c$x_app_arg_59\                            : signed(47 downto 0);
+  signal \c$app_arg_227\                             : unsigned(9 downto 0);
+  signal result_380                                  : unsigned(9 downto 0);
+  signal \c$app_arg_228\                             : std_logic;
+  signal \c$app_arg_229\                             : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal wahBand                                     : signed(23 downto 0) := to_signed(0,24);
-  signal \c$app_arg_209\                             : std_logic;
-  signal \c$app_arg_210\                             : signed(47 downto 0);
-  signal \c$case_alt_139\                            : signed(23 downto 0);
-  signal result_355                                  : signed(23 downto 0);
-  -- src/AudioLab/FixedPoint.hs:52:1-7
-  signal x_160                                       : signed(47 downto 0);
-  signal \c$case_alt_140\                            : signed(23 downto 0);
-  signal result_356                                  : signed(23 downto 0);
-  signal \c$case_alt_141\                            : signed(23 downto 0);
-  -- src/AudioLab/FixedPoint.hs:52:1-7
-  signal x_161                                       : signed(47 downto 0);
-  signal \c$case_alt_142\                            : signed(23 downto 0);
-  signal result_357                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Wah.hs:250:1-11
-  signal f_6                                         : clash_lowpass_fir_types.Frame;
-  signal result_358                                  : signed(23 downto 0);
-  -- src/AudioLab/Pipeline.hs:53:1-10
-  signal wahQBandR                                   : signed(23 downto 0) := to_signed(0,24);
-  signal result_359                                  : signed(23 downto 0);
-  signal \c$case_alt_143\                            : signed(23 downto 0);
-  signal \c$case_alt_144\                            : signed(23 downto 0);
-  signal result_360                                  : signed(23 downto 0);
-  signal \c$app_arg_211\                             : signed(47 downto 0);
-  -- src/AudioLab/Effects/Wah.hs:144:1-9
-  signal raw                                         : unsigned(7 downto 0);
-  signal result_361                                  : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Wah.hs:144:1-9
-  signal \c$raw_app_arg\                             : unsigned(7 downto 0);
-  signal \c$app_arg_212\                             : std_logic;
-  signal \c$app_arg_213\                             : std_logic_vector(31 downto 0);
-  -- src/AudioLab/Effects/Wah.hs:225:1-13
-  signal f_7                                         : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Pipeline.hs:53:1-10
-  signal wahLow                                      : signed(23 downto 0) := to_signed(0,24);
-  signal \c$app_arg_214\                             : std_logic;
-  signal \c$app_arg_215\                             : signed(47 downto 0);
-  signal \c$case_alt_145\                            : signed(23 downto 0);
-  signal result_362                                  : signed(23 downto 0);
+  signal \c$app_arg_230\                             : std_logic;
+  signal \c$app_arg_231\                             : signed(47 downto 0);
+  signal \c$case_alt_153\                            : signed(23 downto 0);
+  signal result_381                                  : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_162                                       : signed(47 downto 0);
-  signal \c$case_alt_146\                            : signed(23 downto 0);
-  signal result_363                                  : signed(23 downto 0);
-  signal \c$case_alt_147\                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Wah.hs:274:1-10
+  signal \c$case_alt_154\                            : signed(23 downto 0);
+  signal result_382                                  : signed(23 downto 0);
+  signal \c$case_alt_155\                            : signed(23 downto 0);
+  -- src/AudioLab/FixedPoint.hs:52:1-7
+  signal x_163                                       : signed(47 downto 0);
+  signal \c$case_alt_156\                            : signed(23 downto 0);
+  signal result_383                                  : signed(23 downto 0);
+  -- src/AudioLab/Effects/Wah.hs:250:1-11
+  signal f_7                                         : clash_lowpass_fir_types.Frame;
+  signal result_384                                  : signed(23 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal wahQBandR                                   : signed(23 downto 0) := to_signed(0,24);
+  signal result_385                                  : signed(23 downto 0);
+  signal \c$case_alt_157\                            : signed(23 downto 0);
+  signal \c$case_alt_158\                            : signed(23 downto 0);
+  signal result_386                                  : signed(23 downto 0);
+  signal \c$app_arg_232\                             : signed(47 downto 0);
+  -- src/AudioLab/Effects/Wah.hs:144:1-9
+  signal raw                                         : unsigned(7 downto 0);
+  signal result_387                                  : unsigned(7 downto 0);
+  -- src/AudioLab/Effects/Wah.hs:144:1-9
+  signal \c$raw_app_arg\                             : unsigned(7 downto 0);
+  signal \c$app_arg_233\                             : std_logic;
+  signal \c$app_arg_234\                             : std_logic_vector(31 downto 0);
+  -- src/AudioLab/Effects/Wah.hs:225:1-13
   signal f_8                                         : clash_lowpass_fir_types.Frame;
-  signal result_364                                  : signed(23 downto 0);
+  -- src/AudioLab/Pipeline.hs:53:1-10
+  signal wahLow                                      : signed(23 downto 0) := to_signed(0,24);
+  signal \c$app_arg_235\                             : std_logic;
+  signal \c$app_arg_236\                             : signed(47 downto 0);
+  signal \c$case_alt_159\                            : signed(23 downto 0);
+  signal result_388                                  : signed(23 downto 0);
+  -- src/AudioLab/FixedPoint.hs:52:1-7
+  signal x_164                                       : signed(47 downto 0);
+  signal \c$case_alt_160\                            : signed(23 downto 0);
+  signal result_389                                  : signed(23 downto 0);
+  signal \c$case_alt_161\                            : signed(23 downto 0);
+  -- src/AudioLab/Effects/Wah.hs:274:1-10
+  signal f_9                                         : clash_lowpass_fir_types.Frame;
+  signal result_390                                  : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal wahFByteR                                   : unsigned(7 downto 0) := to_unsigned(0,8);
-  signal result_365                                  : unsigned(7 downto 0);
-  signal \c$case_alt_148\                            : unsigned(7 downto 0);
+  signal result_391                                  : unsigned(7 downto 0);
+  signal \c$case_alt_162\                            : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Wah.hs:120:1-15
   signal biasByte                                    : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Wah.hs:120:1-15
   signal baseSigned                                  : signed(17 downto 0);
   -- src/AudioLab/Effects/Wah.hs:120:1-15
-  signal x_163                                       : signed(17 downto 0);
-  signal result_366                                  : unsigned(7 downto 0);
-  signal \c$case_alt_149\                            : unsigned(7 downto 0);
-  signal \c$app_arg_216\                             : signed(63 downto 0);
+  signal x_165                                       : signed(17 downto 0);
+  signal result_392                                  : unsigned(7 downto 0);
+  signal \c$case_alt_163\                            : unsigned(7 downto 0);
+  signal \c$app_arg_237\                             : signed(63 downto 0);
   -- src/AudioLab/Effects/Wah.hs:120:1-15
-  signal \c$x_app_arg_59\                            : signed(17 downto 0);
-  signal result_367                                  : unsigned(7 downto 0);
-  signal result_368                                  : unsigned(15 downto 0);
-  signal \c$case_alt_150\                            : unsigned(15 downto 0);
-  signal \c$case_alt_151\                            : unsigned(15 downto 0);
-  signal \c$app_arg_217\                             : unsigned(15 downto 0);
+  signal \c$x_app_arg_60\                            : signed(17 downto 0);
+  signal result_393                                  : unsigned(7 downto 0);
+  signal result_394                                  : unsigned(15 downto 0);
+  signal \c$case_alt_164\                            : unsigned(15 downto 0);
+  signal \c$case_alt_165\                            : unsigned(15 downto 0);
+  signal \c$app_arg_238\                             : unsigned(15 downto 0);
   signal \c$tupIn\                                   : clash_lowpass_fir_types.Tuple2_1;
   signal \c$tupIn_case_alt\                          : clash_lowpass_fir_types.Tuple2_1;
   signal \c$tupIn_case_alt_0\                        : clash_lowpass_fir_types.Tuple2_1;
@@ -2153,32 +2273,32 @@ architecture structural of clash_lowpass_fir is
   signal \c$tupIn_case_scrut\                        : boolean;
   signal \c$tupIn_case_scrut_0\                      : boolean;
   signal \c$tupIn_case_scrut_1\                      : boolean;
-  signal \c$app_arg_218\                             : std_logic;
-  signal \c$app_arg_219\                             : unsigned(7 downto 0);
+  signal \c$app_arg_239\                             : std_logic;
+  signal \c$app_arg_240\                             : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Wah.hs:216:1-13
-  signal f_9                                         : clash_lowpass_fir_types.Frame;
+  signal f_10                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal wahPosSmooth                                : unsigned(7 downto 0) := to_unsigned(0,8);
-  signal result_369                                  : unsigned(7 downto 0);
-  signal \c$case_alt_152\                            : unsigned(7 downto 0);
-  signal result_370                                  : signed(63 downto 0);
-  signal \c$case_alt_153\                            : signed(63 downto 0);
-  signal result_371                                  : signed(63 downto 0);
-  signal \c$case_alt_154\                            : signed(63 downto 0);
-  signal \c$case_alt_155\                            : signed(63 downto 0);
+  signal result_395                                  : unsigned(7 downto 0);
+  signal \c$case_alt_166\                            : unsigned(7 downto 0);
+  signal result_396                                  : signed(63 downto 0);
+  signal \c$case_alt_167\                            : signed(63 downto 0);
+  signal result_397                                  : signed(63 downto 0);
+  signal \c$case_alt_168\                            : signed(63 downto 0);
+  signal \c$case_alt_169\                            : signed(63 downto 0);
   -- src/AudioLab/Effects/Wah.hs:181:1-16
   signal nudged                                      : signed(10 downto 0);
-  signal result_372                                  : signed(63 downto 0);
-  signal \c$case_alt_156\                            : signed(63 downto 0);
-  signal \c$case_alt_157\                            : signed(63 downto 0);
+  signal result_398                                  : signed(63 downto 0);
+  signal \c$case_alt_170\                            : signed(63 downto 0);
+  signal \c$case_alt_171\                            : signed(63 downto 0);
   -- src/AudioLab/Effects/Wah.hs:181:1-16
   signal nudged_0                                    : signed(10 downto 0);
-  signal result_373                                  : signed(63 downto 0);
-  signal \c$case_alt_158\                            : signed(63 downto 0);
-  signal \c$case_alt_159\                            : signed(63 downto 0);
+  signal result_399                                  : signed(63 downto 0);
+  signal \c$case_alt_172\                            : signed(63 downto 0);
+  signal \c$case_alt_173\                            : signed(63 downto 0);
   -- src/AudioLab/Effects/Wah.hs:181:1-16
   signal nudged_1                                    : signed(10 downto 0);
-  signal \c$app_arg_220\                             : boolean;
+  signal \c$app_arg_241\                             : boolean;
   -- src/AudioLab/Effects/Wah.hs:181:1-16
   signal stepDelta                                   : signed(10 downto 0);
   -- src/AudioLab/Effects/Wah.hs:181:1-16
@@ -2186,65 +2306,65 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Wah.hs:181:1-16
   signal prevSigned                                  : signed(10 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
-  signal x_164                                       : unsigned(7 downto 0);
-  signal \c$app_arg_221\                             : std_logic;
-  signal \c$app_arg_222\                             : std_logic_vector(31 downto 0);
+  signal x_166                                       : unsigned(7 downto 0);
+  signal \c$app_arg_242\                             : std_logic;
+  signal \c$app_arg_243\                             : std_logic_vector(31 downto 0);
   -- src/AudioLab/Effects/Wah.hs:181:1-16
-  signal f_10                                        : clash_lowpass_fir_types.Frame;
+  signal f_11                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_165                                       : clash_lowpass_fir_types.Frame;
+  signal x_167                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal compMakeupPipe                              : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_374                                  : clash_lowpass_fir_types.Maybe;
-  signal result_375                                  : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_160\                            : signed(23 downto 0);
-  signal result_376                                  : signed(23 downto 0);
+  signal result_400                                  : clash_lowpass_fir_types.Maybe;
+  signal result_401                                  : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_174\                            : signed(23 downto 0);
+  signal result_402                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:168:1-15
-  signal \c$x_app_arg_60\                            : signed(47 downto 0);
+  signal \c$x_app_arg_61\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal gain_42                                     : unsigned(8 downto 0);
-  signal \c$app_arg_223\                             : std_logic;
-  signal \c$app_arg_224\                             : unsigned(7 downto 0);
+  signal \c$app_arg_244\                             : std_logic;
+  signal \c$app_arg_245\                             : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_166                                       : clash_lowpass_fir_types.Frame;
+  signal x_168                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_54                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_377                                  : clash_lowpass_fir_types.Maybe;
-  signal result_378                                  : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_161\                            : signed(23 downto 0);
-  signal result_379                                  : signed(23 downto 0);
+  signal ds1_55                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_403                                  : clash_lowpass_fir_types.Maybe;
+  signal result_404                                  : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_175\                            : signed(23 downto 0);
+  signal result_405                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:157:1-14
-  signal \c$x_app_arg_61\                            : signed(47 downto 0);
-  signal \c$app_arg_225\                             : std_logic;
+  signal \c$x_app_arg_62\                            : signed(47 downto 0);
+  signal \c$app_arg_246\                             : std_logic;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal compGain                                    : unsigned(11 downto 0) := to_unsigned(4095,12);
   -- src/AudioLab/Effects/Compressor.hs:144:1-14
-  signal \on_9\                                      : boolean;
+  signal \on_10\                                     : boolean;
   -- src/AudioLab/Effects/Compressor.hs:144:1-14
   signal target                                      : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:144:1-14
   signal step                                        : unsigned(11 downto 0);
-  signal \c$case_alt_162\                            : unsigned(11 downto 0);
-  signal \c$case_alt_163\                            : unsigned(11 downto 0);
-  signal \c$case_alt_164\                            : unsigned(11 downto 0);
-  signal \c$case_alt_165\                            : unsigned(11 downto 0);
-  signal \c$case_alt_166\                            : unsigned(11 downto 0);
-  signal result_380                                  : unsigned(11 downto 0);
+  signal \c$case_alt_176\                            : unsigned(11 downto 0);
+  signal \c$case_alt_177\                            : unsigned(11 downto 0);
+  signal \c$case_alt_178\                            : unsigned(11 downto 0);
+  signal \c$case_alt_179\                            : unsigned(11 downto 0);
+  signal \c$case_alt_180\                            : unsigned(11 downto 0);
+  signal result_406                                  : unsigned(11 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$compGain_app_arg\                        : clash_lowpass_fir_types.Maybe_1 := std_logic_vector'("0" & "-------------------------");
-  signal result_381                                  : clash_lowpass_fir_types.Maybe_1;
-  signal \c$app_arg_226\                             : unsigned(11 downto 0);
-  signal \c$app_arg_227\                             : unsigned(11 downto 0);
-  signal \c$case_alt_167\                            : unsigned(11 downto 0);
+  signal result_407                                  : clash_lowpass_fir_types.Maybe_1;
+  signal \c$app_arg_247\                             : unsigned(11 downto 0);
+  signal \c$app_arg_248\                             : unsigned(11 downto 0);
+  signal \c$case_alt_181\                            : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
-  signal \on_10\                                     : boolean;
-  signal \c$case_alt_168\                            : unsigned(11 downto 0);
+  signal \on_11\                                     : boolean;
+  signal \c$case_alt_182\                            : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
   signal \c$on_app_arg\                              : std_logic;
-  signal result_382                                  : unsigned(11 downto 0);
+  signal result_408                                  : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
   signal reduction24                                 : unsigned(23 downto 0);
-  signal result_383                                  : signed(23 downto 0);
+  signal result_409                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:81:1-16
   signal \c$s_case_alt\                              : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
@@ -2255,16 +2375,16 @@ architecture structural of clash_lowpass_fir is
   signal \c$excessShifted_app_arg_0\                 : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
   signal excess                                      : signed(23 downto 0);
-  signal result_384                                  : signed(23 downto 0);
+  signal result_410                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
   signal \c$softThreshold_app_arg\                   : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:65:1-19
   signal base                                        : signed(23 downto 0);
-  signal result_385                                  : signed(23 downto 0);
-  signal \c$app_arg_228\                             : signed(23 downto 0);
+  signal result_411                                  : signed(23 downto 0);
+  signal \c$app_arg_249\                             : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
-  signal x_167                                       : unsigned(7 downto 0);
-  signal result_386                                  : unsigned(7 downto 0);
+  signal x_169                                       : unsigned(7 downto 0);
+  signal result_412                                  : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
   signal \c$raw_app_arg_0\                           : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
@@ -2274,20 +2394,20 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
   signal \c$responseDistance_app_arg\                : std_logic_vector(31 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:109:1-14
-  signal f_11                                        : clash_lowpass_fir_types.Frame;
+  signal f_12                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal compEnv                                     : signed(23 downto 0) := to_signed(0,24);
-  signal result_387                                  : signed(23 downto 0);
-  signal \c$case_alt_169\                            : signed(23 downto 0);
-  signal result_388                                  : signed(23 downto 0);
-  signal \c$case_alt_170\                            : signed(23 downto 0);
-  signal result_389                                  : signed(23 downto 0);
-  signal result_390                                  : signed(23 downto 0);
+  signal result_413                                  : signed(23 downto 0);
+  signal \c$case_alt_183\                            : signed(23 downto 0);
+  signal result_414                                  : signed(23 downto 0);
+  signal \c$case_alt_184\                            : signed(23 downto 0);
+  signal result_415                                  : signed(23 downto 0);
+  signal result_416                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:88:1-11
   signal releaseStep                                 : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:88:1-11
   signal \c$releaseStep_app_arg\                     : signed(24 downto 0);
-  signal result_391                                  : signed(23 downto 0);
+  signal result_417                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:88:1-11
   signal raw_0                                       : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:88:1-11
@@ -2296,89 +2416,89 @@ architecture structural of clash_lowpass_fir is
   signal \c$raw_app_arg_3\                           : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:88:1-11
   signal distance                                    : unsigned(7 downto 0);
-  signal \c$app_arg_229\                             : std_logic;
-  signal \c$app_arg_230\                             : std_logic_vector(31 downto 0);
+  signal \c$app_arg_250\                             : std_logic;
+  signal \c$app_arg_251\                             : std_logic_vector(31 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:88:1-11
-  signal f_12                                        : clash_lowpass_fir_types.Frame;
+  signal f_13                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_168                                       : clash_lowpass_fir_types.Frame;
+  signal x_170                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal compLevelPipe                               : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_392                                  : clash_lowpass_fir_types.Maybe;
-  signal result_393                                  : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_171\                            : signed(23 downto 0);
-  signal result_394                                  : signed(23 downto 0);
+  signal result_418                                  : clash_lowpass_fir_types.Maybe;
+  signal result_419                                  : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_185\                            : signed(23 downto 0);
+  signal result_420                                  : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_169                                       : clash_lowpass_fir_types.Frame;
+  signal x_171                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_55                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_395                                  : clash_lowpass_fir_types.Maybe;
-  signal result_396                                  : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_172\                            : signed(23 downto 0);
-  signal result_397                                  : signed(23 downto 0);
+  signal ds1_56                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal result_421                                  : clash_lowpass_fir_types.Maybe;
+  signal result_422                                  : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_186\                            : signed(23 downto 0);
+  signal result_423                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:52:1-9
-  signal \c$x_app_arg_62\                            : signed(47 downto 0);
+  signal \c$x_app_arg_63\                            : signed(47 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal nsGain                                      : unsigned(11 downto 0) := to_unsigned(4095,12);
-  signal result_398                                  : unsigned(11 downto 0);
-  signal \c$case_alt_173\                            : unsigned(11 downto 0);
-  signal \c$case_alt_174\                            : unsigned(11 downto 0);
-  signal result_399                                  : unsigned(11 downto 0);
-  signal \c$case_alt_175\                            : unsigned(11 downto 0);
+  signal result_424                                  : unsigned(11 downto 0);
+  signal \c$case_alt_187\                            : unsigned(11 downto 0);
+  signal \c$case_alt_188\                            : unsigned(11 downto 0);
+  signal result_425                                  : unsigned(11 downto 0);
+  signal \c$case_alt_189\                            : unsigned(11 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:163:1-10
-  signal f_13                                        : clash_lowpass_fir_types.Frame;
-  signal result_400                                  : unsigned(11 downto 0);
-  signal result_401                                  : unsigned(11 downto 0);
-  signal result_402                                  : unsigned(11 downto 0);
-  signal \c$case_alt_176\                            : unsigned(11 downto 0);
-  signal \c$app_arg_231\                             : signed(23 downto 0);
+  signal f_14                                        : clash_lowpass_fir_types.Frame;
+  signal result_426                                  : unsigned(11 downto 0);
+  signal result_427                                  : unsigned(11 downto 0);
+  signal result_428                                  : unsigned(11 downto 0);
+  signal \c$case_alt_190\                            : unsigned(11 downto 0);
+  signal \c$app_arg_252\                             : signed(23 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:147:1-12
   signal threshold                                   : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
-  signal x_170                                       : unsigned(7 downto 0);
-  signal result_403                                  : unsigned(11 downto 0);
-  signal result_404                                  : unsigned(15 downto 0);
-  signal \c$app_arg_232\                             : unsigned(15 downto 0);
+  signal x_172                                       : unsigned(7 downto 0);
+  signal result_429                                  : unsigned(11 downto 0);
+  signal result_430                                  : unsigned(15 downto 0);
+  signal \c$app_arg_253\                             : unsigned(15 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:97:1-12
   signal inv8                                        : unsigned(7 downto 0);
   signal \c$nsClosedGainOut_app_arg\                 : std_logic_vector(31 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:108:1-11
   signal raw_1                                       : unsigned(7 downto 0);
-  signal result_405                                  : unsigned(11 downto 0);
-  signal result_406                                  : unsigned(11 downto 0);
+  signal result_431                                  : unsigned(11 downto 0);
+  signal result_432                                  : unsigned(11 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal nsEnv                                       : signed(23 downto 0) := to_signed(0,24);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:120:1-9
   signal \c$releaseStep_app_arg_0\                   : signed(24 downto 0);
-  signal result_407                                  : signed(23 downto 0);
-  signal result_408                                  : signed(23 downto 0);
-  signal \c$case_alt_177\                            : signed(23 downto 0);
+  signal result_433                                  : signed(23 downto 0);
+  signal result_434                                  : signed(23 downto 0);
+  signal \c$case_alt_191\                            : signed(23 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:120:1-9
-  signal f_14                                        : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_178\                            : signed(23 downto 0);
-  signal result_409                                  : signed(23 downto 0);
+  signal f_15                                        : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_192\                            : signed(23 downto 0);
+  signal result_435                                  : signed(23 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:120:1-9
   signal releaseStep_0                               : signed(23 downto 0);
-  signal result_410                                  : signed(23 downto 0);
+  signal result_436                                  : signed(23 downto 0);
   -- src/AudioLab/Types.hs:77:1-7
-  signal x_171                                       : clash_lowpass_fir_types.Frame;
+  signal x_173                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal nsLevelPipe                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-  signal result_411                                  : clash_lowpass_fir_types.Maybe;
-  signal result_412                                  : clash_lowpass_fir_types.Frame;
-  signal \c$case_alt_179\                            : signed(23 downto 0);
-  signal result_413                                  : signed(23 downto 0);
+  signal result_437                                  : clash_lowpass_fir_types.Maybe;
+  signal result_438                                  : clash_lowpass_fir_types.Frame;
+  signal \c$case_alt_193\                            : signed(23 downto 0);
+  signal result_439                                  : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal x_172                                       : clash_lowpass_fir_types.Frame;
+  signal x_174                                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal ds1_56                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+  signal ds1_57                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   -- src/AudioLab/Axis.hs:15:1-9
   signal validIn                                     : boolean;
-  signal result_414                                  : clash_lowpass_fir_types.Tuple2_2;
-  signal \c$app_arg_233\                             : std_logic_vector(47 downto 0);
+  signal result_440                                  : clash_lowpass_fir_types.Tuple2_2;
+  signal \c$app_arg_254\                             : std_logic_vector(47 downto 0);
   -- src/AudioLab/Axis.hs:15:1-9
   signal mono_0                                      : signed(23 downto 0);
-  signal result_415                                  : clash_lowpass_fir_types.Maybe;
+  signal result_441                                  : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$reverbAddr_case_alt\                     : clash_lowpass_fir_types.index_1024;
   -- src/LowPassFir.hs:80:1-8
@@ -2386,8 +2506,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2                                         : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_6                                         : boolean;
-  signal result_416                                  : std_logic_vector(31 downto 0);
+  signal b_13                                        : boolean;
+  signal result_442                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg\                               : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2397,8 +2517,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_0                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_7                                         : boolean;
-  signal result_417                                  : std_logic_vector(31 downto 0);
+  signal b_14                                        : boolean;
+  signal result_443                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_0\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2408,8 +2528,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_1                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_8                                         : boolean;
-  signal result_418                                  : std_logic_vector(31 downto 0);
+  signal b_15                                        : boolean;
+  signal result_444                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_1\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2419,8 +2539,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_2                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_9                                         : boolean;
-  signal result_419                                  : std_logic_vector(31 downto 0);
+  signal b_16                                        : boolean;
+  signal result_445                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_2\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2430,8 +2550,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_3                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_10                                        : boolean;
-  signal result_420                                  : std_logic_vector(31 downto 0);
+  signal b_17                                        : boolean;
+  signal result_446                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_3\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2441,8 +2561,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_4                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_11                                        : boolean;
-  signal result_421                                  : std_logic_vector(31 downto 0);
+  signal b_18                                        : boolean;
+  signal result_447                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_4\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2452,8 +2572,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_5                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_12                                        : boolean;
-  signal result_422                                  : std_logic_vector(31 downto 0);
+  signal b_19                                        : boolean;
+  signal result_448                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_5\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2463,8 +2583,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_6                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_13                                        : boolean;
-  signal result_423                                  : std_logic_vector(31 downto 0);
+  signal b_20                                        : boolean;
+  signal result_449                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_6\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2474,8 +2594,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_7                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_14                                        : boolean;
-  signal result_424                                  : std_logic_vector(31 downto 0);
+  signal b_21                                        : boolean;
+  signal result_450                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_7\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2485,8 +2605,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_8                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_15                                        : boolean;
-  signal result_425                                  : std_logic_vector(31 downto 0);
+  signal b_22                                        : boolean;
+  signal result_451                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_8\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2496,8 +2616,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_9                                       : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_16                                        : boolean;
-  signal result_426                                  : std_logic_vector(31 downto 0);
+  signal b_23                                        : boolean;
+  signal result_452                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_9\                             : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2507,8 +2627,8 @@ architecture structural of clash_lowpass_fir is
   -- src/LowPassFir.hs:80:1-8
   signal ff2_10                                      : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
-  signal b_17                                        : boolean;
-  signal result_427                                  : std_logic_vector(31 downto 0);
+  signal b_24                                        : boolean;
+  signal result_453                                  : std_logic_vector(31 downto 0);
   -- src/LowPassFir.hs:80:1-8
   signal \c$b_app_arg_10\                            : std_logic_vector(31 downto 0) := std_logic_vector'(x"00000000");
   -- src/LowPassFir.hs:80:1-8
@@ -2948,6 +3068,14 @@ architecture structural of clash_lowpass_fir is
   signal \c$shI_117\                                 : signed(63 downto 0);
   signal \c$case_alt_selection_res_70\               : boolean;
   signal result_selection_res_86                     : boolean;
+  signal \c$vec_0\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_3_3_3                     : clash_lowpass_fir_types.Tuple2_4;
+  signal \c$vec_1\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_3_3                       : clash_lowpass_fir_types.Tuple2_4;
+  signal \c$vec_2\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_3                         : clash_lowpass_fir_types.Tuple2_4;
+  signal \c$vec_3\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection                           : clash_lowpass_fir_types.Tuple2_4;
   signal result_selection_res_87                     : boolean;
   signal \c$case_alt_selection_res_71\               : boolean;
   signal \c$case_alt_selection_res_72\               : boolean;
@@ -2967,14 +3095,6 @@ architecture structural of clash_lowpass_fir is
   signal \c$shI_122\                                 : signed(63 downto 0);
   signal result_selection_res_93                     : boolean;
   signal \c$case_alt_selection_res_77\               : boolean;
-  signal \c$vec_0\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
-  signal result_sel_alt_730_5_3_3                    : clash_lowpass_fir_types.Tuple2_4;
-  signal \c$vec_1\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
-  signal result_sel_alt_730_5_3                      : clash_lowpass_fir_types.Tuple2_4;
-  signal \c$vec_2\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
-  signal result_sel_alt_730_5                        : clash_lowpass_fir_types.Tuple2_4;
-  signal \c$vec_3\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
-  signal result_sel_alt_730                          : clash_lowpass_fir_types.Tuple2_4;
   signal \c$case_alt_selection_res_78\               : boolean;
   signal result_selection_res_94                     : boolean;
   signal \c$shI_123\                                 : signed(63 downto 0);
@@ -3090,229 +3210,279 @@ architecture structural of clash_lowpass_fir is
   signal result_selection_res_112                    : boolean;
   signal x_selection_res_20                          : std_logic_vector(0 downto 0);
   signal \c$bv_165\                                  : std_logic_vector(31 downto 0);
-  signal result_selection_res_113                    : boolean;
-  signal result_selection_res_114                    : boolean;
+  signal \c$shI_148\                                 : signed(63 downto 0);
   signal \c$case_alt_selection_res_97\               : boolean;
-  signal \c$bv_166\                                  : std_logic_vector(31 downto 0);
+  signal result_selection_res_113                    : boolean;
   signal x_selection_res_21                          : std_logic_vector(0 downto 0);
+  signal \c$bv_166\                                  : std_logic_vector(31 downto 0);
+  signal result_selection_res_114                    : boolean;
   signal \c$bv_167\                                  : std_logic_vector(31 downto 0);
   signal \c$bv_168\                                  : std_logic_vector(31 downto 0);
-  signal \c$shI_148\                                 : signed(63 downto 0);
-  signal \c$shI_149\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_98\               : boolean;
   signal result_selection_res_115                    : boolean;
-  signal x_selection_res_22                          : std_logic_vector(0 downto 0);
-  signal \c$bv_169\                                  : std_logic_vector(31 downto 0);
-  signal \c$shI_150\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_98\               : boolean;
   signal \c$case_alt_selection_res_99\               : boolean;
   signal result_selection_res_116                    : boolean;
-  signal x_selection_res_23                          : std_logic_vector(0 downto 0);
-  signal \c$bv_170\                                  : std_logic_vector(31 downto 0);
-  signal \c$app_arg_selection_res_6\                 : std_logic_vector(0 downto 0);
-  signal \c$bv_171\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_172\                                  : std_logic_vector(31 downto 0);
-  signal \c$case_alt_selection_res_100\              : boolean;
+  signal \c$shI_149\                                 : signed(63 downto 0);
+  signal \c$shI_150\                                 : signed(63 downto 0);
   signal result_selection_res_117                    : boolean;
-  signal x_selection_res_24                          : std_logic_vector(0 downto 0);
-  signal \c$bv_173\                                  : std_logic_vector(31 downto 0);
-  signal x_selection_res_25                          : boolean;
-  signal \c$bv_174\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_100\              : boolean;
   signal \c$case_alt_selection_res_101\              : boolean;
   signal result_selection_res_118                    : boolean;
   signal \c$shI_151\                                 : signed(63 downto 0);
-  signal x_selection_res_26                          : boolean;
-  signal \c$bv_175\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_176\                                  : std_logic_vector(31 downto 0);
-  signal \c$case_alt_selection_res_102\              : boolean;
   signal result_selection_res_119                    : boolean;
-  signal \c$shI_152\                                 : signed(63 downto 0);
-  signal \c$bv_177\                                  : std_logic_vector(31 downto 0);
-  signal x_selection_res_27                          : boolean;
-  signal \c$bv_178\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_179\                                  : std_logic_vector(31 downto 0);
-  signal result_selection_res_120                    : boolean;
+  signal \c$case_alt_selection_res_102\              : boolean;
   signal \c$case_alt_selection_res_103\              : boolean;
-  signal x_selection_res_28                          : boolean;
+  signal result_selection_res_120                    : boolean;
+  signal \c$shI_152\                                 : signed(63 downto 0);
+  signal \c$shI_153\                                 : signed(63 downto 0);
+  signal result_selection_res_121                    : boolean;
+  signal \c$case_alt_selection_res_104\              : boolean;
+  signal result_selection_res_122                    : boolean;
+  signal \c$bv_169\                                  : std_logic_vector(31 downto 0);
+  signal \c$vec_4\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_4_7_7_5                   : clash_lowpass_fir_types.Tuple2_4;
+  signal \c$vec_5\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_4_7_7                     : clash_lowpass_fir_types.Tuple2_4;
+  signal \c$vec_6\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_4_7                       : clash_lowpass_fir_types.Tuple2_4;
+  signal \c$vec_7\                                   : clash_lowpass_fir_types.array_of_signed_24(0 to 12);
+  signal result_projection_4                         : clash_lowpass_fir_types.Tuple2_4;
+  signal result_selection_res_123                    : boolean;
+  signal \c$case_alt_selection_res_105\              : boolean;
+  signal \c$case_alt_selection_res_106\              : boolean;
+  signal result_selection_res_124                    : boolean;
+  signal \c$shI_154\                                 : signed(63 downto 0);
+  signal \c$shI_155\                                 : signed(63 downto 0);
+  signal result_selection_res_125                    : boolean;
+  signal \c$case_alt_selection_res_107\              : boolean;
+  signal \c$case_alt_selection_res_108\              : boolean;
+  signal result_selection_res_126                    : boolean;
+  signal \c$shI_156\                                 : signed(63 downto 0);
+  signal result_selection_res_127                    : boolean;
+  signal \c$case_alt_selection_res_109\              : boolean;
+  signal \c$case_alt_selection_res_110\              : boolean;
+  signal result_selection_res_128                    : boolean;
+  signal \c$shI_157\                                 : signed(63 downto 0);
+  signal \c$shI_158\                                 : signed(63 downto 0);
+  signal result_selection_res_129                    : boolean;
+  signal \c$case_alt_selection_res_111\              : boolean;
+  signal \c$bv_170\                                  : std_logic_vector(31 downto 0);
+  signal \c$shI_159\                                 : signed(63 downto 0);
+  signal \c$shI_160\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_112\              : boolean;
+  signal result_selection_res_130                    : boolean;
+  signal x_selection_res_22                          : std_logic_vector(0 downto 0);
+  signal \c$bv_171\                                  : std_logic_vector(31 downto 0);
+  signal \c$shI_161\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_113\              : boolean;
+  signal result_selection_res_131                    : boolean;
+  signal x_selection_res_23                          : std_logic_vector(0 downto 0);
+  signal \c$bv_172\                                  : std_logic_vector(31 downto 0);
+  signal \c$app_arg_selection_res_6\                 : std_logic_vector(0 downto 0);
+  signal \c$bv_173\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_174\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_114\              : boolean;
+  signal result_selection_res_132                    : boolean;
+  signal x_selection_res_24                          : std_logic_vector(0 downto 0);
+  signal \c$bv_175\                                  : std_logic_vector(31 downto 0);
+  signal x_selection_res_25                          : boolean;
+  signal \c$bv_176\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_115\              : boolean;
+  signal result_selection_res_133                    : boolean;
+  signal \c$shI_162\                                 : signed(63 downto 0);
+  signal x_selection_res_26                          : boolean;
+  signal \c$bv_177\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_178\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_116\              : boolean;
+  signal result_selection_res_134                    : boolean;
+  signal \c$shI_163\                                 : signed(63 downto 0);
+  signal \c$bv_179\                                  : std_logic_vector(31 downto 0);
+  signal x_selection_res_27                          : boolean;
   signal \c$bv_180\                                  : std_logic_vector(31 downto 0);
   signal \c$bv_181\                                  : std_logic_vector(31 downto 0);
-  signal \c$case_alt_selection_res_104\              : boolean;
-  signal result_selection_res_121                    : boolean;
-  signal \c$shI_153\                                 : signed(63 downto 0);
-  signal result_selection_res_122                    : boolean;
-  signal \c$app_arg_selection_res_7\                 : boolean;
-  signal \c$bv_182\                                  : std_logic_vector(31 downto 0);
-  signal x_selection_res_29                          : std_logic_vector(0 downto 0);
-  signal \c$bv_183\                                  : std_logic_vector(31 downto 0);
-  signal result_selection_res_123                    : boolean;
-  signal \c$shI_154\                                 : signed(63 downto 0);
-  signal result_selection_res_124                    : boolean;
-  signal \c$shI_155\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_105\              : boolean;
-  signal result_selection_res_125                    : boolean;
-  signal \c$shI_156\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_106\              : boolean;
-  signal result_selection_res_126                    : boolean;
-  signal \c$shI_157\                                 : signed(63 downto 0);
-  signal result_selection_res_127                    : boolean;
-  signal \c$shI_158\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_107\              : boolean;
-  signal result_selection_res_128                    : boolean;
-  signal x_selection_res_30                          : std_logic_vector(0 downto 0);
-  signal \c$bv_184\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_185\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_186\                                  : std_logic_vector(31 downto 0);
-  signal result_selection_res_129                    : boolean;
-  signal \c$shI_159\                                 : signed(63 downto 0);
-  signal result_selection_res_130                    : boolean;
-  signal \c$shI_160\                                 : signed(63 downto 0);
-  signal result_selection_res_131                    : boolean;
-  signal \c$shI_161\                                 : signed(63 downto 0);
-  signal result_selection_res_132                    : boolean;
-  signal \c$shI_162\                                 : signed(63 downto 0);
-  signal result_selection_res_133                    : boolean;
-  signal \c$shI_163\                                 : signed(63 downto 0);
-  signal result_selection_res_134                    : boolean;
-  signal \c$shI_164\                                 : signed(63 downto 0);
   signal result_selection_res_135                    : boolean;
-  signal \c$shI_165\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_117\              : boolean;
+  signal x_selection_res_28                          : boolean;
+  signal \c$bv_182\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_183\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_118\              : boolean;
   signal result_selection_res_136                    : boolean;
+  signal \c$shI_164\                                 : signed(63 downto 0);
+  signal result_selection_res_137                    : boolean;
+  signal \c$app_arg_selection_res_7\                 : boolean;
+  signal \c$bv_184\                                  : std_logic_vector(31 downto 0);
+  signal x_selection_res_29                          : std_logic_vector(0 downto 0);
+  signal \c$bv_185\                                  : std_logic_vector(31 downto 0);
+  signal result_selection_res_138                    : boolean;
+  signal \c$shI_165\                                 : signed(63 downto 0);
+  signal result_selection_res_139                    : boolean;
   signal \c$shI_166\                                 : signed(63 downto 0);
-  signal \c$app_arg_selection_res_8\                 : boolean;
+  signal \c$case_alt_selection_res_119\              : boolean;
+  signal result_selection_res_140                    : boolean;
+  signal \c$shI_167\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_120\              : boolean;
+  signal result_selection_res_141                    : boolean;
+  signal \c$shI_168\                                 : signed(63 downto 0);
+  signal result_selection_res_142                    : boolean;
+  signal \c$shI_169\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_121\              : boolean;
+  signal result_selection_res_143                    : boolean;
+  signal x_selection_res_30                          : std_logic_vector(0 downto 0);
+  signal \c$bv_186\                                  : std_logic_vector(31 downto 0);
   signal \c$bv_187\                                  : std_logic_vector(31 downto 0);
   signal \c$bv_188\                                  : std_logic_vector(31 downto 0);
-  signal \c$shI_167\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_108\              : boolean;
-  signal result_selection_res_137                    : boolean;
-  signal x_selection_res_31                          : std_logic_vector(0 downto 0);
-  signal \c$bv_189\                                  : std_logic_vector(31 downto 0);
-  signal \c$app_arg_selection_res_9\                 : std_logic_vector(0 downto 0);
-  signal \c$bv_190\                                  : std_logic_vector(31 downto 0);
-  signal \c$gain_app_arg_selection_res_3\            : unsigned(2 downto 0);
-  signal result_selection_res_138                    : boolean;
-  signal \c$case_alt_selection_res_109\              : boolean;
-  signal result_selection_res_139                    : boolean;
-  signal \c$shI_168\                                 : signed(63 downto 0);
-  signal \c$shI_169\                                 : signed(63 downto 0);
-  signal result_selection_res_140                    : boolean;
-  signal \c$bv_191\                                  : std_logic_vector(7 downto 0);
-  signal \c$bv_192\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_193\                                  : std_logic_vector(7 downto 0);
-  signal \c$shI_170\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_110\              : boolean;
-  signal result_selection_res_141                    : boolean;
-  signal \c$case_alt_selection_res_111\              : boolean;
-  signal result_selection_res_142                    : boolean;
-  signal \c$case_alt_selection_res_112\              : boolean;
-  signal \c$case_alt_selection_res_113\              : boolean;
-  signal result_selection_res_143                    : boolean;
-  signal \c$case_alt_selection_res_114\              : boolean;
-  signal \c$case_alt_selection_res_115\              : boolean;
   signal result_selection_res_144                    : boolean;
-  signal \c$shI_171\                                 : signed(63 downto 0);
+  signal \c$shI_170\                                 : signed(63 downto 0);
   signal result_selection_res_145                    : boolean;
-  signal \c$shI_172\                                 : signed(63 downto 0);
-  signal \c$bv_194\                                  : std_logic_vector(7 downto 0);
-  signal \c$bv_195\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_196\                                  : std_logic_vector(7 downto 0);
-  signal \c$shI_173\                                 : signed(63 downto 0);
-  signal \c$case_alt_selection_res_116\              : boolean;
+  signal \c$shI_171\                                 : signed(63 downto 0);
   signal result_selection_res_146                    : boolean;
-  signal \c$case_alt_selection_res_117\              : boolean;
+  signal \c$shI_172\                                 : signed(63 downto 0);
   signal result_selection_res_147                    : boolean;
-  signal \c$case_alt_selection_res_118\              : boolean;
-  signal \c$case_alt_selection_res_119\              : boolean;
+  signal \c$shI_173\                                 : signed(63 downto 0);
   signal result_selection_res_148                    : boolean;
-  signal \c$case_alt_selection_res_120\              : boolean;
   signal \c$shI_174\                                 : signed(63 downto 0);
-  signal \c$shI_175\                                 : signed(63 downto 0);
-  signal \c$bv_197\                                  : std_logic_vector(7 downto 0);
-  signal \c$bv_198\                                  : std_logic_vector(31 downto 0);
-  signal \c$case_alt_selection_res_121\              : boolean;
   signal result_selection_res_149                    : boolean;
-  signal \c$case_alt_selection_res_122\              : boolean;
+  signal \c$shI_175\                                 : signed(63 downto 0);
   signal result_selection_res_150                    : boolean;
-  signal \c$case_alt_selection_res_123\              : boolean;
-  signal result_selection_res_151                    : boolean;
-  signal \c$case_alt_selection_res_124\              : boolean;
-  signal result_selection_res_152                    : boolean;
-  signal \c$case_alt_selection_res_125\              : boolean;
   signal \c$shI_176\                                 : signed(63 downto 0);
-  signal \c$bv_199\                                  : std_logic_vector(7 downto 0);
-  signal result_selection_res_153                    : boolean;
-  signal \c$case_alt_selection_res_126\              : boolean;
-  signal result_selection_res_154                    : boolean;
+  signal result_selection_res_151                    : boolean;
   signal \c$shI_177\                                 : signed(63 downto 0);
-  signal \c$bv_200\                                  : std_logic_vector(7 downto 0);
-  signal \c$bv_201\                                  : std_logic_vector(31 downto 0);
-  signal result_selection_res_155                    : boolean;
-  signal \c$case_alt_selection_res_127\              : boolean;
-  signal result_selection_res_156                    : boolean;
+  signal \c$app_arg_selection_res_8\                 : boolean;
+  signal \c$bv_189\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_190\                                  : std_logic_vector(31 downto 0);
   signal \c$shI_178\                                 : signed(63 downto 0);
-  signal \c$bv_202\                                  : std_logic_vector(31 downto 0);
-  signal \c$bv_203\                                  : std_logic_vector(7 downto 0);
+  signal \c$case_alt_selection_res_122\              : boolean;
+  signal result_selection_res_152                    : boolean;
+  signal x_selection_res_31                          : std_logic_vector(0 downto 0);
+  signal \c$bv_191\                                  : std_logic_vector(31 downto 0);
+  signal \c$app_arg_selection_res_9\                 : std_logic_vector(0 downto 0);
+  signal \c$bv_192\                                  : std_logic_vector(31 downto 0);
+  signal \c$gain_app_arg_selection_res_3\            : unsigned(2 downto 0);
+  signal result_selection_res_153                    : boolean;
+  signal \c$case_alt_selection_res_123\              : boolean;
+  signal result_selection_res_154                    : boolean;
+  signal \c$shI_179\                                 : signed(63 downto 0);
+  signal \c$shI_180\                                 : signed(63 downto 0);
+  signal result_selection_res_155                    : boolean;
+  signal \c$bv_193\                                  : std_logic_vector(7 downto 0);
+  signal \c$bv_194\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_195\                                  : std_logic_vector(7 downto 0);
+  signal \c$shI_181\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_124\              : boolean;
+  signal result_selection_res_156                    : boolean;
+  signal \c$case_alt_selection_res_125\              : boolean;
+  signal result_selection_res_157                    : boolean;
+  signal \c$case_alt_selection_res_126\              : boolean;
+  signal \c$case_alt_selection_res_127\              : boolean;
+  signal result_selection_res_158                    : boolean;
   signal \c$case_alt_selection_res_128\              : boolean;
   signal \c$case_alt_selection_res_129\              : boolean;
-  signal \c$case_alt_selection_res_130\              : boolean;
-  signal \c$case_alt_selection_res_131\              : boolean;
-  signal \c$case_alt_selection_res_132\              : boolean;
-  signal \c$app_arg_selection_res_10\                : boolean;
-  signal \c$case_alt_selection_res_133\              : boolean;
-  signal \c$case_alt_selection_res_134\              : boolean;
-  signal \c$bv_204\                                  : std_logic_vector(7 downto 0);
-  signal result_selection_res_157                    : boolean;
-  signal \c$bv_205\                                  : std_logic_vector(23 downto 0);
-  signal \c$shI_179\                                 : signed(63 downto 0);
-  signal result_selection_res_158                    : boolean;
-  signal \c$s_case_alt_selection_res\                : boolean;
-  signal \c$shI_180\                                 : signed(63 downto 0);
-  signal \c$shI_181\                                 : signed(63 downto 0);
+  signal result_selection_res_159                    : boolean;
   signal \c$shI_182\                                 : signed(63 downto 0);
+  signal result_selection_res_160                    : boolean;
   signal \c$shI_183\                                 : signed(63 downto 0);
+  signal \c$bv_196\                                  : std_logic_vector(7 downto 0);
+  signal \c$bv_197\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_198\                                  : std_logic_vector(7 downto 0);
   signal \c$shI_184\                                 : signed(63 downto 0);
-  signal \c$bv_206\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_130\              : boolean;
+  signal result_selection_res_161                    : boolean;
+  signal \c$case_alt_selection_res_131\              : boolean;
+  signal result_selection_res_162                    : boolean;
+  signal \c$case_alt_selection_res_132\              : boolean;
+  signal \c$case_alt_selection_res_133\              : boolean;
+  signal result_selection_res_163                    : boolean;
+  signal \c$case_alt_selection_res_134\              : boolean;
   signal \c$shI_185\                                 : signed(63 downto 0);
   signal \c$shI_186\                                 : signed(63 downto 0);
+  signal \c$bv_199\                                  : std_logic_vector(7 downto 0);
+  signal \c$bv_200\                                  : std_logic_vector(31 downto 0);
   signal \c$case_alt_selection_res_135\              : boolean;
-  signal result_selection_res_159                    : boolean;
-  signal \c$case_alt_selection_res_136\              : boolean;
-  signal result_selection_res_160                    : boolean;
-  signal result_selection_res_161                    : boolean;
-  signal \c$shI_187\                                 : signed(63 downto 0);
-  signal \c$shI_188\                                 : signed(63 downto 0);
-  signal \c$shI_189\                                 : signed(63 downto 0);
-  signal \c$bv_207\                                  : std_logic_vector(7 downto 0);
-  signal \c$case_alt_selection_res_137\              : boolean;
-  signal result_selection_res_162                    : boolean;
-  signal result_selection_res_163                    : boolean;
-  signal \c$bv_208\                                  : std_logic_vector(31 downto 0);
-  signal \c$case_alt_selection_res_138\              : boolean;
   signal result_selection_res_164                    : boolean;
-  signal \c$shI_190\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_136\              : boolean;
   signal result_selection_res_165                    : boolean;
-  signal \c$case_alt_selection_res_139\              : boolean;
-  signal \c$case_alt_selection_res_140\              : boolean;
+  signal \c$case_alt_selection_res_137\              : boolean;
   signal result_selection_res_166                    : boolean;
-  signal \c$case_alt_selection_res_141\              : boolean;
-  signal \c$bv_209\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_138\              : boolean;
   signal result_selection_res_167                    : boolean;
-  signal \c$bv_210\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_139\              : boolean;
+  signal \c$shI_187\                                 : signed(63 downto 0);
+  signal \c$bv_201\                                  : std_logic_vector(7 downto 0);
   signal result_selection_res_168                    : boolean;
+  signal \c$case_alt_selection_res_140\              : boolean;
   signal result_selection_res_169                    : boolean;
+  signal \c$shI_188\                                 : signed(63 downto 0);
+  signal \c$bv_202\                                  : std_logic_vector(7 downto 0);
+  signal \c$bv_203\                                  : std_logic_vector(31 downto 0);
+  signal result_selection_res_170                    : boolean;
+  signal \c$case_alt_selection_res_141\              : boolean;
+  signal result_selection_res_171                    : boolean;
+  signal \c$shI_189\                                 : signed(63 downto 0);
+  signal \c$bv_204\                                  : std_logic_vector(31 downto 0);
+  signal \c$bv_205\                                  : std_logic_vector(7 downto 0);
   signal \c$case_alt_selection_res_142\              : boolean;
+  signal \c$case_alt_selection_res_143\              : boolean;
+  signal \c$case_alt_selection_res_144\              : boolean;
+  signal \c$case_alt_selection_res_145\              : boolean;
+  signal \c$case_alt_selection_res_146\              : boolean;
+  signal \c$app_arg_selection_res_10\                : boolean;
+  signal \c$case_alt_selection_res_147\              : boolean;
+  signal \c$case_alt_selection_res_148\              : boolean;
+  signal \c$bv_206\                                  : std_logic_vector(7 downto 0);
+  signal result_selection_res_172                    : boolean;
+  signal \c$bv_207\                                  : std_logic_vector(23 downto 0);
+  signal \c$shI_190\                                 : signed(63 downto 0);
+  signal result_selection_res_173                    : boolean;
+  signal \c$s_case_alt_selection_res\                : boolean;
   signal \c$shI_191\                                 : signed(63 downto 0);
   signal \c$shI_192\                                 : signed(63 downto 0);
   signal \c$shI_193\                                 : signed(63 downto 0);
-  signal \c$bv_211\                                  : std_logic_vector(31 downto 0);
   signal \c$shI_194\                                 : signed(63 downto 0);
   signal \c$shI_195\                                 : signed(63 downto 0);
-  signal result_selection_res_170                    : boolean;
-  signal result_selection_res_171                    : boolean;
-  signal \c$case_alt_selection_res_143\              : boolean;
+  signal \c$bv_208\                                  : std_logic_vector(31 downto 0);
+  signal \c$shI_196\                                 : signed(63 downto 0);
+  signal \c$shI_197\                                 : signed(63 downto 0);
+  signal \c$case_alt_selection_res_149\              : boolean;
+  signal result_selection_res_174                    : boolean;
+  signal \c$case_alt_selection_res_150\              : boolean;
+  signal result_selection_res_175                    : boolean;
+  signal result_selection_res_176                    : boolean;
+  signal \c$shI_198\                                 : signed(63 downto 0);
+  signal \c$shI_199\                                 : signed(63 downto 0);
+  signal \c$shI_200\                                 : signed(63 downto 0);
+  signal \c$bv_209\                                  : std_logic_vector(7 downto 0);
+  signal \c$case_alt_selection_res_151\              : boolean;
+  signal result_selection_res_177                    : boolean;
+  signal result_selection_res_178                    : boolean;
+  signal \c$bv_210\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_152\              : boolean;
+  signal result_selection_res_179                    : boolean;
+  signal \c$shI_201\                                 : signed(63 downto 0);
+  signal result_selection_res_180                    : boolean;
+  signal \c$case_alt_selection_res_153\              : boolean;
+  signal \c$case_alt_selection_res_154\              : boolean;
+  signal result_selection_res_181                    : boolean;
+  signal \c$case_alt_selection_res_155\              : boolean;
+  signal \c$bv_211\                                  : std_logic_vector(31 downto 0);
+  signal result_selection_res_182                    : boolean;
   signal \c$bv_212\                                  : std_logic_vector(31 downto 0);
-  signal \c$case_alt_selection_res_144\              : boolean;
-  signal result_selection_res_172                    : boolean;
-  signal \c$case_alt_selection_res_145\              : boolean;
-  signal result_selection_res_173                    : boolean;
+  signal result_selection_res_183                    : boolean;
+  signal result_selection_res_184                    : boolean;
+  signal \c$case_alt_selection_res_156\              : boolean;
+  signal \c$shI_202\                                 : signed(63 downto 0);
+  signal \c$shI_203\                                 : signed(63 downto 0);
+  signal \c$shI_204\                                 : signed(63 downto 0);
+  signal \c$bv_213\                                  : std_logic_vector(31 downto 0);
+  signal \c$shI_205\                                 : signed(63 downto 0);
+  signal \c$shI_206\                                 : signed(63 downto 0);
+  signal result_selection_res_185                    : boolean;
+  signal result_selection_res_186                    : boolean;
+  signal \c$case_alt_selection_res_157\              : boolean;
+  signal \c$bv_214\                                  : std_logic_vector(31 downto 0);
+  signal \c$case_alt_selection_res_158\              : boolean;
+  signal result_selection_res_187                    : boolean;
+  signal \c$case_alt_selection_res_159\              : boolean;
+  signal result_selection_res_188                    : boolean;
   signal \c$reverbAddr_case_alt_selection_res\       : boolean;
   signal result                                      : clash_lowpass_fir_types.Tuple4_0;
 
@@ -14177,42 +14347,42 @@ begin
 
   with (metalMulPipe(1067 downto 1067)) select
     result_209 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_213.Frame_sel0_fL)
-                   & std_logic_vector(result_213.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_213.Frame_sel2_fLast)
-                   & result_213.Frame_sel3_fGate
-                   & result_213.Frame_sel4_fOd
-                   & result_213.Frame_sel5_fDist
-                   & result_213.Frame_sel6_fEq
-                   & result_213.Frame_sel7_fRat
-                   & result_213.Frame_sel8_fAmp
-                   & result_213.Frame_sel9_fAmpTone
-                   & result_213.Frame_sel10_fCab
-                   & result_213.Frame_sel11_fReverb
-                   & result_213.Frame_sel12_fNs
-                   & result_213.Frame_sel13_fComp
-                   & result_213.Frame_sel14_fWah
-                   & std_logic_vector(result_213.Frame_sel15_fAddr)
-                   & std_logic_vector(result_213.Frame_sel16_fDryL)
-                   & std_logic_vector(result_213.Frame_sel17_fDryR)
-                   & std_logic_vector(result_213.Frame_sel18_fWetL)
-                   & std_logic_vector(result_213.Frame_sel19_fWetR)
-                   & std_logic_vector(result_213.Frame_sel20_fFbL)
-                   & std_logic_vector(result_213.Frame_sel21_fFbR)
-                   & std_logic_vector(result_213.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_213.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_213.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_213.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_213.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_213.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_213.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_213.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_213.Frame_sel30_fAccL)
-                   & std_logic_vector(result_213.Frame_sel31_fAccR)
-                   & std_logic_vector(result_213.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_213.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_213.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_213.Frame_sel35_fAcc3R)))) when others;
+                  std_logic_vector'("1" & ((std_logic_vector(result_214.Frame_sel0_fL)
+                   & std_logic_vector(result_214.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_214.Frame_sel2_fLast)
+                   & result_214.Frame_sel3_fGate
+                   & result_214.Frame_sel4_fOd
+                   & result_214.Frame_sel5_fDist
+                   & result_214.Frame_sel6_fEq
+                   & result_214.Frame_sel7_fRat
+                   & result_214.Frame_sel8_fAmp
+                   & result_214.Frame_sel9_fAmpTone
+                   & result_214.Frame_sel10_fCab
+                   & result_214.Frame_sel11_fReverb
+                   & result_214.Frame_sel12_fNs
+                   & result_214.Frame_sel13_fComp
+                   & result_214.Frame_sel14_fWah
+                   & std_logic_vector(result_214.Frame_sel15_fAddr)
+                   & std_logic_vector(result_214.Frame_sel16_fDryL)
+                   & std_logic_vector(result_214.Frame_sel17_fDryR)
+                   & std_logic_vector(result_214.Frame_sel18_fWetL)
+                   & std_logic_vector(result_214.Frame_sel19_fWetR)
+                   & std_logic_vector(result_214.Frame_sel20_fFbL)
+                   & std_logic_vector(result_214.Frame_sel21_fFbR)
+                   & std_logic_vector(result_214.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_214.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_214.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_214.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_214.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_214.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_214.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_214.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_214.Frame_sel30_fAccL)
+                   & std_logic_vector(result_214.Frame_sel31_fAccR)
+                   & std_logic_vector(result_214.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_214.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_214.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_214.Frame_sel35_fAcc3R)))) when others;
 
   result_selection_res_76 <= rawT < to_signed(1250000,25);
 
@@ -14229,7 +14399,7 @@ begin
 
   \c$shI_111\ <= (to_signed(8,64));
 
-  cds36_app_arg_shiftR : block
+  cds37_app_arg_shiftR : block
     signal sh_113 : natural;
   begin
     sh_113 <=
@@ -14237,28 +14407,22 @@ begin
         natural'high when (\c$shI_111\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_111\);
-    \c$ds36_app_arg\ <= shift_right(x_98.Frame_sel30_fAccL,sh_113)
+    \c$ds37_app_arg\ <= shift_right(x_98.Frame_sel30_fAccL,sh_113)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_62\ <= \c$ds36_app_arg\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_62\ <= \c$ds37_app_arg\ < to_signed(-8388608,48);
 
   \c$case_alt_86\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_62\ else
-                     resize(\c$ds36_app_arg\,24);
+                     resize(\c$ds37_app_arg\,24);
 
-  result_selection_res_77 <= \c$ds36_app_arg\ > to_signed(8388607,48);
+  result_selection_res_77 <= \c$ds37_app_arg\ > to_signed(8388607,48);
 
   result_212 <= to_signed(8388607,24) when result_selection_res_77 else
                 \c$case_alt_86\;
-
-  \c$app_arg_116\ <= ((resize(((resize(result_215.Tuple4_sel3_signed_3,48)) + (resize(b,48))) * to_signed(-2,48), 48)) + (resize(((resize(result_215.Tuple4_sel2_signed_2,48)) + (resize(b_0,48))) * to_signed(-3,48), 48))) + (resize(((resize(result_215.Tuple4_sel1_signed_1,48)) + (resize(b_1,48))) * to_signed(-4,48), 48)) when result_214 else
-                     to_signed(0,48);
-
-  \c$app_arg_117\ <= ((resize(((resize(result_215.Tuple4_sel0_signed_0,48)) + (resize(b_2,48))) * to_signed(5,48), 48)) + (resize(((resize(a,48)) + (resize(b_3,48))) * to_signed(29,48), 48))) + (resize(((resize(a_0,48)) + (resize(b_4,48))) * to_signed(68,48), 48)) when result_214 else
-                     to_signed(0,48);
 
   -- index begin
   indexVec_21 : block
@@ -14269,14 +14433,154 @@ begin
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_118\ <= metalClipHist(vec_index_41);
+    \c$app_arg_116\ <= metalClipHist(vec_index_41);
   end block;
   -- index end
 
-  \c$app_arg_119\ <= (resize(((resize(a_1,48)) + (resize(b_5,48))) * to_signed(104,48), 48)) + (resize((resize(\c$app_arg_118\,48)) * to_signed(118,48), 48)) when result_214 else
+  -- index begin
+  indexVec_22 : block
+    signal vec_index_42 : integer range 0 to 12-1;
+  begin
+    vec_index_42 <= to_integer((to_signed(2,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    a <= metalClipHist(vec_index_42);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_23 : block
+    signal vec_index_43 : integer range 0 to 12-1;
+  begin
+    vec_index_43 <= to_integer((to_signed(4,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b <= metalClipHist(vec_index_43);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_24 : block
+    signal vec_index_44 : integer range 0 to 12-1;
+  begin
+    vec_index_44 <= to_integer((to_signed(1,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    a_0 <= metalClipHist(vec_index_44);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_25 : block
+    signal vec_index_45 : integer range 0 to 12-1;
+  begin
+    vec_index_45 <= to_integer((to_signed(5,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_0 <= metalClipHist(vec_index_45);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_26 : block
+    signal vec_index_46 : integer range 0 to 12-1;
+  begin
+    vec_index_46 <= to_integer((to_signed(0,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    a_1 <= metalClipHist(vec_index_46);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_27 : block
+    signal vec_index_47 : integer range 0 to 12-1;
+  begin
+    vec_index_47 <= to_integer((to_signed(6,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_1 <= metalClipHist(vec_index_47);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_28 : block
+    signal vec_index_48 : integer range 0 to 12-1;
+  begin
+    vec_index_48 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_2 <= metalClipHist(vec_index_48);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_29 : block
+    signal vec_index_49 : integer range 0 to 12-1;
+  begin
+    vec_index_49 <= to_integer((to_signed(8,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_3 <= metalClipHist(vec_index_49);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_30 : block
+    signal vec_index_50 : integer range 0 to 12-1;
+  begin
+    vec_index_50 <= to_integer((to_signed(9,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_4 <= metalClipHist(vec_index_50);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_31 : block
+    signal vec_index_51 : integer range 0 to 12-1;
+  begin
+    vec_index_51 <= to_integer((to_signed(10,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_5 <= metalClipHist(vec_index_51);
+  end block;
+  -- index end
+
+  result_213 <= ( Tuple3_0_sel0_signed_0 => ((resize(((resize(result_216.Tuple4_sel3_signed_3,48)) + (resize(b_5,48))) * to_signed(-2,48), 48)) + (resize(((resize(result_216.Tuple4_sel2_signed_2,48)) + (resize(b_4,48))) * to_signed(-3,48), 48))) + (resize(((resize(result_216.Tuple4_sel1_signed_1,48)) + (resize(b_3,48))) * to_signed(-4,48), 48))
+                , Tuple3_0_sel1_signed_1 => ((resize(((resize(result_216.Tuple4_sel0_signed_0,48)) + (resize(b_2,48))) * to_signed(5,48), 48)) + (resize(((resize(a_1,48)) + (resize(b_1,48))) * to_signed(29,48), 48))) + (resize(((resize(a_0,48)) + (resize(b_0,48))) * to_signed(68,48), 48))
+                , Tuple3_0_sel2_signed_2 => (resize(((resize(a,48)) + (resize(b,48))) * to_signed(104,48), 48)) + (resize((resize(\c$app_arg_116\,48)) * to_signed(118,48), 48)) );
+
+  \c$app_arg_117\ <= result_213.Tuple3_0_sel0_signed_0 when result_215 else
                      to_signed(0,48);
 
-  result_213 <= ( Frame_sel0_fL => x_98.Frame_sel0_fL
+  \c$app_arg_118\ <= result_213.Tuple3_0_sel1_signed_1 when result_215 else
+                     to_signed(0,48);
+
+  \c$app_arg_119\ <= result_213.Tuple3_0_sel2_signed_2 when result_215 else
+                     to_signed(0,48);
+
+  result_214 <= ( Frame_sel0_fL => x_98.Frame_sel0_fL
                 , Frame_sel1_fR => x_98.Frame_sel1_fR
                 , Frame_sel2_fLast => x_98.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_98.Frame_sel3_fGate
@@ -14306,142 +14610,12 @@ begin
                 , Frame_sel27_fEqHighR => x_98.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_98.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_98.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_116\
+                , Frame_sel30_fAccL => \c$app_arg_117\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_117\
+                , Frame_sel32_fAcc2L => \c$app_arg_118\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
                 , Frame_sel34_fAcc3L => \c$app_arg_119\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
-
-  -- index begin
-  indexVec_22 : block
-    signal vec_index_42 : integer range 0 to 12-1;
-  begin
-    vec_index_42 <= to_integer((to_signed(0,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    a <= metalClipHist(vec_index_42);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_23 : block
-    signal vec_index_43 : integer range 0 to 12-1;
-  begin
-    vec_index_43 <= to_integer((to_signed(10,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b <= metalClipHist(vec_index_43);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_24 : block
-    signal vec_index_44 : integer range 0 to 12-1;
-  begin
-    vec_index_44 <= to_integer((to_signed(9,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b_0 <= metalClipHist(vec_index_44);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_25 : block
-    signal vec_index_45 : integer range 0 to 12-1;
-  begin
-    vec_index_45 <= to_integer((to_signed(8,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b_1 <= metalClipHist(vec_index_45);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_26 : block
-    signal vec_index_46 : integer range 0 to 12-1;
-  begin
-    vec_index_46 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b_2 <= metalClipHist(vec_index_46);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_27 : block
-    signal vec_index_47 : integer range 0 to 12-1;
-  begin
-    vec_index_47 <= to_integer((to_signed(6,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b_3 <= metalClipHist(vec_index_47);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_28 : block
-    signal vec_index_48 : integer range 0 to 12-1;
-  begin
-    vec_index_48 <= to_integer((to_signed(5,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b_4 <= metalClipHist(vec_index_48);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_29 : block
-    signal vec_index_49 : integer range 0 to 12-1;
-  begin
-    vec_index_49 <= to_integer((to_signed(4,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    b_5 <= metalClipHist(vec_index_49);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_30 : block
-    signal vec_index_50 : integer range 0 to 12-1;
-  begin
-    vec_index_50 <= to_integer((to_signed(1,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    a_0 <= metalClipHist(vec_index_50);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_31 : block
-    signal vec_index_51 : integer range 0 to 12-1;
-  begin
-    vec_index_51 <= to_integer((to_signed(2,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    a_1 <= metalClipHist(vec_index_51);
-  end block;
-  -- index end
 
   \c$bv_114\ <= (x_98.Frame_sel5_fDist);
 
@@ -14463,26 +14637,26 @@ begin
 
   \c$bv_116\ <= (x_98.Frame_sel3_fGate);
 
-  result_214 <= ((\c$bv_116\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_120\ = ('1'));
+  result_215 <= ((\c$bv_116\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_120\ = ('1'));
 
   xnw <= resize(result_212,48);
 
   x1w <= resize(metalClipInPrev,48);
 
-  result_215 <= ( Tuple4_sel0_signed_0 => result_222
-                , Tuple4_sel1_signed_1 => result_220
-                , Tuple4_sel2_signed_2 => result_218
-                , Tuple4_sel3_signed_3 => result_216 );
+  result_216 <= ( Tuple4_sel0_signed_0 => result_223
+                , Tuple4_sel1_signed_1 => result_221
+                , Tuple4_sel2_signed_2 => result_219
+                , Tuple4_sel3_signed_3 => result_217 );
 
-  result_selection_res_78 <= result_217 > result_211;
+  result_selection_res_78 <= result_218 > result_211;
 
-  result_216 <= result_211 when result_selection_res_78 else
+  result_217 <= result_211 when result_selection_res_78 else
                 \c$case_alt_87\;
 
-  \c$case_alt_selection_res_63\ <= result_217 < \c$app_arg_121\;
+  \c$case_alt_selection_res_63\ <= result_218 < \c$app_arg_121\;
 
   \c$case_alt_87\ <= \c$app_arg_121\ when \c$case_alt_selection_res_63\ else
-                     result_217;
+                     result_218;
 
   \c$app_arg_121\ <= -result_211;
 
@@ -14493,7 +14667,7 @@ begin
 
   result_selection_res_79 <= \c$app_arg_122\ > to_signed(8388607,48);
 
-  result_217 <= to_signed(8388607,24) when result_selection_res_79 else
+  result_218 <= to_signed(8388607,24) when result_selection_res_79 else
                 \c$case_alt_88\;
 
   \c$shI_112\ <= (to_signed(2,64));
@@ -14530,15 +14704,15 @@ begin
         ;
   end block;
 
-  result_selection_res_80 <= result_219 > result_211;
+  result_selection_res_80 <= result_220 > result_211;
 
-  result_218 <= result_211 when result_selection_res_80 else
+  result_219 <= result_211 when result_selection_res_80 else
                 \c$case_alt_89\;
 
-  \c$case_alt_selection_res_65\ <= result_219 < \c$app_arg_124\;
+  \c$case_alt_selection_res_65\ <= result_220 < \c$app_arg_124\;
 
   \c$case_alt_89\ <= \c$app_arg_124\ when \c$case_alt_selection_res_65\ else
-                     result_219;
+                     result_220;
 
   \c$app_arg_124\ <= -result_211;
 
@@ -14549,7 +14723,7 @@ begin
 
   result_selection_res_81 <= \c$app_arg_125\ > to_signed(8388607,48);
 
-  result_219 <= to_signed(8388607,24) when result_selection_res_81 else
+  result_220 <= to_signed(8388607,24) when result_selection_res_81 else
                 \c$case_alt_90\;
 
   \c$shI_114\ <= (to_signed(1,64));
@@ -14569,15 +14743,15 @@ begin
         ;
   end block;
 
-  result_selection_res_82 <= result_221 > result_211;
+  result_selection_res_82 <= result_222 > result_211;
 
-  result_220 <= result_211 when result_selection_res_82 else
+  result_221 <= result_211 when result_selection_res_82 else
                 \c$case_alt_91\;
 
-  \c$case_alt_selection_res_67\ <= result_221 < \c$app_arg_126\;
+  \c$case_alt_selection_res_67\ <= result_222 < \c$app_arg_126\;
 
   \c$case_alt_91\ <= \c$app_arg_126\ when \c$case_alt_selection_res_67\ else
-                     result_221;
+                     result_222;
 
   \c$app_arg_126\ <= -result_211;
 
@@ -14588,7 +14762,7 @@ begin
 
   result_selection_res_83 <= \c$app_arg_127\ > to_signed(8388607,48);
 
-  result_221 <= to_signed(8388607,24) when result_selection_res_83 else
+  result_222 <= to_signed(8388607,24) when result_selection_res_83 else
                 \c$case_alt_92\;
 
   \c$shI_115\ <= (to_signed(2,64));
@@ -14627,7 +14801,7 @@ begin
 
   result_selection_res_84 <= metalClipInPrev > result_211;
 
-  result_222 <= result_211 when result_selection_res_84 else
+  result_223 <= result_211 when result_selection_res_84 else
                 \c$case_alt_93\;
 
   \c$case_alt_selection_res_69\ <= metalClipInPrev < \c$app_arg_129\;
@@ -14654,14 +14828,14 @@ begin
                                              , to_signed(0,24)
                                              , to_signed(0,24) );
     elsif rising_edge(clk) then
-      metalClipHist <= result_234;
+      metalClipHist <= result_236;
     end if;
   end process;
   -- register end
 
   result_selection_res_85 <= rawT_0 < to_signed(1250000,25);
 
-  result_223 <= to_signed(1250000,25) when result_selection_res_85 else
+  result_224 <= to_signed(1250000,25) when result_selection_res_85 else
                 rawT_0;
 
   \c$bv_117\ <= (f_5.Frame_sel5_fDist);
@@ -14670,7 +14844,7 @@ begin
 
   rawT_0 <= to_signed(3300000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_97)))))))),25)) * to_signed(6000,25), 25));
 
-  result_224 <= resize(result_223,24);
+  result_225 <= resize(result_224,24);
 
   \c$shI_117\ <= (to_signed(8,64));
 
@@ -14696,31 +14870,49 @@ begin
 
   result_selection_res_86 <= \c$ds2_app_arg\ > to_signed(8388607,48);
 
-  result_225 <= to_signed(8388607,24) when result_selection_res_86 else
+  result_226 <= to_signed(8388607,24) when result_selection_res_86 else
                 \c$case_alt_94\;
+
+  \c$vec_0\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_228.Tuple4_sel0_signed_0)) & clash_lowpass_fir_types.array_of_signed_24'(metalClipHist)));
+
+  result_projection_3_3_3 <= (\c$vec_0\(0 to 12-1),\c$vec_0\(12 to \c$vec_0\'high));
+
+  \c$vec_1\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_228.Tuple4_sel1_signed_1)) & clash_lowpass_fir_types.array_of_signed_24'(result_projection_3_3_3.Tuple2_4_sel0_array_of_signed_24_0)));
+
+  result_projection_3_3 <= (\c$vec_1\(0 to 12-1),\c$vec_1\(12 to \c$vec_1\'high));
+
+  \c$vec_2\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_228.Tuple4_sel2_signed_2)) & clash_lowpass_fir_types.array_of_signed_24'(result_projection_3_3.Tuple2_4_sel0_array_of_signed_24_0)));
+
+  result_projection_3 <= (\c$vec_2\(0 to 12-1),\c$vec_2\(12 to \c$vec_2\'high));
+
+  \c$vec_3\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_228.Tuple4_sel3_signed_3)) & clash_lowpass_fir_types.array_of_signed_24'(result_projection_3.Tuple2_4_sel0_array_of_signed_24_0)));
+
+  result_projection <= (\c$vec_3\(0 to 12-1),\c$vec_3\(12 to \c$vec_3\'high));
+
+  result_227 <= result_projection.Tuple2_4_sel0_array_of_signed_24_0;
 
   f_5 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(metalMulPipe(1066 downto 0)));
 
-  xnw_0 <= resize(result_225,48);
+  xnw_0 <= resize(result_226,48);
 
   x1w_0 <= resize(metalClipInPrev,48);
 
-  result_226 <= ( Tuple4_sel0_signed_0 => result_233
-                , Tuple4_sel1_signed_1 => result_231
-                , Tuple4_sel2_signed_2 => result_229
-                , Tuple4_sel3_signed_3 => result_227 );
+  result_228 <= ( Tuple4_sel0_signed_0 => result_235
+                , Tuple4_sel1_signed_1 => result_233
+                , Tuple4_sel2_signed_2 => result_231
+                , Tuple4_sel3_signed_3 => result_229 );
 
-  result_selection_res_87 <= result_228 > result_224;
+  result_selection_res_87 <= result_230 > result_225;
 
-  result_227 <= result_224 when result_selection_res_87 else
+  result_229 <= result_225 when result_selection_res_87 else
                 \c$case_alt_95\;
 
-  \c$case_alt_selection_res_71\ <= result_228 < \c$app_arg_130\;
+  \c$case_alt_selection_res_71\ <= result_230 < \c$app_arg_130\;
 
   \c$case_alt_95\ <= \c$app_arg_130\ when \c$case_alt_selection_res_71\ else
-                     result_228;
+                     result_230;
 
-  \c$app_arg_130\ <= -result_224;
+  \c$app_arg_130\ <= -result_225;
 
   \c$case_alt_selection_res_72\ <= \c$app_arg_131\ < to_signed(-8388608,48);
 
@@ -14729,7 +14921,7 @@ begin
 
   result_selection_res_88 <= \c$app_arg_131\ > to_signed(8388607,48);
 
-  result_228 <= to_signed(8388607,24) when result_selection_res_88 else
+  result_230 <= to_signed(8388607,24) when result_selection_res_88 else
                 \c$case_alt_96\;
 
   \c$shI_118\ <= (to_signed(2,64));
@@ -14766,17 +14958,17 @@ begin
         ;
   end block;
 
-  result_selection_res_89 <= result_230 > result_224;
+  result_selection_res_89 <= result_232 > result_225;
 
-  result_229 <= result_224 when result_selection_res_89 else
+  result_231 <= result_225 when result_selection_res_89 else
                 \c$case_alt_97\;
 
-  \c$case_alt_selection_res_73\ <= result_230 < \c$app_arg_133\;
+  \c$case_alt_selection_res_73\ <= result_232 < \c$app_arg_133\;
 
   \c$case_alt_97\ <= \c$app_arg_133\ when \c$case_alt_selection_res_73\ else
-                     result_230;
+                     result_232;
 
-  \c$app_arg_133\ <= -result_224;
+  \c$app_arg_133\ <= -result_225;
 
   \c$case_alt_selection_res_74\ <= \c$app_arg_134\ < to_signed(-8388608,48);
 
@@ -14785,7 +14977,7 @@ begin
 
   result_selection_res_90 <= \c$app_arg_134\ > to_signed(8388607,48);
 
-  result_230 <= to_signed(8388607,24) when result_selection_res_90 else
+  result_232 <= to_signed(8388607,24) when result_selection_res_90 else
                 \c$case_alt_98\;
 
   \c$shI_120\ <= (to_signed(1,64));
@@ -14805,17 +14997,17 @@ begin
         ;
   end block;
 
-  result_selection_res_91 <= result_232 > result_224;
+  result_selection_res_91 <= result_234 > result_225;
 
-  result_231 <= result_224 when result_selection_res_91 else
+  result_233 <= result_225 when result_selection_res_91 else
                 \c$case_alt_99\;
 
-  \c$case_alt_selection_res_75\ <= result_232 < \c$app_arg_135\;
+  \c$case_alt_selection_res_75\ <= result_234 < \c$app_arg_135\;
 
   \c$case_alt_99\ <= \c$app_arg_135\ when \c$case_alt_selection_res_75\ else
-                     result_232;
+                     result_234;
 
-  \c$app_arg_135\ <= -result_224;
+  \c$app_arg_135\ <= -result_225;
 
   \c$case_alt_selection_res_76\ <= \c$app_arg_136\ < to_signed(-8388608,48);
 
@@ -14824,7 +15016,7 @@ begin
 
   result_selection_res_92 <= \c$app_arg_136\ > to_signed(8388607,48);
 
-  result_232 <= to_signed(8388607,24) when result_selection_res_92 else
+  result_234 <= to_signed(8388607,24) when result_selection_res_92 else
                 \c$case_alt_100\;
 
   \c$shI_121\ <= (to_signed(2,64));
@@ -14861,9 +15053,9 @@ begin
         ;
   end block;
 
-  result_selection_res_93 <= metalClipInPrev > result_224;
+  result_selection_res_93 <= metalClipInPrev > result_225;
 
-  result_233 <= result_224 when result_selection_res_93 else
+  result_235 <= result_225 when result_selection_res_93 else
                 \c$case_alt_101\;
 
   \c$case_alt_selection_res_77\ <= metalClipInPrev < \c$app_arg_138\;
@@ -14871,27 +15063,11 @@ begin
   \c$case_alt_101\ <= \c$app_arg_138\ when \c$case_alt_selection_res_77\ else
                       metalClipInPrev;
 
-  \c$app_arg_138\ <= -result_224;
-
-  \c$vec_0\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_226.Tuple4_sel0_signed_0)) & clash_lowpass_fir_types.array_of_signed_24'(metalClipHist)));
-
-  result_sel_alt_730_5_3_3 <= (\c$vec_0\(0 to 12-1),\c$vec_0\(12 to \c$vec_0\'high));
-
-  \c$vec_1\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_226.Tuple4_sel1_signed_1)) & clash_lowpass_fir_types.array_of_signed_24'(result_sel_alt_730_5_3_3.Tuple2_4_sel0_array_of_signed_24_0)));
-
-  result_sel_alt_730_5_3 <= (\c$vec_1\(0 to 12-1),\c$vec_1\(12 to \c$vec_1\'high));
-
-  \c$vec_2\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_226.Tuple4_sel2_signed_2)) & clash_lowpass_fir_types.array_of_signed_24'(result_sel_alt_730_5_3.Tuple2_4_sel0_array_of_signed_24_0)));
-
-  result_sel_alt_730_5 <= (\c$vec_2\(0 to 12-1),\c$vec_2\(12 to \c$vec_2\'high));
-
-  \c$vec_3\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_226.Tuple4_sel3_signed_3)) & clash_lowpass_fir_types.array_of_signed_24'(result_sel_alt_730_5.Tuple2_4_sel0_array_of_signed_24_0)));
-
-  result_sel_alt_730 <= (\c$vec_3\(0 to 12-1),\c$vec_3\(12 to \c$vec_3\'high));
+  \c$app_arg_138\ <= -result_225;
 
   with (metalMulPipe(1067 downto 1067)) select
-    result_234 <= metalClipHist when "0",
-                  result_sel_alt_730.Tuple2_4_sel0_array_of_signed_24_0 when others;
+    result_236 <= metalClipHist when "0",
+                  result_227 when others;
 
   -- register begin
   metalClipInPrev_register : process(clk,aresetn)
@@ -14906,7 +15082,7 @@ begin
 
   with (metalMulPipe(1067 downto 1067)) select
     \c$metalClipInPrev_app_arg\ <= metalClipInPrev when "0",
-                                   result_235 when others;
+                                   result_237 when others;
 
   \c$case_alt_selection_res_78\ <= \c$metalClipInPrev_app_arg_0\ < to_signed(-8388608,48);
 
@@ -14915,7 +15091,7 @@ begin
 
   result_selection_res_94 <= \c$metalClipInPrev_app_arg_0\ > to_signed(8388607,48);
 
-  result_235 <= to_signed(8388607,24) when result_selection_res_94 else
+  result_237 <= to_signed(8388607,24) when result_selection_res_94 else
                 \c$case_alt_102\;
 
   \c$shI_123\ <= (to_signed(8,64));
@@ -14943,13 +15119,13 @@ begin
     if aresetn =  '0'  then
       metalMulPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      metalMulPipe <= result_236;
+      metalMulPipe <= result_238;
     end if;
   end process;
   -- register end
 
   with (metalHpfPipe(1067 downto 1067)) select
-    result_236 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+    result_238 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_103\.Frame_sel0_fL)
                    & std_logic_vector(\c$case_alt_103\.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(\c$case_alt_103\.Frame_sel2_fLast)
@@ -15007,9 +15183,9 @@ begin
 
   \c$bv_120\ <= (x_101.Frame_sel3_fGate);
 
-  result_237 <= ((\c$bv_120\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_139\ = ('1'));
+  result_239 <= ((\c$bv_120\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_139\ = ('1'));
 
-  \c$app_arg_140\ <= resize((resize(x_101.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_22)))))))),48)), 48) when result_237 else
+  \c$app_arg_140\ <= resize((resize(x_101.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_22)))))))),48)), 48) when result_239 else
                      to_signed(0,48);
 
   \c$case_alt_103\ <= ( Frame_sel0_fL => x_101.Frame_sel0_fL
@@ -15059,52 +15235,52 @@ begin
     if aresetn =  '0'  then
       metalHpfPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      metalHpfPipe <= result_238;
+      metalHpfPipe <= result_240;
     end if;
   end process;
   -- register end
 
   with (ds1_32(1067 downto 1067)) select
-    result_238 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_239.Frame_sel0_fL)
-                   & std_logic_vector(result_239.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_239.Frame_sel2_fLast)
-                   & result_239.Frame_sel3_fGate
-                   & result_239.Frame_sel4_fOd
-                   & result_239.Frame_sel5_fDist
-                   & result_239.Frame_sel6_fEq
-                   & result_239.Frame_sel7_fRat
-                   & result_239.Frame_sel8_fAmp
-                   & result_239.Frame_sel9_fAmpTone
-                   & result_239.Frame_sel10_fCab
-                   & result_239.Frame_sel11_fReverb
-                   & result_239.Frame_sel12_fNs
-                   & result_239.Frame_sel13_fComp
-                   & result_239.Frame_sel14_fWah
-                   & std_logic_vector(result_239.Frame_sel15_fAddr)
-                   & std_logic_vector(result_239.Frame_sel16_fDryL)
-                   & std_logic_vector(result_239.Frame_sel17_fDryR)
-                   & std_logic_vector(result_239.Frame_sel18_fWetL)
-                   & std_logic_vector(result_239.Frame_sel19_fWetR)
-                   & std_logic_vector(result_239.Frame_sel20_fFbL)
-                   & std_logic_vector(result_239.Frame_sel21_fFbR)
-                   & std_logic_vector(result_239.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_239.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_239.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_239.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_239.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_239.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_239.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_239.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_239.Frame_sel30_fAccL)
-                   & std_logic_vector(result_239.Frame_sel31_fAccR)
-                   & std_logic_vector(result_239.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_239.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_239.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_239.Frame_sel35_fAcc3R)))) when others;
+    result_240 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_241.Frame_sel0_fL)
+                   & std_logic_vector(result_241.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_241.Frame_sel2_fLast)
+                   & result_241.Frame_sel3_fGate
+                   & result_241.Frame_sel4_fOd
+                   & result_241.Frame_sel5_fDist
+                   & result_241.Frame_sel6_fEq
+                   & result_241.Frame_sel7_fRat
+                   & result_241.Frame_sel8_fAmp
+                   & result_241.Frame_sel9_fAmpTone
+                   & result_241.Frame_sel10_fCab
+                   & result_241.Frame_sel11_fReverb
+                   & result_241.Frame_sel12_fNs
+                   & result_241.Frame_sel13_fComp
+                   & result_241.Frame_sel14_fWah
+                   & std_logic_vector(result_241.Frame_sel15_fAddr)
+                   & std_logic_vector(result_241.Frame_sel16_fDryL)
+                   & std_logic_vector(result_241.Frame_sel17_fDryR)
+                   & std_logic_vector(result_241.Frame_sel18_fWetL)
+                   & std_logic_vector(result_241.Frame_sel19_fWetR)
+                   & std_logic_vector(result_241.Frame_sel20_fFbL)
+                   & std_logic_vector(result_241.Frame_sel21_fFbR)
+                   & std_logic_vector(result_241.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_241.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_241.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_241.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_241.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_241.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_241.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_241.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_241.Frame_sel30_fAccL)
+                   & std_logic_vector(result_241.Frame_sel31_fAccR)
+                   & std_logic_vector(result_241.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_241.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_241.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_241.Frame_sel35_fAcc3R)))) when others;
 
-  result_239 <= ( Frame_sel0_fL => result_241
-                , Frame_sel1_fR => result_241
+  result_241 <= ( Frame_sel0_fL => result_243
+                , Frame_sel1_fR => result_243
                 , Frame_sel2_fLast => x_102.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_102.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_102.Frame_sel4_fOd
@@ -15125,8 +15301,8 @@ begin
                 , Frame_sel19_fWetR => x_102.Frame_sel19_fWetR
                 , Frame_sel20_fFbL => x_102.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_102.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => result_242
-                , Frame_sel23_fEqLowR => result_242
+                , Frame_sel22_fEqLowL => result_244
+                , Frame_sel23_fEqLowR => result_244
                 , Frame_sel24_fEqMidL => x_102.Frame_sel24_fEqMidL
                 , Frame_sel25_fEqMidR => x_102.Frame_sel25_fEqMidR
                 , Frame_sel26_fEqHighL => x_102.Frame_sel26_fEqHighL
@@ -15138,7 +15314,7 @@ begin
                 , Frame_sel32_fAcc2L => x_102.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_102.Frame_sel33_fAcc2R
                 , Frame_sel34_fAcc3L => x_102.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_102.Frame_sel35_fAcc3R ) when result_240 else
+                , Frame_sel35_fAcc3R => x_102.Frame_sel35_fAcc3R ) when result_242 else
                 ( Frame_sel0_fL => x_100
                 , Frame_sel1_fR => x_100
                 , Frame_sel2_fLast => x_102.Frame_sel2_fLast
@@ -15161,8 +15337,8 @@ begin
                 , Frame_sel19_fWetR => x_102.Frame_sel19_fWetR
                 , Frame_sel20_fFbL => x_102.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_102.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => result_242
-                , Frame_sel23_fEqLowR => result_242
+                , Frame_sel22_fEqLowL => result_244
+                , Frame_sel23_fEqLowR => result_244
                 , Frame_sel24_fEqMidL => x_102.Frame_sel24_fEqMidL
                 , Frame_sel25_fEqMidR => x_102.Frame_sel25_fEqMidR
                 , Frame_sel26_fEqHighL => x_102.Frame_sel26_fEqHighL
@@ -15196,9 +15372,9 @@ begin
 
   \c$bv_124\ <= (x_102.Frame_sel3_fGate);
 
-  result_240 <= ((\c$bv_124\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_141\ = ('1'));
+  result_242 <= ((\c$bv_124\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_141\ = ('1'));
 
-  x_99 <= (resize(x_100,48)) - (resize(result_242,48));
+  x_99 <= (resize(x_100,48)) - (resize(result_244,48));
 
   \c$case_alt_selection_res_79\ <= x_99 < to_signed(-8388608,48);
 
@@ -15207,7 +15383,7 @@ begin
 
   result_selection_res_95 <= x_99 > to_signed(8388607,48);
 
-  result_241 <= to_signed(8388607,24) when result_selection_res_95 else
+  result_243 <= to_signed(8388607,24) when result_selection_res_95 else
                 \c$case_alt_104\;
 
   alpha_5 <= to_unsigned(8,8) + \c$lp_app_arg_4\;
@@ -15238,7 +15414,7 @@ begin
 
   result_selection_res_96 <= \c$app_arg_142\ > to_signed(8388607,48);
 
-  result_242 <= to_signed(8388607,24) when result_selection_res_96 else
+  result_244 <= to_signed(8388607,24) when result_selection_res_96 else
                 \c$case_alt_105\;
 
   x_100 <= x_102.Frame_sel0_fL;
@@ -15287,49 +15463,49 @@ begin
     if aresetn =  '0'  then
       ds1_32 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_32 <= result_243;
+      ds1_32 <= result_245;
     end if;
   end process;
   -- register end
 
   with (tsPostLpfPipe(1067 downto 1067)) select
-    result_243 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_247.Frame_sel0_fL)
-                   & std_logic_vector(result_247.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_247.Frame_sel2_fLast)
-                   & result_247.Frame_sel3_fGate
-                   & result_247.Frame_sel4_fOd
-                   & result_247.Frame_sel5_fDist
-                   & result_247.Frame_sel6_fEq
-                   & result_247.Frame_sel7_fRat
-                   & result_247.Frame_sel8_fAmp
-                   & result_247.Frame_sel9_fAmpTone
-                   & result_247.Frame_sel10_fCab
-                   & result_247.Frame_sel11_fReverb
-                   & result_247.Frame_sel12_fNs
-                   & result_247.Frame_sel13_fComp
-                   & result_247.Frame_sel14_fWah
-                   & std_logic_vector(result_247.Frame_sel15_fAddr)
-                   & std_logic_vector(result_247.Frame_sel16_fDryL)
-                   & std_logic_vector(result_247.Frame_sel17_fDryR)
-                   & std_logic_vector(result_247.Frame_sel18_fWetL)
-                   & std_logic_vector(result_247.Frame_sel19_fWetR)
-                   & std_logic_vector(result_247.Frame_sel20_fFbL)
-                   & std_logic_vector(result_247.Frame_sel21_fFbR)
-                   & std_logic_vector(result_247.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_247.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_247.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_247.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_247.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_247.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_247.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_247.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_247.Frame_sel30_fAccL)
-                   & std_logic_vector(result_247.Frame_sel31_fAccR)
-                   & std_logic_vector(result_247.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_247.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_247.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_247.Frame_sel35_fAcc3R)))) when others;
+    result_245 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_249.Frame_sel0_fL)
+                   & std_logic_vector(result_249.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_249.Frame_sel2_fLast)
+                   & result_249.Frame_sel3_fGate
+                   & result_249.Frame_sel4_fOd
+                   & result_249.Frame_sel5_fDist
+                   & result_249.Frame_sel6_fEq
+                   & result_249.Frame_sel7_fRat
+                   & result_249.Frame_sel8_fAmp
+                   & result_249.Frame_sel9_fAmpTone
+                   & result_249.Frame_sel10_fCab
+                   & result_249.Frame_sel11_fReverb
+                   & result_249.Frame_sel12_fNs
+                   & result_249.Frame_sel13_fComp
+                   & result_249.Frame_sel14_fWah
+                   & std_logic_vector(result_249.Frame_sel15_fAddr)
+                   & std_logic_vector(result_249.Frame_sel16_fDryL)
+                   & std_logic_vector(result_249.Frame_sel17_fDryR)
+                   & std_logic_vector(result_249.Frame_sel18_fWetL)
+                   & std_logic_vector(result_249.Frame_sel19_fWetR)
+                   & std_logic_vector(result_249.Frame_sel20_fFbL)
+                   & std_logic_vector(result_249.Frame_sel21_fFbR)
+                   & std_logic_vector(result_249.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_249.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_249.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_249.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_249.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_249.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_249.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_249.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_249.Frame_sel30_fAccL)
+                   & std_logic_vector(result_249.Frame_sel31_fAccR)
+                   & std_logic_vector(result_249.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_249.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_249.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_249.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_126\ <= (to_signed(7,64));
 
@@ -15355,7 +15531,7 @@ begin
 
   result_selection_res_97 <= \c$x_app_arg_39\ > to_signed(8388607,48);
 
-  result_244 <= to_signed(8388607,24) when result_selection_res_97 else
+  result_246 <= to_signed(8388607,24) when result_selection_res_97 else
                 \c$case_alt_106\;
 
   \c$bv_126\ <= (x_105.Frame_sel5_fDist);
@@ -15378,17 +15554,17 @@ begin
 
   \c$bv_128\ <= (x_105.Frame_sel3_fGate);
 
-  result_245 <= ((\c$bv_128\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_143\ = ('1'));
+  result_247 <= ((\c$bv_128\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_143\ = ('1'));
 
-  result_selection_res_98 <= result_244 > to_signed(4194304,24);
+  result_selection_res_98 <= result_246 > to_signed(4194304,24);
 
-  result_246 <= resize((to_signed(4194304,25) + \c$app_arg_144\),24) when result_selection_res_98 else
+  result_248 <= resize((to_signed(4194304,25) + \c$app_arg_144\),24) when result_selection_res_98 else
                 \c$case_alt_107\;
 
-  \c$case_alt_selection_res_82\ <= result_244 < to_signed(-4194304,24);
+  \c$case_alt_selection_res_82\ <= result_246 < to_signed(-4194304,24);
 
   \c$case_alt_107\ <= resize((to_signed(-4194304,25) + \c$app_arg_145\),24) when \c$case_alt_selection_res_82\ else
-                      result_244;
+                      result_246;
 
   \c$shI_127\ <= (to_signed(2,64));
 
@@ -15424,9 +15600,9 @@ begin
         ;
   end block;
 
-  \c$app_arg_146\ <= resize(result_244,25);
+  \c$app_arg_146\ <= resize(result_246,25);
 
-  result_247 <= ( Frame_sel0_fL => x_103
+  result_249 <= ( Frame_sel0_fL => x_103
                 , Frame_sel1_fR => x_103
                 , Frame_sel2_fLast => x_105.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_105.Frame_sel3_fGate
@@ -15467,7 +15643,7 @@ begin
 
   gain_24 <= unsigned((\c$bv_129\(15 downto 8)));
 
-  x_103 <= result_246 when result_245 else
+  x_103 <= result_248 when result_247 else
            x_105.Frame_sel0_fL;
 
   -- register begin
@@ -15476,52 +15652,52 @@ begin
     if aresetn =  '0'  then
       tsPostLpfPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      tsPostLpfPipe <= result_248;
+      tsPostLpfPipe <= result_250;
     end if;
   end process;
   -- register end
 
   with (ds1_33(1067 downto 1067)) select
-    result_248 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_249.Frame_sel0_fL)
-                   & std_logic_vector(result_249.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_249.Frame_sel2_fLast)
-                   & result_249.Frame_sel3_fGate
-                   & result_249.Frame_sel4_fOd
-                   & result_249.Frame_sel5_fDist
-                   & result_249.Frame_sel6_fEq
-                   & result_249.Frame_sel7_fRat
-                   & result_249.Frame_sel8_fAmp
-                   & result_249.Frame_sel9_fAmpTone
-                   & result_249.Frame_sel10_fCab
-                   & result_249.Frame_sel11_fReverb
-                   & result_249.Frame_sel12_fNs
-                   & result_249.Frame_sel13_fComp
-                   & result_249.Frame_sel14_fWah
-                   & std_logic_vector(result_249.Frame_sel15_fAddr)
-                   & std_logic_vector(result_249.Frame_sel16_fDryL)
-                   & std_logic_vector(result_249.Frame_sel17_fDryR)
-                   & std_logic_vector(result_249.Frame_sel18_fWetL)
-                   & std_logic_vector(result_249.Frame_sel19_fWetR)
-                   & std_logic_vector(result_249.Frame_sel20_fFbL)
-                   & std_logic_vector(result_249.Frame_sel21_fFbR)
-                   & std_logic_vector(result_249.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_249.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_249.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_249.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_249.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_249.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_249.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_249.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_249.Frame_sel30_fAccL)
-                   & std_logic_vector(result_249.Frame_sel31_fAccR)
-                   & std_logic_vector(result_249.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_249.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_249.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_249.Frame_sel35_fAcc3R)))) when others;
+    result_250 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_251.Frame_sel0_fL)
+                   & std_logic_vector(result_251.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_251.Frame_sel2_fLast)
+                   & result_251.Frame_sel3_fGate
+                   & result_251.Frame_sel4_fOd
+                   & result_251.Frame_sel5_fDist
+                   & result_251.Frame_sel6_fEq
+                   & result_251.Frame_sel7_fRat
+                   & result_251.Frame_sel8_fAmp
+                   & result_251.Frame_sel9_fAmpTone
+                   & result_251.Frame_sel10_fCab
+                   & result_251.Frame_sel11_fReverb
+                   & result_251.Frame_sel12_fNs
+                   & result_251.Frame_sel13_fComp
+                   & result_251.Frame_sel14_fWah
+                   & std_logic_vector(result_251.Frame_sel15_fAddr)
+                   & std_logic_vector(result_251.Frame_sel16_fDryL)
+                   & std_logic_vector(result_251.Frame_sel17_fDryR)
+                   & std_logic_vector(result_251.Frame_sel18_fWetL)
+                   & std_logic_vector(result_251.Frame_sel19_fWetR)
+                   & std_logic_vector(result_251.Frame_sel20_fFbL)
+                   & std_logic_vector(result_251.Frame_sel21_fFbR)
+                   & std_logic_vector(result_251.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_251.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_251.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_251.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_251.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_251.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_251.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_251.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_251.Frame_sel30_fAccL)
+                   & std_logic_vector(result_251.Frame_sel31_fAccR)
+                   & std_logic_vector(result_251.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_251.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_251.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_251.Frame_sel35_fAcc3R)))) when others;
 
-  result_249 <= ( Frame_sel0_fL => result_251
-                , Frame_sel1_fR => result_251
+  result_251 <= ( Frame_sel0_fL => result_253
+                , Frame_sel1_fR => result_253
                 , Frame_sel2_fLast => x_106.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_106.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_106.Frame_sel4_fOd
@@ -15548,14 +15724,14 @@ begin
                 , Frame_sel25_fEqMidR => x_106.Frame_sel25_fEqMidR
                 , Frame_sel26_fEqHighL => x_106.Frame_sel26_fEqHighL
                 , Frame_sel27_fEqHighR => x_106.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => result_251
-                , Frame_sel29_fEqHighLpR => result_251
+                , Frame_sel28_fEqHighLpL => result_253
+                , Frame_sel29_fEqHighLpR => result_253
                 , Frame_sel30_fAccL => x_106.Frame_sel30_fAccL
                 , Frame_sel31_fAccR => x_106.Frame_sel31_fAccR
                 , Frame_sel32_fAcc2L => x_106.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_106.Frame_sel33_fAcc2R
                 , Frame_sel34_fAcc3L => x_106.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_106.Frame_sel35_fAcc3R ) when result_250 else
+                , Frame_sel35_fAcc3R => x_106.Frame_sel35_fAcc3R ) when result_252 else
                 ( Frame_sel0_fL => x_104
                 , Frame_sel1_fR => x_104
                 , Frame_sel2_fLast => x_106.Frame_sel2_fLast
@@ -15584,8 +15760,8 @@ begin
                 , Frame_sel25_fEqMidR => x_106.Frame_sel25_fEqMidR
                 , Frame_sel26_fEqHighL => x_106.Frame_sel26_fEqHighL
                 , Frame_sel27_fEqHighR => x_106.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => result_251
-                , Frame_sel29_fEqHighLpR => result_251
+                , Frame_sel28_fEqHighLpL => result_253
+                , Frame_sel29_fEqHighLpR => result_253
                 , Frame_sel30_fAccL => x_106.Frame_sel30_fAccL
                 , Frame_sel31_fAccR => x_106.Frame_sel31_fAccR
                 , Frame_sel32_fAcc2L => x_106.Frame_sel32_fAcc2L
@@ -15613,7 +15789,7 @@ begin
 
   \c$bv_132\ <= (x_106.Frame_sel3_fGate);
 
-  result_250 <= ((\c$bv_132\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_147\ = ('1'));
+  result_252 <= ((\c$bv_132\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_147\ = ('1'));
 
   alpha_6 <= to_unsigned(56,8) + \c$lp_app_arg_5\;
 
@@ -15643,7 +15819,7 @@ begin
 
   result_selection_res_99 <= \c$app_arg_148\ > to_signed(8388607,48);
 
-  result_251 <= to_signed(8388607,24) when result_selection_res_99 else
+  result_253 <= to_signed(8388607,24) when result_selection_res_99 else
                 \c$case_alt_108\;
 
   x_104 <= x_106.Frame_sel0_fL;
@@ -15692,49 +15868,49 @@ begin
     if aresetn =  '0'  then
       ds1_33 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_33 <= result_252;
+      ds1_33 <= result_254;
     end if;
   end process;
   -- register end
 
   with (ds1_34(1067 downto 1067)) select
-    result_252 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_256.Frame_sel0_fL)
-                   & std_logic_vector(result_256.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_256.Frame_sel2_fLast)
-                   & result_256.Frame_sel3_fGate
-                   & result_256.Frame_sel4_fOd
-                   & result_256.Frame_sel5_fDist
-                   & result_256.Frame_sel6_fEq
-                   & result_256.Frame_sel7_fRat
-                   & result_256.Frame_sel8_fAmp
-                   & result_256.Frame_sel9_fAmpTone
-                   & result_256.Frame_sel10_fCab
-                   & result_256.Frame_sel11_fReverb
-                   & result_256.Frame_sel12_fNs
-                   & result_256.Frame_sel13_fComp
-                   & result_256.Frame_sel14_fWah
-                   & std_logic_vector(result_256.Frame_sel15_fAddr)
-                   & std_logic_vector(result_256.Frame_sel16_fDryL)
-                   & std_logic_vector(result_256.Frame_sel17_fDryR)
-                   & std_logic_vector(result_256.Frame_sel18_fWetL)
-                   & std_logic_vector(result_256.Frame_sel19_fWetR)
-                   & std_logic_vector(result_256.Frame_sel20_fFbL)
-                   & std_logic_vector(result_256.Frame_sel21_fFbR)
-                   & std_logic_vector(result_256.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_256.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_256.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_256.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_256.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_256.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_256.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_256.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_256.Frame_sel30_fAccL)
-                   & std_logic_vector(result_256.Frame_sel31_fAccR)
-                   & std_logic_vector(result_256.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_256.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_256.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_256.Frame_sel35_fAcc3R)))) when others;
+    result_254 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_258.Frame_sel0_fL)
+                   & std_logic_vector(result_258.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_258.Frame_sel2_fLast)
+                   & result_258.Frame_sel3_fGate
+                   & result_258.Frame_sel4_fOd
+                   & result_258.Frame_sel5_fDist
+                   & result_258.Frame_sel6_fEq
+                   & result_258.Frame_sel7_fRat
+                   & result_258.Frame_sel8_fAmp
+                   & result_258.Frame_sel9_fAmpTone
+                   & result_258.Frame_sel10_fCab
+                   & result_258.Frame_sel11_fReverb
+                   & result_258.Frame_sel12_fNs
+                   & result_258.Frame_sel13_fComp
+                   & result_258.Frame_sel14_fWah
+                   & std_logic_vector(result_258.Frame_sel15_fAddr)
+                   & std_logic_vector(result_258.Frame_sel16_fDryL)
+                   & std_logic_vector(result_258.Frame_sel17_fDryR)
+                   & std_logic_vector(result_258.Frame_sel18_fWetL)
+                   & std_logic_vector(result_258.Frame_sel19_fWetR)
+                   & std_logic_vector(result_258.Frame_sel20_fFbL)
+                   & std_logic_vector(result_258.Frame_sel21_fFbR)
+                   & std_logic_vector(result_258.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_258.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_258.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_258.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_258.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_258.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_258.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_258.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_258.Frame_sel30_fAccL)
+                   & std_logic_vector(result_258.Frame_sel31_fAccR)
+                   & std_logic_vector(result_258.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_258.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_258.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_258.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_131\ <= (to_signed(8,64));
 
@@ -15760,7 +15936,7 @@ begin
 
   result_selection_res_100 <= \c$x_app_arg_40\ > to_signed(8388607,48);
 
-  result_253 <= to_signed(8388607,24) when result_selection_res_100 else
+  result_255 <= to_signed(8388607,24) when result_selection_res_100 else
                 \c$case_alt_109\;
 
   \c$bv_134\ <= (x_108.Frame_sel5_fDist);
@@ -15783,17 +15959,17 @@ begin
 
   \c$bv_136\ <= (x_108.Frame_sel3_fGate);
 
-  result_254 <= ((\c$bv_136\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_149\ = ('1'));
+  result_256 <= ((\c$bv_136\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_149\ = ('1'));
 
-  result_selection_res_101 <= result_253 > to_signed(3000000,24);
+  result_selection_res_101 <= result_255 > to_signed(3000000,24);
 
-  result_255 <= resize((to_signed(3000000,25) + \c$app_arg_150\),24) when result_selection_res_101 else
+  result_257 <= resize((to_signed(3000000,25) + \c$app_arg_150\),24) when result_selection_res_101 else
                 \c$case_alt_110\;
 
-  \c$case_alt_selection_res_85\ <= result_253 < to_signed(-2850000,24);
+  \c$case_alt_selection_res_85\ <= result_255 < to_signed(-2850000,24);
 
   \c$case_alt_110\ <= resize((to_signed(-2850000,25) + \c$app_arg_151\),24) when \c$case_alt_selection_res_85\ else
-                      result_253;
+                      result_255;
 
   \c$shI_132\ <= (to_signed(2,64));
 
@@ -15829,9 +16005,9 @@ begin
         ;
   end block;
 
-  \c$app_arg_152\ <= resize(result_253,25);
+  \c$app_arg_152\ <= resize(result_255,25);
 
-  result_256 <= ( Frame_sel0_fL => x_107
+  result_258 <= ( Frame_sel0_fL => x_107
                 , Frame_sel1_fR => x_107
                 , Frame_sel2_fLast => x_108.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_108.Frame_sel3_fGate
@@ -15868,7 +16044,7 @@ begin
                 , Frame_sel34_fAcc3L => x_108.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_108.Frame_sel35_fAcc3R );
 
-  x_107 <= result_255 when result_254 else
+  x_107 <= result_257 when result_256 else
            x_108.Frame_sel0_fL;
 
   x_108 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_34(1066 downto 0)));
@@ -15879,13 +16055,13 @@ begin
     if aresetn =  '0'  then
       ds1_34 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_34 <= result_257;
+      ds1_34 <= result_259;
     end if;
   end process;
   -- register end
 
   with (tsMidPipe(1067 downto 1067)) select
-    result_257 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+    result_259 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_111\.Frame_sel0_fL)
                    & std_logic_vector(\c$case_alt_111\.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(\c$case_alt_111\.Frame_sel2_fLast)
@@ -15943,9 +16119,9 @@ begin
 
   \c$bv_139\ <= (x_110.Frame_sel3_fGate);
 
-  result_258 <= ((\c$bv_139\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_153\ = ('1'));
+  result_260 <= ((\c$bv_139\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_153\ = ('1'));
 
-  \c$app_arg_154\ <= resize((resize(x_110.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_26)))))))),48)), 48) when result_258 else
+  \c$app_arg_154\ <= resize((resize(x_110.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_26)))))))),48)), 48) when result_260 else
                      to_signed(0,48);
 
   \c$case_alt_111\ <= ( Frame_sel0_fL => x_110.Frame_sel0_fL
@@ -15995,49 +16171,49 @@ begin
     if aresetn =  '0'  then
       tsMidPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      tsMidPipe <= result_259;
+      tsMidPipe <= result_261;
     end if;
   end process;
   -- register end
 
   with (tsHpfPipe(1067 downto 1067)) select
-    result_259 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_262.Frame_sel0_fL)
-                   & std_logic_vector(result_262.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_262.Frame_sel2_fLast)
-                   & result_262.Frame_sel3_fGate
-                   & result_262.Frame_sel4_fOd
-                   & result_262.Frame_sel5_fDist
-                   & result_262.Frame_sel6_fEq
-                   & result_262.Frame_sel7_fRat
-                   & result_262.Frame_sel8_fAmp
-                   & result_262.Frame_sel9_fAmpTone
-                   & result_262.Frame_sel10_fCab
-                   & result_262.Frame_sel11_fReverb
-                   & result_262.Frame_sel12_fNs
-                   & result_262.Frame_sel13_fComp
-                   & result_262.Frame_sel14_fWah
-                   & std_logic_vector(result_262.Frame_sel15_fAddr)
-                   & std_logic_vector(result_262.Frame_sel16_fDryL)
-                   & std_logic_vector(result_262.Frame_sel17_fDryR)
-                   & std_logic_vector(result_262.Frame_sel18_fWetL)
-                   & std_logic_vector(result_262.Frame_sel19_fWetR)
-                   & std_logic_vector(result_262.Frame_sel20_fFbL)
-                   & std_logic_vector(result_262.Frame_sel21_fFbR)
-                   & std_logic_vector(result_262.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_262.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_262.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_262.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_262.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_262.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_262.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_262.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_262.Frame_sel30_fAccL)
-                   & std_logic_vector(result_262.Frame_sel31_fAccR)
-                   & std_logic_vector(result_262.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_262.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_262.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_262.Frame_sel35_fAcc3R)))) when others;
+    result_261 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_264.Frame_sel0_fL)
+                   & std_logic_vector(result_264.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_264.Frame_sel2_fLast)
+                   & result_264.Frame_sel3_fGate
+                   & result_264.Frame_sel4_fOd
+                   & result_264.Frame_sel5_fDist
+                   & result_264.Frame_sel6_fEq
+                   & result_264.Frame_sel7_fRat
+                   & result_264.Frame_sel8_fAmp
+                   & result_264.Frame_sel9_fAmpTone
+                   & result_264.Frame_sel10_fCab
+                   & result_264.Frame_sel11_fReverb
+                   & result_264.Frame_sel12_fNs
+                   & result_264.Frame_sel13_fComp
+                   & result_264.Frame_sel14_fWah
+                   & std_logic_vector(result_264.Frame_sel15_fAddr)
+                   & std_logic_vector(result_264.Frame_sel16_fDryL)
+                   & std_logic_vector(result_264.Frame_sel17_fDryR)
+                   & std_logic_vector(result_264.Frame_sel18_fWetL)
+                   & std_logic_vector(result_264.Frame_sel19_fWetR)
+                   & std_logic_vector(result_264.Frame_sel20_fFbL)
+                   & std_logic_vector(result_264.Frame_sel21_fFbR)
+                   & std_logic_vector(result_264.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_264.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_264.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_264.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_264.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_264.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_264.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_264.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_264.Frame_sel30_fAccL)
+                   & std_logic_vector(result_264.Frame_sel31_fAccR)
+                   & std_logic_vector(result_264.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_264.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_264.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_264.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_134\ <= (to_signed(14,64));
 
@@ -16076,7 +16252,7 @@ begin
 
   \c$bv_143\ <= (x_113.Frame_sel3_fGate);
 
-  result_260 <= ((\c$bv_143\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_155\ = ('1'));
+  result_262 <= ((\c$bv_143\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_155\ = ('1'));
 
   \c$case_alt_selection_res_86\ <= \c$x_app_arg_41\ < to_signed(-8388608,48);
 
@@ -16085,10 +16261,10 @@ begin
 
   result_selection_res_102 <= \c$x_app_arg_41\ > to_signed(8388607,48);
 
-  result_261 <= to_signed(8388607,24) when result_selection_res_102 else
+  result_263 <= to_signed(8388607,24) when result_selection_res_102 else
                 \c$case_alt_112\;
 
-  result_262 <= ( Frame_sel0_fL => x_109
+  result_264 <= ( Frame_sel0_fL => x_109
                 , Frame_sel1_fR => x_109
                 , Frame_sel2_fLast => x_113.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_113.Frame_sel3_fGate
@@ -16125,7 +16301,7 @@ begin
                 , Frame_sel34_fAcc3L => x_113.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_113.Frame_sel35_fAcc3R );
 
-  x_109 <= result_261 when result_260 else
+  x_109 <= result_263 when result_262 else
            x_113.Frame_sel0_fL;
 
   -- register begin
@@ -16200,52 +16376,52 @@ begin
     if aresetn =  '0'  then
       tsHpfPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      tsHpfPipe <= result_263;
+      tsHpfPipe <= result_265;
     end if;
   end process;
   -- register end
 
   with (ds1_35(1067 downto 1067)) select
-    result_263 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_264.Frame_sel0_fL)
-                   & std_logic_vector(result_264.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_264.Frame_sel2_fLast)
-                   & result_264.Frame_sel3_fGate
-                   & result_264.Frame_sel4_fOd
-                   & result_264.Frame_sel5_fDist
-                   & result_264.Frame_sel6_fEq
-                   & result_264.Frame_sel7_fRat
-                   & result_264.Frame_sel8_fAmp
-                   & result_264.Frame_sel9_fAmpTone
-                   & result_264.Frame_sel10_fCab
-                   & result_264.Frame_sel11_fReverb
-                   & result_264.Frame_sel12_fNs
-                   & result_264.Frame_sel13_fComp
-                   & result_264.Frame_sel14_fWah
-                   & std_logic_vector(result_264.Frame_sel15_fAddr)
-                   & std_logic_vector(result_264.Frame_sel16_fDryL)
-                   & std_logic_vector(result_264.Frame_sel17_fDryR)
-                   & std_logic_vector(result_264.Frame_sel18_fWetL)
-                   & std_logic_vector(result_264.Frame_sel19_fWetR)
-                   & std_logic_vector(result_264.Frame_sel20_fFbL)
-                   & std_logic_vector(result_264.Frame_sel21_fFbR)
-                   & std_logic_vector(result_264.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_264.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_264.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_264.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_264.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_264.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_264.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_264.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_264.Frame_sel30_fAccL)
-                   & std_logic_vector(result_264.Frame_sel31_fAccR)
-                   & std_logic_vector(result_264.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_264.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_264.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_264.Frame_sel35_fAcc3R)))) when others;
+    result_265 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_266.Frame_sel0_fL)
+                   & std_logic_vector(result_266.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_266.Frame_sel2_fLast)
+                   & result_266.Frame_sel3_fGate
+                   & result_266.Frame_sel4_fOd
+                   & result_266.Frame_sel5_fDist
+                   & result_266.Frame_sel6_fEq
+                   & result_266.Frame_sel7_fRat
+                   & result_266.Frame_sel8_fAmp
+                   & result_266.Frame_sel9_fAmpTone
+                   & result_266.Frame_sel10_fCab
+                   & result_266.Frame_sel11_fReverb
+                   & result_266.Frame_sel12_fNs
+                   & result_266.Frame_sel13_fComp
+                   & result_266.Frame_sel14_fWah
+                   & std_logic_vector(result_266.Frame_sel15_fAddr)
+                   & std_logic_vector(result_266.Frame_sel16_fDryL)
+                   & std_logic_vector(result_266.Frame_sel17_fDryR)
+                   & std_logic_vector(result_266.Frame_sel18_fWetL)
+                   & std_logic_vector(result_266.Frame_sel19_fWetR)
+                   & std_logic_vector(result_266.Frame_sel20_fFbL)
+                   & std_logic_vector(result_266.Frame_sel21_fFbR)
+                   & std_logic_vector(result_266.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_266.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_266.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_266.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_266.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_266.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_266.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_266.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_266.Frame_sel30_fAccL)
+                   & std_logic_vector(result_266.Frame_sel31_fAccR)
+                   & std_logic_vector(result_266.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_266.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_266.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_266.Frame_sel35_fAcc3R)))) when others;
 
-  result_264 <= ( Frame_sel0_fL => result_266
-                , Frame_sel1_fR => result_266
+  result_266 <= ( Frame_sel0_fL => result_268
+                , Frame_sel1_fR => result_268
                 , Frame_sel2_fLast => x_114.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_114.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_114.Frame_sel4_fOd
@@ -16266,8 +16442,8 @@ begin
                 , Frame_sel19_fWetR => x_114.Frame_sel19_fWetR
                 , Frame_sel20_fFbL => x_114.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_114.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => result_267
-                , Frame_sel23_fEqLowR => result_267
+                , Frame_sel22_fEqLowL => result_269
+                , Frame_sel23_fEqLowR => result_269
                 , Frame_sel24_fEqMidL => x_114.Frame_sel24_fEqMidL
                 , Frame_sel25_fEqMidR => x_114.Frame_sel25_fEqMidR
                 , Frame_sel26_fEqHighL => x_114.Frame_sel26_fEqHighL
@@ -16279,7 +16455,7 @@ begin
                 , Frame_sel32_fAcc2L => x_114.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_114.Frame_sel33_fAcc2R
                 , Frame_sel34_fAcc3L => x_114.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_114.Frame_sel35_fAcc3R ) when result_265 else
+                , Frame_sel35_fAcc3R => x_114.Frame_sel35_fAcc3R ) when result_267 else
                 ( Frame_sel0_fL => x_112
                 , Frame_sel1_fR => x_112
                 , Frame_sel2_fLast => x_114.Frame_sel2_fLast
@@ -16302,8 +16478,8 @@ begin
                 , Frame_sel19_fWetR => x_114.Frame_sel19_fWetR
                 , Frame_sel20_fFbL => x_114.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_114.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => result_267
-                , Frame_sel23_fEqLowR => result_267
+                , Frame_sel22_fEqLowL => result_269
+                , Frame_sel23_fEqLowR => result_269
                 , Frame_sel24_fEqMidL => x_114.Frame_sel24_fEqMidL
                 , Frame_sel25_fEqMidR => x_114.Frame_sel25_fEqMidR
                 , Frame_sel26_fEqHighL => x_114.Frame_sel26_fEqHighL
@@ -16337,9 +16513,9 @@ begin
 
   \c$bv_146\ <= (x_114.Frame_sel3_fGate);
 
-  result_265 <= ((\c$bv_146\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_156\ = ('1'));
+  result_267 <= ((\c$bv_146\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_156\ = ('1'));
 
-  x_111 <= (resize(x_112,48)) - (resize(result_267,48));
+  x_111 <= (resize(x_112,48)) - (resize(result_269,48));
 
   \c$case_alt_selection_res_87\ <= x_111 < to_signed(-8388608,48);
 
@@ -16348,7 +16524,7 @@ begin
 
   result_selection_res_103 <= x_111 > to_signed(8388607,48);
 
-  result_266 <= to_signed(8388607,24) when result_selection_res_103 else
+  result_268 <= to_signed(8388607,24) when result_selection_res_103 else
                 \c$case_alt_113\;
 
   alpha_7 <= to_unsigned(4,8) + \c$lp_app_arg_6\;
@@ -16379,7 +16555,7 @@ begin
 
   result_selection_res_104 <= \c$app_arg_157\ > to_signed(8388607,48);
 
-  result_267 <= to_signed(8388607,24) when result_selection_res_104 else
+  result_269 <= to_signed(8388607,24) when result_selection_res_104 else
                 \c$case_alt_114\;
 
   x_112 <= x_114.Frame_sel0_fL;
@@ -16428,49 +16604,49 @@ begin
     if aresetn =  '0'  then
       ds1_35 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_35 <= result_268;
+      ds1_35 <= result_270;
     end if;
   end process;
   -- register end
 
   with (ds1_36(1067 downto 1067)) select
-    result_268 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_272.Frame_sel0_fL)
-                   & std_logic_vector(result_272.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_272.Frame_sel2_fLast)
-                   & result_272.Frame_sel3_fGate
-                   & result_272.Frame_sel4_fOd
-                   & result_272.Frame_sel5_fDist
-                   & result_272.Frame_sel6_fEq
-                   & result_272.Frame_sel7_fRat
-                   & result_272.Frame_sel8_fAmp
-                   & result_272.Frame_sel9_fAmpTone
-                   & result_272.Frame_sel10_fCab
-                   & result_272.Frame_sel11_fReverb
-                   & result_272.Frame_sel12_fNs
-                   & result_272.Frame_sel13_fComp
-                   & result_272.Frame_sel14_fWah
-                   & std_logic_vector(result_272.Frame_sel15_fAddr)
-                   & std_logic_vector(result_272.Frame_sel16_fDryL)
-                   & std_logic_vector(result_272.Frame_sel17_fDryR)
-                   & std_logic_vector(result_272.Frame_sel18_fWetL)
-                   & std_logic_vector(result_272.Frame_sel19_fWetR)
-                   & std_logic_vector(result_272.Frame_sel20_fFbL)
-                   & std_logic_vector(result_272.Frame_sel21_fFbR)
-                   & std_logic_vector(result_272.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_272.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_272.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_272.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_272.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_272.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_272.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_272.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_272.Frame_sel30_fAccL)
-                   & std_logic_vector(result_272.Frame_sel31_fAccR)
-                   & std_logic_vector(result_272.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_272.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_272.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_272.Frame_sel35_fAcc3R)))) when others;
+    result_270 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_274.Frame_sel0_fL)
+                   & std_logic_vector(result_274.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_274.Frame_sel2_fLast)
+                   & result_274.Frame_sel3_fGate
+                   & result_274.Frame_sel4_fOd
+                   & result_274.Frame_sel5_fDist
+                   & result_274.Frame_sel6_fEq
+                   & result_274.Frame_sel7_fRat
+                   & result_274.Frame_sel8_fAmp
+                   & result_274.Frame_sel9_fAmpTone
+                   & result_274.Frame_sel10_fCab
+                   & result_274.Frame_sel11_fReverb
+                   & result_274.Frame_sel12_fNs
+                   & result_274.Frame_sel13_fComp
+                   & result_274.Frame_sel14_fWah
+                   & std_logic_vector(result_274.Frame_sel15_fAddr)
+                   & std_logic_vector(result_274.Frame_sel16_fDryL)
+                   & std_logic_vector(result_274.Frame_sel17_fDryR)
+                   & std_logic_vector(result_274.Frame_sel18_fWetL)
+                   & std_logic_vector(result_274.Frame_sel19_fWetR)
+                   & std_logic_vector(result_274.Frame_sel20_fFbL)
+                   & std_logic_vector(result_274.Frame_sel21_fFbR)
+                   & std_logic_vector(result_274.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_274.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_274.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_274.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_274.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_274.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_274.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_274.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_274.Frame_sel30_fAccL)
+                   & std_logic_vector(result_274.Frame_sel31_fAccR)
+                   & std_logic_vector(result_274.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_274.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_274.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_274.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_137\ <= (to_signed(7,64));
 
@@ -16496,7 +16672,7 @@ begin
 
   result_selection_res_105 <= \c$x_app_arg_42\ > to_signed(8388607,48);
 
-  result_269 <= to_signed(8388607,24) when result_selection_res_105 else
+  result_271 <= to_signed(8388607,24) when result_selection_res_105 else
                 \c$case_alt_115\;
 
   \c$bv_148\ <= (x_116.Frame_sel5_fDist);
@@ -16519,17 +16695,17 @@ begin
 
   \c$bv_150\ <= (x_116.Frame_sel3_fGate);
 
-  result_270 <= ((\c$bv_150\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_158\ = ('1'));
+  result_272 <= ((\c$bv_150\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_158\ = ('1'));
 
-  result_selection_res_106 <= result_269 > to_signed(3800000,24);
+  result_selection_res_106 <= result_271 > to_signed(3800000,24);
 
-  result_271 <= resize((to_signed(3800000,25) + \c$app_arg_159\),24) when result_selection_res_106 else
+  result_273 <= resize((to_signed(3800000,25) + \c$app_arg_159\),24) when result_selection_res_106 else
                 \c$case_alt_116\;
 
-  \c$case_alt_selection_res_90\ <= result_269 < to_signed(-3800000,24);
+  \c$case_alt_selection_res_90\ <= result_271 < to_signed(-3800000,24);
 
   \c$case_alt_116\ <= resize((to_signed(-3800000,25) + \c$app_arg_160\),24) when \c$case_alt_selection_res_90\ else
-                      result_269;
+                      result_271;
 
   \c$shI_138\ <= (to_signed(2,64));
 
@@ -16565,9 +16741,9 @@ begin
         ;
   end block;
 
-  \c$app_arg_161\ <= resize(result_269,25);
+  \c$app_arg_161\ <= resize(result_271,25);
 
-  result_272 <= ( Frame_sel0_fL => x_115
+  result_274 <= ( Frame_sel0_fL => x_115
                 , Frame_sel1_fR => x_115
                 , Frame_sel2_fLast => x_116.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_116.Frame_sel3_fGate
@@ -16608,7 +16784,7 @@ begin
 
   gain_28 <= unsigned((\c$bv_151\(15 downto 8)));
 
-  x_115 <= result_271 when result_270 else
+  x_115 <= result_273 when result_272 else
            x_116.Frame_sel0_fL;
 
   x_116 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_36(1066 downto 0)));
@@ -16619,49 +16795,49 @@ begin
     if aresetn =  '0'  then
       ds1_36 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_36 <= result_273;
+      ds1_36 <= result_275;
     end if;
   end process;
   -- register end
 
   with (ds1_37(1067 downto 1067)) select
-    result_273 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_276.Frame_sel0_fL)
-                   & std_logic_vector(result_276.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_276.Frame_sel2_fLast)
-                   & result_276.Frame_sel3_fGate
-                   & result_276.Frame_sel4_fOd
-                   & result_276.Frame_sel5_fDist
-                   & result_276.Frame_sel6_fEq
-                   & result_276.Frame_sel7_fRat
-                   & result_276.Frame_sel8_fAmp
-                   & result_276.Frame_sel9_fAmpTone
-                   & result_276.Frame_sel10_fCab
-                   & result_276.Frame_sel11_fReverb
-                   & result_276.Frame_sel12_fNs
-                   & result_276.Frame_sel13_fComp
-                   & result_276.Frame_sel14_fWah
-                   & std_logic_vector(result_276.Frame_sel15_fAddr)
-                   & std_logic_vector(result_276.Frame_sel16_fDryL)
-                   & std_logic_vector(result_276.Frame_sel17_fDryR)
-                   & std_logic_vector(result_276.Frame_sel18_fWetL)
-                   & std_logic_vector(result_276.Frame_sel19_fWetR)
-                   & std_logic_vector(result_276.Frame_sel20_fFbL)
-                   & std_logic_vector(result_276.Frame_sel21_fFbR)
-                   & std_logic_vector(result_276.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_276.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_276.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_276.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_276.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_276.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_276.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_276.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_276.Frame_sel30_fAccL)
-                   & std_logic_vector(result_276.Frame_sel31_fAccR)
-                   & std_logic_vector(result_276.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_276.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_276.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_276.Frame_sel35_fAcc3R)))) when others;
+    result_275 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_278.Frame_sel0_fL)
+                   & std_logic_vector(result_278.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_278.Frame_sel2_fLast)
+                   & result_278.Frame_sel3_fGate
+                   & result_278.Frame_sel4_fOd
+                   & result_278.Frame_sel5_fDist
+                   & result_278.Frame_sel6_fEq
+                   & result_278.Frame_sel7_fRat
+                   & result_278.Frame_sel8_fAmp
+                   & result_278.Frame_sel9_fAmpTone
+                   & result_278.Frame_sel10_fCab
+                   & result_278.Frame_sel11_fReverb
+                   & result_278.Frame_sel12_fNs
+                   & result_278.Frame_sel13_fComp
+                   & result_278.Frame_sel14_fWah
+                   & std_logic_vector(result_278.Frame_sel15_fAddr)
+                   & std_logic_vector(result_278.Frame_sel16_fDryL)
+                   & std_logic_vector(result_278.Frame_sel17_fDryR)
+                   & std_logic_vector(result_278.Frame_sel18_fWetL)
+                   & std_logic_vector(result_278.Frame_sel19_fWetR)
+                   & std_logic_vector(result_278.Frame_sel20_fFbL)
+                   & std_logic_vector(result_278.Frame_sel21_fFbR)
+                   & std_logic_vector(result_278.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_278.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_278.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_278.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_278.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_278.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_278.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_278.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_278.Frame_sel30_fAccL)
+                   & std_logic_vector(result_278.Frame_sel31_fAccR)
+                   & std_logic_vector(result_278.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_278.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_278.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_278.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_140\ <= (to_signed(8,64));
 
@@ -16700,7 +16876,7 @@ begin
 
   \c$bv_154\ <= (x_118.Frame_sel3_fGate);
 
-  result_274 <= ((\c$bv_154\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_162\ = ('1'));
+  result_276 <= ((\c$bv_154\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_162\ = ('1'));
 
   \c$case_alt_selection_res_91\ <= \c$x_app_arg_43\ < to_signed(-8388608,48);
 
@@ -16709,10 +16885,10 @@ begin
 
   result_selection_res_107 <= \c$x_app_arg_43\ > to_signed(8388607,48);
 
-  result_275 <= to_signed(8388607,24) when result_selection_res_107 else
+  result_277 <= to_signed(8388607,24) when result_selection_res_107 else
                 \c$case_alt_117\;
 
-  result_276 <= ( Frame_sel0_fL => x_117
+  result_278 <= ( Frame_sel0_fL => x_117
                 , Frame_sel1_fR => x_117
                 , Frame_sel2_fLast => x_118.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_118.Frame_sel3_fGate
@@ -16749,7 +16925,7 @@ begin
                 , Frame_sel34_fAcc3L => x_118.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_118.Frame_sel35_fAcc3R );
 
-  x_117 <= result_275 when result_274 else
+  x_117 <= result_277 when result_276 else
            x_118.Frame_sel0_fL;
 
   x_118 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_37(1066 downto 0)));
@@ -16760,13 +16936,13 @@ begin
     if aresetn =  '0'  then
       ds1_37 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_37 <= result_277;
+      ds1_37 <= result_279;
     end if;
   end process;
   -- register end
 
   with (ds1_38(1067 downto 1067)) select
-    result_277 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+    result_279 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_118\.Frame_sel0_fL)
                    & std_logic_vector(\c$case_alt_118\.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(\c$case_alt_118\.Frame_sel2_fLast)
@@ -16824,9 +17000,9 @@ begin
 
   \c$bv_157\ <= (x_119.Frame_sel3_fGate);
 
-  result_278 <= ((\c$bv_157\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_163\ = ('1'));
+  result_280 <= ((\c$bv_157\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_163\ = ('1'));
 
-  \c$app_arg_164\ <= resize((resize(x_119.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_29)))))))),48)), 48) when result_278 else
+  \c$app_arg_164\ <= resize((resize(x_119.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_29)))))))),48)), 48) when result_280 else
                      to_signed(0,48);
 
   \c$case_alt_118\ <= ( Frame_sel0_fL => x_119.Frame_sel0_fL
@@ -16878,49 +17054,49 @@ begin
     if aresetn =  '0'  then
       ds1_38 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_38 <= result_279;
+      ds1_38 <= result_281;
     end if;
   end process;
   -- register end
 
   with (ds1_39(1067 downto 1067)) select
-    result_279 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_282.Frame_sel0_fL)
-                   & std_logic_vector(result_282.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_282.Frame_sel2_fLast)
-                   & result_282.Frame_sel3_fGate
-                   & result_282.Frame_sel4_fOd
-                   & result_282.Frame_sel5_fDist
-                   & result_282.Frame_sel6_fEq
-                   & result_282.Frame_sel7_fRat
-                   & result_282.Frame_sel8_fAmp
-                   & result_282.Frame_sel9_fAmpTone
-                   & result_282.Frame_sel10_fCab
-                   & result_282.Frame_sel11_fReverb
-                   & result_282.Frame_sel12_fNs
-                   & result_282.Frame_sel13_fComp
-                   & result_282.Frame_sel14_fWah
-                   & std_logic_vector(result_282.Frame_sel15_fAddr)
-                   & std_logic_vector(result_282.Frame_sel16_fDryL)
-                   & std_logic_vector(result_282.Frame_sel17_fDryR)
-                   & std_logic_vector(result_282.Frame_sel18_fWetL)
-                   & std_logic_vector(result_282.Frame_sel19_fWetR)
-                   & std_logic_vector(result_282.Frame_sel20_fFbL)
-                   & std_logic_vector(result_282.Frame_sel21_fFbR)
-                   & std_logic_vector(result_282.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_282.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_282.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_282.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_282.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_282.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_282.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_282.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_282.Frame_sel30_fAccL)
-                   & std_logic_vector(result_282.Frame_sel31_fAccR)
-                   & std_logic_vector(result_282.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_282.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_282.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_282.Frame_sel35_fAcc3R)))) when others;
+    result_281 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_284.Frame_sel0_fL)
+                   & std_logic_vector(result_284.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_284.Frame_sel2_fLast)
+                   & result_284.Frame_sel3_fGate
+                   & result_284.Frame_sel4_fOd
+                   & result_284.Frame_sel5_fDist
+                   & result_284.Frame_sel6_fEq
+                   & result_284.Frame_sel7_fRat
+                   & result_284.Frame_sel8_fAmp
+                   & result_284.Frame_sel9_fAmpTone
+                   & result_284.Frame_sel10_fCab
+                   & result_284.Frame_sel11_fReverb
+                   & result_284.Frame_sel12_fNs
+                   & result_284.Frame_sel13_fComp
+                   & result_284.Frame_sel14_fWah
+                   & std_logic_vector(result_284.Frame_sel15_fAddr)
+                   & std_logic_vector(result_284.Frame_sel16_fDryL)
+                   & std_logic_vector(result_284.Frame_sel17_fDryR)
+                   & std_logic_vector(result_284.Frame_sel18_fWetL)
+                   & std_logic_vector(result_284.Frame_sel19_fWetR)
+                   & std_logic_vector(result_284.Frame_sel20_fFbL)
+                   & std_logic_vector(result_284.Frame_sel21_fFbR)
+                   & std_logic_vector(result_284.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_284.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_284.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_284.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_284.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_284.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_284.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_284.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_284.Frame_sel30_fAccL)
+                   & std_logic_vector(result_284.Frame_sel31_fAccR)
+                   & std_logic_vector(result_284.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_284.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_284.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_284.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_141\ <= (to_signed(8,64));
 
@@ -16946,18 +17122,18 @@ begin
 
   result_selection_res_108 <= \c$x_app_arg_44\ > to_signed(8388607,48);
 
-  result_280 <= to_signed(8388607,24) when result_selection_res_108 else
+  result_282 <= to_signed(8388607,24) when result_selection_res_108 else
                 \c$case_alt_119\;
 
-  result_selection_res_109 <= result_280 > to_signed(4194304,24);
+  result_selection_res_109 <= result_282 > to_signed(4194304,24);
 
-  result_281 <= resize((to_signed(4194304,25) + \c$app_arg_165\),24) when result_selection_res_109 else
+  result_283 <= resize((to_signed(4194304,25) + \c$app_arg_165\),24) when result_selection_res_109 else
                 \c$case_alt_120\;
 
-  \c$case_alt_selection_res_93\ <= result_280 < to_signed(-4194304,24);
+  \c$case_alt_selection_res_93\ <= result_282 < to_signed(-4194304,24);
 
   \c$case_alt_120\ <= resize((to_signed(-4194304,25) + \c$app_arg_166\),24) when \c$case_alt_selection_res_93\ else
-                      result_280;
+                      result_282;
 
   \c$shI_142\ <= (to_signed(2,64));
 
@@ -16993,9 +17169,9 @@ begin
         ;
   end block;
 
-  \c$app_arg_167\ <= resize(result_280,25);
+  \c$app_arg_167\ <= resize(result_282,25);
 
-  result_282 <= ( Frame_sel0_fL => x_120
+  result_284 <= ( Frame_sel0_fL => x_120
                 , Frame_sel1_fR => x_120
                 , Frame_sel2_fLast => x_121.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_121.Frame_sel3_fGate
@@ -17039,7 +17215,7 @@ begin
   x_selection_res_17 <= \c$bv_159\(4 downto 4);
 
   with (x_selection_res_17) select
-    x_120 <= result_281 when "1",
+    x_120 <= result_283 when "1",
              x_121.Frame_sel0_fL when others;
 
   \c$bv_160\ <= (x_121.Frame_sel7_fRat);
@@ -17054,49 +17230,49 @@ begin
     if aresetn =  '0'  then
       ds1_39 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_39 <= result_283;
+      ds1_39 <= result_285;
     end if;
   end process;
   -- register end
 
   with (ratTonePipe(1067 downto 1067)) select
-    result_283 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_285.Frame_sel0_fL)
-                   & std_logic_vector(result_285.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_285.Frame_sel2_fLast)
-                   & result_285.Frame_sel3_fGate
-                   & result_285.Frame_sel4_fOd
-                   & result_285.Frame_sel5_fDist
-                   & result_285.Frame_sel6_fEq
-                   & result_285.Frame_sel7_fRat
-                   & result_285.Frame_sel8_fAmp
-                   & result_285.Frame_sel9_fAmpTone
-                   & result_285.Frame_sel10_fCab
-                   & result_285.Frame_sel11_fReverb
-                   & result_285.Frame_sel12_fNs
-                   & result_285.Frame_sel13_fComp
-                   & result_285.Frame_sel14_fWah
-                   & std_logic_vector(result_285.Frame_sel15_fAddr)
-                   & std_logic_vector(result_285.Frame_sel16_fDryL)
-                   & std_logic_vector(result_285.Frame_sel17_fDryR)
-                   & std_logic_vector(result_285.Frame_sel18_fWetL)
-                   & std_logic_vector(result_285.Frame_sel19_fWetR)
-                   & std_logic_vector(result_285.Frame_sel20_fFbL)
-                   & std_logic_vector(result_285.Frame_sel21_fFbR)
-                   & std_logic_vector(result_285.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_285.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_285.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_285.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_285.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_285.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_285.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_285.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_285.Frame_sel30_fAccL)
-                   & std_logic_vector(result_285.Frame_sel31_fAccR)
-                   & std_logic_vector(result_285.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_285.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_285.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_285.Frame_sel35_fAcc3R)))) when others;
+    result_285 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_287.Frame_sel0_fL)
+                   & std_logic_vector(result_287.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_287.Frame_sel2_fLast)
+                   & result_287.Frame_sel3_fGate
+                   & result_287.Frame_sel4_fOd
+                   & result_287.Frame_sel5_fDist
+                   & result_287.Frame_sel6_fEq
+                   & result_287.Frame_sel7_fRat
+                   & result_287.Frame_sel8_fAmp
+                   & result_287.Frame_sel9_fAmpTone
+                   & result_287.Frame_sel10_fCab
+                   & result_287.Frame_sel11_fReverb
+                   & result_287.Frame_sel12_fNs
+                   & result_287.Frame_sel13_fComp
+                   & result_287.Frame_sel14_fWah
+                   & std_logic_vector(result_287.Frame_sel15_fAddr)
+                   & std_logic_vector(result_287.Frame_sel16_fDryL)
+                   & std_logic_vector(result_287.Frame_sel17_fDryR)
+                   & std_logic_vector(result_287.Frame_sel18_fWetL)
+                   & std_logic_vector(result_287.Frame_sel19_fWetR)
+                   & std_logic_vector(result_287.Frame_sel20_fFbL)
+                   & std_logic_vector(result_287.Frame_sel21_fFbR)
+                   & std_logic_vector(result_287.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_287.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_287.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_287.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_287.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_287.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_287.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_287.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_287.Frame_sel30_fAccL)
+                   & std_logic_vector(result_287.Frame_sel31_fAccR)
+                   & std_logic_vector(result_287.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_287.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_287.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_287.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_144\ <= (to_signed(7,64));
 
@@ -17122,10 +17298,10 @@ begin
 
   result_selection_res_110 <= \c$x_app_arg_45\ > to_signed(8388607,48);
 
-  result_284 <= to_signed(8388607,24) when result_selection_res_110 else
+  result_286 <= to_signed(8388607,24) when result_selection_res_110 else
                 \c$case_alt_121\;
 
-  result_285 <= ( Frame_sel0_fL => x_124.Frame_sel0_fL
+  result_287 <= ( Frame_sel0_fL => x_124.Frame_sel0_fL
                 , Frame_sel1_fR => x_124.Frame_sel1_fR
                 , Frame_sel2_fLast => x_124.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_124.Frame_sel3_fGate
@@ -17171,7 +17347,7 @@ begin
   x_selection_res_18 <= \c$bv_162\(4 downto 4);
 
   with (x_selection_res_18) select
-    x_122 <= result_284 when "1",
+    x_122 <= result_286 when "1",
              x_124.Frame_sel0_fL when others;
 
   -- register begin
@@ -17180,49 +17356,49 @@ begin
     if aresetn =  '0'  then
       ratTonePipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ratTonePipe <= result_286;
+      ratTonePipe <= result_288;
     end if;
   end process;
   -- register end
 
   with (ratPostPipe(1067 downto 1067)) select
-    result_286 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_288.Frame_sel0_fL)
-                   & std_logic_vector(result_288.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_288.Frame_sel2_fLast)
-                   & result_288.Frame_sel3_fGate
-                   & result_288.Frame_sel4_fOd
-                   & result_288.Frame_sel5_fDist
-                   & result_288.Frame_sel6_fEq
-                   & result_288.Frame_sel7_fRat
-                   & result_288.Frame_sel8_fAmp
-                   & result_288.Frame_sel9_fAmpTone
-                   & result_288.Frame_sel10_fCab
-                   & result_288.Frame_sel11_fReverb
-                   & result_288.Frame_sel12_fNs
-                   & result_288.Frame_sel13_fComp
-                   & result_288.Frame_sel14_fWah
-                   & std_logic_vector(result_288.Frame_sel15_fAddr)
-                   & std_logic_vector(result_288.Frame_sel16_fDryL)
-                   & std_logic_vector(result_288.Frame_sel17_fDryR)
-                   & std_logic_vector(result_288.Frame_sel18_fWetL)
-                   & std_logic_vector(result_288.Frame_sel19_fWetR)
-                   & std_logic_vector(result_288.Frame_sel20_fFbL)
-                   & std_logic_vector(result_288.Frame_sel21_fFbR)
-                   & std_logic_vector(result_288.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_288.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_288.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_288.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_288.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_288.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_288.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_288.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_288.Frame_sel30_fAccL)
-                   & std_logic_vector(result_288.Frame_sel31_fAccR)
-                   & std_logic_vector(result_288.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_288.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_288.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_288.Frame_sel35_fAcc3R)))) when others;
+    result_288 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_290.Frame_sel0_fL)
+                   & std_logic_vector(result_290.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_290.Frame_sel2_fLast)
+                   & result_290.Frame_sel3_fGate
+                   & result_290.Frame_sel4_fOd
+                   & result_290.Frame_sel5_fDist
+                   & result_290.Frame_sel6_fEq
+                   & result_290.Frame_sel7_fRat
+                   & result_290.Frame_sel8_fAmp
+                   & result_290.Frame_sel9_fAmpTone
+                   & result_290.Frame_sel10_fCab
+                   & result_290.Frame_sel11_fReverb
+                   & result_290.Frame_sel12_fNs
+                   & result_290.Frame_sel13_fComp
+                   & result_290.Frame_sel14_fWah
+                   & std_logic_vector(result_290.Frame_sel15_fAddr)
+                   & std_logic_vector(result_290.Frame_sel16_fDryL)
+                   & std_logic_vector(result_290.Frame_sel17_fDryR)
+                   & std_logic_vector(result_290.Frame_sel18_fWetL)
+                   & std_logic_vector(result_290.Frame_sel19_fWetR)
+                   & std_logic_vector(result_290.Frame_sel20_fFbL)
+                   & std_logic_vector(result_290.Frame_sel21_fFbR)
+                   & std_logic_vector(result_290.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_290.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_290.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_290.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_290.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_290.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_290.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_290.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_290.Frame_sel30_fAccL)
+                   & std_logic_vector(result_290.Frame_sel31_fAccR)
+                   & std_logic_vector(result_290.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_290.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_290.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_290.Frame_sel35_fAcc3R)))) when others;
 
   \c$bv_163\ <= (x_126.Frame_sel7_fRat);
 
@@ -17271,10 +17447,10 @@ begin
 
   result_selection_res_111 <= \c$app_arg_168\ > to_signed(8388607,48);
 
-  result_287 <= to_signed(8388607,24) when result_selection_res_111 else
+  result_289 <= to_signed(8388607,24) when result_selection_res_111 else
                 \c$case_alt_122\;
 
-  result_288 <= ( Frame_sel0_fL => x_126.Frame_sel0_fL
+  result_290 <= ( Frame_sel0_fL => x_126.Frame_sel0_fL
                 , Frame_sel1_fR => x_126.Frame_sel1_fR
                 , Frame_sel2_fLast => x_126.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_126.Frame_sel3_fGate
@@ -17316,7 +17492,7 @@ begin
   x_selection_res_19 <= \c$bv_164\(4 downto 4);
 
   with (x_selection_res_19) select
-    x_123 <= result_287 when "1",
+    x_123 <= result_289 when "1",
              x_126.Frame_sel0_fL when others;
 
   -- register begin
@@ -17342,49 +17518,49 @@ begin
     if aresetn =  '0'  then
       ratPostPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ratPostPipe <= result_289;
+      ratPostPipe <= result_291;
     end if;
   end process;
   -- register end
 
   with (ds1_40(1067 downto 1067)) select
-    result_289 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_291.Frame_sel0_fL)
-                   & std_logic_vector(result_291.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_291.Frame_sel2_fLast)
-                   & result_291.Frame_sel3_fGate
-                   & result_291.Frame_sel4_fOd
-                   & result_291.Frame_sel5_fDist
-                   & result_291.Frame_sel6_fEq
-                   & result_291.Frame_sel7_fRat
-                   & result_291.Frame_sel8_fAmp
-                   & result_291.Frame_sel9_fAmpTone
-                   & result_291.Frame_sel10_fCab
-                   & result_291.Frame_sel11_fReverb
-                   & result_291.Frame_sel12_fNs
-                   & result_291.Frame_sel13_fComp
-                   & result_291.Frame_sel14_fWah
-                   & std_logic_vector(result_291.Frame_sel15_fAddr)
-                   & std_logic_vector(result_291.Frame_sel16_fDryL)
-                   & std_logic_vector(result_291.Frame_sel17_fDryR)
-                   & std_logic_vector(result_291.Frame_sel18_fWetL)
-                   & std_logic_vector(result_291.Frame_sel19_fWetR)
-                   & std_logic_vector(result_291.Frame_sel20_fFbL)
-                   & std_logic_vector(result_291.Frame_sel21_fFbR)
-                   & std_logic_vector(result_291.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_291.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_291.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_291.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_291.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_291.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_291.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_291.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_291.Frame_sel30_fAccL)
-                   & std_logic_vector(result_291.Frame_sel31_fAccR)
-                   & std_logic_vector(result_291.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_291.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_291.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_291.Frame_sel35_fAcc3R)))) when others;
+    result_291 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_293.Frame_sel0_fL)
+                   & std_logic_vector(result_293.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_293.Frame_sel2_fLast)
+                   & result_293.Frame_sel3_fGate
+                   & result_293.Frame_sel4_fOd
+                   & result_293.Frame_sel5_fDist
+                   & result_293.Frame_sel6_fEq
+                   & result_293.Frame_sel7_fRat
+                   & result_293.Frame_sel8_fAmp
+                   & result_293.Frame_sel9_fAmpTone
+                   & result_293.Frame_sel10_fCab
+                   & result_293.Frame_sel11_fReverb
+                   & result_293.Frame_sel12_fNs
+                   & result_293.Frame_sel13_fComp
+                   & result_293.Frame_sel14_fWah
+                   & std_logic_vector(result_293.Frame_sel15_fAddr)
+                   & std_logic_vector(result_293.Frame_sel16_fDryL)
+                   & std_logic_vector(result_293.Frame_sel17_fDryR)
+                   & std_logic_vector(result_293.Frame_sel18_fWetL)
+                   & std_logic_vector(result_293.Frame_sel19_fWetR)
+                   & std_logic_vector(result_293.Frame_sel20_fFbL)
+                   & std_logic_vector(result_293.Frame_sel21_fFbR)
+                   & std_logic_vector(result_293.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_293.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_293.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_293.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_293.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_293.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_293.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_293.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_293.Frame_sel30_fAccL)
+                   & std_logic_vector(result_293.Frame_sel31_fAccR)
+                   & std_logic_vector(result_293.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_293.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_293.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_293.Frame_sel35_fAcc3R)))) when others;
 
   \c$shI_147\ <= (to_signed(8,64));
 
@@ -17410,10 +17586,10 @@ begin
 
   result_selection_res_112 <= \c$app_arg_169\ > to_signed(8388607,48);
 
-  result_290 <= to_signed(8388607,24) when result_selection_res_112 else
+  result_292 <= to_signed(8388607,24) when result_selection_res_112 else
                 \c$case_alt_123\;
 
-  result_291 <= ( Frame_sel0_fL => x_127.Frame_sel0_fL
+  result_293 <= ( Frame_sel0_fL => x_127.Frame_sel0_fL
                 , Frame_sel1_fR => x_127.Frame_sel1_fR
                 , Frame_sel2_fLast => x_127.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_127.Frame_sel3_fGate
@@ -17455,7 +17631,7 @@ begin
   x_selection_res_20 <= \c$bv_165\(4 downto 4);
 
   with (x_selection_res_20) select
-    x_125 <= result_290 when "1",
+    x_125 <= result_292 when "1",
              x_127.Frame_sel0_fL when others;
 
   -- register begin
@@ -17483,173 +17659,53 @@ begin
     if aresetn =  '0'  then
       ds1_40 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_40 <= result_292;
-    end if;
-  end process;
-  -- register end
-
-  with (ratOpAmpPipe(1067 downto 1067)) select
-    result_292 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_295.Frame_sel0_fL)
-                   & std_logic_vector(result_295.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_295.Frame_sel2_fLast)
-                   & result_295.Frame_sel3_fGate
-                   & result_295.Frame_sel4_fOd
-                   & result_295.Frame_sel5_fDist
-                   & result_295.Frame_sel6_fEq
-                   & result_295.Frame_sel7_fRat
-                   & result_295.Frame_sel8_fAmp
-                   & result_295.Frame_sel9_fAmpTone
-                   & result_295.Frame_sel10_fCab
-                   & result_295.Frame_sel11_fReverb
-                   & result_295.Frame_sel12_fNs
-                   & result_295.Frame_sel13_fComp
-                   & result_295.Frame_sel14_fWah
-                   & std_logic_vector(result_295.Frame_sel15_fAddr)
-                   & std_logic_vector(result_295.Frame_sel16_fDryL)
-                   & std_logic_vector(result_295.Frame_sel17_fDryR)
-                   & std_logic_vector(result_295.Frame_sel18_fWetL)
-                   & std_logic_vector(result_295.Frame_sel19_fWetR)
-                   & std_logic_vector(result_295.Frame_sel20_fFbL)
-                   & std_logic_vector(result_295.Frame_sel21_fFbR)
-                   & std_logic_vector(result_295.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_295.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_295.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_295.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_295.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_295.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_295.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_295.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_295.Frame_sel30_fAccL)
-                   & std_logic_vector(result_295.Frame_sel31_fAccR)
-                   & std_logic_vector(result_295.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_295.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_295.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_295.Frame_sel35_fAcc3R)))) when others;
-
-  result_selection_res_113 <= rawThreshold < to_signed(2200000,25);
-
-  result_293 <= to_signed(2200000,25) when result_selection_res_113 else
-                rawThreshold;
-
-  result_selection_res_114 <= x_131.Frame_sel18_fWetL > (resize(result_293,24));
-
-  result_294 <= resize(result_293,24) when result_selection_res_114 else
-                \c$case_alt_124\;
-
-  \c$case_alt_selection_res_97\ <= x_131.Frame_sel18_fWetL < \c$app_arg_170\;
-
-  \c$case_alt_124\ <= \c$app_arg_170\ when \c$case_alt_selection_res_97\ else
-                      x_131.Frame_sel18_fWetL;
-
-  \c$app_arg_170\ <= -(resize(result_293,24));
-
-  result_295 <= ( Frame_sel0_fL => x_131.Frame_sel0_fL
-                , Frame_sel1_fR => x_131.Frame_sel1_fR
-                , Frame_sel2_fLast => x_131.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_131.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_131.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_131.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_131.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_131.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_131.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_131.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_131.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_131.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_131.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_131.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_131.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_131.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_131.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_131.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_129
-                , Frame_sel19_fWetR => x_129
-                , Frame_sel20_fFbL => x_131.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_131.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_131.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_131.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_131.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_131.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_131.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_131.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_131.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_131.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_131.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_131.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_131.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_131.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_131.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_131.Frame_sel35_fAcc3R );
-
-  \c$bv_166\ <= (x_131.Frame_sel7_fRat);
-
-  x_128 <= unsigned((\c$bv_166\(23 downto 16)));
-
-  \c$bv_167\ <= (x_131.Frame_sel3_fGate);
-
-  x_selection_res_21 <= \c$bv_167\(4 downto 4);
-
-  with (x_selection_res_21) select
-    x_129 <= result_294 when "1",
-             x_131.Frame_sel0_fL when others;
-
-  rawThreshold <= to_signed(6000000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_128)))))))),25)) * to_signed(8500,25), 25));
-
-  -- register begin
-  ratOpAmpPipe_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ratOpAmpPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ratOpAmpPipe <= result_296;
+      ds1_40 <= result_294;
     end if;
   end process;
   -- register end
 
   with (ds1_41(1067 downto 1067)) select
-    result_296 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_298.Frame_sel0_fL)
-                   & std_logic_vector(result_298.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_298.Frame_sel2_fLast)
-                   & result_298.Frame_sel3_fGate
-                   & result_298.Frame_sel4_fOd
-                   & result_298.Frame_sel5_fDist
-                   & result_298.Frame_sel6_fEq
-                   & result_298.Frame_sel7_fRat
-                   & result_298.Frame_sel8_fAmp
-                   & result_298.Frame_sel9_fAmpTone
-                   & result_298.Frame_sel10_fCab
-                   & result_298.Frame_sel11_fReverb
-                   & result_298.Frame_sel12_fNs
-                   & result_298.Frame_sel13_fComp
-                   & result_298.Frame_sel14_fWah
-                   & std_logic_vector(result_298.Frame_sel15_fAddr)
-                   & std_logic_vector(result_298.Frame_sel16_fDryL)
-                   & std_logic_vector(result_298.Frame_sel17_fDryR)
-                   & std_logic_vector(result_298.Frame_sel18_fWetL)
-                   & std_logic_vector(result_298.Frame_sel19_fWetR)
-                   & std_logic_vector(result_298.Frame_sel20_fFbL)
-                   & std_logic_vector(result_298.Frame_sel21_fFbR)
-                   & std_logic_vector(result_298.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_298.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_298.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_298.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_298.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_298.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_298.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_298.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_298.Frame_sel30_fAccL)
-                   & std_logic_vector(result_298.Frame_sel31_fAccR)
-                   & std_logic_vector(result_298.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_298.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_298.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_298.Frame_sel35_fAcc3R)))) when others;
+    result_294 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_296.Frame_sel0_fL)
+                   & std_logic_vector(result_296.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_296.Frame_sel2_fLast)
+                   & result_296.Frame_sel3_fGate
+                   & result_296.Frame_sel4_fOd
+                   & result_296.Frame_sel5_fDist
+                   & result_296.Frame_sel6_fEq
+                   & result_296.Frame_sel7_fRat
+                   & result_296.Frame_sel8_fAmp
+                   & result_296.Frame_sel9_fAmpTone
+                   & result_296.Frame_sel10_fCab
+                   & result_296.Frame_sel11_fReverb
+                   & result_296.Frame_sel12_fNs
+                   & result_296.Frame_sel13_fComp
+                   & result_296.Frame_sel14_fWah
+                   & std_logic_vector(result_296.Frame_sel15_fAddr)
+                   & std_logic_vector(result_296.Frame_sel16_fDryL)
+                   & std_logic_vector(result_296.Frame_sel17_fDryR)
+                   & std_logic_vector(result_296.Frame_sel18_fWetL)
+                   & std_logic_vector(result_296.Frame_sel19_fWetR)
+                   & std_logic_vector(result_296.Frame_sel20_fFbL)
+                   & std_logic_vector(result_296.Frame_sel21_fFbR)
+                   & std_logic_vector(result_296.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_296.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_296.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_296.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_296.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_296.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_296.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_296.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_296.Frame_sel30_fAccL)
+                   & std_logic_vector(result_296.Frame_sel31_fAccR)
+                   & std_logic_vector(result_296.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_296.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_296.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_296.Frame_sel35_fAcc3R)))) when others;
 
-  \c$bv_168\ <= (x_132.Frame_sel7_fRat);
+  \c$shI_148\ <= (to_signed(9,64));
 
-  \c$shI_148\ <= (to_signed(1,64));
-
-  cx_app_arg_47_shiftL : block
+  cx_app_arg_47_shiftR : block
     signal sh_150 : natural;
   begin
     sh_150 <=
@@ -17657,107 +17713,69 @@ begin
         natural'high when (\c$shI_148\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_148\);
-    \c$x_app_arg_47\ <= shift_right((unsigned((\c$bv_168\(23 downto 16)))),sh_150)
+    \c$x_app_arg_47\ <= shift_right(((x_129.Frame_sel30_fAccL + x_129.Frame_sel32_fAcc2L) + x_129.Frame_sel34_fAcc3L),sh_150)
         -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        when ((to_signed(9,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  alpha_9 <= to_unsigned(184,8) - (resize(\c$x_app_arg_47\,8));
+  \c$case_alt_selection_res_97\ <= \c$x_app_arg_47\ < to_signed(-8388608,48);
 
-  \c$shI_149\ <= (to_signed(8,64));
+  \c$case_alt_124\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_97\ else
+                      resize(\c$x_app_arg_47\,24);
 
-  capp_arg_171_shiftR : block
-    signal sh_151 : natural;
-  begin
-    sh_151 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_149\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_149\);
-    \c$app_arg_171\ <= shift_right(((resize((resize(x_132.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_9)))))))),48)), 48)) + (resize((resize(ratOpAmpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_33)))))))),48)), 48))),sh_151)
-        -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
+  result_selection_res_113 <= \c$x_app_arg_47\ > to_signed(8388607,48);
 
-  gain_33 <= to_unsigned(255,8) - alpha_9;
+  result_295 <= to_signed(8388607,24) when result_selection_res_113 else
+                \c$case_alt_124\;
 
-  \c$case_alt_selection_res_98\ <= \c$app_arg_171\ < to_signed(-8388608,48);
+  result_296 <= ( Frame_sel0_fL => x_129.Frame_sel0_fL
+                , Frame_sel1_fR => x_129.Frame_sel1_fR
+                , Frame_sel2_fLast => x_129.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_129.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_129.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_129.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_129.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_129.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_129.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_129.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_129.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_129.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_129.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_129.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_129.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_129.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_129.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_129.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_128
+                , Frame_sel19_fWetR => x_128
+                , Frame_sel20_fFbL => x_129.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_129.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_129.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_129.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_129.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_129.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_129.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_129.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_129.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_129.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_129.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_129.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_129.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_129.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_129.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_129.Frame_sel35_fAcc3R );
 
-  \c$case_alt_125\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_98\ else
-                      resize(\c$app_arg_171\,24);
+  \c$bv_166\ <= (x_129.Frame_sel3_fGate);
 
-  result_selection_res_115 <= \c$app_arg_171\ > to_signed(8388607,48);
+  x_selection_res_21 <= \c$bv_166\(4 downto 4);
 
-  result_297 <= to_signed(8388607,24) when result_selection_res_115 else
-                \c$case_alt_125\;
+  with (x_selection_res_21) select
+    x_128 <= result_295 when "1",
+             x_129.Frame_sel0_fL when others;
 
-  result_298 <= ( Frame_sel0_fL => x_132.Frame_sel0_fL
-                , Frame_sel1_fR => x_132.Frame_sel1_fR
-                , Frame_sel2_fLast => x_132.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_132.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_132.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_132.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_132.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_132.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_132.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_132.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_132.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_132.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_132.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_132.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_132.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_132.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_132.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_132.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_130
-                , Frame_sel19_fWetR => x_130
-                , Frame_sel20_fFbL => x_132.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_132.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_132.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_132.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_132.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_132.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_132.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_132.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_132.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_132.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_132.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_132.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_132.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_132.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_132.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_132.Frame_sel35_fAcc3R );
-
-  \c$bv_169\ <= (x_132.Frame_sel3_fGate);
-
-  x_selection_res_22 <= \c$bv_169\(4 downto 4);
-
-  with (x_selection_res_22) select
-    x_130 <= result_297 when "1",
-             x_132.Frame_sel0_fL when others;
-
-  -- register begin
-  ratOpAmpPrev_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ratOpAmpPrev <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      ratOpAmpPrev <= \c$ratOpAmpPrev_app_arg\;
-    end if;
-  end process;
-  -- register end
-
-  with (ratOpAmpPipe(1067 downto 1067)) select
-    \c$ratOpAmpPrev_app_arg\ <= ratOpAmpPrev when "0",
-                                x_131.Frame_sel18_fWetL when others;
-
-  x_131 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ratOpAmpPipe(1066 downto 0)));
-
-  x_132 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_41(1066 downto 0)));
+  x_129 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_41(1066 downto 0)));
 
   -- register begin
   ds1_41_register : process(clk,aresetn)
@@ -17765,13 +17783,13 @@ begin
     if aresetn =  '0'  then
       ds1_41 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_41 <= result_299;
+      ds1_41 <= result_297;
     end if;
   end process;
   -- register end
 
-  with (ds1_42(1067 downto 1067)) select
-    result_299 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+  with (ratOpAmpPipe(1067 downto 1067)) select
+    result_297 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(result_301.Frame_sel0_fL)
                    & std_logic_vector(result_301.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(result_301.Frame_sel2_fLast)
@@ -17809,9 +17827,267 @@ begin
                    & std_logic_vector(result_301.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_301.Frame_sel35_fAcc3R)))) when others;
 
-  \c$shI_150\ <= (to_signed(8,64));
+  result_selection_res_114 <= rawThreshold < to_signed(2200000,25);
 
-  cx_app_arg_48_shiftR : block
+  result_298 <= to_signed(2200000,25) when result_selection_res_114 else
+                rawThreshold;
+
+  \c$bv_167\ <= (x_133.Frame_sel7_fRat);
+
+  x_130 <= unsigned((\c$bv_167\(23 downto 16)));
+
+  rawThreshold <= to_signed(6000000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_130)))))))),25)) * to_signed(8500,25), 25));
+
+  result_299 <= resize(result_298,24);
+
+  -- index begin
+  indexVec_32 : block
+    signal vec_index_64 : integer range 0 to 12-1;
+  begin
+    vec_index_64 <= to_integer((to_signed(3,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    \c$app_arg_170\ <= ratClipHist(vec_index_64);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_33 : block
+    signal vec_index_65 : integer range 0 to 12-1;
+  begin
+    vec_index_65 <= to_integer((to_signed(2,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    a_2 <= ratClipHist(vec_index_65);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_34 : block
+    signal vec_index_66 : integer range 0 to 12-1;
+  begin
+    vec_index_66 <= to_integer((to_signed(4,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_6 <= ratClipHist(vec_index_66);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_35 : block
+    signal vec_index_67 : integer range 0 to 12-1;
+  begin
+    vec_index_67 <= to_integer((to_signed(1,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    a_3 <= ratClipHist(vec_index_67);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_36 : block
+    signal vec_index_68 : integer range 0 to 12-1;
+  begin
+    vec_index_68 <= to_integer((to_signed(5,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_7 <= ratClipHist(vec_index_68);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_37 : block
+    signal vec_index_69 : integer range 0 to 12-1;
+  begin
+    vec_index_69 <= to_integer((to_signed(0,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    a_4 <= ratClipHist(vec_index_69);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_38 : block
+    signal vec_index_70 : integer range 0 to 12-1;
+  begin
+    vec_index_70 <= to_integer((to_signed(6,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_8 <= ratClipHist(vec_index_70);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_39 : block
+    signal vec_index_71 : integer range 0 to 12-1;
+  begin
+    vec_index_71 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_9 <= ratClipHist(vec_index_71);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_40 : block
+    signal vec_index_72 : integer range 0 to 12-1;
+  begin
+    vec_index_72 <= to_integer((to_signed(8,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_10 <= ratClipHist(vec_index_72);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_41 : block
+    signal vec_index_73 : integer range 0 to 12-1;
+  begin
+    vec_index_73 <= to_integer((to_signed(9,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_11 <= ratClipHist(vec_index_73);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_42 : block
+    signal vec_index_74 : integer range 0 to 12-1;
+  begin
+    vec_index_74 <= to_integer((to_signed(10,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    b_12 <= ratClipHist(vec_index_74);
+  end block;
+  -- index end
+
+  result_300 <= ( Tuple3_0_sel0_signed_0 => ((resize(((resize(result_302.Tuple4_sel3_signed_3,48)) + (resize(b_12,48))) * to_signed(-2,48), 48)) + (resize(((resize(result_302.Tuple4_sel2_signed_2,48)) + (resize(b_11,48))) * to_signed(-3,48), 48))) + (resize(((resize(result_302.Tuple4_sel1_signed_1,48)) + (resize(b_10,48))) * to_signed(-4,48), 48))
+                , Tuple3_0_sel1_signed_1 => ((resize(((resize(result_302.Tuple4_sel0_signed_0,48)) + (resize(b_9,48))) * to_signed(5,48), 48)) + (resize(((resize(a_4,48)) + (resize(b_8,48))) * to_signed(29,48), 48))) + (resize(((resize(a_3,48)) + (resize(b_7,48))) * to_signed(68,48), 48))
+                , Tuple3_0_sel2_signed_2 => (resize(((resize(a_2,48)) + (resize(b_6,48))) * to_signed(104,48), 48)) + (resize((resize(\c$app_arg_170\,48)) * to_signed(118,48), 48)) );
+
+  \c$app_arg_171\ <= result_300.Tuple3_0_sel0_signed_0 when \on_6\ else
+                     to_signed(0,48);
+
+  \c$app_arg_172\ <= result_300.Tuple3_0_sel1_signed_1 when \on_6\ else
+                     to_signed(0,48);
+
+  \c$app_arg_173\ <= result_300.Tuple3_0_sel2_signed_2 when \on_6\ else
+                     to_signed(0,48);
+
+  result_301 <= ( Frame_sel0_fL => x_133.Frame_sel0_fL
+                , Frame_sel1_fR => x_133.Frame_sel1_fR
+                , Frame_sel2_fLast => x_133.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_133.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_133.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_133.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_133.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_133.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_133.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_133.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_133.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_133.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_133.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_133.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_133.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_133.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_133.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_133.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_133.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_133.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_133.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_133.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_133.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_133.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_133.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_133.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_133.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_133.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_133.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_133.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => \c$app_arg_171\
+                , Frame_sel31_fAccR => to_signed(0,48)
+                , Frame_sel32_fAcc2L => \c$app_arg_172\
+                , Frame_sel33_fAcc2R => to_signed(0,48)
+                , Frame_sel34_fAcc3L => \c$app_arg_173\
+                , Frame_sel35_fAcc3R => to_signed(0,48) );
+
+  \c$bv_168\ <= (x_133.Frame_sel3_fGate);
+
+  \on_6\ <= (\c$bv_168\(4 downto 4)) = std_logic_vector'("1");
+
+  xnw_1 <= resize(x_133.Frame_sel18_fWetL,48);
+
+  x1w_1 <= resize(ratClipInPrev,48);
+
+  result_302 <= ( Tuple4_sel0_signed_0 => result_309
+                , Tuple4_sel1_signed_1 => result_307
+                , Tuple4_sel2_signed_2 => result_305
+                , Tuple4_sel3_signed_3 => result_303 );
+
+  result_selection_res_115 <= result_304 > result_299;
+
+  result_303 <= result_299 when result_selection_res_115 else
+                \c$case_alt_125\;
+
+  \c$case_alt_selection_res_98\ <= result_304 < \c$app_arg_174\;
+
+  \c$case_alt_125\ <= \c$app_arg_174\ when \c$case_alt_selection_res_98\ else
+                      result_304;
+
+  \c$app_arg_174\ <= -result_299;
+
+  \c$case_alt_selection_res_99\ <= \c$app_arg_175\ < to_signed(-8388608,48);
+
+  \c$case_alt_126\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_99\ else
+                      resize(\c$app_arg_175\,24);
+
+  result_selection_res_116 <= \c$app_arg_175\ > to_signed(8388607,48);
+
+  result_304 <= to_signed(8388607,24) when result_selection_res_116 else
+                \c$case_alt_126\;
+
+  \c$shI_149\ <= (to_signed(2,64));
+
+  capp_arg_175_shiftR : block
+    signal sh_151 : natural;
+  begin
+    sh_151 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_149\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_149\);
+    \c$app_arg_175\ <= shift_right(((x1w_1 + \c$app_arg_176\) + xnw_1),sh_151)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$shI_150\ <= (to_signed(1,64));
+
+  capp_arg_176_shiftL : block
     signal sh_152 : natural;
   begin
     sh_152 <=
@@ -17819,417 +18095,38 @@ begin
         natural'high when (\c$shI_150\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_150\);
-    \c$x_app_arg_48\ <= shift_right(x_134.Frame_sel30_fAccL,sh_152)
+    \c$app_arg_176\ <= shift_left(xnw_1,sh_152)
         -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_99\ <= \c$x_app_arg_48\ < to_signed(-8388608,48);
+  result_selection_res_117 <= result_306 > result_299;
 
-  \c$case_alt_126\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_99\ else
-                      resize(\c$x_app_arg_48\,24);
+  result_305 <= result_299 when result_selection_res_117 else
+                \c$case_alt_127\;
 
-  result_selection_res_116 <= \c$x_app_arg_48\ > to_signed(8388607,48);
+  \c$case_alt_selection_res_100\ <= result_306 < \c$app_arg_177\;
 
-  result_300 <= to_signed(8388607,24) when result_selection_res_116 else
-                \c$case_alt_126\;
+  \c$case_alt_127\ <= \c$app_arg_177\ when \c$case_alt_selection_res_100\ else
+                      result_306;
 
-  result_301 <= ( Frame_sel0_fL => x_134.Frame_sel0_fL
-                , Frame_sel1_fR => x_134.Frame_sel1_fR
-                , Frame_sel2_fLast => x_134.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_134.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_134.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_134.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_134.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_134.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_134.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_134.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_134.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_134.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_134.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_134.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_134.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_134.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_134.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_134.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_133
-                , Frame_sel19_fWetR => x_133
-                , Frame_sel20_fFbL => x_134.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_134.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_134.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_134.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_134.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_134.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_134.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_134.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_134.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_134.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_134.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_134.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_134.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_134.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_134.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_134.Frame_sel35_fAcc3R );
+  \c$app_arg_177\ <= -result_299;
 
-  \c$bv_170\ <= (x_134.Frame_sel3_fGate);
+  \c$case_alt_selection_res_101\ <= \c$app_arg_178\ < to_signed(-8388608,48);
 
-  x_selection_res_23 <= \c$bv_170\(4 downto 4);
+  \c$case_alt_128\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_101\ else
+                      resize(\c$app_arg_178\,24);
 
-  with (x_selection_res_23) select
-    x_133 <= result_300 when "1",
-             x_134.Frame_sel0_fL when others;
+  result_selection_res_118 <= \c$app_arg_178\ > to_signed(8388607,48);
 
-  x_134 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_42(1066 downto 0)));
-
-  -- register begin
-  ds1_42_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_42 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_42 <= result_302;
-    end if;
-  end process;
-  -- register end
-
-  with (ratHighpassPipe(1067 downto 1067)) select
-    result_302 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_127\.Frame_sel0_fL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(\c$case_alt_127\.Frame_sel2_fLast)
-                   & \c$case_alt_127\.Frame_sel3_fGate
-                   & \c$case_alt_127\.Frame_sel4_fOd
-                   & \c$case_alt_127\.Frame_sel5_fDist
-                   & \c$case_alt_127\.Frame_sel6_fEq
-                   & \c$case_alt_127\.Frame_sel7_fRat
-                   & \c$case_alt_127\.Frame_sel8_fAmp
-                   & \c$case_alt_127\.Frame_sel9_fAmpTone
-                   & \c$case_alt_127\.Frame_sel10_fCab
-                   & \c$case_alt_127\.Frame_sel11_fReverb
-                   & \c$case_alt_127\.Frame_sel12_fNs
-                   & \c$case_alt_127\.Frame_sel13_fComp
-                   & \c$case_alt_127\.Frame_sel14_fWah
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel15_fAddr)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel16_fDryL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel17_fDryR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel18_fWetL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel19_fWetR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel20_fFbL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel21_fFbR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel22_fEqLowL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel23_fEqLowR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel24_fEqMidL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel25_fEqMidR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel26_fEqHighL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel27_fEqHighR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel30_fAccL)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel31_fAccR)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel32_fAcc2L)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel33_fAcc2R)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel34_fAcc3L)
-                   & std_logic_vector(\c$case_alt_127\.Frame_sel35_fAcc3R)))) when others;
-
-  \c$bv_171\ <= (x_137.Frame_sel3_fGate);
-
-  \c$app_arg_selection_res_6\ <= \c$bv_171\(4 downto 4);
-
-  with (\c$app_arg_selection_res_6\) select
-    \c$app_arg_172\ <= resize((resize(x_137.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_34)))))))),48)), 48) when "1",
-                       to_signed(0,48) when others;
-
-  \c$case_alt_127\ <= ( Frame_sel0_fL => x_137.Frame_sel0_fL
-                      , Frame_sel1_fR => x_137.Frame_sel1_fR
-                      , Frame_sel2_fLast => x_137.Frame_sel2_fLast
-                      , Frame_sel3_fGate => x_137.Frame_sel3_fGate
-                      , Frame_sel4_fOd => x_137.Frame_sel4_fOd
-                      , Frame_sel5_fDist => x_137.Frame_sel5_fDist
-                      , Frame_sel6_fEq => x_137.Frame_sel6_fEq
-                      , Frame_sel7_fRat => x_137.Frame_sel7_fRat
-                      , Frame_sel8_fAmp => x_137.Frame_sel8_fAmp
-                      , Frame_sel9_fAmpTone => x_137.Frame_sel9_fAmpTone
-                      , Frame_sel10_fCab => x_137.Frame_sel10_fCab
-                      , Frame_sel11_fReverb => x_137.Frame_sel11_fReverb
-                      , Frame_sel12_fNs => x_137.Frame_sel12_fNs
-                      , Frame_sel13_fComp => x_137.Frame_sel13_fComp
-                      , Frame_sel14_fWah => x_137.Frame_sel14_fWah
-                      , Frame_sel15_fAddr => x_137.Frame_sel15_fAddr
-                      , Frame_sel16_fDryL => x_137.Frame_sel16_fDryL
-                      , Frame_sel17_fDryR => x_137.Frame_sel17_fDryR
-                      , Frame_sel18_fWetL => x_137.Frame_sel18_fWetL
-                      , Frame_sel19_fWetR => x_137.Frame_sel19_fWetR
-                      , Frame_sel20_fFbL => x_137.Frame_sel20_fFbL
-                      , Frame_sel21_fFbR => x_137.Frame_sel21_fFbR
-                      , Frame_sel22_fEqLowL => x_137.Frame_sel22_fEqLowL
-                      , Frame_sel23_fEqLowR => x_137.Frame_sel23_fEqLowR
-                      , Frame_sel24_fEqMidL => x_137.Frame_sel24_fEqMidL
-                      , Frame_sel25_fEqMidR => x_137.Frame_sel25_fEqMidR
-                      , Frame_sel26_fEqHighL => x_137.Frame_sel26_fEqHighL
-                      , Frame_sel27_fEqHighR => x_137.Frame_sel27_fEqHighR
-                      , Frame_sel28_fEqHighLpL => x_137.Frame_sel28_fEqHighLpL
-                      , Frame_sel29_fEqHighLpR => x_137.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_172\
-                      , Frame_sel31_fAccR => to_signed(0,48)
-                      , Frame_sel32_fAcc2L => x_137.Frame_sel32_fAcc2L
-                      , Frame_sel33_fAcc2R => x_137.Frame_sel33_fAcc2R
-                      , Frame_sel34_fAcc3L => x_137.Frame_sel34_fAcc3L
-                      , Frame_sel35_fAcc3R => x_137.Frame_sel35_fAcc3R );
-
-  \c$bv_172\ <= (x_137.Frame_sel7_fRat);
-
-  gain_34 <= resize((to_unsigned(640,12) + (resize((resize((unsigned((\c$bv_172\(23 downto 16)))),12)) * to_unsigned(12,12), 12))),12);
-
-  -- register begin
-  ratHighpassPipe_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ratHighpassPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ratHighpassPipe <= result_303;
-    end if;
-  end process;
-  -- register end
-
-  with (ds1_43(1067 downto 1067)) select
-    result_303 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_305.Frame_sel0_fL)
-                   & std_logic_vector(result_305.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_305.Frame_sel2_fLast)
-                   & result_305.Frame_sel3_fGate
-                   & result_305.Frame_sel4_fOd
-                   & result_305.Frame_sel5_fDist
-                   & result_305.Frame_sel6_fEq
-                   & result_305.Frame_sel7_fRat
-                   & result_305.Frame_sel8_fAmp
-                   & result_305.Frame_sel9_fAmpTone
-                   & result_305.Frame_sel10_fCab
-                   & result_305.Frame_sel11_fReverb
-                   & result_305.Frame_sel12_fNs
-                   & result_305.Frame_sel13_fComp
-                   & result_305.Frame_sel14_fWah
-                   & std_logic_vector(result_305.Frame_sel15_fAddr)
-                   & std_logic_vector(result_305.Frame_sel16_fDryL)
-                   & std_logic_vector(result_305.Frame_sel17_fDryR)
-                   & std_logic_vector(result_305.Frame_sel18_fWetL)
-                   & std_logic_vector(result_305.Frame_sel19_fWetR)
-                   & std_logic_vector(result_305.Frame_sel20_fFbL)
-                   & std_logic_vector(result_305.Frame_sel21_fFbR)
-                   & std_logic_vector(result_305.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_305.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_305.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_305.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_305.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_305.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_305.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_305.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_305.Frame_sel30_fAccL)
-                   & std_logic_vector(result_305.Frame_sel31_fAccR)
-                   & std_logic_vector(result_305.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_305.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_305.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_305.Frame_sel35_fAcc3R)))) when others;
-
-  x_135 <= ((resize(x_138.Frame_sel0_fL,48)) - (resize(ratHpInPrev,48))) + (resize((resize(ratHpOutPrev,48)) * to_signed(0,48), 48));
-
-  \c$case_alt_selection_res_100\ <= x_135 < to_signed(-8388608,48);
-
-  \c$case_alt_128\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_100\ else
-                      resize(x_135,24);
-
-  result_selection_res_117 <= x_135 > to_signed(8388607,48);
-
-  result_304 <= to_signed(8388607,24) when result_selection_res_117 else
+  result_306 <= to_signed(8388607,24) when result_selection_res_118 else
                 \c$case_alt_128\;
 
-  result_305 <= ( Frame_sel0_fL => x_138.Frame_sel0_fL
-                , Frame_sel1_fR => x_138.Frame_sel1_fR
-                , Frame_sel2_fLast => x_138.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_138.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_138.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_138.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_138.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_138.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_138.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_138.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_138.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_138.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_138.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_138.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_138.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_138.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_138.Frame_sel0_fL
-                , Frame_sel17_fDryR => x_138.Frame_sel0_fL
-                , Frame_sel18_fWetL => x_136
-                , Frame_sel19_fWetR => x_136
-                , Frame_sel20_fFbL => x_138.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_138.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_138.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_138.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_138.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_138.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_138.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_138.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_138.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_138.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_138.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_138.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_138.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_138.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_138.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_138.Frame_sel35_fAcc3R );
+  \c$shI_151\ <= (to_signed(1,64));
 
-  \c$bv_173\ <= (x_138.Frame_sel3_fGate);
-
-  x_selection_res_24 <= \c$bv_173\(4 downto 4);
-
-  with (x_selection_res_24) select
-    x_136 <= result_304 when "1",
-             x_138.Frame_sel0_fL when others;
-
-  -- register begin
-  ratHpOutPrev_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ratHpOutPrev <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      ratHpOutPrev <= \c$ratHpOutPrev_app_arg\;
-    end if;
-  end process;
-  -- register end
-
-  with (ratHighpassPipe(1067 downto 1067)) select
-    \c$ratHpOutPrev_app_arg\ <= ratHpOutPrev when "0",
-                                x_137.Frame_sel18_fWetL when others;
-
-  -- register begin
-  ratHpInPrev_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ratHpInPrev <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      ratHpInPrev <= \c$ratHpInPrev_app_arg\;
-    end if;
-  end process;
-  -- register end
-
-  with (ratHighpassPipe(1067 downto 1067)) select
-    \c$ratHpInPrev_app_arg\ <= ratHpInPrev when "0",
-                               x_137.Frame_sel16_fDryL when others;
-
-  x_137 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ratHighpassPipe(1066 downto 0)));
-
-  x_138 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_43(1066 downto 0)));
-
-  -- register begin
-  ds1_43_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_43 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_43 <= result_306;
-    end if;
-  end process;
-  -- register end
-
-  with (distToneBlendPipe(1067 downto 1067)) select
-    result_306 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_307.Frame_sel0_fL)
-                   & std_logic_vector(result_307.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_307.Frame_sel2_fLast)
-                   & result_307.Frame_sel3_fGate
-                   & result_307.Frame_sel4_fOd
-                   & result_307.Frame_sel5_fDist
-                   & result_307.Frame_sel6_fEq
-                   & result_307.Frame_sel7_fRat
-                   & result_307.Frame_sel8_fAmp
-                   & result_307.Frame_sel9_fAmpTone
-                   & result_307.Frame_sel10_fCab
-                   & result_307.Frame_sel11_fReverb
-                   & result_307.Frame_sel12_fNs
-                   & result_307.Frame_sel13_fComp
-                   & result_307.Frame_sel14_fWah
-                   & std_logic_vector(result_307.Frame_sel15_fAddr)
-                   & std_logic_vector(result_307.Frame_sel16_fDryL)
-                   & std_logic_vector(result_307.Frame_sel17_fDryR)
-                   & std_logic_vector(result_307.Frame_sel18_fWetL)
-                   & std_logic_vector(result_307.Frame_sel19_fWetR)
-                   & std_logic_vector(result_307.Frame_sel20_fFbL)
-                   & std_logic_vector(result_307.Frame_sel21_fFbR)
-                   & std_logic_vector(result_307.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_307.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_307.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_307.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_307.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_307.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_307.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_307.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_307.Frame_sel30_fAccL)
-                   & std_logic_vector(result_307.Frame_sel31_fAccR)
-                   & std_logic_vector(result_307.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_307.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_307.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_307.Frame_sel35_fAcc3R)))) when others;
-
-  result_307 <= ( Frame_sel0_fL => x_139
-                , Frame_sel1_fR => x_139
-                , Frame_sel2_fLast => x_142.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_142.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_142.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_142.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_142.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_142.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_142.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_142.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_142.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_142.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_142.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_142.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_142.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_142.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_142.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_142.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_142.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_142.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_142.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_142.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_142.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_142.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_142.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_142.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_142.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_142.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_142.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_142.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_142.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_142.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_142.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_142.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_142.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_142.Frame_sel35_fAcc3R );
-
-  \c$bv_174\ <= (x_142.Frame_sel3_fGate);
-
-  x_selection_res_25 <= ((\c$bv_174\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$x_app_arg_50\(31 downto 24)))) /= to_unsigned(0,8)));
-
-  x_139 <= result_308 when x_selection_res_25 else
-           x_142.Frame_sel0_fL;
-
-  \c$case_alt_selection_res_101\ <= \c$x_app_arg_49\ < to_signed(-8388608,48);
-
-  \c$case_alt_129\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_101\ else
-                      resize(\c$x_app_arg_49\,24);
-
-  result_selection_res_118 <= \c$x_app_arg_49\ > to_signed(8388607,48);
-
-  result_308 <= to_signed(8388607,24) when result_selection_res_118 else
-                \c$case_alt_129\;
-
-  \c$shI_151\ <= (to_signed(7,64));
-
-  cx_app_arg_49_shiftR : block
+  capp_arg_178_shiftR : block
     signal sh_153 : natural;
   begin
     sh_153 <=
@@ -18237,126 +18134,38 @@ begin
         natural'high when (\c$shI_151\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_151\);
-    \c$x_app_arg_49\ <= shift_right((resize((resize(x_142.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_35)))))))),48)), 48)),sh_153)
+    \c$app_arg_178\ <= shift_right((x1w_1 + xnw_1),sh_153)
         -- pragma translate_off
-        when ((to_signed(7,64)) >= 0) else (others => 'X')
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  gain_35 <= unsigned((\c$x_app_arg_50\(15 downto 8)));
+  result_selection_res_119 <= result_308 > result_299;
 
-  \c$x_app_arg_50\ <= x_142.Frame_sel5_fDist;
+  result_307 <= result_299 when result_selection_res_119 else
+                \c$case_alt_129\;
 
-  -- register begin
-  distToneBlendPipe_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      distToneBlendPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      distToneBlendPipe <= result_309;
-    end if;
-  end process;
-  -- register end
+  \c$case_alt_selection_res_102\ <= result_308 < \c$app_arg_179\;
 
-  with (ds1_44(1067 downto 1067)) select
-    result_309 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_310.Frame_sel0_fL)
-                   & std_logic_vector(result_310.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_310.Frame_sel2_fLast)
-                   & result_310.Frame_sel3_fGate
-                   & result_310.Frame_sel4_fOd
-                   & result_310.Frame_sel5_fDist
-                   & result_310.Frame_sel6_fEq
-                   & result_310.Frame_sel7_fRat
-                   & result_310.Frame_sel8_fAmp
-                   & result_310.Frame_sel9_fAmpTone
-                   & result_310.Frame_sel10_fCab
-                   & result_310.Frame_sel11_fReverb
-                   & result_310.Frame_sel12_fNs
-                   & result_310.Frame_sel13_fComp
-                   & result_310.Frame_sel14_fWah
-                   & std_logic_vector(result_310.Frame_sel15_fAddr)
-                   & std_logic_vector(result_310.Frame_sel16_fDryL)
-                   & std_logic_vector(result_310.Frame_sel17_fDryR)
-                   & std_logic_vector(result_310.Frame_sel18_fWetL)
-                   & std_logic_vector(result_310.Frame_sel19_fWetR)
-                   & std_logic_vector(result_310.Frame_sel20_fFbL)
-                   & std_logic_vector(result_310.Frame_sel21_fFbR)
-                   & std_logic_vector(result_310.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_310.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_310.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_310.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_310.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_310.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_310.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_310.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_310.Frame_sel30_fAccL)
-                   & std_logic_vector(result_310.Frame_sel31_fAccR)
-                   & std_logic_vector(result_310.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_310.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_310.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_310.Frame_sel35_fAcc3R)))) when others;
+  \c$case_alt_129\ <= \c$app_arg_179\ when \c$case_alt_selection_res_102\ else
+                      result_308;
 
-  result_310 <= ( Frame_sel0_fL => x_141.Frame_sel0_fL
-                , Frame_sel1_fR => x_141.Frame_sel1_fR
-                , Frame_sel2_fLast => x_141.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_141.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_141.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_141.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_141.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_141.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_141.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_141.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_141.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_141.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_141.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_141.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_141.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_141.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_141.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_141.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_140
-                , Frame_sel19_fWetR => x_140
-                , Frame_sel20_fFbL => x_141.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_141.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_141.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_141.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_141.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_141.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_141.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_141.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_141.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_141.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_141.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_141.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_141.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_141.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_141.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_141.Frame_sel35_fAcc3R );
+  \c$app_arg_179\ <= -result_299;
 
-  \c$bv_175\ <= (x_141.Frame_sel3_fGate);
+  \c$case_alt_selection_res_103\ <= \c$app_arg_180\ < to_signed(-8388608,48);
 
-  \c$bv_176\ <= (x_141.Frame_sel5_fDist);
+  \c$case_alt_130\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_103\ else
+                      resize(\c$app_arg_180\,24);
 
-  x_selection_res_26 <= ((\c$bv_175\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$bv_176\(31 downto 24)))) /= to_unsigned(0,8)));
+  result_selection_res_120 <= \c$app_arg_180\ > to_signed(8388607,48);
 
-  x_140 <= result_311 when x_selection_res_26 else
-           x_141.Frame_sel0_fL;
-
-  \c$case_alt_selection_res_102\ <= \c$x_app_arg_51\ < to_signed(-8388608,48);
-
-  \c$case_alt_130\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_102\ else
-                      resize(\c$x_app_arg_51\,24);
-
-  result_selection_res_119 <= \c$x_app_arg_51\ > to_signed(8388607,48);
-
-  result_311 <= to_signed(8388607,24) when result_selection_res_119 else
+  result_308 <= to_signed(8388607,24) when result_selection_res_120 else
                 \c$case_alt_130\;
 
-  \c$shI_152\ <= (to_signed(8,64));
+  \c$shI_152\ <= (to_signed(2,64));
 
-  cx_app_arg_51_shiftR : block
+  capp_arg_180_shiftR : block
     signal sh_154 : natural;
   begin
     sh_154 <=
@@ -18364,356 +18173,16 @@ begin
         natural'high when (\c$shI_152\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_152\);
-    \c$x_app_arg_51\ <= shift_right((x_141.Frame_sel30_fAccL + x_141.Frame_sel32_fAcc2L),sh_154)
+    \c$app_arg_180\ <= shift_right(((\c$app_arg_181\ + x1w_1) + xnw_1),sh_154)
         -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  x_141 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_44(1066 downto 0)));
+  \c$shI_153\ <= (to_signed(1,64));
 
-  -- register begin
-  ds1_44_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_44 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_44 <= result_312;
-    end if;
-  end process;
-  -- register end
-
-  with (ds1_45(1067 downto 1067)) select
-    result_312 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_313.Frame_sel0_fL)
-                   & std_logic_vector(result_313.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_313.Frame_sel2_fLast)
-                   & result_313.Frame_sel3_fGate
-                   & result_313.Frame_sel4_fOd
-                   & result_313.Frame_sel5_fDist
-                   & result_313.Frame_sel6_fEq
-                   & result_313.Frame_sel7_fRat
-                   & result_313.Frame_sel8_fAmp
-                   & result_313.Frame_sel9_fAmpTone
-                   & result_313.Frame_sel10_fCab
-                   & result_313.Frame_sel11_fReverb
-                   & result_313.Frame_sel12_fNs
-                   & result_313.Frame_sel13_fComp
-                   & result_313.Frame_sel14_fWah
-                   & std_logic_vector(result_313.Frame_sel15_fAddr)
-                   & std_logic_vector(result_313.Frame_sel16_fDryL)
-                   & std_logic_vector(result_313.Frame_sel17_fDryR)
-                   & std_logic_vector(result_313.Frame_sel18_fWetL)
-                   & std_logic_vector(result_313.Frame_sel19_fWetR)
-                   & std_logic_vector(result_313.Frame_sel20_fFbL)
-                   & std_logic_vector(result_313.Frame_sel21_fFbR)
-                   & std_logic_vector(result_313.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_313.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_313.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_313.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_313.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_313.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_313.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_313.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_313.Frame_sel30_fAccL)
-                   & std_logic_vector(result_313.Frame_sel31_fAccR)
-                   & std_logic_vector(result_313.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_313.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_313.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_313.Frame_sel35_fAcc3R)))) when others;
-
-  result_313 <= ( Frame_sel0_fL => x_143.Frame_sel0_fL
-                , Frame_sel1_fR => x_143.Frame_sel1_fR
-                , Frame_sel2_fLast => x_143.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_143.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_143.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_143.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_143.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_143.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_143.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_143.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_143.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_143.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_143.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_143.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_143.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_143.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_143.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_143.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_143.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_143.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_143.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_143.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_143.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_143.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_143.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_143.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_143.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_143.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_143.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_143.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_174\
-                , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_173\
-                , Frame_sel33_fAcc2R => to_signed(0,48)
-                , Frame_sel34_fAcc3L => x_143.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_143.Frame_sel35_fAcc3R );
-
-  \c$app_arg_173\ <= resize((resize(distTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_36)))))))),48)), 48) when \on_6\ else
-                     to_signed(0,48);
-
-  gain_36 <= to_unsigned(255,8) - tone_0;
-
-  \c$app_arg_174\ <= resize((resize(x_143.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_0)))))))),48)), 48) when \on_6\ else
-                     to_signed(0,48);
-
-  \c$bv_177\ <= (x_143.Frame_sel3_fGate);
-
-  \on_6\ <= ((\c$bv_177\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$tone_app_arg\(31 downto 24)))) /= to_unsigned(0,8)));
-
-  tone_0 <= unsigned((\c$tone_app_arg\(7 downto 0)));
-
-  \c$tone_app_arg\ <= x_143.Frame_sel5_fDist;
-
-  -- register begin
-  distTonePrev_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      distTonePrev <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      distTonePrev <= \c$distTonePrev_app_arg\;
-    end if;
-  end process;
-  -- register end
-
-  with (distToneBlendPipe(1067 downto 1067)) select
-    \c$distTonePrev_app_arg\ <= distTonePrev when "0",
-                                x_142.Frame_sel18_fWetL when others;
-
-  x_142 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(distToneBlendPipe(1066 downto 0)));
-
-  x_143 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_45(1066 downto 0)));
-
-  -- register begin
-  ds1_45_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_45 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_45 <= result_314;
-    end if;
-  end process;
-  -- register end
-
-  with (ds1_46(1067 downto 1067)) select
-    result_314 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_315.Frame_sel0_fL)
-                   & std_logic_vector(result_315.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_315.Frame_sel2_fLast)
-                   & result_315.Frame_sel3_fGate
-                   & result_315.Frame_sel4_fOd
-                   & result_315.Frame_sel5_fDist
-                   & result_315.Frame_sel6_fEq
-                   & result_315.Frame_sel7_fRat
-                   & result_315.Frame_sel8_fAmp
-                   & result_315.Frame_sel9_fAmpTone
-                   & result_315.Frame_sel10_fCab
-                   & result_315.Frame_sel11_fReverb
-                   & result_315.Frame_sel12_fNs
-                   & result_315.Frame_sel13_fComp
-                   & result_315.Frame_sel14_fWah
-                   & std_logic_vector(result_315.Frame_sel15_fAddr)
-                   & std_logic_vector(result_315.Frame_sel16_fDryL)
-                   & std_logic_vector(result_315.Frame_sel17_fDryR)
-                   & std_logic_vector(result_315.Frame_sel18_fWetL)
-                   & std_logic_vector(result_315.Frame_sel19_fWetR)
-                   & std_logic_vector(result_315.Frame_sel20_fFbL)
-                   & std_logic_vector(result_315.Frame_sel21_fFbR)
-                   & std_logic_vector(result_315.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_315.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_315.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_315.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_315.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_315.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_315.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_315.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_315.Frame_sel30_fAccL)
-                   & std_logic_vector(result_315.Frame_sel31_fAccR)
-                   & std_logic_vector(result_315.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_315.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_315.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_315.Frame_sel35_fAcc3R)))) when others;
-
-  result_315 <= ( Frame_sel0_fL => x_144
-                , Frame_sel1_fR => x_144
-                , Frame_sel2_fLast => x_145.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_145.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_145.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_145.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_145.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_145.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_145.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_145.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_145.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_145.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_145.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_145.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_145.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_145.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_145.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_145.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_145.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_145.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_145.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_145.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_145.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_145.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_145.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_145.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_145.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_145.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_145.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_145.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_145.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_145.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_145.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_145.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_145.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_145.Frame_sel35_fAcc3R );
-
-  \c$bv_178\ <= (x_145.Frame_sel3_fGate);
-
-  \c$bv_179\ <= (x_145.Frame_sel5_fDist);
-
-  x_selection_res_27 <= ((\c$bv_178\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$bv_179\(31 downto 24)))) /= to_unsigned(0,8)));
-
-  x_144 <= result_316 when x_selection_res_27 else
-           x_145.Frame_sel0_fL;
-
-  result_selection_res_120 <= x_145.Frame_sel18_fWetL > (resize(x_145.Frame_sel32_fAcc2L,24));
-
-  result_316 <= resize(x_145.Frame_sel32_fAcc2L,24) when result_selection_res_120 else
-                \c$case_alt_131\;
-
-  \c$case_alt_selection_res_103\ <= x_145.Frame_sel18_fWetL < \c$app_arg_175\;
-
-  \c$case_alt_131\ <= \c$app_arg_175\ when \c$case_alt_selection_res_103\ else
-                      x_145.Frame_sel18_fWetL;
-
-  \c$app_arg_175\ <= -(resize(x_145.Frame_sel32_fAcc2L,24));
-
-  x_145 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_46(1066 downto 0)));
-
-  -- register begin
-  ds1_46_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_46 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_46 <= result_317;
-    end if;
-  end process;
-  -- register end
-
-  with (ds1_47(1067 downto 1067)) select
-    result_317 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_318.Frame_sel0_fL)
-                   & std_logic_vector(result_318.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_318.Frame_sel2_fLast)
-                   & result_318.Frame_sel3_fGate
-                   & result_318.Frame_sel4_fOd
-                   & result_318.Frame_sel5_fDist
-                   & result_318.Frame_sel6_fEq
-                   & result_318.Frame_sel7_fRat
-                   & result_318.Frame_sel8_fAmp
-                   & result_318.Frame_sel9_fAmpTone
-                   & result_318.Frame_sel10_fCab
-                   & result_318.Frame_sel11_fReverb
-                   & result_318.Frame_sel12_fNs
-                   & result_318.Frame_sel13_fComp
-                   & result_318.Frame_sel14_fWah
-                   & std_logic_vector(result_318.Frame_sel15_fAddr)
-                   & std_logic_vector(result_318.Frame_sel16_fDryL)
-                   & std_logic_vector(result_318.Frame_sel17_fDryR)
-                   & std_logic_vector(result_318.Frame_sel18_fWetL)
-                   & std_logic_vector(result_318.Frame_sel19_fWetR)
-                   & std_logic_vector(result_318.Frame_sel20_fFbL)
-                   & std_logic_vector(result_318.Frame_sel21_fFbR)
-                   & std_logic_vector(result_318.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_318.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_318.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_318.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_318.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_318.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_318.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_318.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_318.Frame_sel30_fAccL)
-                   & std_logic_vector(result_318.Frame_sel31_fAccR)
-                   & std_logic_vector(result_318.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_318.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_318.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_318.Frame_sel35_fAcc3R)))) when others;
-
-  result_318 <= ( Frame_sel0_fL => x_147.Frame_sel0_fL
-                , Frame_sel1_fR => x_147.Frame_sel1_fR
-                , Frame_sel2_fLast => x_147.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_147.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_147.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_147.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_147.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_147.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_147.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_147.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_147.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_147.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_147.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_147.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_147.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_147.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_147.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_147.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_146
-                , Frame_sel19_fWetR => x_146
-                , Frame_sel20_fFbL => x_147.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_147.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_147.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_147.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_147.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_147.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_147.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_147.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_147.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_147.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_147.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_147.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_147.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_147.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_147.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_147.Frame_sel35_fAcc3R );
-
-  \c$bv_180\ <= (x_147.Frame_sel3_fGate);
-
-  \c$bv_181\ <= (x_147.Frame_sel5_fDist);
-
-  x_selection_res_28 <= ((\c$bv_180\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$bv_181\(31 downto 24)))) /= to_unsigned(0,8)));
-
-  x_146 <= result_319 when x_selection_res_28 else
-           x_147.Frame_sel0_fL;
-
-  \c$case_alt_selection_res_104\ <= \c$x_app_arg_52\ < to_signed(-8388608,48);
-
-  \c$case_alt_132\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_104\ else
-                      resize(\c$x_app_arg_52\,24);
-
-  result_selection_res_121 <= \c$x_app_arg_52\ > to_signed(8388607,48);
-
-  result_319 <= to_signed(8388607,24) when result_selection_res_121 else
-                \c$case_alt_132\;
-
-  \c$shI_153\ <= (to_signed(8,64));
-
-  cx_app_arg_52_shiftR : block
+  capp_arg_181_shiftL : block
     signal sh_155 : natural;
   begin
     sh_155 <=
@@ -18721,137 +18190,284 @@ begin
         natural'high when (\c$shI_153\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_153\);
-    \c$x_app_arg_52\ <= shift_right(x_147.Frame_sel30_fAccL,sh_155)
+    \c$app_arg_181\ <= shift_left(x1w_1,sh_155)
         -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  x_147 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_47(1066 downto 0)));
+  result_selection_res_121 <= ratClipInPrev > result_299;
+
+  result_309 <= result_299 when result_selection_res_121 else
+                \c$case_alt_131\;
+
+  \c$case_alt_selection_res_104\ <= ratClipInPrev < \c$app_arg_182\;
+
+  \c$case_alt_131\ <= \c$app_arg_182\ when \c$case_alt_selection_res_104\ else
+                      ratClipInPrev;
+
+  \c$app_arg_182\ <= -result_299;
 
   -- register begin
-  ds1_47_register : process(clk,aresetn)
+  ratClipHist_register : process(clk,aresetn)
   begin
     if aresetn =  '0'  then
-      ds1_47 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+      ratClipHist <= clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24) );
     elsif rising_edge(clk) then
-      ds1_47 <= result_320;
+      ratClipHist <= result_321;
     end if;
   end process;
   -- register end
 
-  with (ds1_48(1067 downto 1067)) select
-    result_320 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_321.Frame_sel0_fL)
-                   & std_logic_vector(result_321.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_321.Frame_sel2_fLast)
-                   & result_321.Frame_sel3_fGate
-                   & result_321.Frame_sel4_fOd
-                   & result_321.Frame_sel5_fDist
-                   & result_321.Frame_sel6_fEq
-                   & result_321.Frame_sel7_fRat
-                   & result_321.Frame_sel8_fAmp
-                   & result_321.Frame_sel9_fAmpTone
-                   & result_321.Frame_sel10_fCab
-                   & result_321.Frame_sel11_fReverb
-                   & result_321.Frame_sel12_fNs
-                   & result_321.Frame_sel13_fComp
-                   & result_321.Frame_sel14_fWah
-                   & std_logic_vector(result_321.Frame_sel15_fAddr)
-                   & std_logic_vector(result_321.Frame_sel16_fDryL)
-                   & std_logic_vector(result_321.Frame_sel17_fDryR)
-                   & std_logic_vector(result_321.Frame_sel18_fWetL)
-                   & std_logic_vector(result_321.Frame_sel19_fWetR)
-                   & std_logic_vector(result_321.Frame_sel20_fFbL)
-                   & std_logic_vector(result_321.Frame_sel21_fFbR)
-                   & std_logic_vector(result_321.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_321.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_321.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_321.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_321.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_321.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_321.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_321.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_321.Frame_sel30_fAccL)
-                   & std_logic_vector(result_321.Frame_sel31_fAccR)
-                   & std_logic_vector(result_321.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_321.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_321.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_321.Frame_sel35_fAcc3R)))) when others;
+  result_selection_res_122 <= rawThreshold_0 < to_signed(2200000,25);
 
-  result_321 <= ( Frame_sel0_fL => x_148.Frame_sel0_fL
-                , Frame_sel1_fR => x_148.Frame_sel1_fR
-                , Frame_sel2_fLast => x_148.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_148.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_148.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_148.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_148.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_148.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_148.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_148.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_148.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_148.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_148.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_148.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_148.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_148.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_148.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_148.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_148.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_148.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_148.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_148.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_148.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_148.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_148.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_148.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_148.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_148.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_148.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_148.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_176\
-                , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => resize((resize(result_322,24)),48)
-                , Frame_sel33_fAcc2R => x_148.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_148.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_148.Frame_sel35_fAcc3R );
-
-  result_selection_res_122 <= rawThreshold_0 < to_signed(1600000,25);
-
-  result_322 <= to_signed(1600000,25) when result_selection_res_122 else
+  result_310 <= to_signed(2200000,25) when result_selection_res_122 else
                 rawThreshold_0;
 
-  rawThreshold_0 <= to_signed(8388607,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(amount)))))))),25)) * to_signed(28000,25), 25));
+  \c$bv_169\ <= (f_6.Frame_sel7_fRat);
 
-  \c$bv_182\ <= (x_148.Frame_sel3_fGate);
+  x_131 <= unsigned((\c$bv_169\(23 downto 16)));
 
-  \c$app_arg_selection_res_7\ <= ((\c$bv_182\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$amount_app_arg\(31 downto 24)))) /= to_unsigned(0,8)));
+  rawThreshold_0 <= to_signed(6000000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_131)))))))),25)) * to_signed(8500,25), 25));
 
-  \c$app_arg_176\ <= resize((resize(x_148.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_37)))))))),48)), 48) when \c$app_arg_selection_res_7\ else
-                     to_signed(0,48);
+  result_311 <= resize(result_310,24);
 
-  gain_37 <= resize((to_unsigned(256,11) + (resize((resize(amount,11)) * to_unsigned(9,11), 11))),12);
+  \c$vec_4\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_313.Tuple4_sel0_signed_0)) & clash_lowpass_fir_types.array_of_signed_24'(ratClipHist)));
 
-  amount <= unsigned((\c$amount_app_arg\(23 downto 16)));
+  result_projection_4_7_7_5 <= (\c$vec_4\(0 to 12-1),\c$vec_4\(12 to \c$vec_4\'high));
 
-  \c$amount_app_arg\ <= x_148.Frame_sel5_fDist;
+  \c$vec_5\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_313.Tuple4_sel1_signed_1)) & clash_lowpass_fir_types.array_of_signed_24'(result_projection_4_7_7_5.Tuple2_4_sel0_array_of_signed_24_0)));
 
-  x_148 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_48(1066 downto 0)));
+  result_projection_4_7_7 <= (\c$vec_5\(0 to 12-1),\c$vec_5\(12 to \c$vec_5\'high));
+
+  \c$vec_6\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_313.Tuple4_sel2_signed_2)) & clash_lowpass_fir_types.array_of_signed_24'(result_projection_4_7_7.Tuple2_4_sel0_array_of_signed_24_0)));
+
+  result_projection_4_7 <= (\c$vec_6\(0 to 12-1),\c$vec_6\(12 to \c$vec_6\'high));
+
+  \c$vec_7\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => result_313.Tuple4_sel3_signed_3)) & clash_lowpass_fir_types.array_of_signed_24'(result_projection_4_7.Tuple2_4_sel0_array_of_signed_24_0)));
+
+  result_projection_4 <= (\c$vec_7\(0 to 12-1),\c$vec_7\(12 to \c$vec_7\'high));
+
+  result_312 <= result_projection_4.Tuple2_4_sel0_array_of_signed_24_0;
+
+  f_6 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ratOpAmpPipe(1066 downto 0)));
+
+  xnw_2 <= resize(f_6.Frame_sel18_fWetL,48);
+
+  x1w_2 <= resize(ratClipInPrev,48);
+
+  result_313 <= ( Tuple4_sel0_signed_0 => result_320
+                , Tuple4_sel1_signed_1 => result_318
+                , Tuple4_sel2_signed_2 => result_316
+                , Tuple4_sel3_signed_3 => result_314 );
+
+  result_selection_res_123 <= result_315 > result_311;
+
+  result_314 <= result_311 when result_selection_res_123 else
+                \c$case_alt_132\;
+
+  \c$case_alt_selection_res_105\ <= result_315 < \c$app_arg_183\;
+
+  \c$case_alt_132\ <= \c$app_arg_183\ when \c$case_alt_selection_res_105\ else
+                      result_315;
+
+  \c$app_arg_183\ <= -result_311;
+
+  \c$case_alt_selection_res_106\ <= \c$app_arg_184\ < to_signed(-8388608,48);
+
+  \c$case_alt_133\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_106\ else
+                      resize(\c$app_arg_184\,24);
+
+  result_selection_res_124 <= \c$app_arg_184\ > to_signed(8388607,48);
+
+  result_315 <= to_signed(8388607,24) when result_selection_res_124 else
+                \c$case_alt_133\;
+
+  \c$shI_154\ <= (to_signed(2,64));
+
+  capp_arg_184_shiftR : block
+    signal sh_156 : natural;
+  begin
+    sh_156 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_154\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_154\);
+    \c$app_arg_184\ <= shift_right(((x1w_2 + \c$app_arg_185\) + xnw_2),sh_156)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$shI_155\ <= (to_signed(1,64));
+
+  capp_arg_185_shiftL : block
+    signal sh_157 : natural;
+  begin
+    sh_157 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_155\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_155\);
+    \c$app_arg_185\ <= shift_left(xnw_2,sh_157)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  result_selection_res_125 <= result_317 > result_311;
+
+  result_316 <= result_311 when result_selection_res_125 else
+                \c$case_alt_134\;
+
+  \c$case_alt_selection_res_107\ <= result_317 < \c$app_arg_186\;
+
+  \c$case_alt_134\ <= \c$app_arg_186\ when \c$case_alt_selection_res_107\ else
+                      result_317;
+
+  \c$app_arg_186\ <= -result_311;
+
+  \c$case_alt_selection_res_108\ <= \c$app_arg_187\ < to_signed(-8388608,48);
+
+  \c$case_alt_135\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_108\ else
+                      resize(\c$app_arg_187\,24);
+
+  result_selection_res_126 <= \c$app_arg_187\ > to_signed(8388607,48);
+
+  result_317 <= to_signed(8388607,24) when result_selection_res_126 else
+                \c$case_alt_135\;
+
+  \c$shI_156\ <= (to_signed(1,64));
+
+  capp_arg_187_shiftR : block
+    signal sh_158 : natural;
+  begin
+    sh_158 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_156\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_156\);
+    \c$app_arg_187\ <= shift_right((x1w_2 + xnw_2),sh_158)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  result_selection_res_127 <= result_319 > result_311;
+
+  result_318 <= result_311 when result_selection_res_127 else
+                \c$case_alt_136\;
+
+  \c$case_alt_selection_res_109\ <= result_319 < \c$app_arg_188\;
+
+  \c$case_alt_136\ <= \c$app_arg_188\ when \c$case_alt_selection_res_109\ else
+                      result_319;
+
+  \c$app_arg_188\ <= -result_311;
+
+  \c$case_alt_selection_res_110\ <= \c$app_arg_189\ < to_signed(-8388608,48);
+
+  \c$case_alt_137\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_110\ else
+                      resize(\c$app_arg_189\,24);
+
+  result_selection_res_128 <= \c$app_arg_189\ > to_signed(8388607,48);
+
+  result_319 <= to_signed(8388607,24) when result_selection_res_128 else
+                \c$case_alt_137\;
+
+  \c$shI_157\ <= (to_signed(2,64));
+
+  capp_arg_189_shiftR : block
+    signal sh_159 : natural;
+  begin
+    sh_159 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_157\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_157\);
+    \c$app_arg_189\ <= shift_right(((\c$app_arg_190\ + x1w_2) + xnw_2),sh_159)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$shI_158\ <= (to_signed(1,64));
+
+  capp_arg_190_shiftL : block
+    signal sh_160 : natural;
+  begin
+    sh_160 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_158\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_158\);
+    \c$app_arg_190\ <= shift_left(x1w_2,sh_160)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  result_selection_res_129 <= ratClipInPrev > result_311;
+
+  result_320 <= result_311 when result_selection_res_129 else
+                \c$case_alt_138\;
+
+  \c$case_alt_selection_res_111\ <= ratClipInPrev < \c$app_arg_191\;
+
+  \c$case_alt_138\ <= \c$app_arg_191\ when \c$case_alt_selection_res_111\ else
+                      ratClipInPrev;
+
+  \c$app_arg_191\ <= -result_311;
+
+  with (ratOpAmpPipe(1067 downto 1067)) select
+    result_321 <= ratClipHist when "0",
+                  result_312 when others;
 
   -- register begin
-  ds1_48_register : process(clk,aresetn)
+  ratClipInPrev_register : process(clk,aresetn)
   begin
     if aresetn =  '0'  then
-      ds1_48 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+      ratClipInPrev <= to_signed(0,24);
     elsif rising_edge(clk) then
-      ds1_48 <= result_323;
+      ratClipInPrev <= \c$ratClipInPrev_app_arg\;
     end if;
   end process;
   -- register end
 
-  with (odToneBlendPipe(1067 downto 1067)) select
-    result_323 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+  with (ratOpAmpPipe(1067 downto 1067)) select
+    \c$ratClipInPrev_app_arg\ <= ratClipInPrev when "0",
+                                 x_133.Frame_sel18_fWetL when others;
+
+  -- register begin
+  ratOpAmpPipe_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ratOpAmpPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ratOpAmpPipe <= result_322;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_42(1067 downto 1067)) select
+    result_322 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(result_324.Frame_sel0_fL)
                    & std_logic_vector(result_324.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(result_324.Frame_sel2_fLast)
@@ -18889,200 +18505,497 @@ begin
                    & std_logic_vector(result_324.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_324.Frame_sel35_fAcc3R)))) when others;
 
-  result_324 <= ( Frame_sel0_fL => x_149
-                , Frame_sel1_fR => x_149
-                , Frame_sel2_fLast => x_153.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_153.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_153.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_153.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_153.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_153.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_153.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_153.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_153.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_153.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_153.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_153.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_153.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_153.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_153.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_153.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_153.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_153.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_153.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_153.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_153.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_153.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_153.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_153.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_153.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_153.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_153.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_153.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_153.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_153.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_153.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_153.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_153.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_153.Frame_sel35_fAcc3R );
+  \c$bv_170\ <= (x_134.Frame_sel7_fRat);
 
-  \c$bv_183\ <= (x_153.Frame_sel3_fGate);
+  \c$shI_159\ <= (to_signed(1,64));
 
-  x_selection_res_29 <= \c$bv_183\(1 downto 1);
-
-  with (x_selection_res_29) select
-    x_149 <= result_325 when "1",
-             x_153.Frame_sel0_fL when others;
-
-  result_selection_res_123 <= result_327 > \c$x_app_arg_55\;
-
-  result_325 <= resize((\c$app_arg_178\ + \c$app_arg_177\),24) when result_selection_res_123 else
-                result_326;
-
-  \c$shI_154\ <= (to_signed(2,64));
-
-  capp_arg_177_shiftR : block
-    signal sh_156 : natural;
+  cx_app_arg_48_shiftL : block
+    signal sh_161 : natural;
   begin
-    sh_156 <=
+    sh_161 <=
         -- pragma translate_off
-        natural'high when (\c$shI_154\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_159\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_154\);
-    \c$app_arg_177\ <= shift_right((\c$app_arg_180\ - \c$app_arg_178\),sh_156)
+        to_integer(\c$shI_159\);
+    \c$x_app_arg_48\ <= shift_right((unsigned((\c$bv_170\(23 downto 16)))),sh_161)
         -- pragma translate_off
-        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_178\ <= resize(\c$x_app_arg_55\,25);
+  alpha_9 <= to_unsigned(184,8) - (resize(\c$x_app_arg_48\,8));
 
-  result_selection_res_124 <= result_327 < negKnee_4;
+  \c$shI_160\ <= (to_signed(8,64));
 
-  result_326 <= resize((\c$app_arg_181\ + \c$app_arg_179\),24) when result_selection_res_124 else
-                result_327;
-
-  \c$shI_155\ <= (to_signed(2,64));
-
-  capp_arg_179_shiftR : block
-    signal sh_157 : natural;
+  capp_arg_192_shiftR : block
+    signal sh_162 : natural;
   begin
-    sh_157 <=
+    sh_162 <=
         -- pragma translate_off
-        natural'high when (\c$shI_155\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_160\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_155\);
-    \c$app_arg_179\ <= shift_right((\c$app_arg_180\ - \c$app_arg_181\),sh_157)
-        -- pragma translate_off
-        when ((to_signed(2,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_180\ <= resize(result_327,25);
-
-  \c$app_arg_181\ <= resize(negKnee_4,25);
-
-  negKnee_4 <= -\c$x_app_arg_55\;
-
-  \c$case_alt_selection_res_105\ <= \c$x_app_arg_53\ < to_signed(-8388608,48);
-
-  \c$case_alt_133\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_105\ else
-                      resize(\c$x_app_arg_53\,24);
-
-  result_selection_res_125 <= \c$x_app_arg_53\ > to_signed(8388607,48);
-
-  result_327 <= to_signed(8388607,24) when result_selection_res_125 else
-                \c$case_alt_133\;
-
-  \c$shI_156\ <= (to_signed(7,64));
-
-  cx_app_arg_53_shiftR : block
-    signal sh_158 : natural;
-  begin
-    sh_158 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_156\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_156\);
-    \c$x_app_arg_53\ <= shift_right((resize((resize(x_150,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_38)))))))),48)), 48)),sh_158)
-        -- pragma translate_off
-        when ((to_signed(7,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  gain_38 <= unsigned((\c$model_app_arg\(15 downto 8)));
-
-  with (model_0) select
-    x_150 <= result_328 when "101",
-             x_153.Frame_sel18_fWetL when others;
-
-  \c$case_alt_selection_res_106\ <= \c$x_app_arg_54\ < to_signed(-8388608,48);
-
-  \c$case_alt_134\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_106\ else
-                      resize(\c$x_app_arg_54\,24);
-
-  result_selection_res_126 <= \c$x_app_arg_54\ > to_signed(8388607,48);
-
-  result_328 <= to_signed(8388607,24) when result_selection_res_126 else
-                \c$case_alt_134\;
-
-  \c$shI_157\ <= (to_signed(8,64));
-
-  cx_app_arg_54_shiftR : block
-    signal sh_159 : natural;
-  begin
-    sh_159 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_157\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_157\);
-    \c$x_app_arg_54\ <= shift_right(((resize((resize(x_153.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_330)))))))),48)), 48)) + (resize((resize((resize(x_153.Frame_sel34_fAcc3L,24)),48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_39)))))))),48)), 48))),sh_159)
+        to_integer(\c$shI_160\);
+    \c$app_arg_192\ <= shift_right(((resize((resize(x_134.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_9)))))))),48)), 48)) + (resize((resize(ratOpAmpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_33)))))))),48)), 48))),sh_162)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  gain_39 <= to_unsigned(255,8) - result_330;
+  gain_33 <= to_unsigned(255,8) - alpha_9;
 
-  y_0 <= resize((resize((unsigned((\c$model_app_arg\(23 downto 16)))),9)) * to_unsigned(0,9), 9);
+  \c$case_alt_selection_res_112\ <= \c$app_arg_192\ < to_signed(-8388608,48);
 
-  result_selection_res_127 <= to_unsigned(191,9) <= y_0;
+  \c$case_alt_139\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_112\ else
+                      resize(\c$app_arg_192\,24);
 
-  result_329 <= to_unsigned(191,9) when result_selection_res_127 else
-                y_0;
+  result_selection_res_130 <= \c$app_arg_192\ > to_signed(8388607,48);
 
-  result_330 <= to_unsigned(64,8) + (resize(result_329,8));
+  result_323 <= to_signed(8388607,24) when result_selection_res_130 else
+                \c$case_alt_139\;
 
-  with (model_0) select
-    \c$x_app_arg_55\ <= to_signed(3350000,24) when "000",
-                        to_signed(3050000,24) when "001",
-                        to_signed(3400000,24) when "010",
-                        to_signed(3700000,24) when "011",
-                        to_signed(3750000,24) when "100",
-                        to_signed(3650000,24) when "101",
-                        to_signed(3350000,24) when others;
+  result_324 <= ( Frame_sel0_fL => x_134.Frame_sel0_fL
+                , Frame_sel1_fR => x_134.Frame_sel1_fR
+                , Frame_sel2_fLast => x_134.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_134.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_134.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_134.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_134.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_134.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_134.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_134.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_134.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_134.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_134.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_134.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_134.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_134.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_134.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_134.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_132
+                , Frame_sel19_fWetR => x_132
+                , Frame_sel20_fFbL => x_134.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_134.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_134.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_134.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_134.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_134.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_134.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_134.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_134.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_134.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_134.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_134.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_134.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_134.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_134.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_134.Frame_sel35_fAcc3R );
 
-  model_0 <= unsigned((\c$model_app_arg\(26 downto 24)));
+  \c$bv_171\ <= (x_134.Frame_sel3_fGate);
 
-  \c$model_app_arg\ <= x_153.Frame_sel4_fOd;
+  x_selection_res_22 <= \c$bv_171\(4 downto 4);
+
+  with (x_selection_res_22) select
+    x_132 <= result_323 when "1",
+             x_134.Frame_sel0_fL when others;
 
   -- register begin
-  odToneBlendPipe_register : process(clk,aresetn)
+  ratOpAmpPrev_register : process(clk,aresetn)
   begin
     if aresetn =  '0'  then
-      odToneBlendPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+      ratOpAmpPrev <= to_signed(0,24);
     elsif rising_edge(clk) then
-      odToneBlendPipe <= result_331;
+      ratOpAmpPrev <= \c$ratOpAmpPrev_app_arg\;
     end if;
   end process;
   -- register end
 
-  with (ds1_49(1067 downto 1067)) select
-    result_331 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+  with (ratOpAmpPipe(1067 downto 1067)) select
+    \c$ratOpAmpPrev_app_arg\ <= ratOpAmpPrev when "0",
+                                x_133.Frame_sel18_fWetL when others;
+
+  x_133 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ratOpAmpPipe(1066 downto 0)));
+
+  x_134 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_42(1066 downto 0)));
+
+  -- register begin
+  ds1_42_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_42 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_42 <= result_325;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_43(1067 downto 1067)) select
+    result_325 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_327.Frame_sel0_fL)
+                   & std_logic_vector(result_327.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_327.Frame_sel2_fLast)
+                   & result_327.Frame_sel3_fGate
+                   & result_327.Frame_sel4_fOd
+                   & result_327.Frame_sel5_fDist
+                   & result_327.Frame_sel6_fEq
+                   & result_327.Frame_sel7_fRat
+                   & result_327.Frame_sel8_fAmp
+                   & result_327.Frame_sel9_fAmpTone
+                   & result_327.Frame_sel10_fCab
+                   & result_327.Frame_sel11_fReverb
+                   & result_327.Frame_sel12_fNs
+                   & result_327.Frame_sel13_fComp
+                   & result_327.Frame_sel14_fWah
+                   & std_logic_vector(result_327.Frame_sel15_fAddr)
+                   & std_logic_vector(result_327.Frame_sel16_fDryL)
+                   & std_logic_vector(result_327.Frame_sel17_fDryR)
+                   & std_logic_vector(result_327.Frame_sel18_fWetL)
+                   & std_logic_vector(result_327.Frame_sel19_fWetR)
+                   & std_logic_vector(result_327.Frame_sel20_fFbL)
+                   & std_logic_vector(result_327.Frame_sel21_fFbR)
+                   & std_logic_vector(result_327.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_327.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_327.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_327.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_327.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_327.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_327.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_327.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_327.Frame_sel30_fAccL)
+                   & std_logic_vector(result_327.Frame_sel31_fAccR)
+                   & std_logic_vector(result_327.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_327.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_327.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_327.Frame_sel35_fAcc3R)))) when others;
+
+  \c$shI_161\ <= (to_signed(8,64));
+
+  cx_app_arg_49_shiftR : block
+    signal sh_163 : natural;
+  begin
+    sh_163 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_161\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_161\);
+    \c$x_app_arg_49\ <= shift_right(x_136.Frame_sel30_fAccL,sh_163)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$case_alt_selection_res_113\ <= \c$x_app_arg_49\ < to_signed(-8388608,48);
+
+  \c$case_alt_140\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_113\ else
+                      resize(\c$x_app_arg_49\,24);
+
+  result_selection_res_131 <= \c$x_app_arg_49\ > to_signed(8388607,48);
+
+  result_326 <= to_signed(8388607,24) when result_selection_res_131 else
+                \c$case_alt_140\;
+
+  result_327 <= ( Frame_sel0_fL => x_136.Frame_sel0_fL
+                , Frame_sel1_fR => x_136.Frame_sel1_fR
+                , Frame_sel2_fLast => x_136.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_136.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_136.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_136.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_136.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_136.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_136.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_136.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_136.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_136.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_136.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_136.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_136.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_136.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_136.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_136.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_135
+                , Frame_sel19_fWetR => x_135
+                , Frame_sel20_fFbL => x_136.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_136.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_136.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_136.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_136.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_136.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_136.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_136.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_136.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_136.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_136.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_136.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_136.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_136.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_136.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_136.Frame_sel35_fAcc3R );
+
+  \c$bv_172\ <= (x_136.Frame_sel3_fGate);
+
+  x_selection_res_23 <= \c$bv_172\(4 downto 4);
+
+  with (x_selection_res_23) select
+    x_135 <= result_326 when "1",
+             x_136.Frame_sel0_fL when others;
+
+  x_136 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_43(1066 downto 0)));
+
+  -- register begin
+  ds1_43_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_43 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_43 <= result_328;
+    end if;
+  end process;
+  -- register end
+
+  with (ratHighpassPipe(1067 downto 1067)) select
+    result_328 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_141\.Frame_sel0_fL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(\c$case_alt_141\.Frame_sel2_fLast)
+                   & \c$case_alt_141\.Frame_sel3_fGate
+                   & \c$case_alt_141\.Frame_sel4_fOd
+                   & \c$case_alt_141\.Frame_sel5_fDist
+                   & \c$case_alt_141\.Frame_sel6_fEq
+                   & \c$case_alt_141\.Frame_sel7_fRat
+                   & \c$case_alt_141\.Frame_sel8_fAmp
+                   & \c$case_alt_141\.Frame_sel9_fAmpTone
+                   & \c$case_alt_141\.Frame_sel10_fCab
+                   & \c$case_alt_141\.Frame_sel11_fReverb
+                   & \c$case_alt_141\.Frame_sel12_fNs
+                   & \c$case_alt_141\.Frame_sel13_fComp
+                   & \c$case_alt_141\.Frame_sel14_fWah
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel15_fAddr)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel16_fDryL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel17_fDryR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel18_fWetL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel19_fWetR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel20_fFbL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel21_fFbR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel22_fEqLowL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel23_fEqLowR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel24_fEqMidL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel25_fEqMidR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel26_fEqHighL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel27_fEqHighR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel30_fAccL)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel31_fAccR)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel32_fAcc2L)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel33_fAcc2R)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel34_fAcc3L)
+                   & std_logic_vector(\c$case_alt_141\.Frame_sel35_fAcc3R)))) when others;
+
+  \c$bv_173\ <= (x_139.Frame_sel3_fGate);
+
+  \c$app_arg_selection_res_6\ <= \c$bv_173\(4 downto 4);
+
+  with (\c$app_arg_selection_res_6\) select
+    \c$app_arg_193\ <= resize((resize(x_139.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_34)))))))),48)), 48) when "1",
+                       to_signed(0,48) when others;
+
+  \c$case_alt_141\ <= ( Frame_sel0_fL => x_139.Frame_sel0_fL
+                      , Frame_sel1_fR => x_139.Frame_sel1_fR
+                      , Frame_sel2_fLast => x_139.Frame_sel2_fLast
+                      , Frame_sel3_fGate => x_139.Frame_sel3_fGate
+                      , Frame_sel4_fOd => x_139.Frame_sel4_fOd
+                      , Frame_sel5_fDist => x_139.Frame_sel5_fDist
+                      , Frame_sel6_fEq => x_139.Frame_sel6_fEq
+                      , Frame_sel7_fRat => x_139.Frame_sel7_fRat
+                      , Frame_sel8_fAmp => x_139.Frame_sel8_fAmp
+                      , Frame_sel9_fAmpTone => x_139.Frame_sel9_fAmpTone
+                      , Frame_sel10_fCab => x_139.Frame_sel10_fCab
+                      , Frame_sel11_fReverb => x_139.Frame_sel11_fReverb
+                      , Frame_sel12_fNs => x_139.Frame_sel12_fNs
+                      , Frame_sel13_fComp => x_139.Frame_sel13_fComp
+                      , Frame_sel14_fWah => x_139.Frame_sel14_fWah
+                      , Frame_sel15_fAddr => x_139.Frame_sel15_fAddr
+                      , Frame_sel16_fDryL => x_139.Frame_sel16_fDryL
+                      , Frame_sel17_fDryR => x_139.Frame_sel17_fDryR
+                      , Frame_sel18_fWetL => x_139.Frame_sel18_fWetL
+                      , Frame_sel19_fWetR => x_139.Frame_sel19_fWetR
+                      , Frame_sel20_fFbL => x_139.Frame_sel20_fFbL
+                      , Frame_sel21_fFbR => x_139.Frame_sel21_fFbR
+                      , Frame_sel22_fEqLowL => x_139.Frame_sel22_fEqLowL
+                      , Frame_sel23_fEqLowR => x_139.Frame_sel23_fEqLowR
+                      , Frame_sel24_fEqMidL => x_139.Frame_sel24_fEqMidL
+                      , Frame_sel25_fEqMidR => x_139.Frame_sel25_fEqMidR
+                      , Frame_sel26_fEqHighL => x_139.Frame_sel26_fEqHighL
+                      , Frame_sel27_fEqHighR => x_139.Frame_sel27_fEqHighR
+                      , Frame_sel28_fEqHighLpL => x_139.Frame_sel28_fEqHighLpL
+                      , Frame_sel29_fEqHighLpR => x_139.Frame_sel29_fEqHighLpR
+                      , Frame_sel30_fAccL => \c$app_arg_193\
+                      , Frame_sel31_fAccR => to_signed(0,48)
+                      , Frame_sel32_fAcc2L => x_139.Frame_sel32_fAcc2L
+                      , Frame_sel33_fAcc2R => x_139.Frame_sel33_fAcc2R
+                      , Frame_sel34_fAcc3L => x_139.Frame_sel34_fAcc3L
+                      , Frame_sel35_fAcc3R => x_139.Frame_sel35_fAcc3R );
+
+  \c$bv_174\ <= (x_139.Frame_sel7_fRat);
+
+  gain_34 <= resize((to_unsigned(640,12) + (resize((resize((unsigned((\c$bv_174\(23 downto 16)))),12)) * to_unsigned(12,12), 12))),12);
+
+  -- register begin
+  ratHighpassPipe_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ratHighpassPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ratHighpassPipe <= result_329;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_44(1067 downto 1067)) select
+    result_329 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_331.Frame_sel0_fL)
+                   & std_logic_vector(result_331.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_331.Frame_sel2_fLast)
+                   & result_331.Frame_sel3_fGate
+                   & result_331.Frame_sel4_fOd
+                   & result_331.Frame_sel5_fDist
+                   & result_331.Frame_sel6_fEq
+                   & result_331.Frame_sel7_fRat
+                   & result_331.Frame_sel8_fAmp
+                   & result_331.Frame_sel9_fAmpTone
+                   & result_331.Frame_sel10_fCab
+                   & result_331.Frame_sel11_fReverb
+                   & result_331.Frame_sel12_fNs
+                   & result_331.Frame_sel13_fComp
+                   & result_331.Frame_sel14_fWah
+                   & std_logic_vector(result_331.Frame_sel15_fAddr)
+                   & std_logic_vector(result_331.Frame_sel16_fDryL)
+                   & std_logic_vector(result_331.Frame_sel17_fDryR)
+                   & std_logic_vector(result_331.Frame_sel18_fWetL)
+                   & std_logic_vector(result_331.Frame_sel19_fWetR)
+                   & std_logic_vector(result_331.Frame_sel20_fFbL)
+                   & std_logic_vector(result_331.Frame_sel21_fFbR)
+                   & std_logic_vector(result_331.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_331.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_331.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_331.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_331.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_331.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_331.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_331.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_331.Frame_sel30_fAccL)
+                   & std_logic_vector(result_331.Frame_sel31_fAccR)
+                   & std_logic_vector(result_331.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_331.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_331.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_331.Frame_sel35_fAcc3R)))) when others;
+
+  x_137 <= ((resize(x_140.Frame_sel0_fL,48)) - (resize(ratHpInPrev,48))) + (resize((resize(ratHpOutPrev,48)) * to_signed(0,48), 48));
+
+  \c$case_alt_selection_res_114\ <= x_137 < to_signed(-8388608,48);
+
+  \c$case_alt_142\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_114\ else
+                      resize(x_137,24);
+
+  result_selection_res_132 <= x_137 > to_signed(8388607,48);
+
+  result_330 <= to_signed(8388607,24) when result_selection_res_132 else
+                \c$case_alt_142\;
+
+  result_331 <= ( Frame_sel0_fL => x_140.Frame_sel0_fL
+                , Frame_sel1_fR => x_140.Frame_sel1_fR
+                , Frame_sel2_fLast => x_140.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_140.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_140.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_140.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_140.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_140.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_140.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_140.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_140.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_140.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_140.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_140.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_140.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_140.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_140.Frame_sel0_fL
+                , Frame_sel17_fDryR => x_140.Frame_sel0_fL
+                , Frame_sel18_fWetL => x_138
+                , Frame_sel19_fWetR => x_138
+                , Frame_sel20_fFbL => x_140.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_140.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_140.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_140.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_140.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_140.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_140.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_140.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_140.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_140.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_140.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_140.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_140.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_140.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_140.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_140.Frame_sel35_fAcc3R );
+
+  \c$bv_175\ <= (x_140.Frame_sel3_fGate);
+
+  x_selection_res_24 <= \c$bv_175\(4 downto 4);
+
+  with (x_selection_res_24) select
+    x_138 <= result_330 when "1",
+             x_140.Frame_sel0_fL when others;
+
+  -- register begin
+  ratHpOutPrev_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ratHpOutPrev <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      ratHpOutPrev <= \c$ratHpOutPrev_app_arg\;
+    end if;
+  end process;
+  -- register end
+
+  with (ratHighpassPipe(1067 downto 1067)) select
+    \c$ratHpOutPrev_app_arg\ <= ratHpOutPrev when "0",
+                                x_139.Frame_sel18_fWetL when others;
+
+  -- register begin
+  ratHpInPrev_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ratHpInPrev <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      ratHpInPrev <= \c$ratHpInPrev_app_arg\;
+    end if;
+  end process;
+  -- register end
+
+  with (ratHighpassPipe(1067 downto 1067)) select
+    \c$ratHpInPrev_app_arg\ <= ratHpInPrev when "0",
+                               x_139.Frame_sel16_fDryL when others;
+
+  x_139 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ratHighpassPipe(1066 downto 0)));
+
+  x_140 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_44(1066 downto 0)));
+
+  -- register begin
+  ds1_44_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_44 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_44 <= result_332;
+    end if;
+  end process;
+  -- register end
+
+  with (distToneBlendPipe(1067 downto 1067)) select
+    result_332 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(result_333.Frame_sel0_fL)
                    & std_logic_vector(result_333.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(result_333.Frame_sel2_fLast)
@@ -19120,79 +19033,671 @@ begin
                    & std_logic_vector(result_333.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_333.Frame_sel35_fAcc3R)))) when others;
 
-  \c$shI_158\ <= (to_signed(8,64));
+  result_333 <= ( Frame_sel0_fL => x_141
+                , Frame_sel1_fR => x_141
+                , Frame_sel2_fLast => x_144.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_144.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_144.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_144.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_144.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_144.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_144.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_144.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_144.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_144.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_144.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_144.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_144.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_144.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_144.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_144.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_144.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_144.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_144.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_144.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_144.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_144.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_144.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_144.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_144.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_144.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_144.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_144.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_144.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_144.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_144.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_144.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_144.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_144.Frame_sel35_fAcc3R );
 
-  cx_app_arg_56_shiftR : block
-    signal sh_160 : natural;
+  \c$bv_176\ <= (x_144.Frame_sel3_fGate);
+
+  x_selection_res_25 <= ((\c$bv_176\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$x_app_arg_51\(31 downto 24)))) /= to_unsigned(0,8)));
+
+  x_141 <= result_334 when x_selection_res_25 else
+           x_144.Frame_sel0_fL;
+
+  \c$case_alt_selection_res_115\ <= \c$x_app_arg_50\ < to_signed(-8388608,48);
+
+  \c$case_alt_143\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_115\ else
+                      resize(\c$x_app_arg_50\,24);
+
+  result_selection_res_133 <= \c$x_app_arg_50\ > to_signed(8388607,48);
+
+  result_334 <= to_signed(8388607,24) when result_selection_res_133 else
+                \c$case_alt_143\;
+
+  \c$shI_162\ <= (to_signed(7,64));
+
+  cx_app_arg_50_shiftR : block
+    signal sh_164 : natural;
   begin
-    sh_160 <=
+    sh_164 <=
         -- pragma translate_off
-        natural'high when (\c$shI_158\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_162\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_158\);
-    \c$x_app_arg_56\ <= shift_right((x_152.Frame_sel30_fAccL + x_152.Frame_sel32_fAcc2L),sh_160)
+        to_integer(\c$shI_162\);
+    \c$x_app_arg_50\ <= shift_right((resize((resize(x_144.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_35)))))))),48)), 48)),sh_164)
+        -- pragma translate_off
+        when ((to_signed(7,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  gain_35 <= unsigned((\c$x_app_arg_51\(15 downto 8)));
+
+  \c$x_app_arg_51\ <= x_144.Frame_sel5_fDist;
+
+  -- register begin
+  distToneBlendPipe_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      distToneBlendPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      distToneBlendPipe <= result_335;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_45(1067 downto 1067)) select
+    result_335 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_336.Frame_sel0_fL)
+                   & std_logic_vector(result_336.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_336.Frame_sel2_fLast)
+                   & result_336.Frame_sel3_fGate
+                   & result_336.Frame_sel4_fOd
+                   & result_336.Frame_sel5_fDist
+                   & result_336.Frame_sel6_fEq
+                   & result_336.Frame_sel7_fRat
+                   & result_336.Frame_sel8_fAmp
+                   & result_336.Frame_sel9_fAmpTone
+                   & result_336.Frame_sel10_fCab
+                   & result_336.Frame_sel11_fReverb
+                   & result_336.Frame_sel12_fNs
+                   & result_336.Frame_sel13_fComp
+                   & result_336.Frame_sel14_fWah
+                   & std_logic_vector(result_336.Frame_sel15_fAddr)
+                   & std_logic_vector(result_336.Frame_sel16_fDryL)
+                   & std_logic_vector(result_336.Frame_sel17_fDryR)
+                   & std_logic_vector(result_336.Frame_sel18_fWetL)
+                   & std_logic_vector(result_336.Frame_sel19_fWetR)
+                   & std_logic_vector(result_336.Frame_sel20_fFbL)
+                   & std_logic_vector(result_336.Frame_sel21_fFbR)
+                   & std_logic_vector(result_336.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_336.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_336.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_336.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_336.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_336.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_336.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_336.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_336.Frame_sel30_fAccL)
+                   & std_logic_vector(result_336.Frame_sel31_fAccR)
+                   & std_logic_vector(result_336.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_336.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_336.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_336.Frame_sel35_fAcc3R)))) when others;
+
+  result_336 <= ( Frame_sel0_fL => x_143.Frame_sel0_fL
+                , Frame_sel1_fR => x_143.Frame_sel1_fR
+                , Frame_sel2_fLast => x_143.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_143.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_143.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_143.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_143.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_143.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_143.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_143.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_143.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_143.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_143.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_143.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_143.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_143.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_143.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_143.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_142
+                , Frame_sel19_fWetR => x_142
+                , Frame_sel20_fFbL => x_143.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_143.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_143.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_143.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_143.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_143.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_143.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_143.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_143.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_143.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_143.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_143.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_143.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_143.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_143.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_143.Frame_sel35_fAcc3R );
+
+  \c$bv_177\ <= (x_143.Frame_sel3_fGate);
+
+  \c$bv_178\ <= (x_143.Frame_sel5_fDist);
+
+  x_selection_res_26 <= ((\c$bv_177\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$bv_178\(31 downto 24)))) /= to_unsigned(0,8)));
+
+  x_142 <= result_337 when x_selection_res_26 else
+           x_143.Frame_sel0_fL;
+
+  \c$case_alt_selection_res_116\ <= \c$x_app_arg_52\ < to_signed(-8388608,48);
+
+  \c$case_alt_144\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_116\ else
+                      resize(\c$x_app_arg_52\,24);
+
+  result_selection_res_134 <= \c$x_app_arg_52\ > to_signed(8388607,48);
+
+  result_337 <= to_signed(8388607,24) when result_selection_res_134 else
+                \c$case_alt_144\;
+
+  \c$shI_163\ <= (to_signed(8,64));
+
+  cx_app_arg_52_shiftR : block
+    signal sh_165 : natural;
+  begin
+    sh_165 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_163\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_163\);
+    \c$x_app_arg_52\ <= shift_right((x_143.Frame_sel30_fAccL + x_143.Frame_sel32_fAcc2L),sh_165)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_107\ <= \c$x_app_arg_56\ < to_signed(-8388608,48);
+  x_143 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_45(1066 downto 0)));
 
-  \c$case_alt_135\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_107\ else
-                      resize(\c$x_app_arg_56\,24);
+  -- register begin
+  ds1_45_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_45 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_45 <= result_338;
+    end if;
+  end process;
+  -- register end
 
-  result_selection_res_128 <= \c$x_app_arg_56\ > to_signed(8388607,48);
+  with (ds1_46(1067 downto 1067)) select
+    result_338 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_339.Frame_sel0_fL)
+                   & std_logic_vector(result_339.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_339.Frame_sel2_fLast)
+                   & result_339.Frame_sel3_fGate
+                   & result_339.Frame_sel4_fOd
+                   & result_339.Frame_sel5_fDist
+                   & result_339.Frame_sel6_fEq
+                   & result_339.Frame_sel7_fRat
+                   & result_339.Frame_sel8_fAmp
+                   & result_339.Frame_sel9_fAmpTone
+                   & result_339.Frame_sel10_fCab
+                   & result_339.Frame_sel11_fReverb
+                   & result_339.Frame_sel12_fNs
+                   & result_339.Frame_sel13_fComp
+                   & result_339.Frame_sel14_fWah
+                   & std_logic_vector(result_339.Frame_sel15_fAddr)
+                   & std_logic_vector(result_339.Frame_sel16_fDryL)
+                   & std_logic_vector(result_339.Frame_sel17_fDryR)
+                   & std_logic_vector(result_339.Frame_sel18_fWetL)
+                   & std_logic_vector(result_339.Frame_sel19_fWetR)
+                   & std_logic_vector(result_339.Frame_sel20_fFbL)
+                   & std_logic_vector(result_339.Frame_sel21_fFbR)
+                   & std_logic_vector(result_339.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_339.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_339.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_339.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_339.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_339.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_339.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_339.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_339.Frame_sel30_fAccL)
+                   & std_logic_vector(result_339.Frame_sel31_fAccR)
+                   & std_logic_vector(result_339.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_339.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_339.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_339.Frame_sel35_fAcc3R)))) when others;
 
-  result_332 <= to_signed(8388607,24) when result_selection_res_128 else
-                \c$case_alt_135\;
+  result_339 <= ( Frame_sel0_fL => x_145.Frame_sel0_fL
+                , Frame_sel1_fR => x_145.Frame_sel1_fR
+                , Frame_sel2_fLast => x_145.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_145.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_145.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_145.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_145.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_145.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_145.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_145.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_145.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_145.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_145.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_145.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_145.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_145.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_145.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_145.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_145.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_145.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_145.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_145.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_145.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_145.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_145.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_145.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_145.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_145.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_145.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_145.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => \c$app_arg_195\
+                , Frame_sel31_fAccR => to_signed(0,48)
+                , Frame_sel32_fAcc2L => \c$app_arg_194\
+                , Frame_sel33_fAcc2R => to_signed(0,48)
+                , Frame_sel34_fAcc3L => x_145.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_145.Frame_sel35_fAcc3R );
 
-  result_333 <= ( Frame_sel0_fL => x_152.Frame_sel0_fL
-                , Frame_sel1_fR => x_152.Frame_sel1_fR
-                , Frame_sel2_fLast => x_152.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_152.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_152.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_152.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_152.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_152.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_152.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_152.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_152.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_152.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_152.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_152.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_152.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_152.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_152.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_152.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_151
-                , Frame_sel19_fWetR => x_151
-                , Frame_sel20_fFbL => x_152.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_152.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_152.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_152.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_152.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_152.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_152.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_152.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_152.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_152.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_152.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_152.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_152.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_152.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_152.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_152.Frame_sel35_fAcc3R );
+  \c$app_arg_194\ <= resize((resize(distTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_36)))))))),48)), 48) when \on_7\ else
+                     to_signed(0,48);
 
-  \c$bv_184\ <= (x_152.Frame_sel3_fGate);
+  gain_36 <= to_unsigned(255,8) - tone_0;
 
-  x_selection_res_30 <= \c$bv_184\(1 downto 1);
+  \c$app_arg_195\ <= resize((resize(x_145.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_0)))))))),48)), 48) when \on_7\ else
+                     to_signed(0,48);
 
-  with (x_selection_res_30) select
-    x_151 <= result_332 when "1",
-             x_152.Frame_sel0_fL when others;
+  \c$bv_179\ <= (x_145.Frame_sel3_fGate);
 
-  x_152 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_49(1066 downto 0)));
+  \on_7\ <= ((\c$bv_179\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$tone_app_arg\(31 downto 24)))) /= to_unsigned(0,8)));
+
+  tone_0 <= unsigned((\c$tone_app_arg\(7 downto 0)));
+
+  \c$tone_app_arg\ <= x_145.Frame_sel5_fDist;
+
+  -- register begin
+  distTonePrev_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      distTonePrev <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      distTonePrev <= \c$distTonePrev_app_arg\;
+    end if;
+  end process;
+  -- register end
+
+  with (distToneBlendPipe(1067 downto 1067)) select
+    \c$distTonePrev_app_arg\ <= distTonePrev when "0",
+                                x_144.Frame_sel18_fWetL when others;
+
+  x_144 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(distToneBlendPipe(1066 downto 0)));
+
+  x_145 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_46(1066 downto 0)));
+
+  -- register begin
+  ds1_46_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_46 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_46 <= result_340;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_47(1067 downto 1067)) select
+    result_340 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_341.Frame_sel0_fL)
+                   & std_logic_vector(result_341.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_341.Frame_sel2_fLast)
+                   & result_341.Frame_sel3_fGate
+                   & result_341.Frame_sel4_fOd
+                   & result_341.Frame_sel5_fDist
+                   & result_341.Frame_sel6_fEq
+                   & result_341.Frame_sel7_fRat
+                   & result_341.Frame_sel8_fAmp
+                   & result_341.Frame_sel9_fAmpTone
+                   & result_341.Frame_sel10_fCab
+                   & result_341.Frame_sel11_fReverb
+                   & result_341.Frame_sel12_fNs
+                   & result_341.Frame_sel13_fComp
+                   & result_341.Frame_sel14_fWah
+                   & std_logic_vector(result_341.Frame_sel15_fAddr)
+                   & std_logic_vector(result_341.Frame_sel16_fDryL)
+                   & std_logic_vector(result_341.Frame_sel17_fDryR)
+                   & std_logic_vector(result_341.Frame_sel18_fWetL)
+                   & std_logic_vector(result_341.Frame_sel19_fWetR)
+                   & std_logic_vector(result_341.Frame_sel20_fFbL)
+                   & std_logic_vector(result_341.Frame_sel21_fFbR)
+                   & std_logic_vector(result_341.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_341.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_341.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_341.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_341.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_341.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_341.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_341.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_341.Frame_sel30_fAccL)
+                   & std_logic_vector(result_341.Frame_sel31_fAccR)
+                   & std_logic_vector(result_341.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_341.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_341.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_341.Frame_sel35_fAcc3R)))) when others;
+
+  result_341 <= ( Frame_sel0_fL => x_146
+                , Frame_sel1_fR => x_146
+                , Frame_sel2_fLast => x_147.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_147.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_147.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_147.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_147.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_147.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_147.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_147.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_147.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_147.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_147.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_147.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_147.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_147.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_147.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_147.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_147.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_147.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_147.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_147.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_147.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_147.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_147.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_147.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_147.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_147.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_147.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_147.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_147.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_147.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_147.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_147.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_147.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_147.Frame_sel35_fAcc3R );
+
+  \c$bv_180\ <= (x_147.Frame_sel3_fGate);
+
+  \c$bv_181\ <= (x_147.Frame_sel5_fDist);
+
+  x_selection_res_27 <= ((\c$bv_180\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$bv_181\(31 downto 24)))) /= to_unsigned(0,8)));
+
+  x_146 <= result_342 when x_selection_res_27 else
+           x_147.Frame_sel0_fL;
+
+  result_selection_res_135 <= x_147.Frame_sel18_fWetL > (resize(x_147.Frame_sel32_fAcc2L,24));
+
+  result_342 <= resize(x_147.Frame_sel32_fAcc2L,24) when result_selection_res_135 else
+                \c$case_alt_145\;
+
+  \c$case_alt_selection_res_117\ <= x_147.Frame_sel18_fWetL < \c$app_arg_196\;
+
+  \c$case_alt_145\ <= \c$app_arg_196\ when \c$case_alt_selection_res_117\ else
+                      x_147.Frame_sel18_fWetL;
+
+  \c$app_arg_196\ <= -(resize(x_147.Frame_sel32_fAcc2L,24));
+
+  x_147 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_47(1066 downto 0)));
+
+  -- register begin
+  ds1_47_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_47 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_47 <= result_343;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_48(1067 downto 1067)) select
+    result_343 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_344.Frame_sel0_fL)
+                   & std_logic_vector(result_344.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_344.Frame_sel2_fLast)
+                   & result_344.Frame_sel3_fGate
+                   & result_344.Frame_sel4_fOd
+                   & result_344.Frame_sel5_fDist
+                   & result_344.Frame_sel6_fEq
+                   & result_344.Frame_sel7_fRat
+                   & result_344.Frame_sel8_fAmp
+                   & result_344.Frame_sel9_fAmpTone
+                   & result_344.Frame_sel10_fCab
+                   & result_344.Frame_sel11_fReverb
+                   & result_344.Frame_sel12_fNs
+                   & result_344.Frame_sel13_fComp
+                   & result_344.Frame_sel14_fWah
+                   & std_logic_vector(result_344.Frame_sel15_fAddr)
+                   & std_logic_vector(result_344.Frame_sel16_fDryL)
+                   & std_logic_vector(result_344.Frame_sel17_fDryR)
+                   & std_logic_vector(result_344.Frame_sel18_fWetL)
+                   & std_logic_vector(result_344.Frame_sel19_fWetR)
+                   & std_logic_vector(result_344.Frame_sel20_fFbL)
+                   & std_logic_vector(result_344.Frame_sel21_fFbR)
+                   & std_logic_vector(result_344.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_344.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_344.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_344.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_344.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_344.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_344.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_344.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_344.Frame_sel30_fAccL)
+                   & std_logic_vector(result_344.Frame_sel31_fAccR)
+                   & std_logic_vector(result_344.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_344.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_344.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_344.Frame_sel35_fAcc3R)))) when others;
+
+  result_344 <= ( Frame_sel0_fL => x_149.Frame_sel0_fL
+                , Frame_sel1_fR => x_149.Frame_sel1_fR
+                , Frame_sel2_fLast => x_149.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_149.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_149.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_149.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_149.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_149.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_149.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_149.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_149.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_149.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_149.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_149.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_149.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_149.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_149.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_149.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_148
+                , Frame_sel19_fWetR => x_148
+                , Frame_sel20_fFbL => x_149.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_149.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_149.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_149.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_149.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_149.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_149.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_149.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_149.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_149.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_149.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_149.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_149.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_149.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_149.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_149.Frame_sel35_fAcc3R );
+
+  \c$bv_182\ <= (x_149.Frame_sel3_fGate);
+
+  \c$bv_183\ <= (x_149.Frame_sel5_fDist);
+
+  x_selection_res_28 <= ((\c$bv_182\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$bv_183\(31 downto 24)))) /= to_unsigned(0,8)));
+
+  x_148 <= result_345 when x_selection_res_28 else
+           x_149.Frame_sel0_fL;
+
+  \c$case_alt_selection_res_118\ <= \c$x_app_arg_53\ < to_signed(-8388608,48);
+
+  \c$case_alt_146\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_118\ else
+                      resize(\c$x_app_arg_53\,24);
+
+  result_selection_res_136 <= \c$x_app_arg_53\ > to_signed(8388607,48);
+
+  result_345 <= to_signed(8388607,24) when result_selection_res_136 else
+                \c$case_alt_146\;
+
+  \c$shI_164\ <= (to_signed(8,64));
+
+  cx_app_arg_53_shiftR : block
+    signal sh_166 : natural;
+  begin
+    sh_166 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_164\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_164\);
+    \c$x_app_arg_53\ <= shift_right(x_149.Frame_sel30_fAccL,sh_166)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  x_149 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_48(1066 downto 0)));
+
+  -- register begin
+  ds1_48_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_48 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_48 <= result_346;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_49(1067 downto 1067)) select
+    result_346 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_347.Frame_sel0_fL)
+                   & std_logic_vector(result_347.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_347.Frame_sel2_fLast)
+                   & result_347.Frame_sel3_fGate
+                   & result_347.Frame_sel4_fOd
+                   & result_347.Frame_sel5_fDist
+                   & result_347.Frame_sel6_fEq
+                   & result_347.Frame_sel7_fRat
+                   & result_347.Frame_sel8_fAmp
+                   & result_347.Frame_sel9_fAmpTone
+                   & result_347.Frame_sel10_fCab
+                   & result_347.Frame_sel11_fReverb
+                   & result_347.Frame_sel12_fNs
+                   & result_347.Frame_sel13_fComp
+                   & result_347.Frame_sel14_fWah
+                   & std_logic_vector(result_347.Frame_sel15_fAddr)
+                   & std_logic_vector(result_347.Frame_sel16_fDryL)
+                   & std_logic_vector(result_347.Frame_sel17_fDryR)
+                   & std_logic_vector(result_347.Frame_sel18_fWetL)
+                   & std_logic_vector(result_347.Frame_sel19_fWetR)
+                   & std_logic_vector(result_347.Frame_sel20_fFbL)
+                   & std_logic_vector(result_347.Frame_sel21_fFbR)
+                   & std_logic_vector(result_347.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_347.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_347.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_347.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_347.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_347.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_347.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_347.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_347.Frame_sel30_fAccL)
+                   & std_logic_vector(result_347.Frame_sel31_fAccR)
+                   & std_logic_vector(result_347.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_347.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_347.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_347.Frame_sel35_fAcc3R)))) when others;
+
+  result_347 <= ( Frame_sel0_fL => x_150.Frame_sel0_fL
+                , Frame_sel1_fR => x_150.Frame_sel1_fR
+                , Frame_sel2_fLast => x_150.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_150.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_150.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_150.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_150.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_150.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_150.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_150.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_150.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_150.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_150.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_150.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_150.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_150.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_150.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_150.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_150.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_150.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_150.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_150.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_150.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_150.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_150.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_150.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_150.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_150.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_150.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_150.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => \c$app_arg_197\
+                , Frame_sel31_fAccR => to_signed(0,48)
+                , Frame_sel32_fAcc2L => resize((resize(result_348,24)),48)
+                , Frame_sel33_fAcc2R => x_150.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_150.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_150.Frame_sel35_fAcc3R );
+
+  result_selection_res_137 <= rawThreshold_1 < to_signed(1600000,25);
+
+  result_348 <= to_signed(1600000,25) when result_selection_res_137 else
+                rawThreshold_1;
+
+  rawThreshold_1 <= to_signed(8388607,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(amount)))))))),25)) * to_signed(28000,25), 25));
+
+  \c$bv_184\ <= (x_150.Frame_sel3_fGate);
+
+  \c$app_arg_selection_res_7\ <= ((\c$bv_184\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$amount_app_arg\(31 downto 24)))) /= to_unsigned(0,8)));
+
+  \c$app_arg_197\ <= resize((resize(x_150.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_37)))))))),48)), 48) when \c$app_arg_selection_res_7\ else
+                     to_signed(0,48);
+
+  gain_37 <= resize((to_unsigned(256,11) + (resize((resize(amount,11)) * to_unsigned(9,11), 11))),12);
+
+  amount <= unsigned((\c$amount_app_arg\(23 downto 16)));
+
+  \c$amount_app_arg\ <= x_150.Frame_sel5_fDist;
+
+  x_150 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_49(1066 downto 0)));
 
   -- register begin
   ds1_49_register : process(clk,aresetn)
@@ -19200,57 +19705,309 @@ begin
     if aresetn =  '0'  then
       ds1_49 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_49 <= result_334;
+      ds1_49 <= result_349;
+    end if;
+  end process;
+  -- register end
+
+  with (odToneBlendPipe(1067 downto 1067)) select
+    result_349 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_350.Frame_sel0_fL)
+                   & std_logic_vector(result_350.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_350.Frame_sel2_fLast)
+                   & result_350.Frame_sel3_fGate
+                   & result_350.Frame_sel4_fOd
+                   & result_350.Frame_sel5_fDist
+                   & result_350.Frame_sel6_fEq
+                   & result_350.Frame_sel7_fRat
+                   & result_350.Frame_sel8_fAmp
+                   & result_350.Frame_sel9_fAmpTone
+                   & result_350.Frame_sel10_fCab
+                   & result_350.Frame_sel11_fReverb
+                   & result_350.Frame_sel12_fNs
+                   & result_350.Frame_sel13_fComp
+                   & result_350.Frame_sel14_fWah
+                   & std_logic_vector(result_350.Frame_sel15_fAddr)
+                   & std_logic_vector(result_350.Frame_sel16_fDryL)
+                   & std_logic_vector(result_350.Frame_sel17_fDryR)
+                   & std_logic_vector(result_350.Frame_sel18_fWetL)
+                   & std_logic_vector(result_350.Frame_sel19_fWetR)
+                   & std_logic_vector(result_350.Frame_sel20_fFbL)
+                   & std_logic_vector(result_350.Frame_sel21_fFbR)
+                   & std_logic_vector(result_350.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_350.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_350.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_350.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_350.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_350.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_350.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_350.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_350.Frame_sel30_fAccL)
+                   & std_logic_vector(result_350.Frame_sel31_fAccR)
+                   & std_logic_vector(result_350.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_350.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_350.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_350.Frame_sel35_fAcc3R)))) when others;
+
+  result_350 <= ( Frame_sel0_fL => x_151
+                , Frame_sel1_fR => x_151
+                , Frame_sel2_fLast => x_155.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_155.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_155.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_155.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_155.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_155.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_155.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_155.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_155.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_155.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_155.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_155.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_155.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_155.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_155.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_155.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_155.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_155.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_155.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_155.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_155.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_155.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_155.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_155.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_155.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_155.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_155.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_155.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_155.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_155.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_155.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_155.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_155.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_155.Frame_sel35_fAcc3R );
+
+  \c$bv_185\ <= (x_155.Frame_sel3_fGate);
+
+  x_selection_res_29 <= \c$bv_185\(1 downto 1);
+
+  with (x_selection_res_29) select
+    x_151 <= result_351 when "1",
+             x_155.Frame_sel0_fL when others;
+
+  result_selection_res_138 <= result_353 > \c$x_app_arg_56\;
+
+  result_351 <= resize((\c$app_arg_199\ + \c$app_arg_198\),24) when result_selection_res_138 else
+                result_352;
+
+  \c$shI_165\ <= (to_signed(2,64));
+
+  capp_arg_198_shiftR : block
+    signal sh_167 : natural;
+  begin
+    sh_167 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_165\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_165\);
+    \c$app_arg_198\ <= shift_right((\c$app_arg_201\ - \c$app_arg_199\),sh_167)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_199\ <= resize(\c$x_app_arg_56\,25);
+
+  result_selection_res_139 <= result_353 < negKnee_4;
+
+  result_352 <= resize((\c$app_arg_202\ + \c$app_arg_200\),24) when result_selection_res_139 else
+                result_353;
+
+  \c$shI_166\ <= (to_signed(2,64));
+
+  capp_arg_200_shiftR : block
+    signal sh_168 : natural;
+  begin
+    sh_168 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_166\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_166\);
+    \c$app_arg_200\ <= shift_right((\c$app_arg_201\ - \c$app_arg_202\),sh_168)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_201\ <= resize(result_353,25);
+
+  \c$app_arg_202\ <= resize(negKnee_4,25);
+
+  negKnee_4 <= -\c$x_app_arg_56\;
+
+  \c$case_alt_selection_res_119\ <= \c$x_app_arg_54\ < to_signed(-8388608,48);
+
+  \c$case_alt_147\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_119\ else
+                      resize(\c$x_app_arg_54\,24);
+
+  result_selection_res_140 <= \c$x_app_arg_54\ > to_signed(8388607,48);
+
+  result_353 <= to_signed(8388607,24) when result_selection_res_140 else
+                \c$case_alt_147\;
+
+  \c$shI_167\ <= (to_signed(7,64));
+
+  cx_app_arg_54_shiftR : block
+    signal sh_169 : natural;
+  begin
+    sh_169 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_167\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_167\);
+    \c$x_app_arg_54\ <= shift_right((resize((resize(x_152,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_38)))))))),48)), 48)),sh_169)
+        -- pragma translate_off
+        when ((to_signed(7,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  gain_38 <= unsigned((\c$model_app_arg\(15 downto 8)));
+
+  with (model_0) select
+    x_152 <= result_354 when "101",
+             x_155.Frame_sel18_fWetL when others;
+
+  \c$case_alt_selection_res_120\ <= \c$x_app_arg_55\ < to_signed(-8388608,48);
+
+  \c$case_alt_148\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_120\ else
+                      resize(\c$x_app_arg_55\,24);
+
+  result_selection_res_141 <= \c$x_app_arg_55\ > to_signed(8388607,48);
+
+  result_354 <= to_signed(8388607,24) when result_selection_res_141 else
+                \c$case_alt_148\;
+
+  \c$shI_168\ <= (to_signed(8,64));
+
+  cx_app_arg_55_shiftR : block
+    signal sh_170 : natural;
+  begin
+    sh_170 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_168\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_168\);
+    \c$x_app_arg_55\ <= shift_right(((resize((resize(x_155.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_356)))))))),48)), 48)) + (resize((resize((resize(x_155.Frame_sel34_fAcc3L,24)),48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_39)))))))),48)), 48))),sh_170)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  gain_39 <= to_unsigned(255,8) - result_356;
+
+  y_0 <= resize((resize((unsigned((\c$model_app_arg\(23 downto 16)))),9)) * to_unsigned(0,9), 9);
+
+  result_selection_res_142 <= to_unsigned(191,9) <= y_0;
+
+  result_355 <= to_unsigned(191,9) when result_selection_res_142 else
+                y_0;
+
+  result_356 <= to_unsigned(64,8) + (resize(result_355,8));
+
+  with (model_0) select
+    \c$x_app_arg_56\ <= to_signed(3350000,24) when "000",
+                        to_signed(3050000,24) when "001",
+                        to_signed(3400000,24) when "010",
+                        to_signed(3700000,24) when "011",
+                        to_signed(3750000,24) when "100",
+                        to_signed(3650000,24) when "101",
+                        to_signed(3350000,24) when others;
+
+  model_0 <= unsigned((\c$model_app_arg\(26 downto 24)));
+
+  \c$model_app_arg\ <= x_155.Frame_sel4_fOd;
+
+  -- register begin
+  odToneBlendPipe_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      odToneBlendPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      odToneBlendPipe <= result_357;
     end if;
   end process;
   -- register end
 
   with (ds1_50(1067 downto 1067)) select
-    result_334 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_335.Frame_sel0_fL)
-                   & std_logic_vector(result_335.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_335.Frame_sel2_fLast)
-                   & result_335.Frame_sel3_fGate
-                   & result_335.Frame_sel4_fOd
-                   & result_335.Frame_sel5_fDist
-                   & result_335.Frame_sel6_fEq
-                   & result_335.Frame_sel7_fRat
-                   & result_335.Frame_sel8_fAmp
-                   & result_335.Frame_sel9_fAmpTone
-                   & result_335.Frame_sel10_fCab
-                   & result_335.Frame_sel11_fReverb
-                   & result_335.Frame_sel12_fNs
-                   & result_335.Frame_sel13_fComp
-                   & result_335.Frame_sel14_fWah
-                   & std_logic_vector(result_335.Frame_sel15_fAddr)
-                   & std_logic_vector(result_335.Frame_sel16_fDryL)
-                   & std_logic_vector(result_335.Frame_sel17_fDryR)
-                   & std_logic_vector(result_335.Frame_sel18_fWetL)
-                   & std_logic_vector(result_335.Frame_sel19_fWetR)
-                   & std_logic_vector(result_335.Frame_sel20_fFbL)
-                   & std_logic_vector(result_335.Frame_sel21_fFbR)
-                   & std_logic_vector(result_335.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_335.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_335.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_335.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_335.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_335.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_335.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_335.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_335.Frame_sel30_fAccL)
-                   & std_logic_vector(result_335.Frame_sel31_fAccR)
-                   & std_logic_vector(result_335.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_335.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_335.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_335.Frame_sel35_fAcc3R)))) when others;
+    result_357 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_359.Frame_sel0_fL)
+                   & std_logic_vector(result_359.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_359.Frame_sel2_fLast)
+                   & result_359.Frame_sel3_fGate
+                   & result_359.Frame_sel4_fOd
+                   & result_359.Frame_sel5_fDist
+                   & result_359.Frame_sel6_fEq
+                   & result_359.Frame_sel7_fRat
+                   & result_359.Frame_sel8_fAmp
+                   & result_359.Frame_sel9_fAmpTone
+                   & result_359.Frame_sel10_fCab
+                   & result_359.Frame_sel11_fReverb
+                   & result_359.Frame_sel12_fNs
+                   & result_359.Frame_sel13_fComp
+                   & result_359.Frame_sel14_fWah
+                   & std_logic_vector(result_359.Frame_sel15_fAddr)
+                   & std_logic_vector(result_359.Frame_sel16_fDryL)
+                   & std_logic_vector(result_359.Frame_sel17_fDryR)
+                   & std_logic_vector(result_359.Frame_sel18_fWetL)
+                   & std_logic_vector(result_359.Frame_sel19_fWetR)
+                   & std_logic_vector(result_359.Frame_sel20_fFbL)
+                   & std_logic_vector(result_359.Frame_sel21_fFbR)
+                   & std_logic_vector(result_359.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_359.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_359.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_359.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_359.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_359.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_359.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_359.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_359.Frame_sel30_fAccL)
+                   & std_logic_vector(result_359.Frame_sel31_fAccR)
+                   & std_logic_vector(result_359.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_359.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_359.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_359.Frame_sel35_fAcc3R)))) when others;
 
-  \c$app_arg_182\ <= resize((resize(x_154.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_1)))))))),48)), 48) when \on_7\ else
-                     to_signed(0,48);
+  \c$shI_169\ <= (to_signed(8,64));
 
-  \c$app_arg_183\ <= resize((resize(odTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_40)))))))),48)), 48) when \on_7\ else
-                     to_signed(0,48);
+  cx_app_arg_57_shiftR : block
+    signal sh_171 : natural;
+  begin
+    sh_171 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_169\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_169\);
+    \c$x_app_arg_57\ <= shift_right((x_154.Frame_sel30_fAccL + x_154.Frame_sel32_fAcc2L),sh_171)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
 
-  result_335 <= ( Frame_sel0_fL => x_154.Frame_sel0_fL
+  \c$case_alt_selection_res_121\ <= \c$x_app_arg_57\ < to_signed(-8388608,48);
+
+  \c$case_alt_149\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_121\ else
+                      resize(\c$x_app_arg_57\,24);
+
+  result_selection_res_143 <= \c$x_app_arg_57\ > to_signed(8388607,48);
+
+  result_358 <= to_signed(8388607,24) when result_selection_res_143 else
+                \c$case_alt_149\;
+
+  result_359 <= ( Frame_sel0_fL => x_154.Frame_sel0_fL
                 , Frame_sel1_fR => x_154.Frame_sel1_fR
                 , Frame_sel2_fLast => x_154.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_154.Frame_sel3_fGate
@@ -19268,8 +20025,8 @@ begin
                 , Frame_sel15_fAddr => x_154.Frame_sel15_fAddr
                 , Frame_sel16_fDryL => x_154.Frame_sel16_fDryL
                 , Frame_sel17_fDryR => x_154.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_154.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_154.Frame_sel19_fWetR
+                , Frame_sel18_fWetL => x_153
+                , Frame_sel19_fWetR => x_153
                 , Frame_sel20_fFbL => x_154.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_154.Frame_sel21_fFbR
                 , Frame_sel22_fEqLowL => x_154.Frame_sel22_fEqLowL
@@ -19280,39 +20037,20 @@ begin
                 , Frame_sel27_fEqHighR => x_154.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_154.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_154.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_182\
-                , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_183\
-                , Frame_sel33_fAcc2R => to_signed(0,48)
+                , Frame_sel30_fAccL => x_154.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_154.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_154.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_154.Frame_sel33_fAcc2R
                 , Frame_sel34_fAcc3L => x_154.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_154.Frame_sel35_fAcc3R );
 
-  gain_40 <= to_unsigned(255,8) - tone_1;
+  \c$bv_186\ <= (x_154.Frame_sel3_fGate);
 
-  \c$bv_185\ <= (x_154.Frame_sel3_fGate);
+  x_selection_res_30 <= \c$bv_186\(1 downto 1);
 
-  \on_7\ <= (\c$bv_185\(1 downto 1)) = std_logic_vector'("1");
-
-  \c$bv_186\ <= (x_154.Frame_sel4_fOd);
-
-  tone_1 <= unsigned((\c$bv_186\(7 downto 0)));
-
-  -- register begin
-  odTonePrev_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      odTonePrev <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      odTonePrev <= \c$odTonePrev_app_arg\;
-    end if;
-  end process;
-  -- register end
-
-  with (odToneBlendPipe(1067 downto 1067)) select
-    \c$odTonePrev_app_arg\ <= odTonePrev when "0",
-                              x_153.Frame_sel18_fWetL when others;
-
-  x_153 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(odToneBlendPipe(1066 downto 0)));
+  with (x_selection_res_30) select
+    x_153 <= result_358 when "1",
+             x_154.Frame_sel0_fL when others;
 
   x_154 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_50(1066 downto 0)));
 
@@ -19322,289 +20060,58 @@ begin
     if aresetn =  '0'  then
       ds1_50 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_50 <= result_336;
+      ds1_50 <= result_360;
     end if;
   end process;
   -- register end
 
   with (ds1_51(1067 downto 1067)) select
-    result_336 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_346.Frame_sel0_fL)
-                   & std_logic_vector(result_346.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_346.Frame_sel2_fLast)
-                   & result_346.Frame_sel3_fGate
-                   & result_346.Frame_sel4_fOd
-                   & result_346.Frame_sel5_fDist
-                   & result_346.Frame_sel6_fEq
-                   & result_346.Frame_sel7_fRat
-                   & result_346.Frame_sel8_fAmp
-                   & result_346.Frame_sel9_fAmpTone
-                   & result_346.Frame_sel10_fCab
-                   & result_346.Frame_sel11_fReverb
-                   & result_346.Frame_sel12_fNs
-                   & result_346.Frame_sel13_fComp
-                   & result_346.Frame_sel14_fWah
-                   & std_logic_vector(result_346.Frame_sel15_fAddr)
-                   & std_logic_vector(result_346.Frame_sel16_fDryL)
-                   & std_logic_vector(result_346.Frame_sel17_fDryR)
-                   & std_logic_vector(result_346.Frame_sel18_fWetL)
-                   & std_logic_vector(result_346.Frame_sel19_fWetR)
-                   & std_logic_vector(result_346.Frame_sel20_fFbL)
-                   & std_logic_vector(result_346.Frame_sel21_fFbR)
-                   & std_logic_vector(result_346.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_346.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_346.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_346.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_346.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_346.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_346.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_346.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_346.Frame_sel30_fAccL)
-                   & std_logic_vector(result_346.Frame_sel31_fAccR)
-                   & std_logic_vector(result_346.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_346.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_346.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_346.Frame_sel35_fAcc3R)))) when others;
+    result_360 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_361.Frame_sel0_fL)
+                   & std_logic_vector(result_361.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_361.Frame_sel2_fLast)
+                   & result_361.Frame_sel3_fGate
+                   & result_361.Frame_sel4_fOd
+                   & result_361.Frame_sel5_fDist
+                   & result_361.Frame_sel6_fEq
+                   & result_361.Frame_sel7_fRat
+                   & result_361.Frame_sel8_fAmp
+                   & result_361.Frame_sel9_fAmpTone
+                   & result_361.Frame_sel10_fCab
+                   & result_361.Frame_sel11_fReverb
+                   & result_361.Frame_sel12_fNs
+                   & result_361.Frame_sel13_fComp
+                   & result_361.Frame_sel14_fWah
+                   & std_logic_vector(result_361.Frame_sel15_fAddr)
+                   & std_logic_vector(result_361.Frame_sel16_fDryL)
+                   & std_logic_vector(result_361.Frame_sel17_fDryR)
+                   & std_logic_vector(result_361.Frame_sel18_fWetL)
+                   & std_logic_vector(result_361.Frame_sel19_fWetR)
+                   & std_logic_vector(result_361.Frame_sel20_fFbL)
+                   & std_logic_vector(result_361.Frame_sel21_fFbR)
+                   & std_logic_vector(result_361.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_361.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_361.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_361.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_361.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_361.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_361.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_361.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_361.Frame_sel30_fAccL)
+                   & std_logic_vector(result_361.Frame_sel31_fAccR)
+                   & std_logic_vector(result_361.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_361.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_361.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_361.Frame_sel35_fAcc3R)))) when others;
 
-  with (model_1) select
-    \c$odKneePOut\ <= to_signed(2950000,24) when "000",
-                      to_signed(2550000,24) when "001",
-                      to_signed(2400000,24) when "010",
-                      to_signed(3600000,24) when "011",
-                      to_signed(2450000,24) when "100",
-                      to_signed(3100000,24) when "101",
-                      to_signed(2950000,24) when others;
-
-  with (model_1) select
-    \c$odKneeNOut\ <= to_signed(2850000,24) when "000",
-                      to_signed(1750000,24) when "001",
-                      to_signed(1900000,24) when "010",
-                      to_signed(3450000,24) when "011",
-                      to_signed(2150000,24) when "100",
-                      to_signed(2900000,24) when "101",
-                      to_signed(2850000,24) when others;
-
-  result_selection_res_129 <= x_156.Frame_sel18_fWetL > \c$odKneePOut\;
-
-  result_337 <= resize((\c$app_arg_185\ + \c$app_arg_184\),24) when result_selection_res_129 else
-                result_338;
-
-  \c$shI_159\ <= (to_signed(1,64));
-
-  capp_arg_184_shiftR : block
-    signal sh_161 : natural;
-  begin
-    sh_161 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_159\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_159\);
-    \c$app_arg_184\ <= shift_right((\c$app_arg_187\ - \c$app_arg_185\),sh_161)
-        -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_185\ <= resize(\c$odKneePOut\,25);
-
-  result_selection_res_130 <= x_156.Frame_sel18_fWetL < negKneeN_0;
-
-  result_338 <= resize((\c$app_arg_188\ + \c$app_arg_186\),24) when result_selection_res_130 else
-                x_156.Frame_sel18_fWetL;
-
-  \c$shI_160\ <= (to_signed(1,64));
-
-  capp_arg_186_shiftR : block
-    signal sh_162 : natural;
-  begin
-    sh_162 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_160\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_160\);
-    \c$app_arg_186\ <= shift_right((\c$app_arg_187\ - \c$app_arg_188\),sh_162)
-        -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_187\ <= resize(x_156.Frame_sel18_fWetL,25);
-
-  \c$app_arg_188\ <= resize(negKneeN_0,25);
-
-  negKneeN_0 <= -\c$odKneeNOut\;
-
-  result_selection_res_131 <= x_156.Frame_sel18_fWetL > \c$odKneePOut\;
-
-  result_339 <= resize((\c$app_arg_190\ + \c$app_arg_189\),24) when result_selection_res_131 else
-                result_340;
-
-  \c$shI_161\ <= (to_signed(3,64));
-
-  capp_arg_189_shiftR : block
-    signal sh_163 : natural;
-  begin
-    sh_163 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_161\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_161\);
-    \c$app_arg_189\ <= shift_right((\c$app_arg_192\ - \c$app_arg_190\),sh_163)
-        -- pragma translate_off
-        when ((to_signed(3,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_190\ <= resize(\c$odKneePOut\,25);
-
-  result_selection_res_132 <= x_156.Frame_sel18_fWetL < negKneeN_1;
-
-  result_340 <= resize((\c$app_arg_193\ + \c$app_arg_191\),24) when result_selection_res_132 else
-                x_156.Frame_sel18_fWetL;
-
-  \c$shI_162\ <= (to_signed(4,64));
-
-  capp_arg_191_shiftR : block
-    signal sh_164 : natural;
-  begin
-    sh_164 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_162\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_162\);
-    \c$app_arg_191\ <= shift_right((\c$app_arg_192\ - \c$app_arg_193\),sh_164)
-        -- pragma translate_off
-        when ((to_signed(4,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_192\ <= resize(x_156.Frame_sel18_fWetL,25);
-
-  \c$app_arg_193\ <= resize(negKneeN_1,25);
-
-  negKneeN_1 <= -\c$odKneeNOut\;
-
-  result_selection_res_133 <= x_156.Frame_sel18_fWetL > \c$odKneePOut\;
-
-  result_341 <= resize((\c$app_arg_195\ + \c$app_arg_194\),24) when result_selection_res_133 else
-                result_342;
-
-  \c$shI_163\ <= (to_signed(2,64));
-
-  capp_arg_194_shiftR : block
-    signal sh_165 : natural;
-  begin
-    sh_165 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_163\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_163\);
-    \c$app_arg_194\ <= shift_right((\c$app_arg_197\ - \c$app_arg_195\),sh_165)
-        -- pragma translate_off
-        when ((to_signed(2,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_195\ <= resize(\c$odKneePOut\,25);
-
-  result_selection_res_134 <= x_156.Frame_sel18_fWetL < negKneeN_2;
-
-  result_342 <= resize((\c$app_arg_198\ + \c$app_arg_196\),24) when result_selection_res_134 else
-                x_156.Frame_sel18_fWetL;
-
-  \c$shI_164\ <= (to_signed(3,64));
-
-  capp_arg_196_shiftR : block
-    signal sh_166 : natural;
-  begin
-    sh_166 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_164\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_164\);
-    \c$app_arg_196\ <= shift_right((\c$app_arg_197\ - \c$app_arg_198\),sh_166)
-        -- pragma translate_off
-        when ((to_signed(3,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_197\ <= resize(x_156.Frame_sel18_fWetL,25);
-
-  \c$app_arg_198\ <= resize(negKneeN_2,25);
-
-  negKneeN_2 <= -\c$odKneeNOut\;
-
-  result_selection_res_135 <= x_156.Frame_sel18_fWetL > \c$odKneePOut\;
-
-  result_343 <= resize((\c$app_arg_200\ + \c$app_arg_199\),24) when result_selection_res_135 else
-                result_344;
-
-  \c$shI_165\ <= (to_signed(1,64));
-
-  capp_arg_199_shiftR : block
-    signal sh_167 : natural;
-  begin
-    sh_167 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_165\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_165\);
-    \c$app_arg_199\ <= shift_right((\c$app_arg_202\ - \c$app_arg_200\),sh_167)
-        -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_200\ <= resize(\c$odKneePOut\,25);
-
-  result_selection_res_136 <= x_156.Frame_sel18_fWetL < negKneeN_3;
-
-  result_344 <= resize((\c$app_arg_203\ + \c$app_arg_201\),24) when result_selection_res_136 else
-                x_156.Frame_sel18_fWetL;
-
-  \c$shI_166\ <= (to_signed(2,64));
-
-  capp_arg_201_shiftR : block
-    signal sh_168 : natural;
-  begin
-    sh_168 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_166\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_166\);
-    \c$app_arg_201\ <= shift_right((\c$app_arg_202\ - \c$app_arg_203\),sh_168)
-        -- pragma translate_off
-        when ((to_signed(2,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$app_arg_202\ <= resize(x_156.Frame_sel18_fWetL,25);
-
-  \c$app_arg_203\ <= resize(negKneeN_3,25);
-
-  negKneeN_3 <= -\c$odKneeNOut\;
-
-  with (ds36) select
-    result_345 <= result_339 when "00",
-                  result_341 when "01",
-                  result_343 when "10",
-                  result_337 when others;
-
-  \c$app_arg_selection_res_8\ <= \on_8\ and (model_1 = to_unsigned(5,3));
-
-  \c$app_arg_204\ <= resize(x_156.Frame_sel18_fWetL,48) when \c$app_arg_selection_res_8\ else
+  \c$app_arg_203\ <= resize((resize(x_156.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_1)))))))),48)), 48) when \on_8\ else
                      to_signed(0,48);
 
-  result_346 <= ( Frame_sel0_fL => x_155
-                , Frame_sel1_fR => x_155
+  \c$app_arg_204\ <= resize((resize(odTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_40)))))))),48)), 48) when \on_8\ else
+                     to_signed(0,48);
+
+  result_361 <= ( Frame_sel0_fL => x_156.Frame_sel0_fL
+                , Frame_sel1_fR => x_156.Frame_sel1_fR
                 , Frame_sel2_fLast => x_156.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_156.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_156.Frame_sel4_fOd
@@ -19633,15 +20140,14 @@ begin
                 , Frame_sel27_fEqHighR => x_156.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_156.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_156.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_156.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_156.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_156.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_156.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => \c$app_arg_204\
-                , Frame_sel35_fAcc3R => to_signed(0,48) );
+                , Frame_sel30_fAccL => \c$app_arg_203\
+                , Frame_sel31_fAccR => to_signed(0,48)
+                , Frame_sel32_fAcc2L => \c$app_arg_204\
+                , Frame_sel33_fAcc2R => to_signed(0,48)
+                , Frame_sel34_fAcc3L => x_156.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_156.Frame_sel35_fAcc3R );
 
-  x_155 <= result_345 when \on_8\ else
-           x_156.Frame_sel0_fL;
+  gain_40 <= to_unsigned(255,8) - tone_1;
 
   \c$bv_187\ <= (x_156.Frame_sel3_fGate);
 
@@ -19649,15 +20155,24 @@ begin
 
   \c$bv_188\ <= (x_156.Frame_sel4_fOd);
 
-  model_1 <= unsigned((\c$bv_188\(26 downto 24)));
+  tone_1 <= unsigned((\c$bv_188\(7 downto 0)));
 
-  with (model_1) select
-    ds36 <= to_unsigned(0,2) when "000",
-            to_unsigned(1,2) when "001",
-            to_unsigned(1,2) when "010",
-            to_unsigned(0,2) when "011",
-            to_unsigned(2,2) when "100",
-            to_unsigned(0,2) when others;
+  -- register begin
+  odTonePrev_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      odTonePrev <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      odTonePrev <= \c$odTonePrev_app_arg\;
+    end if;
+  end process;
+  -- register end
+
+  with (odToneBlendPipe(1067 downto 1067)) select
+    \c$odTonePrev_app_arg\ <= odTonePrev when "0",
+                              x_155.Frame_sel18_fWetL when others;
+
+  x_155 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(odToneBlendPipe(1066 downto 0)));
 
   x_156 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_51(1066 downto 0)));
 
@@ -19667,79 +20182,289 @@ begin
     if aresetn =  '0'  then
       ds1_51 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_51 <= result_347;
+      ds1_51 <= result_362;
     end if;
   end process;
   -- register end
 
   with (ds1_52(1067 downto 1067)) select
-    result_347 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_349.Frame_sel0_fL)
-                   & std_logic_vector(result_349.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_349.Frame_sel2_fLast)
-                   & result_349.Frame_sel3_fGate
-                   & result_349.Frame_sel4_fOd
-                   & result_349.Frame_sel5_fDist
-                   & result_349.Frame_sel6_fEq
-                   & result_349.Frame_sel7_fRat
-                   & result_349.Frame_sel8_fAmp
-                   & result_349.Frame_sel9_fAmpTone
-                   & result_349.Frame_sel10_fCab
-                   & result_349.Frame_sel11_fReverb
-                   & result_349.Frame_sel12_fNs
-                   & result_349.Frame_sel13_fComp
-                   & result_349.Frame_sel14_fWah
-                   & std_logic_vector(result_349.Frame_sel15_fAddr)
-                   & std_logic_vector(result_349.Frame_sel16_fDryL)
-                   & std_logic_vector(result_349.Frame_sel17_fDryR)
-                   & std_logic_vector(result_349.Frame_sel18_fWetL)
-                   & std_logic_vector(result_349.Frame_sel19_fWetR)
-                   & std_logic_vector(result_349.Frame_sel20_fFbL)
-                   & std_logic_vector(result_349.Frame_sel21_fFbR)
-                   & std_logic_vector(result_349.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_349.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_349.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_349.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_349.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_349.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_349.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_349.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_349.Frame_sel30_fAccL)
-                   & std_logic_vector(result_349.Frame_sel31_fAccR)
-                   & std_logic_vector(result_349.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_349.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_349.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_349.Frame_sel35_fAcc3R)))) when others;
+    result_362 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_372.Frame_sel0_fL)
+                   & std_logic_vector(result_372.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_372.Frame_sel2_fLast)
+                   & result_372.Frame_sel3_fGate
+                   & result_372.Frame_sel4_fOd
+                   & result_372.Frame_sel5_fDist
+                   & result_372.Frame_sel6_fEq
+                   & result_372.Frame_sel7_fRat
+                   & result_372.Frame_sel8_fAmp
+                   & result_372.Frame_sel9_fAmpTone
+                   & result_372.Frame_sel10_fCab
+                   & result_372.Frame_sel11_fReverb
+                   & result_372.Frame_sel12_fNs
+                   & result_372.Frame_sel13_fComp
+                   & result_372.Frame_sel14_fWah
+                   & std_logic_vector(result_372.Frame_sel15_fAddr)
+                   & std_logic_vector(result_372.Frame_sel16_fDryL)
+                   & std_logic_vector(result_372.Frame_sel17_fDryR)
+                   & std_logic_vector(result_372.Frame_sel18_fWetL)
+                   & std_logic_vector(result_372.Frame_sel19_fWetR)
+                   & std_logic_vector(result_372.Frame_sel20_fFbL)
+                   & std_logic_vector(result_372.Frame_sel21_fFbR)
+                   & std_logic_vector(result_372.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_372.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_372.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_372.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_372.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_372.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_372.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_372.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_372.Frame_sel30_fAccL)
+                   & std_logic_vector(result_372.Frame_sel31_fAccR)
+                   & std_logic_vector(result_372.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_372.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_372.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_372.Frame_sel35_fAcc3R)))) when others;
 
-  \c$shI_167\ <= (to_signed(8,64));
+  with (model_1) select
+    \c$odKneePOut\ <= to_signed(2950000,24) when "000",
+                      to_signed(2550000,24) when "001",
+                      to_signed(2400000,24) when "010",
+                      to_signed(3600000,24) when "011",
+                      to_signed(2450000,24) when "100",
+                      to_signed(3100000,24) when "101",
+                      to_signed(2950000,24) when others;
 
-  cx_app_arg_57_shiftR : block
-    signal sh_169 : natural;
+  with (model_1) select
+    \c$odKneeNOut\ <= to_signed(2850000,24) when "000",
+                      to_signed(1750000,24) when "001",
+                      to_signed(1900000,24) when "010",
+                      to_signed(3450000,24) when "011",
+                      to_signed(2150000,24) when "100",
+                      to_signed(2900000,24) when "101",
+                      to_signed(2850000,24) when others;
+
+  result_selection_res_144 <= x_158.Frame_sel18_fWetL > \c$odKneePOut\;
+
+  result_363 <= resize((\c$app_arg_206\ + \c$app_arg_205\),24) when result_selection_res_144 else
+                result_364;
+
+  \c$shI_170\ <= (to_signed(1,64));
+
+  capp_arg_205_shiftR : block
+    signal sh_172 : natural;
   begin
-    sh_169 <=
+    sh_172 <=
         -- pragma translate_off
-        natural'high when (\c$shI_167\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_170\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_167\);
-    \c$x_app_arg_57\ <= shift_right(x_158.Frame_sel30_fAccL,sh_169)
+        to_integer(\c$shI_170\);
+    \c$app_arg_205\ <= shift_right((\c$app_arg_208\ - \c$app_arg_206\),sh_172)
         -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_108\ <= \c$x_app_arg_57\ < to_signed(-8388608,48);
+  \c$app_arg_206\ <= resize(\c$odKneePOut\,25);
 
-  \c$case_alt_136\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_108\ else
-                      resize(\c$x_app_arg_57\,24);
+  result_selection_res_145 <= x_158.Frame_sel18_fWetL < negKneeN_0;
 
-  result_selection_res_137 <= \c$x_app_arg_57\ > to_signed(8388607,48);
+  result_364 <= resize((\c$app_arg_209\ + \c$app_arg_207\),24) when result_selection_res_145 else
+                x_158.Frame_sel18_fWetL;
 
-  result_348 <= to_signed(8388607,24) when result_selection_res_137 else
-                \c$case_alt_136\;
+  \c$shI_171\ <= (to_signed(1,64));
 
-  result_349 <= ( Frame_sel0_fL => x_158.Frame_sel0_fL
-                , Frame_sel1_fR => x_158.Frame_sel1_fR
+  capp_arg_207_shiftR : block
+    signal sh_173 : natural;
+  begin
+    sh_173 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_171\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_171\);
+    \c$app_arg_207\ <= shift_right((\c$app_arg_208\ - \c$app_arg_209\),sh_173)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_208\ <= resize(x_158.Frame_sel18_fWetL,25);
+
+  \c$app_arg_209\ <= resize(negKneeN_0,25);
+
+  negKneeN_0 <= -\c$odKneeNOut\;
+
+  result_selection_res_146 <= x_158.Frame_sel18_fWetL > \c$odKneePOut\;
+
+  result_365 <= resize((\c$app_arg_211\ + \c$app_arg_210\),24) when result_selection_res_146 else
+                result_366;
+
+  \c$shI_172\ <= (to_signed(3,64));
+
+  capp_arg_210_shiftR : block
+    signal sh_174 : natural;
+  begin
+    sh_174 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_172\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_172\);
+    \c$app_arg_210\ <= shift_right((\c$app_arg_213\ - \c$app_arg_211\),sh_174)
+        -- pragma translate_off
+        when ((to_signed(3,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_211\ <= resize(\c$odKneePOut\,25);
+
+  result_selection_res_147 <= x_158.Frame_sel18_fWetL < negKneeN_1;
+
+  result_366 <= resize((\c$app_arg_214\ + \c$app_arg_212\),24) when result_selection_res_147 else
+                x_158.Frame_sel18_fWetL;
+
+  \c$shI_173\ <= (to_signed(4,64));
+
+  capp_arg_212_shiftR : block
+    signal sh_175 : natural;
+  begin
+    sh_175 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_173\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_173\);
+    \c$app_arg_212\ <= shift_right((\c$app_arg_213\ - \c$app_arg_214\),sh_175)
+        -- pragma translate_off
+        when ((to_signed(4,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_213\ <= resize(x_158.Frame_sel18_fWetL,25);
+
+  \c$app_arg_214\ <= resize(negKneeN_1,25);
+
+  negKneeN_1 <= -\c$odKneeNOut\;
+
+  result_selection_res_148 <= x_158.Frame_sel18_fWetL > \c$odKneePOut\;
+
+  result_367 <= resize((\c$app_arg_216\ + \c$app_arg_215\),24) when result_selection_res_148 else
+                result_368;
+
+  \c$shI_174\ <= (to_signed(2,64));
+
+  capp_arg_215_shiftR : block
+    signal sh_176 : natural;
+  begin
+    sh_176 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_174\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_174\);
+    \c$app_arg_215\ <= shift_right((\c$app_arg_218\ - \c$app_arg_216\),sh_176)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_216\ <= resize(\c$odKneePOut\,25);
+
+  result_selection_res_149 <= x_158.Frame_sel18_fWetL < negKneeN_2;
+
+  result_368 <= resize((\c$app_arg_219\ + \c$app_arg_217\),24) when result_selection_res_149 else
+                x_158.Frame_sel18_fWetL;
+
+  \c$shI_175\ <= (to_signed(3,64));
+
+  capp_arg_217_shiftR : block
+    signal sh_177 : natural;
+  begin
+    sh_177 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_175\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_175\);
+    \c$app_arg_217\ <= shift_right((\c$app_arg_218\ - \c$app_arg_219\),sh_177)
+        -- pragma translate_off
+        when ((to_signed(3,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_218\ <= resize(x_158.Frame_sel18_fWetL,25);
+
+  \c$app_arg_219\ <= resize(negKneeN_2,25);
+
+  negKneeN_2 <= -\c$odKneeNOut\;
+
+  result_selection_res_150 <= x_158.Frame_sel18_fWetL > \c$odKneePOut\;
+
+  result_369 <= resize((\c$app_arg_221\ + \c$app_arg_220\),24) when result_selection_res_150 else
+                result_370;
+
+  \c$shI_176\ <= (to_signed(1,64));
+
+  capp_arg_220_shiftR : block
+    signal sh_178 : natural;
+  begin
+    sh_178 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_176\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_176\);
+    \c$app_arg_220\ <= shift_right((\c$app_arg_223\ - \c$app_arg_221\),sh_178)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_221\ <= resize(\c$odKneePOut\,25);
+
+  result_selection_res_151 <= x_158.Frame_sel18_fWetL < negKneeN_3;
+
+  result_370 <= resize((\c$app_arg_224\ + \c$app_arg_222\),24) when result_selection_res_151 else
+                x_158.Frame_sel18_fWetL;
+
+  \c$shI_177\ <= (to_signed(2,64));
+
+  capp_arg_222_shiftR : block
+    signal sh_179 : natural;
+  begin
+    sh_179 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_177\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_177\);
+    \c$app_arg_222\ <= shift_right((\c$app_arg_223\ - \c$app_arg_224\),sh_179)
+        -- pragma translate_off
+        when ((to_signed(2,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$app_arg_223\ <= resize(x_158.Frame_sel18_fWetL,25);
+
+  \c$app_arg_224\ <= resize(negKneeN_3,25);
+
+  negKneeN_3 <= -\c$odKneeNOut\;
+
+  with (ds36) select
+    result_371 <= result_365 when "00",
+                  result_367 when "01",
+                  result_369 when "10",
+                  result_363 when others;
+
+  \c$app_arg_selection_res_8\ <= \on_9\ and (model_1 = to_unsigned(5,3));
+
+  \c$app_arg_225\ <= resize(x_158.Frame_sel18_fWetL,48) when \c$app_arg_selection_res_8\ else
+                     to_signed(0,48);
+
+  result_372 <= ( Frame_sel0_fL => x_157
+                , Frame_sel1_fR => x_157
                 , Frame_sel2_fLast => x_158.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_158.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_158.Frame_sel4_fOd
@@ -19756,8 +20481,8 @@ begin
                 , Frame_sel15_fAddr => x_158.Frame_sel15_fAddr
                 , Frame_sel16_fDryL => x_158.Frame_sel16_fDryL
                 , Frame_sel17_fDryR => x_158.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_157
-                , Frame_sel19_fWetR => x_157
+                , Frame_sel18_fWetL => x_158.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_158.Frame_sel19_fWetR
                 , Frame_sel20_fFbL => x_158.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_158.Frame_sel21_fFbR
                 , Frame_sel22_fEqLowL => x_158.Frame_sel22_fEqLowL
@@ -19772,16 +20497,27 @@ begin
                 , Frame_sel31_fAccR => x_158.Frame_sel31_fAccR
                 , Frame_sel32_fAcc2L => x_158.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_158.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_158.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_158.Frame_sel35_fAcc3R );
+                , Frame_sel34_fAcc3L => \c$app_arg_225\
+                , Frame_sel35_fAcc3R => to_signed(0,48) );
+
+  x_157 <= result_371 when \on_9\ else
+           x_158.Frame_sel0_fL;
 
   \c$bv_189\ <= (x_158.Frame_sel3_fGate);
 
-  x_selection_res_31 <= \c$bv_189\(1 downto 1);
+  \on_9\ <= (\c$bv_189\(1 downto 1)) = std_logic_vector'("1");
 
-  with (x_selection_res_31) select
-    x_157 <= result_348 when "1",
-             x_158.Frame_sel0_fL when others;
+  \c$bv_190\ <= (x_158.Frame_sel4_fOd);
+
+  model_1 <= unsigned((\c$bv_190\(26 downto 24)));
+
+  with (model_1) select
+    ds36 <= to_unsigned(0,2) when "000",
+            to_unsigned(1,2) when "001",
+            to_unsigned(1,2) when "010",
+            to_unsigned(0,2) when "011",
+            to_unsigned(2,2) when "100",
+            to_unsigned(0,2) when others;
 
   x_158 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_52(1066 downto 0)));
 
@@ -19791,787 +20527,13 @@ begin
     if aresetn =  '0'  then
       ds1_52 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_52 <= result_350;
+      ds1_52 <= result_373;
     end if;
   end process;
   -- register end
 
   with (ds1_53(1067 downto 1067)) select
-    result_350 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_137\.Frame_sel0_fL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(\c$case_alt_137\.Frame_sel2_fLast)
-                   & \c$case_alt_137\.Frame_sel3_fGate
-                   & \c$case_alt_137\.Frame_sel4_fOd
-                   & \c$case_alt_137\.Frame_sel5_fDist
-                   & \c$case_alt_137\.Frame_sel6_fEq
-                   & \c$case_alt_137\.Frame_sel7_fRat
-                   & \c$case_alt_137\.Frame_sel8_fAmp
-                   & \c$case_alt_137\.Frame_sel9_fAmpTone
-                   & \c$case_alt_137\.Frame_sel10_fCab
-                   & \c$case_alt_137\.Frame_sel11_fReverb
-                   & \c$case_alt_137\.Frame_sel12_fNs
-                   & \c$case_alt_137\.Frame_sel13_fComp
-                   & \c$case_alt_137\.Frame_sel14_fWah
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel15_fAddr)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel16_fDryL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel17_fDryR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel18_fWetL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel19_fWetR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel20_fFbL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel21_fFbR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel22_fEqLowL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel23_fEqLowR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel24_fEqMidL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel25_fEqMidR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel26_fEqHighL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel27_fEqHighR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel30_fAccL)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel31_fAccR)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel32_fAcc2L)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel33_fAcc2R)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel34_fAcc3L)
-                   & std_logic_vector(\c$case_alt_137\.Frame_sel35_fAcc3R)))) when others;
-
-  \c$case_alt_137\ <= ( Frame_sel0_fL => x_159.Frame_sel0_fL
-                      , Frame_sel1_fR => x_159.Frame_sel1_fR
-                      , Frame_sel2_fLast => x_159.Frame_sel2_fLast
-                      , Frame_sel3_fGate => x_159.Frame_sel3_fGate
-                      , Frame_sel4_fOd => x_159.Frame_sel4_fOd
-                      , Frame_sel5_fDist => x_159.Frame_sel5_fDist
-                      , Frame_sel6_fEq => x_159.Frame_sel6_fEq
-                      , Frame_sel7_fRat => x_159.Frame_sel7_fRat
-                      , Frame_sel8_fAmp => x_159.Frame_sel8_fAmp
-                      , Frame_sel9_fAmpTone => x_159.Frame_sel9_fAmpTone
-                      , Frame_sel10_fCab => x_159.Frame_sel10_fCab
-                      , Frame_sel11_fReverb => x_159.Frame_sel11_fReverb
-                      , Frame_sel12_fNs => x_159.Frame_sel12_fNs
-                      , Frame_sel13_fComp => x_159.Frame_sel13_fComp
-                      , Frame_sel14_fWah => x_159.Frame_sel14_fWah
-                      , Frame_sel15_fAddr => x_159.Frame_sel15_fAddr
-                      , Frame_sel16_fDryL => x_159.Frame_sel16_fDryL
-                      , Frame_sel17_fDryR => x_159.Frame_sel17_fDryR
-                      , Frame_sel18_fWetL => x_159.Frame_sel18_fWetL
-                      , Frame_sel19_fWetR => x_159.Frame_sel19_fWetR
-                      , Frame_sel20_fFbL => x_159.Frame_sel20_fFbL
-                      , Frame_sel21_fFbR => x_159.Frame_sel21_fFbR
-                      , Frame_sel22_fEqLowL => x_159.Frame_sel22_fEqLowL
-                      , Frame_sel23_fEqLowR => x_159.Frame_sel23_fEqLowR
-                      , Frame_sel24_fEqMidL => x_159.Frame_sel24_fEqMidL
-                      , Frame_sel25_fEqMidR => x_159.Frame_sel25_fEqMidR
-                      , Frame_sel26_fEqHighL => x_159.Frame_sel26_fEqHighL
-                      , Frame_sel27_fEqHighR => x_159.Frame_sel27_fEqHighR
-                      , Frame_sel28_fEqHighLpL => x_159.Frame_sel28_fEqHighLpL
-                      , Frame_sel29_fEqHighLpR => x_159.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_205\
-                      , Frame_sel31_fAccR => to_signed(0,48)
-                      , Frame_sel32_fAcc2L => x_159.Frame_sel32_fAcc2L
-                      , Frame_sel33_fAcc2R => x_159.Frame_sel33_fAcc2R
-                      , Frame_sel34_fAcc3L => x_159.Frame_sel34_fAcc3L
-                      , Frame_sel35_fAcc3R => x_159.Frame_sel35_fAcc3R );
-
-  \c$bv_190\ <= (x_159.Frame_sel3_fGate);
-
-  \c$app_arg_selection_res_9\ <= \c$bv_190\(1 downto 1);
-
-  with (\c$app_arg_selection_res_9\) select
-    \c$app_arg_205\ <= resize((resize(x_159.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_41)))))))),48)), 48) when "1",
-                       to_signed(0,48) when others;
-
-  gain_41 <= resize((to_unsigned(256,11) + (resize((resize((unsigned((\c$gain_app_arg_13\(23 downto 16)))),11)) * (resize(\c$gain_app_arg_12\,11)), 11))),12);
-
-  \c$gain_app_arg_selection_res_3\ <= unsigned((\c$gain_app_arg_13\(26 downto 24)));
-
-  with (\c$gain_app_arg_selection_res_3\) select
-    \c$gain_app_arg_12\ <= to_unsigned(4,11) when "000",
-                           to_unsigned(5,11) when "001",
-                           to_unsigned(7,11) when "010",
-                           to_unsigned(2,11) when "011",
-                           to_unsigned(7,11) when "100",
-                           to_unsigned(4,11) when others;
-
-  \c$gain_app_arg_13\ <= x_159.Frame_sel4_fOd;
-
-  x_159 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_53(1066 downto 0)));
-
-  -- register begin
-  ds1_53_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_53 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_53 <= result_351;
-    end if;
-  end process;
-  -- register end
-
-  with (compMakeupPipe(1067 downto 1067)) select
-    result_351 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_352.Frame_sel0_fL)
-                   & std_logic_vector(result_352.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_352.Frame_sel2_fLast)
-                   & result_352.Frame_sel3_fGate
-                   & result_352.Frame_sel4_fOd
-                   & result_352.Frame_sel5_fDist
-                   & result_352.Frame_sel6_fEq
-                   & result_352.Frame_sel7_fRat
-                   & result_352.Frame_sel8_fAmp
-                   & result_352.Frame_sel9_fAmpTone
-                   & result_352.Frame_sel10_fCab
-                   & result_352.Frame_sel11_fReverb
-                   & result_352.Frame_sel12_fNs
-                   & result_352.Frame_sel13_fComp
-                   & result_352.Frame_sel14_fWah
-                   & std_logic_vector(result_352.Frame_sel15_fAddr)
-                   & std_logic_vector(result_352.Frame_sel16_fDryL)
-                   & std_logic_vector(result_352.Frame_sel17_fDryR)
-                   & std_logic_vector(result_352.Frame_sel18_fWetL)
-                   & std_logic_vector(result_352.Frame_sel19_fWetR)
-                   & std_logic_vector(result_352.Frame_sel20_fFbL)
-                   & std_logic_vector(result_352.Frame_sel21_fFbR)
-                   & std_logic_vector(result_352.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_352.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_352.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_352.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_352.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_352.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_352.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_352.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_352.Frame_sel30_fAccL)
-                   & std_logic_vector(result_352.Frame_sel31_fAccR)
-                   & std_logic_vector(result_352.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_352.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_352.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_352.Frame_sel35_fAcc3R)))) when others;
-
-  result_selection_res_138 <= not (\c$app_arg_207\ = ('1'));
-
-  result_352 <= x_165 when result_selection_res_138 else
-                ( Frame_sel0_fL => result_353
-                , Frame_sel1_fR => result_353
-                , Frame_sel2_fLast => x_165.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_165.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_165.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_165.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_165.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_165.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_165.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_165.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_165.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_165.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_165.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_165.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_165.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_165.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_165.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_165.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_165.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_165.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_165.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_165.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_165.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_165.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_165.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_165.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_165.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_165.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_165.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_165.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_165.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_165.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_165.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_165.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_165.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_165.Frame_sel35_fAcc3R );
-
-  \c$case_alt_selection_res_109\ <= \c$x_app_arg_58\ < to_signed(-8388608,48);
-
-  \c$case_alt_138\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_109\ else
-                      resize(\c$x_app_arg_58\,24);
-
-  result_selection_res_139 <= \c$x_app_arg_58\ > to_signed(8388607,48);
-
-  result_353 <= to_signed(8388607,24) when result_selection_res_139 else
-                \c$case_alt_138\;
-
-  \c$shI_168\ <= (to_signed(8,64));
-
-  cx_app_arg_58_shiftR : block
-    signal sh_170 : natural;
-  begin
-    sh_170 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_168\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_168\);
-    \c$x_app_arg_58\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_354)))))))),48)), 48)),sh_170)
-        -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$shI_169\ <= (to_signed(1,64));
-
-  capp_arg_206_shiftL : block
-    signal sh_171 : natural;
-  begin
-    sh_171 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_169\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_169\);
-    \c$app_arg_206\ <= shift_left((resize(((unsigned((\c$app_arg_208\(23 downto 16)))) - to_unsigned(128,8)),10)),sh_171)
-        -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  result_selection_res_140 <= (unsigned((\c$app_arg_208\(23 downto 16)))) <= to_unsigned(128,8);
-
-  result_354 <= to_unsigned(128,10) + (resize((unsigned((\c$app_arg_208\(23 downto 16)))),10)) when result_selection_res_140 else
-                to_unsigned(256,10) + \c$app_arg_206\;
-
-  \c$bv_191\ <= ((std_logic_vector((unsigned((\c$app_arg_208\(31 downto 24)))))));
-
-  -- indexBitVector begin
-  indexBitVector_31 : block
-    signal vec_index_64 : integer range 0 to 8-1;
-  begin
-    vec_index_64 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
-
-    \c$app_arg_207\ <= \c$bv_191\(vec_index_64);
-  end block;
-  -- indexBitVector end
-
-  \c$app_arg_208\ <= x_165.Frame_sel14_fWah;
-
-  -- register begin
-  wahBand_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      wahBand <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      wahBand <= result_358;
-    end if;
-  end process;
-  -- register end
-
-  \c$bv_192\ <= (f_6.Frame_sel14_fWah);
-
-  \c$bv_193\ <= ((std_logic_vector((unsigned((\c$bv_192\(31 downto 24)))))));
-
-  -- indexBitVector begin
-  indexBitVector_32 : block
-    signal vec_index_65 : integer range 0 to 8-1;
-  begin
-    vec_index_65 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
-
-    \c$app_arg_209\ <= \c$bv_193\(vec_index_65);
-  end block;
-  -- indexBitVector end
-
-  \c$shI_170\ <= (to_signed(8,64));
-
-  capp_arg_210_shiftR : block
-    signal sh_172 : natural;
-  begin
-    sh_172 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_170\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_170\);
-    \c$app_arg_210\ <= shift_right((resize((resize(result_357,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_172)
-        -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$case_alt_selection_res_110\ <= \c$app_arg_210\ < to_signed(-8388608,48);
-
-  \c$case_alt_139\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_110\ else
-                      resize(\c$app_arg_210\,24);
-
-  result_selection_res_141 <= \c$app_arg_210\ > to_signed(8388607,48);
-
-  result_355 <= to_signed(8388607,24) when result_selection_res_141 else
-                \c$case_alt_139\;
-
-  x_160 <= (resize(wahBand,48)) + (resize(result_355,48));
-
-  \c$case_alt_selection_res_111\ <= x_160 < to_signed(-8388608,48);
-
-  \c$case_alt_140\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_111\ else
-                      resize(x_160,24);
-
-  result_selection_res_142 <= x_160 > to_signed(8388607,48);
-
-  result_356 <= to_signed(8388607,24) when result_selection_res_142 else
-                \c$case_alt_140\;
-
-  \c$case_alt_selection_res_112\ <= not (\c$app_arg_209\ = ('1'));
-
-  \c$case_alt_141\ <= to_signed(0,24) when \c$case_alt_selection_res_112\ else
-                      result_356;
-
-  x_161 <= ((resize(f_6.Frame_sel0_fL,48)) - (resize(wahLow,48))) - (resize(wahQBandR,48));
-
-  \c$case_alt_selection_res_113\ <= x_161 < to_signed(-8388608,48);
-
-  \c$case_alt_142\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_113\ else
-                      resize(x_161,24);
-
-  result_selection_res_143 <= x_161 > to_signed(8388607,48);
-
-  result_357 <= to_signed(8388607,24) when result_selection_res_143 else
-                \c$case_alt_142\;
-
-  f_6 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
-
-  with (compMakeupPipe(1067 downto 1067)) select
-    result_358 <= wahBand when "0",
-                  \c$case_alt_141\ when others;
-
-  -- register begin
-  wahQBandR_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      wahQBandR <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      wahQBandR <= result_359;
-    end if;
-  end process;
-  -- register end
-
-  with (compMakeupPipe(1067 downto 1067)) select
-    result_359 <= wahQBandR when "0",
-                  \c$case_alt_143\ when others;
-
-  \c$case_alt_selection_res_114\ <= not (\c$app_arg_212\ = ('1'));
-
-  \c$case_alt_143\ <= to_signed(0,24) when \c$case_alt_selection_res_114\ else
-                      result_360;
-
-  \c$case_alt_selection_res_115\ <= \c$app_arg_211\ < to_signed(-8388608,48);
-
-  \c$case_alt_144\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_115\ else
-                      resize(\c$app_arg_211\,24);
-
-  result_selection_res_144 <= \c$app_arg_211\ > to_signed(8388607,48);
-
-  result_360 <= to_signed(8388607,24) when result_selection_res_144 else
-                \c$case_alt_144\;
-
-  \c$shI_171\ <= (to_signed(8,64));
-
-  capp_arg_211_shiftR : block
-    signal sh_173 : natural;
-  begin
-    sh_173 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_171\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_171\);
-    \c$app_arg_211\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_361)))))))),48)), 48)),sh_173)
-        -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  raw <= to_unsigned(128,8) - \c$raw_app_arg\;
-
-  result_selection_res_145 <= raw < to_unsigned(16,8);
-
-  result_361 <= to_unsigned(16,8) when result_selection_res_145 else
-                raw;
-
-  \c$shI_172\ <= (to_signed(1,64));
-
-  craw_app_arg_shiftL : block
-    signal sh_174 : natural;
-  begin
-    sh_174 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_172\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_172\);
-    \c$raw_app_arg\ <= shift_right((unsigned((\c$app_arg_213\(15 downto 8)))),sh_174)
-        -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$bv_194\ <= ((std_logic_vector((unsigned((\c$app_arg_213\(31 downto 24)))))));
-
-  -- indexBitVector begin
-  indexBitVector_33 : block
-    signal vec_index_66 : integer range 0 to 8-1;
-  begin
-    vec_index_66 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
-
-    \c$app_arg_212\ <= \c$bv_194\(vec_index_66);
-  end block;
-  -- indexBitVector end
-
-  \c$app_arg_213\ <= f_7.Frame_sel14_fWah;
-
-  f_7 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
-
-  -- register begin
-  wahLow_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      wahLow <= to_signed(0,24);
-    elsif rising_edge(clk) then
-      wahLow <= result_364;
-    end if;
-  end process;
-  -- register end
-
-  \c$bv_195\ <= (f_8.Frame_sel14_fWah);
-
-  \c$bv_196\ <= ((std_logic_vector((unsigned((\c$bv_195\(31 downto 24)))))));
-
-  -- indexBitVector begin
-  indexBitVector_34 : block
-    signal vec_index_67 : integer range 0 to 8-1;
-  begin
-    vec_index_67 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
-
-    \c$app_arg_214\ <= \c$bv_196\(vec_index_67);
-  end block;
-  -- indexBitVector end
-
-  \c$shI_173\ <= (to_signed(8,64));
-
-  capp_arg_215_shiftR : block
-    signal sh_175 : natural;
-  begin
-    sh_175 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_173\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_173\);
-    \c$app_arg_215\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_175)
-        -- pragma translate_off
-        when ((to_signed(8,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$case_alt_selection_res_116\ <= \c$app_arg_215\ < to_signed(-8388608,48);
-
-  \c$case_alt_145\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_116\ else
-                      resize(\c$app_arg_215\,24);
-
-  result_selection_res_146 <= \c$app_arg_215\ > to_signed(8388607,48);
-
-  result_362 <= to_signed(8388607,24) when result_selection_res_146 else
-                \c$case_alt_145\;
-
-  x_162 <= (resize(wahLow,48)) + (resize(result_362,48));
-
-  \c$case_alt_selection_res_117\ <= x_162 < to_signed(-8388608,48);
-
-  \c$case_alt_146\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_117\ else
-                      resize(x_162,24);
-
-  result_selection_res_147 <= x_162 > to_signed(8388607,48);
-
-  result_363 <= to_signed(8388607,24) when result_selection_res_147 else
-                \c$case_alt_146\;
-
-  \c$case_alt_selection_res_118\ <= not (\c$app_arg_214\ = ('1'));
-
-  \c$case_alt_147\ <= to_signed(0,24) when \c$case_alt_selection_res_118\ else
-                      result_363;
-
-  f_8 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
-
-  with (compMakeupPipe(1067 downto 1067)) select
-    result_364 <= wahLow when "0",
-                  \c$case_alt_147\ when others;
-
-  -- register begin
-  wahFByteR_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      wahFByteR <= to_unsigned(0,8);
-    elsif rising_edge(clk) then
-      wahFByteR <= result_365;
-    end if;
-  end process;
-  -- register end
-
-  with (compMakeupPipe(1067 downto 1067)) select
-    result_365 <= wahFByteR when "0",
-                  \c$case_alt_148\ when others;
-
-  \c$case_alt_selection_res_119\ <= not (\c$app_arg_218\ = ('1'));
-
-  \c$case_alt_148\ <= to_unsigned(0,8) when \c$case_alt_selection_res_119\ else
-                      result_366;
-
-  biasByte <= \c$app_arg_219\ and to_unsigned(127,8);
-
-  baseSigned <= resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_367)))))))),18);
-
-  x_163 <= baseSigned + \c$x_app_arg_59\;
-
-  result_selection_res_148 <= x_163 < to_signed(4,18);
-
-  result_366 <= to_unsigned(4,8) when result_selection_res_148 else
-                \c$case_alt_149\;
-
-  \c$case_alt_selection_res_120\ <= x_163 > to_signed(200,18);
-
-  \c$case_alt_149\ <= to_unsigned(200,8) when \c$case_alt_selection_res_120\ else
-                      resize(unsigned(std_logic_vector(\c$app_arg_216\)),8);
-
-  \c$app_arg_216\ <= resize(x_163,64);
-
-  \c$shI_174\ <= (to_signed(6,64));
-
-  cx_app_arg_59_shiftR : block
-    signal sh_176 : natural;
-  begin
-    sh_176 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_174\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_174\);
-    \c$x_app_arg_59\ <= shift_right((resize(baseSigned * ((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(biasByte)))))))),18)) - to_signed(64,18)), 18)),sh_176)
-        -- pragma translate_off
-        when ((to_signed(6,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  result_367 <= resize(result_368,8);
-
-  result_368 <= to_unsigned(15,16) + \c$app_arg_217\ when \c$tupIn_case_scrut_1\ else
-                \c$case_alt_150\;
-
-  \c$case_alt_150\ <= to_unsigned(24,16) + \c$app_arg_217\ when \c$tupIn_case_scrut_0\ else
-                      \c$case_alt_151\;
-
-  \c$case_alt_151\ <= to_unsigned(37,16) + \c$app_arg_217\ when \c$tupIn_case_scrut\ else
-                      to_unsigned(53,16) + \c$app_arg_217\;
-
-  \c$shI_175\ <= (to_signed(6,64));
-
-  capp_arg_217_shiftL : block
-    signal sh_177 : natural;
-  begin
-    sh_177 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_175\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_175\);
-    \c$app_arg_217\ <= shift_right((resize(\c$tupIn\.Tuple2_1_sel0_unsigned_0 * \c$tupIn\.Tuple2_1_sel1_unsigned_1, 16)),sh_177)
-        -- pragma translate_off
-        when ((to_signed(6,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  \c$tupIn\ <= ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\
-               , Tuple2_1_sel1_unsigned_1 => to_unsigned(9,16) ) when \c$tupIn_case_scrut_1\ else
-               \c$tupIn_case_alt\;
-
-  \c$tupIn_case_alt\ <= ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\ - to_unsigned(64,16)
-                        , Tuple2_1_sel1_unsigned_1 => to_unsigned(13,16) ) when \c$tupIn_case_scrut_0\ else
-                        \c$tupIn_case_alt_0\;
-
-  \c$tupIn_case_alt_0\ <= ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\ - to_unsigned(128,16)
-                          , Tuple2_1_sel1_unsigned_1 => to_unsigned(16,16) ) when \c$tupIn_case_scrut\ else
-                          ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\ - to_unsigned(192,16)
-                          , Tuple2_1_sel1_unsigned_1 => to_unsigned(20,16) );
-
-  \c$tupIn_app_arg\ <= resize(wahPosSmooth,16);
-
-  \c$tupIn_case_scrut\ <= wahPosSmooth < to_unsigned(192,8);
-
-  \c$tupIn_case_scrut_0\ <= wahPosSmooth < to_unsigned(128,8);
-
-  \c$tupIn_case_scrut_1\ <= wahPosSmooth < to_unsigned(64,8);
-
-  \c$bv_197\ <= ((std_logic_vector(\c$app_arg_219\)));
-
-  -- indexBitVector begin
-  indexBitVector_35 : block
-    signal vec_index_68 : integer range 0 to 8-1;
-  begin
-    vec_index_68 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
-
-    \c$app_arg_218\ <= \c$bv_197\(vec_index_68);
-  end block;
-  -- indexBitVector end
-
-  \c$bv_198\ <= (f_9.Frame_sel14_fWah);
-
-  \c$app_arg_219\ <= unsigned((\c$bv_198\(31 downto 24)));
-
-  f_9 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
-
-  -- register begin
-  wahPosSmooth_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      wahPosSmooth <= to_unsigned(0,8);
-    elsif rising_edge(clk) then
-      wahPosSmooth <= result_369;
-    end if;
-  end process;
-  -- register end
-
-  with (compMakeupPipe(1067 downto 1067)) select
-    result_369 <= wahPosSmooth when "0",
-                  \c$case_alt_152\ when others;
-
-  \c$case_alt_selection_res_121\ <= not (\c$app_arg_221\ = ('1'));
-
-  \c$case_alt_152\ <= x_164 when \c$case_alt_selection_res_121\ else
-                      resize(unsigned(std_logic_vector(result_370)),8);
-
-  result_selection_res_149 <= \c$app_arg_220\ and (delta > to_signed(0,11));
-
-  result_370 <= result_371 when result_selection_res_149 else
-                \c$case_alt_153\;
-
-  \c$case_alt_selection_res_122\ <= \c$app_arg_220\ and (delta < to_signed(0,11));
-
-  \c$case_alt_153\ <= result_372 when \c$case_alt_selection_res_122\ else
-                      result_373;
-
-  result_selection_res_150 <= nudged < to_signed(0,11);
-
-  result_371 <= to_signed(0,64) when result_selection_res_150 else
-                \c$case_alt_154\;
-
-  \c$case_alt_selection_res_123\ <= nudged > to_signed(255,11);
-
-  \c$case_alt_154\ <= to_signed(255,64) when \c$case_alt_selection_res_123\ else
-                      \c$case_alt_155\;
-
-  \c$case_alt_155\ <= resize(nudged,64);
-
-  nudged <= nudged_1 + to_signed(1,11);
-
-  result_selection_res_151 <= nudged_0 < to_signed(0,11);
-
-  result_372 <= to_signed(0,64) when result_selection_res_151 else
-                \c$case_alt_156\;
-
-  \c$case_alt_selection_res_124\ <= nudged_0 > to_signed(255,11);
-
-  \c$case_alt_156\ <= to_signed(255,64) when \c$case_alt_selection_res_124\ else
-                      \c$case_alt_157\;
-
-  \c$case_alt_157\ <= resize(nudged_0,64);
-
-  nudged_0 <= nudged_1 - to_signed(1,11);
-
-  result_selection_res_152 <= nudged_1 < to_signed(0,11);
-
-  result_373 <= to_signed(0,64) when result_selection_res_152 else
-                \c$case_alt_158\;
-
-  \c$case_alt_selection_res_125\ <= nudged_1 > to_signed(255,11);
-
-  \c$case_alt_158\ <= to_signed(255,64) when \c$case_alt_selection_res_125\ else
-                      \c$case_alt_159\;
-
-  \c$case_alt_159\ <= resize(nudged_1,64);
-
-  nudged_1 <= prevSigned + stepDelta;
-
-  \c$app_arg_220\ <= stepDelta = to_signed(0,11);
-
-  \c$shI_176\ <= (to_signed(4,64));
-
-  stepDelta_shiftR : block
-    signal sh_178 : natural;
-  begin
-    sh_178 <=
-        -- pragma translate_off
-        natural'high when (\c$shI_176\(64-1 downto 31) /= 0) else
-        -- pragma translate_on
-        to_integer(\c$shI_176\);
-    stepDelta <= shift_right(delta,sh_178)
-        -- pragma translate_off
-        when ((to_signed(4,64)) >= 0) else (others => 'X')
-        -- pragma translate_on
-        ;
-  end block;
-
-  delta <= (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_164)))))))),11)) - prevSigned;
-
-  prevSigned <= resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahPosSmooth)))))))),11);
-
-  x_164 <= unsigned((\c$app_arg_222\(7 downto 0)));
-
-  \c$bv_199\ <= ((std_logic_vector((unsigned((\c$app_arg_222\(31 downto 24)))))));
-
-  -- indexBitVector begin
-  indexBitVector_36 : block
-    signal vec_index_69 : integer range 0 to 8-1;
-  begin
-    vec_index_69 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
-
-    \c$app_arg_221\ <= \c$bv_199\(vec_index_69);
-  end block;
-  -- indexBitVector end
-
-  \c$app_arg_222\ <= f_10.Frame_sel14_fWah;
-
-  f_10 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
-
-  x_165 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
-
-  -- register begin
-  compMakeupPipe_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      compMakeupPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      compMakeupPipe <= result_374;
-    end if;
-  end process;
-  -- register end
-
-  with (ds1_54(1067 downto 1067)) select
-    result_374 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+    result_373 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(result_375.Frame_sel0_fL)
                    & std_logic_vector(result_375.Frame_sel1_fR)
                    & clash_lowpass_fir_types.toSLV(result_375.Frame_sel2_fLast)
@@ -20609,96 +20571,190 @@ begin
                    & std_logic_vector(result_375.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_375.Frame_sel35_fAcc3R)))) when others;
 
-  result_selection_res_153 <= not (\c$app_arg_223\ = ('1'));
+  \c$shI_178\ <= (to_signed(8,64));
 
-  result_375 <= x_166 when result_selection_res_153 else
-                ( Frame_sel0_fL => result_376
-                , Frame_sel1_fR => result_376
-                , Frame_sel2_fLast => x_166.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_166.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_166.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_166.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_166.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_166.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_166.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_166.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_166.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_166.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_166.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_166.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_166.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_166.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_166.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_166.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_166.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_166.Frame_sel19_fWetR
-                , Frame_sel20_fFbL => x_166.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_166.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_166.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_166.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_166.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_166.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_166.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_166.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_166.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_166.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_166.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_166.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_166.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_166.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_166.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_166.Frame_sel35_fAcc3R );
-
-  \c$case_alt_selection_res_126\ <= \c$x_app_arg_60\ < to_signed(-8388608,48);
-
-  \c$case_alt_160\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_126\ else
-                      resize(\c$x_app_arg_60\,24);
-
-  result_selection_res_154 <= \c$x_app_arg_60\ > to_signed(8388607,48);
-
-  result_376 <= to_signed(8388607,24) when result_selection_res_154 else
-                \c$case_alt_160\;
-
-  \c$shI_177\ <= (to_signed(8,64));
-
-  cx_app_arg_60_shiftR : block
-    signal sh_179 : natural;
+  cx_app_arg_58_shiftR : block
+    signal sh_180 : natural;
   begin
-    sh_179 <=
+    sh_180 <=
         -- pragma translate_off
-        natural'high when (\c$shI_177\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_178\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_177\);
-    \c$x_app_arg_60\ <= shift_right((resize((resize(x_166.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_42)))))))),48)), 48)),sh_179)
+        to_integer(\c$shI_178\);
+    \c$x_app_arg_58\ <= shift_right(x_160.Frame_sel30_fAccL,sh_180)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  gain_42 <= to_unsigned(192,9) + (resize((\c$app_arg_224\ and to_unsigned(127,8)),9));
+  \c$case_alt_selection_res_122\ <= \c$x_app_arg_58\ < to_signed(-8388608,48);
 
-  \c$bv_200\ <= ((std_logic_vector(\c$app_arg_224\)));
+  \c$case_alt_150\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_122\ else
+                      resize(\c$x_app_arg_58\,24);
 
-  -- indexBitVector begin
-  indexBitVector_37 : block
-    signal vec_index_70 : integer range 0 to 8-1;
+  result_selection_res_152 <= \c$x_app_arg_58\ > to_signed(8388607,48);
+
+  result_374 <= to_signed(8388607,24) when result_selection_res_152 else
+                \c$case_alt_150\;
+
+  result_375 <= ( Frame_sel0_fL => x_160.Frame_sel0_fL
+                , Frame_sel1_fR => x_160.Frame_sel1_fR
+                , Frame_sel2_fLast => x_160.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_160.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_160.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_160.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_160.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_160.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_160.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_160.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_160.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_160.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_160.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_160.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_160.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_160.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_160.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_160.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_159
+                , Frame_sel19_fWetR => x_159
+                , Frame_sel20_fFbL => x_160.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_160.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_160.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_160.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_160.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_160.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_160.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_160.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_160.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_160.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_160.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_160.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_160.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_160.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_160.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_160.Frame_sel35_fAcc3R );
+
+  \c$bv_191\ <= (x_160.Frame_sel3_fGate);
+
+  x_selection_res_31 <= \c$bv_191\(1 downto 1);
+
+  with (x_selection_res_31) select
+    x_159 <= result_374 when "1",
+             x_160.Frame_sel0_fL when others;
+
+  x_160 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_53(1066 downto 0)));
+
+  -- register begin
+  ds1_53_register : process(clk,aresetn)
   begin
-    vec_index_70 <= to_integer((to_signed(7,64)))
-    -- pragma translate_off
-                 mod 8
-    -- pragma translate_on
-                 ;
+    if aresetn =  '0'  then
+      ds1_53 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_53 <= result_376;
+    end if;
+  end process;
+  -- register end
 
-    \c$app_arg_223\ <= \c$bv_200\(vec_index_70);
-  end block;
-  -- indexBitVector end
+  with (ds1_54(1067 downto 1067)) select
+    result_376 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(\c$case_alt_151\.Frame_sel0_fL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(\c$case_alt_151\.Frame_sel2_fLast)
+                   & \c$case_alt_151\.Frame_sel3_fGate
+                   & \c$case_alt_151\.Frame_sel4_fOd
+                   & \c$case_alt_151\.Frame_sel5_fDist
+                   & \c$case_alt_151\.Frame_sel6_fEq
+                   & \c$case_alt_151\.Frame_sel7_fRat
+                   & \c$case_alt_151\.Frame_sel8_fAmp
+                   & \c$case_alt_151\.Frame_sel9_fAmpTone
+                   & \c$case_alt_151\.Frame_sel10_fCab
+                   & \c$case_alt_151\.Frame_sel11_fReverb
+                   & \c$case_alt_151\.Frame_sel12_fNs
+                   & \c$case_alt_151\.Frame_sel13_fComp
+                   & \c$case_alt_151\.Frame_sel14_fWah
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel15_fAddr)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel16_fDryL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel17_fDryR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel18_fWetL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel19_fWetR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel20_fFbL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel21_fFbR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel22_fEqLowL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel23_fEqLowR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel24_fEqMidL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel25_fEqMidR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel26_fEqHighL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel27_fEqHighR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel30_fAccL)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel31_fAccR)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel32_fAcc2L)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel33_fAcc2R)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel34_fAcc3L)
+                   & std_logic_vector(\c$case_alt_151\.Frame_sel35_fAcc3R)))) when others;
 
-  \c$bv_201\ <= (x_166.Frame_sel13_fComp);
+  \c$case_alt_151\ <= ( Frame_sel0_fL => x_161.Frame_sel0_fL
+                      , Frame_sel1_fR => x_161.Frame_sel1_fR
+                      , Frame_sel2_fLast => x_161.Frame_sel2_fLast
+                      , Frame_sel3_fGate => x_161.Frame_sel3_fGate
+                      , Frame_sel4_fOd => x_161.Frame_sel4_fOd
+                      , Frame_sel5_fDist => x_161.Frame_sel5_fDist
+                      , Frame_sel6_fEq => x_161.Frame_sel6_fEq
+                      , Frame_sel7_fRat => x_161.Frame_sel7_fRat
+                      , Frame_sel8_fAmp => x_161.Frame_sel8_fAmp
+                      , Frame_sel9_fAmpTone => x_161.Frame_sel9_fAmpTone
+                      , Frame_sel10_fCab => x_161.Frame_sel10_fCab
+                      , Frame_sel11_fReverb => x_161.Frame_sel11_fReverb
+                      , Frame_sel12_fNs => x_161.Frame_sel12_fNs
+                      , Frame_sel13_fComp => x_161.Frame_sel13_fComp
+                      , Frame_sel14_fWah => x_161.Frame_sel14_fWah
+                      , Frame_sel15_fAddr => x_161.Frame_sel15_fAddr
+                      , Frame_sel16_fDryL => x_161.Frame_sel16_fDryL
+                      , Frame_sel17_fDryR => x_161.Frame_sel17_fDryR
+                      , Frame_sel18_fWetL => x_161.Frame_sel18_fWetL
+                      , Frame_sel19_fWetR => x_161.Frame_sel19_fWetR
+                      , Frame_sel20_fFbL => x_161.Frame_sel20_fFbL
+                      , Frame_sel21_fFbR => x_161.Frame_sel21_fFbR
+                      , Frame_sel22_fEqLowL => x_161.Frame_sel22_fEqLowL
+                      , Frame_sel23_fEqLowR => x_161.Frame_sel23_fEqLowR
+                      , Frame_sel24_fEqMidL => x_161.Frame_sel24_fEqMidL
+                      , Frame_sel25_fEqMidR => x_161.Frame_sel25_fEqMidR
+                      , Frame_sel26_fEqHighL => x_161.Frame_sel26_fEqHighL
+                      , Frame_sel27_fEqHighR => x_161.Frame_sel27_fEqHighR
+                      , Frame_sel28_fEqHighLpL => x_161.Frame_sel28_fEqHighLpL
+                      , Frame_sel29_fEqHighLpR => x_161.Frame_sel29_fEqHighLpR
+                      , Frame_sel30_fAccL => \c$app_arg_226\
+                      , Frame_sel31_fAccR => to_signed(0,48)
+                      , Frame_sel32_fAcc2L => x_161.Frame_sel32_fAcc2L
+                      , Frame_sel33_fAcc2R => x_161.Frame_sel33_fAcc2R
+                      , Frame_sel34_fAcc3L => x_161.Frame_sel34_fAcc3L
+                      , Frame_sel35_fAcc3R => x_161.Frame_sel35_fAcc3R );
 
-  \c$app_arg_224\ <= unsigned((\c$bv_201\(31 downto 24)));
+  \c$bv_192\ <= (x_161.Frame_sel3_fGate);
 
-  x_166 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_54(1066 downto 0)));
+  \c$app_arg_selection_res_9\ <= \c$bv_192\(1 downto 1);
+
+  with (\c$app_arg_selection_res_9\) select
+    \c$app_arg_226\ <= resize((resize(x_161.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_41)))))))),48)), 48) when "1",
+                       to_signed(0,48) when others;
+
+  gain_41 <= resize((to_unsigned(256,11) + (resize((resize((unsigned((\c$gain_app_arg_13\(23 downto 16)))),11)) * (resize(\c$gain_app_arg_12\,11)), 11))),12);
+
+  \c$gain_app_arg_selection_res_3\ <= unsigned((\c$gain_app_arg_13\(26 downto 24)));
+
+  with (\c$gain_app_arg_selection_res_3\) select
+    \c$gain_app_arg_12\ <= to_unsigned(4,11) when "000",
+                           to_unsigned(5,11) when "001",
+                           to_unsigned(7,11) when "010",
+                           to_unsigned(2,11) when "011",
+                           to_unsigned(7,11) when "100",
+                           to_unsigned(4,11) when others;
+
+  \c$gain_app_arg_13\ <= x_161.Frame_sel4_fOd;
+
+  x_161 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_54(1066 downto 0)));
 
   -- register begin
   ds1_54_register : process(clk,aresetn)
@@ -20711,7 +20767,7 @@ begin
   end process;
   -- register end
 
-  with (compLevelPipe(1067 downto 1067)) select
+  with (compMakeupPipe(1067 downto 1067)) select
     result_377 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
                   std_logic_vector'("1" & ((std_logic_vector(result_378.Frame_sel0_fL)
                    & std_logic_vector(result_378.Frame_sel1_fR)
@@ -20750,11 +20806,674 @@ begin
                    & std_logic_vector(result_378.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_378.Frame_sel35_fAcc3R)))) when others;
 
-  result_selection_res_155 <= not (\c$app_arg_225\ = ('1'));
+  result_selection_res_153 <= not (\c$app_arg_228\ = ('1'));
 
-  result_378 <= x_168 when result_selection_res_155 else
+  result_378 <= x_167 when result_selection_res_153 else
                 ( Frame_sel0_fL => result_379
                 , Frame_sel1_fR => result_379
+                , Frame_sel2_fLast => x_167.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_167.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_167.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_167.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_167.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_167.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_167.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_167.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_167.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_167.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_167.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_167.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_167.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_167.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_167.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_167.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_167.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_167.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_167.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_167.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_167.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_167.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_167.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_167.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_167.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_167.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_167.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_167.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_167.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_167.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_167.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_167.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_167.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_167.Frame_sel35_fAcc3R );
+
+  \c$case_alt_selection_res_123\ <= \c$x_app_arg_59\ < to_signed(-8388608,48);
+
+  \c$case_alt_152\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_123\ else
+                      resize(\c$x_app_arg_59\,24);
+
+  result_selection_res_154 <= \c$x_app_arg_59\ > to_signed(8388607,48);
+
+  result_379 <= to_signed(8388607,24) when result_selection_res_154 else
+                \c$case_alt_152\;
+
+  \c$shI_179\ <= (to_signed(8,64));
+
+  cx_app_arg_59_shiftR : block
+    signal sh_181 : natural;
+  begin
+    sh_181 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_179\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_179\);
+    \c$x_app_arg_59\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_380)))))))),48)), 48)),sh_181)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$shI_180\ <= (to_signed(1,64));
+
+  capp_arg_227_shiftL : block
+    signal sh_182 : natural;
+  begin
+    sh_182 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_180\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_180\);
+    \c$app_arg_227\ <= shift_left((resize(((unsigned((\c$app_arg_229\(23 downto 16)))) - to_unsigned(128,8)),10)),sh_182)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  result_selection_res_155 <= (unsigned((\c$app_arg_229\(23 downto 16)))) <= to_unsigned(128,8);
+
+  result_380 <= to_unsigned(128,10) + (resize((unsigned((\c$app_arg_229\(23 downto 16)))),10)) when result_selection_res_155 else
+                to_unsigned(256,10) + \c$app_arg_227\;
+
+  \c$bv_193\ <= ((std_logic_vector((unsigned((\c$app_arg_229\(31 downto 24)))))));
+
+  -- indexBitVector begin
+  indexBitVector_31 : block
+    signal vec_index_75 : integer range 0 to 8-1;
+  begin
+    vec_index_75 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_228\ <= \c$bv_193\(vec_index_75);
+  end block;
+  -- indexBitVector end
+
+  \c$app_arg_229\ <= x_167.Frame_sel14_fWah;
+
+  -- register begin
+  wahBand_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      wahBand <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      wahBand <= result_384;
+    end if;
+  end process;
+  -- register end
+
+  \c$bv_194\ <= (f_7.Frame_sel14_fWah);
+
+  \c$bv_195\ <= ((std_logic_vector((unsigned((\c$bv_194\(31 downto 24)))))));
+
+  -- indexBitVector begin
+  indexBitVector_32 : block
+    signal vec_index_76 : integer range 0 to 8-1;
+  begin
+    vec_index_76 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_230\ <= \c$bv_195\(vec_index_76);
+  end block;
+  -- indexBitVector end
+
+  \c$shI_181\ <= (to_signed(8,64));
+
+  capp_arg_231_shiftR : block
+    signal sh_183 : natural;
+  begin
+    sh_183 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_181\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_181\);
+    \c$app_arg_231\ <= shift_right((resize((resize(result_383,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_183)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$case_alt_selection_res_124\ <= \c$app_arg_231\ < to_signed(-8388608,48);
+
+  \c$case_alt_153\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_124\ else
+                      resize(\c$app_arg_231\,24);
+
+  result_selection_res_156 <= \c$app_arg_231\ > to_signed(8388607,48);
+
+  result_381 <= to_signed(8388607,24) when result_selection_res_156 else
+                \c$case_alt_153\;
+
+  x_162 <= (resize(wahBand,48)) + (resize(result_381,48));
+
+  \c$case_alt_selection_res_125\ <= x_162 < to_signed(-8388608,48);
+
+  \c$case_alt_154\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_125\ else
+                      resize(x_162,24);
+
+  result_selection_res_157 <= x_162 > to_signed(8388607,48);
+
+  result_382 <= to_signed(8388607,24) when result_selection_res_157 else
+                \c$case_alt_154\;
+
+  \c$case_alt_selection_res_126\ <= not (\c$app_arg_230\ = ('1'));
+
+  \c$case_alt_155\ <= to_signed(0,24) when \c$case_alt_selection_res_126\ else
+                      result_382;
+
+  x_163 <= ((resize(f_7.Frame_sel0_fL,48)) - (resize(wahLow,48))) - (resize(wahQBandR,48));
+
+  \c$case_alt_selection_res_127\ <= x_163 < to_signed(-8388608,48);
+
+  \c$case_alt_156\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_127\ else
+                      resize(x_163,24);
+
+  result_selection_res_158 <= x_163 > to_signed(8388607,48);
+
+  result_383 <= to_signed(8388607,24) when result_selection_res_158 else
+                \c$case_alt_156\;
+
+  f_7 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
+
+  with (compMakeupPipe(1067 downto 1067)) select
+    result_384 <= wahBand when "0",
+                  \c$case_alt_155\ when others;
+
+  -- register begin
+  wahQBandR_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      wahQBandR <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      wahQBandR <= result_385;
+    end if;
+  end process;
+  -- register end
+
+  with (compMakeupPipe(1067 downto 1067)) select
+    result_385 <= wahQBandR when "0",
+                  \c$case_alt_157\ when others;
+
+  \c$case_alt_selection_res_128\ <= not (\c$app_arg_233\ = ('1'));
+
+  \c$case_alt_157\ <= to_signed(0,24) when \c$case_alt_selection_res_128\ else
+                      result_386;
+
+  \c$case_alt_selection_res_129\ <= \c$app_arg_232\ < to_signed(-8388608,48);
+
+  \c$case_alt_158\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_129\ else
+                      resize(\c$app_arg_232\,24);
+
+  result_selection_res_159 <= \c$app_arg_232\ > to_signed(8388607,48);
+
+  result_386 <= to_signed(8388607,24) when result_selection_res_159 else
+                \c$case_alt_158\;
+
+  \c$shI_182\ <= (to_signed(8,64));
+
+  capp_arg_232_shiftR : block
+    signal sh_184 : natural;
+  begin
+    sh_184 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_182\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_182\);
+    \c$app_arg_232\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_387)))))))),48)), 48)),sh_184)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  raw <= to_unsigned(128,8) - \c$raw_app_arg\;
+
+  result_selection_res_160 <= raw < to_unsigned(16,8);
+
+  result_387 <= to_unsigned(16,8) when result_selection_res_160 else
+                raw;
+
+  \c$shI_183\ <= (to_signed(1,64));
+
+  craw_app_arg_shiftL : block
+    signal sh_185 : natural;
+  begin
+    sh_185 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_183\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_183\);
+    \c$raw_app_arg\ <= shift_right((unsigned((\c$app_arg_234\(15 downto 8)))),sh_185)
+        -- pragma translate_off
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$bv_196\ <= ((std_logic_vector((unsigned((\c$app_arg_234\(31 downto 24)))))));
+
+  -- indexBitVector begin
+  indexBitVector_33 : block
+    signal vec_index_77 : integer range 0 to 8-1;
+  begin
+    vec_index_77 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_233\ <= \c$bv_196\(vec_index_77);
+  end block;
+  -- indexBitVector end
+
+  \c$app_arg_234\ <= f_8.Frame_sel14_fWah;
+
+  f_8 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
+
+  -- register begin
+  wahLow_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      wahLow <= to_signed(0,24);
+    elsif rising_edge(clk) then
+      wahLow <= result_390;
+    end if;
+  end process;
+  -- register end
+
+  \c$bv_197\ <= (f_9.Frame_sel14_fWah);
+
+  \c$bv_198\ <= ((std_logic_vector((unsigned((\c$bv_197\(31 downto 24)))))));
+
+  -- indexBitVector begin
+  indexBitVector_34 : block
+    signal vec_index_78 : integer range 0 to 8-1;
+  begin
+    vec_index_78 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_235\ <= \c$bv_198\(vec_index_78);
+  end block;
+  -- indexBitVector end
+
+  \c$shI_184\ <= (to_signed(8,64));
+
+  capp_arg_236_shiftR : block
+    signal sh_186 : natural;
+  begin
+    sh_186 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_184\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_184\);
+    \c$app_arg_236\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_186)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$case_alt_selection_res_130\ <= \c$app_arg_236\ < to_signed(-8388608,48);
+
+  \c$case_alt_159\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_130\ else
+                      resize(\c$app_arg_236\,24);
+
+  result_selection_res_161 <= \c$app_arg_236\ > to_signed(8388607,48);
+
+  result_388 <= to_signed(8388607,24) when result_selection_res_161 else
+                \c$case_alt_159\;
+
+  x_164 <= (resize(wahLow,48)) + (resize(result_388,48));
+
+  \c$case_alt_selection_res_131\ <= x_164 < to_signed(-8388608,48);
+
+  \c$case_alt_160\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_131\ else
+                      resize(x_164,24);
+
+  result_selection_res_162 <= x_164 > to_signed(8388607,48);
+
+  result_389 <= to_signed(8388607,24) when result_selection_res_162 else
+                \c$case_alt_160\;
+
+  \c$case_alt_selection_res_132\ <= not (\c$app_arg_235\ = ('1'));
+
+  \c$case_alt_161\ <= to_signed(0,24) when \c$case_alt_selection_res_132\ else
+                      result_389;
+
+  f_9 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
+
+  with (compMakeupPipe(1067 downto 1067)) select
+    result_390 <= wahLow when "0",
+                  \c$case_alt_161\ when others;
+
+  -- register begin
+  wahFByteR_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      wahFByteR <= to_unsigned(0,8);
+    elsif rising_edge(clk) then
+      wahFByteR <= result_391;
+    end if;
+  end process;
+  -- register end
+
+  with (compMakeupPipe(1067 downto 1067)) select
+    result_391 <= wahFByteR when "0",
+                  \c$case_alt_162\ when others;
+
+  \c$case_alt_selection_res_133\ <= not (\c$app_arg_239\ = ('1'));
+
+  \c$case_alt_162\ <= to_unsigned(0,8) when \c$case_alt_selection_res_133\ else
+                      result_392;
+
+  biasByte <= \c$app_arg_240\ and to_unsigned(127,8);
+
+  baseSigned <= resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_393)))))))),18);
+
+  x_165 <= baseSigned + \c$x_app_arg_60\;
+
+  result_selection_res_163 <= x_165 < to_signed(4,18);
+
+  result_392 <= to_unsigned(4,8) when result_selection_res_163 else
+                \c$case_alt_163\;
+
+  \c$case_alt_selection_res_134\ <= x_165 > to_signed(200,18);
+
+  \c$case_alt_163\ <= to_unsigned(200,8) when \c$case_alt_selection_res_134\ else
+                      resize(unsigned(std_logic_vector(\c$app_arg_237\)),8);
+
+  \c$app_arg_237\ <= resize(x_165,64);
+
+  \c$shI_185\ <= (to_signed(6,64));
+
+  cx_app_arg_60_shiftR : block
+    signal sh_187 : natural;
+  begin
+    sh_187 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_185\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_185\);
+    \c$x_app_arg_60\ <= shift_right((resize(baseSigned * ((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(biasByte)))))))),18)) - to_signed(64,18)), 18)),sh_187)
+        -- pragma translate_off
+        when ((to_signed(6,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  result_393 <= resize(result_394,8);
+
+  result_394 <= to_unsigned(15,16) + \c$app_arg_238\ when \c$tupIn_case_scrut_1\ else
+                \c$case_alt_164\;
+
+  \c$case_alt_164\ <= to_unsigned(24,16) + \c$app_arg_238\ when \c$tupIn_case_scrut_0\ else
+                      \c$case_alt_165\;
+
+  \c$case_alt_165\ <= to_unsigned(37,16) + \c$app_arg_238\ when \c$tupIn_case_scrut\ else
+                      to_unsigned(53,16) + \c$app_arg_238\;
+
+  \c$shI_186\ <= (to_signed(6,64));
+
+  capp_arg_238_shiftL : block
+    signal sh_188 : natural;
+  begin
+    sh_188 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_186\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_186\);
+    \c$app_arg_238\ <= shift_right((resize(\c$tupIn\.Tuple2_1_sel0_unsigned_0 * \c$tupIn\.Tuple2_1_sel1_unsigned_1, 16)),sh_188)
+        -- pragma translate_off
+        when ((to_signed(6,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  \c$tupIn\ <= ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\
+               , Tuple2_1_sel1_unsigned_1 => to_unsigned(9,16) ) when \c$tupIn_case_scrut_1\ else
+               \c$tupIn_case_alt\;
+
+  \c$tupIn_case_alt\ <= ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\ - to_unsigned(64,16)
+                        , Tuple2_1_sel1_unsigned_1 => to_unsigned(13,16) ) when \c$tupIn_case_scrut_0\ else
+                        \c$tupIn_case_alt_0\;
+
+  \c$tupIn_case_alt_0\ <= ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\ - to_unsigned(128,16)
+                          , Tuple2_1_sel1_unsigned_1 => to_unsigned(16,16) ) when \c$tupIn_case_scrut\ else
+                          ( Tuple2_1_sel0_unsigned_0 => \c$tupIn_app_arg\ - to_unsigned(192,16)
+                          , Tuple2_1_sel1_unsigned_1 => to_unsigned(20,16) );
+
+  \c$tupIn_app_arg\ <= resize(wahPosSmooth,16);
+
+  \c$tupIn_case_scrut\ <= wahPosSmooth < to_unsigned(192,8);
+
+  \c$tupIn_case_scrut_0\ <= wahPosSmooth < to_unsigned(128,8);
+
+  \c$tupIn_case_scrut_1\ <= wahPosSmooth < to_unsigned(64,8);
+
+  \c$bv_199\ <= ((std_logic_vector(\c$app_arg_240\)));
+
+  -- indexBitVector begin
+  indexBitVector_35 : block
+    signal vec_index_79 : integer range 0 to 8-1;
+  begin
+    vec_index_79 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_239\ <= \c$bv_199\(vec_index_79);
+  end block;
+  -- indexBitVector end
+
+  \c$bv_200\ <= (f_10.Frame_sel14_fWah);
+
+  \c$app_arg_240\ <= unsigned((\c$bv_200\(31 downto 24)));
+
+  f_10 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
+
+  -- register begin
+  wahPosSmooth_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      wahPosSmooth <= to_unsigned(0,8);
+    elsif rising_edge(clk) then
+      wahPosSmooth <= result_395;
+    end if;
+  end process;
+  -- register end
+
+  with (compMakeupPipe(1067 downto 1067)) select
+    result_395 <= wahPosSmooth when "0",
+                  \c$case_alt_166\ when others;
+
+  \c$case_alt_selection_res_135\ <= not (\c$app_arg_242\ = ('1'));
+
+  \c$case_alt_166\ <= x_166 when \c$case_alt_selection_res_135\ else
+                      resize(unsigned(std_logic_vector(result_396)),8);
+
+  result_selection_res_164 <= \c$app_arg_241\ and (delta > to_signed(0,11));
+
+  result_396 <= result_397 when result_selection_res_164 else
+                \c$case_alt_167\;
+
+  \c$case_alt_selection_res_136\ <= \c$app_arg_241\ and (delta < to_signed(0,11));
+
+  \c$case_alt_167\ <= result_398 when \c$case_alt_selection_res_136\ else
+                      result_399;
+
+  result_selection_res_165 <= nudged < to_signed(0,11);
+
+  result_397 <= to_signed(0,64) when result_selection_res_165 else
+                \c$case_alt_168\;
+
+  \c$case_alt_selection_res_137\ <= nudged > to_signed(255,11);
+
+  \c$case_alt_168\ <= to_signed(255,64) when \c$case_alt_selection_res_137\ else
+                      \c$case_alt_169\;
+
+  \c$case_alt_169\ <= resize(nudged,64);
+
+  nudged <= nudged_1 + to_signed(1,11);
+
+  result_selection_res_166 <= nudged_0 < to_signed(0,11);
+
+  result_398 <= to_signed(0,64) when result_selection_res_166 else
+                \c$case_alt_170\;
+
+  \c$case_alt_selection_res_138\ <= nudged_0 > to_signed(255,11);
+
+  \c$case_alt_170\ <= to_signed(255,64) when \c$case_alt_selection_res_138\ else
+                      \c$case_alt_171\;
+
+  \c$case_alt_171\ <= resize(nudged_0,64);
+
+  nudged_0 <= nudged_1 - to_signed(1,11);
+
+  result_selection_res_167 <= nudged_1 < to_signed(0,11);
+
+  result_399 <= to_signed(0,64) when result_selection_res_167 else
+                \c$case_alt_172\;
+
+  \c$case_alt_selection_res_139\ <= nudged_1 > to_signed(255,11);
+
+  \c$case_alt_172\ <= to_signed(255,64) when \c$case_alt_selection_res_139\ else
+                      \c$case_alt_173\;
+
+  \c$case_alt_173\ <= resize(nudged_1,64);
+
+  nudged_1 <= prevSigned + stepDelta;
+
+  \c$app_arg_241\ <= stepDelta = to_signed(0,11);
+
+  \c$shI_187\ <= (to_signed(4,64));
+
+  stepDelta_shiftR : block
+    signal sh_189 : natural;
+  begin
+    sh_189 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_187\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_187\);
+    stepDelta <= shift_right(delta,sh_189)
+        -- pragma translate_off
+        when ((to_signed(4,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  delta <= (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_166)))))))),11)) - prevSigned;
+
+  prevSigned <= resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahPosSmooth)))))))),11);
+
+  x_166 <= unsigned((\c$app_arg_243\(7 downto 0)));
+
+  \c$bv_201\ <= ((std_logic_vector((unsigned((\c$app_arg_243\(31 downto 24)))))));
+
+  -- indexBitVector begin
+  indexBitVector_36 : block
+    signal vec_index_80 : integer range 0 to 8-1;
+  begin
+    vec_index_80 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_242\ <= \c$bv_201\(vec_index_80);
+  end block;
+  -- indexBitVector end
+
+  \c$app_arg_243\ <= f_11.Frame_sel14_fWah;
+
+  f_11 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
+
+  x_167 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1066 downto 0)));
+
+  -- register begin
+  compMakeupPipe_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      compMakeupPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      compMakeupPipe <= result_400;
+    end if;
+  end process;
+  -- register end
+
+  with (ds1_55(1067 downto 1067)) select
+    result_400 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_401.Frame_sel0_fL)
+                   & std_logic_vector(result_401.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_401.Frame_sel2_fLast)
+                   & result_401.Frame_sel3_fGate
+                   & result_401.Frame_sel4_fOd
+                   & result_401.Frame_sel5_fDist
+                   & result_401.Frame_sel6_fEq
+                   & result_401.Frame_sel7_fRat
+                   & result_401.Frame_sel8_fAmp
+                   & result_401.Frame_sel9_fAmpTone
+                   & result_401.Frame_sel10_fCab
+                   & result_401.Frame_sel11_fReverb
+                   & result_401.Frame_sel12_fNs
+                   & result_401.Frame_sel13_fComp
+                   & result_401.Frame_sel14_fWah
+                   & std_logic_vector(result_401.Frame_sel15_fAddr)
+                   & std_logic_vector(result_401.Frame_sel16_fDryL)
+                   & std_logic_vector(result_401.Frame_sel17_fDryR)
+                   & std_logic_vector(result_401.Frame_sel18_fWetL)
+                   & std_logic_vector(result_401.Frame_sel19_fWetR)
+                   & std_logic_vector(result_401.Frame_sel20_fFbL)
+                   & std_logic_vector(result_401.Frame_sel21_fFbR)
+                   & std_logic_vector(result_401.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_401.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_401.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_401.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_401.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_401.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_401.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_401.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_401.Frame_sel30_fAccL)
+                   & std_logic_vector(result_401.Frame_sel31_fAccR)
+                   & std_logic_vector(result_401.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_401.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_401.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_401.Frame_sel35_fAcc3R)))) when others;
+
+  result_selection_res_168 <= not (\c$app_arg_244\ = ('1'));
+
+  result_401 <= x_168 when result_selection_res_168 else
+                ( Frame_sel0_fL => result_402
+                , Frame_sel1_fR => result_402
                 , Frame_sel2_fLast => x_168.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_168.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_168.Frame_sel4_fOd
@@ -20790,48 +21509,189 @@ begin
                 , Frame_sel34_fAcc3L => x_168.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_168.Frame_sel35_fAcc3R );
 
-  \c$case_alt_selection_res_127\ <= \c$x_app_arg_61\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_140\ <= \c$x_app_arg_61\ < to_signed(-8388608,48);
 
-  \c$case_alt_161\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_127\ else
+  \c$case_alt_174\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_140\ else
                       resize(\c$x_app_arg_61\,24);
 
-  result_selection_res_156 <= \c$x_app_arg_61\ > to_signed(8388607,48);
+  result_selection_res_169 <= \c$x_app_arg_61\ > to_signed(8388607,48);
 
-  result_379 <= to_signed(8388607,24) when result_selection_res_156 else
-                \c$case_alt_161\;
+  result_402 <= to_signed(8388607,24) when result_selection_res_169 else
+                \c$case_alt_174\;
 
-  \c$shI_178\ <= (to_signed(12,64));
+  \c$shI_188\ <= (to_signed(8,64));
 
   cx_app_arg_61_shiftR : block
-    signal sh_180 : natural;
+    signal sh_190 : natural;
   begin
-    sh_180 <=
+    sh_190 <=
         -- pragma translate_off
-        natural'high when (\c$shI_178\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_188\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_178\);
-    \c$x_app_arg_61\ <= shift_right((resize((resize(x_168.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(compGain)))))))),48)), 48)),sh_180)
+        to_integer(\c$shI_188\);
+    \c$x_app_arg_61\ <= shift_right((resize((resize(x_168.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_42)))))))),48)), 48)),sh_190)
+        -- pragma translate_off
+        when ((to_signed(8,64)) >= 0) else (others => 'X')
+        -- pragma translate_on
+        ;
+  end block;
+
+  gain_42 <= to_unsigned(192,9) + (resize((\c$app_arg_245\ and to_unsigned(127,8)),9));
+
+  \c$bv_202\ <= ((std_logic_vector(\c$app_arg_245\)));
+
+  -- indexBitVector begin
+  indexBitVector_37 : block
+    signal vec_index_81 : integer range 0 to 8-1;
+  begin
+    vec_index_81 <= to_integer((to_signed(7,64)))
+    -- pragma translate_off
+                 mod 8
+    -- pragma translate_on
+                 ;
+
+    \c$app_arg_244\ <= \c$bv_202\(vec_index_81);
+  end block;
+  -- indexBitVector end
+
+  \c$bv_203\ <= (x_168.Frame_sel13_fComp);
+
+  \c$app_arg_245\ <= unsigned((\c$bv_203\(31 downto 24)));
+
+  x_168 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_55(1066 downto 0)));
+
+  -- register begin
+  ds1_55_register : process(clk,aresetn)
+  begin
+    if aresetn =  '0'  then
+      ds1_55 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_55 <= result_403;
+    end if;
+  end process;
+  -- register end
+
+  with (compLevelPipe(1067 downto 1067)) select
+    result_403 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_404.Frame_sel0_fL)
+                   & std_logic_vector(result_404.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_404.Frame_sel2_fLast)
+                   & result_404.Frame_sel3_fGate
+                   & result_404.Frame_sel4_fOd
+                   & result_404.Frame_sel5_fDist
+                   & result_404.Frame_sel6_fEq
+                   & result_404.Frame_sel7_fRat
+                   & result_404.Frame_sel8_fAmp
+                   & result_404.Frame_sel9_fAmpTone
+                   & result_404.Frame_sel10_fCab
+                   & result_404.Frame_sel11_fReverb
+                   & result_404.Frame_sel12_fNs
+                   & result_404.Frame_sel13_fComp
+                   & result_404.Frame_sel14_fWah
+                   & std_logic_vector(result_404.Frame_sel15_fAddr)
+                   & std_logic_vector(result_404.Frame_sel16_fDryL)
+                   & std_logic_vector(result_404.Frame_sel17_fDryR)
+                   & std_logic_vector(result_404.Frame_sel18_fWetL)
+                   & std_logic_vector(result_404.Frame_sel19_fWetR)
+                   & std_logic_vector(result_404.Frame_sel20_fFbL)
+                   & std_logic_vector(result_404.Frame_sel21_fFbR)
+                   & std_logic_vector(result_404.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_404.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_404.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_404.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_404.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_404.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_404.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_404.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_404.Frame_sel30_fAccL)
+                   & std_logic_vector(result_404.Frame_sel31_fAccR)
+                   & std_logic_vector(result_404.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_404.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_404.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_404.Frame_sel35_fAcc3R)))) when others;
+
+  result_selection_res_170 <= not (\c$app_arg_246\ = ('1'));
+
+  result_404 <= x_170 when result_selection_res_170 else
+                ( Frame_sel0_fL => result_405
+                , Frame_sel1_fR => result_405
+                , Frame_sel2_fLast => x_170.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_170.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_170.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_170.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_170.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_170.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_170.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_170.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_170.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_170.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_170.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_170.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_170.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_170.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_170.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_170.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_170.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_170.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_170.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_170.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_170.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_170.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_170.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_170.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_170.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_170.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_170.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_170.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_170.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_170.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_170.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_170.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_170.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_170.Frame_sel35_fAcc3R );
+
+  \c$case_alt_selection_res_141\ <= \c$x_app_arg_62\ < to_signed(-8388608,48);
+
+  \c$case_alt_175\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_141\ else
+                      resize(\c$x_app_arg_62\,24);
+
+  result_selection_res_171 <= \c$x_app_arg_62\ > to_signed(8388607,48);
+
+  result_405 <= to_signed(8388607,24) when result_selection_res_171 else
+                \c$case_alt_175\;
+
+  \c$shI_189\ <= (to_signed(12,64));
+
+  cx_app_arg_62_shiftR : block
+    signal sh_191 : natural;
+  begin
+    sh_191 <=
+        -- pragma translate_off
+        natural'high when (\c$shI_189\(64-1 downto 31) /= 0) else
+        -- pragma translate_on
+        to_integer(\c$shI_189\);
+    \c$x_app_arg_62\ <= shift_right((resize((resize(x_170.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(compGain)))))))),48)), 48)),sh_191)
         -- pragma translate_off
         when ((to_signed(12,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$bv_202\ <= (x_168.Frame_sel13_fComp);
+  \c$bv_204\ <= (x_170.Frame_sel13_fComp);
 
-  \c$bv_203\ <= ((std_logic_vector((unsigned((\c$bv_202\(31 downto 24)))))));
+  \c$bv_205\ <= ((std_logic_vector((unsigned((\c$bv_204\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_38 : block
-    signal vec_index_71 : integer range 0 to 8-1;
+    signal vec_index_82 : integer range 0 to 8-1;
   begin
-    vec_index_71 <= to_integer((to_signed(7,64)))
+    vec_index_82 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_225\ <= \c$bv_203\(vec_index_71);
+    \c$app_arg_246\ <= \c$bv_205\(vec_index_82);
   end block;
   -- indexBitVector end
 
@@ -20841,45 +21701,45 @@ begin
     if aresetn =  '0'  then
       compGain <= to_unsigned(4095,12);
     elsif rising_edge(clk) then
-      compGain <= result_380;
+      compGain <= result_406;
     end if;
   end process;
   -- register end
 
-  \on_9\ <= boolean'(clash_lowpass_fir_types.fromSLV(\c$compGain_app_arg\(24 downto 24)));
+  \on_10\ <= boolean'(clash_lowpass_fir_types.fromSLV(\c$compGain_app_arg\(24 downto 24)));
 
   target <= unsigned'(clash_lowpass_fir_types.fromSLV(\c$compGain_app_arg\(23 downto 12)));
 
   step <= unsigned'(clash_lowpass_fir_types.fromSLV(\c$compGain_app_arg\(11 downto 0)));
 
-  \c$case_alt_selection_res_128\ <= not \on_9\;
+  \c$case_alt_selection_res_142\ <= not \on_10\;
 
-  \c$case_alt_162\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_128\ else
-                      \c$case_alt_163\;
+  \c$case_alt_176\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_142\ else
+                      \c$case_alt_177\;
 
-  \c$case_alt_selection_res_129\ <= compGain < target;
+  \c$case_alt_selection_res_143\ <= compGain < target;
 
-  \c$case_alt_163\ <= \c$case_alt_164\ when \c$case_alt_selection_res_129\ else
-                      \c$case_alt_165\;
+  \c$case_alt_177\ <= \c$case_alt_178\ when \c$case_alt_selection_res_143\ else
+                      \c$case_alt_179\;
 
-  \c$case_alt_selection_res_130\ <= (target - compGain) < step;
+  \c$case_alt_selection_res_144\ <= (target - compGain) < step;
 
-  \c$case_alt_164\ <= target when \c$case_alt_selection_res_130\ else
+  \c$case_alt_178\ <= target when \c$case_alt_selection_res_144\ else
                       compGain + step;
 
-  \c$case_alt_selection_res_131\ <= compGain > target;
+  \c$case_alt_selection_res_145\ <= compGain > target;
 
-  \c$case_alt_165\ <= \c$case_alt_166\ when \c$case_alt_selection_res_131\ else
+  \c$case_alt_179\ <= \c$case_alt_180\ when \c$case_alt_selection_res_145\ else
                       compGain;
 
-  \c$case_alt_selection_res_132\ <= (compGain - target) < step;
+  \c$case_alt_selection_res_146\ <= (compGain - target) < step;
 
-  \c$case_alt_166\ <= target when \c$case_alt_selection_res_132\ else
+  \c$case_alt_180\ <= target when \c$case_alt_selection_res_146\ else
                       compGain - step;
 
   with (\c$compGain_app_arg\(25 downto 25)) select
-    result_380 <= compGain when "0",
-                  \c$case_alt_162\ when others;
+    result_406 <= compGain when "0",
+                  \c$case_alt_176\ when others;
 
   -- register begin
   ccompGain_app_arg_register : process(clk,aresetn)
@@ -20887,81 +21747,81 @@ begin
     if aresetn =  '0'  then
       \c$compGain_app_arg\ <= std_logic_vector'("0" & "-------------------------");
     elsif rising_edge(clk) then
-      \c$compGain_app_arg\ <= result_381;
+      \c$compGain_app_arg\ <= result_407;
     end if;
   end process;
   -- register end
 
   with (compLevelPipe(1067 downto 1067)) select
-    result_381 <= std_logic_vector'("0" & "-------------------------") when "0",
-                  std_logic_vector'("1" & ((clash_lowpass_fir_types.toSLV(\on_10\)
-                   & std_logic_vector(\c$app_arg_227\)
-                   & std_logic_vector(\c$app_arg_226\)))) when others;
+    result_407 <= std_logic_vector'("0" & "-------------------------") when "0",
+                  std_logic_vector'("1" & ((clash_lowpass_fir_types.toSLV(\on_11\)
+                   & std_logic_vector(\c$app_arg_248\)
+                   & std_logic_vector(\c$app_arg_247\)))) when others;
 
-  with (result_386) select
-    \c$app_arg_226\ <= to_unsigned(1,12) when x"00",
-                       resize(result_386,12) when others;
+  with (result_412) select
+    \c$app_arg_247\ <= to_unsigned(1,12) when x"00",
+                       resize(result_412,12) when others;
 
-  \c$app_arg_selection_res_10\ <= not \on_10\;
+  \c$app_arg_selection_res_10\ <= not \on_11\;
 
-  \c$app_arg_227\ <= to_unsigned(4095,12) when \c$app_arg_selection_res_10\ else
-                     \c$case_alt_167\;
+  \c$app_arg_248\ <= to_unsigned(4095,12) when \c$app_arg_selection_res_10\ else
+                     \c$case_alt_181\;
 
-  \c$case_alt_selection_res_133\ <= compEnv <= result_384;
+  \c$case_alt_selection_res_147\ <= compEnv <= result_410;
 
-  \c$case_alt_167\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_133\ else
-                      \c$case_alt_168\;
+  \c$case_alt_181\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_147\ else
+                      \c$case_alt_182\;
 
-  \on_10\ <= \c$on_app_arg\ = ('1');
+  \on_11\ <= \c$on_app_arg\ = ('1');
 
-  \c$case_alt_selection_res_134\ <= result_382 >= to_unsigned(4095,12);
+  \c$case_alt_selection_res_148\ <= result_408 >= to_unsigned(4095,12);
 
-  \c$case_alt_168\ <= to_unsigned(0,12) when \c$case_alt_selection_res_134\ else
-                      to_unsigned(4095,12) - result_382;
+  \c$case_alt_182\ <= to_unsigned(0,12) when \c$case_alt_selection_res_148\ else
+                      to_unsigned(4095,12) - result_408;
 
-  \c$bv_204\ <= ((std_logic_vector((unsigned((\c$responseDistance_app_arg\(31 downto 24)))))));
+  \c$bv_206\ <= ((std_logic_vector((unsigned((\c$responseDistance_app_arg\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_39 : block
-    signal vec_index_72 : integer range 0 to 8-1;
+    signal vec_index_83 : integer range 0 to 8-1;
   begin
-    vec_index_72 <= to_integer((to_signed(7,64)))
+    vec_index_83 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$on_app_arg\ <= \c$bv_204\(vec_index_72);
+    \c$on_app_arg\ <= \c$bv_206\(vec_index_83);
   end block;
   -- indexBitVector end
 
-  result_selection_res_157 <= reduction24 >= to_unsigned(4095,24);
+  result_selection_res_172 <= reduction24 >= to_unsigned(4095,24);
 
-  result_382 <= to_unsigned(4095,12) when result_selection_res_157 else
+  result_408 <= to_unsigned(4095,12) when result_selection_res_172 else
                 resize(reduction24,12);
 
-  \c$bv_205\ <= (((std_logic_vector(result_383))));
+  \c$bv_207\ <= (((std_logic_vector(result_409))));
 
-  \c$shI_179\ <= (to_signed(8,64));
+  \c$shI_190\ <= (to_signed(8,64));
 
   reduction24_shiftL : block
-    signal sh_181 : natural;
+    signal sh_192 : natural;
   begin
-    sh_181 <=
+    sh_192 <=
         -- pragma translate_off
-        natural'high when (\c$shI_179\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_190\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_179\);
-    reduction24 <= shift_right((resize((resize((unsigned((\c$bv_205\(11 downto 0)))),24)) * (resize((unsigned((\c$responseDistance_app_arg\(15 downto 8)))),24)), 24)),sh_181)
+        to_integer(\c$shI_190\);
+    reduction24 <= shift_right((resize((resize((unsigned((\c$bv_207\(11 downto 0)))),24)) * (resize((unsigned((\c$responseDistance_app_arg\(15 downto 8)))),24)), 24)),sh_192)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_selection_res_158 <= excessShifted < to_signed(0,24);
+  result_selection_res_173 <= excessShifted < to_signed(0,24);
 
-  result_383 <= to_signed(0,24) when result_selection_res_158 else
+  result_409 <= to_signed(0,24) when result_selection_res_173 else
                 \c$s_case_alt\;
 
   \c$s_case_alt_selection_res\ <= excessShifted > to_signed(4095,24);
@@ -20971,131 +21831,131 @@ begin
 
   excessShifted <= \c$excessShifted_app_arg_0\ + \c$excessShifted_app_arg\;
 
-  \c$shI_180\ <= (to_signed(14,64));
+  \c$shI_191\ <= (to_signed(14,64));
 
   cexcessShifted_app_arg_shiftR : block
-    signal sh_182 : natural;
+    signal sh_193 : natural;
   begin
-    sh_182 <=
+    sh_193 <=
         -- pragma translate_off
-        natural'high when (\c$shI_180\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_191\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_180\);
-    \c$excessShifted_app_arg\ <= shift_right(excess,sh_182)
+        to_integer(\c$shI_191\);
+    \c$excessShifted_app_arg\ <= shift_right(excess,sh_193)
         -- pragma translate_off
         when ((to_signed(14,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$shI_181\ <= (to_signed(12,64));
+  \c$shI_192\ <= (to_signed(12,64));
 
   cexcessShifted_app_arg_0_shiftR : block
-    signal sh_183 : natural;
+    signal sh_194 : natural;
   begin
-    sh_183 <=
+    sh_194 <=
         -- pragma translate_off
-        natural'high when (\c$shI_181\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_192\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_181\);
-    \c$excessShifted_app_arg_0\ <= shift_right(excess,sh_183)
+        to_integer(\c$shI_192\);
+    \c$excessShifted_app_arg_0\ <= shift_right(excess,sh_194)
         -- pragma translate_off
         when ((to_signed(12,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  excess <= compEnv - result_384;
+  excess <= compEnv - result_410;
 
-  result_384 <= result_385 - \c$softThreshold_app_arg\;
+  result_410 <= result_411 - \c$softThreshold_app_arg\;
 
-  \c$shI_182\ <= (to_signed(3,64));
+  \c$shI_193\ <= (to_signed(3,64));
 
   csoftThreshold_app_arg_shiftR : block
-    signal sh_184 : natural;
+    signal sh_195 : natural;
   begin
-    sh_184 <=
+    sh_195 <=
         -- pragma translate_off
-        natural'high when (\c$shI_182\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_193\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_182\);
-    \c$softThreshold_app_arg\ <= shift_right(result_385,sh_184)
+        to_integer(\c$shI_193\);
+    \c$softThreshold_app_arg\ <= shift_right(result_411,sh_195)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$shI_183\ <= (to_signed(13,64));
+  \c$shI_194\ <= (to_signed(13,64));
 
   base_shiftL : block
-    signal sh_185 : natural;
+    signal sh_196 : natural;
   begin
-    sh_185 <=
+    sh_196 <=
         -- pragma translate_off
-        natural'high when (\c$shI_183\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_194\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_183\);
-    base <= shift_left((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_167)))))))),24)),sh_185)
+        to_integer(\c$shI_194\);
+    base <= shift_left((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_169)))))))),24)),sh_196)
         -- pragma translate_off
         when ((to_signed(13,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_385 <= base - \c$app_arg_228\;
+  result_411 <= base - \c$app_arg_249\;
 
-  \c$shI_184\ <= (to_signed(3,64));
+  \c$shI_195\ <= (to_signed(3,64));
 
-  capp_arg_228_shiftR : block
-    signal sh_186 : natural;
+  capp_arg_249_shiftR : block
+    signal sh_197 : natural;
   begin
-    sh_186 <=
+    sh_197 <=
         -- pragma translate_off
-        natural'high when (\c$shI_184\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_195\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_184\);
-    \c$app_arg_228\ <= shift_right(base,sh_186)
+        to_integer(\c$shI_195\);
+    \c$app_arg_249\ <= shift_right(base,sh_197)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$bv_206\ <= (f_11.Frame_sel13_fComp);
+  \c$bv_208\ <= (f_12.Frame_sel13_fComp);
 
-  x_167 <= unsigned((\c$bv_206\(7 downto 0)));
+  x_169 <= unsigned((\c$bv_208\(7 downto 0)));
 
-  result_386 <= \c$raw_app_arg_1\ + \c$raw_app_arg_0\;
+  result_412 <= \c$raw_app_arg_1\ + \c$raw_app_arg_0\;
 
-  \c$shI_185\ <= (to_signed(5,64));
+  \c$shI_196\ <= (to_signed(5,64));
 
   craw_app_arg_0_shiftL : block
-    signal sh_187 : natural;
+    signal sh_198 : natural;
   begin
-    sh_187 <=
+    sh_198 <=
         -- pragma translate_off
-        natural'high when (\c$shI_185\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_196\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_185\);
-    \c$raw_app_arg_0\ <= shift_right(responseDistance,sh_187)
+        to_integer(\c$shI_196\);
+    \c$raw_app_arg_0\ <= shift_right(responseDistance,sh_198)
         -- pragma translate_off
         when ((to_signed(5,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$shI_186\ <= (to_signed(3,64));
+  \c$shI_197\ <= (to_signed(3,64));
 
   craw_app_arg_1_shiftL : block
-    signal sh_188 : natural;
+    signal sh_199 : natural;
   begin
-    sh_188 <=
+    sh_199 <=
         -- pragma translate_off
-        natural'high when (\c$shI_186\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_197\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_186\);
-    \c$raw_app_arg_1\ <= shift_right(responseDistance,sh_188)
+        to_integer(\c$shI_197\);
+    \c$raw_app_arg_1\ <= shift_right(responseDistance,sh_199)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21104,9 +21964,9 @@ begin
 
   responseDistance <= to_unsigned(255,8) - (unsigned((\c$responseDistance_app_arg\(23 downto 16))));
 
-  \c$responseDistance_app_arg\ <= f_11.Frame_sel13_fComp;
+  \c$responseDistance_app_arg\ <= f_12.Frame_sel13_fComp;
 
-  f_11 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1066 downto 0)));
+  f_12 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1066 downto 0)));
 
   -- register begin
   compEnv_register : process(clk,aresetn)
@@ -21114,53 +21974,53 @@ begin
     if aresetn =  '0'  then
       compEnv <= to_signed(0,24);
     elsif rising_edge(clk) then
-      compEnv <= result_387;
+      compEnv <= result_413;
     end if;
   end process;
   -- register end
 
   with (compLevelPipe(1067 downto 1067)) select
-    result_387 <= compEnv when "0",
-                  \c$case_alt_169\ when others;
+    result_413 <= compEnv when "0",
+                  \c$case_alt_183\ when others;
 
-  \c$case_alt_selection_res_135\ <= not (\c$app_arg_229\ = ('1'));
+  \c$case_alt_selection_res_149\ <= not (\c$app_arg_250\ = ('1'));
 
-  \c$case_alt_169\ <= to_signed(0,24) when \c$case_alt_selection_res_135\ else
-                      result_388;
+  \c$case_alt_183\ <= to_signed(0,24) when \c$case_alt_selection_res_149\ else
+                      result_414;
 
-  result_selection_res_159 <= result_389 > compEnv;
+  result_selection_res_174 <= result_415 > compEnv;
 
-  result_388 <= result_389 when result_selection_res_159 else
-                result_390;
+  result_414 <= result_415 when result_selection_res_174 else
+                result_416;
 
-  \c$case_alt_selection_res_136\ <= f_12.Frame_sel0_fL < to_signed(0,24);
+  \c$case_alt_selection_res_150\ <= f_13.Frame_sel0_fL < to_signed(0,24);
 
-  \c$case_alt_170\ <= -f_12.Frame_sel0_fL when \c$case_alt_selection_res_136\ else
-                      f_12.Frame_sel0_fL;
+  \c$case_alt_184\ <= -f_13.Frame_sel0_fL when \c$case_alt_selection_res_150\ else
+                      f_13.Frame_sel0_fL;
 
-  result_selection_res_160 <= f_12.Frame_sel0_fL = to_signed(-8388608,24);
+  result_selection_res_175 <= f_13.Frame_sel0_fL = to_signed(-8388608,24);
 
-  result_389 <= to_signed(8388607,24) when result_selection_res_160 else
-                \c$case_alt_170\;
+  result_415 <= to_signed(8388607,24) when result_selection_res_175 else
+                \c$case_alt_184\;
 
-  result_selection_res_161 <= compEnv > releaseStep;
+  result_selection_res_176 <= compEnv > releaseStep;
 
-  result_390 <= compEnv - releaseStep when result_selection_res_161 else
+  result_416 <= compEnv - releaseStep when result_selection_res_176 else
                 to_signed(0,24);
 
-  releaseStep <= result_391 + (resize((\c$releaseStep_app_arg\ + to_signed(1,25)),24));
+  releaseStep <= result_417 + (resize((\c$releaseStep_app_arg\ + to_signed(1,25)),24));
 
-  \c$shI_187\ <= (to_signed(8,64));
+  \c$shI_198\ <= (to_signed(8,64));
 
   creleaseStep_app_arg_shiftR : block
-    signal sh_189 : natural;
+    signal sh_200 : natural;
   begin
-    sh_189 <=
+    sh_200 <=
         -- pragma translate_off
-        natural'high when (\c$shI_187\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_198\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_187\);
-    \c$releaseStep_app_arg\ <= shift_right((resize(compEnv,25)),sh_189)
+        to_integer(\c$shI_198\);
+    \c$releaseStep_app_arg\ <= shift_right((resize(compEnv,25)),sh_200)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21168,68 +22028,68 @@ begin
   end block;
 
   with (raw_0) select
-    result_391 <= to_signed(1,24) when x"00",
+    result_417 <= to_signed(1,24) when x"00",
                   resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(raw_0)))))))),24) when others;
 
   raw_0 <= \c$raw_app_arg_3\ + \c$raw_app_arg_2\;
 
-  \c$shI_188\ <= (to_signed(6,64));
+  \c$shI_199\ <= (to_signed(6,64));
 
   craw_app_arg_2_shiftL : block
-    signal sh_190 : natural;
+    signal sh_201 : natural;
   begin
-    sh_190 <=
+    sh_201 <=
         -- pragma translate_off
-        natural'high when (\c$shI_188\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_199\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_188\);
-    \c$raw_app_arg_2\ <= shift_right(distance,sh_190)
+        to_integer(\c$shI_199\);
+    \c$raw_app_arg_2\ <= shift_right(distance,sh_201)
         -- pragma translate_off
         when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$shI_189\ <= (to_signed(4,64));
+  \c$shI_200\ <= (to_signed(4,64));
 
   craw_app_arg_3_shiftL : block
-    signal sh_191 : natural;
+    signal sh_202 : natural;
   begin
-    sh_191 <=
+    sh_202 <=
         -- pragma translate_off
-        natural'high when (\c$shI_189\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_200\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_189\);
-    \c$raw_app_arg_3\ <= shift_right(distance,sh_191)
+        to_integer(\c$shI_200\);
+    \c$raw_app_arg_3\ <= shift_right(distance,sh_202)
         -- pragma translate_off
         when ((to_signed(4,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  distance <= to_unsigned(255,8) - (unsigned((\c$app_arg_230\(23 downto 16))));
+  distance <= to_unsigned(255,8) - (unsigned((\c$app_arg_251\(23 downto 16))));
 
-  \c$bv_207\ <= ((std_logic_vector((unsigned((\c$app_arg_230\(31 downto 24)))))));
+  \c$bv_209\ <= ((std_logic_vector((unsigned((\c$app_arg_251\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_40 : block
-    signal vec_index_73 : integer range 0 to 8-1;
+    signal vec_index_84 : integer range 0 to 8-1;
   begin
-    vec_index_73 <= to_integer((to_signed(7,64)))
+    vec_index_84 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_229\ <= \c$bv_207\(vec_index_73);
+    \c$app_arg_250\ <= \c$bv_209\(vec_index_84);
   end block;
   -- indexBitVector end
 
-  \c$app_arg_230\ <= f_12.Frame_sel13_fComp;
+  \c$app_arg_251\ <= f_13.Frame_sel13_fComp;
 
-  f_12 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1066 downto 0)));
+  f_13 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1066 downto 0)));
 
-  x_168 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1066 downto 0)));
+  x_170 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1066 downto 0)));
 
   -- register begin
   compLevelPipe_register : process(clk,aresetn)
@@ -21237,156 +22097,52 @@ begin
     if aresetn =  '0'  then
       compLevelPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      compLevelPipe <= result_392;
+      compLevelPipe <= result_418;
     end if;
   end process;
   -- register end
 
-  with (ds1_55(1067 downto 1067)) select
-    result_392 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_393.Frame_sel0_fL)
-                   & std_logic_vector(result_393.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_393.Frame_sel2_fLast)
-                   & result_393.Frame_sel3_fGate
-                   & result_393.Frame_sel4_fOd
-                   & result_393.Frame_sel5_fDist
-                   & result_393.Frame_sel6_fEq
-                   & result_393.Frame_sel7_fRat
-                   & result_393.Frame_sel8_fAmp
-                   & result_393.Frame_sel9_fAmpTone
-                   & result_393.Frame_sel10_fCab
-                   & result_393.Frame_sel11_fReverb
-                   & result_393.Frame_sel12_fNs
-                   & result_393.Frame_sel13_fComp
-                   & result_393.Frame_sel14_fWah
-                   & std_logic_vector(result_393.Frame_sel15_fAddr)
-                   & std_logic_vector(result_393.Frame_sel16_fDryL)
-                   & std_logic_vector(result_393.Frame_sel17_fDryR)
-                   & std_logic_vector(result_393.Frame_sel18_fWetL)
-                   & std_logic_vector(result_393.Frame_sel19_fWetR)
-                   & std_logic_vector(result_393.Frame_sel20_fFbL)
-                   & std_logic_vector(result_393.Frame_sel21_fFbR)
-                   & std_logic_vector(result_393.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_393.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_393.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_393.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_393.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_393.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_393.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_393.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_393.Frame_sel30_fAccL)
-                   & std_logic_vector(result_393.Frame_sel31_fAccR)
-                   & std_logic_vector(result_393.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_393.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_393.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_393.Frame_sel35_fAcc3R)))) when others;
+  with (ds1_56(1067 downto 1067)) select
+    result_418 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_419.Frame_sel0_fL)
+                   & std_logic_vector(result_419.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_419.Frame_sel2_fLast)
+                   & result_419.Frame_sel3_fGate
+                   & result_419.Frame_sel4_fOd
+                   & result_419.Frame_sel5_fDist
+                   & result_419.Frame_sel6_fEq
+                   & result_419.Frame_sel7_fRat
+                   & result_419.Frame_sel8_fAmp
+                   & result_419.Frame_sel9_fAmpTone
+                   & result_419.Frame_sel10_fCab
+                   & result_419.Frame_sel11_fReverb
+                   & result_419.Frame_sel12_fNs
+                   & result_419.Frame_sel13_fComp
+                   & result_419.Frame_sel14_fWah
+                   & std_logic_vector(result_419.Frame_sel15_fAddr)
+                   & std_logic_vector(result_419.Frame_sel16_fDryL)
+                   & std_logic_vector(result_419.Frame_sel17_fDryR)
+                   & std_logic_vector(result_419.Frame_sel18_fWetL)
+                   & std_logic_vector(result_419.Frame_sel19_fWetR)
+                   & std_logic_vector(result_419.Frame_sel20_fFbL)
+                   & std_logic_vector(result_419.Frame_sel21_fFbR)
+                   & std_logic_vector(result_419.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_419.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_419.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_419.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_419.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_419.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_419.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_419.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_419.Frame_sel30_fAccL)
+                   & std_logic_vector(result_419.Frame_sel31_fAccR)
+                   & std_logic_vector(result_419.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_419.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_419.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_419.Frame_sel35_fAcc3R)))) when others;
 
-  result_393 <= ( Frame_sel0_fL => x_169.Frame_sel0_fL
-                , Frame_sel1_fR => x_169.Frame_sel1_fR
-                , Frame_sel2_fLast => x_169.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_169.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_169.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_169.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_169.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_169.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_169.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_169.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_169.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_169.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_169.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_169.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_169.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_169.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_169.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_169.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => result_394
-                , Frame_sel19_fWetR => result_394
-                , Frame_sel20_fFbL => x_169.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_169.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_169.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_169.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_169.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_169.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_169.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_169.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_169.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_169.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_169.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_169.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_169.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_169.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_169.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_169.Frame_sel35_fAcc3R );
-
-  \c$case_alt_selection_res_137\ <= x_169.Frame_sel0_fL < to_signed(0,24);
-
-  \c$case_alt_171\ <= -x_169.Frame_sel0_fL when \c$case_alt_selection_res_137\ else
-                      x_169.Frame_sel0_fL;
-
-  result_selection_res_162 <= x_169.Frame_sel0_fL = to_signed(-8388608,24);
-
-  result_394 <= to_signed(8388607,24) when result_selection_res_162 else
-                \c$case_alt_171\;
-
-  x_169 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_55(1066 downto 0)));
-
-  -- register begin
-  ds1_55_register : process(clk,aresetn)
-  begin
-    if aresetn =  '0'  then
-      ds1_55 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
-    elsif rising_edge(clk) then
-      ds1_55 <= result_395;
-    end if;
-  end process;
-  -- register end
-
-  with (nsLevelPipe(1067 downto 1067)) select
-    result_395 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_396.Frame_sel0_fL)
-                   & std_logic_vector(result_396.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_396.Frame_sel2_fLast)
-                   & result_396.Frame_sel3_fGate
-                   & result_396.Frame_sel4_fOd
-                   & result_396.Frame_sel5_fDist
-                   & result_396.Frame_sel6_fEq
-                   & result_396.Frame_sel7_fRat
-                   & result_396.Frame_sel8_fAmp
-                   & result_396.Frame_sel9_fAmpTone
-                   & result_396.Frame_sel10_fCab
-                   & result_396.Frame_sel11_fReverb
-                   & result_396.Frame_sel12_fNs
-                   & result_396.Frame_sel13_fComp
-                   & result_396.Frame_sel14_fWah
-                   & std_logic_vector(result_396.Frame_sel15_fAddr)
-                   & std_logic_vector(result_396.Frame_sel16_fDryL)
-                   & std_logic_vector(result_396.Frame_sel17_fDryR)
-                   & std_logic_vector(result_396.Frame_sel18_fWetL)
-                   & std_logic_vector(result_396.Frame_sel19_fWetR)
-                   & std_logic_vector(result_396.Frame_sel20_fFbL)
-                   & std_logic_vector(result_396.Frame_sel21_fFbR)
-                   & std_logic_vector(result_396.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_396.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_396.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_396.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_396.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_396.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_396.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_396.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_396.Frame_sel30_fAccL)
-                   & std_logic_vector(result_396.Frame_sel31_fAccR)
-                   & std_logic_vector(result_396.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_396.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_396.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_396.Frame_sel35_fAcc3R)))) when others;
-
-  \c$bv_208\ <= (x_171.Frame_sel3_fGate);
-
-  result_selection_res_163 <= not ((\c$bv_208\(0 downto 0)) = std_logic_vector'("1"));
-
-  result_396 <= x_171 when result_selection_res_163 else
-                ( Frame_sel0_fL => result_397
-                , Frame_sel1_fR => result_397
+  result_419 <= ( Frame_sel0_fL => x_171.Frame_sel0_fL
+                , Frame_sel1_fR => x_171.Frame_sel1_fR
                 , Frame_sel2_fLast => x_171.Frame_sel2_fLast
                 , Frame_sel3_fGate => x_171.Frame_sel3_fGate
                 , Frame_sel4_fOd => x_171.Frame_sel4_fOd
@@ -21403,8 +22159,8 @@ begin
                 , Frame_sel15_fAddr => x_171.Frame_sel15_fAddr
                 , Frame_sel16_fDryL => x_171.Frame_sel16_fDryL
                 , Frame_sel17_fDryR => x_171.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => x_171.Frame_sel18_fWetL
-                , Frame_sel19_fWetR => x_171.Frame_sel19_fWetR
+                , Frame_sel18_fWetL => result_420
+                , Frame_sel19_fWetR => result_420
                 , Frame_sel20_fFbL => x_171.Frame_sel20_fFbL
                 , Frame_sel21_fFbR => x_171.Frame_sel21_fFbR
                 , Frame_sel22_fEqLowL => x_171.Frame_sel22_fEqLowL
@@ -21422,27 +22178,131 @@ begin
                 , Frame_sel34_fAcc3L => x_171.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_171.Frame_sel35_fAcc3R );
 
-  \c$case_alt_selection_res_138\ <= \c$x_app_arg_62\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_151\ <= x_171.Frame_sel0_fL < to_signed(0,24);
 
-  \c$case_alt_172\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_138\ else
-                      resize(\c$x_app_arg_62\,24);
+  \c$case_alt_185\ <= -x_171.Frame_sel0_fL when \c$case_alt_selection_res_151\ else
+                      x_171.Frame_sel0_fL;
 
-  result_selection_res_164 <= \c$x_app_arg_62\ > to_signed(8388607,48);
+  result_selection_res_177 <= x_171.Frame_sel0_fL = to_signed(-8388608,24);
 
-  result_397 <= to_signed(8388607,24) when result_selection_res_164 else
-                \c$case_alt_172\;
+  result_420 <= to_signed(8388607,24) when result_selection_res_177 else
+                \c$case_alt_185\;
 
-  \c$shI_190\ <= (to_signed(12,64));
+  x_171 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_56(1066 downto 0)));
 
-  cx_app_arg_62_shiftR : block
-    signal sh_192 : natural;
+  -- register begin
+  ds1_56_register : process(clk,aresetn)
   begin
-    sh_192 <=
+    if aresetn =  '0'  then
+      ds1_56 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    elsif rising_edge(clk) then
+      ds1_56 <= result_421;
+    end if;
+  end process;
+  -- register end
+
+  with (nsLevelPipe(1067 downto 1067)) select
+    result_421 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_422.Frame_sel0_fL)
+                   & std_logic_vector(result_422.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_422.Frame_sel2_fLast)
+                   & result_422.Frame_sel3_fGate
+                   & result_422.Frame_sel4_fOd
+                   & result_422.Frame_sel5_fDist
+                   & result_422.Frame_sel6_fEq
+                   & result_422.Frame_sel7_fRat
+                   & result_422.Frame_sel8_fAmp
+                   & result_422.Frame_sel9_fAmpTone
+                   & result_422.Frame_sel10_fCab
+                   & result_422.Frame_sel11_fReverb
+                   & result_422.Frame_sel12_fNs
+                   & result_422.Frame_sel13_fComp
+                   & result_422.Frame_sel14_fWah
+                   & std_logic_vector(result_422.Frame_sel15_fAddr)
+                   & std_logic_vector(result_422.Frame_sel16_fDryL)
+                   & std_logic_vector(result_422.Frame_sel17_fDryR)
+                   & std_logic_vector(result_422.Frame_sel18_fWetL)
+                   & std_logic_vector(result_422.Frame_sel19_fWetR)
+                   & std_logic_vector(result_422.Frame_sel20_fFbL)
+                   & std_logic_vector(result_422.Frame_sel21_fFbR)
+                   & std_logic_vector(result_422.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_422.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_422.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_422.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_422.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_422.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_422.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_422.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_422.Frame_sel30_fAccL)
+                   & std_logic_vector(result_422.Frame_sel31_fAccR)
+                   & std_logic_vector(result_422.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_422.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_422.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_422.Frame_sel35_fAcc3R)))) when others;
+
+  \c$bv_210\ <= (x_173.Frame_sel3_fGate);
+
+  result_selection_res_178 <= not ((\c$bv_210\(0 downto 0)) = std_logic_vector'("1"));
+
+  result_422 <= x_173 when result_selection_res_178 else
+                ( Frame_sel0_fL => result_423
+                , Frame_sel1_fR => result_423
+                , Frame_sel2_fLast => x_173.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_173.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_173.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_173.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_173.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_173.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_173.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_173.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_173.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_173.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_173.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_173.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_173.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_173.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_173.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_173.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => x_173.Frame_sel18_fWetL
+                , Frame_sel19_fWetR => x_173.Frame_sel19_fWetR
+                , Frame_sel20_fFbL => x_173.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_173.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_173.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_173.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_173.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_173.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_173.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_173.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_173.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_173.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_173.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_173.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_173.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_173.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_173.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_173.Frame_sel35_fAcc3R );
+
+  \c$case_alt_selection_res_152\ <= \c$x_app_arg_63\ < to_signed(-8388608,48);
+
+  \c$case_alt_186\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_152\ else
+                      resize(\c$x_app_arg_63\,24);
+
+  result_selection_res_179 <= \c$x_app_arg_63\ > to_signed(8388607,48);
+
+  result_423 <= to_signed(8388607,24) when result_selection_res_179 else
+                \c$case_alt_186\;
+
+  \c$shI_201\ <= (to_signed(12,64));
+
+  cx_app_arg_63_shiftR : block
+    signal sh_203 : natural;
+  begin
+    sh_203 <=
         -- pragma translate_off
-        natural'high when (\c$shI_190\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_201\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_190\);
-    \c$x_app_arg_62\ <= shift_right((resize((resize(x_171.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(nsGain)))))))),48)), 48)),sh_192)
+        to_integer(\c$shI_201\);
+    \c$x_app_arg_63\ <= shift_right((resize((resize(x_173.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(nsGain)))))))),48)), 48)),sh_203)
         -- pragma translate_off
         when ((to_signed(12,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21455,136 +22315,136 @@ begin
     if aresetn =  '0'  then
       nsGain <= to_unsigned(4095,12);
     elsif rising_edge(clk) then
-      nsGain <= result_406;
+      nsGain <= result_432;
     end if;
   end process;
   -- register end
 
-  result_selection_res_165 <= (nsGain - result_400) < result_405;
+  result_selection_res_180 <= (nsGain - result_426) < result_431;
 
-  result_398 <= result_400 when result_selection_res_165 else
-                nsGain - result_405;
+  result_424 <= result_426 when result_selection_res_180 else
+                nsGain - result_431;
 
-  \c$case_alt_selection_res_139\ <= nsGain > result_400;
+  \c$case_alt_selection_res_153\ <= nsGain > result_426;
 
-  \c$case_alt_173\ <= result_398 when \c$case_alt_selection_res_139\ else
+  \c$case_alt_187\ <= result_424 when \c$case_alt_selection_res_153\ else
                       nsGain;
 
-  \c$case_alt_selection_res_140\ <= (result_400 - nsGain) < to_unsigned(512,12);
+  \c$case_alt_selection_res_154\ <= (result_426 - nsGain) < to_unsigned(512,12);
 
-  \c$case_alt_174\ <= result_400 when \c$case_alt_selection_res_140\ else
+  \c$case_alt_188\ <= result_426 when \c$case_alt_selection_res_154\ else
                       nsGain + to_unsigned(512,12);
 
-  result_selection_res_166 <= nsGain < result_400;
+  result_selection_res_181 <= nsGain < result_426;
 
-  result_399 <= \c$case_alt_174\ when result_selection_res_166 else
-                \c$case_alt_173\;
+  result_425 <= \c$case_alt_188\ when result_selection_res_181 else
+                \c$case_alt_187\;
 
-  \c$bv_209\ <= (f_13.Frame_sel3_fGate);
+  \c$bv_211\ <= (f_14.Frame_sel3_fGate);
 
-  \c$case_alt_selection_res_141\ <= not ((\c$bv_209\(0 downto 0)) = std_logic_vector'("1"));
+  \c$case_alt_selection_res_155\ <= not ((\c$bv_211\(0 downto 0)) = std_logic_vector'("1"));
 
-  \c$case_alt_175\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_141\ else
-                      result_399;
+  \c$case_alt_189\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_155\ else
+                      result_425;
 
-  f_13 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(nsLevelPipe(1066 downto 0)));
+  f_14 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(nsLevelPipe(1066 downto 0)));
 
-  \c$bv_210\ <= (f_13.Frame_sel3_fGate);
+  \c$bv_212\ <= (f_14.Frame_sel3_fGate);
 
-  result_selection_res_167 <= not ((\c$bv_210\(0 downto 0)) = std_logic_vector'("1"));
+  result_selection_res_182 <= not ((\c$bv_212\(0 downto 0)) = std_logic_vector'("1"));
 
-  result_400 <= to_unsigned(4095,12) when result_selection_res_167 else
-                result_401;
+  result_426 <= to_unsigned(4095,12) when result_selection_res_182 else
+                result_427;
 
-  result_selection_res_168 <= nsEnv >= threshold;
+  result_selection_res_183 <= nsEnv >= threshold;
 
-  result_401 <= to_unsigned(4095,12) when result_selection_res_168 else
-                result_402;
+  result_427 <= to_unsigned(4095,12) when result_selection_res_183 else
+                result_428;
 
-  result_selection_res_169 <= nsEnv <= (threshold - \c$app_arg_231\);
+  result_selection_res_184 <= nsEnv <= (threshold - \c$app_arg_252\);
 
-  result_402 <= result_403 when result_selection_res_169 else
-                \c$case_alt_176\;
+  result_428 <= result_429 when result_selection_res_184 else
+                \c$case_alt_190\;
 
-  \c$case_alt_selection_res_142\ <= nsGain >= to_unsigned(2047,12);
+  \c$case_alt_selection_res_156\ <= nsGain >= to_unsigned(2047,12);
 
-  \c$case_alt_176\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_142\ else
-                      result_403;
+  \c$case_alt_190\ <= to_unsigned(4095,12) when \c$case_alt_selection_res_156\ else
+                      result_429;
 
-  \c$shI_191\ <= (to_signed(2,64));
+  \c$shI_202\ <= (to_signed(2,64));
 
-  capp_arg_231_shiftR : block
-    signal sh_193 : natural;
+  capp_arg_252_shiftR : block
+    signal sh_204 : natural;
   begin
-    sh_193 <=
+    sh_204 <=
         -- pragma translate_off
-        natural'high when (\c$shI_191\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_202\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_191\);
-    \c$app_arg_231\ <= shift_right(threshold,sh_193)
+        to_integer(\c$shI_202\);
+    \c$app_arg_252\ <= shift_right(threshold,sh_204)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$shI_192\ <= (to_signed(13,64));
+  \c$shI_203\ <= (to_signed(13,64));
 
   threshold_shiftL : block
-    signal sh_194 : natural;
+    signal sh_205 : natural;
   begin
-    sh_194 <=
+    sh_205 <=
         -- pragma translate_off
-        natural'high when (\c$shI_192\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_203\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_192\);
-    threshold <= shift_left((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_170)))))))),24)),sh_194)
+        to_integer(\c$shI_203\);
+    threshold <= shift_left((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_172)))))))),24)),sh_205)
         -- pragma translate_off
         when ((to_signed(13,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  x_170 <= unsigned((\c$nsClosedGainOut_app_arg\(7 downto 0)));
+  x_172 <= unsigned((\c$nsClosedGainOut_app_arg\(7 downto 0)));
 
-  result_403 <= resize(result_404,12);
+  result_429 <= resize(result_430,12);
 
-  \c$shI_193\ <= (to_signed(5,64));
+  \c$shI_204\ <= (to_signed(5,64));
 
-  result_404_shiftL : block
-    signal sh_195 : natural;
+  result_430_shiftL : block
+    signal sh_206 : natural;
   begin
-    sh_195 <=
+    sh_206 <=
         -- pragma translate_off
-        natural'high when (\c$shI_193\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_204\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_193\);
-    result_404 <= shift_right((resize(\c$app_arg_232\ * \c$app_arg_232\, 16)),sh_195)
+        to_integer(\c$shI_204\);
+    result_430 <= shift_right((resize(\c$app_arg_253\ * \c$app_arg_253\, 16)),sh_206)
         -- pragma translate_off
         when ((to_signed(5,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_232\ <= resize(inv8,16);
+  \c$app_arg_253\ <= resize(inv8,16);
 
   inv8 <= to_unsigned(255,8) - (unsigned((\c$nsClosedGainOut_app_arg\(23 downto 16))));
 
-  \c$nsClosedGainOut_app_arg\ <= f_13.Frame_sel12_fNs;
+  \c$nsClosedGainOut_app_arg\ <= f_14.Frame_sel12_fNs;
 
-  \c$bv_211\ <= (f_13.Frame_sel12_fNs);
+  \c$bv_213\ <= (f_14.Frame_sel12_fNs);
 
-  \c$shI_194\ <= (to_signed(2,64));
+  \c$shI_205\ <= (to_signed(2,64));
 
   raw_1_shiftL : block
-    signal sh_196 : natural;
+    signal sh_207 : natural;
   begin
-    sh_196 <=
+    sh_207 <=
         -- pragma translate_off
-        natural'high when (\c$shI_194\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_205\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_194\);
-    raw_1 <= shift_right((to_unsigned(255,8) - (unsigned((\c$bv_211\(15 downto 8))))),sh_196)
+        to_integer(\c$shI_205\);
+    raw_1 <= shift_right((to_unsigned(255,8) - (unsigned((\c$bv_213\(15 downto 8))))),sh_207)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21592,12 +22452,12 @@ begin
   end block;
 
   with (raw_1) select
-    result_405 <= to_unsigned(1,12) when x"00",
+    result_431 <= to_unsigned(1,12) when x"00",
                   resize(raw_1,12) when others;
 
   with (nsLevelPipe(1067 downto 1067)) select
-    result_406 <= nsGain when "0",
-                  \c$case_alt_175\ when others;
+    result_432 <= nsGain when "0",
+                  \c$case_alt_189\ when others;
 
   -- register begin
   nsEnv_register : process(clk,aresetn)
@@ -21605,64 +22465,64 @@ begin
     if aresetn =  '0'  then
       nsEnv <= to_signed(0,24);
     elsif rising_edge(clk) then
-      nsEnv <= result_410;
+      nsEnv <= result_436;
     end if;
   end process;
   -- register end
 
-  \c$shI_195\ <= (to_signed(8,64));
+  \c$shI_206\ <= (to_signed(8,64));
 
   creleaseStep_app_arg_0_shiftR : block
-    signal sh_197 : natural;
+    signal sh_208 : natural;
   begin
-    sh_197 <=
+    sh_208 <=
         -- pragma translate_off
-        natural'high when (\c$shI_195\(64-1 downto 31) /= 0) else
+        natural'high when (\c$shI_206\(64-1 downto 31) /= 0) else
         -- pragma translate_on
-        to_integer(\c$shI_195\);
-    \c$releaseStep_app_arg_0\ <= shift_right((resize(nsEnv,25)),sh_197)
+        to_integer(\c$shI_206\);
+    \c$releaseStep_app_arg_0\ <= shift_right((resize(nsEnv,25)),sh_208)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_selection_res_170 <= nsEnv > releaseStep_0;
+  result_selection_res_185 <= nsEnv > releaseStep_0;
 
-  result_407 <= nsEnv - releaseStep_0 when result_selection_res_170 else
+  result_433 <= nsEnv - releaseStep_0 when result_selection_res_185 else
                 to_signed(0,24);
 
-  result_selection_res_171 <= result_409 > nsEnv;
+  result_selection_res_186 <= result_435 > nsEnv;
 
-  result_408 <= result_409 when result_selection_res_171 else
-                result_407;
+  result_434 <= result_435 when result_selection_res_186 else
+                result_433;
 
-  \c$bv_212\ <= (f_14.Frame_sel3_fGate);
+  \c$bv_214\ <= (f_15.Frame_sel3_fGate);
 
-  \c$case_alt_selection_res_143\ <= not ((\c$bv_212\(0 downto 0)) = std_logic_vector'("1"));
+  \c$case_alt_selection_res_157\ <= not ((\c$bv_214\(0 downto 0)) = std_logic_vector'("1"));
 
-  \c$case_alt_177\ <= to_signed(0,24) when \c$case_alt_selection_res_143\ else
-                      result_408;
+  \c$case_alt_191\ <= to_signed(0,24) when \c$case_alt_selection_res_157\ else
+                      result_434;
 
-  f_14 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(nsLevelPipe(1066 downto 0)));
+  f_15 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(nsLevelPipe(1066 downto 0)));
 
-  \c$case_alt_selection_res_144\ <= f_14.Frame_sel0_fL < to_signed(0,24);
+  \c$case_alt_selection_res_158\ <= f_15.Frame_sel0_fL < to_signed(0,24);
 
-  \c$case_alt_178\ <= -f_14.Frame_sel0_fL when \c$case_alt_selection_res_144\ else
-                      f_14.Frame_sel0_fL;
+  \c$case_alt_192\ <= -f_15.Frame_sel0_fL when \c$case_alt_selection_res_158\ else
+                      f_15.Frame_sel0_fL;
 
-  result_selection_res_172 <= f_14.Frame_sel0_fL = to_signed(-8388608,24);
+  result_selection_res_187 <= f_15.Frame_sel0_fL = to_signed(-8388608,24);
 
-  result_409 <= to_signed(8388607,24) when result_selection_res_172 else
-                \c$case_alt_178\;
+  result_435 <= to_signed(8388607,24) when result_selection_res_187 else
+                \c$case_alt_192\;
 
   releaseStep_0 <= resize((\c$releaseStep_app_arg_0\ + to_signed(1,25)),24);
 
   with (nsLevelPipe(1067 downto 1067)) select
-    result_410 <= nsEnv when "0",
-                  \c$case_alt_177\ when others;
+    result_436 <= nsEnv when "0",
+                  \c$case_alt_191\ when others;
 
-  x_171 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(nsLevelPipe(1066 downto 0)));
+  x_173 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(nsLevelPipe(1066 downto 0)));
 
   -- register begin
   nsLevelPipe_register : process(clk,aresetn)
@@ -21670,120 +22530,120 @@ begin
     if aresetn =  '0'  then
       nsLevelPipe <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      nsLevelPipe <= result_411;
+      nsLevelPipe <= result_437;
     end if;
   end process;
   -- register end
 
-  with (ds1_56(1067 downto 1067)) select
-    result_411 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
-                  std_logic_vector'("1" & ((std_logic_vector(result_412.Frame_sel0_fL)
-                   & std_logic_vector(result_412.Frame_sel1_fR)
-                   & clash_lowpass_fir_types.toSLV(result_412.Frame_sel2_fLast)
-                   & result_412.Frame_sel3_fGate
-                   & result_412.Frame_sel4_fOd
-                   & result_412.Frame_sel5_fDist
-                   & result_412.Frame_sel6_fEq
-                   & result_412.Frame_sel7_fRat
-                   & result_412.Frame_sel8_fAmp
-                   & result_412.Frame_sel9_fAmpTone
-                   & result_412.Frame_sel10_fCab
-                   & result_412.Frame_sel11_fReverb
-                   & result_412.Frame_sel12_fNs
-                   & result_412.Frame_sel13_fComp
-                   & result_412.Frame_sel14_fWah
-                   & std_logic_vector(result_412.Frame_sel15_fAddr)
-                   & std_logic_vector(result_412.Frame_sel16_fDryL)
-                   & std_logic_vector(result_412.Frame_sel17_fDryR)
-                   & std_logic_vector(result_412.Frame_sel18_fWetL)
-                   & std_logic_vector(result_412.Frame_sel19_fWetR)
-                   & std_logic_vector(result_412.Frame_sel20_fFbL)
-                   & std_logic_vector(result_412.Frame_sel21_fFbR)
-                   & std_logic_vector(result_412.Frame_sel22_fEqLowL)
-                   & std_logic_vector(result_412.Frame_sel23_fEqLowR)
-                   & std_logic_vector(result_412.Frame_sel24_fEqMidL)
-                   & std_logic_vector(result_412.Frame_sel25_fEqMidR)
-                   & std_logic_vector(result_412.Frame_sel26_fEqHighL)
-                   & std_logic_vector(result_412.Frame_sel27_fEqHighR)
-                   & std_logic_vector(result_412.Frame_sel28_fEqHighLpL)
-                   & std_logic_vector(result_412.Frame_sel29_fEqHighLpR)
-                   & std_logic_vector(result_412.Frame_sel30_fAccL)
-                   & std_logic_vector(result_412.Frame_sel31_fAccR)
-                   & std_logic_vector(result_412.Frame_sel32_fAcc2L)
-                   & std_logic_vector(result_412.Frame_sel33_fAcc2R)
-                   & std_logic_vector(result_412.Frame_sel34_fAcc3L)
-                   & std_logic_vector(result_412.Frame_sel35_fAcc3R)))) when others;
+  with (ds1_57(1067 downto 1067)) select
+    result_437 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------") when "0",
+                  std_logic_vector'("1" & ((std_logic_vector(result_438.Frame_sel0_fL)
+                   & std_logic_vector(result_438.Frame_sel1_fR)
+                   & clash_lowpass_fir_types.toSLV(result_438.Frame_sel2_fLast)
+                   & result_438.Frame_sel3_fGate
+                   & result_438.Frame_sel4_fOd
+                   & result_438.Frame_sel5_fDist
+                   & result_438.Frame_sel6_fEq
+                   & result_438.Frame_sel7_fRat
+                   & result_438.Frame_sel8_fAmp
+                   & result_438.Frame_sel9_fAmpTone
+                   & result_438.Frame_sel10_fCab
+                   & result_438.Frame_sel11_fReverb
+                   & result_438.Frame_sel12_fNs
+                   & result_438.Frame_sel13_fComp
+                   & result_438.Frame_sel14_fWah
+                   & std_logic_vector(result_438.Frame_sel15_fAddr)
+                   & std_logic_vector(result_438.Frame_sel16_fDryL)
+                   & std_logic_vector(result_438.Frame_sel17_fDryR)
+                   & std_logic_vector(result_438.Frame_sel18_fWetL)
+                   & std_logic_vector(result_438.Frame_sel19_fWetR)
+                   & std_logic_vector(result_438.Frame_sel20_fFbL)
+                   & std_logic_vector(result_438.Frame_sel21_fFbR)
+                   & std_logic_vector(result_438.Frame_sel22_fEqLowL)
+                   & std_logic_vector(result_438.Frame_sel23_fEqLowR)
+                   & std_logic_vector(result_438.Frame_sel24_fEqMidL)
+                   & std_logic_vector(result_438.Frame_sel25_fEqMidR)
+                   & std_logic_vector(result_438.Frame_sel26_fEqHighL)
+                   & std_logic_vector(result_438.Frame_sel27_fEqHighR)
+                   & std_logic_vector(result_438.Frame_sel28_fEqHighLpL)
+                   & std_logic_vector(result_438.Frame_sel29_fEqHighLpR)
+                   & std_logic_vector(result_438.Frame_sel30_fAccL)
+                   & std_logic_vector(result_438.Frame_sel31_fAccR)
+                   & std_logic_vector(result_438.Frame_sel32_fAcc2L)
+                   & std_logic_vector(result_438.Frame_sel33_fAcc2R)
+                   & std_logic_vector(result_438.Frame_sel34_fAcc3L)
+                   & std_logic_vector(result_438.Frame_sel35_fAcc3R)))) when others;
 
-  result_412 <= ( Frame_sel0_fL => x_172.Frame_sel0_fL
-                , Frame_sel1_fR => x_172.Frame_sel1_fR
-                , Frame_sel2_fLast => x_172.Frame_sel2_fLast
-                , Frame_sel3_fGate => x_172.Frame_sel3_fGate
-                , Frame_sel4_fOd => x_172.Frame_sel4_fOd
-                , Frame_sel5_fDist => x_172.Frame_sel5_fDist
-                , Frame_sel6_fEq => x_172.Frame_sel6_fEq
-                , Frame_sel7_fRat => x_172.Frame_sel7_fRat
-                , Frame_sel8_fAmp => x_172.Frame_sel8_fAmp
-                , Frame_sel9_fAmpTone => x_172.Frame_sel9_fAmpTone
-                , Frame_sel10_fCab => x_172.Frame_sel10_fCab
-                , Frame_sel11_fReverb => x_172.Frame_sel11_fReverb
-                , Frame_sel12_fNs => x_172.Frame_sel12_fNs
-                , Frame_sel13_fComp => x_172.Frame_sel13_fComp
-                , Frame_sel14_fWah => x_172.Frame_sel14_fWah
-                , Frame_sel15_fAddr => x_172.Frame_sel15_fAddr
-                , Frame_sel16_fDryL => x_172.Frame_sel16_fDryL
-                , Frame_sel17_fDryR => x_172.Frame_sel17_fDryR
-                , Frame_sel18_fWetL => result_413
-                , Frame_sel19_fWetR => result_413
-                , Frame_sel20_fFbL => x_172.Frame_sel20_fFbL
-                , Frame_sel21_fFbR => x_172.Frame_sel21_fFbR
-                , Frame_sel22_fEqLowL => x_172.Frame_sel22_fEqLowL
-                , Frame_sel23_fEqLowR => x_172.Frame_sel23_fEqLowR
-                , Frame_sel24_fEqMidL => x_172.Frame_sel24_fEqMidL
-                , Frame_sel25_fEqMidR => x_172.Frame_sel25_fEqMidR
-                , Frame_sel26_fEqHighL => x_172.Frame_sel26_fEqHighL
-                , Frame_sel27_fEqHighR => x_172.Frame_sel27_fEqHighR
-                , Frame_sel28_fEqHighLpL => x_172.Frame_sel28_fEqHighLpL
-                , Frame_sel29_fEqHighLpR => x_172.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => x_172.Frame_sel30_fAccL
-                , Frame_sel31_fAccR => x_172.Frame_sel31_fAccR
-                , Frame_sel32_fAcc2L => x_172.Frame_sel32_fAcc2L
-                , Frame_sel33_fAcc2R => x_172.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => x_172.Frame_sel34_fAcc3L
-                , Frame_sel35_fAcc3R => x_172.Frame_sel35_fAcc3R );
+  result_438 <= ( Frame_sel0_fL => x_174.Frame_sel0_fL
+                , Frame_sel1_fR => x_174.Frame_sel1_fR
+                , Frame_sel2_fLast => x_174.Frame_sel2_fLast
+                , Frame_sel3_fGate => x_174.Frame_sel3_fGate
+                , Frame_sel4_fOd => x_174.Frame_sel4_fOd
+                , Frame_sel5_fDist => x_174.Frame_sel5_fDist
+                , Frame_sel6_fEq => x_174.Frame_sel6_fEq
+                , Frame_sel7_fRat => x_174.Frame_sel7_fRat
+                , Frame_sel8_fAmp => x_174.Frame_sel8_fAmp
+                , Frame_sel9_fAmpTone => x_174.Frame_sel9_fAmpTone
+                , Frame_sel10_fCab => x_174.Frame_sel10_fCab
+                , Frame_sel11_fReverb => x_174.Frame_sel11_fReverb
+                , Frame_sel12_fNs => x_174.Frame_sel12_fNs
+                , Frame_sel13_fComp => x_174.Frame_sel13_fComp
+                , Frame_sel14_fWah => x_174.Frame_sel14_fWah
+                , Frame_sel15_fAddr => x_174.Frame_sel15_fAddr
+                , Frame_sel16_fDryL => x_174.Frame_sel16_fDryL
+                , Frame_sel17_fDryR => x_174.Frame_sel17_fDryR
+                , Frame_sel18_fWetL => result_439
+                , Frame_sel19_fWetR => result_439
+                , Frame_sel20_fFbL => x_174.Frame_sel20_fFbL
+                , Frame_sel21_fFbR => x_174.Frame_sel21_fFbR
+                , Frame_sel22_fEqLowL => x_174.Frame_sel22_fEqLowL
+                , Frame_sel23_fEqLowR => x_174.Frame_sel23_fEqLowR
+                , Frame_sel24_fEqMidL => x_174.Frame_sel24_fEqMidL
+                , Frame_sel25_fEqMidR => x_174.Frame_sel25_fEqMidR
+                , Frame_sel26_fEqHighL => x_174.Frame_sel26_fEqHighL
+                , Frame_sel27_fEqHighR => x_174.Frame_sel27_fEqHighR
+                , Frame_sel28_fEqHighLpL => x_174.Frame_sel28_fEqHighLpL
+                , Frame_sel29_fEqHighLpR => x_174.Frame_sel29_fEqHighLpR
+                , Frame_sel30_fAccL => x_174.Frame_sel30_fAccL
+                , Frame_sel31_fAccR => x_174.Frame_sel31_fAccR
+                , Frame_sel32_fAcc2L => x_174.Frame_sel32_fAcc2L
+                , Frame_sel33_fAcc2R => x_174.Frame_sel33_fAcc2R
+                , Frame_sel34_fAcc3L => x_174.Frame_sel34_fAcc3L
+                , Frame_sel35_fAcc3R => x_174.Frame_sel35_fAcc3R );
 
-  \c$case_alt_selection_res_145\ <= x_172.Frame_sel0_fL < to_signed(0,24);
+  \c$case_alt_selection_res_159\ <= x_174.Frame_sel0_fL < to_signed(0,24);
 
-  \c$case_alt_179\ <= -x_172.Frame_sel0_fL when \c$case_alt_selection_res_145\ else
-                      x_172.Frame_sel0_fL;
+  \c$case_alt_193\ <= -x_174.Frame_sel0_fL when \c$case_alt_selection_res_159\ else
+                      x_174.Frame_sel0_fL;
 
-  result_selection_res_173 <= x_172.Frame_sel0_fL = to_signed(-8388608,24);
+  result_selection_res_188 <= x_174.Frame_sel0_fL = to_signed(-8388608,24);
 
-  result_413 <= to_signed(8388607,24) when result_selection_res_173 else
-                \c$case_alt_179\;
+  result_439 <= to_signed(8388607,24) when result_selection_res_188 else
+                \c$case_alt_193\;
 
-  x_172 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_56(1066 downto 0)));
+  x_174 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_57(1066 downto 0)));
 
   -- register begin
-  ds1_56_register : process(clk,aresetn)
+  ds1_57_register : process(clk,aresetn)
   begin
     if aresetn =  '0'  then
-      ds1_56 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+      ds1_57 <= std_logic_vector'("0" & "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     elsif rising_edge(clk) then
-      ds1_56 <= result_415;
+      ds1_57 <= result_441;
     end if;
   end process;
   -- register end
 
   validIn <= axis_in_tvalid and axis_out_tready;
 
-  result_414 <= ( Tuple2_2_sel0_signed_0 => signed((\c$app_arg_233\(23 downto 0)))
-                , Tuple2_2_sel1_signed_1 => signed((\c$app_arg_233\(47 downto 24))) );
+  result_440 <= ( Tuple2_2_sel0_signed_0 => signed((\c$app_arg_254\(23 downto 0)))
+                , Tuple2_2_sel1_signed_1 => signed((\c$app_arg_254\(47 downto 24))) );
 
-  \c$app_arg_233\ <= axis_in_tdata;
+  \c$app_arg_254\ <= axis_in_tdata;
 
-  mono_0 <= result_414.Tuple2_2_sel0_signed_0;
+  mono_0 <= result_440.Tuple2_2_sel0_signed_0;
 
-  result_415 <= std_logic_vector'("1" & ((std_logic_vector(mono_0)
+  result_441 <= std_logic_vector'("1" & ((std_logic_vector(mono_0)
                  & std_logic_vector(mono_0)
                  & clash_lowpass_fir_types.toSLV(axis_in_tlast)
                  & stable_10
@@ -21832,7 +22692,7 @@ begin
     if aresetn =  '0'  then
       stable <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable <= result_416;
+      stable <= result_442;
     end if;
   end process;
   -- register end
@@ -21848,9 +22708,9 @@ begin
   end process;
   -- register end
 
-  b_6 <= ff2 = \c$b_app_arg\;
+  b_13 <= ff2 = \c$b_app_arg\;
 
-  result_416 <= ff2 when b_6 else
+  result_442 <= ff2 when b_13 else
                 stable;
 
   -- register begin
@@ -21881,7 +22741,7 @@ begin
     if aresetn =  '0'  then
       stable_0 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_0 <= result_417;
+      stable_0 <= result_443;
     end if;
   end process;
   -- register end
@@ -21897,9 +22757,9 @@ begin
   end process;
   -- register end
 
-  b_7 <= ff2_0 = \c$b_app_arg_0\;
+  b_14 <= ff2_0 = \c$b_app_arg_0\;
 
-  result_417 <= ff2_0 when b_7 else
+  result_443 <= ff2_0 when b_14 else
                 stable_0;
 
   -- register begin
@@ -21930,7 +22790,7 @@ begin
     if aresetn =  '0'  then
       stable_1 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_1 <= result_418;
+      stable_1 <= result_444;
     end if;
   end process;
   -- register end
@@ -21946,9 +22806,9 @@ begin
   end process;
   -- register end
 
-  b_8 <= ff2_1 = \c$b_app_arg_1\;
+  b_15 <= ff2_1 = \c$b_app_arg_1\;
 
-  result_418 <= ff2_1 when b_8 else
+  result_444 <= ff2_1 when b_15 else
                 stable_1;
 
   -- register begin
@@ -21979,7 +22839,7 @@ begin
     if aresetn =  '0'  then
       stable_2 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_2 <= result_419;
+      stable_2 <= result_445;
     end if;
   end process;
   -- register end
@@ -21995,9 +22855,9 @@ begin
   end process;
   -- register end
 
-  b_9 <= ff2_2 = \c$b_app_arg_2\;
+  b_16 <= ff2_2 = \c$b_app_arg_2\;
 
-  result_419 <= ff2_2 when b_9 else
+  result_445 <= ff2_2 when b_16 else
                 stable_2;
 
   -- register begin
@@ -22028,7 +22888,7 @@ begin
     if aresetn =  '0'  then
       stable_3 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_3 <= result_420;
+      stable_3 <= result_446;
     end if;
   end process;
   -- register end
@@ -22044,9 +22904,9 @@ begin
   end process;
   -- register end
 
-  b_10 <= ff2_3 = \c$b_app_arg_3\;
+  b_17 <= ff2_3 = \c$b_app_arg_3\;
 
-  result_420 <= ff2_3 when b_10 else
+  result_446 <= ff2_3 when b_17 else
                 stable_3;
 
   -- register begin
@@ -22077,7 +22937,7 @@ begin
     if aresetn =  '0'  then
       stable_4 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_4 <= result_421;
+      stable_4 <= result_447;
     end if;
   end process;
   -- register end
@@ -22093,9 +22953,9 @@ begin
   end process;
   -- register end
 
-  b_11 <= ff2_4 = \c$b_app_arg_4\;
+  b_18 <= ff2_4 = \c$b_app_arg_4\;
 
-  result_421 <= ff2_4 when b_11 else
+  result_447 <= ff2_4 when b_18 else
                 stable_4;
 
   -- register begin
@@ -22126,7 +22986,7 @@ begin
     if aresetn =  '0'  then
       stable_5 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_5 <= result_422;
+      stable_5 <= result_448;
     end if;
   end process;
   -- register end
@@ -22142,9 +23002,9 @@ begin
   end process;
   -- register end
 
-  b_12 <= ff2_5 = \c$b_app_arg_5\;
+  b_19 <= ff2_5 = \c$b_app_arg_5\;
 
-  result_422 <= ff2_5 when b_12 else
+  result_448 <= ff2_5 when b_19 else
                 stable_5;
 
   -- register begin
@@ -22175,7 +23035,7 @@ begin
     if aresetn =  '0'  then
       stable_6 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_6 <= result_423;
+      stable_6 <= result_449;
     end if;
   end process;
   -- register end
@@ -22191,9 +23051,9 @@ begin
   end process;
   -- register end
 
-  b_13 <= ff2_6 = \c$b_app_arg_6\;
+  b_20 <= ff2_6 = \c$b_app_arg_6\;
 
-  result_423 <= ff2_6 when b_13 else
+  result_449 <= ff2_6 when b_20 else
                 stable_6;
 
   -- register begin
@@ -22224,7 +23084,7 @@ begin
     if aresetn =  '0'  then
       stable_7 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_7 <= result_424;
+      stable_7 <= result_450;
     end if;
   end process;
   -- register end
@@ -22240,9 +23100,9 @@ begin
   end process;
   -- register end
 
-  b_14 <= ff2_7 = \c$b_app_arg_7\;
+  b_21 <= ff2_7 = \c$b_app_arg_7\;
 
-  result_424 <= ff2_7 when b_14 else
+  result_450 <= ff2_7 when b_21 else
                 stable_7;
 
   -- register begin
@@ -22273,7 +23133,7 @@ begin
     if aresetn =  '0'  then
       stable_8 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_8 <= result_425;
+      stable_8 <= result_451;
     end if;
   end process;
   -- register end
@@ -22289,9 +23149,9 @@ begin
   end process;
   -- register end
 
-  b_15 <= ff2_8 = \c$b_app_arg_8\;
+  b_22 <= ff2_8 = \c$b_app_arg_8\;
 
-  result_425 <= ff2_8 when b_15 else
+  result_451 <= ff2_8 when b_22 else
                 stable_8;
 
   -- register begin
@@ -22322,7 +23182,7 @@ begin
     if aresetn =  '0'  then
       stable_9 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_9 <= result_426;
+      stable_9 <= result_452;
     end if;
   end process;
   -- register end
@@ -22338,9 +23198,9 @@ begin
   end process;
   -- register end
 
-  b_16 <= ff2_9 = \c$b_app_arg_9\;
+  b_23 <= ff2_9 = \c$b_app_arg_9\;
 
-  result_426 <= ff2_9 when b_16 else
+  result_452 <= ff2_9 when b_23 else
                 stable_9;
 
   -- register begin
@@ -22371,7 +23231,7 @@ begin
     if aresetn =  '0'  then
       stable_10 <= std_logic_vector'(x"00000000");
     elsif rising_edge(clk) then
-      stable_10 <= result_427;
+      stable_10 <= result_453;
     end if;
   end process;
   -- register end
@@ -22387,9 +23247,9 @@ begin
   end process;
   -- register end
 
-  b_17 <= ff2_10 = \c$b_app_arg_10\;
+  b_24 <= ff2_10 = \c$b_app_arg_10\;
 
-  result_427 <= ff2_10 when b_17 else
+  result_453 <= ff2_10 when b_24 else
                 stable_10;
 
   -- register begin

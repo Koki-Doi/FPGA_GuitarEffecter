@@ -78,14 +78,19 @@ When a previous turn stopped mid-implementation:
   rebuild and a timing-summary check. A bitstream with significantly worse
   WNS than the previous deployed build must not be deployed (latest
   baseline is recorded in `docs/ai_context/TIMING_AND_FPGA_NOTES.md`).
-- The DSP runs in a **50 MHz clock-domain island** (`DECISIONS.md` D75,
-  full record `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md`). Only
-  `clash_lowpass_fir_0` is clocked by `FCLK_CLK1` (50 MHz); the rest of the
+- The DSP runs in a **clock-domain island, FCLK_CLK1 = 40 MHz as of D89**
+  (was 50 MHz at D75; lowered to give the DS-1 critical path more budget so
+  multiple 4x oversamplers fit -- the whole design now meets timing). `DECISIONS.md`
+  D75 + D89, full record `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md`. Only
+  `clash_lowpass_fir_0` is clocked by `FCLK_CLK1` (40 MHz); the rest of the
   fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays on `FCLK_CLK0`
   (100 MHz), bridged by `axis_clock_converter` `cc_dsp_in` / `cc_dsp_out`
   added in `hw/Pynq-Z2/island_integration.tcl` (additive, sourced from
   `create_project.tcl` after `wah_integration.tcl`; `block_design.tcl` is
-  NOT edited). **Do not lower the whole fabric to 50 MHz** -- it corrupts
+  NOT edited). The island clock is the only consumer of FCLK_CLK1, runs
+  1 sample/cycle, and is frequency-independent (paceCount removed), so it can
+  be lowered further (33 MHz = 1000/5/6) for more headroom; pitch is set by the
+  I2S/Pmod sample clock, not this clock. **Do not lower the whole fabric** -- it corrupts
   the I2S/Pmod clock-domain crossings (audible bypass buzz, proven). Three
   pieces are load-bearing and must not be reverted: the `paceCount` removal
   in `Pipeline.hs` (`acceptReady = readyOut`), the `syncCtrl` control-word

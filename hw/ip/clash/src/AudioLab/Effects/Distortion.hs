@@ -244,10 +244,16 @@ metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: 
   driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
   rawT = 3_300_000 - driveS * 6_000 :: Signed 25
 
--- the 4 clipped 4x sub-samples for the interval [x1 -> xn] (chronological:
--- q0 oldest at x1, q3 newest near xn). Linear interp weights, then hard clip.
-metalOsSubSamples :: Sample -> Sample -> Sample -> (Sample, Sample, Sample, Sample)
-metalOsSubSamples thr x1 xn = (q0, q1, q2, q3)
+-- ---- Shared 4x oversampled-hard-clip helpers (realism item 2 / R5) --------
+-- Reused by every oversampled clip (Metal D88, RAT D89, ...). The clip itself
+-- and its threshold are pedal-specific; these helpers are the generic
+-- upsample / decimation machinery.
+
+-- The 4 clipped 4x sub-samples for the interval [x1 -> xn] (chronological:
+-- q0 oldest at x1, q3 newest near xn). Linear-interp weights (shifts/adds, no
+-- multiply), then hard clip.
+os4xSubSamples :: Sample -> Sample -> Sample -> (Sample, Sample, Sample, Sample)
+os4xSubSamples thr x1 xn = (q0, q1, q2, q3)
  where
   x1w = resize x1 :: Wide
   xnw = resize xn :: Wide
@@ -259,6 +265,27 @@ metalOsSubSamples thr x1 xn = (q0, q1, q2, q3)
   q2 = hardClip p2 thr
   q3 = hardClip p3 thr
 
+-- 15-tap symmetric anti-alias decimation FIR over the 192 kHz clipped stream
+-- (taps newest-first q3 q2 q1 q0 hist0..hist10; coeffs
+-- [-2,-3,-4,5,29,68,104,118,...] Q9 sum=512 = unity DC). Folded to 8
+-- multiplies, returned as 3 Wide partial sums for the pipeline-split products
+-- stage. Combine in the mix stage with `satShift9 (s0+s1+s2)`.
+os4xDecimProducts ::
+  Sample -> Sample -> Sample -> Sample -> Vec 12 Sample -> (Wide, Wide, Wide)
+os4xDecimProducts q0 q1 q2 q3 hist = (s0, s1, s2)
+ where
+  pm :: Sample -> Sample -> Signed 10 -> Wide
+  pm a b g = (resize a + resize b) * resize g
+  s0 = pm q3 (hist !! 10) (-2) + pm q2 (hist !! 9) (-3) + pm q1 (hist !! 8) (-4)
+  s1 = pm q0 (hist !! 7) 5 + pm (hist !! 0) (hist !! 6) 29 + pm (hist !! 1) (hist !! 5) 68
+  s2 = pm (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
+
+os4xHistShift ::
+  Sample -> Sample -> Sample -> Sample -> Vec 12 Sample -> Vec 12 Sample
+os4xHistShift q0 q1 q2 q3 hist = q3 +>> q2 +>> q1 +>> q0 +>> hist
+
+-- ---- Metal 4x oversampled clip (D88) --------------------------------------
+
 metalClipProductsFrame :: Sample -> Vec 12 Sample -> Frame -> Frame
 metalClipProductsFrame x1 hist f =
   f { fAccL = if on then s0 else 0, fAccR = 0
@@ -266,16 +293,8 @@ metalClipProductsFrame x1 hist f =
     , fAcc3L = if on then s2 else 0, fAcc3R = 0 }
  where
   on = metalDistortionOn f
-  thr = metalClipThreshold f
-  xn = satShift8 (fAccL f)
-  (q0, q1, q2, q3) = metalOsSubSamples thr x1 xn
-  -- 15 taps newest-first: q3 q2 q1 q0 hist0..hist10 ; symmetric coeffs
-  -- c = [-2,-3,-4,5,29,68,104,118,104,68,29,5,-4,-3,-2], folded.
-  pm :: Sample -> Sample -> Signed 10 -> Wide
-  pm a b g = (resize a + resize b) * resize g
-  s0 = pm q3 (hist !! 10) (-2) + pm q2 (hist !! 9) (-3) + pm q1 (hist !! 8) (-4)
-  s1 = pm q0 (hist !! 7) 5 + pm (hist !! 0) (hist !! 6) 29 + pm (hist !! 1) (hist !! 5) 68
-  s2 = pm (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
+  (q0, q1, q2, q3) = os4xSubSamples (metalClipThreshold f) x1 (satShift8 (fAccL f))
+  (s0, s1, s2) = os4xDecimProducts q0 q1 q2 q3 hist
 
 metalClipMixFrame :: Frame -> Frame
 metalClipMixFrame f =
@@ -285,9 +304,9 @@ metalClipMixFrame f =
 
 metalClipHistNext :: Vec 12 Sample -> Sample -> Maybe Frame -> Vec 12 Sample
 metalClipHistNext hist _ Nothing = hist
-metalClipHistNext hist x1 (Just f) = q3 +>> q2 +>> q1 +>> q0 +>> hist
+metalClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
  where
-  (q0, q1, q2, q3) = metalOsSubSamples (metalClipThreshold f) x1 (satShift8 (fAccL f))
+  (q0, q1, q2, q3) = os4xSubSamples (metalClipThreshold f) x1 (satShift8 (fAccL f))
 
 metalPostLpfFrame :: Sample -> Frame -> Frame
 metalPostLpfFrame prevLp f =
@@ -578,16 +597,39 @@ ratOpAmpLowpassFrame prev f =
   alpha = 184 - resize (ctrlC (fRat f) `shiftR` 1) :: Unsigned 8
   low = onePoleU8 alpha prev (monoWet f)
 
-ratClipFrame :: Frame -> Frame
-ratClipFrame f =
-  setMonoWet (if on then hardClip (monoWet f) threshold else monoSample f) f
+-- RAT 4x oversampled hard clip (realism item 2 / R5, D89). Same DSP-free
+-- upsample + 15-tap decimation as Metal (D88) via the shared os4x helpers;
+-- the RAT op-amp + Si-diode hard clip is a strong aliaser. Clip input/output
+-- is monoWet; threshold from ctrlC (fRat). Split products/mix; bit-exact
+-- bypass when the RAT is off.
+ratClipThreshold :: Frame -> Sample
+ratClipThreshold f = resize clampedThreshold :: Sample
  where
-  on = flag4 (fGate f)
   amount = ctrlC (fRat f)
-  -- Fat old-op-amp hard clip; rougher than DS-1, less modern than Metal.
   rawThreshold = 6_000_000 - (resize (asSigned9 amount) * 8_500) :: Signed 25
   clampedThreshold = if rawThreshold < 2_200_000 then 2_200_000 else rawThreshold
-  threshold = resize clampedThreshold :: Sample
+
+ratClipProductsFrame :: Sample -> Vec 12 Sample -> Frame -> Frame
+ratClipProductsFrame x1 hist f =
+  f { fAccL = if on then s0 else 0, fAccR = 0
+    , fAcc2L = if on then s1 else 0, fAcc2R = 0
+    , fAcc3L = if on then s2 else 0, fAcc3R = 0 }
+ where
+  on = flag4 (fGate f)
+  (q0, q1, q2, q3) = os4xSubSamples (ratClipThreshold f) x1 (monoWet f)
+  (s0, s1, s2) = os4xDecimProducts q0 q1 q2 q3 hist
+
+ratClipMixFrame :: Frame -> Frame
+ratClipMixFrame f =
+  setMonoWet (if on then satShift9 (fAccL f + fAcc2L f + fAcc3L f) else monoSample f) f
+ where
+  on = flag4 (fGate f)
+
+ratClipHistNext :: Vec 12 Sample -> Sample -> Maybe Frame -> Vec 12 Sample
+ratClipHistNext hist _ Nothing = hist
+ratClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
+ where
+  (q0, q1, q2, q3) = os4xSubSamples (ratClipThreshold f) x1 (monoWet f)
 
 ratPostLowpassFrame :: Sample -> Frame -> Frame
 -- Global real-pedal pass: roll off more high-frequency content after the
