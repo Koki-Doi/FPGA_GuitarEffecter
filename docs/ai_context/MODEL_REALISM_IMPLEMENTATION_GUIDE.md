@@ -62,16 +62,26 @@ This does not affect the D79 timing baseline.
 ---
 
 (Design spec for all items follows. Items 4/5a are accepted as D79. **Item 3
-(resonant tone stacks) is now partially implemented as D81**: the Tube Screamer
-~720 Hz mid hump shipped as a pre-clip `tubeScreamerMidFrame` peaking biquad
-(direct-form-I, hand-designed f0=720 Hz / Q=0.8 / +6 dB, **Q14** coeffs via new
-`FixedPoint.mulS16` + `satShift14` — Q8/`mulS10` collapses the low-frequency DC
-gain, see below), five multiplies summed in parallel, pipeline-level
-`x1/x2/y1/y2` state, bit-exact bypass. Built / deployed / bench-accepted at
-island WNS -0.193 ns (better than D79), audio fabric +0.657 / 0 fail; no
-GPIO/API change. bit `3a79745f`. Remaining item-3 targets (Big Muff notch,
-amp stacks) and item 5b (Fuzz/amp sag) are still spec-only; reuse ONE shared
-biquad with per-model coefficient mux for the rest.)
+(resonant tone stacks) is now implemented for two targets:**
+- **D81 — Tube Screamer ~720 Hz mid hump:** pre-clip `tubeScreamerMidFrame`
+  peaking biquad (DF1, hand-designed f0=720 Hz / Q=0.8 / +6 dB, **Q14** coeffs
+  via new `FixedPoint.mulS16` + `satShift14` — Q8/`mulS10` collapses the
+  low-frequency DC gain), five multiplies in parallel, pipeline `x1/x2/y1/y2`,
+  bit-exact bypass. Island WNS -0.193 ns. bit `3a79745f`.
+- **D82 — Big Muff ~700 Hz mid-scoop notch:** post-clip peaking biquad with
+  negative gain (f0=700 Hz / Q=0.8 / -10 dB), between clip2 and the tone LPF.
+  **Pipeline-split (load-bearing):** the single-stage 5-mul form measured
+  -0.659 ns (biquad feedback near-critical, pressuring DS-1). An IIR feedback
+  loop CANNOT be naively pipelined; the fix precomputes the feedforward sum
+  `b0*x+b1*x1+b2*x2` into `fAcc3L` one stage earlier (`bigMuffScoopFeedforwardFrame`)
+  and closes the loop in `bigMuffScoopRecursiveFrame` with only `-a1*y1-a2*y2`
+  (shorter single-cycle feedback path, math identical) — recovered to -0.534 ns
+  with the biquad off the critical set. bit `ee295544`.
+
+Both bench-accepted, no GPIO/API change. Remaining item-3 target (Fender/Vox/
+Marshall amp stacks) and item 5b (Fuzz/amp sag) are still spec-only; for the amp
+stacks reuse ONE shared biquad with per-model coefficient mux + the D82
+feedforward/recursive split.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

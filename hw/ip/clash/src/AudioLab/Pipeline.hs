@@ -233,14 +233,33 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (ds1ToneFrame <$> ds1TonePrev) <*> ds1ClipPipe
   ds1LevelPipe = register Nothing (mapPipe ds1LevelFrame <$> ds1TonePipe)
 
-  -- big_muff (5 stages: pre, clip1, clip2, tone+state, level)
+  -- big_muff (7 stages: pre, clip1, clip2, mid-scoop feedforward, mid-scoop
+  -- recursive, tone+state, level). The ~700 Hz mid-scoop notch (realism item
+  -- 3, D82) sits post-clip so it carves the scoop out of the saturated signal
+  -- -- the Muff's defining tone-network shape a one-pole LPF cannot make. The
+  -- biquad is split: the feedforward stage precomputes b0*x+b1*x1+b2*x2 into
+  -- fAcc3L (no feedback, freely pipelined), the recursive stage closes the
+  -- loop with only -a1*y1-a2*y2 (shorter single-cycle feedback path; the
+  -- single-stage 5-mul form pressured the DS-1 P&R to WNS -0.659). x1/x2 are a
+  -- 2-tap delay of the feedforward input, y1/y2 a 2-tap delay of the recursive
+  -- output.
   bigMuffPrePipe = register Nothing (mapPipe bigMuffPreFrame <$> ds1LevelPipe)
   bigMuffClip1Pipe = register Nothing (mapPipe bigMuffClip1Frame <$> bigMuffPrePipe)
   bigMuffClip2Pipe = register Nothing (mapPipe bigMuffClip2Frame <$> bigMuffClip1Pipe)
+  bmScoopX1 = register 0 (delayNext <$> bmScoopX1 <*> (frameOr monoSample 0 <$> bigMuffClip2Pipe) <*> bigMuffClip2Pipe)
+  bmScoopX2 = register 0 (delayNext <$> bmScoopX2 <*> bmScoopX1 <*> bigMuffClip2Pipe)
+  bigMuffScoopFfPipe =
+    register Nothing $
+      mapPipe <$> (bigMuffScoopFeedforwardFrame <$> bmScoopX1 <*> bmScoopX2) <*> bigMuffClip2Pipe
+  bmScoopY1 = register 0 (frameOr monoSample <$> bmScoopY1 <*> bigMuffScoopRecPipe)
+  bmScoopY2 = register 0 (delayNext <$> bmScoopY2 <*> bmScoopY1 <*> bigMuffScoopRecPipe)
+  bigMuffScoopRecPipe =
+    register Nothing $
+      mapPipe <$> (bigMuffScoopRecursiveFrame <$> bmScoopY1 <*> bmScoopY2) <*> bigMuffScoopFfPipe
   bigMuffTonePrev = register 0 (frameOr monoEqHighLp <$> bigMuffTonePrev <*> bigMuffTonePipe)
   bigMuffTonePipe =
     register Nothing $
-      mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrev) <*> bigMuffClip2Pipe
+      mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrev) <*> bigMuffScoopRecPipe
   bigMuffLevelPipe = register Nothing (mapPipe bigMuffLevelFrame <$> bigMuffTonePipe)
 
   -- fuzz_face (4 stages: pre, asym clip, tone+state, level)
