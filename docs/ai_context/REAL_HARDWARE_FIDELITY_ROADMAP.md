@@ -185,12 +185,15 @@ and D86 power-amp sag (slow envelope drops the amp master gain on loud passages,
 recovers after; JC-120 excluded). Both **DSP-free** (envelope = abs/shift/
 compare; sag reuses the master multiply) and bench-accepted (island WNS
 -0.122 / -0.397 ns -- envelope-modulated params are timing-cheap on this
-island). **item 2 (oversampling) was investigated and deferred:** a DSP-free 2x
-(linear interp + short shift/add anti-alias) measured only ~-2.8 dB alias
-reduction in offline tests -- not worth a bitstream cycle. Real benefit needs
-4x and/or steep multi-tap FIRs with real multiplies (high DSP, the costliest
-item); revisit only with a dedicated headroom plan. Note item 1 (cab IR)
-partially addresses the same fizz via its sharp HF rolloff.
+island). **item 2 (oversampling) is in progress (D88):** the Metal MT-2 hard clip now
+runs **4x oversampled** (linear-interp upsample = shifts/adds, 4 hard clips,
+15-tap symmetric anti-alias decimation FIR, pipeline-split). Offline + bench
+confirm ~-12 dB inharmonic-fizz reduction. Investigation finding: DSP-free 2x
+~-2.8 dB and proper 2x plateaus ~-5.8 dB (>48 kHz harmonics still fold), so
+**4x is the worthwhile rate**. Island WNS -0.496 ns (worst path still DS-1, not
+the oversampler). **Extending to other hard-clip aliasers: RAT next, Big Muff
+after -- one model per phase** (each adds DSP + island placement pressure;
+there is a ceiling). DS-1 is excluded (it is the island critical path).
 
 **item 1 (cab IR) step A is done (D87):** an additive 15-tap symmetric
 speaker-rolloff FIR on the cab output (sharper >5 kHz rolloff, fizz reduction,

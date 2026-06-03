@@ -5441,3 +5441,47 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Cab.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-cab-speaker-fir`.
+
+## D88 — Oversampling (item 2 / R5): 4x oversampled hard clip on Metal MT-2
+
+- **Decision.** First oversampled nonlinearity. A static 48 kHz hard clip
+  folds its >Nyquist harmonics back as inharmonic "digital fizz"; run the
+  Metal (MT-2) clip at **4x** and steeply decimate to push those products out
+  before the fold. **Investigation first (offline):** DSP-free 2x gave only
+  ~-2.8 dB; proper 2x plateaus at ~-5.8 dB (>48 kHz harmonics still fold);
+  **4x reaches ~-12 dB** -- so 4x is the worthwhile rate. Metal was chosen as
+  the worst aliaser; **DS-1 was excluded** (it is the island critical path).
+- **Structure (DSP only in the decimation FIR).** Linear-interp upsample 4x
+  (the signal is already band-limited, so linear interp's images are
+  negligible -- offline-confirmed equal to a full anti-image FIR -- and the
+  0 / 1/4 / 1/2 / 3/4 weights are shifts/adds, no multiply) -> hard clip the 4
+  sub-samples -> **15-tap symmetric anti-alias decimation FIR** over the
+  192 kHz clipped stream (`os` coeffs `[-2,-3,-4,5,29,68,104,118,...]`, Q9
+  sum=512 = unity DC, -7.5 dB @ 24 kHz / -48 dB @ 48 kHz; folds to 8
+  multiplies). Clipped sub-sample history = `Vec 12 Sample` pipeline register;
+  `metalClipInPrev` = previous clip input for the interp.
+- **Pipeline split (load-bearing).** The 15-tap FIR is feedforward, so it
+  splits freely (D87 lesson): `metalClipProductsFrame` (current 4 clips +
+  history -> 8 folded products into 3 Wide partial sums) +
+  `metalClipMixFrame` (combine + satShift9). The folded pair `(a+b)*c` maps
+  onto the DSP48 pre-adder. Bit-exact bypass when the pedal is off.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `d4c250be87400649b7b1ebf037fcf314`, hwh `701067551c7399e6f96c888b7851cc59`.
+  Island (`clk_fpga_1`) **WNS -0.496 ns** / 81 fail -- the worst path is still
+  DS-1 (`ds1_31_reg`, CARRY4=27), NOT the oversampler (its paths are
+  near-critical but below DS-1); audio fabric (`clk_fpga_0`) **+0.385 ns / 0
+  fail**, WHS +0.022, THS 0. DSP **123** (+1 vs D87), BRAM 6. -0.496 = D79's
+  bench-clean baseline (well above the ~-0.7 bitcrusher boundary). No
+  GPIO/API/Frame change; Python golden tests unchanged. Deployed 5-site (board
+  md5 matched). Bench (Pmod mode 2): all_off clean / no bitcrusher, Metal
+  high-string/high-fret alias fizz audibly reduced, voicing preserved, other
+  pedals unchanged -- user-confirmed accepted. **D88 (`d4c250be`) is the new
+  accepted bitstream baseline, superseding D87** (`8a3754c1`, rollback in git
+  history + `/tmp/d87_backup`).
+- **Next.** Extend the same 4x oversampler to other hard-clip aliasers (RAT
+  next; Big Muff after) -- one model per phase (each adds DSP + island
+  placement pressure). DS-1 remains excluded (critical path) unless explicitly
+  approved.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-metal-oversample2x`.
