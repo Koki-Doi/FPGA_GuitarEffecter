@@ -99,11 +99,16 @@ substantially complete.**
   envelope (`fuzzFaceBiasEnvNext`, instant attack / ~43 ms release / reset-0 on
   bypass) drifts the clip knees -- soft = cleaner asymmetric Ge knees, hard =
   knees pull together (sputter). DSP-free (abs+shift+compare), bit-exact bypass.
-  Island WNS -0.122 ns (best of the run). bit `b2d8a41b`. **Part 2 = amp sag**
-  is the next phase: reuse the same envelope pattern after the 2nd amp gain
-  stage to scale power/master gain down on loud passages.
+  Island WNS -0.122 ns (best of the run). bit `b2d8a41b`.
+- **D86 — power-amp sag (part 2, item 5b complete):** a slow peak-follower of
+  the master-input level (`ampSagEnvNext`, ~170 ms release, reset-0 on bypass)
+  lowers the `ampMasterFrame` level on loud passages and recovers. **DSP-free**
+  -- reuses the existing master `mulU8` by dropping the level operand
+  (`sagByte = min(env bits 22..17, level>>1)`, bounded = no choke); JC-120
+  excluded (solid-state). Island WNS -0.397 ns. bit `1ab991c7`.
 
-item 1 (cab IR) and item 2 (oversampling) remain after item 5b.)
+**item 5b (dynamic behaviour) is complete.** item 1 (cab IR) and item 2
+(oversampling) remain -- both heavier; see the roadmap.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

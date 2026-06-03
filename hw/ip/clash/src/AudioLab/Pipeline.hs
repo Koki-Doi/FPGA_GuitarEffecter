@@ -326,7 +326,11 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (ampResPresenceFilterFrame <$> ampResPrev <*> ampPresencePrev) <*> ampPowerPipe
   ampResPresenceProductsPipe = register Nothing (mapPipe ampResPresenceProductsFrame <$> ampResPresenceFilterPipe)
   ampResPresencePipe = register Nothing (mapPipe ampResPresenceMixFrame <$> ampResPresenceProductsPipe)
-  ampMasterPipe = register Nothing (mapPipe ampMasterFrame <$> ampResPresencePipe)
+  -- Power-amp sag (item 5b part 2): a slow envelope of the master-input level
+  -- pulls the master gain down on loud passages (reuses the master multiply,
+  -- no new DSP; disabled for JC-120; resets to 0 on bypass).
+  ampSagEnv = register 0 (ampSagEnvNext <$> ampSagEnv <*> ampResPresencePipe)
+  ampMasterPipe = register Nothing (mapPipe <$> (ampMasterFrame <$> ampSagEnv) <*> ampResPresencePipe)
 
   cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampMasterPipe) <*> ampMasterPipe)
   cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampMasterPipe)

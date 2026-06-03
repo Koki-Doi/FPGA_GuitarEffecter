@@ -426,10 +426,38 @@ satShift9Wide = resize . satShift9
 satShift10Wide :: Wide -> Wide
 satShift10Wide = resize . satShift10
 
-ampMasterFrame :: Frame -> Frame
-ampMasterFrame f =
+-- Power-amp sag envelope (realism item 5b / R2, part 2). A slow peak-follower
+-- of the master-input level (same shape as the Compressor / NoiseSuppressor /
+-- Fuzz-bias envelopes: instant attack, slow linear release for the
+-- "recovers-after-the-transient" sag character, reset to 0 when the amp is
+-- off so bypass stays bit-exact). No multiply (abs + compare + subtract).
+ampSagReleaseStep :: Sample
+ampSagReleaseStep = 1024
+
+ampSagEnvNext :: Sample -> Maybe Frame -> Sample
+ampSagEnvNext env Nothing = env
+ampSagEnvNext env (Just f)
+  | not (flag6 (fGate f))     = 0
+  | level > env               = level
+  | env > ampSagReleaseStep   = env - ampSagReleaseStep
+  | otherwise                 = 0
+ where
+  level = abs24 (monoWet f)
+
+ampMasterFrame :: Sample -> Frame -> Frame
+ampMasterFrame env f =
   setMonoSample (if on then out else monoSample f) f
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) level))
+  idx = ampModelIdxF f
+  -- Power-amp sag: loud passages pull the master level down a touch, then it
+  -- recovers as the envelope releases. Bounded to at most half the level (no
+  -- choke) and DISABLED for JC-120 (idx 0, solid-state = stiff supply, no
+  -- sag). Reuses the existing master multiply -> no new DSP. sagRaw takes bits
+  -- 22..17 of the (non-negative) envelope = a 0..63 magnitude.
+  sagRaw = resize (unpack (slice d22 d17 (pack env)) :: Unsigned 6) :: Unsigned 8
+  sagCap = level `shiftR` 1
+  sagByte = if idx == 0 then 0 else min sagRaw sagCap
+  effLevel = level - sagByte
+  out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) effLevel))
