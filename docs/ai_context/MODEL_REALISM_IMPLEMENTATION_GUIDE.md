@@ -86,9 +86,14 @@ This does not affect the D79 timing baseline.
   idx 1, f0=400 Hz / Q=0.7 / -5 dB); models 2-5 flat = unity = byte-identical.
   Island WNS -0.381 ns (beat D82's -0.534 despite +5 DSP). bit `cef494cb`.
 
-All three bench-accepted, no GPIO/API change. **Remaining item-3 work: fill the
-AC30 chime + JCM800/Marshall mid coefficients into the SAME D83 amp-scoop mux**
-(coefficient-only, no new DSP). Item 5b (Fuzz/amp sag) still spec-only.)
+- **D84 — AC30 chime + JCM800 mid (coefficient-only):** filled idx 2 (Vox
+  chime, +4 dB @ 2200 Hz) and idx 4 (Marshall mid, +4 dB @ 650 Hz) into the
+  same D83 amp-scoop mux; Rockerverb/TriAmp stay flat. Island WNS -0.472 ns.
+  bit `dc030473`.
+
+All four bench-accepted, no GPIO/API change. **item 3 (resonant tone stacks) is
+substantially complete.** Item 5b (Fuzz/amp dynamic bias-sag) is the next phase
+(below); item 1 (cab IR) and item 2 (oversampling) remain after.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

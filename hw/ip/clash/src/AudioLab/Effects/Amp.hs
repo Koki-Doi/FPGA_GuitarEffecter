@@ -253,25 +253,31 @@ ampSecondStageFrame f =
 -- families that are defined by a resonant stack (Fender blackface mid scoop,
 -- Vox AC30 chime, Marshall mid) all sound similar. This ONE shared peaking
 -- biquad, with coefficients muxed by ampModelIdxF, adds that resonant shape.
--- This phase fills only the **Fender blackface mid scoop** (JC-120 idx 0 +
--- Twin Reverb idx 1; hand-designed f0 = 400 Hz, Q = 0.7, -5 dB, Q14 coeffs;
--- NOT a schematic table, D7/D45) and leaves the other models FLAT (b0 = 2^14,
--- rest 0 -> exact unity passthrough, byte-identical). Future phases fill the
--- AC30 / Marshall coefficients into the same mux -- do NOT instantiate a
--- second biquad (D58 lesson). Pipeline-split like D82 (feedforward precomputed
--- a stage earlier, recursive stage closes the loop with two multiplies) so the
--- single-cycle feedback path stays short on the timing-tight island.
+-- Filled families (all hand-designed target curves, NOT schematic tables,
+-- D7/D45): Fender blackface mid scoop (JC-120 idx 0 + Twin idx 1, -5 dB @
+-- 400 Hz, D83), Vox AC30 chime (idx 2, +4 dB @ 2200 Hz, D84), Marshall JCM800
+-- mid (idx 4, +4 dB @ 650 Hz, D84). Rockerverb (idx 3) and TriAmp (idx 5) stay
+-- FLAT (b0 = 2^14, rest 0 -> exact unity passthrough, byte-identical). All
+-- families share this ONE biquad via the coefficient mux -- do NOT instantiate
+-- a second biquad (D58 lesson). Pipeline-split like D82 (feedforward
+-- precomputed a stage earlier, recursive stage closes the loop with two
+-- multiplies) so the single-cycle feedback path stays short on the
+-- timing-tight island.
 ampScoopFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 ampScoopFeedforwardCoeffs idx = case idx of
-  0 -> (16044, -31169, 15169)   -- JC-120 : Fender-style clean scoop
-  1 -> (16044, -31169, 15169)   -- Twin   : blackface mid scoop
-  _ -> (16384, 0, 0)            -- others : flat (unity, b0 = 2^14)
+  0 -> (16044, -31169, 15169)   -- JC-120 : Fender-style clean scoop (-5 dB @ 400 Hz)
+  1 -> (16044, -31169, 15169)   -- Twin   : blackface mid scoop      (-5 dB @ 400 Hz)
+  2 -> (17355, -28234, 12091)   -- AC30   : Vox chime upper-mid peak  (+4 dB @ 2200 Hz)
+  4 -> (16772, -31328, 14670)   -- JCM800 : Marshall mid peak         (+4 dB @ 650 Hz)
+  _ -> (16384, 0, 0)            -- Rockerverb(3)/TriAmp(5) : flat (unity, b0 = 2^14)
 
 ampScoopFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 ampScoopFeedbackCoeffs idx = case idx of
   0 -> (-31169, 14828)
   1 -> (-31169, 14828)
-  _ -> (0, 0)                   -- others : flat (no feedback)
+  2 -> (-28234, 13062)
+  4 -> (-31328, 15057)
+  _ -> (0, 0)                   -- Rockerverb(3)/TriAmp(5) : flat (no feedback)
 
 ampToneScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 ampToneScoopFeedforwardFrame x1 x2 f =
