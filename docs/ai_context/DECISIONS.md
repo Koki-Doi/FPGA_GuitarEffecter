@@ -5395,3 +5395,49 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-amp-sag`.
+
+## D87 — Cab IR (item 1 / R4, step A): 15-tap symmetric speaker-rolloff FIR
+
+- **Decision.** First step toward a real cab IR. The cab's frequency response
+  is fundamentally set by a 4-tap FIR; add a longer linear FIR to sharpen the
+  >5 kHz rolloff (tame high-gain fizz, deepen model separation). To avoid
+  regressing the carefully-tuned **accepted D71 nonlinear cab core**
+  (cabProducts/Sat/Ir/LevelMix), the FIR is an **ADDITIVE post-stage** on the
+  cab output, not a rewrite of the core. (The full 128-256-tap BRAM
+  convolution is the planned **step B**, a separate phase.)
+- **Filter.** 15-tap symmetric linear-phase FIR, per-model coefficients
+  hand-designed from a magnitude target (lowpass + gentle presence,
+  inverse-FFT; sum = 256 = unity DC; NOT a captured commercial IR, D7): open
+  1x12 brightest (~-5.7 dB @ 8 kHz), british 2x12 mid (~-9.3 dB), closed 4x12
+  darkest/sharpest (~-11.8 dB @ 8 kHz, -26 dB @ 12 kHz). Symmetric -> folds to
+  8 multiplies; the folded pair `(a+b)*c` maps onto the DSP48 pre-adder.
+  Bit-exact bypass when the cab is off. The AIR knob keeps its existing cab
+  role (coeffs are not switched by AIR in this FIR).
+- **Pipeline split (load-bearing).** A single-cycle 15-tap sum was too deep for
+  the 50 MHz island: it measured **WNS -1.106 ns** with the FIR itself the
+  critical path (`cabSpk` 96x in the worst-100). A FIR is **feedforward**, so it
+  pipelines freely (unlike the D82 biquad feedback): split into
+  `cabSpeakerFirProductsFrame` (all 8 products from ONE history snapshot ->
+  three Wide partial sums in fAccL/fAcc2L/fAcc3L) + `cabSpeakerFirMixFrame`
+  (combine + satShift8). That moved the FIR off the critical set (`cabSpk` 0x
+  in the worst-100; DS-1 is the worst path again) and recovered WNS to
+  **-0.476 ns**. The 14-deep output history is a `Vec 14 Sample` shift register
+  (`cabSpeakerFirHistNext`, shifts on active frames).
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `8a3754c1f8cef9864c1b5e61eee289aa`, hwh `a14e788ded059adf824ac70198c5cbff`.
+  Island (`clk_fpga_1`) **WNS -0.476 ns** / 65 fail (all DS-1), audio fabric
+  (`clk_fpga_0`) **+0.449 ns / 0 fail**, WHS +0.051, THS 0. DSP **122** (+16
+  vs D86's 106), BRAM 6. In the accepted-clean band (≈ D82 -0.534 / D79
+  -0.496). No GPIO/API/Frame change; Python golden tests unchanged. Deployed
+  5-site (board md5 matched). Bench (Pmod mode 2): all_off clean / no
+  bitcrusher, cab high-gain fizz reduced + model HF separation clearer, cab
+  off + other effects unchanged -- user-confirmed accepted. **D87
+  (`8a3754c1`) is the new accepted bitstream baseline, superseding D86**
+  (`1ab991c7`, rollback in git history + `/tmp/d86_backup`).
+- **Lesson / step B note.** Feedforward FIRs pipeline freely (split the
+  product/sum across stages); only IIR feedback loops are constrained to one
+  cycle. step B (the real 128-256-tap IR) needs the time-multiplexed MAC +
+  BRAM + handshake gating -- a dedicated structural phase.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Cab.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-cab-speaker-fir`.

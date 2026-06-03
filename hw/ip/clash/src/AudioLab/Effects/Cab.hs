@@ -174,3 +174,58 @@ cabLevelMixFrame f =
   level = ctrlB (fCab f)
   wet = satShift7 (mulU8 (monoWet f) level)
   mixed = satShift8 (mulU8 (monoSample f) invMix + mulU8 wet mix)
+
+-- 15-tap symmetric linear-phase speaker-rolloff FIR (realism item 1 / R4,
+-- step A). An ADDITIVE post-stage on the cab output that sharpens the >5 kHz
+-- rolloff (tames high-gain fizz, deepens per-model separation) WITHOUT
+-- touching the accepted D71 nonlinear cab core (cabProductsFrame / cabSat /
+-- cabIr / cabLevelMix all unchanged). Coefficients are hand-designed per
+-- model (lowpass + gentle presence, inverse-FFT of a magnitude target; sum =
+-- 256 => unity DC; NOT a captured commercial IR, D7). Symmetric, so it folds
+-- to 8 mulS10. `hist` = [x[n-1] .. x[n-14]] (cab output history). Bit-exact
+-- bypass when the cab is off. The full 128-256-tap BRAM convolution (the real
+-- IR) is the planned step B; this short FIR is the low-risk first step.
+--
+-- Per-model magnitude (designed): open 1x12 brightest (~-5.7 dB @ 8 kHz),
+-- british 2x12 mid (~-9.3 dB), closed 4x12 darkest/sharpest (~-11.8 dB @
+-- 8 kHz, -26 dB @ 12 kHz).
+cabSpeakerFirCoeff :: Unsigned 8 -> Vec 8 (Signed 10)
+cabSpeakerFirCoeff model = case model `shiftR` 6 of
+  0 -> 0 :> 0 :> (-1) :> (-2) :> 2 :> 20 :> 62 :> 94 :> Nil       -- open 1x12
+  1 -> 0 :> (-1) :> (-2) :> 0 :> 8 :> 27 :> 57 :> 78 :> Nil       -- british 2x12
+  _ -> 0 :> (-1) :> (-2) :> 1 :> 11 :> 30 :> 55 :> 68 :> Nil      -- closed 4x12
+
+-- The FIR is split into two pipeline stages (it is feedforward, so it
+-- pipelines freely -- unlike the biquads' feedback). A single combinational
+-- 15-tap sum was too deep for the 50 MHz island (WNS -1.1 ns). Stage 1
+-- computes all 8 folded products from ONE history snapshot into three Wide
+-- partial sums (fAccL/fAcc2L/fAcc3L); stage 2 combines + scales. The folded
+-- pair sum (a+b)*c maps onto the DSP48 pre-adder, so each pair is one DSP.
+cabSpeakerFirProductsFrame :: Vec 14 Sample -> Frame -> Frame
+cabSpeakerFirProductsFrame hist f =
+  f { fAccL = if on then p0 else 0, fAccR = 0
+    , fAcc2L = if on then p1 else 0, fAcc2R = 0
+    , fAcc3L = if on then p2 else 0, fAcc3R = 0 }
+ where
+  on = flag7 (fGate f)
+  x = monoSample f
+  c = cabSpeakerFirCoeff (ctrlC (fCab f))
+  pairMul a b g = (resize a + resize b :: Wide) * resize g
+  p0 = pairMul x          (hist !! 13) (c !! 0)
+         + pairMul (hist !! 0) (hist !! 12) (c !! 1)
+         + pairMul (hist !! 1) (hist !! 11) (c !! 2)
+  p1 = pairMul (hist !! 2) (hist !! 10) (c !! 3)
+         + pairMul (hist !! 3) (hist !! 9)  (c !! 4)
+         + pairMul (hist !! 4) (hist !! 8)  (c !! 5)
+  p2 = pairMul (hist !! 5) (hist !! 7)  (c !! 6)
+         + (resize (hist !! 6) * resize (c !! 7) :: Wide)
+
+cabSpeakerFirMixFrame :: Frame -> Frame
+cabSpeakerFirMixFrame f =
+  setMonoSample (if on then satShift8 (fAccL f + fAcc2L f + fAcc3L f) else monoSample f) f
+ where
+  on = flag7 (fGate f)
+
+cabSpeakerFirHistNext :: Vec 14 Sample -> Maybe Frame -> Vec 14 Sample
+cabSpeakerFirHistNext hist Nothing = hist
+cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist

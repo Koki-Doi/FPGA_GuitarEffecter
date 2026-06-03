@@ -107,8 +107,20 @@ substantially complete.**
   (`sagByte = min(env bits 22..17, level>>1)`, bounded = no choke); JC-120
   excluded (solid-state). Island WNS -0.397 ns. bit `1ab991c7`.
 
-**item 5b (dynamic behaviour) is complete.** item 1 (cab IR) and item 2
-(oversampling) remain -- both heavier; see the roadmap.)
+**item 5b (dynamic behaviour) is complete.**
+
+**item 1 (cab IR) step A is done (D87):** an additive 15-tap symmetric
+linear-phase speaker-rolloff FIR on the cab output (sharper >5 kHz rolloff,
+fizz reduction, model HF separation), per-model hand-designed coeffs, folded to
+8 mulS10. A FIR is feedforward so it pipelines freely -- the single-cycle
+15-tap sum blew timing to -1.1 ns (FIR = critical path); splitting into a
+products stage (8 products from one history snapshot -> 3 Wide partial sums)
+and a mix stage recovered to -0.476 ns. Does NOT touch the accepted D71
+nonlinear cab core. bit `8a3754c1`. **step B = the real 128-256-tap MAC
+convolution** (time-mux MAC + BRAM + handshake) remains the next phase.
+
+**item 2 (oversampling) investigated + deferred:** a DSP-free 2x gave only
+~-2.8 dB alias reduction offline; real benefit needs 4x + steep DSP filters.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),
