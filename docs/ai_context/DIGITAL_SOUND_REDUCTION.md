@@ -33,8 +33,16 @@ cost, and current status of each. Read with `MODEL_REALISM_GAP_ANALYSIS.md`
 - Dynamic behaviour: Fuzz Face level-dependent bias (D85), power-amp sag (D86).
 - Cab speaker-rolloff FIR step A (D87) — sharper >5 kHz rolloff, but the cab is
   still fundamentally a 4-tap response.
-- The DSP island was lowered to **40 MHz (D89)** to fit the above; it is now
-  near-full (D90 island WNS -0.036 ns).
+- Per-model resonant tone biquads extended to the **dedicated Overdrive** stage
+  (D92): TS9 +6 dB @ 720 Hz, BD-2 +3 dB @ 1500 Hz (item 5 below, partly done).
+  D92 also gave JC-120 a true clean channel (clip bypass), refined the Klon
+  wet/clean blend, and deepened AC30 class-A sag.
+- The DSP island was lowered to **40 MHz (D89)** to fit the above. **It is no
+  longer at the D90 -0.036 ns edge: after D92 the island measured WNS +0.155 ns
+  / 0 fail and the whole design meets timing** (the +5-DSP OD biquad routed
+  upstream of DS-1 and the JC-120 clean mux relieved idx-0 clip pressure). There
+  is now a small positive margin, but **not enough for the big items below** (cab
+  IR step B, amp oversampling) -- those still want the 33 MHz headroom phase.
 
 ## Ranked causes still contributing, with methods
 
@@ -102,7 +110,40 @@ cost, and current status of each. Read with `MODEL_REALISM_GAP_ANALYSIS.md`
   honk, etc.).
 - **Cost / risk.** Medium (DSP per biquad, but one shared biquad + coeff mux is
   bounded). Headroom-aware.
-- **Status.** Partially done; extend to the Overdrive models.
+- **Status.** Partially done; **the dedicated Overdrive now has the shared
+  per-model biquad (D92, TS9 + BD-2 filled, others flat)** -- remaining work is
+  filling OCD honk / OD-1 / Jan Ray coefficients into the same mux (coefficient-
+  only, ~0 extra DSP).
+
+## Cheap headroom-free interims (ship before the 33 MHz phase)
+
+Two low-cost moves that attack the same two facets (harshness, fizzy top)
+*without* needing the island headroom phase, as a partial fix while the big
+oversampling/cab items wait:
+
+### A. Pre/de-emphasis around the Amp clips  [cheap anti-alias, no oversampler]
+
+- **Idea.** Most clip aliasing comes from *high-frequency input content* folding
+  back. Attenuate HF *into* the clipper (pre-emphasis cut), clip, then restore HF
+  after (complementary de-emphasis). Fewer high harmonics are generated above
+  Nyquist, so less folds back -- a fraction of the benefit of true 4x
+  oversampling for a fraction of the cost (two one-pole filters per clip vs an
+  upsampler + decimation FIR). NOT transparent (it reshapes the clip's harmonic
+  balance), so it must be voiced, but it can be applied to the always-on amp
+  clips *now*. The D87 cab FIR already darkens the top *when the cab is on*; this
+  works at the clip itself and helps cab-off patches too.
+- **Cost.** ~0 new DSP (one-pole `onePoleU8` filters reuse adders). Headroom-free.
+- **Risk.** Voicing only; bit-exact bypass preserved by gating on the amp enable.
+
+### B. Output "analog" HF shelf  [global de-fizz]
+
+- **Idea.** Real analog gear is never brick-wall flat to 20 kHz; a gentle
+  musical HF rolloff/shelf removes the sterile fizzy top that reads as digital.
+  Add one mild high-shelf (or 2nd-order rolloff) on the final output (post-EQ /
+  pre-reverb-out), always-on, subtle. A poor-man's stand-in until full
+  oversampling + real cab land; helps every patch including cab-off.
+- **Cost.** One biquad (~5 DSP) OR a one-pole shelf (~0 DSP) on the output.
+- **Risk.** Low; keep it subtle so it does not dull genuinely bright patches.
 
 ### 6. Front-end: line input, not a Hi-Z guitar input  [MEDIUM — hardware, not DSP]
 
@@ -146,16 +187,28 @@ island, which is **full at 40 MHz** (D90 WNS -0.036 ns). Before any of them:
 
 ## Recommended sequence (impact per effort, headroom-aware)
 
-1. **Item 0 — island 40 -> 33 MHz** headroom phase (cheap tcl change, big
-   unlock). Bench: pitch correct, all effects clean.
-2. **Item 1 — real cab IR (step B)** — the biggest single "less digital" win.
-3. **Item 2 — oversample the Amp waveshapers** — broad win (amp is everywhere).
+Order it as two facets: **harshness/fizz = aliasing** (the AMP is the most
+pervasive offender, on in nearly every patch) and **fake/boxy = the 4-tap cab**.
+The single highest-leverage *DSP* next move is amp aliasing, because the amp is
+everywhere; the real cab IR is the biggest *realism* jump. They are complementary.
+
+0. **Cheap interims first (no headroom needed):** pre/de-emphasis around the amp
+   clips (A) and a subtle output HF shelf (B). Ship these before the 33 MHz phase
+   to take the fizzy edge off immediately. Also confirm the **front-end Hi-Z
+   buffer** (item 6) is in place -- a passive guitar into the Pmod line input may
+   be a large part of the "thin/digital" impression and no DSP fixes it.
+1. **Item 0 — island 40 -> 33 MHz** headroom phase (cheap tcl change, proven-safe
+   like the D89 50->40 step; big unlock). Bench: pitch correct, all effects clean.
+2. **Item 2 — oversample the Amp waveshapers** — broadest "less harsh" win (amp
+   is in every patch); do this BEFORE the cab so the cab is not masking amp fizz.
+3. **Item 1 — real cab IR (step B)** — the biggest single "more real / in the
+   room" win (128-256-tap time-mux MAC).
 4. **Item 3 — oversample the remaining clips** (OD high-gain, DS-1).
 5. **Item 4 — more dynamic behaviour** (cheap envelope extensions) — interleave
    anytime; DSP-free.
-6. **Item 5 — per-model Overdrive tone biquads** — fixes "samey".
-7. **Item 6 — front-end Hi-Z buffer** — operational, do in parallel; it may
-   account for a surprising amount of the "thin/digital" impression.
+6. **Item 5 — fill remaining per-model Overdrive tone biquads** (OCD/OD-1/Jan
+   Ray coeffs into the D92 mux) — fixes "samey"; coefficient-only.
+7. **Item 6 — front-end Hi-Z buffer** — operational, do in parallel.
 
 Every DSP item is its own bitstream + WNS-vs-baseline + bench-audio gate. The
 D74/D78 history stands: static timing passing is necessary but never sufficient
