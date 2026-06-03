@@ -247,6 +247,50 @@ ampSecondStageFrame f =
   -- touch-sensitive by halving the per-model intensity.
   intensity = ampCharForModel idx `shiftR` 1
 
+-- Per-amp-family resonant tone-stack biquad (realism item 3 / R3, D83).
+-- The existing 3-band difference EQ (ampToneFilterFrame / ampToneBandFrame
+-- below) can tilt the bands but cannot make a resonant scoop/peak, so amp
+-- families that are defined by a resonant stack (Fender blackface mid scoop,
+-- Vox AC30 chime, Marshall mid) all sound similar. This ONE shared peaking
+-- biquad, with coefficients muxed by ampModelIdxF, adds that resonant shape.
+-- This phase fills only the **Fender blackface mid scoop** (JC-120 idx 0 +
+-- Twin Reverb idx 1; hand-designed f0 = 400 Hz, Q = 0.7, -5 dB, Q14 coeffs;
+-- NOT a schematic table, D7/D45) and leaves the other models FLAT (b0 = 2^14,
+-- rest 0 -> exact unity passthrough, byte-identical). Future phases fill the
+-- AC30 / Marshall coefficients into the same mux -- do NOT instantiate a
+-- second biquad (D58 lesson). Pipeline-split like D82 (feedforward precomputed
+-- a stage earlier, recursive stage closes the loop with two multiplies) so the
+-- single-cycle feedback path stays short on the timing-tight island.
+ampScoopFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
+ampScoopFeedforwardCoeffs idx = case idx of
+  0 -> (16044, -31169, 15169)   -- JC-120 : Fender-style clean scoop
+  1 -> (16044, -31169, 15169)   -- Twin   : blackface mid scoop
+  _ -> (16384, 0, 0)            -- others : flat (unity, b0 = 2^14)
+
+ampScoopFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
+ampScoopFeedbackCoeffs idx = case idx of
+  0 -> (-31169, 14828)
+  1 -> (-31169, 14828)
+  _ -> (0, 0)                   -- others : flat (no feedback)
+
+ampToneScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
+ampToneScoopFeedforwardFrame x1 x2 f =
+  setMonoAcc (if on then ff else 0) f
+ where
+  on = flag6 (fGate f)
+  (b0, b1, b2) = ampScoopFeedforwardCoeffs (ampModelIdxF f)
+  x = monoWet f
+  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
+
+ampToneScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
+ampToneScoopRecursiveFrame y1 y2 f =
+  setMonoWet (if on then y else monoWet f) f
+ where
+  on = flag6 (fGate f)
+  (a1, a2) = ampScoopFeedbackCoeffs (ampModelIdxF f)
+  -- fAccL already holds the feedforward sum; y = satShift14(FF - a1*y1 - a2*y2).
+  y = satShift14 (fAccL f - mulS16 y1 a1 - mulS16 y2 a2)
+
 ampToneFilterFrame :: Sample -> Sample -> Frame -> Frame
 ampToneFilterFrame prevLow prevHighLp f =
   f

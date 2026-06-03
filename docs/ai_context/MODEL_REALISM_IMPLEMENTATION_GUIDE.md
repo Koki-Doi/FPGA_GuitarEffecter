@@ -78,10 +78,17 @@ This does not affect the D79 timing baseline.
   (shorter single-cycle feedback path, math identical) — recovered to -0.534 ns
   with the biquad off the critical set. bit `ee295544`.
 
-Both bench-accepted, no GPIO/API change. Remaining item-3 target (Fender/Vox/
-Marshall amp stacks) and item 5b (Fuzz/amp sag) are still spec-only; for the amp
-stacks reuse ONE shared biquad with per-model coefficient mux + the D82
-feedforward/recursive split.)
+- **D83 — amp-stack shared biquad, Fender blackface mid scoop:** ONE shared
+  peaking biquad in the amp tone path (between `ampStage2Pipe` and
+  `ampToneFilterPipe`, on `monoWet`), coefficients muxed by `ampModelIdxF`
+  (`ampScoopFeedforwardCoeffs`/`ampScoopFeedbackCoeffs`), reusing the D82
+  feedforward/recursive split. Filled the Fender scoop (JC-120 idx 0 + Twin
+  idx 1, f0=400 Hz / Q=0.7 / -5 dB); models 2-5 flat = unity = byte-identical.
+  Island WNS -0.381 ns (beat D82's -0.534 despite +5 DSP). bit `cef494cb`.
+
+All three bench-accepted, no GPIO/API change. **Remaining item-3 work: fill the
+AC30 chime + JCM800/Marshall mid coefficients into the SAME D83 amp-scoop mux**
+(coefficient-only, no new DSP). Item 5b (Fuzz/amp sag) still spec-only.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

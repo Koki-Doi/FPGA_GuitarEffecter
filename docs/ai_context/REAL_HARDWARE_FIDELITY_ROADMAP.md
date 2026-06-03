@@ -167,11 +167,18 @@ transfer function); when the single-stage 5-multiply form pressured the DS-1
 P&R (-0.659 ns), the fix was to precompute the FEEDFORWARD sum
 (`b0*x+b1*x1+b2*x2`) one stage earlier and close the loop in the recursive stage
 with only `-a1*y1-a2*y2` (recovered to -0.534 ns, biquad off the critical set).
-Remaining R3 target: **Fender/Vox/Marshall amp stacks** -- reuse ONE shared
-biquad with per-model coefficient mux (do NOT instantiate one biquad per model,
-D58 lesson) and reuse the D82 feedforward/recursive split. Note each added
-biquad costs ~+5 DSP and ~-0.3 ns of DS-1 island slack from placement pressure;
-budget against the baseline before the amp-stack phase.
+**D83 started the amp-stack family work**: ONE shared peaking biquad in the amp
+tone path with coefficients muxed by `ampModelIdxF`
+(`ampScoopFeedforwardCoeffs`/`ampScoopFeedbackCoeffs`), reusing the D82 split.
+This phase filled the Fender blackface mid scoop (JC-120 + Twin, ~400 Hz,
+-5 dB); models 2-5 use flat coeffs (exact unity = byte-identical). Island WNS
+-0.381 ns -- the +5 DSP did NOT bust the budget (it actually beat D82's -0.534;
+the per-biquad cost estimate is P&R-variable, not a fixed -0.3 ns).
+**Remaining R3 work: fill the AC30 chime (upper-mid peak) and JCM800/Marshall
+mid (mid peak) coefficients into the SAME amp-scoop mux** -- coefficient-only,
+no new DSP, timing essentially unchanged (a coeff change still needs a build +
+bench). After that, item 3 is essentially complete; item 5b (Fuzz/amp sag),
+item 1 (cab IR), and item 2 (oversampling) remain.
 
 Recommended start:
 

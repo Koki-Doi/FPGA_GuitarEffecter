@@ -5237,3 +5237,46 @@ pre-existing 3 failures + 1 error baseline.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-bigmuff-notch`.
+
+## D83 — Resonant tone stack (item 3 / R3): shared amp tone-stack biquad, Fender blackface mid scoop
+
+- **Decision.** Third R3 biquad and the start of the **amp-stack** family work.
+  The amp tone section is a 3-band difference EQ (`ampToneFilterFrame` /
+  `ampToneBandFrame`) that can tilt bands but cannot make the resonant
+  scoop/peak that *is* each amp family's identity. Add **ONE shared peaking
+  biquad** in the amp tone path whose coefficients are **muxed by
+  `ampModelIdxF`** -- do NOT instantiate a biquad per model (D58 lesson). This
+  phase fills only the **Fender blackface mid scoop**; future phases add the
+  AC30 / Marshall coefficients into the same mux (no new DSP).
+- **Coefficients (this phase).** JC-120 (idx 0) and Twin Reverb (idx 1) get a
+  hand-designed mid scoop (f0 = 400 Hz, Q = 0.7, -5 dB; NOT a schematic table,
+  D7/D45; Q14 b0=16044 b1=-31169 b2=15169, a1=-31169 a2=14828; verified notch
+  -5.00 dB @ 400 Hz, pole 0.951 stable, +0.2 dB DC error from Q14 rounding at
+  this low f0 -- inaudible). Models 2-5 use **flat coefficients** (b0 = 2^14,
+  rest 0) = exact unity passthrough, so AC30 / Rockerverb / JCM800 / TriAmp are
+  **byte-identical**.
+- **Placement / structure.** New stages between `ampStage2Pipe` and
+  `ampToneFilterPipe`, operating on `monoWet` (the amp signal). Reuses the D82
+  **feedforward/recursive split** (feedforward sum into `fAccL` one stage
+  earlier, recursive stage closes the loop with two multiplies) so the
+  single-cycle feedback path stays short. No GPIO/API/Frame change; Python
+  golden tests unchanged.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `cef494cb409e9a323b70659827d6c49c`, hwh `82d2e14f21fb56b9bc62f247356a0d21`.
+  Island (`clk_fpga_1`) **WNS -0.381 ns** / 52 fail (all DS-1; `scoop` 0x in
+  the worst-100, biquad off the critical set via the split), audio fabric
+  (`clk_fpga_0`) **+0.453 ns / 0 fail**, WHS +0.014, THS 0. DSP 105 (+5 over
+  D82's 100), BRAM 6, LUT 22082, FF 24811. **Better than D82 (-0.534) despite
+  +5 DSP** -- P&R + phys_opt landed favorably; the earlier worry that a third
+  biquad would bust the budget did not hold. Deployed 5-site (board md5
+  matched). Bench (Pmod mode 2): all_off clean / no bitcrusher, Twin + JC-120
+  mid scoop audible, amps 2-5 unchanged, other effects unchanged --
+  user-confirmed accepted. **D83 (`cef494cb`) is the new accepted bitstream
+  baseline, superseding D82** (`ee295544`, rollback in git history +
+  `/tmp/d82_backup`).
+- **Next.** Fill AC30 chime (upper-mid peak) and JCM800/Marshall mid (mid peak)
+  coefficients into the SAME `ampScoopFeedforwardCoeffs`/`ampScoopFeedbackCoeffs`
+  mux -- coefficient-only, no new DSP, timing essentially unchanged.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-amp-fender-scoop`.
