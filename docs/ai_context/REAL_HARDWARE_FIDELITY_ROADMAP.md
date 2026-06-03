@@ -185,10 +185,23 @@ and D86 power-amp sag (slow envelope drops the amp master gain on loud passages,
 recovers after; JC-120 excluded). Both **DSP-free** (envelope = abs/shift/
 compare; sag reuses the master multiply) and bench-accepted (island WNS
 -0.122 / -0.397 ns -- envelope-modulated params are timing-cheap on this
-island). **Remaining realism: item 1 (cab IR) and item 2 (oversampling)** --
-both heavier DSP/structural; the island is healthy (~-0.4 ns) but these need
-their own timing-headroom plan. R0 (full reference capture, no bitstream) is
-also still pending and would make further tuning objective.
+island). **item 2 (oversampling) was investigated and deferred:** a DSP-free 2x
+(linear interp + short shift/add anti-alias) measured only ~-2.8 dB alias
+reduction in offline tests -- not worth a bitstream cycle. Real benefit needs
+4x and/or steep multi-tap FIRs with real multiplies (high DSP, the costliest
+item); revisit only with a dedicated headroom plan. Note item 1 (cab IR)
+partially addresses the same fizz via its sharp HF rolloff.
+
+**item 1 (cab IR) step A is done (D87):** an additive 15-tap symmetric
+speaker-rolloff FIR on the cab output (sharper >5 kHz rolloff, fizz reduction,
+model separation), pipeline-split into products + mix stages (a FIR is
+feedforward -> splits freely; a single-cycle 15-tap sum blew timing to -1.1 ns,
+the split recovered to -0.476 ns). Does NOT touch the accepted D71 nonlinear
+cab core. **step B = the real 128-256-tap BRAM convolution** (time-mux MAC +
+circular history BRAM + handshake gating, interacting with the D75 acceptReady
+rule) -- the biggest cab realism gain, a dedicated structural phase, still
+pending. R0 (full reference capture, no bitstream) also still pending and
+would make further tuning objective.
 
 Recommended start:
 

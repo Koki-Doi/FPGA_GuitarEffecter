@@ -342,11 +342,21 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
 
+  -- 15-tap symmetric speaker-rolloff FIR (realism item 1, step A): an additive
+  -- post-stage on the cab output. cabSpkHist holds the 14-deep output history
+  -- (shifted on active frames); the FIR folds to 8 mulS10. Bit-exact bypass
+  -- when the cab is off. Does not touch the accepted D71 nonlinear cab core.
+  cabSpkHist = register (repeat 0) (cabSpeakerFirHistNext <$> cabSpkHist <*> cabMixPipe)
+  cabSpkProductsPipe =
+    register Nothing $
+      mapPipe <$> (cabSpeakerFirProductsFrame <$> cabSpkHist) <*> cabMixPipe
+  cabSpkFirPipe = register Nothing (mapPipe cabSpeakerFirMixFrame <$> cabSpkProductsPipe)
+
   eqLowPrev = register 0 (frameOr monoEqLow <$> eqLowPrev <*> eqFilterPipe)
   eqHighPrev = register 0 (frameOr monoEqHighLp <$> eqHighPrev <*> eqFilterPipe)
   eqFilterPipe =
     register Nothing $
-      mapPipe <$> (eqFilterFrame <$> eqLowPrev <*> eqHighPrev) <*> cabMixPipe
+      mapPipe <$> (eqFilterFrame <$> eqLowPrev <*> eqHighPrev) <*> cabSpkFirPipe
   eqBandPipe = register Nothing (mapPipe eqBandFrame <$> eqFilterPipe)
   eqProductsPipe = register Nothing (mapPipe eqProductsFrame <$> eqBandPipe)
   eqMixPipe = register Nothing (mapPipe eqMixFrame <$> eqProductsPipe)
