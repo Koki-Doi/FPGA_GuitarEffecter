@@ -132,9 +132,12 @@ WNS -0.496 ns (D88, Metal only). bit `d4c250be`. **D89 added RAT** (shared
 whole design meets timing (first since D72)**. The island clock is the only
 FCLK_CLK1 consumer / 1 sample-per-cycle / frequency-independent, so it can be
 lowered further (33 MHz) for more headroom; pitch is set by the I2S/Pmod clock,
-not this one. **Big Muff next** -- but its soft-clip *cascade* (clip1 -> *208
--> clip2) needs a soft-clip sub-sample variant, not the hard-clip
-`os4xSubSamples`.)
+not this one. **Big Muff done (D90)** -- its soft-clip *cascade* (clip1 -> *208
+-> clip2) uses `bigMuffOsCascade` per sub-sample. **Lesson:** the cascade
+(2 clips + a mul) + the FIR (a mul) in one stage = two muls in series =
+-6.244 ns; isolate the cascade in the history-update path (no FIR after) and
+read all FIR taps from history -> -0.036 ns. Metal+RAT+Big Muff all 4x
+oversampled; the island (40 MHz) is now near-full, a 4th needs 33 MHz.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

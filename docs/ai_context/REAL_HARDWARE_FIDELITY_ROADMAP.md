@@ -197,9 +197,13 @@ a 25 ns budget. Result: **island WNS +1.846 ns, the whole design meets timing
 (first time since D72)**, with Metal + RAT both 4x oversampled. The island now
 has ample headroom, so further oversamplers (Big Muff, even DS-1) and DSP fit;
 33 MHz is the next step down if ever needed. The oversampler is now a shared
-helper (`os4x*`) reused per model. RAT done (D89); **Big Muff next** (its
-soft-clip cascade needs a soft-clip sub-sample variant, not the hard-clip
-`os4xSubSamples`).
+helper (`os4x*`) reused per model. RAT done (D89); **Big Muff done (D90)** -- its
+soft-clip cascade uses a soft-clip sub-sample variant (`bigMuffOsCascade`),
+with the deep cascade isolated in the history-update path (cascade + FIR in one
+stage blew timing to -6.244 ns; separating them recovered to -0.036 ns).
+**Metal + RAT + Big Muff are all 4x oversampled.** The 3rd oversampler used most
+of the 40 MHz headroom (island now -0.036 ns); a 4th (DS-1) would need the 33 MHz
+island step.
 
 **item 1 (cab IR) step A is done (D87):** an additive 15-tap symmetric
 speaker-rolloff FIR on the cab output (sharper >5 kHz rolloff, fizz reduction,
