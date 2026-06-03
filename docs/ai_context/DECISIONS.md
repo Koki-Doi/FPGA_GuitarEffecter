@@ -5190,3 +5190,50 @@ pre-existing 3 failures + 1 error baseline.
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch
   `feature/realism-tone-stack-biquad`.
+
+## D82 — Resonant tone stack (item 3 / R3): Big Muff ~700 Hz mid-scoop notch biquad (pipeline-split)
+
+- **Decision.** Second R3 resonant biquad: the Big Muff's defining **mid-scoop
+  notch**. A one-pole LPF (the existing `bigMuffToneFrame`) can only darken; a
+  peaking biquad with negative gain carves the scoop. Single pedal, single
+  biquad (no per-model mux yet).
+- **Placement.** New stages between Big Muff clip2 and the tone LPF
+  (`bigMuffClip2Pipe -> scoop -> bigMuffTonePipe`). Post-clip so the scoop is
+  carved out of the saturated signal. Added, not a replacement; the dark tone
+  LPF stays.
+- **Filter.** Direct-form-I peaking biquad, hand-designed target (f0 = 700 Hz,
+  fs = 48 kHz, Q = 0.8, **-10 dB** dip; NOT a schematic table, D7/D45). Q14
+  coeffs (b0=15350 b1=-29618 b2=14393, a1=-29618 a2=13359) via the D81
+  `mulS16`/`satShift14`. Verified: DC -0.00 dB, notch -10.00 dB @ 700 Hz,
+  Nyquist 0 dB, pole radius 0.903 stable. No GPIO/API/Frame change; only Big
+  Muff voicing changes, all other pedals byte-identical, Python golden tests
+  unchanged.
+- **Timing — pipeline split (load-bearing).** The single-stage 5-multiply form
+  measured island WNS **-0.659 ns** (74 fail, biquad feedback path near-critical
+  and pressuring the DS-1 P&R; `scoop` appeared 62x in the worst-100). An IIR
+  feedback loop **cannot be naively pipelined** (it changes the transfer
+  function), so the fix splits the biquad: a **feedforward** stage precomputes
+  `b0*x + b1*x1 + b2*x2` into `fAcc3L` (no feedback, freely pipelined), and a
+  **recursive** stage closes the loop with only `-a1*y1 - a2*y2` (two multiplies,
+  shorter single-cycle feedback path). Math is identical (same coefficients /
+  response). Result: island WNS **-0.534 ns** / 56 fail, TNS -17.195 (from
+  -27.887), **`scoop` 0x in the worst-100** (biquad off the critical set; the
+  worst path is pure DS-1). The residual -0.534 vs D81 -0.193 is the cost of
+  +5 DSP placement pressure on the DS-1 path, not the biquad itself.
+- **Built, deployed, bench-accepted.** bit md5
+  `ee295544e2e2caf22d5a3904aea045a1`, hwh `e05afdb895ef7eda50f6204ac7d114eb`.
+  Audio fabric (`clk_fpga_0`) **+0.656 ns / 0 fail**, WHS +0.023, THS 0. DSP
+  100, BRAM 6. -0.534 is only -0.038 ns from D79's bench-clean -0.496 (well
+  inside the accepted-clean band; D75 was clean at -0.706). Deployed 5-site
+  (board md5 matched). Bench (Pmod mode 2): all_off clean / no bitcrusher,
+  Big Muff mid scoop audible, other pedals unchanged -- user-confirmed
+  accepted. **D82 (`ee295544`) is the new accepted bitstream baseline,
+  superseding D81** (`3a79745f`, rollback in git history + `/tmp/d81_backup`).
+- **Lesson.** A DF1 biquad in a tight feedback section recovers timing by
+  precomputing the feedforward sum a stage earlier, NOT by splitting the
+  feedback (which would break the IIR) and NOT by serialising the multiplies
+  (the D79 LERP lesson). Reuse this split for the amp-stack biquads (item 3
+  next phase).
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-bigmuff-notch`.

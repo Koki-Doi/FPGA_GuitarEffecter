@@ -354,6 +354,44 @@ bigMuffClip2Frame f =
   afterMore = satShift8 (mulU8 (monoSample f) 208)
   kneeSecond = 1_850_000 :: Sample
 
+-- ~700 Hz mid-scoop NOTCH biquad (realism item 3 / R3, D82), split into a
+-- feedforward stage + a recursive stage. The Big Muff's defining tone-network
+-- character is a deep mid *scoop* -- a one-pole LPF (bigMuffToneFrame below)
+-- can only darken, it cannot notch the mids. This post-clip peaking biquad
+-- with NEGATIVE gain carves the scoop out of the saturated signal.
+-- Direct-form-I, Q14 fixed coefficients, hand-designed for f0 = 700 Hz,
+-- fs = 48 kHz, Q = 0.8, -10 dB dip (a chosen target curve, NOT a
+-- schematic-derived table -- same policy as the TS mid hump, D7/D45). Unity
+-- at DC and Nyquist by construction so only the mids are scooped.
+--   y[n]*2^14 = b0*x + b1*x1 + b2*x2 - a1*y1 - a2*y2  (a0 normalised to 2^14)
+--   b0=15350  b1=-29618  b2=14393  ;  a1=-29618  a2=13359  -> -a1 = +29618
+--
+-- TIMING SPLIT (D82): the single-stage 5-multiply form measured island
+-- WNS -0.659 ns (the biquad feedback path was near-critical and pressured the
+-- DS-1 P&R). The IIR feedback loop CANNOT be naively pipelined (it would
+-- change the transfer function), so instead the FEEDFORWARD sum
+-- (b0*x + b1*x1 + b2*x2, no feedback) is precomputed one stage earlier into
+-- fAcc3L; the recursive stage then closes the loop with only TWO multiplies
+-- (-a1*y1 - a2*y2), shortening the single-cycle feedback path. The math is
+-- identical to the single-stage form (same coefficients, same response).
+-- x1/x2 are a 2-tap delay of the stage input, y1/y2 of the recursive output;
+-- bit-exact bypass when the pedal is off (output = input).
+bigMuffScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
+bigMuffScoopFeedforwardFrame x1 x2 f =
+  setMonoAcc3 (if on then ff else 0) f
+ where
+  on = bigMuffOn f
+  x = monoSample f
+  ff = mulS16 x 15350 + mulS16 x1 (-29618) + mulS16 x2 14393 :: Wide
+
+bigMuffScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
+bigMuffScoopRecursiveFrame y1 y2 f =
+  setMonoSample (if on then y else monoSample f) f
+ where
+  on = bigMuffOn f
+  -- -a1 = +29618, -a2 = -13359; fAcc3L already holds the feedforward sum.
+  y = satShift14 (fAcc3L f + mulS16 y1 29618 - mulS16 y2 13359)
+
 bigMuffToneFrame :: Sample -> Frame -> Frame
 bigMuffToneFrame prevLp f =
   (if on then setMonoSample lp else setMonoSample x) (setMonoEqHighLp lp f)

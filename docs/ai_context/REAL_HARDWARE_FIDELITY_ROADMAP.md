@@ -156,15 +156,22 @@ or stuck bias; bypass is unchanged.
 
 This targets the "samey" model problem directly.
 
-Progress: **D81 landed the first resonant biquad** -- the Tube Screamer
-~720 Hz mid hump (a pre-clip `tubeScreamerMidFrame` peaking biquad, hand-designed
-f0=720 Hz / Q=0.8 / +6 dB, Q14 coeffs via new `mulS16`/`satShift14`, five
-multiplies summed in parallel, pipeline-level `x1/x2/y1/y2` state, bit-exact
-bypass). Built / deployed / bench-accepted at island WNS -0.193 ns (better than
-D79), audio fabric +0.657 / 0 fail; no GPIO/API change. This proved the
-shared-biquad infrastructure. Remaining R3 targets (Big Muff mid notch,
-Fender/Vox/Marshall amp stacks) should reuse ONE shared biquad with per-model
-coefficient mux -- do not instantiate one biquad per model (D58 lesson).
+Progress: **D81 + D82 landed the first two resonant biquads.** D81 = the Tube
+Screamer ~720 Hz mid hump (pre-clip peaking biquad, +6 dB, island WNS -0.193 ns).
+**D82 = the Big Muff ~700 Hz mid-scoop notch** (post-clip peaking biquad with
+negative gain, -10 dB dip; island WNS -0.534 ns). Both hand-designed Q14
+targets via `mulS16`/`satShift14`, pipeline-level `x1/x2/y1/y2` state, bit-exact
+bypass, no GPIO/API change; built / deployed / bench-accepted. **Key D82 lesson:
+an IIR biquad's feedback loop cannot be naively pipelined** (it changes the
+transfer function); when the single-stage 5-multiply form pressured the DS-1
+P&R (-0.659 ns), the fix was to precompute the FEEDFORWARD sum
+(`b0*x+b1*x1+b2*x2`) one stage earlier and close the loop in the recursive stage
+with only `-a1*y1-a2*y2` (recovered to -0.534 ns, biquad off the critical set).
+Remaining R3 target: **Fender/Vox/Marshall amp stacks** -- reuse ONE shared
+biquad with per-model coefficient mux (do NOT instantiate one biquad per model,
+D58 lesson) and reuse the D82 feedforward/recursive split. Note each added
+biquad costs ~+5 DSP and ~-0.3 ns of DS-1 island slack from placement pressure;
+budget against the baseline before the amp-stack phase.
 
 Recommended start:
 
