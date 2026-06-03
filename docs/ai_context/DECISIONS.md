@@ -5530,3 +5530,39 @@ pre-existing 3 failures + 1 error baseline.
   `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
   `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
   `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-rat-oversample`.
+
+## D90 — Oversampling (item 2 / R5): 4x oversampled Big Muff clip cascade
+
+- **Decision.** Third oversampled clip: Big Muff. Its **two cascaded soft
+  clips** (clip1 -> *208 -> clip2) generate fizz that aliases; run the whole
+  cascade 4x and decimate. Same `os4x*` machinery as Metal/RAT, but the
+  per-sub-sample nonlinearity is the soft-clip **cascade** (`bigMuffOsCascade`,
+  knees 2.4M then 1.85M with the *208 inter-stage gain -- identical to the old
+  two-stage clip1/clip2, so the voicing is preserved; only aliasing drops).
+- **Cascade isolation (load-bearing).** Putting the cascade AND the decimation
+  FIR in one products stage measured **WNS -6.244 ns** -- two multiplies
+  (the *208 and the FIR pairMul) plus two soft clips **in series** in one
+  combinational path. Fix: the deep cascade lives ONLY in the history-update
+  path (`bigMuffClipHistNext` -> the `Vec 16` register, no FIR after it), and
+  the products stage reads all 15 FIR taps **from the 16-deep history** (no
+  cascade in the products path). This keeps the cascade multiply and the FIR
+  multiply in SEPARATE register-to-register paths. The FIR output lags the
+  cascade by one frame group (harmless latency). Recovered to **WNS -0.036 ns**.
+- **Timing (built, deployed, bench-accepted).** bit md5
+  `93e8b220f94749b39c66e14ed2c431c6`, hwh `13427a86e08dad9e7e39daf14547b05b`.
+  Island (`clk_fpga_1`, 40 MHz) **WNS -0.036 ns** / 1 fail (worst path back to
+  DS-1, NOT the oversampler), audio fabric (`clk_fpga_0`) **+0.434 ns / 0
+  fail**, WHS +0.051, THS 0. DSP **128** (+4 vs D89), BRAM 6. -0.036 is
+  essentially meeting timing (far above the ~-0.7 bitcrusher boundary). The 3rd
+  oversampler used most of the D89 40 MHz headroom (+1.846 -> -0.036); a 4th
+  (e.g. DS-1) would need 33 MHz. No GPIO/API/Frame change; Python golden tests
+  unchanged. Deployed 5-site (board md5 matched). Bench (Pmod mode 2): all_off
+  clean / no bitcrusher, Big Muff fizz reduced + voicing (sustain, D82
+  mid-scoop) preserved, Metal/RAT/other effects + pitch unchanged --
+  user-confirmed accepted. **D90 (`93e8b220`) is the new accepted bitstream
+  baseline, superseding D89** (`1e9eb9ac`, rollback in git history +
+  `/tmp/d89_backup`). **Metal (D88) + RAT (D89) + Big Muff (D90) -- all three
+  hard/cascade-clip aliasers are now 4x oversampled.**
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Distortion.hs`,
+  `hw/ip/clash/src/AudioLab/Pipeline.hs`; regenerated `vhdl/LowPassFir`;
+  `bitstreams/audio_lab.{bit,hwh}`. Branch `feature/realism-bigmuff-oversample`.

@@ -260,9 +260,17 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   -- single-stage 5-mul form pressured the DS-1 P&R to WNS -0.659). x1/x2 are a
   -- 2-tap delay of the feedforward input, y1/y2 a 2-tap delay of the recursive
   -- output.
+  -- big_muff: the old clip1 + clip2 cascade is now a 4x oversampled cascade
+  -- (item 2 / R5, D90): bmClipInPrev = previous clip input (pre-gained =
+  -- satShift8 fAccL); bmClipHist = 12-deep clipped 4x history; FIR split
+  -- products/mix. The cascaded-clipped output feeds the D82 mid-scoop biquad.
   bigMuffPrePipe = register Nothing (mapPipe bigMuffPreFrame <$> ds1LevelPipe)
-  bigMuffClip1Pipe = register Nothing (mapPipe bigMuffClip1Frame <$> bigMuffPrePipe)
-  bigMuffClip2Pipe = register Nothing (mapPipe bigMuffClip2Frame <$> bigMuffClip1Pipe)
+  bmClipInPrev = register 0 (frameOr (satShift8 . fAccL) <$> bmClipInPrev <*> bigMuffPrePipe)
+  bmClipHist = register (repeat 0) (bigMuffClipHistNext <$> bmClipHist <*> bmClipInPrev <*> bigMuffPrePipe)
+  bigMuffClipProductsPipe =
+    register Nothing $
+      mapPipe <$> (bigMuffClipProductsFrame <$> bmClipHist) <*> bigMuffPrePipe
+  bigMuffClip2Pipe = register Nothing (mapPipe bigMuffClipMixFrame <$> bigMuffClipProductsPipe)
   bmScoopX1 = register 0 (delayNext <$> bmScoopX1 <*> (frameOr monoSample 0 <$> bigMuffClip2Pipe) <*> bigMuffClip2Pipe)
   bmScoopX2 = register 0 (delayNext <$> bmScoopX2 <*> bmScoopX1 <*> bigMuffClip2Pipe)
   bigMuffScoopFfPipe =

@@ -249,21 +249,23 @@ metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: 
 -- and its threshold are pedal-specific; these helpers are the generic
 -- upsample / decimation machinery.
 
--- The 4 clipped 4x sub-samples for the interval [x1 -> xn] (chronological:
--- q0 oldest at x1, q3 newest near xn). Linear-interp weights (shifts/adds, no
--- multiply), then hard clip.
-os4xSubSamples :: Sample -> Sample -> Sample -> (Sample, Sample, Sample, Sample)
-os4xSubSamples thr x1 xn = (q0, q1, q2, q3)
+-- The 4 linear-interp 4x sub-sample points for the interval [x1 -> xn]
+-- (chronological: p0 at x1, p3 near xn). Shifts/adds only, no multiply.
+os4xInterp :: Sample -> Sample -> (Sample, Sample, Sample, Sample)
+os4xInterp x1 xn = (x1, p1, p2, p3)
  where
   x1w = resize x1 :: Wide
   xnw = resize xn :: Wide
   p1 = satWide (((x1w `shiftL` 1) + x1w + xnw) `shiftR` 2)   -- (3*x1 + xn)/4
   p2 = satWide ((x1w + xnw) `shiftR` 1)                       -- (x1 + xn)/2
   p3 = satWide ((x1w + (xnw `shiftL` 1) + xnw) `shiftR` 2)    -- (x1 + 3*xn)/4
-  q0 = hardClip x1 thr
-  q1 = hardClip p1 thr
-  q2 = hardClip p2 thr
-  q3 = hardClip p3 thr
+
+-- 4 hard-clipped sub-samples (Metal / RAT). Big Muff uses its own soft-clip
+-- cascade variant (bigMuffOsSubSamples) over the same os4xInterp points.
+os4xSubSamples :: Sample -> Sample -> Sample -> (Sample, Sample, Sample, Sample)
+os4xSubSamples thr x1 xn = (hardClip p0 thr, hardClip p1 thr, hardClip p2 thr, hardClip p3 thr)
+ where
+  (p0, p1, p2, p3) = os4xInterp x1 xn
 
 -- 15-tap symmetric anti-alias decimation FIR over the 192 kHz clipped stream
 -- (taps newest-first q3 q2 q1 q0 hist0..hist10; coeffs
@@ -281,7 +283,7 @@ os4xDecimProducts q0 q1 q2 q3 hist = (s0, s1, s2)
   s2 = pm (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
 
 os4xHistShift ::
-  Sample -> Sample -> Sample -> Sample -> Vec 12 Sample -> Vec 12 Sample
+  KnownNat n => Sample -> Sample -> Sample -> Sample -> Vec n Sample -> Vec n Sample
 os4xHistShift q0 q1 q2 q3 hist = q3 +>> q2 +>> q1 +>> q0 +>> hist
 
 -- ---- Metal 4x oversampled clip (D88) --------------------------------------
@@ -410,24 +412,56 @@ bigMuffPreFrame f =
   -- Hot floor and broad sustain, but keep the ceiling below Metal.
   gain = resize (448 + (resize drive * 11 :: Unsigned 12)) :: Unsigned 12
 
-bigMuffClip1Frame :: Frame -> Frame
-bigMuffClip1Frame f =
-  setMonoSample (if on then softClipK kneeFirst boosted else monoSample f) f
- where
-  on = bigMuffOn f
-  boosted = satShift8 (fAccL f)
-  -- First clip stage: earlier soft compression for sustain.
-  kneeFirst = 2_400_000 :: Sample
+-- Big Muff 4x oversampled clip cascade (realism item 2 / R5, D90). The two
+-- cascaded soft clips (clip1 -> *208 -> clip2) generate fizz that aliases at
+-- 48 kHz; run the whole cascade at 4x and decimate. Same os4x machinery as
+-- Metal/RAT, but the per-sub-sample nonlinearity is the soft-clip *cascade*
+-- (bigMuffOsCascade), not a single hard clip. Knees are the same as the old
+-- two-stage clip1/clip2 (2.4M then 1.85M, with the *208 inter-stage gain), so
+-- the voicing is preserved; only aliasing is reduced. Bit-exact bypass off.
+bigMuffOsCascade :: Sample -> Sample
+bigMuffOsCascade x =
+  softClipK 1_850_000 (satShift8 (mulU8 (softClipK 2_400_000 x) 208))
 
-bigMuffClip2Frame :: Frame -> Frame
-bigMuffClip2Frame f =
-  setMonoSample (if on then softClipK kneeSecond afterMore else monoSample f) f
+bigMuffOsSubSamples :: Sample -> Sample -> (Sample, Sample, Sample, Sample)
+bigMuffOsSubSamples x1 xn =
+  (bigMuffOsCascade p0, bigMuffOsCascade p1, bigMuffOsCascade p2, bigMuffOsCascade p3)
+ where
+  (p0, p1, p2, p3) = os4xInterp x1 xn
+
+-- The deep soft-clip cascade (clip1 -> *208 -> clip2) lives ONLY in the
+-- history-update path below (which ends at the Vec register -- no FIR after
+-- it), and the products stage reads all 15 FIR taps from the 16-deep history
+-- (no cascade in the products path). This keeps the cascade multiply and the
+-- FIR multiply in SEPARATE register-to-register paths -- a single combined
+-- stage measured WNS -6.244 ns (two muls + two clips in series). The FIR
+-- output lags the cascade by one frame group (harmless latency).
+bigMuffClipProductsFrame :: Vec 16 Sample -> Frame -> Frame
+bigMuffClipProductsFrame hist f =
+  f { fAccL = if on then s0 else 0, fAccR = 0
+    , fAcc2L = if on then s1 else 0, fAcc2R = 0
+    , fAcc3L = if on then s2 else 0, fAcc3R = 0 }
  where
   on = bigMuffOn f
-  -- Existing second clip stage: a little more push into a tighter knee
-  -- for thicker sustain without adding another cascade.
-  afterMore = satShift8 (mulU8 (monoSample f) 208)
-  kneeSecond = 1_850_000 :: Sample
+  -- 15-tap symmetric decimation FIR over history[0..14] (newest-first);
+  -- pairs (0,14)..(6,8), center 7. Coeffs [-2,-3,-4,5,29,68,104,118].
+  pm :: Sample -> Sample -> Signed 10 -> Wide
+  pm a b g = (resize a + resize b) * resize g
+  s0 = pm (hist !! 0) (hist !! 14) (-2) + pm (hist !! 1) (hist !! 13) (-3) + pm (hist !! 2) (hist !! 12) (-4)
+  s1 = pm (hist !! 3) (hist !! 11) 5 + pm (hist !! 4) (hist !! 10) 29 + pm (hist !! 5) (hist !! 9) 68
+  s2 = pm (hist !! 6) (hist !! 8) 104 + (resize (hist !! 7) * 118 :: Wide)
+
+bigMuffClipMixFrame :: Frame -> Frame
+bigMuffClipMixFrame f =
+  setMonoSample (if on then satShift9 (fAccL f + fAcc2L f + fAcc3L f) else monoSample f) f
+ where
+  on = bigMuffOn f
+
+bigMuffClipHistNext :: Vec 16 Sample -> Sample -> Maybe Frame -> Vec 16 Sample
+bigMuffClipHistNext hist _ Nothing = hist
+bigMuffClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
+ where
+  (q0, q1, q2, q3) = bigMuffOsSubSamples x1 (satShift8 (fAccL f))
 
 -- ~700 Hz mid-scoop NOTCH biquad (realism item 3 / R3, D82), split into a
 -- feedforward stage + a recursive stage. The Big Muff's defining tone-network
