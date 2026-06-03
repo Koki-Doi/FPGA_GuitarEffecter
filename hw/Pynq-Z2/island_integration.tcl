@@ -26,16 +26,24 @@
 current_bd_design [get_bd_designs block_design]
 current_bd_instance /
 
-puts "ISLAND: separating clash_lowpass_fir_0 onto FCLK_CLK1 = 50 MHz"
+puts "ISLAND: separating clash_lowpass_fir_0 onto FCLK_CLK1 = 40 MHz"
 
-# 1. FCLK_CLK1 = 50 MHz (FCLK0 stays 100 MHz). 1000 MHz IO PLL / 5 / 4 = 50.
+# 1. FCLK_CLK1 = 40 MHz (FCLK0 stays 100 MHz). 1000 MHz IO PLL / 5 / 5 = 40.
+#    Lowered from the D75 50 MHz to 40 MHz (D89 headroom phase): the DSP island
+#    is the only consumer of FCLK_CLK1, runs 1 sample/cycle, and is
+#    frequency-independent (paceCount removed, D75), so 40 MHz still trivially
+#    exceeds the 48 kHz throughput need while giving the DS-1 CARRY4 critical
+#    path a 25 ns (was 20 ns) budget -- the headroom needed to fit multiple
+#    4x oversamplers (Metal + RAT). The two axis_clock_converters bridge
+#    100 <-> 40 MHz exactly as they did 100 <-> 50. Pitch is set by the
+#    I2S/Pmod sample clock, NOT this island clock, so it is unaffected.
 set_property -dict [list \
   CONFIG.PCW_EN_CLK1_PORT {1} \
   CONFIG.PCW_FPGA_FCLK1_ENABLE {1} \
   CONFIG.PCW_FCLK_CLK1_BUF {TRUE} \
-  CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ {50} \
+  CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ {40} \
   CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR0 {5} \
-  CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR1 {4} \
+  CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR1 {5} \
 ] [get_bd_cells processing_system7_0]
 
 # 2. proc_sys_reset for the 50 MHz island

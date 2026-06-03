@@ -125,9 +125,16 @@ makes it == a full anti-image FIR), 4 hard clips, 15-tap symmetric anti-alias
 decimation FIR (Q9, 8 folded mulS10), pipeline-split products/mix. Offline +
 bench ~-12 dB inharmonic-fizz reduction. (DSP-free 2x only -2.8 dB; proper 2x
 plateaus -5.8 dB since >48 kHz still folds; 4x is the worthwhile rate.) Island
-WNS -0.496 ns (worst path still DS-1). bit `d4c250be`. **Extend the same 4x
-oversampler to RAT, then Big Muff -- one model/phase; DS-1 excluded (critical
-path).**)
+WNS -0.496 ns (D88, Metal only). bit `d4c250be`. **D89 added RAT** (shared
+`os4x*` helpers) but a 2nd oversampler hit the 50 MHz island congestion ceiling
+(-1.276 ns), so D89 **lowered the island clock 50 -> 40 MHz**
+(`island_integration.tcl`): DS-1 budget 20 -> 25 ns, **island WNS +1.846 ns,
+whole design meets timing (first since D72)**. The island clock is the only
+FCLK_CLK1 consumer / 1 sample-per-cycle / frequency-independent, so it can be
+lowered further (33 MHz) for more headroom; pitch is set by the I2S/Pmod clock,
+not this one. **Big Muff next** -- but its soft-clip *cascade* (clip1 -> *208
+-> clip2) needs a soft-clip sub-sample variant, not the hard-clip
+`os4xSubSamples`.)
 
 Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 `FixedPoint.hs` (helpers), `TIMING_AND_FPGA_NOTES.md` (timing baseline),

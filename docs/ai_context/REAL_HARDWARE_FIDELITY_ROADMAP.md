@@ -190,10 +190,16 @@ runs **4x oversampled** (linear-interp upsample = shifts/adds, 4 hard clips,
 15-tap symmetric anti-alias decimation FIR, pipeline-split). Offline + bench
 confirm ~-12 dB inharmonic-fizz reduction. Investigation finding: DSP-free 2x
 ~-2.8 dB and proper 2x plateaus ~-5.8 dB (>48 kHz harmonics still fold), so
-**4x is the worthwhile rate**. Island WNS -0.496 ns (worst path still DS-1, not
-the oversampler). **Extending to other hard-clip aliasers: RAT next, Big Muff
-after -- one model per phase** (each adds DSP + island placement pressure;
-there is a ceiling). DS-1 is excluded (it is the island critical path).
+**4x is the worthwhile rate**. Island WNS -0.496 ns (D88, Metal only). Adding RAT
+on top hit the island congestion ceiling (-1.276 ns) -- so **D89 lowered the
+DSP island clock 50 -> 40 MHz** (`island_integration.tcl`), giving the DS-1 path
+a 25 ns budget. Result: **island WNS +1.846 ns, the whole design meets timing
+(first time since D72)**, with Metal + RAT both 4x oversampled. The island now
+has ample headroom, so further oversamplers (Big Muff, even DS-1) and DSP fit;
+33 MHz is the next step down if ever needed. The oversampler is now a shared
+helper (`os4x*`) reused per model. RAT done (D89); **Big Muff next** (its
+soft-clip cascade needs a soft-clip sub-sample variant, not the hard-clip
+`os4xSubSamples`).
 
 **item 1 (cab IR) step A is done (D87):** an additive 15-tap symmetric
 speaker-rolloff FIR on the cab output (sharper >5 kHz rolloff, fizz reduction,

@@ -164,7 +164,15 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
 
   ratOpAmpPrev = register 0 (frameOr monoWet <$> ratOpAmpPrev <*> ratOpAmpPipe)
   ratOpAmpPipe = register Nothing (mapPipe <$> (ratOpAmpLowpassFrame <$> ratOpAmpPrev) <*> ratDriveBoostPipe)
-  ratClipPipe = register Nothing (mapPipe ratClipFrame <$> ratOpAmpPipe)
+  -- 4x oversampled hard clip (item 2 / R5, D89): same os4x machinery as Metal.
+  -- ratClipInPrev = previous clip input (monoWet) for the linear-interp
+  -- upsample; ratClipHist = 12-deep clipped 4x history; FIR split products/mix.
+  ratClipInPrev = register 0 (frameOr monoWet <$> ratClipInPrev <*> ratOpAmpPipe)
+  ratClipHist = register (repeat 0) (ratClipHistNext <$> ratClipHist <*> ratClipInPrev <*> ratOpAmpPipe)
+  ratClipProductsPipe =
+    register Nothing $
+      mapPipe <$> (ratClipProductsFrame <$> ratClipInPrev <*> ratClipHist) <*> ratOpAmpPipe
+  ratClipPipe = register Nothing (mapPipe ratClipMixFrame <$> ratClipProductsPipe)
 
   ratPostPrev = register 0 (frameOr monoWet <$> ratPostPrev <*> ratPostPipe)
   ratPostPipe = register Nothing (mapPipe <$> (ratPostLowpassFrame <$> ratPostPrev) <*> ratClipPipe)

@@ -105,6 +105,11 @@ package clash_lowpass_fir_types is
     Frame_sel35_fAcc3R : signed(47 downto 0);
   end record;
   subtype Maybe is std_logic_vector(1067 downto 0);
+  type Tuple3_0 is record
+    Tuple3_0_sel0_signed_0 : signed(47 downto 0);
+    Tuple3_0_sel1_signed_1 : signed(47 downto 0);
+    Tuple3_0_sel2_signed_2 : signed(47 downto 0);
+  end record;
   function toSLV (s : in signed) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return signed;
   function toSLV (slv : in std_logic_vector) return std_logic_vector;
@@ -145,6 +150,8 @@ package clash_lowpass_fir_types is
   function fromSLV (slv : in std_logic_vector) return Tuple3;
   function toSLV (p : Frame) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return Frame;
+  function toSLV (p : Tuple3_0) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return Tuple3_0;
 end;
 
 package body clash_lowpass_fir_types is
@@ -358,6 +365,15 @@ package body clash_lowpass_fir_types is
   alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
     return (fromSLV(islv(0 to 23)),fromSLV(islv(24 to 47)),fromSLV(islv(48 to 48)),fromSLV(islv(49 to 80)),fromSLV(islv(81 to 112)),fromSLV(islv(113 to 144)),fromSLV(islv(145 to 176)),fromSLV(islv(177 to 208)),fromSLV(islv(209 to 240)),fromSLV(islv(241 to 272)),fromSLV(islv(273 to 304)),fromSLV(islv(305 to 336)),fromSLV(islv(337 to 368)),fromSLV(islv(369 to 400)),fromSLV(islv(401 to 432)),fromSLV(islv(433 to 442)),fromSLV(islv(443 to 466)),fromSLV(islv(467 to 490)),fromSLV(islv(491 to 514)),fromSLV(islv(515 to 538)),fromSLV(islv(539 to 562)),fromSLV(islv(563 to 586)),fromSLV(islv(587 to 610)),fromSLV(islv(611 to 634)),fromSLV(islv(635 to 658)),fromSLV(islv(659 to 682)),fromSLV(islv(683 to 706)),fromSLV(islv(707 to 730)),fromSLV(islv(731 to 754)),fromSLV(islv(755 to 778)),fromSLV(islv(779 to 826)),fromSLV(islv(827 to 874)),fromSLV(islv(875 to 922)),fromSLV(islv(923 to 970)),fromSLV(islv(971 to 1018)),fromSLV(islv(1019 to 1066)));
+  end;
+  function toSLV (p : Tuple3_0) return std_logic_vector is
+  begin
+    return (toSLV(p.Tuple3_0_sel0_signed_0) & toSLV(p.Tuple3_0_sel1_signed_1) & toSLV(p.Tuple3_0_sel2_signed_2));
+  end;
+  function fromSLV (slv : in std_logic_vector) return Tuple3_0 is
+  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  begin
+    return (fromSLV(islv(0 to 47)),fromSLV(islv(48 to 95)),fromSLV(islv(96 to 143)));
   end;
 end;
 
