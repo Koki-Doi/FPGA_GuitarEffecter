@@ -5728,13 +5728,15 @@ pre-existing 3 failures + 1 error baseline.
   (AggressiveExplore) already on.
 - **Decision.** User chose to **deploy -0.279 as-is and bench** (rather than
   bundle the 33 MHz island drop or revert). bit/hwh md5
-  `935cf5f3361149ed45ba61bb3e1740ed` / `616523cd323052e6d3ee3cfb3d119e3b`. **Deployed; D90/D92
-  remain the rollback baselines** (`/tmp/d90_backup`, `/tmp/d92_backup`).
-  Bench-audio confirmation pending (Pmod mode 2: all_off clean / NO bitcrusher
-  -- the key check given the island regression; amp fizz/harshness reduced,
-  JC-120 clean unchanged, pitch correct, other models not worse). If the bench
-  shows a bitcrusher or the amps are too dark, roll back to D92 and/or re-tune
-  `ampEmphAmount` / `ampEmphShift` (or take the 33 MHz headroom phase first).
+  `935cf5f3361149ed45ba61bb3e1740ed` / `616523cd323052e6d3ee3cfb3d119e3b`.
+  **Deployed 5-site (board md5 matched `935cf5f3`). Bench-audio ACCEPTED
+  (user-confirmed "合格", 2026-06-04): all_off clean / no bitcrusher despite the
+  island -0.279, amp fizz reduced, JC-120 clean unchanged, pitch correct, other
+  models not worse. D93 is the new accepted deployed bitstream baseline,
+  superseding D92** (`5e6aebe4`, rollback at `/tmp/d92_backup`; D90 `93e8b220` at
+  `/tmp/d90_backup`). Merged to main. Confirms the precedent: an island WNS of
+  -0.279 is in the normal bench-clean band; D92's +0.155 was the anomaly, not a
+  required floor.
 - **Next cheap interim (queued):** the output "analog" HF shelf (item B in
   `DIGITAL_SOUND_REDUCTION.md`), kept separate for bench isolation.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampPreEmphFrame` /
