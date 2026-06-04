@@ -5884,3 +5884,57 @@ pre-existing 3 failures + 1 error baseline.
   `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampXfmrHfPipe` stage; `cabModLfo` /
   `cabModLine` / `cabModPipe` after the cab FIR), regenerated Clash VHDL/IP.
   Branch `feature/transformer-hf-droop-and-cab-micromod`.
+
+## D97 — Transformer low-end resonance (#9 final) + multiband mid saturation (#12) + reverb diffusion (#13)
+
+- **Three bundled digital-sound items, one bitstream** (user asked for #9 + #12 +
+  #13 together). All additive, independently gated (#9/#12 on amp-on + JC-120
+  excluded; #13 on reverb-on), conservative, bench-tunable. **Built but NOT
+  deployed / NOT merged -- the user deferred verification + the final commit to
+  the next day; this branch is a save point.**
+- **#9 final -- transformer low-end resonance bump.** Completes the transformer
+  (D94 LF saturation + D96 HF droop + now the LF resonance). A gentle ~110 Hz
+  peaking biquad (`ampXfmrResFrame`, single-stage 5-mul -- the island has +3 ns
+  margin so no D82/D83 split needed) on the transformer output, after the HF
+  droop, before the cab. Hand-designed Q14 f0=110 Hz Q=0.8 +2.0 dB (verified
+  +2.0 @ 110 / unity at 500 Hz+ / pole 0.984 stable); conservative to avoid
+  sub-bass mud. amp-on + skip-JC-120 gate; x1/x2/y1/y2 pipeline state. **+5 DSP.**
+- **#12 -- multiband (3-band) mid-focused saturation.** The "proper" version of
+  the D93 single-band pre/de-emphasis: split low/mid/high with two one-pole
+  lowpasses (~240 Hz, ~1.9 kHz), soft-clip ONLY the mid band (`softClipK
+  4_000_000`, where the musical amp grind lives), pass low (transformer handles
+  it) + high (stay clean, no fizz) through. Shift-only -> **0 new DSP.** Between
+  the amp master and the transformer; amp-on + skip-JC-120 gate. Two one-pole
+  states in the reuse-safe `fEqLowL` + `fEqHighLpL` (both verified free between
+  the amp master and the cab: the cab re-inits `fEqLowL` and never touches
+  `fEqHighLpL`, the EQ overwrites it downstream). `ampMidSatKnee` bench-tunable.
+- **#13 -- reverb diffusion.** The reverb is a single comb (1024-sample BRAM) ->
+  sparse/metallic tails. A Schroeder allpass diffuser (`reverbDiffuseFrame`,
+  g=1/2 shift, 128-sample line ~2.7 ms) on the recirculating `monoFb` densifies
+  the tail WITHOUT changing the decay (allpass = magnitude-flat) or the clean
+  dry-mix path (`monoDry`, untouched). reverb-on (flag5) gate -> all_off bypass
+  bit-exact; unconditionally stable for |g|<1 (no oscillation). Shift-only ->
+  **0 new DSP** (the 128-line synthesises as SRL/registers, not BRAM). The line +
+  the frame read the same registered delay + pre-diffusion `monoFb` so their
+  allpass math is consistent; the extra pipeline stage lengthens the comb loop by
+  1 sample (negligible) and `fAddr` rides through it unchanged.
+- **Build / timing (FULLY CLEAN).** Island `clk_fpga_1` (33.334 MHz) **WNS +3.002
+  ns / 0 fail**; audio fabric `clk_fpga_0` +0.930 / 0 fail; **whole design +0.930
+  / WHS +0.019 / THS 0 -- meets timing.** DSP **139 (+5 vs D96 -- the #9 biquad;
+  #12 + #13 are shift-only, 0 DSP as predicted)**, BRAM 6, LUT 29644 (+232), FF
+  28088. Clash 15-module typecheck clean. bit/hwh md5
+  `ad771d7c3c48e981dcd8acdd19c5c2b4` / `7bb6cd9cda6b5a6c5b8ba7996c2ea163`.
+- **Status: deployed 5-site (board md5 matched `ad771d7c`). Bench-audio ACCEPTED
+  (user-confirmed "合格", 2026-06-05): all_off clean / no bitcrusher, more low-end
+  weight/bump on tube amps (#9), fuller mid grind on cranked amps (#12), denser
+  reverb tail at the same decay (#13), JC-120 unchanged, pitch correct. D97 is
+  the new accepted deployed bitstream baseline, superseding D96** (`581bf6fc`,
+  rollback `/tmp/d96_backup`). Merged to main. The transformer (#9 LF sat + HF
+  droop + LF resonance) is now complete; #10/#11/#12/#13 also done.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampXfmrResFrame`,
+  `ampMultibandSatFrame` + constants), `hw/ip/clash/src/AudioLab/Effects/Reverb.hs`
+  (`reverbDiffuseFrame` / `reverbDiffLineNext` / `reverbDiffuseY`),
+  `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampMbSatPipe`, `ampXfmrResPipe` + x/y
+  state, `reverbDiffLine` / `reverbDiffusePipe`), regenerated Clash VHDL/IP. Also
+  added `docs/ai_context/LATENCY_REDUCTION.md` (latency investigation). Branch
+  `feature/ds-9res-12multiband-13reverbdiffuse`.
