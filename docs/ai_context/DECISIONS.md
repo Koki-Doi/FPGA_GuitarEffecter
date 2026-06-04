@@ -5690,3 +5690,57 @@ pre-existing 3 failures + 1 error baseline.
   both clip stages, per-model AC30 sag), `hw/ip/clash/src/AudioLab/Pipeline.hs`
   (OD biquad 2 stages + `odMidX1/X2/Y1/Y2` state), regenerated Clash VHDL/IP.
   Branch `feature/dedicated-stage-voicings-jc120-od-amp`.
+
+## D93 — "Digital sound" interim: anti-alias pre/de-emphasis around the amp clip stages
+
+- **Goal.** First cheap, headroom-free step from `DIGITAL_SOUND_REDUCTION.md`
+  against the "digital" complaint. The amp waveshaper (two cascaded asymmetric
+  soft clips, on in nearly every patch) is NOT oversampled, so its HF content
+  folds back as inharmonic alias = a broad always-present fizzy/metallic edge.
+- **Method (shift-only, no new DSP).** Attenuate the highs going INTO the first
+  amp clip (pre-emphasis) and restore them after the second clip (de-emphasis),
+  so fewer high harmonics are generated above Nyquist -> less folds back. A
+  one-pole lowpass (`prev + (x-prev)>>ampEmphShift`, the ampToneFilter idiom)
+  gives the HF band `h = x - lp`; pre = `x - h>>ampEmphAmount`, de =
+  `x + h>>ampEmphAmount`. NO multiply -> **DSP unchanged (133)**. `ampEmphShift`
+  = 3 (corner ~ a few kHz), `ampEmphAmount` = 1 (half the HF band) are the
+  bench-tunable voicing knobs. Two new pipeline stages (`ampPreEmphPipe`
+  before `ampWaveshapeFrame`, `ampDeEmphPipe` after `ampSecondStageFrame`,
+  feeding the D83 amp scoop biquad), each with a one-pole state register
+  (`ampPreEmphLpPrev` / `ampDeEmphLpPrev`); lowpass state stashed in the
+  reuse-safe `fEqLowL`. **Gated on amp-on (bit-exact bypass when the amp is
+  off) AND skipped for JC-120 (idx 0)** so its D92 clean channel stays exact.
+  NOT transparent -- a voiced interim until full 4x amp oversampling (needs the
+  33 MHz headroom phase). A fraction of true oversampling's benefit for a
+  fraction of the cost.
+- **Build / timing (REGRESSION from D92, but in the historically bench-clean
+  band).** The +491 LUT / +384 FF of the emphasis logic perturbed the island
+  P&R and pushed an **existing** critical path -- the **Big Muff 4x oversampler
+  cascade** (`bmClipInPrev -> bmClipHist`, NOT the new amp logic) -- to **island
+  `clk_fpga_1` WNS -0.279 ns / 5 failing / TNS -0.978** (D92 was +0.155). Audio
+  fabric `clk_fpga_0` +0.157 / 0 fail; WHS +0.051; THS 0; WPWS +2.845. DSP 133
+  (unchanged, confirming 0 new DSP), BRAM 6, LUT 27772, FF 27119. **-0.279 sits
+  squarely in the project's normal accepted band** (D82 -0.534, D83 -0.381, D84
+  -0.472, D86 -0.397, D87 -0.476, D88 -0.496 were ALL negative and bench-clean;
+  the ~-0.7 bitcrusher boundary is well clear) -- D92's +0.155 was the anomaly,
+  not the norm. Same "added logic perturbs island P&R, pushes an existing
+  critical path" phenomenon as D78 (footswitch) / D89; phys_opt
+  (AggressiveExplore) already on.
+- **Decision.** User chose to **deploy -0.279 as-is and bench** (rather than
+  bundle the 33 MHz island drop or revert). bit/hwh md5
+  `935cf5f3361149ed45ba61bb3e1740ed` / `616523cd323052e6d3ee3cfb3d119e3b`.
+  **Deployed 5-site (board md5 matched `935cf5f3`). Bench-audio ACCEPTED
+  (user-confirmed "合格", 2026-06-04): all_off clean / no bitcrusher despite the
+  island -0.279, amp fizz reduced, JC-120 clean unchanged, pitch correct, other
+  models not worse. D93 is the new accepted deployed bitstream baseline,
+  superseding D92** (`5e6aebe4`, rollback at `/tmp/d92_backup`; D90 `93e8b220` at
+  `/tmp/d90_backup`). Merged to main. Confirms the precedent: an island WNS of
+  -0.279 is in the normal bench-clean band; D92's +0.155 was the anomaly, not a
+  required floor.
+- **Next cheap interim (queued):** the output "analog" HF shelf (item B in
+  `DIGITAL_SOUND_REDUCTION.md`), kept separate for bench isolation.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampPreEmphFrame` /
+  `ampDeEmphFrame` + `ampEmphShift` / `ampEmphAmount`),
+  `hw/ip/clash/src/AudioLab/Pipeline.hs` (two emphasis stages + state, scoop
+  repointed to `ampDeEmphPipe`), regenerated Clash VHDL/IP. Branch
+  `feature/amp-clip-preemphasis-antialias`.

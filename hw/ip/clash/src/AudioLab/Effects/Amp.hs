@@ -161,6 +161,53 @@ ampDriveBoostFrame f =
  where
   on = flag6 (fGate f)
 
+-- ---- Anti-alias pre/de-emphasis around the amp clip stages -------------
+-- "Digital sound" interim (DIGITAL_SOUND_REDUCTION.md): high-frequency content
+-- driven into a static clipper generates harmonics above Nyquist that fold back
+-- as inharmonic alias = the metallic / fizzy "digital" edge. The amp waveshaper
+-- is on in nearly every patch and is NOT oversampled (unlike Metal/RAT/Big Muff,
+-- D88-D90), so it is a broad always-present alias layer.
+--
+-- Cheap interim until full 4x oversampling lands (needs the 33 MHz headroom
+-- phase): attenuate the highs going INTO the first clip (pre-emphasis) and
+-- restore them after the second clip (de-emphasis). Fewer high harmonics are
+-- generated above Nyquist, so less folds back -- a fraction of the benefit of
+-- true oversampling for a fraction of the cost. NOT transparent (it reshapes the
+-- clip's harmonic balance) -- a voiced interim; `ampEmphAmount` / `ampEmphShift`
+-- are the bench-tunable knobs.
+--
+-- Shift-only: a one-pole lowpass (`prev + (x-prev)>>shift`, the ampToneFilter
+-- idiom) gives the HF band `h = x - lp`; pre = x - h>>amount, de = x + h>>amount.
+-- NO multiply -> NO new DSP (keeps the island off the timing edge). Gated on
+-- amp-on (bit-exact bypass when the amp is off) AND skipped for JC-120 (idx 0)
+-- so its D92 clean channel stays exact. The lowpass state is stashed in the
+-- reuse-safe fEqLowL field (overwritten by ampToneFilterFrame downstream).
+ampEmphShift :: Int
+ampEmphShift = 3       -- one-pole corner (~ a few kHz at 48 kHz); gentle
+
+ampEmphAmount :: Int
+ampEmphAmount = 1      -- cut/restore 1/2^amount of the HF band (half)
+
+ampPreEmphFrame :: Sample -> Frame -> Frame
+ampPreEmphFrame prevLp f =
+  setMonoWet (if on then xpre else monoWet f) (setMonoEqLow lp f)
+ where
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoWet f
+  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampEmphShift)
+  h = satWide (resize x - resize lp :: Wide)
+  xpre = satWide (resize x - (resize h `shiftR` ampEmphAmount) :: Wide)
+
+ampDeEmphFrame :: Sample -> Frame -> Frame
+ampDeEmphFrame prevLp f =
+  setMonoWet (if on then xpost else monoWet f) (setMonoEqLow lp f)
+ where
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoWet f
+  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampEmphShift)
+  h = satWide (resize x - resize lp :: Wide)
+  xpost = satWide (resize x + (resize h `shiftR` ampEmphAmount) :: Wide)
+
 -- | Soft asymmetric clip. ``intensity`` keeps the legacy character-byte
 -- scale (per-model centre via ``ampCharForModel``) so each model's
 -- Clean-mode knee character is preserved. When ``drive`` is True the
