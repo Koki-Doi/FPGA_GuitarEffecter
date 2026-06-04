@@ -179,7 +179,7 @@ are mostly about *adding the analog imperfections that the ear expects* rather
 than removing artifacts. Tagged by cost and whether they need the 33 MHz island
 headroom phase.
 
-### 9. Output-transformer emulation  [HIGH realism, MEDIUM cost, headroom-gated]
+### 9. Output-transformer emulation  [HIGH realism — STARTED D94: LF core saturation]
 
 - **Why it sounds digital without it.** A real tube amp's output transformer is a
   big part of "amp warmth": **low-frequency core saturation** (bass notes /
@@ -197,6 +197,11 @@ headroom phase.
 - **Cost / risk.** Medium DSP (a band split + a saturator); on the island ->
   needs the 33 MHz headroom phase. Distinct from the cab IR (transformer is the
   power-amp's iron, cab is the speaker) -- both are missing and complementary.
+- **Status (D94).** LF core saturation BUILT as a shift-only stage (one-pole LF
+  split + low-band `softClipK`, 0 new DSP, gated amp-on, JC-120 excluded), on the
+  same bitstream as the 40 -> 33 MHz island drop (which restored the island to
+  WNS +3.150). The HF bandwidth droop + low-end resonance bump are still to come
+  (left to the cab + D93 for now). bit `a1506fce`. See `DECISIONS.md` D94.
 
 ### 10. Waveshaper hysteresis / per-sample memory  [MEDIUM, cheap-ish]
 
@@ -276,18 +281,17 @@ and hysteresis (#10) are the two with the best "more analog, believable" payoff;
 diffusion (#13) are situational. Multiband (#12) is the expensive "proper" D93.
 Noise floor (#14) and round-to-nearest (#15) are tiny/optional.
 
-## The gating prerequisite: island headroom (item 0)
+## The gating prerequisite: island headroom (item 0) — DONE (D94)
 
 Items 1-3 (cab IR, amp + remaining-clip oversampling) all add DSP to the DS-1
-island, which is **full at 40 MHz** (D90 WNS -0.036 ns). Before any of them:
-
-- **Lower the island clock 40 -> 33 MHz** (`island_integration.tcl`,
-  `PCW_FPGA1_PERIPHERAL_FREQMHZ {33}`, divisor 1000/5/6). DS-1 budget 25 -> 30
-  ns. The island is the only FCLK_CLK1 consumer, 1 sample/cycle,
-  frequency-independent (paceCount removed), and pitch is set by the I2S/Pmod
-  clock -- so this is safe, exactly as the D89 50 -> 40 step was. 33 MHz still
-  gives ~690 cycles/sample, plenty for a 256-tap time-mux cab MAC.
-- This single change unlocks the biggest items (cab IR + amp oversampling).
+island. **The 40 -> 33 MHz island drop was taken in D94** (bundled with the #9
+transformer): `island_integration.tcl` `PCW_FPGA1_PERIPHERAL_FREQMHZ {33}`,
+divisor 1000/5/6, DS-1 budget 25 -> 30 ns. The island is the only FCLK_CLK1
+consumer, 1 sample/cycle, frequency-independent (paceCount removed), pitch set
+by the I2S/Pmod clock -- safe, exactly as the D89 50 -> 40 step. **Result: island
+WNS +3.150 ns at 33 MHz** (was -0.279 at 40 MHz post-D93), ~690 cycles/sample.
+The headroom for the big items (cab IR step B + amp oversampling) is now in place
+-- they no longer need a separate clock phase, just their own DSP.
 
 ## Recommended sequence (impact per effort, headroom-aware)
 

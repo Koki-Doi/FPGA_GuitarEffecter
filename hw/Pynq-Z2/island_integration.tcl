@@ -26,24 +26,26 @@
 current_bd_design [get_bd_designs block_design]
 current_bd_instance /
 
-puts "ISLAND: separating clash_lowpass_fir_0 onto FCLK_CLK1 = 40 MHz"
+puts "ISLAND: separating clash_lowpass_fir_0 onto FCLK_CLK1 = 33 MHz"
 
-# 1. FCLK_CLK1 = 40 MHz (FCLK0 stays 100 MHz). 1000 MHz IO PLL / 5 / 5 = 40.
-#    Lowered from the D75 50 MHz to 40 MHz (D89 headroom phase): the DSP island
-#    is the only consumer of FCLK_CLK1, runs 1 sample/cycle, and is
-#    frequency-independent (paceCount removed, D75), so 40 MHz still trivially
-#    exceeds the 48 kHz throughput need while giving the DS-1 CARRY4 critical
-#    path a 25 ns (was 20 ns) budget -- the headroom needed to fit multiple
-#    4x oversamplers (Metal + RAT). The two axis_clock_converters bridge
-#    100 <-> 40 MHz exactly as they did 100 <-> 50. Pitch is set by the
-#    I2S/Pmod sample clock, NOT this island clock, so it is unaffected.
+# 1. FCLK_CLK1 = 33.33 MHz (FCLK0 stays 100 MHz). 1000 MHz IO PLL / 5 / 6 = 33.33.
+#    Lowered D75 50 -> D89 40 -> D94 33 MHz (headroom phases): the DSP island is
+#    the only consumer of FCLK_CLK1, runs 1 sample/cycle, and is
+#    frequency-independent (paceCount removed, D75), so 33 MHz still trivially
+#    exceeds the 48 kHz throughput need (~690 cycles/sample) while giving the
+#    DS-1 CARRY4 critical path a 30 ns (was 25 ns) budget -- the headroom needed
+#    to fit more island DSP (D94 output-transformer emulation, and future amp 4x
+#    oversampling / cab IR step B). The two axis_clock_converters bridge
+#    100 <-> 33 MHz exactly as they did 100 <-> 40 / 100 <-> 50. Pitch is set by
+#    the I2S/Pmod sample clock, NOT this island clock, so it is unaffected (the
+#    D89 50 -> 40 step bench-confirmed this; 33 is the same kind of step).
 set_property -dict [list \
   CONFIG.PCW_EN_CLK1_PORT {1} \
   CONFIG.PCW_FPGA_FCLK1_ENABLE {1} \
   CONFIG.PCW_FCLK_CLK1_BUF {TRUE} \
-  CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ {40} \
+  CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ {33} \
   CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR0 {5} \
-  CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR1 {5} \
+  CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR1 {6} \
 ] [get_bd_cells processing_system7_0]
 
 # 2. proc_sys_reset for the 50 MHz island

@@ -5744,3 +5744,57 @@ pre-existing 3 failures + 1 error baseline.
   `hw/ip/clash/src/AudioLab/Pipeline.hs` (two emphasis stages + state, scoop
   repointed to `ampDeEmphPipe`), regenerated Clash VHDL/IP. Branch
   `feature/amp-clip-preemphasis-antialias`.
+
+## D94 — DSP island 40 -> 33 MHz (headroom) + output-transformer emulation (digital-sound #9)
+
+- **Two bundled changes, one bitstream.** (a) the **island headroom phase**
+  (`island_integration.tcl` FCLK_CLK1 40 -> 33.33 MHz, divisor 1000/5/5 ->
+  1000/5/6) and (b) **output-transformer emulation** (`DIGITAL_SOUND_REDUCTION.md`
+  #9). The clock change is sonically transparent (pitch is set by the I2S/Pmod
+  sample clock, not the island; D89's 50 -> 40 step bench-proved this), so the
+  only audible variable to bench is the transformer -- bundling does not hurt
+  bench isolation, and it keeps the island timing clean instead of stacking #9
+  onto D93's -0.279.
+- **Why 33 MHz.** D93 left the island at -0.279 ns (the amp emphasis perturbed
+  P&R). #9 adds more island logic; stacking it at 40 MHz risked the ~-0.7
+  bitcrusher boundary. 33 MHz (1000/5/6) gives the DS-1 CARRY4 path a **30 ns**
+  budget (was 25) and ~690 cycles/sample -- the island is the only FCLK_CLK1
+  consumer, 1 sample/cycle, frequency-independent (paceCount removed, D75), so
+  this is the same safe kind of step as D75 50 / D89 40. Pre-stages the headroom
+  for the future big items (amp 4x oversampling, cab IR step B).
+- **Output transformer (shift-only, NO new DSP).** A real tube amp's output
+  transformer iron saturates on low-frequency energy (bass / power chords push
+  the core and compress/round, low-order harmonics) while highs pass ~linearly
+  -- a "bloom and compress on loud lows" the clip -> tone -> cab chain missed
+  entirely (transformer = power-amp iron; cab = speaker; both distinct, both
+  were absent). `ampTransformerFrame` sits after the power-amp master, before
+  the cab: split the low band with a one-pole lowpass (`prev + (x-prev)>>6`,
+  ~120 Hz corner), soft-clip ONLY the low band (`softClipK 5_200_000`, compare+
+  shift), recombine with the untouched high band. **Gated on amp-on (bit-exact
+  bypass when off) AND skipped for JC-120 (idx 0, solid-state = no output
+  transformer, same exclusion as the D86 sag).** Lowpass state in `ampXfmrLpPrev`,
+  stashed in the reuse-safe `fEqLowL` (the cab's first stage re-inits
+  `fEqLowL = 0`, so it never leaks). The HF bandwidth droop is left to the cab +
+  D93 emphasis for now; this phase is just the LF core saturation. `ampTransformerLfShift`
+  / `ampTransformerKnee` are the bench-tunable knobs.
+- **Build / timing (FULLY CLEAN, big margin restored).** Island `clk_fpga_1`
+  (33.334 MHz, 30 ns period) **WNS +3.150 ns / 0 fail** (was -0.279 at 40 MHz in
+  D93); audio fabric `clk_fpga_0` +0.834 / 0 fail; **whole design WNS +0.834 /
+  WHS +0.016 / THS 0 -- meets timing.** DSP **133 (unchanged -- transformer is
+  shift-only, 0 new DSP)**, BRAM 6, LUT 27948, FF 27066. Clash 15-module
+  typecheck clean. bit/hwh md5 `a1506fce1634a5a33e161fc2c7dbf1b6` /
+  `fd797e7a407a30fd5136028faf7694d8`.
+- **Status.** Deployed 5-site (board md5 matched `a1506fce`). **Bench-audio
+  ACCEPTED (user-confirmed "合格", 2026-06-04): pitch correct (the 33 MHz step is
+  transparent, as predicted), all_off clean / no bitcrusher, tube amps
+  bloom/compress on loud low chords (transformer), JC-120 unchanged, highs +
+  other effects healthy. D94 is the new accepted deployed bitstream baseline,
+  superseding D93** (`935cf5f3`, rollback `/tmp/d93_backup`; D92/D90 also
+  retained). Merged to main. **Confirms the 33 MHz island drop is safe and
+  transparent** (third headroom step after D75 50 / D89 40), and the island now
+  has +3.150 ns -- ample room for the next DSP items without a clock change.
+- **Files.** `hw/Pynq-Z2/island_integration.tcl` (40 -> 33 MHz),
+  `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampTransformerFrame` +
+  `ampTransformerLfShift` / `ampTransformerKnee`),
+  `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampXfmrPipe` stage + cab repointed),
+  regenerated Clash VHDL/IP. Branch `feature/output-transformer-emulation-island33`.

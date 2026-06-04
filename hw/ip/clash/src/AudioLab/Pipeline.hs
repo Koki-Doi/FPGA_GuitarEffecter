@@ -390,12 +390,18 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampSagEnv = register 0 (ampSagEnvNext <$> ampSagEnv <*> ampResPresencePipe)
   ampMasterPipe = register Nothing (mapPipe <$> (ampMasterFrame <$> ampSagEnv) <*> ampResPresencePipe)
 
-  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampMasterPipe) <*> ampMasterPipe)
-  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampMasterPipe)
-  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampMasterPipe)
+  -- Output-transformer emulation (D94, digital-sound #9): LF core saturation on
+  -- the power-amp output, before the cab. Shift-only one-pole LF split + low-band
+  -- soft clip (state in ampXfmrLpPrev), no DSP, gated amp-on + skips JC-120.
+  ampXfmrLpPrev = register 0 (frameOr monoEqLow <$> ampXfmrLpPrev <*> ampXfmrPipe)
+  ampXfmrPipe = register Nothing (mapPipe <$> (ampTransformerFrame <$> ampXfmrLpPrev) <*> ampMasterPipe)
+
+  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampXfmrPipe) <*> ampXfmrPipe)
+  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampXfmrPipe)
+  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampXfmrPipe)
   cabProductsPipe =
     register Nothing $
-      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampMasterPipe
+      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampXfmrPipe
   cabSatPipe = register Nothing (mapPipe cabSatFrame <$> cabProductsPipe)
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)

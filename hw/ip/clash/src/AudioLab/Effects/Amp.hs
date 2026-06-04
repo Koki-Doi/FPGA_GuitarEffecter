@@ -533,3 +533,40 @@ ampMasterFrame env f =
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
   effLevel = level - sagByte
   out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) effLevel))
+
+-- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
+-- A real tube amp's output transformer is a big part of "amp warmth" that the
+-- current clip -> tone -> cab chain misses entirely: the iron core SATURATES on
+-- low-frequency energy (bass notes / power chords push the core and
+-- compress/round, adding low-order harmonics), while the highs pass roughly
+-- linearly. The audible tell is "the low end blooms and compresses on loud
+-- chords". This sits after the power-amp master, before the cab (transformer =
+-- the power-amp's iron; cab = the speaker -- both are distinct, both were
+-- missing).
+--
+-- Minimal model (shift-only, NO new DSP): split the low band with a one-pole
+-- lowpass (`prev + (x-prev)>>shift`, ~120 Hz corner at 48 kHz), soft-clip ONLY
+-- the low band (softClipK = compare+shift, no multiply), and recombine with the
+-- untouched high band. So loud lows bloom/compress while treble stays linear.
+-- Gated on amp-on (bit-exact bypass when off) AND skipped for JC-120 (idx 0,
+-- solid-state = NO output transformer, same exclusion as the D86 sag). The
+-- lowpass state is stashed in the reuse-safe fEqLowL (the cab's first stage
+-- re-initialises fEqLowL = 0, so the stash never leaks). The HF bandwidth droop
+-- of a real transformer is left to the cab rolloff + the D93 emphasis for now;
+-- this phase is just the LF core saturation (the defining character).
+ampTransformerLfShift :: Int
+ampTransformerLfShift = 6      -- one-pole LF split corner ~120 Hz at 48 kHz
+
+ampTransformerKnee :: Sample
+ampTransformerKnee = 5_200_000 -- LF core-saturation knee (loud lows bloom/compress)
+
+ampTransformerFrame :: Sample -> Frame -> Frame
+ampTransformerFrame prevLp f =
+  setMonoSample (if on then out else monoSample f) (setMonoEqLow lp f)
+ where
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoSample f
+  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerLfShift)
+  high = satWide (resize x - resize lp :: Wide)
+  lowSat = softClipK ampTransformerKnee lp
+  out = satWide (resize lowSat + resize high :: Wide)
