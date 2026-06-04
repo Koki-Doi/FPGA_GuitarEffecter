@@ -172,6 +172,110 @@ oversampling/cab items wait:
 - **Method (if ever).** Round-to-nearest (add half-LSB before the shift) or
   TPDF dither at the final output. Cheap but very low expected payoff at 24-bit.
 
+## Further / less-obvious methods (beyond the 8 above)
+
+These attack the "digital" perception from angles the first 8 items do not. They
+are mostly about *adding the analog imperfections that the ear expects* rather
+than removing artifacts. Tagged by cost and whether they need the 33 MHz island
+headroom phase.
+
+### 9. Output-transformer emulation  [HIGH realism, MEDIUM cost, headroom-gated]
+
+- **Why it sounds digital without it.** A real tube amp's output transformer is a
+  big part of "amp warmth": **low-frequency core saturation** (bass notes /
+  power chords push the core and compress/round, adding low-order harmonics that
+  a clean linear output never makes), a **gentle HF bandwidth limit**, a slight
+  low-end resonance bump, and frequency-dependent phase. The chain currently
+  goes clip -> tone -> cab with no transformer stage, so it misses this entire
+  layer of "bloom".
+- **Method.** A small post-power-amp block: a frequency-weighted soft saturator
+  that saturates the LOW band harder than the highs (split low via a one-pole,
+  soft-clip the low band only, recombine) + a gentle output high-shelf droop +
+  optional low resonance bump. The "bass blooms and compresses, treble stays
+  linear" behaviour is the audible tell. Reuses the existing softClipK / one-pole
+  idioms.
+- **Cost / risk.** Medium DSP (a band split + a saturator); on the island ->
+  needs the 33 MHz headroom phase. Distinct from the cab IR (transformer is the
+  power-amp's iron, cab is the speaker) -- both are missing and complementary.
+
+### 10. Waveshaper hysteresis / per-sample memory  [MEDIUM, cheap-ish]
+
+- **Why.** Real clipping is NOT memoryless: tube/diode/magnetic transfer curves
+  depend on signal *history and slew direction* (the curve you trace going up
+  differs from coming down). Every clip here is a static, memoryless transfer
+  function -> the "frozen / same every cycle" quality the ear reads as digital.
+  This is DIFFERENT from the D85/D86 envelope dynamics (those move a *parameter*
+  slowly; hysteresis is a *per-sample* path dependence in the transfer curve).
+- **Method.** Add a small one-sample feedback term to a clip: shift the effective
+  knee by a fraction of the previous output (or of the input slew `x - xPrev`),
+  so a rising edge clips slightly differently than a falling one. Bounded,
+  reset-on-bypass. A little goes a long way; it "thickens" the saturation.
+- **Cost / risk.** Low-medium (one prev register + an add per targeted clip, no
+  multiply if done with shifts). Headroom-aware but cheap. Easy to overdo ->
+  keep subtle, bench-tune.
+
+### 11. Subtle "analog" modulation / micro-detune on the cab or output  [MEDIUM]
+
+- **Why.** A perfectly static spectrum is a digital tell -- real rooms, speakers
+  and tubes have tiny, constant movement (air, microphonics, thermal drift). A
+  bone-static patch sounds "frozen".
+- **Method.** A *very* small LFO-modulated fractional delay (sub-millisecond,
+  ~0.1-0.3 % depth) on the cab output, or a slightly detuned parallel voice
+  (chorus-adjacent but far subtler), adds organic shimmer/movement without an
+  audible chorus effect. Needs fractional-delay interpolation (the cab taps are
+  integer-sample today).
+- **Cost / risk.** Medium (interp + an LFO + a small delay line in BRAM);
+  headroom-gated. Risk: overdone = obvious chorus/seasick. Keep depth tiny.
+
+### 12. Multiband saturation (frequency-dependent clipping)  [HIGH realism, HIGH cost]
+
+- **Why.** The D93 pre/de-emphasis is a crude single-band approximation of the
+  fact that real circuits clip lows and highs *differently* (reactive parts make
+  the knee frequency-dependent). Bass stays tight, mids saturate, highs fizz
+  less.
+- **Method.** Split into 2-3 bands (one-pole crossovers), saturate each with its
+  own knee/hardness, recombine. The "proper" version of D93.
+- **Cost / risk.** High DSP (crossovers + per-band saturators); firmly
+  headroom-gated. Do only after the cheaper items prove insufficient.
+
+### 13. Reverb diffusion quality  [MEDIUM, ambient patches only]
+
+- **Why.** The current reverb is a simple BRAM feedback line; a sparse/comb-y
+  reverb sounds metallic/digital on ambient patches. Real spring/room reverb is
+  dense and diffuse.
+- **Method.** Add a couple of allpass diffusers before/in the feedback loop (the
+  Schroeder/Dattorro idiom) to increase echo density without lengthening decay.
+- **Cost / risk.** Medium (a few allpass stages + BRAM); island-gated. Only helps
+  reverb-on patches, so lower priority than amp/cab.
+
+### 14. Intentional analog noise floor / "alive" idle  [LOW cost, polarising]
+
+- **Why.** Dead-silent digital quiet between notes is itself a "digital" tell;
+  real rigs have a faint hiss/hum floor that the brain associates with "real amp
+  in the room". (Counter-pressure: most users want LESS noise -- so make it
+  optional and *very* low.)
+- **Method.** Inject an extremely low-level shaped noise (LFSR) only while the
+  amp is on, well below the playing level. Cheap (an LFSR + an add). Strictly
+  opt-in; default off.
+- **Cost / risk.** Low DSP; high taste-risk. Likely a toggle, not a default.
+
+### 15. Round-to-nearest in the per-stage shifts  [VERY LOW, free-ish]
+
+- **Why.** Every `satShiftN` truncates toward -inf, so each stage adds a tiny
+  consistent negative DC bias; across ~50 stages these correlate. Inaudible in
+  level terms (24-bit) but the *correlation* is a (very minor) "digital" texture.
+- **Method.** Add half-LSB (`+ (1 << (N-1))`) before each shift = round-to-
+  nearest, removing the per-stage bias. Essentially free (an OR/add in the
+  existing shift), no new DSP, no new state.
+- **Cost / risk.** Negligible; expected payoff also small. Worth folding in
+  opportunistically when a stage is touched anyway, not as its own phase.
+
+**Quick ranking of these extras (realism per effort):** output-transformer (#9)
+and hysteresis (#10) are the two with the best "more analog, believable" payoff;
+#9 is headroom-gated, #10 is cheap-ish. Micro-modulation (#11) and reverb
+diffusion (#13) are situational. Multiband (#12) is the expensive "proper" D93.
+Noise floor (#14) and round-to-nearest (#15) are tiny/optional.
+
 ## The gating prerequisite: island headroom (item 0)
 
 Items 1-3 (cab IR, amp + remaining-clip oversampling) all add DSP to the DS-1
