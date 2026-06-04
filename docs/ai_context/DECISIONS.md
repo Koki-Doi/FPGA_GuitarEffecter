@@ -5924,14 +5924,13 @@ pre-existing 3 failures + 1 error baseline.
   #12 + #13 are shift-only, 0 DSP as predicted)**, BRAM 6, LUT 29644 (+232), FF
   28088. Clash 15-module typecheck clean. bit/hwh md5
   `ad771d7c3c48e981dcd8acdd19c5c2b4` / `7bb6cd9cda6b5a6c5b8ba7996c2ea163`.
-- **Status: built, NOT deployed, verification PENDING (next day).** Bench (Pmod
-  mode 2) checklist -- symptom -> item mapping for isolation: all_off clean / no
-  bitcrusher (everything gated); a touch more low-end weight/bump on tube amps
-  (#9 -- raise f0 / lower gain if it muds); a fuller mid "grind" on cranked amps
-  (#12 -- adjust `ampMidSatKnee`); a denser/smoother reverb tail at the same
-  decay length (#13 -- must not change the reverb decay time or add metallic
-  ring); JC-120 unchanged; pitch correct. D90/D92/D93/D94/D95/D96 are rollback
-  baselines (D96 `581bf6fc` is the current deployed/accepted baseline).
+- **Status: deployed 5-site (board md5 matched `ad771d7c`). Bench-audio ACCEPTED
+  (user-confirmed "合格", 2026-06-05): all_off clean / no bitcrusher, more low-end
+  weight/bump on tube amps (#9), fuller mid grind on cranked amps (#12), denser
+  reverb tail at the same decay (#13), JC-120 unchanged, pitch correct. D97 is
+  the new accepted deployed bitstream baseline, superseding D96** (`581bf6fc`,
+  rollback `/tmp/d96_backup`). Merged to main. The transformer (#9 LF sat + HF
+  droop + LF resonance) is now complete; #10/#11/#12/#13 also done.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampXfmrResFrame`,
   `ampMultibandSatFrame` + constants), `hw/ip/clash/src/AudioLab/Effects/Reverb.hs`
   (`reverbDiffuseFrame` / `reverbDiffLineNext` / `reverbDiffuseY`),
