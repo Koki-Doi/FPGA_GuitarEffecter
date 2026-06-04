@@ -330,12 +330,25 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (ampHighpassFrame <$> ampHpInPrev <*> ampHpOutPrev) <*> distortionPedalsPipe
   ampDriveMulPipe = register Nothing (mapPipe ampDriveMultiplyFrame <$> ampHighpassPipe)
   ampDriveBoostPipe = register Nothing (mapPipe ampDriveBoostFrame <$> ampDriveMulPipe)
-  ampShapePipe = register Nothing (mapPipe ampWaveshapeFrame <$> ampDriveBoostPipe)
+
+  -- Anti-alias pre-emphasis (digital-sound interim): attenuate the highs going
+  -- into the first amp clip so fewer fold back as alias. Shift-only one-pole
+  -- (state in ampPreEmphLpPrev), no DSP, gated amp-on + skips JC-120.
+  ampPreEmphLpPrev = register 0 (frameOr monoEqLow <$> ampPreEmphLpPrev <*> ampPreEmphPipe)
+  ampPreEmphPipe = register Nothing (mapPipe <$> (ampPreEmphFrame <$> ampPreEmphLpPrev) <*> ampDriveBoostPipe)
+
+  ampShapePipe = register Nothing (mapPipe ampWaveshapeFrame <$> ampPreEmphPipe)
 
   ampPreLpPrev = register 0 (frameOr monoWet <$> ampPreLpPrev <*> ampPreLowpassPipe)
   ampPreLowpassPipe = register Nothing (mapPipe <$> (ampPreLowpassFrame <$> ampPreLpPrev) <*> ampShapePipe)
   ampStage2MulPipe = register Nothing (mapPipe ampSecondStageMultiplyFrame <$> ampPreLowpassPipe)
   ampStage2Pipe = register Nothing (mapPipe ampSecondStageFrame <$> ampStage2MulPipe)
+
+  -- Anti-alias de-emphasis (digital-sound interim): restore the highs cut by the
+  -- pre-emphasis, after the second clip. Complementary one-pole, shift-only, no
+  -- DSP, same amp-on + skip-JC-120 gate. Output feeds the amp scoop biquad.
+  ampDeEmphLpPrev = register 0 (frameOr monoEqLow <$> ampDeEmphLpPrev <*> ampDeEmphPipe)
+  ampDeEmphPipe = register Nothing (mapPipe <$> (ampDeEmphFrame <$> ampDeEmphLpPrev) <*> ampStage2Pipe)
 
   -- Per-amp-family resonant tone-stack biquad (realism item 3, D83), inserted
   -- before the 3-band difference EQ. Operates on monoWet (the amp signal).
@@ -343,11 +356,11 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   -- idx 0/1, flat (unity) on the others. Pipeline-split like D82: x1/x2 a
   -- 2-tap delay of the stage-2 monoWet, y1/y2 a 2-tap delay of the recursive
   -- output; feedforward sum precomputed into fAccL one stage earlier.
-  ampScoopX1 = register 0 (delayNext <$> ampScoopX1 <*> (frameOr monoWet 0 <$> ampStage2Pipe) <*> ampStage2Pipe)
-  ampScoopX2 = register 0 (delayNext <$> ampScoopX2 <*> ampScoopX1 <*> ampStage2Pipe)
+  ampScoopX1 = register 0 (delayNext <$> ampScoopX1 <*> (frameOr monoWet 0 <$> ampDeEmphPipe) <*> ampDeEmphPipe)
+  ampScoopX2 = register 0 (delayNext <$> ampScoopX2 <*> ampScoopX1 <*> ampDeEmphPipe)
   ampScoopFfPipe =
     register Nothing $
-      mapPipe <$> (ampToneScoopFeedforwardFrame <$> ampScoopX1 <*> ampScoopX2) <*> ampStage2Pipe
+      mapPipe <$> (ampToneScoopFeedforwardFrame <$> ampScoopX1 <*> ampScoopX2) <*> ampDeEmphPipe
   ampScoopY1 = register 0 (frameOr monoWet <$> ampScoopY1 <*> ampScoopRecPipe)
   ampScoopY2 = register 0 (delayNext <$> ampScoopY2 <*> ampScoopY1 <*> ampScoopRecPipe)
   ampScoopRecPipe =
