@@ -73,6 +73,36 @@ reverbMixFrame f =
   on = flag5 (fGate f)
   mixed = satShift8 (fAccL f + fAcc2L f)
 
+-- ---- Reverb diffusion (D97, digital-sound #13) ------------------------
+-- The reverb is a single comb (1024-sample BRAM feedback line); a single comb
+-- is sparse / metallic on tails. A Schroeder allpass diffuser in the feedback
+-- path increases echo density (more diffuse, less "boingy") WITHOUT lengthening
+-- the decay (an allpass is magnitude-flat -- it only disperses phase). It runs
+-- on the RECIRCULATING signal `monoFb` (the value written to the comb BRAM), so
+-- the clean dry-mix path (`monoDry`, used by reverbMixProductsFrame) is
+-- untouched. g = 1/2 (shift, no multiply); 128-sample internal delay (~2.7 ms).
+-- Gated on reverb-on (flag5): when off the line just passes monoFb through, so
+-- the all_off bypass is bit-exact. Allpass is unconditionally stable for
+-- |g| < 1, so no oscillation. The line + the frame both read the SAME registered
+-- delay and the pre-diffusion monoFb, so their allpass math is consistent.
+--   y[n] = d - x/2   (allpass output, d = delayed buffer value)
+--   w[n] = x + y/2   (written into the buffer)
+reverbDiffuseY :: Vec 128 Sample -> Sample -> Sample
+reverbDiffuseY line x = satWide (resize (line !! (127 :: Int)) - (resize x `shiftR` 1) :: Wide)
+
+reverbDiffLineNext :: Vec 128 Sample -> Maybe Frame -> Vec 128 Sample
+reverbDiffLineNext line Nothing = line
+reverbDiffLineNext line (Just f) = w +>> line
+ where
+  x = monoFb f
+  w = if flag5 (fGate f)
+        then satWide (resize x + (resize (reverbDiffuseY line x) `shiftR` 1) :: Wide)
+        else x
+
+reverbDiffuseFrame :: Vec 128 Sample -> Frame -> Frame
+reverbDiffuseFrame line f =
+  setMonoFb (if flag5 (fGate f) then reverbDiffuseY line (monoFb f) else monoFb f) f
+
 writeReverb :: Maybe Frame -> Maybe (ReverbAddr, Sample)
 writeReverb Nothing = Nothing
 writeReverb (Just f) = Just (fAddr f, monoFb f)

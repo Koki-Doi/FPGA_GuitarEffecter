@@ -623,3 +623,63 @@ ampTransformerHfFrame prevLp f =
   lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerHfShift)
   h = satWide (resize x - resize lp :: Wide)            -- HF band
   out = satWide (resize x - (resize h `shiftR` ampTransformerHfDroop) :: Wide)
+
+-- Transformer low-end resonance bump (D97, #9 final sub-item). A real output
+-- transformer's primary inductance + reflected load make a gentle low-frequency
+-- resonance (a slight bass bump ~110 Hz) on top of the LF saturation. A fixed
+-- peaking biquad, single-stage (the island has +3.2 ns margin so a 5-mul biquad
+-- does not need the D82/D83 split). Hand-designed Q14 target f0 = 110 Hz,
+-- Q = 0.8, +2.0 dB (verified DC ~+2.6 dB skirt / +2.0 dB @ 110 / unity at 500 Hz+
+-- / pole 0.984 stable). Conservative (a "bump", not a boost) to avoid sub-bass
+-- mud on a guitar. Same amp-on + skip-JC-120 gate; x1/x2/y1/y2 are pipeline
+-- state. Sits on the transformer output, after the HF droop, before the cab.
+-- Coeffs bench-tunable (raise f0 / lower gain if it muds).
+ampXfmrResFrame :: Sample -> Sample -> Sample -> Sample -> Frame -> Frame
+ampXfmrResFrame x1 x2 y1 y2 f =
+  setMonoSample (if on then y else x) f
+ where
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoSample f
+  acc =
+    mulS16 x 16418
+      + mulS16 x1 (-32504)
+      + mulS16 x2 16090
+      + mulS16 y1 32504
+      - mulS16 y2 16123 :: Wide
+  y = satShift14 acc
+
+-- Multiband (3-band) mid-focused saturation (D97, digital-sound #12). The D93
+-- pre/de-emphasis is a single-band crude version; real circuits clip the bands
+-- differently. Split into low / mid / high with two one-pole lowpasses, saturate
+-- ONLY the mid band (where the musical amp "grind/body" lives) with a moderate
+-- knee, and pass low + high through (lows are handled by the transformer LF
+-- saturation; highs stay clean to avoid fizz). Shift-only (one-poles + softClipK)
+-- -> NO new DSP. Gated amp-on + skip-JC-120. Two one-pole states stashed in the
+-- reuse-safe fEqLowL (low/mid split) and fEqHighLpL (mid/high split) -- both are
+-- free between the amp master and the cab (the cab re-inits fEqLowL and never
+-- touches fEqHighLpL; the EQ stage overwrites fEqHighLpL downstream). Sits right
+-- after the amp master, before the transformer. ampMidSatKnee is bench-tunable
+-- (lower = more mid grind).
+amp3BandLowShift :: Int
+amp3BandLowShift = 5      -- low/mid split ~240 Hz at 48 kHz
+
+amp3BandHighShift :: Int
+amp3BandHighShift = 2     -- mid/high split ~1.9 kHz at 48 kHz
+
+ampMidSatKnee :: Sample
+ampMidSatKnee = 4_000_000 -- mid-band grind knee (lower = more mid saturation)
+
+ampMultibandSatFrame :: Sample -> Sample -> Frame -> Frame
+ampMultibandSatFrame prevLp1 prevLp2 f =
+  setMonoSample (if on then out else monoSample f)
+    (setMonoEqHighLp lp2 (setMonoEqLow lp1 f))
+ where
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoSample f
+  lp1 = prevLp1 + resize (((resize x - resize prevLp1) :: Signed 25) `shiftR` amp3BandLowShift)
+  lp2 = prevLp2 + resize (((resize x - resize prevLp2) :: Signed 25) `shiftR` amp3BandHighShift)
+  low = lp1
+  mid = satWide (resize lp2 - resize lp1 :: Wide)
+  high = satWide (resize x - resize lp2 :: Wide)
+  midSat = softClipK ampMidSatKnee mid
+  out = satWide (resize low + resize midSat + resize high :: Wide)

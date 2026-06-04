@@ -396,22 +396,40 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampSagEnv = register 0 (ampSagEnvNext <$> ampSagEnv <*> ampResPresencePipe)
   ampMasterPipe = register Nothing (mapPipe <$> (ampMasterFrame <$> ampSagEnv) <*> ampResPresencePipe)
 
+  -- Multiband mid-focused saturation (D97, digital-sound #12): 3-band split,
+  -- saturate only the mid band. Shift-only, no DSP, gated amp-on + skips JC-120.
+  -- Two one-pole states (low/mid in ampMbLp1Prev=fEqLowL, mid/high in
+  -- ampMbLp2Prev=fEqHighLpL). Sits between the amp master and the transformer.
+  ampMbLp1Prev = register 0 (frameOr monoEqLow <$> ampMbLp1Prev <*> ampMbSatPipe)
+  ampMbLp2Prev = register 0 (frameOr monoEqHighLp <$> ampMbLp2Prev <*> ampMbSatPipe)
+  ampMbSatPipe = register Nothing (mapPipe <$> (ampMultibandSatFrame <$> ampMbLp1Prev <*> ampMbLp2Prev) <*> ampMasterPipe)
+
   -- Output-transformer emulation (D94, digital-sound #9): LF core saturation on
   -- the power-amp output, before the cab. Shift-only one-pole LF split + low-band
   -- soft clip (state in ampXfmrLpPrev), no DSP, gated amp-on + skips JC-120.
   ampXfmrLpPrev = register 0 (frameOr monoEqLow <$> ampXfmrLpPrev <*> ampXfmrPipe)
-  ampXfmrPipe = register Nothing (mapPipe <$> (ampTransformerFrame <$> ampXfmrLpPrev) <*> ampMasterPipe)
+  ampXfmrPipe = register Nothing (mapPipe <$> (ampTransformerFrame <$> ampXfmrLpPrev) <*> ampMbSatPipe)
   -- Transformer HF bandwidth droop (D96, #9 cont.): one-pole high-cut right after
   -- the LF saturation, completing the transformer character. Shift-only, no DSP.
   ampXfmrHfPrev = register 0 (frameOr monoEqLow <$> ampXfmrHfPrev <*> ampXfmrHfPipe)
   ampXfmrHfPipe = register Nothing (mapPipe <$> (ampTransformerHfFrame <$> ampXfmrHfPrev) <*> ampXfmrPipe)
+  -- Transformer low-end resonance bump (D97, #9 final): a gentle ~110 Hz peaking
+  -- biquad on the transformer output (after the HF droop). Single-stage 5-mul
+  -- (island has margin); x1/x2/y1/y2 pipeline state. Gated amp-on + skips JC-120.
+  ampXfmrResX1 = register 0 (delayNext <$> ampXfmrResX1 <*> (frameOr monoSample 0 <$> ampXfmrHfPipe) <*> ampXfmrHfPipe)
+  ampXfmrResX2 = register 0 (delayNext <$> ampXfmrResX2 <*> ampXfmrResX1 <*> ampXfmrHfPipe)
+  ampXfmrResY1 = register 0 (frameOr monoSample <$> ampXfmrResY1 <*> ampXfmrResPipe)
+  ampXfmrResY2 = register 0 (delayNext <$> ampXfmrResY2 <*> ampXfmrResY1 <*> ampXfmrResPipe)
+  ampXfmrResPipe =
+    register Nothing $
+      mapPipe <$> (ampXfmrResFrame <$> ampXfmrResX1 <*> ampXfmrResX2 <*> ampXfmrResY1 <*> ampXfmrResY2) <*> ampXfmrHfPipe
 
-  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampXfmrHfPipe) <*> ampXfmrHfPipe)
-  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampXfmrHfPipe)
-  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampXfmrHfPipe)
+  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampXfmrResPipe) <*> ampXfmrResPipe)
+  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampXfmrResPipe)
+  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampXfmrResPipe)
   cabProductsPipe =
     register Nothing $
-      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampXfmrHfPipe
+      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampXfmrResPipe
   cabSatPipe = register Nothing (mapPipe cabSatFrame <$> cabProductsPipe)
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
@@ -457,6 +475,12 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   reverbToneBlendPipe = register Nothing (mapPipe reverbToneBlendFrame <$> reverbToneProductsPipe)
   reverbFeedbackProductsPipe = register Nothing (mapPipe reverbFeedbackProductsFrame <$> reverbToneBlendPipe)
   reverbFeedbackPipe = register Nothing (mapPipe reverbFeedbackFrame <$> reverbFeedbackProductsPipe)
-  reverbMixProductsPipe = register Nothing (mapPipe reverbMixProductsFrame <$> reverbFeedbackPipe)
+  -- Reverb diffusion (D97, digital-sound #13): a Schroeder allpass diffuser on
+  -- the recirculating signal (monoFb), densifying the tail without changing the
+  -- decay or the clean dry-mix path. g=1/2 (shift), 128-sample line, gated
+  -- reverb-on (flag5) so bypass is bit-exact, unconditionally stable.
+  reverbDiffLine = register (repeat 0) (reverbDiffLineNext <$> reverbDiffLine <*> reverbFeedbackPipe)
+  reverbDiffusePipe = register Nothing (mapPipe <$> (reverbDiffuseFrame <$> reverbDiffLine) <*> reverbFeedbackPipe)
+  reverbMixProductsPipe = register Nothing (mapPipe reverbMixProductsFrame <$> reverbDiffusePipe)
   outPipe = register Nothing (mapPipe reverbMixFrame <$> reverbMixProductsPipe)
   outReg = register emptyAxisOut (nextAxisOut <$> outReg <*> outPipe <*> readyOut)

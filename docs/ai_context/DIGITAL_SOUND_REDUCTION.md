@@ -201,7 +201,7 @@ headroom phase.
   split + low-band `softClipK`, 0 new DSP, gated amp-on, JC-120 excluded), on the
   same bitstream as the 40 -> 33 MHz island drop (which restored the island to
   WNS +3.150). The HF bandwidth droop + low-end resonance bump are still to come
-  (left to the cab + D93 for now). bit `a1506fce`. **D96 adds the HF bandwidth droop** (one-pole high-cut, shift-only, 0 DSP) -- LF bloom + HF iron softness now both present; the low-end resonance bump is the only remaining transformer sub-item. See `DECISIONS.md` D94 + D96.
+  (left to the cab + D93 for now). bit `a1506fce`. **D96 adds the HF bandwidth droop** (one-pole high-cut, shift-only, 0 DSP) -- LF bloom + HF iron softness now both present; **D97 adds the low-end resonance bump** (~110 Hz peaking biquad) -- the transformer (LF saturation + HF droop + LF resonance) is now complete. See `DECISIONS.md` D94 + D96 + D97.
 
 ### 10. Waveshaper hysteresis / per-sample memory  [DONE D95 on the amp clips]
 
@@ -237,7 +237,7 @@ headroom phase.
 - **Cost / risk.** Medium (interp + an LFO + a small delay line in BRAM);
   headroom-gated. Risk: overdone = obvious chorus/seasick. Keep depth tiny.
 
-### 12. Multiband saturation (frequency-dependent clipping)  [HIGH realism, HIGH cost]
+### 12. Multiband saturation (frequency-dependent clipping)  [BUILT D97 (amp mids)]
 
 - **Why.** The D93 pre/de-emphasis is a crude single-band approximation of the
   fact that real circuits clip lows and highs *differently* (reactive parts make
@@ -248,7 +248,7 @@ headroom phase.
 - **Cost / risk.** High DSP (crossovers + per-band saturators); firmly
   headroom-gated. Do only after the cheaper items prove insufficient.
 
-### 13. Reverb diffusion quality  [MEDIUM, ambient patches only]
+### 13. Reverb diffusion quality  [BUILT D97 (allpass in the feedback)]
 
 - **Why.** The current reverb is a simple BRAM feedback line; a sparse/comb-y
   reverb sounds metallic/digital on ambient patches. Real spring/room reverb is
