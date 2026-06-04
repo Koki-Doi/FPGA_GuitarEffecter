@@ -6000,10 +6000,14 @@ pre-existing 3 failures + 1 error baseline.
   reverb), LUT 30740 (+~1100, doubled diffusion/cab-mod shift regs), FF 28830.
   Clash typecheck clean (only the standard integerToInt warning). bit/hwh md5
   `18df313f181bf972cb90b9dc2f21692a` / `8f7bb97945442d722c19ff44d0388904`.
-- **Status: BUILT, NOT deployed, NOT bench-verified.** Before deploy: (1) confirm
-  the codec locks at 96 kHz double-speed and mode-2 audio plays at correct pitch;
-  (2) bench-audition the re-voiced chain (all_off clean, each effect's corner/time
-  voicing close to D97, no instability); (3) measure the round-trip latency drop.
-  The re-voiced constants are first-pass principled values -- expect bench fine-
-  tuning (the per-knob tapers / one-pole refits are approximate). Rollback = the
-  deployed D97 baseline (`ad771d7c`).
+- **Status: DEPLOYED 5-site (board md5 matched `18df313f` at all four board
+  resolution sites) + bench-audio ACCEPTED (user-confirmed "合格", 2026-06-05).**
+  The codec locks at 96 kHz double-speed, mode-2 audio plays at correct pitch,
+  the re-voiced chain auditions clean (all_off clean, effects close to the D97
+  voicing, no instability). **D98 (`18df313f`) is the new accepted deployed
+  bitstream baseline, superseding D97** (`ad771d7c`, rollback `/tmp/d97_backup`).
+  Merged to main. The re-voiced constants are first-pass principled values (each
+  carries its old 48 k value in a comment); future bench fine-tuning of any
+  single knob/corner is expected to be a constant-only tweak. **Reference: round
+  trip group delay is now ~half the 48 k figure (codec-dominated); aliasing
+  headroom doubled.**

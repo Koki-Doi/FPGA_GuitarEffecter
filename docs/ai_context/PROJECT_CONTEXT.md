@@ -39,7 +39,7 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 | `audio_lab_pynq/fp02m.py` | ZOOM FP02M expression-pedal layer: `Fp02mCalibration` (JSON load/save), `Fp02mXadcMmioReader` (reads `xadc_wiz_a0` reg `0x244` = VAUX1 via AXI MMIO), `Fp02mPositionMapper` (raw->u8 with invert / deadband / EMA / "C" anti-log taper), `Fp02mWahController`. The pedal is the sole `position_raw` writer (D74/D76). |
 | `hw/ip/clash/src/LowPassFir.hs` | The full PL DSP pipeline. Real source of truth for every effect. |
 | `hw/ip/clash/vhdl/LowPassFir/` | Clash-generated VHDL plus packaged Vivado IP. |
-| `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` | FPGA-master I2S engine for the active Pmod I2S2 path. Generates 12.288 MHz MCLK, 3.072 MHz BCLK, 48 kHz LRCK, supports modes 0 tone / 1 loopback / 2 DSP / 3 mute, and mirrors mode-2 RIGHT slot to both DAC channels via `mode2_right_snapshot` (D50). |
+| `hw/ip/pmod_i2s2/src/pmod_i2s2_master.v` | FPGA-master I2S engine for the active Pmod I2S2 path. Generates 12.288 MHz MCLK, **6.144 MHz BCLK, 96 kHz LRCK (D98 codec double-speed; was 3.072 MHz / 48 kHz through D97)**, supports modes 0 tone / 1 loopback / 2 DSP / 3 mute, and mirrors mode-2 RIGHT slot to both DAC channels via `mode2_right_snapshot` (D50). |
 | `hw/ip/pmod_i2s2/src/axi_pmod_i2s2_status.v` | AXI-Lite status/control slave (`pmod_status_0` @ `0x43D20000`): VERSION `0x00480001`, STATUS, FRAME_COUNT, NONZERO_COUNT, SDOUT_XCOUNT, CLIP_COUNT, LAST/PEAK sample registers, MODE, CLEAR. |
 | `hw/ip/fx_gain/` | Legacy HLS gain IP (instantiated but not stream-connected). |
 | `audio_lab_pynq/AudioLabOverlay.py` | Python facade: overlay loading, AXIS routing, GPIO writes. |
@@ -99,7 +99,9 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   (`cc_dsp_in` / `cc_dsp_out`) added in `island_integration.tcl`. The 50 MHz
   island is what closed the DS-1 distortion timing (WNS -10.387 -> -0.706 ns
   at D75; -0.368 ns at D76; -0.173 ns at D78 with phys_opt; -0.496 ns at
-  D79 after Klon clean-blend). Sample rate is 48 kHz. The control-word CDC
+  D79 after Klon clean-blend). Sample rate is **96 kHz as of D98** (was 48 kHz
+  through D97; codec double-speed via Pmod BCLK = MCLK/2, all fs-dependent DSP
+  constants re-voiced; the DSP island clock is fs-independent and unchanged). The control-word CDC
   (`syncCtrl` in `LowPassFir.hs`) and `paceCount` removal in `Pipeline.hs`
   are load-bearing -- see `DSP_ISLAND_CLOCK_DESIGN.md` and `DECISIONS.md` D75.
 - The Overdrive section has six selectable models on

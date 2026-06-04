@@ -30,9 +30,9 @@ def main(argv=None):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--output-dir', default='./audio_diag')
-    parser.add_argument('--num-frames', type=int, default=48000,
-                        help='samples per capture (default 48000 = 1 s @ 48 kHz)')
-    parser.add_argument('--sample-rate', type=int, default=48000)
+    parser.add_argument('--num-frames', type=int, default=96000,
+                        help='samples per capture (default 96000 = 1 s @ 96 kHz, D98)')
+    parser.add_argument('--sample-rate', type=int, default=96000)
     parser.add_argument('--capture-shorted', action='store_true',
                         help='capture with the input jack shorted/disconnected')
     parser.add_argument('--capture-silence', action='store_true',

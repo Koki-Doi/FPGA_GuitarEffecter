@@ -58,14 +58,16 @@ import argparse
 import time
 
 
+# D98: codec runs double-speed at 96 kHz (BCLK 6.144 MHz = MCLK/2, MCLK
+# unchanged 12.288 MHz = 128fs). Was 48 kHz / 3.072 MHz through D97.
 JB_WIRING = (
     "  JB1  (W14)  D/A MCLK   12.288 MHz\n"
-    "  JB2  (Y14)  D/A LRCK   48 kHz\n"
-    "  JB3  (T11)  D/A SCLK    3.072 MHz\n"
+    "  JB2  (Y14)  D/A LRCK   96 kHz\n"
+    "  JB3  (T11)  D/A SCLK    6.144 MHz\n"
     "  JB4  (T10)  D/A SDIN   24-bit I2S Philips MSB-first\n"
     "  JB7  (V16)  A/D MCLK   12.288 MHz (fanout)\n"
-    "  JB8  (W16)  A/D LRCK   48 kHz     (fanout)\n"
-    "  JB9  (V12)  A/D SCLK    3.072 MHz (fanout)\n"
+    "  JB8  (W16)  A/D LRCK   96 kHz     (fanout)\n"
+    "  JB9  (V12)  A/D SCLK    6.144 MHz (fanout)\n"
     "  JB10 (W13)  A/D SDOUT  <- input\n"
 )
 
@@ -347,8 +349,8 @@ def main():
 
     print("")
     print("[pmod_i2s2] delta over %.1f s:" % args.duration)
-    print("    frames     +%u  (expected ~%u for 48 kHz)"
-          % (d_frames, int(args.duration * 48000)))
+    print("    frames     +%u  (expected ~%u for 96 kHz)"
+          % (d_frames, int(args.duration * 96000)))
     print("    nonzero    +%u" % d_nonzero)
     print("    sdout_xcnt +%u" % d_xcount)
     print("    peak_abs_l = %u  (~%.3f of full-scale)"

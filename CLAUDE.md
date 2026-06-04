@@ -78,6 +78,17 @@ When a previous turn stopped mid-implementation:
   rebuild and a timing-summary check. A bitstream with significantly worse
   WNS than the previous deployed build must not be deployed (latest
   baseline is recorded in `docs/ai_context/TIMING_AND_FPGA_NOTES.md`).
+- The audio sample rate is **96 kHz as of D98** (was 48 kHz through D97;
+  `DECISIONS.md` D98, codec double-speed via Pmod BCLK = MCLK/2). Every
+  fs-dependent DSP constant was re-voiced for 96 kHz: biquad Q14 coeffs
+  (RBJ), one-pole shifts / `onePoleU8` alphas, HP coeffs (`>>9`),
+  envelope / LFO / smoothing time-constants, the wah SVF f-byte map, and
+  the reverb/diffusion/cab-mod delay-line lengths. Each carries its old
+  48 kHz value in a comment. **The 4x oversampler interp + decimation FIRs
+  are ratio-based (fs-independent) and were left unchanged.** When adding a
+  new fs-dependent stage, voice it for 96 kHz, not 48 kHz. The DSP island
+  clock is unrelated to fs (see the island bullet below); raising fs did
+  NOT change it.
 - The DSP runs in a **clock-domain island, FCLK_CLK1 = 40 MHz as of D89**
   (was 50 MHz at D75; lowered to give the DS-1 critical path more budget so
   multiple 4x oversamplers fit -- the whole design now meets timing). `DECISIONS.md`
@@ -199,11 +210,13 @@ When a previous turn stopped mid-implementation:
   `0x43D20000`. Runtime modes are `0=tone`, `1=loopback`, `2=dsp`,
   `3=mute`; mode 2 routes Pmod CS5343 ADC SDOUT on JB10 into
   `i2s_to_stream_0/si`, clocks the I2S IP from the Pmod-generated
-  3.072 MHz / 48 kHz clocks, and sends DSP output back to the Pmod
+  6.144 MHz / 96 kHz clocks (D98 ran the codec in double-speed mode:
+  BCLK = MCLK/2, MCLK unchanged 12.288 MHz = 128fs, LRCK 96 kHz; was
+  3.072 MHz / 48 kHz through D97), and sends DSP output back to the Pmod
   CS4344 DAC. D50 mode 2 intentionally mirrors the IP RIGHT slot into
   both DAC channels via `mode2_right_snapshot` (mono RIGHT output,
-  about one frame / 21 us delay) to avoid the `i2s_to_stream` LEFT
-  extraction bug and `i2sOut` setup race. Use
+  about one frame / ~10.4 us delay at 96 kHz) to avoid the
+  `i2s_to_stream` LEFT extraction bug and `i2sOut` setup race. Use
   `scripts/test_pmod_i2s2.py`, `scripts/pmod_i2s2_mode.py`,
   `scripts/pmod_i2s2_capture_probe.py`, and the two Pmod notebooks
   listed above.

@@ -1452,10 +1452,12 @@ D12)。新しいエフェクトを追加するときは、まず
   `mode2_right_snapshot` が RIGHT slot を左右 DAC slot に複製します。
   `i2s_to_stream` LEFT extraction と `i2sOut` setup race を根本修正する
   まではこの mono RIGHT output を current spec として扱います。
-- **96 kHz / alternate sample-rate work**。Pmod I2S2 は将来 96 kHz
-  実験余地がありますが、現行は 48 kHz / 24-bit / 32-bit slot /
-  I2S Philips 固定です。変更時は Pmod master、I2S IP、Clash timing、
-  HDMI/encoder runtime に影響がないかを別 phase で検証します。
+- **96 kHz sample-rate (D98, 実装済み)**。Pmod I2S2 を CS4344 / CS5343 の
+  ダブルスピードモードで **96 kHz / 24-bit / 32-bit slot / I2S Philips** に
+  変更済み (BCLK = MCLK/2 = 6.144 MHz、MCLK は 12.288 MHz = 128fs 維持;
+  D97 までは 48 kHz / 3.072 MHz)。群遅延 (コーデック支配) が約半分になり、
+  エイリアスの余裕が倍増。DSP の fs 依存定数は全段再ボイシング済み。詳細は
+  `docs/ai_context/DECISIONS.md` D98 / `LATENCY_REDUCTION.md`。
 - **旧 PCM5102 / PCM1808 path は archival**。Phase 7C / 7E / 7D の
   Tcl/XDC/RTL は履歴確認用に残していますが、現行 build では retired です。
   再投入する場合は Pmod I2S2 からの明示的な切替 phase と full rebuild /

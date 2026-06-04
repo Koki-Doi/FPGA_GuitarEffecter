@@ -72,7 +72,7 @@ PYNQ-Z2 ボードには次の外部 IO ヘッダがあり、現状 `audio_lab.xd
 
 優先順位の理由:
 - 外付け I2S audio は同期性が要るので、同じ PMOD にまとめる
-- 高速 (3.072 MHz BCLK / 12.288 MHz MCLK) は PMOD で問題ない
+- 高速 (D98 以降 6.144 MHz BCLK / 12.288 MHz MCLK; D97 までは 3.072 MHz BCLK) は PMOD で問題ない
 - encoder は低速 GPIO で問題なく、Raspberry Pi header に分散できる
 - Arduino header は最後に使う
 
@@ -281,7 +281,8 @@ PMOD JB の現行 active audio module。`audio_lab_pmod_i2s2.xdc` が
   bit-true 同期になり、PCM5102 / PCM1808 で発生した async-clocks
   問題 (D40 / D41) は構造的に発生しない。
 - Phase Pmod-1 では 48 kHz / 24-bit / 32-bit slot / stereo I2S Philips
-  で開始する。96 kHz は Phase Pmod-5 (別 branch、後回し)。
+  で開始した。**96 kHz は D98 で実装済み** (codec double-speed、BCLK 6.144 MHz;
+  上の pin 表の "48 kHz / 3.072 MHz" 表記は D97 までの値、pin 割当は不変)。
 - 本予約は **Phase Pmod-0 docs のみ**だったが、Phase Pmod-1 (2026-05-19、
   branch `feature/pmod-i2s2-bringup`、`DECISIONS.md` D48) で
   実装が入った。**Pmod I2S2 は PMOD JB の唯一の外付け audio

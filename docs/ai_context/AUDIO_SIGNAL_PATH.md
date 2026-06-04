@@ -192,16 +192,16 @@ clk_wiz_audio_ext.clk_out1 (12.288 MHz)
                                       ◄── JB10 (W13) ext_pmod_i2s2_ad_sdout_i
                                               ◄── Pmod I2S2 CS5343 ADC ◄── Line In
 
-         (Deployed = 48 kHz. On branch `feature/96khz-conversion` / D98 the codec
-         runs double-speed: MCLK unchanged 12.288 MHz=128fs, BCLK 6.144 MHz=MCLK/2,
-         LRCK 96 kHz. The numbers below are the deployed 48 kHz path.)
+         (Deployed = 96 kHz as of D98: codec runs CS4344/CS5343 double-speed,
+         MCLK unchanged 12.288 MHz=128fs, BCLK=MCLK/2. Was 48 kHz / BCLK MCLK/4
+         through D97.)
 
          Shared FPGA-master clock tree (one source, two fanouts):
          MCLK 12.288 MHz   ──┬──► JB1 (W14)  ext_pmod_i2s2_da_mclk_o
                              └──► JB7 (V16)  ext_pmod_i2s2_ad_mclk_o
-         BCLK  3.072 MHz   ──┬──► JB3 (T11)  ext_pmod_i2s2_da_sclk_o
+         BCLK  6.144 MHz   ──┬──► JB3 (T11)  ext_pmod_i2s2_da_sclk_o   (was 3.072 @48k)
                              └──► JB9 (V12)  ext_pmod_i2s2_ad_sclk_o
-         LRCK  48 kHz      ──┬──► JB2 (Y14)  ext_pmod_i2s2_da_lrck_o
+         LRCK  96 kHz      ──┬──► JB2 (Y14)  ext_pmod_i2s2_da_lrck_o   (was 48 kHz)
                              └──► JB8 (W16)  ext_pmod_i2s2_ad_lrck_o
 ```
 
@@ -225,7 +225,8 @@ Mode select (AXI register at `0x43D20000 + 0x28`):
   (`i2s_to_stream_0/so`), routed through the RIGHT-to-LEFT mirror
   buffer described below (D50). The Pmod ADC SDOUT feeds
   `i2s_to_stream_0/si`, and `i2s_to_stream_0/bclk` / `/lrclk` are
-  driven by the Pmod-generated 3.072 MHz / 48 kHz clocks
+  driven by the Pmod-generated 6.144 MHz / 96 kHz clocks (D98; was
+  3.072 MHz / 48 kHz through D97)
   (`pmod_master_0/dsp_bclk_o` / `dsp_lrck_o`). All existing
   effects (Overdrive / Distortion / Compressor / Noise Suppressor /
   Amp / Cab / EQ / Reverb / Safe Bypass) work via their existing
@@ -290,10 +291,10 @@ Original (D48 follow-up, mode 0/1 only):
   i2s_to_stream_0/so ─→ ADAU sdata_o (G18)      (DSP output to ADAU DAC)
   Pmod I2S2 sits next to the chain but does not feed it.
 
-After (D49, mode 0/1/2/3):
-  pmod_master_0/dsp_bclk_o (3.072 MHz from clk_wiz_audio_ext / 4)
+After (D49, mode 0/1/2/3; D98 doubled the rate to 96 kHz):
+  pmod_master_0/dsp_bclk_o (6.144 MHz from clk_wiz_audio_ext / 2; was /4 @48k)
                             ─→ i2s_to_stream_0/bclk + slowest_sync_clk
-  pmod_master_0/dsp_lrck_o (48 kHz from bclk_int / 64)
+  pmod_master_0/dsp_lrck_o (96 kHz from bclk_int / 64; was 48 kHz)
                             ─→ i2s_to_stream_0/lrclk
   ext_pmod_i2s2_ad_sdout_i (W13, Pmod ADC SDOUT)
                             ─→ i2s_to_stream_0/si

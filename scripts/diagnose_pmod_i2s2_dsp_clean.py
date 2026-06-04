@@ -24,7 +24,7 @@ Usage on the PYNQ-Z2 (sudo + PYTHONPATH like every other smoke):
 Outputs per phase:
   - applied / dropped kwargs (so any silent typo is visible)
   - mode register read-back
-  - frame_count delta over the window (expected ~48000 / s)
+  - frame_count delta over the window (expected ~96000 / s @96k, D98)
   - clip_count
   - peak_abs L/R (24-bit absolute) + dBFS estimate
   - "INFO" lines: 24-bit signed full-scale = 8388607
@@ -211,8 +211,8 @@ def _watch(mmio, duration, label):
     time.sleep(duration)
     f1 = _read(mmio, REG["FRAME_COUNT"])
     _print_status("%s after %.1f s" % (label, duration), mmio)
-    expected = int(round(48000.0 * duration))
-    print("[diag]     frame delta = %u  (expected ~ %u for 48 kHz)"
+    expected = int(round(96000.0 * duration))  # D98: 96 kHz
+    print("[diag]     frame delta = %u  (expected ~ %u for 96 kHz)"
           % ((f1 - f0) & 0xFFFFFFFF, expected))
 
 
