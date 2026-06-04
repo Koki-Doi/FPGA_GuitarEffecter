@@ -5839,3 +5839,48 @@ pre-existing 3 failures + 1 error baseline.
   `ampHystShift` / `ampHystBias`, both clip frames take a `prevOut`),
   `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampShapePrev` / `ampStage2Prev`
   registers), regenerated Clash VHDL/IP. Branch `feature/amp-waveshaper-hysteresis`.
+
+## D96 — Transformer HF bandwidth droop (#9 cont.) + cab-output micro-modulation (#11)
+
+- **Two bundled digital-sound items, one bitstream** (user asked for #9 + #11
+  together). Both subtle, gated, bench-tunable.
+- **#9 continuation -- transformer HF bandwidth droop.** The D94 transformer did
+  only LF core saturation; a real output transformer also cannot pass the top
+  octave (limited bandwidth rounds the treble -- characteristic "iron"
+  softness). `ampTransformerHfFrame` runs right after the LF saturation stage: a
+  one-pole high-cut (`lp = prev + (x-prev)>>1`, ~3.8 kHz) takes the HF band
+  `h = x - lp` and subtracts a fraction (`h >> 3`, ~-1.2 dB gentle shelf).
+  Shift-only -> **0 new DSP**. Same amp-on + skip-JC-120 gate; one-pole state in
+  `ampXfmrHfPrev` (stashed in reuse-safe `fEqLowL`, re-init by the cab).
+  `ampTransformerHfShift` / `ampTransformerHfDroop` bench-tunable.
+- **#11 -- cab-output micro-modulation.** A perfectly static spectrum is a
+  "digital" tell; real speakers/air have constant tiny movement. A VERY small
+  LFO-modulated fractional delay on the cab output adds organic micro-detune
+  ("analog wobble") without an audible chorus. `cabModFrame`: a 64-deep delay
+  line of the cab output (`cabModLine`), a 16-bit phase LFO (`cabModLfo`,
+  step 3 = ~2.2 Hz), a triangle drives a Q4 fractional read position centered on
+  tap 32 with +-3 samples (~1-2 cents) depth, linear-interpolated (one small
+  multiply). **Gated on cab-on (flag7) so the all_off bypass is bit-exact** (the
+  LFO + line still advance harmlessly when off). Pure modulated delay (vibrato),
+  not a dry/wet blend; depth deliberately tiny. `cabModDepthQ4` / `cabModLfoStep`
+  bench-tunable.
+- **Build / timing (FULLY CLEAN, ample 33 MHz headroom).** Island `clk_fpga_1`
+  (33.334 MHz) **WNS +3.233 ns / 0 fail**; audio fabric `clk_fpga_0` +1.006 / 0
+  fail; **whole design WNS +1.006 / WHS +0.022 / THS 0 -- meets timing.** DSP
+  **134 (+1 vs D95 -- the #11 linear-interp multiply, as predicted)**, BRAM 6
+  (the 64-deep line synthesised as SRL/registers, not BRAM), LUT 29412 (+1357 --
+  the delay line + dynamic `!!` mux + LFO/interp), FF ~31.9k. Clash 15-module
+  typecheck clean. bit/hwh md5 `581bf6fc7813fff7c4a9a9cd0d6b41c2` /
+  `22206436571735d8fc0a49edc64601a2`.
+- **Status.** Deployed 5-site (board md5 matched `581bf6fc`). **Bench-audio
+  ACCEPTED (user-confirmed "合格", 2026-06-04): all_off clean / no bitcrusher,
+  amps rounder on top (HF droop), faint organic movement on cab'd patches (#11
+  not chorus-y), JC-120 unchanged, pitch correct. D96 is the new accepted
+  deployed bitstream baseline, superseding D95** (`27c008ca`, rollback
+  `/tmp/d95_backup`). Merged to main.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampTransformerHfFrame` +
+  shifts), `hw/ip/clash/src/AudioLab/Effects/Cab.hs` (`cabModFrame` /
+  `cabModLfoNext` / `cabModDelayNext` + constants),
+  `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampXfmrHfPipe` stage; `cabModLfo` /
+  `cabModLine` / `cabModPipe` after the cab FIR), regenerated Clash VHDL/IP.
+  Branch `feature/transformer-hf-droop-and-cab-micromod`.

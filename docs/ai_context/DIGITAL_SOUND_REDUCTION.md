@@ -179,7 +179,7 @@ are mostly about *adding the analog imperfections that the ear expects* rather
 than removing artifacts. Tagged by cost and whether they need the 33 MHz island
 headroom phase.
 
-### 9. Output-transformer emulation  [HIGH realism — STARTED D94: LF core saturation]
+### 9. Output-transformer emulation  [HIGH realism — D94 LF saturation + D96 HF droop]
 
 - **Why it sounds digital without it.** A real tube amp's output transformer is a
   big part of "amp warmth": **low-frequency core saturation** (bass notes /
@@ -201,7 +201,7 @@ headroom phase.
   split + low-band `softClipK`, 0 new DSP, gated amp-on, JC-120 excluded), on the
   same bitstream as the 40 -> 33 MHz island drop (which restored the island to
   WNS +3.150). The HF bandwidth droop + low-end resonance bump are still to come
-  (left to the cab + D93 for now). bit `a1506fce`. See `DECISIONS.md` D94.
+  (left to the cab + D93 for now). bit `a1506fce`. **D96 adds the HF bandwidth droop** (one-pole high-cut, shift-only, 0 DSP) -- LF bloom + HF iron softness now both present; the low-end resonance bump is the only remaining transformer sub-item. See `DECISIONS.md` D94 + D96.
 
 ### 10. Waveshaper hysteresis / per-sample memory  [DONE D95 on the amp clips]
 
@@ -224,7 +224,7 @@ headroom phase.
   `27c008ca`. `ampHystShift` is the subtlety knob. Could extend to the
   distortion/OD clips later. See `DECISIONS.md` D95.
 
-### 11. Subtle "analog" modulation / micro-detune on the cab or output  [MEDIUM]
+### 11. Subtle "analog" modulation / micro-detune on the cab or output  [DONE D96]
 
 - **Why.** A perfectly static spectrum is a digital tell -- real rooms, speakers
   and tubes have tiny, constant movement (air, microphonics, thermal drift). A
