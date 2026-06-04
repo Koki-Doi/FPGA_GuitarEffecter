@@ -5784,12 +5784,15 @@ pre-existing 3 failures + 1 error baseline.
   shift-only, 0 new DSP)**, BRAM 6, LUT 27948, FF 27066. Clash 15-module
   typecheck clean. bit/hwh md5 `a1506fce1634a5a33e161fc2c7dbf1b6` /
   `fd797e7a407a30fd5136028faf7694d8`.
-- **Status.** Built; deploy + bench pending. Bench (Pmod mode 2): pitch correct
-  (the 33 MHz step), all_off clean / no bitcrusher, tube amps bloom/compress on
-  loud low chords (transformer), JC-120 unchanged (excluded), highs unchanged,
-  other effects healthy. D90/D92/D93 remain rollback baselines. If the
-  transformer is too compressed/woolly, raise `ampTransformerKnee` or the LF
-  corner; if pitch is wrong (it must not be), the 33 MHz step is the suspect.
+- **Status.** Deployed 5-site (board md5 matched `a1506fce`). **Bench-audio
+  ACCEPTED (user-confirmed "合格", 2026-06-04): pitch correct (the 33 MHz step is
+  transparent, as predicted), all_off clean / no bitcrusher, tube amps
+  bloom/compress on loud low chords (transformer), JC-120 unchanged, highs +
+  other effects healthy. D94 is the new accepted deployed bitstream baseline,
+  superseding D93** (`935cf5f3`, rollback `/tmp/d93_backup`; D92/D90 also
+  retained). Merged to main. **Confirms the 33 MHz island drop is safe and
+  transparent** (third headroom step after D75 50 / D89 40), and the island now
+  has +3.150 ns -- ample room for the next DSP items without a clock change.
 - **Files.** `hw/Pynq-Z2/island_integration.tcl` (40 -> 33 MHz),
   `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampTransformerFrame` +
   `ampTransformerLfShift` / `ampTransformerKnee`),
