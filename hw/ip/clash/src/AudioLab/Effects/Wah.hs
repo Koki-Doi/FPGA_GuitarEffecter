@@ -99,6 +99,11 @@ wahOn f = wahEnabled (fWah f)
 -- vs 350), keeps the mid the same (1600 Hz at pos 192), and lowers
 -- toe (2200 vs 2400) so the upper end stays in the vocal "wah / yeah"
 -- formant region rather than tipping into ice-picky 2.4 kHz territory.
+--
+-- 96 kHz: the Chamberlin SVF f-coef ~ 2*sin(pi*f0/fs), so to keep the SAME
+-- formant Hz (450/700/1100/1600/2200) when fs doubles, every f_byte halves.
+-- D73 48 kHz anchors 15/24/37/53/73 -> 96 kHz anchors 8/12/19/27/37, with the
+-- per-segment slopes halved to match.
 basePositionToFByte :: Unsigned 8 -> Unsigned 8
 basePositionToFByte pos = resize wide
  where
@@ -106,10 +111,10 @@ basePositionToFByte pos = resize wide
   pos16 = resize pos
   wide  :: Unsigned 16
   wide
-    | pos < 64  = 15 + ((pos16              * 9)  `shiftR` 6)
-    | pos < 128 = 24 + (((pos16 - 64)       * 13) `shiftR` 6)
-    | pos < 192 = 37 + (((pos16 - 128)      * 16) `shiftR` 6)
-    | otherwise = 53 + (((pos16 - 192)      * 20) `shiftR` 6)
+    | pos < 64  = 8  + ((pos16              * 4)  `shiftR` 6)
+    | pos < 128 = 12 + (((pos16 - 64)       * 7)  `shiftR` 6)
+    | pos < 192 = 19 + (((pos16 - 128)      * 8)  `shiftR` 6)
+    | otherwise = 27 + (((pos16 - 192)      * 10) `shiftR` 6)
 
 -- Bias modulates the position->freq mapping. Centre at byte 64 (the
 -- ctrlD bits[6:0] mid-point), so bias bytes 0/64/127 produce roughly
@@ -129,9 +134,11 @@ positionToFByte pos biasByte = clamp adjusted
   offset     = (baseSigned * biasSigned) `shiftR` 6
   adjusted   :: Signed 18
   adjusted   = baseSigned + offset
+  -- 96 kHz: f_byte bounds halve with the anchors so the bias sweep still cannot
+  -- collapse to DC or push past Nyquist (was [4, 200] at 48 kHz).
   clamp x
-    | x < 4     = 4
-    | x > 200   = 200
+    | x < 2     = 2
+    | x > 100   = 100
     | otherwise = fromIntegral x
 
 -- Q UI byte -> SVF damping byte (q_coef encoded as u8, 256 == 1.0).
@@ -187,7 +194,9 @@ wahPosSmoothNext prev (Just f)
   prevSigned  = resize (asSigned9 prev)   :: Signed 11
   tgtSigned   = resize (asSigned9 target) :: Signed 11
   delta       = tgtSigned - prevSigned
-  stepDelta   = delta `shiftR` 4
+  -- 96 kHz: >>5 (was >>4) halves the per-sample convergence so the smoothing
+  -- TIME (ms) is unchanged at 2x fs.
+  stepDelta   = delta `shiftR` 5
   candidate   = prevSigned + stepDelta
   -- If delta is non-zero but the shift collapses it to 0, nudge by 1
   -- so the smoother actually reaches the target instead of stalling.

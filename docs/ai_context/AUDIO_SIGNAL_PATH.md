@@ -192,6 +192,10 @@ clk_wiz_audio_ext.clk_out1 (12.288 MHz)
                                       ◄── JB10 (W13) ext_pmod_i2s2_ad_sdout_i
                                               ◄── Pmod I2S2 CS5343 ADC ◄── Line In
 
+         (Deployed = 48 kHz. On branch `feature/96khz-conversion` / D98 the codec
+         runs double-speed: MCLK unchanged 12.288 MHz=128fs, BCLK 6.144 MHz=MCLK/2,
+         LRCK 96 kHz. The numbers below are the deployed 48 kHz path.)
+
          Shared FPGA-master clock tree (one source, two fanouts):
          MCLK 12.288 MHz   ──┬──► JB1 (W14)  ext_pmod_i2s2_da_mclk_o
                              └──► JB7 (V16)  ext_pmod_i2s2_ad_mclk_o

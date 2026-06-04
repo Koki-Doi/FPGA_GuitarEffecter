@@ -189,11 +189,16 @@ cabLevelMixFrame f =
 -- Per-model magnitude (designed): open 1x12 brightest (~-5.7 dB @ 8 kHz),
 -- british 2x12 mid (~-9.3 dB), closed 4x12 darkest/sharpest (~-11.8 dB @
 -- 8 kHz, -26 dB @ 12 kHz).
+-- 96 kHz: the 15-tap FIR is redesigned (windowed-sinc, sum=256=unity DC) to keep
+-- the SAME per-model -6 dB rolloff corner Hz at 2x fs (open ~8.2 k, british
+-- ~6.7 k, closed ~6.1 k). A 15-tap kernel at 96 kHz is gentler above the corner
+-- than the 48 kHz one, so the cab is a touch brighter on british/closed -- this
+-- is bench-tunable (and less anti-fizz is needed at 96 kHz anyway).
 cabSpeakerFirCoeff :: Unsigned 8 -> Vec 8 (Signed 10)
 cabSpeakerFirCoeff model = case model `shiftR` 6 of
-  0 -> 0 :> 0 :> (-1) :> (-2) :> 2 :> 20 :> 62 :> 94 :> Nil       -- open 1x12
-  1 -> 0 :> (-1) :> (-2) :> 0 :> 8 :> 27 :> 57 :> 78 :> Nil       -- british 2x12
-  _ -> 0 :> (-1) :> (-2) :> 1 :> 11 :> 30 :> 55 :> 68 :> Nil      -- closed 4x12
+  0 -> (-1) :> 0 :> 2 :> 8 :> 19 :> 32 :> 43 :> 50 :> Nil        -- open 1x12
+  1 -> 0 :> 1 :> 4 :> 11 :> 20 :> 31 :> 40 :> 42 :> Nil          -- british 2x12
+  _ -> 0 :> 1 :> 5 :> 11 :> 21 :> 31 :> 38 :> 42 :> Nil          -- closed 4x12
 
 -- The FIR is split into two pipeline stages (it is feedforward, so it
 -- pipelines freely -- unlike the biquads' feedback). A single combinational
@@ -234,28 +239,32 @@ cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 -- A perfectly static spectrum is a "digital" tell; real speakers / air / tubes
 -- have tiny constant movement. A VERY small LFO-modulated fractional delay on
 -- the cab output adds organic micro-detune ("analog wobble") without an audible
--- chorus. Pure modulated delay (vibrato) at ~2 Hz, +-3 samples (~1-2 cents) into
--- a 64-deep line, linear-interpolated. Gated on cab-on (flag7) so the all_off
+-- chorus. Pure modulated delay (vibrato) at ~2-3 Hz, +-6 samples (~1-2 cents) into
+-- a 128-deep line (96 kHz; was +-3 / 64-deep at 48 kHz), linear-interpolated.
+-- Gated on cab-on (flag7) so the all_off
 -- bypass is bit-exact (the LFO + line still advance, harmlessly). The depth is
 -- deliberately tiny; cabModDepthQ4 / cabModLfoStep are the bench-tunable knobs.
+-- 96 kHz: LFO step halved (3 -> 2, ~2.9 Hz; closest integer to the 1.5 ideal),
+-- and the center tap + modulation depth double (in samples) so the delay TIME
+-- and the vibrato cents are preserved at 2x fs.
 cabModLfoStep :: Unsigned 16
-cabModLfoStep = 3            -- ~2.2 Hz at 48 kHz (48000 * 3 / 65536)
+cabModLfoStep = 2            -- ~2.9 Hz at 96 kHz (96000 * 2 / 65536)
 
 cabModCenterQ4 :: Unsigned 16
-cabModCenterQ4 = 512         -- center read = tap 32, in Q4 sub-samples (32 << 4)
+cabModCenterQ4 = 1024        -- center read = tap 64, in Q4 sub-samples (64 << 4)
 
 cabModDepthQ4 :: Unsigned 16
-cabModDepthQ4 = 96           -- peak-to-peak modulation, Q4 (96/16 = 6 samples p-p = +-3)
+cabModDepthQ4 = 192          -- peak-to-peak, Q4 (192/16 = 12 samples p-p = +-6 = +-62.5 us)
 
 cabModLfoNext :: Unsigned 16 -> Maybe Frame -> Unsigned 16
 cabModLfoNext ph Nothing = ph
 cabModLfoNext ph (Just _) = ph + cabModLfoStep
 
-cabModDelayNext :: Vec 64 Sample -> Maybe Frame -> Vec 64 Sample
+cabModDelayNext :: Vec 128 Sample -> Maybe Frame -> Vec 128 Sample
 cabModDelayNext line Nothing = line
 cabModDelayNext line (Just f) = monoSample f +>> line
 
-cabModFrame :: Unsigned 16 -> Vec 64 Sample -> Frame -> Frame
+cabModFrame :: Unsigned 16 -> Vec 128 Sample -> Frame -> Frame
 cabModFrame ph line f =
   setMonoSample (if on then out else monoSample f) f
  where

@@ -10,14 +10,23 @@
 // fanned out to BOTH the D/A side (Pin 1..4) and the A/D side (Pin 7..10)
 // of the Pmod I2S2 board so D/A and A/D run bit-true synchronous.
 //
+// 96 kHz CONVERSION (LATENCY_REDUCTION.md method 1): the codec runs in
+// CS4344/CS5343 DOUBLE-SPEED mode. MCLK stays 12.288 MHz = 128*fs at 96 kHz
+// (a valid double-speed MCLK/LRCK ratio of 128). BCLK is now MCLK/2 instead
+// of MCLK/4, so LRCK = BCLK/64 = 96 kHz. Group delay (codec-dominated) ~halves
+// and the DSP aliasing headroom doubles. The DSP island clock is UNCHANGED
+// (FCLK_CLK1 33 MHz, 1 sample/cycle, frequency-independent): at 96 kHz there
+// are still ~347 island cycles per audio sample, far above the ~106-stage
+// pipeline depth, so no timing change is needed.
+//
 // Output mapping (FPGA -> Pmod I2S2 J1):
-//   ext_pmod_i2s2_da_mclk_o   = JB1  W14   12.288 MHz (passthrough)
-//   ext_pmod_i2s2_da_lrck_o   = JB2  Y14   48 kHz
-//   ext_pmod_i2s2_da_sclk_o   = JB3  T11   3.072 MHz
+//   ext_pmod_i2s2_da_mclk_o   = JB1  W14   12.288 MHz (passthrough, 128*fs)
+//   ext_pmod_i2s2_da_lrck_o   = JB2  Y14   96 kHz
+//   ext_pmod_i2s2_da_sclk_o   = JB3  T11   6.144 MHz
 //   ext_pmod_i2s2_da_sdin_o   = JB4  T10   24-bit I2S Philips MSB-first
 //   ext_pmod_i2s2_ad_mclk_o   = JB7  V16   12.288 MHz (fanout of internal MCLK)
-//   ext_pmod_i2s2_ad_lrck_o   = JB8  W16   48 kHz     (fanout of internal LRCK)
-//   ext_pmod_i2s2_ad_sclk_o   = JB9  V12   3.072 MHz  (fanout of internal BCLK)
+//   ext_pmod_i2s2_ad_lrck_o   = JB8  W16   96 kHz     (fanout of internal LRCK)
+//   ext_pmod_i2s2_ad_sclk_o   = JB9  V12   6.144 MHz  (fanout of internal BCLK)
 //   ext_pmod_i2s2_ad_sdout_i  = JB10 W13   24-bit I2S Philips MSB-first  (in)
 //
 // Build-time MODE values (`cfg_mode_i`):
@@ -142,9 +151,11 @@ module pmod_i2s2_master (
 
     // -------------------------------------------------------------------------
     // mclk_phase: 2-bit free-running counter clocked by 12.288 MHz.
-    //   phase 0,1 -> BCLK high
-    //   phase 2,3 -> BCLK low
-    // BCLK = 12.288 MHz / 4 = 3.072 MHz.
+    // 96 kHz double-speed: BCLK = MCLK/2 = 6.144 MHz, so BCLK toggles every
+    // MCLK cycle and there are exactly 2 MCLK cycles per BCLK period.
+    //   phase even (bit0 = 0) -> BCLK high
+    //   phase odd  (bit0 = 1) -> BCLK low
+    // (was BCLK = MCLK/4 = 3.072 MHz at 48 kHz, gated by mclk_phase[1].)
     // -------------------------------------------------------------------------
     reg [1:0] mclk_phase;
     always @(posedge clk_12m288_i) begin
@@ -154,7 +165,7 @@ module pmod_i2s2_master (
             mclk_phase <= mclk_phase + 2'd1;
     end
 
-    wire bclk_int   = ~mclk_phase[1];
+    wire bclk_int   = ~mclk_phase[0];
     assign ext_pmod_i2s2_da_sclk_o = bclk_int;
     assign ext_pmod_i2s2_ad_sclk_o = bclk_int;
     // Internal BCLK / LRCK fanout for the AudioLab DSP I2S converter. Driven
@@ -163,14 +174,17 @@ module pmod_i2s2_master (
     // serializer. No CDC needed between i2s_to_stream_0 and pmod_master_0.
     assign dsp_bclk_o = bclk_int;
 
-    // Single-MCLK pre-pulses for BCLK edge handling.
+    // Single-MCLK pre-pulses for BCLK edge handling. With BCLK = MCLK/2 each
+    // BCLK half-period is exactly one MCLK cycle, so the pre-pulses gate on
+    // mclk_phase[0]:
     //   bclk_fall_pre: next posedge of clk_12m288 will land on a BCLK falling
-    //                  edge. Use this as the global "bit slot tick" so the
-    //                  receiver sees stable DIN during the next BCLK high.
-    //   bclk_rise_pre: next posedge will land on a BCLK rising edge. Use this
-    //                  as the SDOUT sampling tick (data stable on BCLK high).
-    wire bclk_fall_pre = (mclk_phase == 2'd1);
-    wire bclk_rise_pre = (mclk_phase == 2'd3);
+    //                  edge (current phase even -> next phase odd = BCLK low).
+    //                  Used as the global "bit slot tick".
+    //   bclk_rise_pre: next posedge will land on a BCLK rising edge (current
+    //                  phase odd -> next phase even = BCLK high). Used as the
+    //                  SDOUT sampling tick.
+    wire bclk_fall_pre = (mclk_phase[0] == 1'b0);
+    wire bclk_rise_pre = (mclk_phase[0] == 1'b1);
 
     // -------------------------------------------------------------------------
     // bit_idx: 0..63 BCLK slot within a stereo frame.
@@ -198,8 +212,10 @@ module pmod_i2s2_master (
     wire [4:0] slot_idx = bit_idx[4:0];
 
     // -------------------------------------------------------------------------
-    // 1 kHz sine ROM at 48 kHz fs (48 samples / cycle), signed 24-bit,
-    // quarter scale (amplitude = 2^21 = 2097152). Reused from pcm5102_dac_tone.
+    // Sine ROM (48 samples / cycle), signed 24-bit, quarter scale
+    // (amplitude = 2^21 = 2097152). At the new 96 kHz fs this plays a 2 kHz
+    // test tone (was 1 kHz at 48 kHz); it is only the mode-0 probe tone, so the
+    // pitch change is cosmetic. Reused from pcm5102_dac_tone.
     // -------------------------------------------------------------------------
     reg signed [23:0] sine_rom [0:47];
     initial begin
@@ -358,7 +374,7 @@ module pmod_i2s2_master (
     // slot_idx). In mode 2, drive the DAC SDIN from the same buffer
     // position regardless of LEFT vs RIGHT slot. The user hears mono
     // (= IP RIGHT slot data in both ears) with a one-frame delay (about
-    // 21 us, imperceptible).
+    // 10.4 us at 96 kHz, was ~21 us at 48 kHz, imperceptible).
     //
     // The snapshot is updated at bclk_fall_pre, i.e., the MCLK posedge
     // where mclk_phase is 01. At that moment dsp_dac_sdin_i = the IP's so

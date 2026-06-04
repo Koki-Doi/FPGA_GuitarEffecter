@@ -197,16 +197,17 @@ odUsesCleanBlend m = m == 5
 -- precomputed one stage earlier into fAccL, and the recursive stage closes the
 -- loop with only -a1*y1 - a2*y2 (two multiplies, short single-cycle feedback
 -- path) -- the timing-friendly form on the tight DS-1 island.
+-- 96 kHz RBJ coeffs (was the 48 kHz values noted per line).
 odMidFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 odMidFeedforwardCoeffs m = case m of
-  0 -> (17036, -31323, 14422)   -- TS9  : +6 dB @ 720 Hz  (D81 proven coeffs)
-  2 -> (17093, -28766, 12236)   -- BD-2 : +3 dB @ 1500 Hz (upper-mid bite)
+  0 -> (16717, -32063, 15382)   -- TS9  : +6 dB @ 720 Hz  (48k: 17036/-31323/14422)
+  2 -> (16760, -30796, 14185)   -- BD-2 : +3 dB @ 1500 Hz (48k: 17093/-28766/12236)
   _ -> (16384, 0, 0)            -- flat (unity, b0 = 2^14)
 
 odMidFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 odMidFeedbackCoeffs m = case m of
-  0 -> (-31323, 15075)          -- TS9
-  2 -> (-28766, 12945)          -- BD-2
+  0 -> (-32063, 15715)          -- TS9  (48k: -31323/15075)
+  2 -> (-30796, 14561)          -- BD-2 (48k: -28766/12945)
   _ -> (0, 0)                   -- flat (no feedback)
 
 -- Feedforward stage: precompute b0*x + b1*x1 + b2*x2 into fAccL (no feedback,

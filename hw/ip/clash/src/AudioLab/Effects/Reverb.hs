@@ -18,16 +18,18 @@ addrNext :: ReverbAddr -> Maybe Frame -> ReverbAddr
 addrNext addr pipe = if isActive pipe then advanceAddr addr else addr
 
 reverbToneProductsFrame :: Sample -> Sample -> Maybe Frame -> Maybe Frame
--- Real-pedal voicing pass: scale the tone byte by 7/8 so the maximum
--- bright setting is ~224 instead of 255. This keeps a small slice
--- (~12.5%) of the previous tap mixed in at every TONE setting,
--- providing some high-frequency damping in the recirculation path so
--- long tails do not turn metallic.
+-- Real-pedal voicing pass: scale the tone byte so a slice of the previous tap
+-- mixes in at every TONE setting, providing high-frequency damping in the
+-- recirculation path so long tails do not turn metallic. This blend is a
+-- one-pole lowpass on the comb-output stream (input weight = toneScaled/256),
+-- so its damping CORNER is fs-dependent. 96 kHz: the input weight is halved
+-- ((tone - tone>>3) >> 1) so the damping corner Hz is preserved at 2x fs (the
+-- previous-tap weight invTone rises to keep the blend unity).
 reverbToneProductsFrame tap prev = mapPipe applyTone
  where
   applyTone f =
     let tone       = ctrlB (fReverb f)
-        toneScaled = tone - (tone `shiftR` 3)
+        toneScaled = (tone - (tone `shiftR` 3)) `shiftR` 1
         invTone    = 255 - toneScaled
     in f
       { fAccL = mulU8 tap toneScaled
@@ -87,10 +89,12 @@ reverbMixFrame f =
 -- delay and the pre-diffusion monoFb, so their allpass math is consistent.
 --   y[n] = d - x/2   (allpass output, d = delayed buffer value)
 --   w[n] = x + y/2   (written into the buffer)
-reverbDiffuseY :: Vec 128 Sample -> Sample -> Sample
-reverbDiffuseY line x = satWide (resize (line !! (127 :: Int)) - (resize x `shiftR` 1) :: Wide)
+-- 96 kHz: the diffusion line doubles 128 -> 256 so the ~2.7 ms diffusion time
+-- is unchanged at 2x fs.
+reverbDiffuseY :: Vec 256 Sample -> Sample -> Sample
+reverbDiffuseY line x = satWide (resize (line !! (255 :: Int)) - (resize x `shiftR` 1) :: Wide)
 
-reverbDiffLineNext :: Vec 128 Sample -> Maybe Frame -> Vec 128 Sample
+reverbDiffLineNext :: Vec 256 Sample -> Maybe Frame -> Vec 256 Sample
 reverbDiffLineNext line Nothing = line
 reverbDiffLineNext line (Just f) = w +>> line
  where
@@ -99,7 +103,7 @@ reverbDiffLineNext line (Just f) = w +>> line
         then satWide (resize x + (resize (reverbDiffuseY line x) `shiftR` 1) :: Wide)
         else x
 
-reverbDiffuseFrame :: Vec 128 Sample -> Frame -> Frame
+reverbDiffuseFrame :: Vec 256 Sample -> Frame -> Frame
 reverbDiffuseFrame line f =
   setMonoFb (if flag5 (fGate f) then reverbDiffuseY line (monoFb f) else monoFb f) f
 

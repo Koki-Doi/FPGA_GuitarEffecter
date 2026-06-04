@@ -5938,3 +5938,72 @@ pre-existing 3 failures + 1 error baseline.
   state, `reverbDiffLine` / `reverbDiffusePipe`), regenerated Clash VHDL/IP. Also
   added `docs/ai_context/LATENCY_REDUCTION.md` (latency investigation). Branch
   `feature/ds-9res-12multiband-13reverbdiffuse`.
+
+## D98 — 96 kHz conversion (group delay halved + aliasing headroom; whole-chain re-voicing)
+
+- **Goal (LATENCY_REDUCTION.md method 1, the only real latency lever + best
+  anti-alias move).** Run the codec in **CS4344/CS5343 double-speed mode at
+  96 kHz**: MCLK stays 12.288 MHz (= 128*fs, a valid double-speed ratio), BCLK
+  goes MCLK/4 -> **MCLK/2** so LRCK = BCLK/64 = 96 kHz. Codec group delay (the
+  dominant round-trip contributor) ~halves and the DSP aliasing headroom doubles.
+  **Built + FULLY timing-clean; NOT deployed / NOT bench-verified** -- the codec
+  96 kHz lock and all the re-voiced constants need a bench pass. Branch
+  `feature/96khz-conversion`.
+- **Hardware (`hw/ip/pmod_i2s2/src/pmod_i2s2_master.v`).** BCLK divider
+  `bclk_int = ~mclk_phase[1]` (MCLK/4) -> `~mclk_phase[0]` (MCLK/2); the
+  `bclk_fall_pre` / `bclk_rise_pre` pre-pulses now gate on `mclk_phase[0]`
+  (one MCLK per BCLK half-period). dsp_bclk_o / dsp_lrck_o fan out the doubled
+  clocks to `i2s_to_stream`; the mode-2 RIGHT-snapshot DAC path + D50 mono mirror
+  are structurally unchanged (one-frame delay now ~10.4 us). **The riskiest
+  bench item: the 2-FF SDOUT sync is now 1 BCLK, so the rx_shift status/loopback
+  path may misalign 1 bit -- the live mode-2 DSP audio does NOT use rx_shift, so
+  it should be fine, but verify on the bench.** The mode-0 test tone is now 2 kHz
+  (cosmetic).
+- **DSP island clock UNCHANGED** (FCLK_CLK1 33 MHz, 1 sample/cycle,
+  frequency-independent -- paceCount removed at D75). At 96 kHz there are still
+  ~347 island cycles per audio sample, far above the ~106-stage pipeline, so no
+  clock/timing change is needed (pitch is set by the I2S/Pmod sample clock).
+- **KEY finding: the 4x oversampler interp + 15-tap decimation FIRs are
+  RATIO-based (fs-independent)** -- the decimation cutoff sits at fs_base/2 =
+  fs_os/8 in both cases (normalised 0.125), so the SAME coeffs anti-alias at 96 k.
+  Metal/RAT/Big Muff oversamplers need NO change. (This removed the biggest
+  feared chunk of the re-voicing.)
+- **Whole-chain re-voicing (preserve corner Hz / centre Hz / time-constant ms at
+  2x fs).** Computed with a validated RBJ + bilinear helper (`/tmp/revoice96.py`,
+  the RBJ formula reproduces every existing 48 k coeff exactly first):
+  - **7 biquads recomputed (RBJ, fs=96k, Q14):** TS mid hump (720 Hz), Big Muff
+    scoop (700 Hz), amp scoop x3 (Fender 400 Hz / AC30 2200 Hz / JCM800 650 Hz),
+    output-transformer resonance (110 Hz), OD TS9 (720 Hz) + BD-2 (1500 Hz).
+  - **shift-based one-poles +1 shift** (small-a bilinear = a/2): EQ, ampTone,
+    ampResPresence, amp pre/de-emphasis, transformer LF (>>7) / HF (>>2),
+    multiband (>>6 / >>3).
+  - **onePoleU8 alphas (Q8) re-fit via a' = 1 - sqrt(1-a)** for the 11 distortion
+    / RAT tone-HPF/LPF filters + ampPreLowpass (its base/darken tables rebuilt).
+  - **HP one-pole coeffs widened >>8 -> >>9** (ampHighpass 253->509, ratHighpass
+    255->511) so the ~90 / ~30 Hz HP corners hold at 96 k.
+  - **time constants halved** (same ms): comp/NS/gate/fuzz/sag envelope release +
+    smoothing steps, wah position smoothing; **wah SVF f-byte map halved** (same
+    formant Hz, anchors 8/12/19/27/37, clamp [2,100]).
+  - **time-based delay lines doubled** (same ms / decay / comb spacing): reverb
+    comb `Index/Vec 1024 -> 2048` (Types.hs), reverb diffusion `Vec 128 -> 256`,
+    cab micro-mod line `Vec 64 -> 128` (center/depth doubled, LFO step 3->2).
+    **reverb tone-damping one-pole input weight halved** (per-sample LP on the
+    comb output -> corner preserved).
+  - **cab speaker FIR redesigned** for 96 k (15-tap windowed-sinc, -6 dB corner
+    matched per model; gentler above the corner -> cab a touch brighter on
+    british/closed, bench-tunable; less anti-fizz needed at 96 k anyway).
+- **Build / timing (FULLY CLEAN, better island margin than D97).** Island
+  `clk_fpga_1` (33.334 MHz) **WNS +3.141 / 0 fail** (D97 +3.002); audio fabric
+  `clk_fpga_0` **+0.587 / 0 fail** (D97 +0.930); whole design +0.587 / WHS +0.018
+  / THS 0. phys_opt skipped (WNS>=0). DSP **135** (D97 139, NO new multipliers --
+  coefficient-only biquad changes), BRAM **6** (unchanged despite the doubled
+  reverb), LUT 30740 (+~1100, doubled diffusion/cab-mod shift regs), FF 28830.
+  Clash typecheck clean (only the standard integerToInt warning). bit/hwh md5
+  `18df313f181bf972cb90b9dc2f21692a` / `8f7bb97945442d722c19ff44d0388904`.
+- **Status: BUILT, NOT deployed, NOT bench-verified.** Before deploy: (1) confirm
+  the codec locks at 96 kHz double-speed and mode-2 audio plays at correct pitch;
+  (2) bench-audition the re-voiced chain (all_off clean, each effect's corner/time
+  voicing close to D97, no instability); (3) measure the round-trip latency drop.
+  The re-voiced constants are first-pass principled values -- expect bench fine-
+  tuning (the per-knob tapers / one-pole refits are approximate). Rollback = the
+  deployed D97 baseline (`ad771d7c`).

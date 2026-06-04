@@ -446,7 +446,7 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
 
   -- Cab-output micro-modulation (D96, digital-sound #11): a tiny ~2 Hz
   -- LFO-modulated fractional delay on the cab output for organic "analog
-  -- wobble". Gated on cab-on (flag7); the LFO + 64-deep line advance every active
+  -- wobble". Gated on cab-on (flag7); the LFO + 128-deep line advance every active
   -- frame. linear-interp read -> one small multiply.
   cabModLfo = register 0 (cabModLfoNext <$> cabModLfo <*> cabSpkFirPipe)
   cabModLine = register (repeat 0) (cabModDelayNext <$> cabModLine <*> cabSpkFirPipe)
@@ -477,8 +477,8 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   reverbFeedbackPipe = register Nothing (mapPipe reverbFeedbackFrame <$> reverbFeedbackProductsPipe)
   -- Reverb diffusion (D97, digital-sound #13): a Schroeder allpass diffuser on
   -- the recirculating signal (monoFb), densifying the tail without changing the
-  -- decay or the clean dry-mix path. g=1/2 (shift), 128-sample line, gated
-  -- reverb-on (flag5) so bypass is bit-exact, unconditionally stable.
+  -- decay or the clean dry-mix path. g=1/2 (shift), 256-sample line (96 kHz;
+  -- was 128 at 48 kHz), gated reverb-on (flag5) so bypass is bit-exact, stable.
   reverbDiffLine = register (repeat 0) (reverbDiffLineNext <$> reverbDiffLine <*> reverbFeedbackPipe)
   reverbDiffusePipe = register Nothing (mapPipe <$> (reverbDiffuseFrame <$> reverbDiffLine) <*> reverbFeedbackPipe)
   reverbMixProductsPipe = register Nothing (mapPipe reverbMixProductsFrame <$> reverbDiffusePipe)
