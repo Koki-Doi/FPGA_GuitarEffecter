@@ -5828,12 +5828,13 @@ pre-existing 3 failures + 1 error baseline.
   (unchanged -- shift-only, 0 new DSP)**, BRAM 6, LUT 28055 (+107 vs D94), FF
   ~27.1k. Clash 15-module typecheck clean. bit/hwh md5
   `27c008cac0604180869aaecfa1be167a` / `664e54c9c66fd4936a95c158c6aa210b`.
-- **Status.** Built; deploy + bench pending. Bench (Pmod mode 2): all_off clean /
-  no bitcrusher, tube amps (idx 1-5) sound "thicker"/more alive under sustain and
-  pick dynamics (the loop), JC-120 unchanged (excluded), pitch + other effects
-  healthy. D90/D92/D93/D94 remain rollback baselines. If it sounds gritty/
-  unstable, raise `ampHystShift` (5/6 = subtler); the loop cannot oscillate
-  (registered feedback), so any grit is voicing, not instability.
+- **Status.** Deployed 5-site (board md5 matched `27c008ca`). **Bench-audio
+  ACCEPTED (user-confirmed "合格", 2026-06-04): all_off clean / no bitcrusher,
+  tube amps thicker/more alive under sustain + pick dynamics, JC-120 unchanged,
+  pitch + other effects healthy. D95 is the new accepted deployed bitstream
+  baseline, superseding D94** (`a1506fce`, rollback `/tmp/d94_backup`). Merged to
+  main. Confirms registered-feedback hysteresis is stable + musical (no
+  oscillation, as designed).
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampAsymClip` + `hyst`,
   `ampHystShift` / `ampHystBias`, both clip frames take a `prevOut`),
   `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampShapePrev` / `ampStage2Prev`
