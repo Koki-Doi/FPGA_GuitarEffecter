@@ -229,3 +229,49 @@ cabSpeakerFirMixFrame f =
 cabSpeakerFirHistNext :: Vec 14 Sample -> Maybe Frame -> Vec 14 Sample
 cabSpeakerFirHistNext hist Nothing = hist
 cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
+
+-- ---- Cab-output micro-modulation (D96, digital-sound #11) --------------
+-- A perfectly static spectrum is a "digital" tell; real speakers / air / tubes
+-- have tiny constant movement. A VERY small LFO-modulated fractional delay on
+-- the cab output adds organic micro-detune ("analog wobble") without an audible
+-- chorus. Pure modulated delay (vibrato) at ~2 Hz, +-3 samples (~1-2 cents) into
+-- a 64-deep line, linear-interpolated. Gated on cab-on (flag7) so the all_off
+-- bypass is bit-exact (the LFO + line still advance, harmlessly). The depth is
+-- deliberately tiny; cabModDepthQ4 / cabModLfoStep are the bench-tunable knobs.
+cabModLfoStep :: Unsigned 16
+cabModLfoStep = 3            -- ~2.2 Hz at 48 kHz (48000 * 3 / 65536)
+
+cabModCenterQ4 :: Unsigned 16
+cabModCenterQ4 = 512         -- center read = tap 32, in Q4 sub-samples (32 << 4)
+
+cabModDepthQ4 :: Unsigned 16
+cabModDepthQ4 = 96           -- peak-to-peak modulation, Q4 (96/16 = 6 samples p-p = +-3)
+
+cabModLfoNext :: Unsigned 16 -> Maybe Frame -> Unsigned 16
+cabModLfoNext ph Nothing = ph
+cabModLfoNext ph (Just _) = ph + cabModLfoStep
+
+cabModDelayNext :: Vec 64 Sample -> Maybe Frame -> Vec 64 Sample
+cabModDelayNext line Nothing = line
+cabModDelayNext line (Just f) = monoSample f +>> line
+
+cabModFrame :: Unsigned 16 -> Vec 64 Sample -> Frame -> Frame
+cabModFrame ph line f =
+  setMonoSample (if on then out else monoSample f) f
+ where
+  on = flag7 (fGate f)
+  -- Triangle 0..0x7FFF..0 from the 16-bit phase.
+  lower = ph .&. 0x7FFF
+  tri = if testBit ph 15 then 0x7FFF - lower else lower :: Unsigned 16
+  -- Fractional read position in Q4 sub-samples, centered on cabModCenterQ4.
+  modOffQ4 = resize ((resize tri * resize cabModDepthQ4 :: Unsigned 32) `shiftR` 15) :: Unsigned 16
+  readPosQ4 = cabModCenterQ4 - (cabModDepthQ4 `shiftR` 1) + modOffQ4
+  idxA = fromIntegral (readPosQ4 `shiftR` 4) :: Int
+  fracU = readPosQ4 .&. 0xF
+  tapA = line !! idxA
+  tapB = line !! (idxA + 1)
+  -- Linear interpolation: tapA + (tapB - tapA) * frac / 16.
+  delta = resize tapB - resize tapA :: Signed 31
+  fracS = fromIntegral fracU :: Signed 31
+  interp = (delta * fracS) `shiftR` 4
+  out = satWide (resize tapA + resize interp :: Wide)

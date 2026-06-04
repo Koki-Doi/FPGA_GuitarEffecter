@@ -401,13 +401,17 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   -- soft clip (state in ampXfmrLpPrev), no DSP, gated amp-on + skips JC-120.
   ampXfmrLpPrev = register 0 (frameOr monoEqLow <$> ampXfmrLpPrev <*> ampXfmrPipe)
   ampXfmrPipe = register Nothing (mapPipe <$> (ampTransformerFrame <$> ampXfmrLpPrev) <*> ampMasterPipe)
+  -- Transformer HF bandwidth droop (D96, #9 cont.): one-pole high-cut right after
+  -- the LF saturation, completing the transformer character. Shift-only, no DSP.
+  ampXfmrHfPrev = register 0 (frameOr monoEqLow <$> ampXfmrHfPrev <*> ampXfmrHfPipe)
+  ampXfmrHfPipe = register Nothing (mapPipe <$> (ampTransformerHfFrame <$> ampXfmrHfPrev) <*> ampXfmrPipe)
 
-  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampXfmrPipe) <*> ampXfmrPipe)
-  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampXfmrPipe)
-  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampXfmrPipe)
+  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampXfmrHfPipe) <*> ampXfmrHfPipe)
+  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampXfmrHfPipe)
+  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampXfmrHfPipe)
   cabProductsPipe =
     register Nothing $
-      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampXfmrPipe
+      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampXfmrHfPipe
   cabSatPipe = register Nothing (mapPipe cabSatFrame <$> cabProductsPipe)
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
@@ -422,11 +426,19 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (cabSpeakerFirProductsFrame <$> cabSpkHist) <*> cabMixPipe
   cabSpkFirPipe = register Nothing (mapPipe cabSpeakerFirMixFrame <$> cabSpkProductsPipe)
 
+  -- Cab-output micro-modulation (D96, digital-sound #11): a tiny ~2 Hz
+  -- LFO-modulated fractional delay on the cab output for organic "analog
+  -- wobble". Gated on cab-on (flag7); the LFO + 64-deep line advance every active
+  -- frame. linear-interp read -> one small multiply.
+  cabModLfo = register 0 (cabModLfoNext <$> cabModLfo <*> cabSpkFirPipe)
+  cabModLine = register (repeat 0) (cabModDelayNext <$> cabModLine <*> cabSpkFirPipe)
+  cabModPipe = register Nothing (mapPipe <$> (cabModFrame <$> cabModLfo <*> cabModLine) <*> cabSpkFirPipe)
+
   eqLowPrev = register 0 (frameOr monoEqLow <$> eqLowPrev <*> eqFilterPipe)
   eqHighPrev = register 0 (frameOr monoEqHighLp <$> eqHighPrev <*> eqFilterPipe)
   eqFilterPipe =
     register Nothing $
-      mapPipe <$> (eqFilterFrame <$> eqLowPrev <*> eqHighPrev) <*> cabSpkFirPipe
+      mapPipe <$> (eqFilterFrame <$> eqLowPrev <*> eqHighPrev) <*> cabModPipe
   eqBandPipe = register Nothing (mapPipe eqBandFrame <$> eqFilterPipe)
   eqProductsPipe = register Nothing (mapPipe eqProductsFrame <$> eqBandPipe)
   eqMixPipe = register Nothing (mapPipe eqMixFrame <$> eqProductsPipe)

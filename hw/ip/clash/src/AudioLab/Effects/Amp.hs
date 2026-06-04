@@ -597,3 +597,29 @@ ampTransformerFrame prevLp f =
   high = satWide (resize x - resize lp :: Wide)
   lowSat = softClipK ampTransformerKnee lp
   out = satWide (resize lowSat + resize high :: Wide)
+
+-- Transformer HF bandwidth droop (D96, #9 continuation). A real output
+-- transformer cannot pass the top octave -- its limited bandwidth rounds the
+-- treble, a characteristic "iron" softness. A gentle one-pole high-cut on the
+-- transformer output: take the HF band `h = x - lp` (lp = one-pole lowpass,
+-- ~3.8 kHz corner) and subtract a fraction (`h >> ampTransformerHfDroop`) so the
+-- top is shelved down a touch. Shift-only -> NO new DSP. Same amp-on + skip-
+-- JC-120 gate as the LF stage; its own one-pole state stashed in the reuse-safe
+-- fEqLowL (overwritten by the cab's first stage). Runs right after the LF
+-- saturation stage so the two transformer behaviours (LF bloom + HF droop) are
+-- complete. ampTransformerHfShift / ampTransformerHfDroop are bench-tunable.
+ampTransformerHfShift :: Int
+ampTransformerHfShift = 1      -- one-pole HF corner ~3.8 kHz at 48 kHz
+
+ampTransformerHfDroop :: Int
+ampTransformerHfDroop = 3      -- subtract 1/2^n of the HF band (gentle ~-1.2 dB shelf)
+
+ampTransformerHfFrame :: Sample -> Frame -> Frame
+ampTransformerHfFrame prevLp f =
+  setMonoSample (if on then out else monoSample f) (setMonoEqLow lp f)
+ where
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoSample f
+  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerHfShift)
+  h = satWide (resize x - resize lp :: Wide)            -- HF band
+  out = satWide (resize x - (resize h `shiftR` ampTransformerHfDroop) :: Wide)
