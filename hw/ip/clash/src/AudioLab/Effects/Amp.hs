@@ -218,8 +218,20 @@ ampDeEmphFrame prevLp f =
 -- fallback path with a low percent value) keeps the D52 knees
 -- unchanged regardless of drive_mode so older notebooks see no
 -- behavioural change.
-ampAsymClip :: Unsigned 3 -> Unsigned 8 -> Bool -> Sample -> Sample
-ampAsymClip modelIdx intensity drive x
+-- ``hyst`` is the per-sample hysteresis bias (realism #10, D95): a fraction of
+-- this clip's PREVIOUS output, threaded as a pipeline register. It shifts the
+-- knees with signal history so a rising edge clips slightly differently than a
+-- falling one -- real tube/diode/magnetic transfer curves are NOT memoryless
+-- (the curve traced going up differs from coming down), and that path
+-- dependence is part of the "analog thickness" a static waveshaper lacks. When
+-- the previous output was high-positive (hyst > 0) the positive knee lowers
+-- (the clipper stays engaged -> sticky high) and the negative knee rises
+-- (harder to clip negative); symmetric for hyst < 0. Bounded and STABLE: hyst
+-- comes from a registered previous output, so there is no combinational loop,
+-- and |hyst| stays a small fraction of the knee. ``hyst = 0`` reproduces the
+-- pre-D95 memoryless clip exactly (so callers that pass 0 are byte-identical).
+ampAsymClip :: Unsigned 3 -> Unsigned 8 -> Bool -> Sample -> Sample -> Sample
+ampAsymClip modelIdx intensity drive hyst x
   | x > posKnee =
       satWide (resize (resize posKnee + (((resize x :: Signed 25) - resize posKnee) `shiftR` posShift) :: Signed 25))
   | x < negate negKnee =
@@ -228,16 +240,26 @@ ampAsymClip modelIdx intensity drive x
  where
   ch :: Signed 25
   ch = resize (asSigned9 intensity)
+  hystS :: Signed 25
+  hystS = resize hyst
   -- Extra knee shrink in Drive mode, per-model (linear in the per-model
   -- delta so high-gain models cut deeper).
   posDriveDelta :: Signed 25
   posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
   negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
-  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta) :: Sample
-  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta) :: Sample
+  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
+  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
+
+-- | Hysteresis bias from a previous clip output: a small signed fraction
+-- (1/2^ampHystShift) of the prior output sample. Larger shift = subtler memory.
+ampHystShift :: Int
+ampHystShift = 4
+
+ampHystBias :: Sample -> Sample
+ampHystBias prevOut = prevOut `shiftR` ampHystShift
 
 -- | JC-120 clean-channel ceiling. The real JC-120 is a solid-state, hi-fi
 -- *clean* amp that does not clip in normal playing; the shared waveshaper
@@ -250,17 +272,21 @@ ampAsymClip modelIdx intensity drive x
 ampJc120CleanKnee :: Sample
 ampJc120CleanKnee = 7_500_000
 
-ampWaveshapeFrame :: Frame -> Frame
-ampWaveshapeFrame f =
+-- ``prevOut`` is this stage's previous output (pipeline register), feeding the
+-- D95 hysteresis. JC-120 (clean) and the amp-off bypass pass hyst = 0 implicitly
+-- (they do not call ampAsymClip), so they stay byte-identical.
+ampWaveshapeFrame :: Sample -> Frame -> Frame
+ampWaveshapeFrame prevOut f =
   setMonoWet (if on then shaped else monoSample f) f
  where
   on = flag6 (fGate f)
   idx = ampModelIdxF f
   drive = ampDriveModeF f
   intensity = ampCharForModel idx
+  hyst = ampHystBias prevOut
   shaped
     | idx == 0  = softClipK ampJc120CleanKnee (monoWet f)  -- JC-120: clean SS channel
-    | otherwise = ampAsymClip idx intensity drive (monoWet f)
+    | otherwise = ampAsymClip idx intensity drive hyst (monoWet f)
 
 ampPreLowpassFrame :: Sample -> Frame -> Frame
 ampPreLowpassFrame prev f =
@@ -297,8 +323,8 @@ ampSecondStageMultiplyFrame f =
        + resize (charByte `shiftR` 2)
        + driveBonus
 
-ampSecondStageFrame :: Frame -> Frame
-ampSecondStageFrame f =
+ampSecondStageFrame :: Sample -> Frame -> Frame
+ampSecondStageFrame prevOut f =
   setMonoWet (if on then shaped else monoSample f) f
  where
   on = flag6 (fGate f)
@@ -308,10 +334,11 @@ ampSecondStageFrame f =
   -- touch-sensitive by halving the per-model intensity.
   intensity = ampCharForModel idx `shiftR` 1
   s2in = satShift7 (fAccL f)
+  hyst = ampHystBias prevOut
   -- JC-120 stays clean here too (same high-knee ceiling as stage 1).
   shaped
     | idx == 0  = softClipK ampJc120CleanKnee s2in
-    | otherwise = ampAsymClip idx intensity drive s2in
+    | otherwise = ampAsymClip idx intensity drive hyst s2in
 
 -- Per-amp-family resonant tone-stack biquad (realism item 3 / R3, D83).
 -- The existing 3-band difference EQ (ampToneFilterFrame / ampToneBandFrame

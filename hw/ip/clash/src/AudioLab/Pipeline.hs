@@ -337,12 +337,18 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   ampPreEmphLpPrev = register 0 (frameOr monoEqLow <$> ampPreEmphLpPrev <*> ampPreEmphPipe)
   ampPreEmphPipe = register Nothing (mapPipe <$> (ampPreEmphFrame <$> ampPreEmphLpPrev) <*> ampDriveBoostPipe)
 
-  ampShapePipe = register Nothing (mapPipe ampWaveshapeFrame <$> ampPreEmphPipe)
+  -- Waveshaper hysteresis (digital-sound #10, D95): the clip knee shifts with a
+  -- fraction of this stage's PREVIOUS output (ampShapePrev), giving the transfer
+  -- curve per-sample memory (rising vs falling clip differently). Registered
+  -- prev = no combinational loop; hyst=0 on JC-120 / amp-off = byte-identical.
+  ampShapePrev = register 0 (frameOr monoWet <$> ampShapePrev <*> ampShapePipe)
+  ampShapePipe = register Nothing (mapPipe <$> (ampWaveshapeFrame <$> ampShapePrev) <*> ampPreEmphPipe)
 
   ampPreLpPrev = register 0 (frameOr monoWet <$> ampPreLpPrev <*> ampPreLowpassPipe)
   ampPreLowpassPipe = register Nothing (mapPipe <$> (ampPreLowpassFrame <$> ampPreLpPrev) <*> ampShapePipe)
   ampStage2MulPipe = register Nothing (mapPipe ampSecondStageMultiplyFrame <$> ampPreLowpassPipe)
-  ampStage2Pipe = register Nothing (mapPipe ampSecondStageFrame <$> ampStage2MulPipe)
+  ampStage2Prev = register 0 (frameOr monoWet <$> ampStage2Prev <*> ampStage2Pipe)
+  ampStage2Pipe = register Nothing (mapPipe <$> (ampSecondStageFrame <$> ampStage2Prev) <*> ampStage2MulPipe)
 
   -- Anti-alias de-emphasis (digital-sound interim): restore the highs cut by the
   -- pre-emphasis, after the second clip. Complementary one-pole, shift-only, no

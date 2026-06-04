@@ -203,7 +203,7 @@ headroom phase.
   WNS +3.150). The HF bandwidth droop + low-end resonance bump are still to come
   (left to the cab + D93 for now). bit `a1506fce`. See `DECISIONS.md` D94.
 
-### 10. Waveshaper hysteresis / per-sample memory  [MEDIUM, cheap-ish]
+### 10. Waveshaper hysteresis / per-sample memory  [DONE D95 on the amp clips]
 
 - **Why.** Real clipping is NOT memoryless: tube/diode/magnetic transfer curves
   depend on signal *history and slew direction* (the curve you trace going up
@@ -218,6 +218,11 @@ headroom phase.
 - **Cost / risk.** Low-medium (one prev register + an add per targeted clip, no
   multiply if done with shifts). Headroom-aware but cheap. Easy to overdo ->
   keep subtle, bench-tune.
+- **Status (D95).** BUILT on both amp clip stages (`ampAsymClip` knee shifted by
+  `prevOut >> 4`, registered prev = no combinational loop, 0 new DSP, JC-120 +
+  amp-off byte-identical). Island stayed +3.085 (33 MHz headroom). bit
+  `27c008ca`. `ampHystShift` is the subtlety knob. Could extend to the
+  distortion/OD clips later. See `DECISIONS.md` D95.
 
 ### 11. Subtle "analog" modulation / micro-detune on the cab or output  [MEDIUM]
 

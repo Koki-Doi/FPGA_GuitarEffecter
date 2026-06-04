@@ -5798,3 +5798,43 @@ pre-existing 3 failures + 1 error baseline.
   `ampTransformerLfShift` / `ampTransformerKnee`),
   `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampXfmrPipe` stage + cab repointed),
   regenerated Clash VHDL/IP. Branch `feature/output-transformer-emulation-island33`.
+
+## D95 — Waveshaper hysteresis / per-sample memory on the amp clips (digital-sound #10)
+
+- **Goal.** `DIGITAL_SOUND_REDUCTION.md` #10. Real tube/diode/magnetic transfer
+  curves are NOT memoryless -- the curve traced going up differs from coming down
+  (path dependence / a loop). Every clip here is a static, memoryless function,
+  which the ear reads as the "frozen / same every cycle" digital quality. This is
+  DISTINCT from the D85/D86 envelope dynamics (those move a *parameter* slowly;
+  hysteresis is a *per-sample* path dependence in the transfer curve itself).
+- **Method (shift-only, NO new DSP).** `ampAsymClip` gains a `hyst` argument = a
+  small signed fraction (`prevOut >> ampHystShift`, shift = 4 -> 1/16) of THAT
+  clip stage's previous output, threaded as a pipeline register. It shifts the
+  knees with signal history: `posKnee -= hyst`, `negKnee += hyst`. When the
+  previous output was high-positive the positive knee lowers (clipper stays
+  engaged -> sticky high) and the negative knee rises (harder to clip negative);
+  symmetric for the negative direction -- a hysteresis loop. Applied to BOTH amp
+  clip stages (`ampWaveshapeFrame` via `ampShapePrev`, `ampSecondStageFrame` via
+  `ampStage2Prev`). **STABLE / no combinational loop** (hyst comes from a
+  REGISTERED previous output, not the current one), and `|hyst|` stays a small
+  fraction of the knee (~7-11 %). `hyst = 0` reproduces the pre-D95 memoryless
+  clip bit-for-bit, so **JC-120 (idx 0, uses softClipK) and the amp-off bypass
+  are byte-identical** (they never call ampAsymClip). `ampHystShift` is the
+  bench-tunable subtlety knob (larger = subtler).
+- **Build / timing (FULLY CLEAN, 33 MHz headroom absorbed it easily).** Island
+  `clk_fpga_1` (33.334 MHz) **WNS +3.085 ns / 0 fail** (D94 was +3.150 -- the
+  hysteresis cost almost nothing); audio fabric `clk_fpga_0` +0.663 / 0 fail;
+  **whole design WNS +0.663 / WHS +0.025 / THS 0 -- meets timing.** DSP **133
+  (unchanged -- shift-only, 0 new DSP)**, BRAM 6, LUT 28055 (+107 vs D94), FF
+  ~27.1k. Clash 15-module typecheck clean. bit/hwh md5
+  `27c008cac0604180869aaecfa1be167a` / `664e54c9c66fd4936a95c158c6aa210b`.
+- **Status.** Built; deploy + bench pending. Bench (Pmod mode 2): all_off clean /
+  no bitcrusher, tube amps (idx 1-5) sound "thicker"/more alive under sustain and
+  pick dynamics (the loop), JC-120 unchanged (excluded), pitch + other effects
+  healthy. D90/D92/D93/D94 remain rollback baselines. If it sounds gritty/
+  unstable, raise `ampHystShift` (5/6 = subtler); the loop cannot oscillate
+  (registered feedback), so any grit is voicing, not instability.
+- **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampAsymClip` + `hyst`,
+  `ampHystShift` / `ampHystBias`, both clip frames take a `prevOut`),
+  `hw/ip/clash/src/AudioLab/Pipeline.hs` (`ampShapePrev` / `ampStage2Prev`
+  registers), regenerated Clash VHDL/IP. Branch `feature/amp-waveshaper-hysteresis`.
