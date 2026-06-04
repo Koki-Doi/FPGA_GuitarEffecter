@@ -122,7 +122,8 @@ tubeScreamerHpfFrame prevLp f =
  where
   on = tubeScreamerOn f
   -- Stronger low cut into the clip stage for a TS-style mid focus.
-  alpha = 4 + (distTight (fOd f) `shiftR` 4)
+  -- 96 kHz: bilinear-refit (was 4 + tight>>4) to hold the same HPF corner Hz.
+  alpha = 2 + (distTight (fOd f) `shiftR` 5)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -149,12 +150,13 @@ tubeScreamerMidFrame x1 x2 y1 y2 f =
  where
   on = tubeScreamerOn f
   x = monoSample f
+  -- 96 kHz RBJ coeffs (720 Hz, Q 0.8, +6 dB); was 17036/-31323/14422/31323/15075 @48k.
   acc =
-    mulS16 x 17036
-      + mulS16 x1 (-31323)
-      + mulS16 x2 14422
-      + mulS16 y1 31323
-      - mulS16 y2 15075 :: Wide
+    mulS16 x 16717
+      + mulS16 x1 (-32063)
+      + mulS16 x2 15382
+      + mulS16 y1 32063
+      - mulS16 y2 15715 :: Wide
   y = satShift14 acc
 
 tubeScreamerMulFrame :: Frame -> Frame
@@ -184,7 +186,8 @@ tubeScreamerPostLpfFrame prevLp f =
   on = tubeScreamerOn f
   tone = ctrlA (fDist f)
   -- Darker post-LPF emphasises the mid band and avoids piercing highs.
-  alpha = 56 + (tone `shiftR` 1)
+  -- 96 kHz: bilinear-refit (was 56 + tone>>1) to hold the same LPF corner Hz.
+  alpha = 30 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -205,7 +208,8 @@ metalHpfFrame prevLp f =
  where
   on = metalDistortionOn f
   -- Tight low cut for modern-metal-style palm-mute response.
-  alpha = 8 + (distTight (fOd f) `shiftR` 3)
+  -- 96 kHz: bilinear-refit (was 8 + tight>>3) to hold the same HPF corner Hz.
+  alpha = 4 + (distTight (fOd f) `shiftR` 4)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -317,7 +321,8 @@ metalPostLpfFrame prevLp f =
   on = metalDistortionOn f
   tone = ctrlA (fDist f)
   -- Dark post-LPF keeps the high-gain top end controlled.
-  alpha = 40 + (tone `shiftR` 1)
+  -- 96 kHz: bilinear-refit (was 40 + tone>>1) to hold the same LPF corner Hz.
+  alpha = 21 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -344,7 +349,8 @@ ds1HpfFrame prevLp f =
  where
   on = ds1On f
   -- Moderate input low cut; tighter than TS, looser than metal.
-  alpha = 5 + (distTight (fOd f) `shiftR` 4)
+  -- 96 kHz: bilinear-refit (was 5 + tight>>4) to hold the same HPF corner Hz.
+  alpha = 3 + (distTight (fOd f) `shiftR` 5)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -378,7 +384,8 @@ ds1ToneFrame prevLp f =
   on = ds1On f
   tone = ctrlA (fDist f)
   -- Brighter than TS; cutting top end without full pass-through.
-  alpha = 104 + (tone `shiftR` 1)
+  -- 96 kHz: bilinear-refit (was 104 + tone>>1) to hold the same LPF corner Hz.
+  alpha = 59 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -491,15 +498,16 @@ bigMuffScoopFeedforwardFrame x1 x2 f =
  where
   on = bigMuffOn f
   x = monoSample f
-  ff = mulS16 x 15350 + mulS16 x1 (-29618) + mulS16 x2 14393 :: Wide
+  -- 96 kHz RBJ coeffs (700 Hz, Q 0.8, -10 dB); was 15350/-29618/14393 @48k.
+  ff = mulS16 x 15841 + mulS16 x1 (-31148) + mulS16 x2 15339 :: Wide
 
 bigMuffScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopRecursiveFrame y1 y2 f =
   setMonoSample (if on then y else monoSample f) f
  where
   on = bigMuffOn f
-  -- -a1 = +29618, -a2 = -13359; fAcc3L already holds the feedforward sum.
-  y = satShift14 (fAcc3L f + mulS16 y1 29618 - mulS16 y2 13359)
+  -- 96 kHz: -a1 = +31148, -a2 = -14797 (was 29618 / 13359); fAcc3L holds the FF sum.
+  y = satShift14 (fAcc3L f + mulS16 y1 31148 - mulS16 y2 14797)
 
 bigMuffToneFrame :: Sample -> Frame -> Frame
 bigMuffToneFrame prevLp f =
@@ -508,7 +516,8 @@ bigMuffToneFrame prevLp f =
   on = bigMuffOn f
   tone = ctrlA (fDist f)
   -- Darker tone curve keeps top-end fizz off the output.
-  alpha = 48 + (tone `shiftR` 1)
+  -- 96 kHz: bilinear-refit (was 48 + tone>>1) to hold the same LPF corner Hz.
+  alpha = 25 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -549,8 +558,9 @@ fuzzFacePreFrame f =
 -- the pedal is off so OFF stays bit-exact). The clip stage uses it to drift
 -- the knees with the playing level -- the level-dependent behaviour a static
 -- waveshaper lacks. No multiply (abs + shift + compare only), so no new DSP.
+-- 96 kHz: halved (was 4096) so the bias envelope release TIME is unchanged.
 ffBiasReleaseStep :: Sample
-ffBiasReleaseStep = 4096
+ffBiasReleaseStep = 2048
 
 fuzzFaceBiasEnvNext :: Sample -> Maybe Frame -> Sample
 fuzzFaceBiasEnvNext env Nothing = env
@@ -587,7 +597,8 @@ fuzzFaceToneFrame prevLp f =
   on = fuzzFaceOn f
   tone = ctrlA (fDist f)
   -- "Round vs. bright", still rolling off the very top.
-  alpha = 80 + (tone `shiftR` 1)
+  -- 96 kHz: bilinear-refit (was 80 + tone>>1) to hold the same LPF corner Hz.
+  alpha = 44 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -607,8 +618,9 @@ ratHighpassFrame prevIn prevOut f =
  where
   on = flag4 (fGate f)
   x = monoSample f
+  -- 96 kHz: 511/512 with >>9 (was 255/256 >>8) keeps the ~30 Hz HP corner at 2x fs.
   highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 255 `shiftR` 8))
+    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 511 `shiftR` 9))
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =
@@ -628,7 +640,8 @@ ratOpAmpLowpassFrame prev f =
   setMonoWet (if on then low else monoSample f) f
  where
   on = flag4 (fGate f)
-  alpha = 184 - resize (ctrlC (fRat f) `shiftR` 1) :: Unsigned 8
+  -- 96 kHz: bilinear-refit (was 184 - drive>>1) to hold the op-amp LPF corner.
+  alpha = 120 - resize ((ctrlC (fRat f) `shiftR` 2) + (ctrlC (fRat f) `shiftR` 3)) :: Unsigned 8
   low = onePoleU8 alpha prev (monoWet f)
 
 -- RAT 4x oversampled hard clip (realism item 2 / R5, D89). Same DSP-free
@@ -668,8 +681,9 @@ ratClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
 ratPostLowpassFrame :: Sample -> Frame -> Frame
 -- Global real-pedal pass: roll off more high-frequency content after the
 -- hard clip, matching the darker top end of a real RAT.
+-- 96 kHz: 106 (was 168) holds the same post-clip LPF corner Hz at 2x fs.
 ratPostLowpassFrame prev f =
-  setMonoWet (if on then onePoleU8 168 prev (monoWet f) else monoSample f) f
+  setMonoWet (if on then onePoleU8 106 prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
 
@@ -678,9 +692,9 @@ ratToneFrame prev f =
   setMonoWet (if on then onePoleU8 alpha prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
-  dark = resize ((resize (ctrlA (fRat f)) * 3 :: Unsigned 10) `shiftR` 2) :: Unsigned 8
   -- Darker FILTER base so fully bright still has upper roll-off.
-  alpha = 192 - dark
+  -- 96 kHz: bilinear-refit (was 192 - (toneA*3)>>2) to hold the tone LPF corner.
+  alpha = 128 - (ctrlA (fRat f) `shiftR` 1)
 
 ratLevelFrame :: Frame -> Frame
 ratLevelFrame f =

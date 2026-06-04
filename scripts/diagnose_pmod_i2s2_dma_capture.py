@@ -69,9 +69,9 @@ def _dbfs(x):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--frames", type=int, default=48000,
+    p.add_argument("--frames", type=int, default=96000,
                    help="DMA frames to capture (1 frame = 1 stereo sample). "
-                        "Default 48000 ~= 1 second @ 48 kHz.")
+                        "Default 96000 ~= 1 second @ 96 kHz (D98; was 48000 @48k).")
     p.add_argument("--restore-mode-2", action="store_true", default=True,
                    help="After capture, set MODE=2 and route line_in -> "
                         "passthrough -> headphone so DAC plays again.")
@@ -81,7 +81,7 @@ def main():
     args = p.parse_args()
 
     print("[dma] capturing %d frames (%.3f s) of AXIS-passthrough"
-          % (args.frames, args.frames / 48000.0))
+          % (args.frames, args.frames / 96000.0))
 
     from audio_lab_pynq import AudioLabOverlay
     from audio_lab_pynq.diagnostics import (capture_input,

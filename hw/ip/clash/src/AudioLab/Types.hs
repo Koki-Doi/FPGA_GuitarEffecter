@@ -13,8 +13,11 @@ type Sample = Signed 24
 type Wide = Signed 48
 type Ctrl = BitVector 32
 type GateGain = Unsigned 12
-type ReverbAddr = Index 1024
-type ReverbMem = Vec 1024 Sample
+-- 96 kHz: the reverb comb delay line doubles (1024 -> 2048) so the decay time
+-- and comb frequency spacing are unchanged when fs doubles (loops/sec =
+-- fs/length stays 46.9). Costs ~1 extra BRAM.
+type ReverbAddr = Index 2048
+type ReverbMem = Vec 2048 Sample
 
 data Frame = Frame
   { fL :: Sample

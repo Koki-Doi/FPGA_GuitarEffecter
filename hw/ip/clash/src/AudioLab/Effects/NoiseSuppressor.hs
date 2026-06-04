@@ -26,7 +26,8 @@ gateEnvNext env (Just f)
  | otherwise = 0
  where
   level = monoWet f
-  decay = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
+  -- 96 kHz: >>9 (was >>8) so the exponential release TIME is unchanged at 2x fs.
+  decay = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
 
 gateOpenNext :: Bool -> Sample -> Maybe Frame -> Bool
 gateOpenNext open _ Nothing = open
@@ -99,18 +100,21 @@ nsClosedGain damp =
       sq16 = (resize inv8 :: Unsigned 16) * (resize inv8 :: Unsigned 16)
   in resize (sq16 `shiftR` 5) :: GateGain
 
--- close_step = max(1, (255 - decay_byte) >> 2)
---   decay byte = 0   -> step 63  (full close in ~65 samples, ~1.4 ms)
---   decay byte = 127 -> step 32  (full close in ~128 samples, ~2.7 ms)
---   decay byte = 255 -> step 1   (full close in ~4096 samples, ~85 ms)
+-- close_step = max(1, (255 - decay_byte) >> 3)
+-- 96 kHz: >>3 (was >>2) halves the per-sample close step so the close TIME (ms)
+-- is unchanged at 2x fs:
+--   decay byte = 0   -> step 31  (full close in ~130 samples, ~1.4 ms @96k)
+--   decay byte = 127 -> step 16  (~256 samples, ~2.7 ms)
+--   decay byte = 255 -> step 1   (~4096 samples, ~43 ms; floored)
 -- Linear ramp: simple, predictable, fits one register stage.
 nsCloseStep :: Unsigned 8 -> GateGain
 nsCloseStep d =
-  let raw = ((255 :: Unsigned 8) - d) `shiftR` 2
+  let raw = ((255 :: Unsigned 8) - d) `shiftR` 3
   in if raw == 0 then 1 else resize raw :: GateGain
 
+-- 96 kHz: halved (was 512) so the attack TIME is unchanged at 2x fs.
 nsAttackStep :: GateGain
-nsAttackStep = 512
+nsAttackStep = 256
 
 -- Stage 1 envelope: peak follower, attack-instantaneous,
 -- release ~ env >> 8 + 1 per sample (matches legacy gate envelope so
@@ -125,7 +129,8 @@ nsEnvNext env (Just f)
   | otherwise             = 0
  where
   level       = maxAbsFrame f
-  releaseStep = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
+  -- 96 kHz: >>9 (was >>8) keeps the exponential release TIME constant at 2x fs.
+  releaseStep = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
 
 -- Stage 2 target gain: open above threshold, damp-derived closed gain
 -- below. Lives entirely inside the gain-smoother register; not its own

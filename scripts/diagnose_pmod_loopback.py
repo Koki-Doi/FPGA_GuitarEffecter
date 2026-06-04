@@ -71,7 +71,7 @@ REG_PEAK_R     = 0x24
 REG_MODE       = 0x28
 REG_CLEAR      = 0x2C
 
-FS_AUDIO = 48000
+FS_AUDIO = 96000  # D98: 96 kHz (was 48000 @D97)
 
 
 def _sign24(x):
@@ -163,7 +163,7 @@ def phase3_dma_capture_fft(ov, st):
         print("    L: rms=%.0f peak=%d (%.1f dBFS) mean=%.0f" %
               (np.sqrt(np.mean(L * L)), peak, _dbfs(peak), np.mean(L)))
         top3 = np.argsort(spec[2:])[-3:][::-1] + 2
-        print("    top 3 spectral peaks (uniform 48 kHz fs):")
+        print("    top 3 spectral peaks (uniform 96 kHz fs):")
         for b in top3:
             print("      %7.1f Hz mag=%.0f" % (freqs[b], spec[b]))
 

@@ -77,7 +77,7 @@ def main():
     mmio.write(REG["CLEAR"], 1)
     time.sleep(0.05)
 
-    samples = capture_input(ovl, num_frames=48000)
+    samples = capture_input(ovl, num_frames=96000)  # ~1 s @96k (D98)
 
     pl = mmio.read(REG["PEAK_ABS_LEFT"]) & 0xFFFFFF
     pr = mmio.read(REG["PEAK_ABS_RIGHT"]) & 0xFFFFFF

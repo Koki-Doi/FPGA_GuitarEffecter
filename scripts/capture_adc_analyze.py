@@ -31,7 +31,7 @@ REPO = "/home/xilinx/Audio-Lab-PYNQ"
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 
-FS = 48000
+FS = 96000  # D98: 96 kHz (was 48000 @D97)
 FULL = (1 << 23)  # 24-bit signed full scale
 
 

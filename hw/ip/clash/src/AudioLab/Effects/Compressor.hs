@@ -94,10 +94,12 @@ compEnvNext env (Just f)
  where
   level = maxAbsFrame f
   responseByte = compResponseByte (fComp f)
-  envStep = resize (((resize env :: Signed 25) `shiftR` 8) + 1) :: Sample
+  -- 96 kHz: release steps halve (>>9, and the response shifts deepen by one)
+  -- so the release TIME (ms) is unchanged when the sample rate doubles.
+  envStep = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
   responseStep =
     let distance = (255 :: Unsigned 8) - responseByte
-        raw = (distance `shiftR` 4) + (distance `shiftR` 6)
+        raw = (distance `shiftR` 5) + (distance `shiftR` 7)
     in if raw == 0 then 1 else resize (asSigned9 raw) :: Sample
   releaseStep = responseStep + envStep
 
@@ -135,7 +137,9 @@ compTargetNext env (Just f) = Just (CompTarget on target step)
     | otherwise            = gateUnity - reduction
   responseByte = compResponseByte (fComp f)
   responseDistance = (255 :: Unsigned 8) - responseByte
-  raw = (responseDistance `shiftR` 3) + (responseDistance `shiftR` 5)
+  -- 96 kHz: per-sample smoothing step halves (>>4/>>6 was >>3/>>5) so the gain
+  -- smoothing TIME is unchanged at 2x fs.
+  raw = (responseDistance `shiftR` 4) + (responseDistance `shiftR` 6)
   step = if raw == 0 then 1 else resize raw :: GateGain
 
 -- Stage 2b: gain smoother. Nothing holds gain unchanged; Just steps

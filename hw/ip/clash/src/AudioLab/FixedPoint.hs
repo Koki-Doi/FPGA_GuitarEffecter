@@ -158,11 +158,13 @@ asymHardClip kneeP kneeN x
 gateUnity :: GateGain
 gateUnity = 4_095
 
+-- 96 kHz: per-sample gain-ramp steps halve so the attack/release TIME (ms)
+-- is unchanged when the sample rate doubles (512/4 at 48 kHz -> 256/2).
 gateAttackStep :: GateGain
-gateAttackStep = 512
+gateAttackStep = 256
 
 gateReleaseStep :: GateGain
-gateReleaseStep = 4
+gateReleaseStep = 2
 
 maxAbsFrame :: Frame -> Sample
 maxAbsFrame f = abs24 (monoSample f)

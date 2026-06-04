@@ -46,6 +46,19 @@ fights `DSP_ISLAND_CLOCK_DESIGN.md`).
 
 ### 1. Sample rate 48 -> 96 kHz  [BIGGEST lever, HIGH cost — shared with the 96 kHz project]
 
+> **STATUS (D98, 2026-06-05): DONE -- deployed + bench-audio ACCEPTED ("合格").**
+> Branch `feature/96khz-conversion` (merged to main). Pmod BCLK MCLK/4 -> MCLK/2
+> (codec double-speed, MCLK still 128fs); DSP island clock unchanged. Whole-chain
+> re-voicing done (7 biquads recomputed, one-poles +1 shift / bilinear re-fit,
+> envelope/LFO time-constants halved, delay lines doubled, cab FIR redesigned).
+> The 4x oversampler decimation FIRs are ratio-based so they needed NO change.
+> Island WNS +3.141 / fabric +0.587, DSP 135 (no new multipliers), BRAM 6.
+> Codec locks at 96 kHz (correct pitch), re-voiced chain auditions clean. bit
+> `18df313f` (rollback D97 `ad771d7c` / `/tmp/d97_backup`). See `DECISIONS.md`
+> D98. **This was the only real round-trip latency lever, now realised: codec
+> group delay (the dominant term) is ~halved.**
+
+
 - **Why.** Codec group delay scales with the sample period: doubling fs roughly
   **halves the codec group delay in milliseconds** (the dominant term) AND halves
   every per-sample time (framing, FIFO, snapshot). This is the only change that
