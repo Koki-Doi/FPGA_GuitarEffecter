@@ -5872,14 +5872,12 @@ pre-existing 3 failures + 1 error baseline.
   the delay line + dynamic `!!` mux + LFO/interp), FF ~31.9k. Clash 15-module
   typecheck clean. bit/hwh md5 `581bf6fc7813fff7c4a9a9cd0d6b41c2` /
   `22206436571735d8fc0a49edc64601a2`.
-- **Status.** Built; deploy + bench pending. Bench (Pmod mode 2): all_off clean /
-  no bitcrusher (the modulation is cab-gated, so bypass is bit-exact), tube amps
-  slightly rounder on top (HF droop), a faint organic movement on cab'd patches
-  (#11 -- must NOT sound like obvious chorus/vibrato; if it does, lower
-  `cabModDepthQ4`), JC-120 unchanged, pitch correct. D90/D92/D93/D94/D95 are
-  rollback baselines. Bench isolation note: the HF droop affects timbre (amp on),
-  the modulation affects movement (cab on) -- different symptoms map to different
-  items.
+- **Status.** Deployed 5-site (board md5 matched `581bf6fc`). **Bench-audio
+  ACCEPTED (user-confirmed "合格", 2026-06-04): all_off clean / no bitcrusher,
+  amps rounder on top (HF droop), faint organic movement on cab'd patches (#11
+  not chorus-y), JC-120 unchanged, pitch correct. D96 is the new accepted
+  deployed bitstream baseline, superseding D95** (`27c008ca`, rollback
+  `/tmp/d95_backup`). Merged to main.
 - **Files.** `hw/ip/clash/src/AudioLab/Effects/Amp.hs` (`ampTransformerHfFrame` +
   shifts), `hw/ip/clash/src/AudioLab/Effects/Cab.hs` (`cabModFrame` /
   `cabModLfoNext` / `cabModDelayNext` + constants),
