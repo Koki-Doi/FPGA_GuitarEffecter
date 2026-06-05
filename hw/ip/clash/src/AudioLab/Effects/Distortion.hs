@@ -563,14 +563,9 @@ ffBiasReleaseStep :: Sample
 ffBiasReleaseStep = 2048
 
 fuzzFaceBiasEnvNext :: Sample -> Maybe Frame -> Sample
-fuzzFaceBiasEnvNext env Nothing = env
-fuzzFaceBiasEnvNext env (Just f)
-  | not (fuzzFaceOn f)        = 0
-  | level > env               = level
-  | env > ffBiasReleaseStep   = env - ffBiasReleaseStep
-  | otherwise                 = 0
+fuzzFaceBiasEnvNext = peakFollower fuzzFaceOn level (\_ _ -> ffBiasReleaseStep)
  where
-  level = abs24 (satShift8 (fAccL f))
+  level f = abs24 (satShift8 (fAccL f))
 
 fuzzFaceClipFrame :: Sample -> Frame -> Frame
 fuzzFaceClipFrame env f =
@@ -618,9 +613,9 @@ ratHighpassFrame prevIn prevOut f =
  where
   on = flag4 (fGate f)
   x = monoSample f
-  -- 96 kHz: 511/512 with >>9 (was 255/256 >>8) keeps the ~30 Hz HP corner at 2x fs.
-  highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 511 `shiftR` 9))
+  -- coef 511 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
+  -- preserved bit-exact; the stage is effectively x - prevIn).
+  highpass x prevIn prevOut = onePoleHighpass 511 9 x prevIn prevOut
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =

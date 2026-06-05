@@ -274,6 +274,9 @@ exactly once.
 | `make tests` | runs CPU-side C++ and Python tests. |
 | `make clean` | removes Vivado project and bitstream artefacts. |
 
-Note: `make ip` invokes `nix-shell` via `hw/ip/clash/clash/Makefile`. The
-direct path documented above (`clash` invoked from `hw/ip/clash/`) is
-what we have been using in this lab; both should produce identical VHDL.
+Note: `make ip` runs `make -C hw/ip/clash` (the direct `clash` path
+documented above, building the split `src/AudioLab/` tree via `-isrc`).
+The old nested nix-shell variant (`hw/ip/clash/clash/`) was **removed**
+(D98 cleanup): its `src/` was a stale pre-split copy of `LowPassFir.hs`,
+so running it would have silently built outdated DSP logic. Use the
+direct path only.

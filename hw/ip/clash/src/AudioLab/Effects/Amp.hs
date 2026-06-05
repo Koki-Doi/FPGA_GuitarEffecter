@@ -147,9 +147,9 @@ ampHighpassFrame prevIn prevOut f =
  where
   on = flag6 (fGate f)
   x = monoSample f
-  -- 96 kHz: 509/512 with >>9 (was 253/256 >>8) keeps the ~90 Hz HP corner at 2x fs.
-  highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 509 `shiftR` 9))
+  -- coef 509 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
+  -- preserved bit-exact; the stage is effectively x - prevIn).
+  highpass x prevIn prevOut = onePoleHighpass 509 9 x prevIn prevOut
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =
@@ -200,7 +200,7 @@ ampPreEmphFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoWet f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampEmphShift)
+  lp = onePoleShift ampEmphShift prevLp x
   h = satWide (resize x - resize lp :: Wide)
   xpre = satWide (resize x - (resize h `shiftR` ampEmphAmount) :: Wide)
 
@@ -210,7 +210,7 @@ ampDeEmphFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoWet f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampEmphShift)
+  lp = onePoleShift ampEmphShift prevLp x
   h = satWide (resize x - resize lp :: Wide)
   xpost = satWide (resize x + (resize h `shiftR` ampEmphAmount) :: Wide)
 
@@ -408,9 +408,9 @@ ampToneFilterFrame prevLow prevHighLp f =
     }
  where
   x = monoWet f
-  -- 96 kHz: +1 shift (>>6 / >>3) keeps the tone-stack crossover corners.
-  low = prevLow + resize (((resize x - resize prevLow) :: Signed 25) `shiftR` 6)
-  highLp = prevHighLp + resize (((resize x - resize prevHighLp) :: Signed 25) `shiftR` 3)
+  -- 96 kHz: shift 6 / 3 keeps the tone-stack crossover corners.
+  low = onePoleShift 6 prevLow x
+  highLp = onePoleShift 3 prevHighLp x
 
 ampToneBandFrame :: Frame -> Frame
 ampToneBandFrame f =
@@ -480,9 +480,9 @@ ampResPresenceFilterFrame prevRes prevPresence f =
  where
   x = monoWet f
   -- Slow lowpass approximates resonance around the speaker low-end region.
-  -- 96 kHz: +1 shift (>>9 / >>4) keeps the resonance / presence corners.
-  res = prevRes + resize (((resize x - resize prevRes) :: Signed 25) `shiftR` 9)
-  presenceLp = prevPresence + resize (((resize x - resize prevPresence) :: Signed 25) `shiftR` 4)
+  -- 96 kHz: shift 9 / 4 keeps the resonance / presence corners.
+  res = onePoleShift 9 prevRes x
+  presenceLp = onePoleShift 4 prevPresence x
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
@@ -539,14 +539,9 @@ ampSagReleaseStep :: Sample
 ampSagReleaseStep = 512
 
 ampSagEnvNext :: Sample -> Maybe Frame -> Sample
-ampSagEnvNext env Nothing = env
-ampSagEnvNext env (Just f)
-  | not (flag6 (fGate f))     = 0
-  | level > env               = level
-  | env > ampSagReleaseStep   = env - ampSagReleaseStep
-  | otherwise                 = 0
+ampSagEnvNext = peakFollower (flag6 . fGate) level (\_ _ -> ampSagReleaseStep)
  where
-  level = abs24 (monoWet f)
+  level f = abs24 (monoWet f)
 
 ampMasterFrame :: Sample -> Frame -> Frame
 ampMasterFrame env f =
@@ -604,7 +599,7 @@ ampTransformerFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerLfShift)
+  lp = onePoleShift ampTransformerLfShift prevLp x
   high = satWide (resize x - resize lp :: Wide)
   lowSat = softClipK ampTransformerKnee lp
   out = satWide (resize lowSat + resize high :: Wide)
@@ -631,7 +626,7 @@ ampTransformerHfFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerHfShift)
+  lp = onePoleShift ampTransformerHfShift prevLp x
   h = satWide (resize x - resize lp :: Wide)            -- HF band
   out = satWide (resize x - (resize h `shiftR` ampTransformerHfDroop) :: Wide)
 
@@ -688,8 +683,8 @@ ampMultibandSatFrame prevLp1 prevLp2 f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  lp1 = prevLp1 + resize (((resize x - resize prevLp1) :: Signed 25) `shiftR` amp3BandLowShift)
-  lp2 = prevLp2 + resize (((resize x - resize prevLp2) :: Signed 25) `shiftR` amp3BandHighShift)
+  lp1 = onePoleShift amp3BandLowShift prevLp1 x
+  lp2 = onePoleShift amp3BandHighShift prevLp2 x
   low = lp1
   mid = satWide (resize lp2 - resize lp1 :: Wide)
   high = satWide (resize x - resize lp2 :: Wide)
