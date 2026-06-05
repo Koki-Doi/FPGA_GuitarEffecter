@@ -147,9 +147,10 @@ ampHighpassFrame prevIn prevOut f =
  where
   on = flag6 (fGate f)
   x = monoSample f
-  -- coef 509 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
-  -- preserved bit-exact; the stage is effectively x - prevIn).
-  highpass x prevIn prevOut = onePoleHighpass 509 9 x prevIn prevOut
+  -- D101: pole a = 502/512 -> ~298 Hz one-pole HP (tightens input lows without
+  -- the D100 90 Hz bass bloom; HF rise still tamed). Bench-tunable: raise the
+  -- coef toward 509 for more lows, lower it (e.g. 500/498) for tighter.
+  highpass x prevIn prevOut = onePoleHighpass 502 9 x prevIn prevOut
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =

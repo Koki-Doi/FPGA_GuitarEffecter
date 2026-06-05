@@ -99,17 +99,23 @@ onePoleShift :: Int -> Sample -> Sample -> Sample
 onePoleShift n prev x =
   prev + resize (((resize x - resize prev) :: Signed 25) `shiftR` n)
 
--- | First-difference "highpass" with a feedback term, as used by the amp / RAT
--- input highpass stages: @satWide (x - prevIn + prevOut * coef >> shift)@.
--- NOTE: with @coef >> shift@ (Haskell binds `shiftR` tighter than `*`), the
--- current call sites pass coef/shift where @coef >> shift == 0@, so the
--- feedback term is presently a no-op and the stage reduces to @x - prevIn@.
--- This preserves the long-standing behaviour bit-for-bit; see the FixedPoint
--- note. Kept parameterised so the pole can be enabled later by passing a coef
--- that does not round to zero.
+-- | One-pole highpass: @y = satWide (x - prevIn + (prevOut * coef) >> shift)@,
+-- i.e. H(z) = (1 - z^-1) / (1 - a z^-1) with the pole @a = coef / 2^shift@.
+-- DC gain 0 (DC block), HF gain 2/(1+a) ~ 1 (no boost), corner
+-- fc ~ fs*(1-a)/(2*pi). Used by the amp / RAT input stages.
+--
+-- D101: the multiply is parenthesised @(prevOut * coef) >> shift@ so the pole is
+-- LIVE. (Pre-D100 the inlined form @prevOut * coef >> shift@ parsed as
+-- @prevOut * (coef >> shift)@ == @prevOut * 0@ -- a dead pole, i.e. just the
+-- first difference @x - prevIn@.) D100 enabled the pole at ~90/30 Hz and bench-
+-- rejected it as too bassy (the dead-pole first difference had been a strong
+-- input low-cut the amp/RAT voicing relied on); D101 keeps the pole live but
+-- moves the corner UP per call site (amp ~298 Hz, RAT ~209 Hz) so the input low
+-- end is tightened while still taming the first-difference's +6 dB HF rise.
+-- Stable for @a < 1@.
 onePoleHighpass :: Wide -> Int -> Sample -> Sample -> Sample -> Sample
 onePoleHighpass coef shift x prevIn prevOut =
-  satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * coef `shiftR` shift))
+  satWide (resize x - resize prevIn + (((resize prevOut :: Wide) * coef) `shiftR` shift))
 
 -- | Symmetric soft clip with a tunable knee. Below knee it is identity;
 -- above the knee the sample is compressed by 1/4 slope.

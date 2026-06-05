@@ -613,9 +613,9 @@ ratHighpassFrame prevIn prevOut f =
  where
   on = flag4 (fGate f)
   x = monoSample f
-  -- coef 511 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
-  -- preserved bit-exact; the stage is effectively x - prevIn).
-  highpass x prevIn prevOut = onePoleHighpass 511 9 x prevIn prevOut
+  -- D101: pole a = 505/512 -> ~209 Hz one-pole HP (tightens RAT input lows vs the
+  -- D100 30 Hz bloom; HF rise still tamed). Bench-tunable coef.
+  highpass x prevIn prevOut = onePoleHighpass 505 9 x prevIn prevOut
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =
