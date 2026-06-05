@@ -221,7 +221,7 @@ overdriveMidFeedforwardFrame x1 x2 f =
   on = flag1 (fGate f)
   (b0, b1, b2) = odMidFeedforwardCoeffs (overdriveModel (fOd f))
   x = monoWet f
-  ff = biquadFf b0 b1 b2 x x1 x2
+  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
 
 -- Recursive stage: close the loop with -a1*y1 - a2*y2 and scale back by 2^14.
 -- For the flat models (1/3/4/5) fAccL = x*2^14 and a1 = a2 = 0, so
@@ -233,7 +233,7 @@ overdriveMidRecursiveFrame y1 y2 f =
  where
   on = flag1 (fGate f)
   (a1, a2) = odMidFeedbackCoeffs (overdriveModel (fOd f))
-  y = biquadRec a1 a2 (fAccL f) y1 y2
+  y = satShift14 (fAccL f - mulS16 y1 a1 - mulS16 y2 a2)
 
 -- Per-model asymmetric soft clip. The knee constants (odKneeP/odKneeN) set
 -- where it engages; odClipHardness now also sets the compression slope per

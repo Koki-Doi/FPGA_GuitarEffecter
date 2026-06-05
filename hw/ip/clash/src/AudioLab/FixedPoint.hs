@@ -39,14 +39,6 @@ mulU12 x gain = resize x * resize (asSigned13 gain)
 mulS10 :: Sample -> Signed 10 -> Wide
 mulS10 x gain = resize x * resize gain
 
--- | Folded symmetric-FIR tap pair: (a + b) * g in Wide -- the DSP48 pre-adder
--- form for a linear-phase FIR (the two taps sharing a coefficient are summed
--- before the multiply). Shared by the symmetric decimation FIRs (Metal/RAT/Big
--- Muff oversamplers) and the cab speaker-rolloff FIR. The centre tap of an
--- odd-length symmetric FIR is a plain mulS10 (no pair).
-foldTap :: Sample -> Sample -> Signed 10 -> Wide
-foldTap a b g = (resize a + resize b) * resize g
-
 -- | Sample * Signed 16 -> Wide. Higher coefficient precision than mulS10,
 -- needed by the resonant biquad tone stages (realism item 3): a peaking /
 -- notch biquad at a low normalised frequency (e.g. the ~720 Hz Tube Screamer
@@ -80,29 +72,6 @@ satShift12 = satWide . (`shiftR` 12)
 -- | Q14 accumulator scale-back for the biquad tone stages (mulS16 coeffs).
 satShift14 :: Wide -> Sample
 satShift14 = satWide . (`shiftR` 14)
-
--- ---- Direct-form-I biquad (Q14) kernels -------------------------------------
--- Shared by every resonant tone biquad (TS mid hump, Big Muff scoop, amp scoop
--- mux, output-transformer resonance, dedicated-OD mid). a1/a2 are the
--- a0-normalised RBJ feedback coefficients (a1 is typically negative), matching
--- the existing `satShift14 (ff - mulS16 y1 a1 - mulS16 y2 a2)` convention.
-
--- | Feedforward sum b0*x + b1*x1 + b2*x2 (Wide accumulator). For the timing-
--- split biquads (D82) this is one pipeline stage; biquadRec is the next.
-biquadFf :: Signed 16 -> Signed 16 -> Signed 16 -> Sample -> Sample -> Sample -> Wide
-biquadFf b0 b1 b2 x x1 x2 = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2
-
--- | Recursive close: (ff - a1*y1 - a2*y2) >> 14.
-biquadRec :: Signed 16 -> Signed 16 -> Wide -> Sample -> Sample -> Sample
-biquadRec a1 a2 ff y1 y2 = satShift14 (ff - mulS16 y1 a1 - mulS16 y2 a2)
-
--- | Single-stage direct-form-I biquad (5 mul) = biquadRec . biquadFf. Used by
--- biquads whose island budget allows one combinational stage (no D82 split).
-biquad5
-  :: Signed 16 -> Signed 16 -> Signed 16 -> Signed 16 -> Signed 16
-  -> Sample -> Sample -> Sample -> Sample -> Sample -> Sample
-biquad5 b0 b1 b2 a1 a2 x x1 x2 y1 y2 =
-  biquadRec a1 a2 (biquadFf b0 b1 b2 x x1 x2) y1 y2
 
 softClip :: Sample -> Sample
 softClip x
