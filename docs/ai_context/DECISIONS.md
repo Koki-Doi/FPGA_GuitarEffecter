@@ -6132,3 +6132,32 @@ pre-existing 3 failures + 1 error baseline.
   Behaviourally == D101, so no re-bench.** New deployed baseline `b18d1477`
   (behaviour == D101 `9e09ff27`, rollback `/tmp/d101_backup`). Merged to main;
   branch `feature/refactor-constants-pedal-helpers`.
+
+## D103 — Refactor B: shared biquad kernels (biquadFf / biquadRec / biquad5) [deployed, behaviour == D102]
+
+- **Pure refactor, NO audible change** (B of the "other refactorings" set). The 5
+  resonant tone biquads (TS mid hump, Big Muff scoop, amp scoop mux,
+  output-transformer resonance, dedicated-OD mid) now share three kernels in
+  `FixedPoint`: `biquadFf b0 b1 b2 x x1 x2` (feedforward sum), `biquadRec a1 a2 ff
+  y1 y2` (`(ff - a1*y1 - a2*y2) >> 14`, a0-normalised RBJ a1/a2), and `biquad5 =
+  biquadRec . biquadFf` (single-stage 5-mul). The Pipeline x1/x2/y1/y2 wiring +
+  the D82 ff/rec timing split are UNCHANGED (the Pipeline `biquadStage`
+  combinator -- B2 -- was deliberately deferred as higher-risk).
+- **Behaviour proven == D102.** Regenerated VHDL: `clash_lowpass_fir_types.vhdl`
+  byte-identical; ampScoop + odMid inline byte-identical; tubeScreamerMid /
+  ampXfmrRes / bigMuff-rec differ ONLY by a sign-flipped y1 multiplier constant
+  (the helper uses the a0-normalised negative-a1 convention; `-y1*(-c)` ==
+  `+y1*c`, same value) plus a named `ff` intermediate + wire renames. Same audio.
+- **Timing clean: island clk_fpga_1 WNS +2.800 / 0 fail, fabric +0.657 / 0 fail,
+  WHS +0.009, THS 0.** Resource MAPPING shifted vs D102 (DSP 137 -> 139, FF 30902
+  -> 28920, LUT 31618 -> 30807): restructuring the biquad as ff+rec let Vivado
+  pack more of the arithmetic into DSP48 blocks (trading FF for DSP) -- a larger
+  P&R delta than D99/D102 but behaviour-preserving (VHDL-diff proven). bit/hwh md5
+  `98c6593e3ab5537a1e1f8b875cef2af3` / (IP repack).
+- **Status: DEPLOYED 5-site (board matched `98c6593e`), mode-2 smoke pass
+  (~96.1 kHz, clocks alive). User accepted merge on the VHDL-equivalence proof
+  (no ear bench).** New deployed baseline `98c6593e` (behaviour == D102
+  `b18d1477` == bench-accepted D101 `9e09ff27`); rollback D102 via
+  `/tmp/d102_backup`. Merged to main; branch `feature/refactor-biquad-helpers`.
+  Remaining refactor candidates: D (Pipeline tap combinators), E (folded FIR
+  helper), F (module splits), B2 (Pipeline biquadStage).
