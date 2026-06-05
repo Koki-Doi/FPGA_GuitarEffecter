@@ -90,6 +90,27 @@ hardClip x threshold
 onePoleU8 :: Unsigned 8 -> Sample -> Sample -> Sample
 onePoleU8 alpha prev x = satShift8 (mulU8 x alpha + mulU8 prev (255 - alpha))
 
+-- | Shift-coefficient one-pole lowpass: @prev + (x - prev) >> n@ with a
+-- Signed 25 intermediate (matches the inlined idiom used across the tone /
+-- emphasis / transformer / multiband stages exactly). The corner frequency is
+-- ~ fs / (2*pi*2^n); larger @n@ = lower corner. fs re-voicing is a single @n@
+-- change per call. Bit-exact replacement for the previously inlined form.
+onePoleShift :: Int -> Sample -> Sample -> Sample
+onePoleShift n prev x =
+  prev + resize (((resize x - resize prev) :: Signed 25) `shiftR` n)
+
+-- | First-difference "highpass" with a feedback term, as used by the amp / RAT
+-- input highpass stages: @satWide (x - prevIn + prevOut * coef >> shift)@.
+-- NOTE: with @coef >> shift@ (Haskell binds `shiftR` tighter than `*`), the
+-- current call sites pass coef/shift where @coef >> shift == 0@, so the
+-- feedback term is presently a no-op and the stage reduces to @x - prevIn@.
+-- This preserves the long-standing behaviour bit-for-bit; see the FixedPoint
+-- note. Kept parameterised so the pole can be enabled later by passing a coef
+-- that does not round to zero.
+onePoleHighpass :: Wide -> Int -> Sample -> Sample -> Sample -> Sample
+onePoleHighpass coef shift x prevIn prevOut =
+  satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * coef `shiftR` shift))
+
 -- | Symmetric soft clip with a tunable knee. Below knee it is identity;
 -- above the knee the sample is compressed by 1/4 slope.
 softClipK :: Sample -> Sample -> Sample
@@ -168,3 +189,26 @@ gateReleaseStep = 2
 
 maxAbsFrame :: Frame -> Sample
 maxAbsFrame f = abs24 (monoSample f)
+
+-- | Peak-follower envelope shared by the Compressor / NoiseSuppressor / legacy
+-- gate / Fuzz-Face-bias / amp-sag stages: instant attack, linear release by
+-- @releaseOf env f@ per sample, reset to 0 when @enabled f@ is false (so a
+-- re-enable starts clean), holds on idle (Nothing) cycles. The three function
+-- arguments capture every per-stage difference (enable predicate, level source,
+-- release-step formula). The guard order is identical to the previously inlined
+-- versions, so this is a bit-exact replacement. (Release-step time constants are
+-- still fs-dependent and were halved for 96 kHz inside each call site's formula.)
+peakFollower
+  :: (Frame -> Bool)              -- ^ enabled?
+  -> (Frame -> Sample)           -- ^ level source
+  -> (Sample -> Frame -> Sample) -- ^ release step from (current env, frame)
+  -> Sample -> Maybe Frame -> Sample
+peakFollower _ _ _ env Nothing = env
+peakFollower enabled levelOf releaseOf env (Just f)
+  | not (enabled f)   = 0
+  | level > env       = level
+  | env > releaseStep = env - releaseStep
+  | otherwise         = 0
+ where
+  level = levelOf f
+  releaseStep = releaseOf env f
