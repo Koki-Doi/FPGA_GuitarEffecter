@@ -23,6 +23,11 @@ import time
 
 import numpy as np
 
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+
 
 REG = dict(
     PEAK_ABS_LEFT  = 0x20,
@@ -77,7 +82,7 @@ def main():
     mmio.write(REG["CLEAR"], 1)
     time.sleep(0.05)
 
-    samples = capture_input(ovl, num_frames=96000)  # ~1 s @96k (D98)
+    samples = capture_input(ovl, num_frames=SAMPLE_RATE_HZ)  # ~1 s
 
     pl = mmio.read(REG["PEAK_ABS_LEFT"]) & 0xFFFFFF
     pr = mmio.read(REG["PEAK_ABS_RIGHT"]) & 0xFFFFFF

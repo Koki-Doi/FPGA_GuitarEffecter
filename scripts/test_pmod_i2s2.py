@@ -57,6 +57,11 @@ PYNQ Python 3.6 compatibility: no dataclass, no f-string `=` syntax.
 import argparse
 import time
 
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+
 
 # D98: codec runs double-speed at 96 kHz (BCLK 6.144 MHz = MCLK/2, MCLK
 # unchanged 12.288 MHz = 128fs). Was 48 kHz / 3.072 MHz through D97.
@@ -350,7 +355,7 @@ def main():
     print("")
     print("[pmod_i2s2] delta over %.1f s:" % args.duration)
     print("    frames     +%u  (expected ~%u for 96 kHz)"
-          % (d_frames, int(args.duration * 96000)))
+          % (d_frames, int(args.duration * SAMPLE_RATE_HZ)))
     print("    nonzero    +%u" % d_nonzero)
     print("    sdout_xcnt +%u" % d_xcount)
     print("    peak_abs_l = %u  (~%.3f of full-scale)"

@@ -35,8 +35,8 @@ import numpy as np
 
 
 FULL_SCALE_24 = (1 << 23) - 1
-# 96 kHz as of D98 (codec double-speed); was 48000 through D97.
-DEFAULT_SAMPLE_RATE_HZ = 96000
+# Single source of truth in audio_lab_pynq/constants.py (96 kHz as of D98).
+from .constants import SAMPLE_RATE_HZ as DEFAULT_SAMPLE_RATE_HZ
 
 
 def _require_overlay_dma(overlay):

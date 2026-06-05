@@ -31,7 +31,11 @@ REPO = "/home/xilinx/Audio-Lab-PYNQ"
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 
-FS = 96000  # D98: 96 kHz (was 48000 @D97)
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+FS = SAMPLE_RATE_HZ
 FULL = (1 << 23)  # 24-bit signed full scale
 
 

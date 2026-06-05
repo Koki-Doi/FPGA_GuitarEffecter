@@ -24,15 +24,20 @@ import argparse
 import os
 import sys
 
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--output-dir', default='./audio_diag')
-    parser.add_argument('--num-frames', type=int, default=96000,
-                        help='samples per capture (default 96000 = 1 s @ 96 kHz, D98)')
-    parser.add_argument('--sample-rate', type=int, default=96000)
+    parser.add_argument('--num-frames', type=int, default=SAMPLE_RATE_HZ,
+                        help='samples per capture (~1 s; default = SAMPLE_RATE_HZ from constants.py)')
+    parser.add_argument('--sample-rate', type=int, default=SAMPLE_RATE_HZ)
     parser.add_argument('--capture-shorted', action='store_true',
                         help='capture with the input jack shorted/disconnected')
     parser.add_argument('--capture-silence', action='store_true',
