@@ -73,6 +73,29 @@ satShift12 = satWide . (`shiftR` 12)
 satShift14 :: Wide -> Sample
 satShift14 = satWide . (`shiftR` 14)
 
+-- ---- Direct-form-I biquad (Q14) kernels -------------------------------------
+-- Shared by every resonant tone biquad (TS mid hump, Big Muff scoop, amp scoop
+-- mux, output-transformer resonance, dedicated-OD mid). a1/a2 are the
+-- a0-normalised RBJ feedback coefficients (a1 is typically negative), matching
+-- the existing `satShift14 (ff - mulS16 y1 a1 - mulS16 y2 a2)` convention.
+
+-- | Feedforward sum b0*x + b1*x1 + b2*x2 (Wide accumulator). For the timing-
+-- split biquads (D82) this is one pipeline stage; biquadRec is the next.
+biquadFf :: Signed 16 -> Signed 16 -> Signed 16 -> Sample -> Sample -> Sample -> Wide
+biquadFf b0 b1 b2 x x1 x2 = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2
+
+-- | Recursive close: (ff - a1*y1 - a2*y2) >> 14.
+biquadRec :: Signed 16 -> Signed 16 -> Wide -> Sample -> Sample -> Sample
+biquadRec a1 a2 ff y1 y2 = satShift14 (ff - mulS16 y1 a1 - mulS16 y2 a2)
+
+-- | Single-stage direct-form-I biquad (5 mul) = biquadRec . biquadFf. Used by
+-- biquads whose island budget allows one combinational stage (no D82 split).
+biquad5
+  :: Signed 16 -> Signed 16 -> Signed 16 -> Signed 16 -> Signed 16
+  -> Sample -> Sample -> Sample -> Sample -> Sample -> Sample
+biquad5 b0 b1 b2 a1 a2 x x1 x2 y1 y2 =
+  biquadRec a1 a2 (biquadFf b0 b1 b2 x x1 x2) y1 y2
+
 softClip :: Sample -> Sample
 softClip x
   | x > knee = resize (resize knee + (((resize x :: Signed 25) - resize knee) `shiftR` 2) :: Signed 25)

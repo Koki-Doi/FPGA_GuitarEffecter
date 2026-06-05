@@ -168,14 +168,9 @@ tubeScreamerMidFrame x1 x2 y1 y2 f =
  where
   on = tubeScreamerOn f
   x = monoSample f
-  -- 96 kHz RBJ coeffs (720 Hz, Q 0.8, +6 dB); was 17036/-31323/14422/31323/15075 @48k.
-  acc =
-    mulS16 x 16717
-      + mulS16 x1 (-32063)
-      + mulS16 x2 15382
-      + mulS16 y1 32063
-      - mulS16 y2 15715 :: Wide
-  y = satShift14 acc
+  -- 96 kHz RBJ coeffs (720 Hz, Q 0.8, +6 dB); single-stage 5-mul biquad.
+  -- (b0,b1,b2,a1,a2) = 16717,-32063,15382,-32063,15715.
+  y = biquad5 16717 (-32063) 15382 (-32063) 15715 x x1 x2 y1 y2
 
 tubeScreamerMulFrame :: Frame -> Frame
 tubeScreamerMulFrame f =
@@ -513,16 +508,16 @@ bigMuffScoopFeedforwardFrame x1 x2 f =
  where
   on = bigMuffOn f
   x = monoSample f
-  -- 96 kHz RBJ coeffs (700 Hz, Q 0.8, -10 dB); was 15350/-29618/14393 @48k.
-  ff = mulS16 x 15841 + mulS16 x1 (-31148) + mulS16 x2 15339 :: Wide
+  -- 96 kHz RBJ coeffs (700 Hz, Q 0.8, -10 dB); feedforward of the split biquad.
+  ff = biquadFf 15841 (-31148) 15339 x x1 x2
 
 bigMuffScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopRecursiveFrame y1 y2 f =
   setMonoSample (if on then y else monoSample f) f
  where
   on = bigMuffOn f
-  -- 96 kHz: -a1 = +31148, -a2 = -14797 (was 29618 / 13359); fAcc3L holds the FF sum.
-  y = satShift14 (fAcc3L f + mulS16 y1 31148 - mulS16 y2 14797)
+  -- 96 kHz feedback a1=-31148 a2=14797; fAcc3L holds the FF sum.
+  y = biquadRec (-31148) 14797 (fAcc3L f) y1 y2
 
 bigMuffToneFrame :: Sample -> Frame -> Frame
 bigMuffToneFrame prevLp f =
