@@ -6228,3 +6228,28 @@ pre-existing 3 failures + 1 error baseline.
   ear bench. The 96 kHz conversion (D98) + the HP-pole fix (D101) remain the
   accepted audible state; D99/D102/D103/D104 were behaviour-preserving refactors,
   of which the bitstreams are now abandoned. `DECISIONS.md` D105.
+
+## D106 — Amp 2-5 kHz presence restore: BUILT, bench-REJECTED (bypass artifact), rolled back to D101
+
+- **Attempt to fix the 96 kHz amp "muffled / presence recessed" voicing** (user
+  report on D101: Amp Sim + Cab, 2-5 kHz presence recessed). Root cause: the 96 k
+  re-voicing's plain +1-shift on the shift one-poles UNDER-preserves the corner
+  for larger-a stages (original shift 1/2), darkening amp 2-5 kHz. Fix used a new
+  shift+add helper `onePoleShift2 n m` (a = 2^-n + 2^-m, NO multiply, NO DSP
+  increase): transformer HF -> onePoleShift2 2 5 (~5.0 kHz) + droop 3->4; amp
+  tone high crossover + multiband mid/high -> onePoleShift2 3 7 (~2.2 kHz).
+- **Build clean** (island +2.352 / fabric +0.565, 0 fail; DSP 137 unchanged; bit
+  `33362e61`), deployed for bench. **Bench REJECTED: distorts on SAFE-BYPASS** --
+  the SAME D58/D60/D105 P&R artifact, AGAIN, from a tiny no-DSP shift+add change.
+- **CRITICAL finding: only the original D101 bit (`9e09ff27`) is bypass-clean;
+  every DSP-source rebuild since (D102/D103/D104 refactors + D106) reproduces the
+  artifact.** This design sits on a P&R-artifact knife-edge; Vivado P&R is
+  deterministic so there is no "re-roll." **Voicing can no longer be safely
+  changed via a DSP rebuild -- it must be done in the Python/control layer (knob
+  tapers / preset defaults / EQ) on the D101 bit, or via the amp TREBLE/PRESENCE/
+  EQ knobs.**
+- **Rolled back to D101** (`9e09ff27`, 5-site; board needed a power-cycle after it
+  dropped off the network during the failed deploy, then auto-redeployed). D106
+  source is on branch `feature/amp-presence-restore` (NOT merged). Deployed +
+  source baseline remain D101 (with A's `constants.py` Python kept from D102).
+  `DECISIONS.md` D106; memory `project_96khz_conversion_d98`.
