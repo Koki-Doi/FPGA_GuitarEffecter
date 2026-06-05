@@ -6049,3 +6049,29 @@ pre-existing 3 failures + 1 error baseline.
   difference: DC block + mild HF emphasis, not the intended ~90/30 Hz one-pole).
   Preserved bit-exact. A fix (enable the pole) changes the sound and needs a
   re-voice + bench, so it is deferred to its own phase.
+
+## D100 — Enable the amp/RAT input-HP feedback pole (BUILT, bench-REJECTED, rolled back to D99)
+
+- **Attempted the D99 latent fix and it was bench-REJECTED -- do NOT retry as-is.**
+  Parenthesised `(prevOut * coef) >> shift` in `FixedPoint.onePoleHighpass` to
+  enable the previously-dead pole: amp `509/512` -> ~90 Hz, RAT `511/512` -> ~30 Hz
+  one-pole highpass. Built FULLY timing-clean (island `clk_fpga_1` WNS +2.754 / 0
+  fail, fabric +0.592 / 0 fail, WHS +0.030, THS 0; DSP 137 (+2 constant-mults),
+  LUT 31618 (+878), BRAM 6; bit/hwh md5 `369e38a16cd1460c31405774f7b0f426` /
+  `076dddf7b438facc025e54ce9fdf4c76`). Deployed for bench; mode-2 smoke passed
+  (~96.1 kHz, clocks alive).
+- **Bench REJECTED (user: "低音が強調されすぎている" -- bass over-emphasised).** Root
+  cause: the dead-pole stage was a first difference `x - prevIn`, whose magnitude
+  `2*sin(pi*f/fs)` rolls lows off at 6 dB/oct (~-45 dB @ 90 Hz, ~-24 dB @ 1 kHz vs
+  highs) -- i.e. it was a strong input low-cut that made the amp/RAT input THIN,
+  and **the whole amp + RAT model lineup (knees/gains/tone, D68-D97) was voiced
+  around that thin input.** Enabling the proper pole passes that low/mid back, so
+  the amps bloom. The "dead pole" is **load-bearing accidental voicing**, not a
+  free bug; a real fix would require re-voicing the entire amp/RAT chain for a
+  full-range input (large, not currently worth it).
+- **Rolled back to D99 (`83a64ffc`), the accepted deployed baseline** (5-site
+  re-synced + verified; an interim SSH connection-reset truncated the notebooks-dir
+  bit to 0 bytes, fixed by re-running the deploy). D100 source is preserved on
+  branch `feature/fix-amp-rat-highpass-pole` (NOT merged). `onePoleHighpass` on
+  main keeps the no-op-pole form, documented. See
+  memory `project_amp_rat_hp_dead_pole` ("DON'T FIX").
