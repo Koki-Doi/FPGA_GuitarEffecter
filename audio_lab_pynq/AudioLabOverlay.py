@@ -1,6 +1,7 @@
 from pynq import Overlay
 from enum import Enum
 import os
+from .constants import SAMPLE_RATE_HZ
 from .AxisSwitch import AxisSwitch
 from .AudioCodec import ADAU1761
 from . import control_maps as _cm
@@ -1837,11 +1838,11 @@ class AudioLabOverlay(Overlay):
         print(self.codec.format_register_diff(diffs))
         return diffs
 
-    def capture_input(self, num_frames=96000, **kwargs):
+    def capture_input(self, num_frames=SAMPLE_RATE_HZ, **kwargs):
         from . import diagnostics
         return diagnostics.capture_input(self, num_frames=num_frames, **kwargs)
 
-    def diagnostic_capture(self, label, num_frames=96000, save_dir=None,
+    def diagnostic_capture(self, label, num_frames=SAMPLE_RATE_HZ, save_dir=None,
                            settling_ms=0, discard_initial_frames=0):
         from . import diagnostics
         samples = diagnostics.capture_input(

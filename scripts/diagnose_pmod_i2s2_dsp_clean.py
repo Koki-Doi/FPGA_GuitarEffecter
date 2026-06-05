@@ -38,6 +38,11 @@ import math
 import sys
 import time
 
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+
 
 REG = dict(
     VERSION         = 0x00,
@@ -211,7 +216,7 @@ def _watch(mmio, duration, label):
     time.sleep(duration)
     f1 = _read(mmio, REG["FRAME_COUNT"])
     _print_status("%s after %.1f s" % (label, duration), mmio)
-    expected = int(round(96000.0 * duration))  # D98: 96 kHz
+    expected = int(round(float(SAMPLE_RATE_HZ) * duration))
     print("[diag]     frame delta = %u  (expected ~ %u for 96 kHz)"
           % ((f1 - f0) & 0xFFFFFFFF, expected))
 

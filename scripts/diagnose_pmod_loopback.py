@@ -71,7 +71,11 @@ REG_PEAK_R     = 0x24
 REG_MODE       = 0x28
 REG_CLEAR      = 0x2C
 
-FS_AUDIO = 96000  # D98: 96 kHz (was 48000 @D97)
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+FS_AUDIO = SAMPLE_RATE_HZ
 
 
 def _sign24(x):

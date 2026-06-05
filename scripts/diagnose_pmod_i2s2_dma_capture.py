@@ -35,6 +35,11 @@ import time
 
 import numpy as np
 
+try:
+    from audio_lab_pynq.constants import SAMPLE_RATE_HZ
+except Exception:  # off-board (pynq unavailable); constants.py is the source of truth
+    SAMPLE_RATE_HZ = 96000
+
 
 REG = dict(
     PEAK_ABS_LEFT  = 0x20,
@@ -69,9 +74,9 @@ def _dbfs(x):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--frames", type=int, default=96000,
+    p.add_argument("--frames", type=int, default=SAMPLE_RATE_HZ,
                    help="DMA frames to capture (1 frame = 1 stereo sample). "
-                        "Default 96000 ~= 1 second @ 96 kHz (D98; was 48000 @48k).")
+                        "Default = SAMPLE_RATE_HZ (constants.py) ~= 1 second.")
     p.add_argument("--restore-mode-2", action="store_true", default=True,
                    help="After capture, set MODE=2 and route line_in -> "
                         "passthrough -> headphone so DAC plays again.")
@@ -81,7 +86,7 @@ def main():
     args = p.parse_args()
 
     print("[dma] capturing %d frames (%.3f s) of AXIS-passthrough"
-          % (args.frames, args.frames / 96000.0))
+          % (args.frames, args.frames / float(SAMPLE_RATE_HZ)))
 
     from audio_lab_pynq import AudioLabOverlay
     from audio_lab_pynq.diagnostics import (capture_input,
