@@ -6011,3 +6011,41 @@ pre-existing 3 failures + 1 error baseline.
   single knob/corner is expected to be a constant-only tweak. **Reference: round
   trip group delay is now ~half the 48 k figure (codec-dominated); aliasing
   headroom doubled.**
+
+## D99 — Behaviour-preserving DSP helper refactor (shared one-pole / envelope helpers; stale tree removed)
+
+- **Pure refactor, NO audible change.** Deduplicates repeated DSP idioms into
+  shared helpers in `AudioLab.FixedPoint`; the deployed audio is bit-identical to
+  D98. New helpers: **`onePoleShift`** (the `prev + (x-prev)>>n` shift one-pole,
+  was inlined at 12 sites: EQ low/highLp, amp tone low/highLp + res/presence +
+  pre/de-emphasis + transformer LF/HF + multiband low/high), **`onePoleHighpass`**
+  (amp + RAT input HP), and **`peakFollower`** (the 5 envelope followers
+  `compEnvNext` / `nsEnvNext` / `gateEnvNext` / `fuzzFaceBiasEnvNext` /
+  `ampSagEnvNext`, parameterised by enable predicate / level source / release
+  formula). Also **removed the stale nested `hw/ip/clash/clash/` tree** (a
+  pre-split copy of `LowPassFir.hs` behind a nix-shell Makefile -- a footgun that
+  would silently build outdated logic; `BUILD_AND_DEPLOY.md` note corrected).
+- **Equivalence proof.** Regenerated Clash VHDL diffed against the D98 output:
+  `clash_lowpass_fir_types.vhdl` byte-identical; `clash_lowpass_fir.vhdl` differs
+  ONLY in source-line comments, renamed intermediate signals, and one harmless
+  CSE (`resize x` computed twice vs shared once -- same value). Same arithmetic
+  -> identical samples. **Timing + utilisation identical to D98** (island WNS
+  +3.141 / fabric +0.587 / WHS +0.018 / THS 0; DSP 135, BRAM 6, LUT 30740, FF
+  28830). The bitstream md5 changed (`83a64ffc6415fe2a3bc2aed47b6b19f9`, hwh
+  `8f7bb97945442d722c19ff44d0388904`) purely because renamed wires alter the
+  synthesis input -- behaviour is unchanged.
+- **Status: DEPLOYED 5-site (board md5 matched `83a64ffc` at all four resolution
+  sites). Programmatic mode-2 smoke PASS: bclk/lrclk/sdout alive, frame delta
+  288304/3 s ≈ 96.1 kHz, mode 2->3 control OK, bit loads clean** (CLIP_COUNT
+  reflected a hot input level, not a DSP change; behaviour is bit-identical to the
+  bench-accepted D98). **New deployed baseline `83a64ffc`, behaviourally ==
+  D98**; rollback to D98 `18df313f` via `/tmp/d98_backup` (D97 `ad771d7c` at
+  `/tmp/d97_backup`). Merged to main; branch `feature/refactor-dsp-helpers`.
+- **Latent finding (NOT fixed here -- separate proposal).** `onePoleHighpass`
+  documents that the amp/RAT input highpass feedback term is `prevOut * (coef >>
+  shift)` and `coef >> shift == 0` at both call sites (Haskell binds `shiftR`
+  tighter than `*`), so the intended one-pole HP pole has been a no-op for the
+  whole project history -- the stage is effectively `x - prevIn` (a first
+  difference: DC block + mild HF emphasis, not the intended ~90/30 Hz one-pole).
+  Preserved bit-exact. A fix (enable the pole) changes the sound and needs a
+  re-voice + bench, so it is deferred to its own phase.
