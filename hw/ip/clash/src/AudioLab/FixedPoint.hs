@@ -39,6 +39,14 @@ mulU12 x gain = resize x * resize (asSigned13 gain)
 mulS10 :: Sample -> Signed 10 -> Wide
 mulS10 x gain = resize x * resize gain
 
+-- | Folded symmetric-FIR tap pair: (a + b) * g in Wide -- the DSP48 pre-adder
+-- form for a linear-phase FIR (the two taps sharing a coefficient are summed
+-- before the multiply). Shared by the symmetric decimation FIRs (Metal/RAT/Big
+-- Muff oversamplers) and the cab speaker-rolloff FIR. The centre tap of an
+-- odd-length symmetric FIR is a plain mulS10 (no pair).
+foldTap :: Sample -> Sample -> Signed 10 -> Wide
+foldTap a b g = (resize a + resize b) * resize g
+
 -- | Sample * Signed 16 -> Wide. Higher coefficient precision than mulS10,
 -- needed by the resonant biquad tone stages (realism item 3): a peaking /
 -- notch biquad at a low normalised frequency (e.g. the ~720 Hz Tube Screamer
