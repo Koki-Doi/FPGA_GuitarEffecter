@@ -215,15 +215,14 @@ cabSpeakerFirProductsFrame hist f =
   on = flag7 (fGate f)
   x = monoSample f
   c = cabSpeakerFirCoeff (ctrlC (fCab f))
-  pairMul a b g = (resize a + resize b :: Wide) * resize g
-  p0 = pairMul x          (hist !! 13) (c !! 0)
-         + pairMul (hist !! 0) (hist !! 12) (c !! 1)
-         + pairMul (hist !! 1) (hist !! 11) (c !! 2)
-  p1 = pairMul (hist !! 2) (hist !! 10) (c !! 3)
-         + pairMul (hist !! 3) (hist !! 9)  (c !! 4)
-         + pairMul (hist !! 4) (hist !! 8)  (c !! 5)
-  p2 = pairMul (hist !! 5) (hist !! 7)  (c !! 6)
-         + (resize (hist !! 6) * resize (c !! 7) :: Wide)
+  p0 = foldTap x          (hist !! 13) (c !! 0)
+         + foldTap (hist !! 0) (hist !! 12) (c !! 1)
+         + foldTap (hist !! 1) (hist !! 11) (c !! 2)
+  p1 = foldTap (hist !! 2) (hist !! 10) (c !! 3)
+         + foldTap (hist !! 3) (hist !! 9)  (c !! 4)
+         + foldTap (hist !! 4) (hist !! 8)  (c !! 5)
+  p2 = foldTap (hist !! 5) (hist !! 7)  (c !! 6)
+         + mulS10 (hist !! 6) (c !! 7)
 
 cabSpeakerFirMixFrame :: Frame -> Frame
 cabSpeakerFirMixFrame f =
