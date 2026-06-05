@@ -6101,3 +6101,34 @@ pre-existing 3 failures + 1 error baseline.
   `ad771d7c` / `/tmp/d97_backup` are older rollbacks.) This is the first time the
   amp/RAT input pole has actually been live -- it superseded the project-long
   dead-pole first-difference; future amp/RAT low-end tweaks are the coef 502/505.
+
+## D102 — Refactor: sample-rate single source (A) + distortion-pedal stage kernels (C) [deployed, behaviour == D101]
+
+- **Two refactors bundled, NO audible change** (the second of the "other
+  refactorings" set, after the D99 helpers). Deployed audio is bit-identical to
+  the bench-accepted D101.
+- **A (Python, no bitstream impact).** New `audio_lab_pynq/constants.py`
+  (`SAMPLE_RATE_HZ = 96000`, zero deps) is the single source of truth for the
+  audio sample rate -- previously hardcoded as `96000`/`48000` literals in ~9
+  files. `diagnostics.py` (`DEFAULT_SAMPLE_RATE_HZ`) + `AudioLabOverlay.py`
+  (capture defaults) import it; the 7 board diagnostic scripts import it with a
+  `try/except` fallback so off-board `--help` still works (the scripts defer
+  their pynq import on purpose). The coefficient generator used for the 96 kHz
+  re-voicing is committed as `tools/revoice.py` (was `/tmp/revoice96.py`).
+- **C (Clash, behaviour-preserving).** Factor the repeated distortion-pedalboard
+  stage forms into shared kernels in `Distortion.hs`: `pedalDriveGain base k
+  drive` (the 6 mul/pre stages -- clean_boost/TS/metal/ds1/big_muff/fuzz_face)
+  and `distLevelRaw f` (the 6 output-level stages). **Verified equivalent to
+  D101**: regenerated VHDL diff = `clash_lowpass_fir_types.vhdl` byte-identical,
+  and only the 6 gain lines differ (a redundant outer `resize` dropped +
+  clean_boost's U11->U12 intermediate, both numerically identical -- no
+  overflow); `distLevelRaw` produced ZERO logic diff. Same audio output.
+- **Build / timing identical to D101.** Island `clk_fpga_1` WNS +2.670 / 0 fail,
+  fabric +0.592 / 0 fail, WHS +0.030, THS 0; DSP 137, LUT 31618, BRAM 6. bit/hwh
+  md5 `b18d147725d5dc323ecbe58bb75719da` / (hwh from the IP repack). The bit md5
+  changed only from the resize/width tweaks; behaviour unchanged.
+- **Status: DEPLOYED 5-site (board matched `b18d1477`), mode-2 smoke pass
+  (~96.1 kHz, clocks alive), A verified on board (`SAMPLE_RATE_HZ` imports = 96000).
+  Behaviourally == D101, so no re-bench.** New deployed baseline `b18d1477`
+  (behaviour == D101 `9e09ff27`, rollback `/tmp/d101_backup`). Merged to main;
+  branch `feature/refactor-constants-pedal-helpers`.
