@@ -6193,3 +6193,38 @@ pre-existing 3 failures + 1 error baseline.
   `feature/refactor-foldtap-modsplit`. Remaining refactor candidates: D (Pipeline
   tap combinators) and B2 (Pipeline biquadStage) -- both higher-risk Signal-level
   changes, deferred.
+
+## D105 — Revert DSP refactors B/C/E/F to D101 (safe-bypass P&R artifact); keep A
+
+- **D104 (and the D102-D104 refactor-bitstream lineage) distorted on SAFE-BYPASS
+  (all effects off); user bench-confirmed; rolled back to D101 (`9e09ff27`,
+  clean).** This is the **D58/D59/D60-class P&R-induced bypass artifact**: the
+  refactors (A/B/C/E/F) only changed gated-off effect-stage internals -- never
+  the bypass datapath -- and were VHDL-logic-equivalent (constant + operation
+  multisets identical) with clean timing (+2.6 island / +0.6 fabric), yet the
+  netlist-structure change perturbed Vivado P&R enough to corrupt the
+  passthrough. Static timing + logic-equivalence are necessary but NOT
+  sufficient; only an ear bench catches this.
+- **Process failure acknowledged.** D102/D103/D104 were merged on VHDL-
+  equivalence proofs WITHOUT an ear bench (the user opted to skip listening for
+  the "behaviour-identical" refactors). The standing project rule -- always
+  bench-audition a new bitstream regardless of equivalence/timing -- was the
+  thing skipped. Going forward: any new bitstream gets all_off-clean +
+  touched-models bench before it can become the deployed baseline.
+- **Revert.** DSP source + Clash VHDL + bit/hwh restored to D101 (`9e09ff27`):
+  FixedPoint drops `biquadFf`/`biquadRec`/`biquad5` (B) + `foldTap` (E);
+  Distortion.hs back to monolithic, drops `pedalDriveGain`/`distLevelRaw` (C) +
+  the `Distortion/{Common,Legacy,Pedals,Rat}.hs` split (F); Amp.hs back to
+  monolithic, removes the `Amp/{Models,Clip,Tone}.hs` split (F) + restores inline
+  biquads (B); Cab.hs / Overdrive.hs back to D101. Verified: the restored source
+  recompiles to byte-identical D101 VHDL; board re-deployed 5-site to `9e09ff27`,
+  **bypass confirmed clean by the user.**
+- **KEPT A** (bit-independent, cannot affect audio): `audio_lab_pynq/constants.py`
+  (`SAMPLE_RATE_HZ`) + its use in `diagnostics.py` / `AudioLabOverlay.py` / the 7
+  diagnostic scripts, and `tools/revoice.py`.
+- **Deployed baseline is D101 again** (`9e09ff27`, the amp/RAT input-HP pole at
+  298/209 Hz, bench-accepted). The B/C/E/F source work survives in git history
+  (feature branches + the D102-D104 merges) -- only to be revisited WITH a real
+  ear bench. The 96 kHz conversion (D98) + the HP-pole fix (D101) remain the
+  accepted audible state; D99/D102/D103/D104 were behaviour-preserving refactors,
+  of which the bitstreams are now abandoned. `DECISIONS.md` D105.
