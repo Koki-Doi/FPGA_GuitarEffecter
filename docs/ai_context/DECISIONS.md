@@ -6161,3 +6161,35 @@ pre-existing 3 failures + 1 error baseline.
   `/tmp/d102_backup`. Merged to main; branch `feature/refactor-biquad-helpers`.
   Remaining refactor candidates: D (Pipeline tap combinators), E (folded FIR
   helper), F (module splits), B2 (Pipeline biquadStage).
+
+## D104 — Refactor E (folded-FIR helper) + F (Distortion/Amp module splits) [deployed, behaviour == D103]
+
+- **Two refactors, NO audible change** (E + F of the "other refactorings" set;
+  deployed audio bit-identical to the bench-accepted-lineage D103).
+- **E (FixedPoint.foldTap).** The symmetric folded-FIR tap pair `(a+b)*g` (the
+  DSP48 pre-adder form) was copied as a local `pm`/`pairMul` in
+  `os4xDecimProducts`, `bigMuffClipProductsFrame`, and
+  `cabSpeakerFirProductsFrame`; now one shared kernel. Centre taps use the
+  existing `mulS10`. Same arithmetic.
+- **F (module splits, code move only).** `AudioLab/Effects/Distortion.hs` ->
+  `Distortion/{Common,Legacy,Pedals,Rat}.hs`; `AudioLab/Effects/Amp.hs` ->
+  `Amp/{Models,Clip,Tone}.hs`. Each parent is now a thin re-export shim, so
+  `Pipeline.hs` imports are unchanged (the D26 GUI/hdmi-state split pattern).
+  Clash inlines all modules into the topEntity, so module boundaries do not
+  appear in the netlist -- F changes only the `-- src/...` source-path comments
+  in the generated VHDL.
+- **Behaviour proven == D103.** Regenerated VHDL: `clash_lowpass_fir_types.vhdl`
+  byte-identical; in the data VHDL the numeric-constant multiset (317 distinct)
+  and operation counts (shift_right 248, `*` 169, `+` 277, `-` 190) are
+  IDENTICAL -- the only diffs are signal renames (E names the foldTap FIR
+  intermediates) + the source-path comments (F). Same audio output.
+- **Timing clean.** Island `clk_fpga_1` WNS +2.647 / 0 fail, fabric +0.613 / 0
+  fail, WHS +0.012, THS 0. bit/hwh md5 `c807fb3ae7e725fa2fb48f44275b2c82` / (IP
+  repack).
+- **Status: DEPLOYED 5-site (board matched `c807fb3a`), mode-2 smoke pass
+  (~96.1 kHz, clocks alive). Merged on the VHDL-equivalence proof (no ear
+  bench), same as D102/D103.** New deployed baseline `c807fb3a` (behaviour ==
+  D103 `98c6593e`); rollback D103 via `/tmp/d103_backup`. Merged to main; branch
+  `feature/refactor-foldtap-modsplit`. Remaining refactor candidates: D (Pipeline
+  tap combinators) and B2 (Pipeline biquadStage) -- both higher-risk Signal-level
+  changes, deferred.
