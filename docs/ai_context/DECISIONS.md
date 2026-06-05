@@ -6075,3 +6075,29 @@ pre-existing 3 failures + 1 error baseline.
   branch `feature/fix-amp-rat-highpass-pole` (NOT merged). `onePoleHighpass` on
   main keeps the no-op-pole form, documented. See
   memory `project_amp_rat_hp_dead_pole` ("DON'T FIX").
+
+## D101 — amp/RAT input-HP pole live at a higher corner (tighter lows, less fizz) [deployed, bench-ACCEPTED]
+
+- **The successful follow-up to D100.** Keeps the pole LIVE (the parenthesised
+  `(prevOut * coef) >> shift` in `FixedPoint.onePoleHighpass`) but raises the
+  corner so the input low end is tightened toward what the amp/RAT voicing
+  expects, instead of D100's 90/30 Hz which passed too much low end and bloomed:
+  **amp `ampHighpassFrame` coef 502 -> ~298 Hz**, **RAT `ratHighpassFrame` coef
+  505 -> ~209 Hz** (shift 9, pole a = coef/512). Still removes the dead-pole
+  first-difference's +6 dB HF rise at Nyquist (HF gain 2/(1+a) ~ 1), so the
+  anti-fizz benefit D100 aimed for is retained without the bass bloom. Each
+  corner is a single bench-tunable constant (raise toward 509/511 for more lows,
+  lower toward 498 for tighter).
+- **Build FULLY timing-clean.** Island `clk_fpga_1` WNS **+2.670 / 0 fail**,
+  fabric `clk_fpga_0` **+0.592 / 0 fail**, WHS +0.030, THS 0. DSP **137** (+2 vs
+  D99 -- the two constant-multiplies for the now-live pole), LUT 31618, BRAM 6.
+  bit/hwh md5 `9e09ff273b6095e0b138577c8fcca903` / (hwh from the IP repack).
+- **Status: DEPLOYED 5-site (board md5 matched `9e09ff27` at all four resolution
+  sites) + bench-ACCEPTED.** Mode-2 smoke passed (~96.1 kHz, clocks alive); the
+  user auditioned and approved (tighter lows, no D100 bloom) and asked to merge.
+  **D101 (`9e09ff27`) is the new accepted deployed baseline, superseding D99**
+  (`83a64ffc`, rollback `/tmp/d99_backup`). Merged to main; branch
+  `feature/amp-rat-hp-tighter`. (D98 `18df313f` / `/tmp/d98_backup`, D97
+  `ad771d7c` / `/tmp/d97_backup` are older rollbacks.) This is the first time the
+  amp/RAT input pole has actually been live -- it superseded the project-long
+  dead-pole first-difference; future amp/RAT low-end tweaks are the coef 502/505.
