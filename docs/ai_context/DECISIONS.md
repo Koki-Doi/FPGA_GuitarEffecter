@@ -6282,3 +6282,23 @@ pre-existing 3 failures + 1 error baseline.
   D98 bit is known clean. Voicing changes must be Python/control-layer or via the
   amp tone/presence/EQ knobs.** Note: the board dropped off the network twice
   during rollback deploys and needed power-cycles. `DECISIONS.md` D107.
+
+## D108 — Tried D101 for amp bass, REVERTED (D101 bypass also muffled; only D98 bypass-clean)
+
+- **User wanted more amp bass on D98.** Amp bass is structurally absent on D98:
+  the amp input stage is a first difference (`x - prevIn`, the dead-pole HP) that
+  removes the lows BEFORE the tone stack, so the BASS knob (+/-3 dB post-clip)
+  cannot restore them. Amp bass is a BITSTREAM property -- not Python-tunable.
+- **D108 switched the deployed bit to D101** (`9e09ff27`, whose live input HP pole
+  passes lows >=298 Hz) + Python-only amp defaults to compensate D101's earlier
+  muffle/loudness (compact_v2 TREB 20->50, PRES 70->78, MSTR 70->55;
+  AMP_DEFAULTS bass/treble/presence up, master down). No rebuild.
+- **Bench: D101's BYPASS is muffled** -- so D101's bit ALSO carries a (milder,
+  tonal) bypass P&R artifact, not just D102/D104/D106's gross distortion.
+  **ONLY the D98 bit (`18df313f`) is truly bypass-clean.**
+- **Reverted D108** (git revert) -> back to D98 `18df313f` + original defaults,
+  redeployed 5-site. **Conclusion: there is NO safe way to add amp bass on this
+  design** -- D98's bit removes it, D101's bit muffles bypass, and any rebuilt
+  "gentle-HP" bit breaks bypass (the established P&R knife-edge). The amp is
+  bass-light on the only clean bit by design. Deployed baseline = D98.
+  `DECISIONS.md` D108.
