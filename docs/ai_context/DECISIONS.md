@@ -6253,3 +6253,32 @@ pre-existing 3 failures + 1 error baseline.
   source is on branch `feature/amp-presence-restore` (NOT merged). Deployed +
   source baseline remain D101 (with A's `constants.py` Python kept from D102).
   `DECISIONS.md` D106; memory `project_96khz_conversion_d98`.
+
+## D107 — Deployed baseline rolled back to D98 (D101 HP-pole made amp muffled + too loud)
+
+- **User bench on D101: amp muffled (2-5 kHz presence recessed) AND output too
+  loud.** Root cause = the D101 amp/RAT input HP pole. D98's input stage was the
+  dead-pole first difference (`x - prevIn`), which has a rising HF response
+  (bright top) and cuts the lows (lower level); D101 replaced it with a proper
+  one-pole HP that removed the HF rise (-> darker / muffled) and passed the lows
+  the first difference had cut (-> louder). The D101 pole had been bench-accepted
+  earlier in isolation, but in full amp+cab use it is wrong. User referenced D98.
+- **D98 (`18df313f`) is both the wanted amp character AND the only confirmed
+  bypass-clean bitstream.** Every rebuild after D98 (D99 helpers, D101 pole, D102/
+  D103/D104 refactors, D106 presence) either reproduced the D58/D60 safe-bypass
+  P&R artifact or changed the amp badly. So the safe AND correct move is to pin to
+  D98 exactly (no rebuild).
+- **Reconcile.** main DSP source + Clash VHDL + bit/hwh restored to D98 (commit
+  `0e4350a`): FixedPoint / Amp / Distortion / Compressor / NoiseSuppressor / Eq
+  reverted (drops the D99 onePoleShift/onePoleHighpass/peakFollower helpers + the
+  D101 live HP pole; restores D98 inline forms + the dead-pole first-difference
+  input HP). KEPT (bit-independent): A's `constants.py` + consumers +
+  `tools/revoice.py`, and the D99 stale `hw/ip/clash/clash/` tree removal.
+- **Deployed 5-site to D98 `18df313f`; user-confirmed amp muffle + level fixed,
+  bypass clean. D98 is the final deployed baseline.** D99-D106 (refactors A-F,
+  the HP pole, the presence fix) are abandoned as deployed bits; their source is
+  in git history only. **Hard lesson reaffirmed (D58/D60/D105/D106): this design
+  is on a P&R-artifact knife-edge -- do NOT rebuild the DSP for voicing; only the
+  D98 bit is known clean. Voicing changes must be Python/control-layer or via the
+  amp tone/presence/EQ knobs.** Note: the board dropped off the network twice
+  during rollback deploys and needed power-cycles. `DECISIONS.md` D107.
