@@ -18,9 +18,10 @@ eqFilterFrame prevLow prevHighLp f =
     }
  where
   x = monoSample f
-  -- 96 kHz: shift 6 / 3 (was 5 / 2 at 48k) keeps the low/high crossover corners.
-  low = onePoleShift 6 prevLow x
-  highLp = onePoleShift 3 prevHighLp x
+  -- 96 kHz: +1 shift (>>6 / >>3, was >>5 / >>2) keeps the low/high crossover
+  -- corner frequencies the same when fs doubles.
+  low = prevLow + resize (((resize x - resize prevLow) :: Signed 25) `shiftR` 6)
+  highLp = prevHighLp + resize (((resize x - resize prevHighLp) :: Signed 25) `shiftR` 3)
 
 eqBandFrame :: Frame -> Frame
 eqBandFrame f =
