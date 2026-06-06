@@ -85,18 +85,23 @@ sampleToGateGain s = unpack (slice d11 d0 (pack s))
 -- tightest, response=255 is the slowest / most sustaining. Bypassed
 -- (env -> 0) when the compressor is off so a re-enable starts clean.
 compEnvNext :: Sample -> Maybe Frame -> Sample
-compEnvNext = peakFollower compOn maxAbsFrame release
+compEnvNext env Nothing = env
+compEnvNext env (Just f)
+  | not (compOn f)        = 0
+  | level > env           = level
+  | env > releaseStep     = env - releaseStep
+  | otherwise             = 0
  where
+  level = maxAbsFrame f
+  responseByte = compResponseByte (fComp f)
   -- 96 kHz: release steps halve (>>9, and the response shifts deepen by one)
   -- so the release TIME (ms) is unchanged when the sample rate doubles.
-  release env f = responseStep + envStep
-   where
-    responseByte = compResponseByte (fComp f)
-    envStep = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
-    responseStep =
-      let distance = (255 :: Unsigned 8) - responseByte
-          raw = (distance `shiftR` 5) + (distance `shiftR` 7)
-      in if raw == 0 then 1 else resize (asSigned9 raw) :: Sample
+  envStep = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
+  responseStep =
+    let distance = (255 :: Unsigned 8) - responseByte
+        raw = (distance `shiftR` 5) + (distance `shiftR` 7)
+    in if raw == 0 then 1 else resize (asSigned9 raw) :: Sample
+  releaseStep = responseStep + envStep
 
 -- Stage 2a: target gain + smoothing step, registered as Maybe CompTarget.
 -- Nothing cycles (idle pipeline slots between valid I2S frames) produce

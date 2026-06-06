@@ -90,33 +90,6 @@ hardClip x threshold
 onePoleU8 :: Unsigned 8 -> Sample -> Sample -> Sample
 onePoleU8 alpha prev x = satShift8 (mulU8 x alpha + mulU8 prev (255 - alpha))
 
--- | Shift-coefficient one-pole lowpass: @prev + (x - prev) >> n@ with a
--- Signed 25 intermediate (matches the inlined idiom used across the tone /
--- emphasis / transformer / multiband stages exactly). The corner frequency is
--- ~ fs / (2*pi*2^n); larger @n@ = lower corner. fs re-voicing is a single @n@
--- change per call. Bit-exact replacement for the previously inlined form.
-onePoleShift :: Int -> Sample -> Sample -> Sample
-onePoleShift n prev x =
-  prev + resize (((resize x - resize prev) :: Signed 25) `shiftR` n)
-
--- | One-pole highpass: @y = satWide (x - prevIn + (prevOut * coef) >> shift)@,
--- i.e. H(z) = (1 - z^-1) / (1 - a z^-1) with the pole @a = coef / 2^shift@.
--- DC gain 0 (DC block), HF gain 2/(1+a) ~ 1 (no boost), corner
--- fc ~ fs*(1-a)/(2*pi). Used by the amp / RAT input stages.
---
--- D101: the multiply is parenthesised @(prevOut * coef) >> shift@ so the pole is
--- LIVE. (Pre-D100 the inlined form @prevOut * coef >> shift@ parsed as
--- @prevOut * (coef >> shift)@ == @prevOut * 0@ -- a dead pole, i.e. just the
--- first difference @x - prevIn@.) D100 enabled the pole at ~90/30 Hz and bench-
--- rejected it as too bassy (the dead-pole first difference had been a strong
--- input low-cut the amp/RAT voicing relied on); D101 keeps the pole live but
--- moves the corner UP per call site (amp ~298 Hz, RAT ~209 Hz) so the input low
--- end is tightened while still taming the first-difference's +6 dB HF rise.
--- Stable for @a < 1@.
-onePoleHighpass :: Wide -> Int -> Sample -> Sample -> Sample -> Sample
-onePoleHighpass coef shift x prevIn prevOut =
-  satWide (resize x - resize prevIn + (((resize prevOut :: Wide) * coef) `shiftR` shift))
-
 -- | Symmetric soft clip with a tunable knee. Below knee it is identity;
 -- above the knee the sample is compressed by 1/4 slope.
 softClipK :: Sample -> Sample -> Sample
@@ -195,26 +168,3 @@ gateReleaseStep = 2
 
 maxAbsFrame :: Frame -> Sample
 maxAbsFrame f = abs24 (monoSample f)
-
--- | Peak-follower envelope shared by the Compressor / NoiseSuppressor / legacy
--- gate / Fuzz-Face-bias / amp-sag stages: instant attack, linear release by
--- @releaseOf env f@ per sample, reset to 0 when @enabled f@ is false (so a
--- re-enable starts clean), holds on idle (Nothing) cycles. The three function
--- arguments capture every per-stage difference (enable predicate, level source,
--- release-step formula). The guard order is identical to the previously inlined
--- versions, so this is a bit-exact replacement. (Release-step time constants are
--- still fs-dependent and were halved for 96 kHz inside each call site's formula.)
-peakFollower
-  :: (Frame -> Bool)              -- ^ enabled?
-  -> (Frame -> Sample)           -- ^ level source
-  -> (Sample -> Frame -> Sample) -- ^ release step from (current env, frame)
-  -> Sample -> Maybe Frame -> Sample
-peakFollower _ _ _ env Nothing = env
-peakFollower enabled levelOf releaseOf env (Just f)
-  | not (enabled f)   = 0
-  | level > env       = level
-  | env > releaseStep = env - releaseStep
-  | otherwise         = 0
- where
-  level = levelOf f
-  releaseStep = releaseOf env f

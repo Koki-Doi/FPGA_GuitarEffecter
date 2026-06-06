@@ -182,12 +182,12 @@ AMP_MODELS_LEGACY_PERCENT = (10, 35, 60, 85)
 AMP_DEFAULTS = {
     "enabled": False,
     "input_gain": 35,
-    "bass": 60,       # D108: a touch more low end on the D101 amp (passes lows)
+    "bass": 50,
     "middle": 50,
-    "treble": 60,     # D108: brighter -- compensate the D101 HP-pole HF removal
-    "presence": 55,   # D108: +presence (2-5 kHz)
+    "treble": 50,
+    "presence": 45,
     "resonance": 35,
-    "master": 62,     # D108: lower -- the D101 pole passes more low energy (was loud)
+    "master": 80,
     "character": 35,
 }
 
