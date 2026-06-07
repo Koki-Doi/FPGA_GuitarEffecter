@@ -12,6 +12,66 @@ from __future__ import print_function
 import time
 
 try:
+    from audio_lab_pynq.app_state_mapping import (
+        EFFECT_AMP,
+        EFFECT_CAB,
+        EFFECT_COMPRESSOR,
+        EFFECT_DISTORTION,
+        EFFECT_EQ,
+        EFFECT_NOISE_SUP,
+        EFFECT_OVERDRIVE,
+        EFFECT_REVERB,
+        EFFECT_WAH,
+        effect_enabled as _shared_effect_enabled,
+        effect_index as _shared_effect_index,
+    )
+except Exception:  # pragma: no cover - supports flat /tmp copies on PYNQ.
+    try:
+        import importlib.util
+        import os
+        _asm_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "audio_lab_pynq", "app_state_mapping.py")
+        _asm_spec = importlib.util.spec_from_file_location(
+            "_audio_lab_app_state_mapping", _asm_path)
+        _asm_mod = importlib.util.module_from_spec(_asm_spec)
+        _asm_spec.loader.exec_module(_asm_mod)
+        EFFECT_AMP = _asm_mod.EFFECT_AMP
+        EFFECT_CAB = _asm_mod.EFFECT_CAB
+        EFFECT_COMPRESSOR = _asm_mod.EFFECT_COMPRESSOR
+        EFFECT_DISTORTION = _asm_mod.EFFECT_DISTORTION
+        EFFECT_EQ = _asm_mod.EFFECT_EQ
+        EFFECT_NOISE_SUP = _asm_mod.EFFECT_NOISE_SUP
+        EFFECT_OVERDRIVE = _asm_mod.EFFECT_OVERDRIVE
+        EFFECT_REVERB = _asm_mod.EFFECT_REVERB
+        EFFECT_WAH = _asm_mod.EFFECT_WAH
+        _shared_effect_enabled = _asm_mod.effect_enabled
+        _shared_effect_index = _asm_mod.effect_index
+    except Exception:
+        EFFECT_NOISE_SUP = "Noise Sup"
+        EFFECT_COMPRESSOR = "Compressor"
+        EFFECT_WAH = "Wah"
+        EFFECT_OVERDRIVE = "Overdrive"
+        EFFECT_DISTORTION = "Distortion"
+        EFFECT_AMP = "Amp Sim"
+        EFFECT_CAB = "Cab IR"
+        EFFECT_EQ = "EQ"
+        EFFECT_REVERB = "Reverb"
+
+        def _shared_effect_index(effect_name, default=-1):
+            try:
+                return list(EFFECTS).index(effect_name)
+            except Exception:
+                return default
+
+        def _shared_effect_enabled(state, effect_name, default=False):
+            idx = _shared_effect_index(effect_name)
+            values = list(getattr(state, "effect_on", []) or [])
+            if 0 <= idx < len(values):
+                return bool(values[idx])
+            return bool(default)
+
+try:
     from audio_lab_pynq.knob_tapers import (
         taper_distortion_kwargs,
         taper_guitar_effects_kwargs,
@@ -91,16 +151,6 @@ except Exception:  # pragma: no cover - supports flat /tmp copies on PYNQ.
         ]
 
 
-EFFECT_NOISE_SUP = "Noise Sup"
-EFFECT_COMPRESSOR = "Compressor"
-EFFECT_WAH = "Wah"
-EFFECT_OVERDRIVE = "Overdrive"
-EFFECT_DISTORTION = "Distortion"
-EFFECT_AMP = "Amp Sim"
-EFFECT_CAB = "Cab IR"
-EFFECT_EQ = "EQ"
-EFFECT_REVERB = "Reverb"
-
 FIXED_DSP_CHAIN = tuple(range(len(EFFECTS)))
 SUPPORTED_EFFECTS = tuple(EFFECTS)
 UNSUPPORTED_LIVE_EFFECTS = (
@@ -150,22 +200,12 @@ def _level_200(value):
     return int(round(_clamp(value, 0, 100) * 2.0))
 
 
-def _effect_enabled(state, index):
-    values = list(getattr(state, "effect_on", []) or [])
-    if 0 <= index < len(values):
-        return bool(values[index])
-    return False
-
-
 def _effect_index(effect_name):
-    try:
-        return list(EFFECTS).index(effect_name)
-    except ValueError:
-        return -1
+    return _shared_effect_index(effect_name)
 
 
 def _effect_enabled_by_name(state, effect_name):
-    return _effect_enabled(state, _effect_index(effect_name))
+    return _shared_effect_enabled(state, effect_name, False)
 
 
 def _selected_effect_index(state):

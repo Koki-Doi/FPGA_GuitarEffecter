@@ -18,31 +18,20 @@ This module is import-safe on workstations without ``pynq`` installed.
 
 import time
 
+from .app_state_mapping import (
+    EFFECT_AMP,
+    EFFECT_CAB,
+    EFFECT_COMPRESSOR,
+    EFFECT_DISTORTION,
+    EFFECT_EQ,
+    EFFECT_NOISE_SUP,
+    EFFECT_OVERDRIVE,
+    EFFECT_REVERB,
+    EFFECT_WAH,
+    effect_enabled as _effect_on,
+    knob_list as _knob_list,
+)
 from .knob_tapers import taper_guitar_effects_kwargs
-
-EFFECT_NOISE_SUP  = "Noise Sup"
-EFFECT_COMPRESSOR = "Compressor"
-EFFECT_WAH        = "Wah"
-EFFECT_OVERDRIVE  = "Overdrive"
-EFFECT_DISTORTION = "Distortion"
-EFFECT_AMP        = "Amp Sim"
-EFFECT_CAB        = "Cab IR"
-EFFECT_EQ         = "EQ"
-EFFECT_REVERB     = "Reverb"
-
-# Index map mirrors GUI/compact_v2/knobs.py::EFFECTS. Used to read
-# effect_on flags by effect name without depending on a list scan.
-_EFFECT_ON_INDEX = {
-    EFFECT_NOISE_SUP:  0,
-    EFFECT_COMPRESSOR: 1,
-    EFFECT_WAH:        2,
-    EFFECT_OVERDRIVE:  3,
-    EFFECT_DISTORTION: 4,
-    EFFECT_AMP:        5,
-    EFFECT_CAB:        6,
-    EFFECT_EQ:         7,
-    EFFECT_REVERB:     8,
-}
 
 # Default throttle: at most one set_guitar_effects burst per 100 ms while
 # encoder 3 is being turned continuously.
@@ -90,21 +79,6 @@ def _clamp_eq_overlay(value):
     if v > 200.0:
         return 200.0
     return v
-
-
-def _knob_list(state, name, fallback):
-    vals = getattr(state, "all_knob_values", {}) or {}
-    cur = vals.get(name)
-    if cur is None or len(cur) < len(fallback):
-        return list(fallback)
-    return list(cur)
-
-
-def _effect_on(state, index, default=True):
-    on = list(getattr(state, "effect_on", []) or [])
-    if 0 <= index < len(on):
-        return bool(on[index])
-    return bool(default)
 
 
 class EncoderEffectApplier(object):
@@ -319,13 +293,13 @@ class EncoderEffectApplier(object):
                 threshold=_clamp_percent(ns[0]),
                 decay=_clamp_percent(ns[1]),
                 damp=_clamp_percent(ns[2]),
-                enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_NOISE_SUP], True))
+                enabled=_effect_on(state, EFFECT_NOISE_SUP, True))
             self.overlay.set_compressor_settings(
                 threshold=_clamp_percent(cmp_[0]),
                 ratio=_clamp_percent(cmp_[1]),
                 response=_clamp_percent(cmp_[2]),
                 makeup=_clamp_percent(cmp_[3]),
-                enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_COMPRESSOR], True))
+                enabled=_effect_on(state, EFFECT_COMPRESSOR, True))
             if hasattr(self.overlay, "set_wah_settings"):
                 # D74: in SOURCE=PEDAL mode the FP02M controller is the sole
                 # writer of POSITION (position_raw). Do NOT pass position=
@@ -337,7 +311,7 @@ class EncoderEffectApplier(object):
                     q=_clamp_percent(wah[1]),
                     volume=_clamp_percent(wah[2]),
                     bias=_clamp_percent(wah[3]),
-                    enabled=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_WAH], False),
+                    enabled=_effect_on(state, EFFECT_WAH, False),
                     source=wah_source)
                 if wah_source != "pedal":
                     wah_kwargs["position"] = _clamp_percent(wah[0])
@@ -346,14 +320,14 @@ class EncoderEffectApplier(object):
                 self._mark_unsupported(EFFECT_WAH)
 
             kwargs = dict(
-                noise_gate_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_NOISE_SUP], True),
-                overdrive_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_OVERDRIVE], False),
-                distortion_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_DISTORTION], False),
+                noise_gate_on=_effect_on(state, EFFECT_NOISE_SUP, True),
+                overdrive_on=_effect_on(state, EFFECT_OVERDRIVE, False),
+                distortion_on=_effect_on(state, EFFECT_DISTORTION, False),
                 rat_on=False,
-                amp_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_AMP], True),
-                cab_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_CAB], True),
-                eq_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_EQ], True),
-                reverb_on=_effect_on(state, _EFFECT_ON_INDEX[EFFECT_REVERB], True),
+                amp_on=_effect_on(state, EFFECT_AMP, True),
+                cab_on=_effect_on(state, EFFECT_CAB, True),
+                eq_on=_effect_on(state, EFFECT_EQ, True),
+                reverb_on=_effect_on(state, EFFECT_REVERB, True),
 
                 overdrive_drive=_clamp_percent(od[2]),
                 overdrive_tone=_clamp_percent(od[0]),

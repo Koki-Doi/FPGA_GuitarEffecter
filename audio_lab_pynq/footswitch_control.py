@@ -40,19 +40,18 @@ the functions that need them.
 """
 
 from .footswitch_input import CH_FX_TOGGLE, CH_PRESET_NEXT, CH_PRESET_PREV
-
-# AppState.effect_on index per effect (mirrors GUI/compact_v2/knobs.py EFFECTS
-# and audio_lab_pynq/encoder_effect_apply.py::_EFFECT_ON_INDEX).
-IDX_NOISE_SUP  = 0
-IDX_COMPRESSOR = 1
-IDX_WAH        = 2
-IDX_OVERDRIVE  = 3
-IDX_DISTORTION = 4
-IDX_AMP        = 5
-IDX_CAB        = 6
-IDX_EQ         = 7
-IDX_REVERB     = 8
-NUM_EFFECTS    = 9
+from .app_state_mapping import (
+    IDX_AMP,
+    IDX_CAB,
+    IDX_COMPRESSOR,
+    IDX_DISTORTION,
+    IDX_EQ,
+    IDX_NOISE_SUP,
+    IDX_OVERDRIVE,
+    IDX_REVERB,
+    IDX_WAH,
+    NUM_EFFECTS,
+)
 
 DEFAULT_REBIND_COUNT    = 5
 DEFAULT_REBIND_WINDOW_S = 3.0
