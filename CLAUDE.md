@@ -23,6 +23,7 @@ Then the topic file that matches the task:
 | --- | --- |
 | Adding a new effect | `docs/ai_context/EFFECT_ADDING_GUIDE.md` (+ `EFFECT_STAGE_TEMPLATE.md`) |
 | Clash / DSP edits | `docs/ai_context/DSP_EFFECT_CHAIN.md` |
+| Refactoring (DSP / Python / build) | `docs/ai_context/REFACTORING_CANDIDATES.md` |
 | GPIO bit allocation | `docs/ai_context/GPIO_CONTROL_MAP.md` |
 | Audio routing / passthrough debug | `docs/ai_context/AUDIO_SIGNAL_PATH.md` |
 | Distortion model work | `docs/ai_context/DISTORTION_REFACTOR_PLAN.md` |
