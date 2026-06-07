@@ -6428,3 +6428,33 @@ pre-existing 3 failures + 1 error baseline.
   `AudioLabOverlay()` once, set Pmod I2S2 mode 2, and re-run smoke/ear bench
   before accepting D114. D112 remains the accepted baseline until D113/D114 are
   bench-approved.
+
+## D115 — Python overlay facade split is bitstream-independent
+
+- **Decision.** Continue P1 as Python-only, compatibility-preserving slices:
+  `audio_lab_pynq/control_maps.py` owns GPIO byte/word packing, and
+  `audio_lab_pynq/overlay/register_writers.py` owns the shared register-write
+  and cached-word update helpers. `AudioLabOverlay` remains the public facade;
+  existing public APIs and private helper names stay in place as delegates.
+- **Why.** `AudioLabOverlay.py` is the most-touched Python module, and the
+  register packing/writing logic was the riskiest part to keep inline because
+  many GUI, encoder, footswitch, notebook, and direct API paths share it.
+  Moving byte layout into `control_maps.py` and write-side bookkeeping into an
+  `overlay/` helper package makes future per-effect setter splits smaller while
+  preserving the deployed GPIO contract.
+- **Boundaries.** This is not a DSP change. No Clash/VHDL/Tcl/XDC/bit/hwh
+  rebuild is required, no GPIO name/address/byte semantics change, and
+  `block_design.tcl` remains untouched. The accepted bitstream baseline is
+  unchanged: D112 (`c1e3de50`) remains bench-accepted; D113/D114 are still
+  bench-pending.
+- **Verification / deploy.** Local verification passed:
+  `tests/test_overlay_controls.py` (`129 passed`) and adjacent
+  GUI/encoder/footswitch control tests (`217 passed`). Deployed to PYNQ-Z2
+  `192.168.1.9` with `scripts/deploy_to_pynq.sh`; import sanity passed and a
+  board-side Python smoke confirmed `audio_lab_pynq.overlay.register_writers`
+  imports, `overdrive_match=True`, and D55 amp `ctrlD=0x84`. No PL load was
+  performed for this Python-only deploy.
+- **How to apply.** Future P1 work should keep using this pattern: split one
+  narrow helper/setter group at a time into `audio_lab_pynq/overlay/`, leave
+  `AudioLabOverlay` as the compatibility facade, and prove byte output/write
+  order with focused snapshot tests before deploy.
