@@ -59,32 +59,30 @@ except Exception:  # pragma: no cover - supports flat /tmp copies on PYNQ.
         # Local CI environments for control-layer tests may not have NumPy /
         # Pillow installed, even though PYNQ does. Keep a small copy of the GUI
         # constants so the bridge remains importable without the renderer.
-        EFFECTS = ["Noise Sup", "Compressor", "Overdrive", "Distortion",
-                   "Amp Sim", "Cab IR", "EQ", "Reverb"]
+        EFFECTS = ["Noise Sup", "Compressor", "Wah", "Overdrive",
+                   "Distortion", "Amp Sim", "Cab IR", "EQ", "Reverb"]
         EFFECT_KNOBS = {
-            "Noise Sup":  [("THRESH", 35), ("DECAY", 45), ("DAMP", 80),
-                           ("", 0), ("", 0), ("", 0)],
-            "Compressor": [("THRESH", 50), ("RATIO", 45), ("RESPONSE", 40),
-                           ("MAKEUP", 55), ("", 0), ("", 0)],
-            "Overdrive":  [("DRIVE", 35), ("TONE", 60), ("LEVEL", 60),
-                           ("", 0), ("", 0), ("", 0)],
-            "Distortion": [("DRIVE", 50), ("TONE", 55), ("LEVEL", 35),
+            "Noise Sup":  [("THRESH", 20), ("DECAY", 90), ("DAMP", 100)],
+            "Compressor": [("THRESH", 30), ("RATIO", 70), ("RESP", 85),
+                           ("MAKEUP", 55)],
+            "Wah":        [("POS", 0), ("Q", 50), ("VOL", 50), ("BIAS", 50)],
+            "Overdrive":  [("TONE", 35), ("LEVEL", 50), ("DRIVE", 55)],
+            "Distortion": [("TONE", 50), ("LEVEL", 35), ("DRIVE", 50),
                            ("BIAS", 50), ("TIGHT", 60), ("MIX", 100)],
-            "Amp Sim":    [("GAIN", 45), ("BASS", 55), ("MID", 60),
-                           ("TREBLE", 50), ("MASTER", 70), ("CHAR", 60)],
+            "Amp Sim":    [("GAIN", 52), ("BASS", 52), ("MID", 58),
+                           ("TREB", 62), ("PRES", 72), ("RES", 65),
+                           ("MSTR", 50), ("DRV MODE", 1)],
             "Cab IR":     [("MIX", 100), ("LEVEL", 70), ("MODEL", 33),
-                           ("AIR", 35), ("", 0), ("", 0)],
-            "EQ":         [("LOW", 50), ("MID", 55), ("HIGH", 55),
-                           ("", 0), ("", 0), ("", 0)],
-            "Reverb":     [("DECAY", 30), ("TONE", 65), ("MIX", 25),
-                           ("", 0), ("", 0), ("", 0)],
+                           ("AIR", 100)],
+            "EQ":         [("LOW", 50), ("MID", 50), ("HIGH", 50)],
+            "Reverb":     [("DECAY", 30), ("TONE", 65), ("MIX", 65)],
         }
         DIST_MODELS = ["CLEAN BOOST", "TUBE SCREAMER", "RAT", "DS-1",
                        "BIG MUFF", "FUZZ FACE", "METAL"]
-        AMP_MODELS = [("JC CLEAN", 10), ("CLEAN COMBO", 35),
-                      ("BRITISH CRUNCH", 60), ("HIGH GAIN STACK", 85)]
-        CAB_MODELS = ["1x12 COMBO", "2x12 BLACK", "4x12 BRITISH",
-                      "4x12 V30", "DIRECT DI"]
+        AMP_MODELS = [("JC-120", 0), ("Twin Reverb", 1), ("AC30", 2),
+                      ("Rockerverb", 3), ("JCM800", 4),
+                      ("TriAmp Mk3", 5)]
+        CAB_MODELS = ["1x12 OPEN BACK", "2x12 BRITISH", "4x12 CLOSED"]
         CHAIN_PRESETS = [
             "Safe Bypass", "Basic Clean", "Clean Sustain", "Light Crunch",
             "TS Lead", "RAT Rhythm", "Metal Tight", "Ambient Clean",
@@ -92,6 +90,16 @@ except Exception:  # pragma: no cover - supports flat /tmp copies on PYNQ.
             "DS-1 Crunch", "Big Muff Sustain", "Vintage Fuzz",
         ]
 
+
+EFFECT_NOISE_SUP = "Noise Sup"
+EFFECT_COMPRESSOR = "Compressor"
+EFFECT_WAH = "Wah"
+EFFECT_OVERDRIVE = "Overdrive"
+EFFECT_DISTORTION = "Distortion"
+EFFECT_AMP = "Amp Sim"
+EFFECT_CAB = "Cab IR"
+EFFECT_EQ = "EQ"
+EFFECT_REVERB = "Reverb"
 
 FIXED_DSP_CHAIN = tuple(range(len(EFFECTS)))
 SUPPORTED_EFFECTS = tuple(EFFECTS)
@@ -149,6 +157,17 @@ def _effect_enabled(state, index):
     return False
 
 
+def _effect_index(effect_name):
+    try:
+        return list(EFFECTS).index(effect_name)
+    except ValueError:
+        return -1
+
+
+def _effect_enabled_by_name(state, effect_name):
+    return _effect_enabled(state, _effect_index(effect_name))
+
+
 def _selected_effect_index(state):
     idx = int(getattr(state, "selected_effect", 0) or 0)
     if idx < 0:
@@ -176,7 +195,8 @@ def _knob_values_for_effect(state, effect_name, effect_index):
     return defaults
 
 
-def _knob_map(state, effect_name, effect_index):
+def _knob_map(state, effect_name):
+    effect_index = _effect_index(effect_name)
     labels = [label for label, _default in EFFECT_KNOBS[effect_name]]
     values = _knob_values_for_effect(state, effect_name, effect_index)
     out = {}
@@ -238,37 +258,47 @@ def app_state_to_audio_lab_sections(state):
     non-selected sections use the GUI defaults. Full per-effect knob state can
     be added later without changing the public bridge contract.
     """
-    ns = _knob_map(state, "Noise Sup", 0)
-    comp = _knob_map(state, "Compressor", 1)
-    od = _knob_map(state, "Overdrive", 2)
-    dist = _knob_map(state, "Distortion", 3)
-    amp = _knob_map(state, "Amp Sim", 4)
-    cab = _knob_map(state, "Cab IR", 5)
-    eq = _knob_map(state, "EQ", 6)
-    rev = _knob_map(state, "Reverb", 7)
+    ns = _knob_map(state, EFFECT_NOISE_SUP)
+    comp = _knob_map(state, EFFECT_COMPRESSOR)
+    wah = _knob_map(state, EFFECT_WAH)
+    od = _knob_map(state, EFFECT_OVERDRIVE)
+    dist = _knob_map(state, EFFECT_DISTORTION)
+    amp = _knob_map(state, EFFECT_AMP)
+    cab = _knob_map(state, EFFECT_CAB)
+    eq = _knob_map(state, EFFECT_EQ)
+    rev = _knob_map(state, EFFECT_REVERB)
+    wah_source = str(getattr(state, "wah_source", "manual") or "manual")
 
     sections = {
         "noise_suppressor": {
-            "enabled": _effect_enabled(state, 0),
+            "enabled": _effect_enabled_by_name(state, EFFECT_NOISE_SUP),
             "threshold": _percent(ns.get("thresh", 35)),
             "decay": _percent(ns.get("decay", 45)),
             "damp": _percent(ns.get("damp", 80)),
         },
         "compressor": {
-            "enabled": _effect_enabled(state, 1),
+            "enabled": _effect_enabled_by_name(state, EFFECT_COMPRESSOR),
             "threshold": _percent(comp.get("thresh", 50)),
             "ratio": _percent(comp.get("ratio", 45)),
             "response": _percent(comp.get("resp", comp.get("response", 40))),
             "makeup": _percent(comp.get("makeup", 55)),
         },
+        "wah": {
+            "enabled": _effect_enabled_by_name(state, EFFECT_WAH),
+            "position": _percent(wah.get("pos", wah.get("position", 0))),
+            "q": _percent(wah.get("q", 50)),
+            "volume": _percent(wah.get("vol", wah.get("volume", 50))),
+            "bias": _percent(wah.get("bias", 50)),
+            "source": wah_source,
+        },
         "overdrive": {
-            "enabled": _effect_enabled(state, 2),
+            "enabled": _effect_enabled_by_name(state, EFFECT_OVERDRIVE),
             "drive": _percent(od.get("drive", 35)),
             "tone": _percent(od.get("tone", 60)),
             "level": _percent(od.get("level", 60)),
         },
         "distortion": {
-            "enabled": _effect_enabled(state, 3),
+            "enabled": _effect_enabled_by_name(state, EFFECT_DISTORTION),
             "pedal": _distortion_pedal_from_state(state),
             "exclusive": True,
             "drive": _percent(dist.get("drive", 50)),
@@ -279,7 +309,7 @@ def app_state_to_audio_lab_sections(state):
             "mix": _percent(dist.get("mix", 100)),
         },
         "amp": {
-            "enabled": _effect_enabled(state, 4),
+            "enabled": _effect_enabled_by_name(state, EFFECT_AMP),
             "input_gain": _percent(amp.get("gain", 45)),
             "bass": _percent(amp.get("bass", 55)),
             "middle": _percent(amp.get("mid", 60)),
@@ -290,20 +320,20 @@ def app_state_to_audio_lab_sections(state):
             "character": _amp_character_from_state(state, amp),
         },
         "cab": {
-            "enabled": _effect_enabled(state, 5),
+            "enabled": _effect_enabled_by_name(state, EFFECT_CAB),
             "mix": _percent(cab.get("mix", 100)),
             "level": _percent(cab.get("level", 70)),
             "model": _cab_model_from_state(state, cab),
             "air": _percent(cab.get("air", 35)),
         },
         "eq": {
-            "enabled": _effect_enabled(state, 6),
+            "enabled": _effect_enabled_by_name(state, EFFECT_EQ),
             "low": _level_200(eq.get("low", 50)),
             "mid": _level_200(eq.get("mid", 55)),
             "high": _level_200(eq.get("high", 55)),
         },
         "reverb": {
-            "enabled": _effect_enabled(state, 7),
+            "enabled": _effect_enabled_by_name(state, EFFECT_REVERB),
             "decay": _percent(rev.get("decay", 30)),
             "tone": _percent(rev.get("tone", 65)),
             "mix": _percent(rev.get("mix", 25)),
@@ -424,6 +454,7 @@ def full_state_plan(state):
     ops = []
     ns = sections["noise_suppressor"]
     comp = sections["compressor"]
+    wah = sections["wah"]
     dist = sections["distortion"]
 
     ops.append(BridgeOperation(
@@ -442,6 +473,18 @@ def full_state_plan(state):
              makeup=comp["makeup"]),
         reason="Compressor AppState section",
         throttle_key="compressor",
+    ))
+    wah_kwargs = dict(enabled=wah["enabled"], q=wah["q"],
+                      volume=wah["volume"], bias=wah["bias"],
+                      source=wah["source"])
+    if wah["source"] != "pedal":
+        wah_kwargs["position"] = wah["position"]
+    ops.append(BridgeOperation(
+        "wah",
+        "set_wah_settings",
+        wah_kwargs,
+        reason="Wah AppState section",
+        throttle_key="wah",
     ))
     if dist["enabled"] and dist.get("pedal"):
         ops.append(BridgeOperation(
@@ -525,6 +568,11 @@ def safe_bypass_plan():
             "compressor", "set_compressor_settings",
             dict(enabled=False),
             reason="Safe Bypass disables Compressor",
+            priority=0),
+        BridgeOperation(
+            "wah", "set_wah_settings",
+            dict(enabled=False),
+            reason="Safe Bypass disables Wah",
             priority=0),
         BridgeOperation(
             "guitar_effects", "set_guitar_effects",

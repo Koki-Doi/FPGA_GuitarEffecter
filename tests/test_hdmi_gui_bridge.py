@@ -40,6 +40,7 @@ def test_default_app_state_maps_to_supported_overlay_api():
 
     assert "set_noise_suppressor_settings" in methods
     assert "set_compressor_settings" in methods
+    assert "set_wah_settings" in methods
     assert "set_guitar_effects" in methods
     assert "apply_chain_preset" not in methods
     assert "set_chorus" not in methods
@@ -108,10 +109,57 @@ def test_safe_bypass_uses_existing_safe_api_sequence():
         "set_distortion_settings",
         "set_noise_suppressor_settings",
         "set_compressor_settings",
+        "set_wah_settings",
         "set_guitar_effects",
     ]
     assert plan.operations[-1].kwargs["distortion_on"] is False
     assert plan.operations[-1].kwargs["reverb_on"] is False
+
+
+def test_effect_on_flags_follow_named_wah_layout():
+    state = AppState()
+
+    sections = app_state_to_audio_lab_sections(state)
+
+    assert sections["noise_suppressor"]["enabled"] is True
+    assert sections["compressor"]["enabled"] is True
+    assert sections["wah"]["enabled"] is False
+    assert sections["overdrive"]["enabled"] is True
+    assert sections["distortion"]["enabled"] is False
+    assert sections["amp"]["enabled"] is True
+    assert sections["cab"]["enabled"] is True
+    assert sections["eq"]["enabled"] is False
+    assert sections["reverb"]["enabled"] is True
+
+
+def test_wah_section_maps_to_dedicated_overlay_call():
+    state = AppState()
+    if not hasattr(state, "all_knob_values"):
+        state.all_knob_values = {}
+    state.effect_on[2] = True
+    state.all_knob_values["Wah"] = [33.0, 44.0, 55.0, 66.0]
+    state.wah_source = "manual"
+
+    plan = AudioLabGuiBridge().build_plan(state, force=True)
+    op = [op for op in plan.operations if op.method == "set_wah_settings"][0]
+
+    assert op.kwargs == dict(enabled=True, q=44, volume=55, bias=66,
+                             source="manual", position=33)
+
+
+def test_wah_pedal_source_does_not_overwrite_position():
+    state = AppState()
+    if not hasattr(state, "all_knob_values"):
+        state.all_knob_values = {}
+    state.effect_on[2] = True
+    state.all_knob_values["Wah"] = [33.0, 44.0, 55.0, 66.0]
+    state.wah_source = "pedal"
+
+    plan = AudioLabGuiBridge().build_plan(state, force=True)
+    op = [op for op in plan.operations if op.method == "set_wah_settings"][0]
+
+    assert op.kwargs == dict(enabled=True, q=44, volume=55, bias=66,
+                             source="pedal")
 
 
 def test_eq_knobs_map_gui_percent_to_overlay_level_range():
@@ -155,6 +203,9 @@ if __name__ == "__main__":
         test_chain_reorder_is_warning_only,
         test_chain_preset_alias_matches_overlay_name,
         test_safe_bypass_uses_existing_safe_api_sequence,
+        test_effect_on_flags_follow_named_wah_layout,
+        test_wah_section_maps_to_dedicated_overlay_call,
+        test_wah_pedal_source_does_not_overwrite_position,
         test_eq_knobs_map_gui_percent_to_overlay_level_range,
         test_live_plan_tapers_gui_drive_but_keeps_levels,
     ]
