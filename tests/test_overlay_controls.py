@@ -1938,6 +1938,88 @@ def test_guitar_effect_control_words_reverb_uses_reverb_word():
     assert words['reverb'] == cm.reverb_word(30, 65, 20)
 
 
+def test_control_maps_grouped_words_match_overlay_packer():
+    """The full guitar packer delegates every GPIO word shape to
+    control_maps. This locks the behavior while AudioLabOverlay becomes a
+    thinner facade over the packers."""
+    from audio_lab_pynq import control_maps as cm
+    kwargs = dict(
+        noise_gate_on=True,
+        noise_gate_threshold=42,
+        overdrive_on=True,
+        overdrive_tone=61,
+        overdrive_level=93,
+        overdrive_drive=72,
+        overdrive_model=3,
+        distortion_on=True,
+        distortion_tone=44,
+        distortion_level=36,
+        distortion=88,
+        distortion_pedal_mask=0x15,
+        distortion_bias=47,
+        distortion_tight=69,
+        distortion_mix=83,
+        rat_on=True,
+        rat_filter=34,
+        rat_level=117,
+        rat_drive=58,
+        rat_mix=91,
+        amp_on=True,
+        amp_input_gain=63,
+        amp_bass=41,
+        amp_middle=52,
+        amp_treble=73,
+        amp_presence=64,
+        amp_resonance=29,
+        amp_master=121,
+        amp_model_idx=4,
+        amp_drive_mode=1,
+        cab_on=True,
+        cab_mix=79,
+        cab_level=131,
+        cab_model=2,
+        cab_air=38,
+        eq_on=True,
+        eq_low=90,
+        eq_mid=111,
+        eq_high=70,
+        reverb_on=True,
+        reverb_decay=27,
+        reverb_tone=74,
+        reverb_mix=62,
+    )
+    words = AudioLabOverlay.guitar_effect_control_words(**kwargs)
+    assert words['gate'] == cm.gate_word(
+        noise_gate_on=True, noise_gate_threshold=42, overdrive_on=True,
+        distortion_on=True, eq_on=True, rat_on=True, reverb_on=True,
+        amp_on=True, cab_on=True, distortion_bias=47, distortion_mix=83)
+    assert words['overdrive'] == cm.overdrive_word(
+        61, 93, 72, distortion_tight=69, overdrive_model=3,
+        overdrive_model_count=AudioLabOverlay.OVERDRIVE_MODEL_COUNT)
+    assert words['distortion'] == cm.distortion_word(44, 36, 88, 0x15)
+    assert words['rat'] == cm.rat_word(34, 117, 58, 91)
+    assert words['delay'] == words['rat']
+    assert words['amp'] == cm.amp_word(63, 121, 64, 29)
+    assert words['amp_tone'] == cm.amp_tone_word(
+        41, 52, 73, amp_model_idx=4, amp_drive_mode=1,
+        max_idx=AudioLabOverlay.AMP_MODEL_IDX_MAX,
+        idx_mask=AudioLabOverlay.AMP_MODEL_IDX_MASK,
+        drive_mode_bit=AudioLabOverlay.AMP_DRIVE_MODE_BIT)
+    assert words['cab'] == cm.cab_word(79, 131, 2, 38)
+    assert words['eq'] == cm.eq_word(90, 111, 70)
+    assert words['reverb'] == cm.reverb_word(27, 74, 62)
+
+
+def test_control_maps_amp_tone_legacy_character_and_d55_model_paths():
+    from audio_lab_pynq import control_maps as cm
+
+    legacy = cm.amp_tone_word(50, 60, 70, character=35)
+    d55 = cm.amp_tone_word(50, 60, 70, amp_model_idx=4, amp_drive_mode=1)
+
+    assert (legacy >> 24) & 0xFF == cm.percent_to_u8(35, 255)
+    assert (d55 >> 24) & 0xFF == AudioLabOverlay.amp_model_drive_byte(4, 1)
+
+
 def test_guitar_effect_control_words_defaults_match_effect_defaults():
     """#3: the packer signature defaults are sourced from the
     effect_defaults dicts (single source of truth), so a partial /
@@ -2107,6 +2189,8 @@ if __name__ == "__main__":
     # #2 reverb word consolidation
     test_reverb_word_matches_clash_layout()
     test_guitar_effect_control_words_reverb_uses_reverb_word()
+    test_control_maps_grouped_words_match_overlay_packer()
+    test_control_maps_amp_tone_legacy_character_and_d55_model_paths()
     test_reverb_control_word_uses_clash_layout_not_enable_in_ctrla()
     # #3 defaults sourced from effect_defaults
     test_guitar_effect_control_words_defaults_match_effect_defaults()

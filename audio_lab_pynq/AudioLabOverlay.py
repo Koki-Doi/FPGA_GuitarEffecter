@@ -1146,17 +1146,13 @@ class AudioLabOverlay(Overlay):
         in the byte itself -- each model has its own per-coefficient
         voicing table inside Amp.hs.
         """
-        try:
-            idx = int(amp_model_idx)
-        except Exception:
-            idx = 0
-        idx = max(0, min(cls.AMP_MODEL_IDX_MAX, idx))
-        try:
-            mode = 1 if int(amp_drive_mode) >= 1 else 0
-        except Exception:
-            mode = 0
-        return ((mode & 1) << cls.AMP_DRIVE_MODE_BIT) | (
-            idx & cls.AMP_MODEL_IDX_MASK)
+        return _cm.amp_model_drive_byte(
+            amp_model_idx=amp_model_idx,
+            amp_drive_mode=amp_drive_mode,
+            max_idx=cls.AMP_MODEL_IDX_MAX,
+            idx_mask=cls.AMP_MODEL_IDX_MASK,
+            drive_mode_bit=cls.AMP_DRIVE_MODE_BIT,
+        )
 
     @classmethod
     def amp_character_byte_for_model(cls, amp_model_idx, amp_drive_mode=0):
@@ -1488,77 +1484,58 @@ class AudioLabOverlay(Overlay):
         reverb_mix=_REVERB_DEFAULTS["mix"],
         **unused,
     ):
-        flags = 0
-        flags |= 0x01 if noise_gate_on else 0
-        flags |= 0x02 if overdrive_on else 0
-        flags |= 0x04 if distortion_on else 0
-        flags |= 0x08 if eq_on else 0
-        flags |= 0x10 if rat_on else 0
-        flags |= 0x20 if reverb_on else 0
-        flags |= 0x40 if amp_on else 0
-        flags |= 0x80 if cab_on else 0
-
         pedal_mask = int(distortion_pedal_mask) & 0x7F
-        bias_byte = cls._percent_to_u8(distortion_bias, 255)
-        mix_byte = cls._percent_to_u8(distortion_mix, 255)
-        tight_byte = cls._percent_to_u8(distortion_tight, 255)
-
-        gate_word = (
-            flags
-            | (cls._noise_threshold_to_u8(noise_gate_threshold) << 8)
-            | (bias_byte << 16)
-            | (mix_byte << 24)
+        gate_word = _cm.gate_word(
+            noise_gate_on=noise_gate_on,
+            noise_gate_threshold=noise_gate_threshold,
+            overdrive_on=overdrive_on,
+            distortion_on=distortion_on,
+            eq_on=eq_on,
+            rat_on=rat_on,
+            reverb_on=reverb_on,
+            amp_on=amp_on,
+            cab_on=cab_on,
+            distortion_bias=distortion_bias,
+            distortion_mix=distortion_mix,
         )
-        # overdrive_control.ctrlD packs distTight (upper 5 bits) and the
-        # 3-bit OD model select (lower 3 bits). Every Clash consumer of
-        # distTight uses `>> 3` or `>> 4`, so the low 3 bits are
-        # already discarded and become free storage for the model
-        # select (D45). Values outside 0..5 fall through to 0 (TS9).
-        od_model = cls._clamp_range(overdrive_model, 0, 7) & 0x07
-        if od_model >= cls.OVERDRIVE_MODEL_COUNT:
-            od_model = 0
-        od_ctrlD = ((tight_byte & 0xF8) | (od_model & 0x07)) & 0xFF
-        overdrive_word = (
-            cls._pack3(
-                cls._percent_to_u8(overdrive_tone, 255),
-                cls._level_to_q7(overdrive_level),
-                cls._percent_to_u8(overdrive_drive, 255),
-            )
-            | (od_ctrlD << 24)
+        overdrive_word = _cm.overdrive_word(
+            tone=overdrive_tone,
+            level=overdrive_level,
+            drive=overdrive_drive,
+            distortion_tight=distortion_tight,
+            overdrive_model=overdrive_model,
+            overdrive_model_count=cls.OVERDRIVE_MODEL_COUNT,
         )
-        distortion_word = (
-            cls._pack3(
-                cls._percent_to_u8(distortion_tone, 255),
-                cls._level_to_q7(distortion_level),
-                cls._percent_to_u8(distortion, 255),
-            )
-            | ((pedal_mask & 0x7F) << 24)
+        distortion_word = _cm.distortion_word(
+            tone=distortion_tone,
+            level=distortion_level,
+            drive=distortion,
+            pedal_mask=pedal_mask,
         )
         eq_word = _cm.eq_word(eq_low, eq_mid, eq_high)
         rat_word = _cm.rat_word(rat_filter, rat_level, rat_drive, rat_mix)
-        amp_word = cls._pack4(
-            cls._percent_to_u8(amp_input_gain, 255),
-            cls._level_to_q7(cls._clamp_range(amp_master, 0, 150)),
-            cls._percent_to_u8(amp_presence, 255),
-            cls._percent_to_u8(amp_resonance, 255),
+        amp_word = _cm.amp_word(
+            input_gain=amp_input_gain,
+            master=amp_master,
+            presence=amp_presence,
+            resonance=amp_resonance,
         )
-        # D54: when amp_model_idx is supplied, ctrlD is a bit-packed
-        # field (bit 7 = drive_mode, bits[1:0] = model idx) that the
+        # D54/D55: when amp_model_idx is supplied, ctrlD is a bit-packed
+        # field (bit 7 = drive_mode, bits[2:0] = model idx) that the
         # Clash side decodes directly. Legacy callers without
         # amp_model_idx fall back to the pre-D53 percent-character
         # path so older Notebook presets / chain presets keep
         # working byte-for-byte.
-        if amp_model_idx is not None:
-            character_byte = cls.amp_model_drive_byte(
-                amp_model_idx=amp_model_idx,
-                amp_drive_mode=amp_drive_mode)
-        else:
-            character_byte = cls._percent_to_u8(amp_character, 255)
-        amp_tone_word = cls._pack4(
-            cls._percent_to_u8(amp_bass, 255),
-            cls._percent_to_u8(amp_middle, 255),
-            cls._percent_to_u8(amp_treble, 255),
-            character_byte,
+        amp_tone_word = _cm.amp_tone_word(
+            bass=amp_bass,
+            middle=amp_middle,
+            treble=amp_treble,
+            character=amp_character,
+            amp_model_idx=amp_model_idx,
+            amp_drive_mode=amp_drive_mode,
+            max_idx=cls.AMP_MODEL_IDX_MAX,
+            idx_mask=cls.AMP_MODEL_IDX_MASK,
+            drive_mode_bit=cls.AMP_DRIVE_MODE_BIT,
         )
         cab_word = _cm.cab_word(cab_mix, cab_level, cab_model, cab_air)
         reverb_word = _cm.reverb_word(reverb_decay, reverb_tone, reverb_mix)

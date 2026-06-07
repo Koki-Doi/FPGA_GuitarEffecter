@@ -272,6 +272,153 @@ def cab_word(mix, level, model, air):
     )
 
 
+def gate_flags(noise_gate_on=False, overdrive_on=False, distortion_on=False,
+               eq_on=False, rat_on=False, reverb_on=False, amp_on=False,
+               cab_on=False):
+    """Pack the eight effect-master flags into ``gate_control.ctrlA``."""
+    flags = 0
+    flags |= 0x01 if noise_gate_on else 0
+    flags |= 0x02 if overdrive_on else 0
+    flags |= 0x04 if distortion_on else 0
+    flags |= 0x08 if eq_on else 0
+    flags |= 0x10 if rat_on else 0
+    flags |= 0x20 if reverb_on else 0
+    flags |= 0x40 if amp_on else 0
+    flags |= 0x80 if cab_on else 0
+    return flags & 0xFF
+
+
+def gate_word(noise_gate_on=False, noise_gate_threshold=8,
+              overdrive_on=False, distortion_on=False, eq_on=False,
+              rat_on=False, reverb_on=False, amp_on=False, cab_on=False,
+              distortion_bias=50, distortion_mix=100):
+    """Build ``axi_gpio_gate``.
+
+    Bytes:
+
+    - ``ctrlA`` = effect-master flags
+    - ``ctrlB`` = legacy noise gate threshold via
+      :func:`noise_threshold_to_u8`
+    - ``ctrlC`` = distortion bias byte
+    - ``ctrlD`` = distortion mix byte
+    """
+    return pack_u8x4(
+        gate_flags(
+            noise_gate_on=noise_gate_on,
+            overdrive_on=overdrive_on,
+            distortion_on=distortion_on,
+            eq_on=eq_on,
+            rat_on=rat_on,
+            reverb_on=reverb_on,
+            amp_on=amp_on,
+            cab_on=cab_on,
+        ),
+        noise_threshold_to_u8(noise_gate_threshold),
+        percent_to_u8(distortion_bias, 255),
+        percent_to_u8(distortion_mix, 255),
+    )
+
+
+def overdrive_ctrlD(distortion_tight=50, overdrive_model=0,
+                    overdrive_model_count=6):
+    """Pack ``overdrive_control.ctrlD``.
+
+    Upper five bits carry distortion TIGHT. Lower three bits carry the
+    overdrive model select; values outside the implemented model count
+    fall back to 0 (TS9), matching the legacy inline packer.
+    """
+    tight_byte = percent_to_u8(distortion_tight, 255)
+    model = clamp_int(overdrive_model, 0, 7) & 0x07
+    if model >= int(overdrive_model_count):
+        model = 0
+    return ((tight_byte & 0xF8) | (model & 0x07)) & 0xFF
+
+
+def overdrive_word(tone, level, drive, distortion_tight=50,
+                   overdrive_model=0, overdrive_model_count=6):
+    """Build ``axi_gpio_overdrive``.
+
+    Bytes: ctrlA=TONE, ctrlB=LEVEL Q7, ctrlC=DRIVE, ctrlD=TIGHT/model.
+    """
+    return pack_u8x4(
+        percent_to_u8(tone, 255),
+        level_to_q7(level),
+        percent_to_u8(drive, 255),
+        overdrive_ctrlD(distortion_tight, overdrive_model,
+                        overdrive_model_count),
+    )
+
+
+def distortion_word(tone, level, drive, pedal_mask=0):
+    """Build ``axi_gpio_distortion``.
+
+    Bytes: ctrlA=TONE, ctrlB=LEVEL Q7, ctrlC=DRIVE, ctrlD=pedal mask
+    bits[6:0]. Bit 7 is reserved and always cleared.
+    """
+    return pack_u8x4(
+        percent_to_u8(tone, 255),
+        level_to_q7(level),
+        percent_to_u8(drive, 255),
+        int(pedal_mask) & 0x7F,
+    )
+
+
+def amp_word(input_gain, master, presence, resonance):
+    """Build ``axi_gpio_amp``.
+
+    Bytes: ctrlA=INPUT_GAIN, ctrlB=MASTER Q7 (clamped to <=150 before
+    scaling), ctrlC=PRESENCE, ctrlD=RESONANCE.
+    """
+    return pack_u8x4(
+        percent_to_u8(input_gain, 255),
+        level_to_q7(clamp_int(master, 0, 150)),
+        percent_to_u8(presence, 255),
+        percent_to_u8(resonance, 255),
+    )
+
+
+def amp_model_drive_byte(amp_model_idx=0, amp_drive_mode=0,
+                         max_idx=5, idx_mask=0x07, drive_mode_bit=7):
+    """Pack the D55 amp model index and binary drive mode into one byte."""
+    try:
+        idx = int(amp_model_idx)
+    except Exception:
+        idx = 0
+    idx = max(0, min(int(max_idx), idx))
+    try:
+        mode = 1 if int(amp_drive_mode) >= 1 else 0
+    except Exception:
+        mode = 0
+    return ((mode & 1) << int(drive_mode_bit)) | (idx & int(idx_mask))
+
+
+def amp_tone_word(bass, middle, treble, character=35, amp_model_idx=None,
+                  amp_drive_mode=0, max_idx=5, idx_mask=0x07,
+                  drive_mode_bit=7):
+    """Build ``axi_gpio_amp_tone``.
+
+    Legacy callers without ``amp_model_idx`` use ``character`` as a
+    percent byte. D55 callers pass ``amp_model_idx`` and get the bit-packed
+    model/drive byte in ctrlD.
+    """
+    if amp_model_idx is not None:
+        character_byte = amp_model_drive_byte(
+            amp_model_idx=amp_model_idx,
+            amp_drive_mode=amp_drive_mode,
+            max_idx=max_idx,
+            idx_mask=idx_mask,
+            drive_mode_bit=drive_mode_bit,
+        )
+    else:
+        character_byte = percent_to_u8(character, 255)
+    return pack_u8x4(
+        percent_to_u8(bass, 255),
+        percent_to_u8(middle, 255),
+        percent_to_u8(treble, 255),
+        character_byte,
+    )
+
+
 # ---- Wah --------------------------------------------------------------
 #
 # Drives the dedicated ``axi_gpio_wah`` at ``0x43D30000``. Bytes:
