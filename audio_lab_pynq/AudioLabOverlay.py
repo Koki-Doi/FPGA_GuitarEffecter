@@ -6,6 +6,7 @@ from .AxisSwitch import AxisSwitch
 from .AudioCodec import ADAU1761
 from . import control_maps as _cm
 from . import knob_tapers as _kt
+from .overlay import register_writers as _writers
 from .effect_defaults import (
     DISTORTION_DEFAULTS as _DISTORTION_DEFAULTS,
     DISTORTION_PEDALS as _DISTORTION_PEDALS,
@@ -317,8 +318,7 @@ class AudioLabOverlay(Overlay):
 
     @staticmethod
     def _write_gpio(gpio, word):
-        gpio.write(0x04, 0x00000000)
-        gpio.write(0x00, int(word) & 0xFFFFFFFF)
+        _writers.write_gpio(gpio, word)
 
     @classmethod
     def _normalize_overdrive_model(cls, model):
@@ -412,59 +412,7 @@ class AudioLabOverlay(Overlay):
         owned by other effects are preserved across distortion-only
         edits (the AXI GPIO is output-only, so we cannot read it back).
         """
-        s = self._dist_state
-        pedal_mask = int(s['pedal_mask']) & 0x7F
-        tone_byte = self._percent_to_u8(s['tone'], 255)
-        level_byte = self._level_to_q7(s['level'])
-        drive_byte = self._percent_to_u8(s['drive'], 255)
-        bias_byte = self._percent_to_u8(s['bias'], 255)
-        tight_byte = self._percent_to_u8(s['tight'], 255)
-        mix_byte = self._percent_to_u8(s['mix'], 255)
-
-        # gate: keep ctrlA (effect flags) and ctrlB (gate threshold);
-        # overwrite ctrlC (bias) and ctrlD (mix). When the pedal mask's
-        # rat bit is set, also drive the legacy rat_on flag (gate.bit4)
-        # high so that the existing RAT stage processes audio. The
-        # rat_on flag is owned both by set_guitar_effects() and here;
-        # this method only forces it on, never off, so a user who
-        # asked for rat via set_guitar_effects(rat_on=True) still keeps
-        # rat enabled even after a set_distortion_pedal('clean_boost')
-        # call.
-        gate = self._cached_gate_word & 0x0000FFFF
-        if pedal_mask & (1 << self._DIST_PEDAL_BIT['rat']):
-            gate |= 0x10  # rat_on (flag4)
-        gate |= (bias_byte & 0xFF) << 16
-        gate |= (mix_byte & 0xFF) << 24
-        self._cached_gate_word = gate
-
-        # overdrive: keep ctrlA-C (existing OD params); overwrite ctrlD
-        # with the composed tight (upper 5 bits) + OD model (lower 3
-        # bits). The low 3 bits of `tight_byte` are masked off because
-        # every Clash consumer of distTight uses `>> 3` or `>> 4`, so
-        # the bottom 3 bits are already discarded and become free
-        # storage for the OD model select (D45).
-        od_model = self._normalize_overdrive_model(self._od_state['model'])
-        od_ctrlD = (tight_byte & 0xF8) | (od_model & 0x07)
-        od = self._cached_overdrive_word & 0x00FFFFFF
-        od |= (od_ctrlD & 0xFF) << 24
-        self._cached_overdrive_word = od
-
-        # distortion: tone / level / drive plus pedal mask in ctrlD.
-        # ctrlD bit 7 stays reserved (cleared).
-        dist = (
-            (tone_byte & 0xFF)
-            | ((level_byte & 0xFF) << 8)
-            | ((drive_byte & 0xFF) << 16)
-            | ((pedal_mask & 0x7F) << 24)
-        )
-        self._cached_distortion_word = dist
-
-        if hasattr(self, 'axi_gpio_gate'):
-            self._write_gpio(self.axi_gpio_gate, self._cached_gate_word)
-        if hasattr(self, 'axi_gpio_overdrive'):
-            self._write_gpio(self.axi_gpio_overdrive, self._cached_overdrive_word)
-        if hasattr(self, 'axi_gpio_distortion'):
-            self._write_gpio(self.axi_gpio_distortion, self._cached_distortion_word)
+        _writers.apply_distortion_state_to_words(self)
 
     # ---- Distortion section public API ----------------------------------
 
@@ -680,34 +628,8 @@ class AudioLabOverlay(Overlay):
         re-route the AXIS source crossbar (only when ``touch_gate`` is
         True).
         """
-        s = self._od_state
-        od_model = self._normalize_overdrive_model(s['model'])
-        # ctrlA-C from cached OD knobs (same encoding as
-        # guitar_effect_control_words).
-        tone_byte = self._percent_to_u8(s['tone'], 255)
-        level_byte = self._level_to_q7(s['level'])
-        drive_byte = self._percent_to_u8(s['drive'], 255)
-        # ctrlD: top 5 bits = distTight from the distortion cache;
-        # bottom 3 bits = OD model select. Both bytes share the same
-        # AXI GPIO byte but never collide in hardware (the Clash
-        # distTight consumers all use `>> 3` or `>> 4`).
-        tight_byte = self._percent_to_u8(
-            self._dist_state['tight'] if hasattr(self, '_dist_state') else 0,
-            255)
-        ctrlD = (tight_byte & 0xF8) | (od_model & 0x07)
-        od_word = self._pack4(tone_byte, level_byte, drive_byte, ctrlD)
-        self._cached_overdrive_word = od_word
-        if hasattr(self, 'axi_gpio_overdrive'):
-            self._write_gpio(self.axi_gpio_overdrive, od_word)
-        if touch_gate and hasattr(self, 'axi_gpio_gate'):
-            gate = self._cached_gate_word & ~0x02
-            if s['enabled']:
-                gate |= 0x02
-            self._cached_gate_word = gate
-            self._write_gpio(self.axi_gpio_gate, gate)
-            # Re-route the AXIS source crossbar based on the updated
-            # flag byte: at least one effect bit set -> guitar_chain.
-            self._route_effect_chain(sink, gate)
+        _writers.apply_overdrive_state_to_words(
+            self, touch_gate=touch_gate, sink=sink)
 
     def get_overdrive_settings(self):
         """Return the cached overdrive-section state (model + knobs)."""
@@ -744,28 +666,8 @@ class AudioLabOverlay(Overlay):
         only had the legacy hard noise gate still see a usable
         threshold.
         """
-        s = self._noise_suppressor_state
-        word = self._noise_suppressor_word(
-            threshold=s['threshold'],
-            decay=s['decay'],
-            damp=s['damp'],
-            mode=s['mode'],
-        )
-        self._cached_noise_suppressor_word = word
-        gpio = getattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME, None)
-        if gpio is not None:
-            self._write_gpio(gpio, word)
-
-        if mirror_to_gate and hasattr(self, 'axi_gpio_gate'):
-            threshold_byte = self._noise_threshold_to_u8(s['threshold'])
-            gate_word = self._cached_gate_word & ~0x0000FF00
-            gate_word |= (threshold_byte & 0xFF) << 8
-            if s['enabled']:
-                gate_word |= 0x01
-            else:
-                gate_word &= ~0x01
-            self._cached_gate_word = gate_word
-            self._write_gpio(self.axi_gpio_gate, gate_word)
+        _writers.apply_noise_suppressor_state_to_word(
+            self, mirror_to_gate=mirror_to_gate)
 
     def set_noise_suppressor_threshold(self, value):
         return self.set_noise_suppressor_settings(threshold=value)
@@ -848,18 +750,7 @@ class AudioLabOverlay(Overlay):
         write it to the dedicated GPIO. No mirror to legacy GPIOs --
         the compressor is a brand-new section with no historical slot.
         """
-        s = self._compressor_state
-        word = self._compressor_word(
-            threshold=s['threshold'],
-            ratio=s['ratio'],
-            response=s['response'],
-            makeup=s['makeup'],
-            enabled=s['enabled'],
-        )
-        self._cached_compressor_word = word
-        gpio = getattr(self, self.COMPRESSOR_GPIO_NAME, None)
-        if gpio is not None:
-            self._write_gpio(gpio, word)
+        _writers.apply_compressor_state_to_word(self)
 
     def set_compressor_threshold(self, value):
         return self.set_compressor_settings(threshold=value)
@@ -981,28 +872,7 @@ class AudioLabOverlay(Overlay):
         to the dedicated GPIO. No mirror to legacy GPIOs -- the wah is
         a brand-new section with no historical slot.
         """
-        s = self._wah_state
-        raw = s.get('position_raw')
-        if raw is not None:
-            word = self._wah_word(
-                position_raw=raw,
-                q=s['q'],
-                volume=s['volume'],
-                bias=s['bias'],
-                enabled=s['enabled'],
-            )
-        else:
-            word = self._wah_word(
-                position=s.get('position', 0),
-                q=s['q'],
-                volume=s['volume'],
-                bias=s['bias'],
-                enabled=s['enabled'],
-            )
-        self._cached_wah_word = word
-        gpio = getattr(self, self.WAH_GPIO_NAME, None)
-        if gpio is not None:
-            self._write_gpio(gpio, word)
+        _writers.apply_wah_state_to_word(self)
 
     def set_wah_position(self, value):
         return self.set_wah_settings(position=value)
@@ -1592,11 +1462,7 @@ class AudioLabOverlay(Overlay):
     )
 
     def _require_effect_gpios(self):
-        missing = [name for name in self._REQUIRED_EFFECT_GPIOS
-                   if not hasattr(self, name)]
-        if missing:
-            raise RuntimeError(
-                'missing effect control GPIO(s): ' + ', '.join(missing))
+        _writers.require_effect_gpios(self)
 
     def _merge_cached_distortion_state(self, kwargs):
         """Fold cached distortion-section state into ``kwargs`` in place.
@@ -1680,26 +1546,14 @@ class AudioLabOverlay(Overlay):
         bit in the gate word is clear, otherwise we raise so the
         caller can spot the mismatch.
         """
-        self._write_gpio(self.axi_gpio_gate, words['gate'])
-        self._write_gpio(self.axi_gpio_overdrive, words['overdrive'])
-        self._write_gpio(self.axi_gpio_distortion, words['distortion'])
-        self._write_gpio(self.axi_gpio_eq, words['eq'])
-        for gpio_attr, words_key, gate_bit, description in self._OPTIONAL_EFFECT_GPIOS:
-            if hasattr(self, gpio_attr):
-                self._write_gpio(getattr(self, gpio_attr), words[words_key])
-            elif words['gate'] & gate_bit:
-                raise RuntimeError(
-                    '{} is required for {}'.format(gpio_attr, description))
-        self._write_gpio(self.axi_gpio_reverb, words['reverb'])
+        _writers.write_effect_gpios(self, words)
 
     def _refresh_cached_words(self, words):
         """Snapshot the just-written gate / overdrive / distortion words
         so subsequent per-effect setters (``set_distortion_settings``,
         ``set_distortion_pedal``, ...) preserve the on/off flags and
         rat / amp / cab / reverb bits this call just wrote."""
-        self._cached_gate_word = words['gate']
-        self._cached_overdrive_word = words['overdrive']
-        self._cached_distortion_word = words['distortion']
+        _writers.refresh_cached_words(self, words)
 
     def _route_effect_chain(self, sink, gate_word):
         """Switch the AXIS source crossbar to guitar_chain when any
