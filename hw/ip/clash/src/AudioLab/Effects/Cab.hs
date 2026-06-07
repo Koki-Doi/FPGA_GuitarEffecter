@@ -197,8 +197,8 @@ cabLevelMixFrame f =
 cabSpeakerFirCoeff :: Unsigned 8 -> Vec 8 (Signed 10)
 cabSpeakerFirCoeff model = case model `shiftR` 6 of
   0 -> (-1) :> 0 :> 2 :> 8 :> 19 :> 32 :> 43 :> 50 :> Nil        -- open 1x12
-  1 -> 0 :> 1 :> 4 :> 11 :> 20 :> 31 :> 40 :> 42 :> Nil          -- british 2x12
-  _ -> 0 :> 1 :> 5 :> 11 :> 21 :> 31 :> 38 :> 42 :> Nil          -- closed 4x12
+  1 -> 0 :> 0 :> 3 :> 10 :> 20 :> 32 :> 41 :> 44 :> Nil          -- british 2x12
+  _ -> 0 :> 0 :> 2 :> 8 :> 20 :> 33 :> 43 :> 50 :> Nil           -- closed 4x12
 
 -- The FIR is split into two pipeline stages (it is feedforward, so it
 -- pipelines freely -- unlike the biquads' feedback). A single combinational
@@ -244,17 +244,16 @@ cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 -- Gated on cab-on (flag7) so the all_off
 -- bypass is bit-exact (the LFO + line still advance, harmlessly). The depth is
 -- deliberately tiny; cabModDepthQ4 / cabModLfoStep are the bench-tunable knobs.
--- 96 kHz: LFO step halved (3 -> 2, ~2.9 Hz; closest integer to the 1.5 ideal),
--- and the center tap + modulation depth double (in samples) so the delay TIME
--- and the vibrato cents are preserved at 2x fs.
+-- 96 kHz: D98 doubled the center tap/depth in samples and used step=2. D114
+-- backs the motion down to a subtler real-speaker drift: step=1 and +-4 samples.
 cabModLfoStep :: Unsigned 16
-cabModLfoStep = 2            -- ~2.9 Hz at 96 kHz (96000 * 2 / 65536)
+cabModLfoStep = 1            -- ~1.46 Hz at 96 kHz (96000 / 65536), subtler speaker motion
 
 cabModCenterQ4 :: Unsigned 16
 cabModCenterQ4 = 1024        -- center read = tap 64, in Q4 sub-samples (64 << 4)
 
 cabModDepthQ4 :: Unsigned 16
-cabModDepthQ4 = 192          -- peak-to-peak, Q4 (192/16 = 12 samples p-p = +-6 = +-62.5 us)
+cabModDepthQ4 = 128          -- peak-to-peak, Q4 (128/16 = 8 samples p-p = +-4 = +-41.7 us)
 
 cabModLfoNext :: Unsigned 16 -> Maybe Frame -> Unsigned 16
 cabModLfoNext ph Nothing = ph

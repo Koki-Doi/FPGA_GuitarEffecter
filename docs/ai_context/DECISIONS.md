@@ -6393,3 +6393,38 @@ pre-existing 3 failures + 1 error baseline.
   `CLIP_COUNT=735` under the current input, so tone acceptance should start
   with the input level checked/lowered. **Not ear-bench accepted yet; D112
   (`c1e3de50`) remains the accepted baseline until D113 is bench-approved.**
+
+## D114 — Non-amp effect constant retune; built clean, file-synced, PL smoke blocked
+
+- **Why:** after D113's amp-identity pass, the follow-up request was to review
+  the other effect constants. D114 deliberately stays constant-only and within
+  existing stages: no new GPIO, no topology change, no new effect stage, no new
+  helper/multiplier, and `block_design.tcl` untouched.
+- **What changed:** `Overdrive.hs` spreads the six selectable OD references
+  further without a mux/topology change: TS9/OD-1/OCD get slightly more drive
+  and lower knees, Centaur gets cleaner headroom, Jan Ray remains flatter, and
+  the existing OD mid-biquad slots are filled for OD-1/OCD/Centaur with modest
+  96 kHz RBJ Q14 peaking coefficients. `Distortion.hs` keeps DS-1 unchanged
+  because of the D63/D64 history, but makes Clean Boost cleaner, Tube Screamer
+  slightly softer, Metal less brittle, and RAT more like a controlled hard clip.
+  `Cab.hs` keeps the accepted 15-tap speaker FIR topology but darkens the
+  British/Closed choices slightly and reduces the micro-modulation depth/rate.
+  `Reverb.hs` leaves delay topology unchanged and only makes high-TONE damping a
+  little less dark.
+- **Verification:** Clash VHDL generation PASS, IP repackage PASS, full Vivado
+  build PASS. Routed timing fully MET: WNS `+0.601 ns`, TNS `0.000`, WHS
+  `+0.010 ns`, THS `0.000`; route errors `0`; bus-skew reports all `MET`
+  (minimum slack `+7.989 ns`). bit/hwh md5:
+  `31c768eb4788f31de21bd30977614361` /
+  `e380ed637f145a6377e29e13c45a098d`.
+- **Deploy status:** `scripts/deploy_to_pynq.sh` successfully file-synced to
+  PYNQ-Z2 `192.168.1.9`, and all six board bit/hwh sites md5-matched. However,
+  the subsequent `AudioLabOverlay()` PL-load smoke timed out and the board
+  stopped responding to ping/SSH. Therefore D114 is **not confirmed loaded on
+  the FPGA** and **not ear-bench accepted**. A pre-load Pmod helper readback
+  still showed mode 2 and live I2S clocks, but that only proves the previously
+  loaded PL was alive; it also showed input clipping (`PEAK_ABS_LEFT/RIGHT =
+  8388607`, post-clear 1 s `CLIP_COUNT=776`). Power-cycle the board, load
+  `AudioLabOverlay()` once, set Pmod I2S2 mode 2, and re-run smoke/ear bench
+  before accepting D114. D112 remains the accepted baseline until D113/D114 are
+  bench-approved.

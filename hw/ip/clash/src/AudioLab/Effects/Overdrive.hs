@@ -36,21 +36,24 @@ import AudioLab.Types
 --   5 CENTAUR            -- smooth, dynamic, mid focused
 
 -- | Per-model gain ceiling factor. The driveGain in the multiply stage
--- is `256 + (drive * odDriveK model)`, so model 3 (Jan Ray, k=3)
--- produces ~1x..~3.9x at DRIVE=255 while model 4 (OCD, k=7) reaches
--- ~1x..~7.97x. Each model's ceiling stays bounded so the post-shift
+-- is `256 + (drive * odDriveK model)`, so model 3 (Jan Ray, k=2)
+-- produces ~1x..~3x at DRIVE=255 while model 4 (OCD, k=8) reaches
+-- ~1x..~9x. Each model's ceiling stays bounded so the post-shift
 -- byte never saturates beyond Q8.
+--
+-- D114: constant-only spread after the D113 amp retune. TS/OD-1/OCD get a
+-- little more pedal-like drive range; Jan Ray and Centaur stay cleaner.
 odDriveK :: Unsigned 3 -> Unsigned 11
 odDriveK m = case m of
-  0 -> 4
-  1 -> 5
+  0 -> 5
+  1 -> 6
   2 -> 7   -- BD-2: D62, raised from 6 to match the two-cascaded ~40 dB op-amp
-           -- character documented in BD2_MODEL_RESEARCH.md. Matches OCD's
-           -- ceiling but BD-2's tighter asym knees keep the texture distinct.
+           -- character documented in BD2_MODEL_RESEARCH.md. Slightly below
+           -- OCD's ceiling; tighter asym knees keep the texture distinct.
   3 -> 2
-  4 -> 7
-  5 -> 4
-  _ -> 4
+  4 -> 8
+  5 -> 3
+  _ -> 5
 
 -- | Per-model positive-half soft-clip knee. Smaller values clip earlier
 -- (more saturation at moderate DRIVE); larger values keep the signal
@@ -58,8 +61,8 @@ odDriveK m = case m of
 -- knee constants change per model.
 odKneeP :: Unsigned 3 -> Sample
 odKneeP m = case m of
-  0 -> 2_950_000   -- TS9: smoother, near-symmetric
-  1 -> 2_550_000   -- OD-1: slightly earlier
+  0 -> 2_850_000   -- TS9: smoother, near-symmetric; engages a little earlier
+  1 -> 2_450_000   -- OD-1: slightly earlier and cruder
   2 -> 2_400_000   -- BD-2: D62, aggressive (was 3_000_000). Real BD-2 has
                    -- audible breakup well below mid-drive per source [4]
                    -- breadboard measurement; "transparent" was the wrong
@@ -67,23 +70,23 @@ odKneeP m = case m of
                    -- and OD-1 (2_600_000) but pairs with a much smaller
                    -- N knee for strong even-harmonic asymmetry.
   3 -> 3_600_000   -- Jan Ray: transparent
-  4 -> 2_450_000   -- OCD: open hard-clip-leaning drive
-  5 -> 2_400_000   -- CENTAUR/Klon: germanium-leaning wet path (refined). Lowered
+  4 -> 2_300_000   -- OCD: open hard-clip-leaning drive
+  5 -> 2_550_000   -- CENTAUR/Klon: germanium-leaning wet path (refined). Lowered
                    -- from 3_100_000 so the wet (clipped) path engages earlier --
                    -- germanium diodes have a low forward voltage, so the Klon's
                    -- clipped path bites sooner than a silicon op-amp soft clip.
                    -- The parallel clean blend (odCleanBlend) keeps the overall
                    -- "transparency"; this only changes the grit-over-clean wet
                    -- texture. Only model 5 uses this value.
-  _ -> 2_950_000
+  _ -> 2_850_000
 
 -- | Per-model negative-half soft-clip knee. `kneeN < kneeP` adds even
 -- harmonics; tighter asymmetry == more obvious second-harmonic
 -- "tube" colour.
 odKneeN :: Unsigned 3 -> Sample
 odKneeN m = case m of
-  0 -> 2_850_000   -- TS9: near-symmetric
-  1 -> 1_750_000   -- OD-1: stronger asym
+  0 -> 2_700_000   -- TS9: near-symmetric
+  1 -> 1_650_000   -- OD-1: stronger asym
   2 -> 1_900_000   -- BD-2: D62, strong asym (was 2_700_000). The BD-2 op-amps
                    -- run from a single supply with the rail offset documented
                    -- in source [1]; the resulting saturation is asymmetric.
@@ -92,25 +95,25 @@ odKneeN m = case m of
                    -- in the six-model lineup, matching the "tube-like"
                    -- breakup the real pedal is known for.
   3 -> 3_450_000   -- Jan Ray: barely asymmetric
-  4 -> 2_150_000   -- OCD: firm but more open than BD-2
-  5 -> 2_050_000   -- CENTAUR/Klon: germanium asym (refined, was 2_900_000). The
-                   -- 350k P/N gap (2_400k vs 2_050k) gives the wet path a stronger
+  4 -> 2_050_000   -- OCD: firm but more open than BD-2
+  5 -> 2_100_000   -- CENTAUR/Klon: germanium asym (refined, was 2_900_000). The
+                   -- 450k P/N gap (2_550k vs 2_100k) gives the wet path a stronger
                    -- even-harmonic germanium colour; the clean blend keeps it
                    -- transparent overall.
-  _ -> 2_850_000
+  _ -> 2_700_000
 
 -- | Per-model output safety knee. Caps the level stage so a hot LEVEL
 -- knob cannot slam the downstream amp / pedal stages. Higher = more
 -- headroom (more transparent), lower = harder ceiling.
 odSafetyKnee :: Unsigned 3 -> Sample
 odSafetyKnee m = case m of
-  0 -> 3_350_000   -- TS9
-  1 -> 3_050_000   -- OD-1: tighter
-  2 -> 3_400_000   -- BD-2: more headroom
-  3 -> 3_700_000   -- Jan Ray: transparent
-  4 -> 3_750_000   -- OCD: high headroom
-  5 -> 3_650_000   -- CENTAUR: smooth
-  _ -> 3_350_000
+  0 -> 3_300_000   -- TS9
+  1 -> 3_000_000   -- OD-1: tighter
+  2 -> 3_350_000   -- BD-2: more headroom
+  3 -> 3_800_000   -- Jan Ray: transparent
+  4 -> 3_850_000   -- OCD: high headroom
+  5 -> 3_700_000   -- CENTAUR: smooth
+  _ -> 3_300_000
 
 -- ---- Overdrive pipeline stages ---------------------------------------
 
@@ -145,7 +148,7 @@ odClipHardness m = case m of
   1 -> 1   -- OD-1     : medium (legacy 2/3 shape)
   2 -> 1   -- BD-2     : medium, keep even-harmonic asym
   3 -> 0   -- Jan Ray  : transparent / softest
-  4 -> 2   -- OCD      : harder MOSFET-style knee
+  4 -> 3   -- OCD      : harder MOSFET-style knee
   5 -> 1   -- CENTAUR/Klon : germanium wet path now firmer (was 0). Medium knee
            -- (pos>>2 neg>>3) on the wet path; the clean blend supplies the
            -- transparency, the wet path supplies the germanium grit (refined).
@@ -155,14 +158,12 @@ odClipHardness m = case m of
 -- an unclipped clean path with a germanium hard-clipped path; its
 -- "transparency" is the parallel clean signal, and turning GAIN up raises the
 -- clipped proportion. `blend` is the clipped-path weight (0..255), rising with
--- DRIVE; the clean weight is `255 - blend`. Floor ~64 so even DRIVE=0 has a
--- little grit; the cap (176) holds the clipped weight at 240 max so the clean
--- weight never drops below 15 (~6%) -- the Klon's defining always-present
--- parallel clean path (refined: the old cap of 191 let blend reach 255 at
--- DRIVE=255, which fully removed the clean signal and contradicted the
--- "slice of clean always remains" intent). Only model 5 uses this.
+-- DRIVE; the clean weight is `255 - blend`. D114 floor is 72 so even DRIVE=0
+-- has a little grit; the cap (152) holds the clipped weight at 224 max so the
+-- clean weight never drops below 31 (~12%) -- the Klon's defining
+-- always-present parallel clean path. Only model 5 uses this.
 odCleanBlend :: Unsigned 8 -> Unsigned 8
-odCleanBlend drive = 64 + resize (min 176 (resize drive * 3 `shiftR` 2) :: Unsigned 9)
+odCleanBlend drive = 72 + resize (min 152 (resize drive * 3 `shiftR` 2) :: Unsigned 9)
 
 -- True when this Overdrive model uses the parallel clean-blend (Klon only).
 odUsesCleanBlend :: Unsigned 3 -> Bool
@@ -183,12 +184,15 @@ odUsesCleanBlend m = m == 5
 -- this one shapes the dedicated *Overdrive* model 0 (overdrive_control model
 -- select). They are independent stages.
 --
--- Filled models (hand-designed target curves at fs = 48 kHz, NOT schematic
--- tables -- D7/D45):
+-- Filled models (hand-designed target curves, NOT schematic tables -- D7/D45;
+-- coefficients below are RBJ Q14 at fs = 96 kHz):
 --   0 TS9  : +6 dB @ 720 Hz, Q 0.8 (reuses the proven D81 Q14 coeffs)
+--   1 OD-1 : +2 dB @ 900 Hz, Q 0.8 (simple mid push)
 --   2 BD-2 : +3 dB @ 1500 Hz, Q 0.7 (bright upper-mid bite)
--- Every other model (1/3/4/5) stays FLAT (b0 = 2^14, rest 0 -> exact unity
--- passthrough = byte-identical). All models share this ONE biquad via the
+--   4 OCD  : +2.5 dB @ 1200 Hz, Q 0.8 (open upper-mid grind)
+--   5 Klon : +4 dB @ 1000 Hz, Q 0.9 (mid focus into clean blend)
+-- Jan Ray (3) stays FLAT (b0 = 2^14, rest 0 -> exact unity passthrough).
+-- All models share this ONE biquad via the
 -- coefficient mux -- do NOT instantiate a second biquad (D58 lesson).
 --
 -- Direct-form-I, Q14 coefficients (a0 normalised to 2^14):
@@ -201,13 +205,19 @@ odUsesCleanBlend m = m == 5
 odMidFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 odMidFeedforwardCoeffs m = case m of
   0 -> (16717, -32063, 15382)   -- TS9  : +6 dB @ 720 Hz  (48k: 17036/-31323/14422)
+  1 -> (16519, -31673, 15209)   -- OD-1 : +2 dB @ 900 Hz
   2 -> (16760, -30796, 14185)   -- BD-2 : +3 dB @ 1500 Hz (48k: 17093/-28766/12236)
+  4 -> (16607, -31336, 14827)   -- OCD  : +2.5 dB @ 1200 Hz
+  5 -> (16653, -31781, 15196)   -- Klon : +4 dB @ 1000 Hz
   _ -> (16384, 0, 0)            -- flat (unity, b0 = 2^14)
 
 odMidFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 odMidFeedbackCoeffs m = case m of
   0 -> (-32063, 15715)          -- TS9  (48k: -31323/15075)
+  1 -> (-31673, 15125)          -- OD-1
   2 -> (-30796, 14561)          -- BD-2 (48k: -28766/12945)
+  4 -> (-31336, 14657)          -- OCD
+  5 -> (-31781, 15268)          -- Klon
   _ -> (0, 0)                   -- flat (no feedback)
 
 -- Feedforward stage: precompute b0*x + b1*x1 + b2*x2 into fAccL (no feedback,

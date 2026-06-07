@@ -112,7 +112,7 @@ cleanBoostLevelFrame f =
   level = ctrlB (fDist f)
   afterLevel = satShift7 (mulU8 (monoSample f) level)
   -- High safety knee so Clean Boost only catches exceptional peaks.
-  safetyKnee = 3_800_000 :: Sample
+  safetyKnee = 4_050_000 :: Sample
 
 -- ---- tube_screamer (5 stages: HPF, mul, clip, post-LPF, level) -------
 
@@ -176,8 +176,8 @@ tubeScreamerClipFrame f =
   on = tubeScreamerOn f
   boosted = satShift8 (fAccL f)
   -- Near-symmetric soft knees keep the TS smoother than DS-1.
-  kneeP = 3_000_000 :: Sample
-  kneeN = 2_850_000 :: Sample
+  kneeP = 2_900_000 :: Sample
+  kneeN = 2_750_000 :: Sample
 
 tubeScreamerPostLpfFrame :: Sample -> Frame -> Frame
 tubeScreamerPostLpfFrame prevLp f =
@@ -223,7 +223,7 @@ metalMulFrame f =
   drive = ctrlC (fDist f)
   -- Higher drive within the existing Q12 gain path; threshold and LPF
   -- below keep the result aggressive without fizzing out.
-  gain = resize (768 + (resize drive * 13 :: Unsigned 12)) :: Unsigned 12
+  gain = resize (768 + (resize drive * 12 :: Unsigned 12)) :: Unsigned 12
 
 -- 4x oversampled hard clip (realism item 2 / R5) for Metal MT-2, the worst
 -- aliaser. A static 48 kHz hard clip generates harmonics far above Nyquist
@@ -243,7 +243,7 @@ metalMulFrame f =
 -- freely; the D87 lesson) to keep the 50 MHz island path short. Bit-exact
 -- bypass when the pedal is off.
 metalClipThreshold :: Frame -> Sample
-metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
+metalClipThreshold f = resize (if rawT < 1_450_000 then 1_450_000 else rawT) :: Sample
  where
   driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
   rawT = 3_300_000 - driveS * 6_000 :: Signed 25
@@ -322,7 +322,7 @@ metalPostLpfFrame prevLp f =
   tone = ctrlA (fDist f)
   -- Dark post-LPF keeps the high-gain top end controlled.
   -- 96 kHz: bilinear-refit (was 40 + tone>>1) to hold the same LPF corner Hz.
-  alpha = 21 + (tone `shiftR` 2)
+  alpha = 18 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -627,7 +627,7 @@ ratDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (monoWet f) driveGain else 0, fAccR = 0}
  where
   on = flag4 (fGate f)
-  driveGain = resize (640 + (resize (ctrlC (fRat f)) * 12 :: Unsigned 12)) :: Unsigned 12
+  driveGain = resize (640 + (resize (ctrlC (fRat f)) * 13 :: Unsigned 12)) :: Unsigned 12
 
 ratDriveBoostFrame :: Frame -> Frame
 ratDriveBoostFrame f =
@@ -653,8 +653,8 @@ ratClipThreshold :: Frame -> Sample
 ratClipThreshold f = resize clampedThreshold :: Sample
  where
   amount = ctrlC (fRat f)
-  rawThreshold = 6_000_000 - (resize (asSigned9 amount) * 8_500) :: Signed 25
-  clampedThreshold = if rawThreshold < 2_200_000 then 2_200_000 else rawThreshold
+  rawThreshold = 5_800_000 - (resize (asSigned9 amount) * 10_000) :: Signed 25
+  clampedThreshold = if rawThreshold < 2_600_000 then 2_600_000 else rawThreshold
 
 ratClipProductsFrame :: Sample -> Vec 12 Sample -> Frame -> Frame
 ratClipProductsFrame x1 hist f =
