@@ -106,9 +106,20 @@ When a previous turn stopped mid-implementation:
   pieces are load-bearing and must not be reverted: the `paceCount` removal
   in `Pipeline.hs` (`acceptReady = readyOut`), the `syncCtrl` control-word
   CDC in `LowPassFir.hs` (2-FF + 2-cycle stability on all 12 control words;
-  without it every effect/knob switch clicks), and the
-  `set_clock_groups -asynchronous` over all 7 clock domains in
-  `audio_lab.xdc`. XADC stays dropped (`create_project.tcl` xadc lines
+  without it every effect/knob switch clicks), and the asynchronous clock-group
+  setup in `audio_lab.xdc`. **As of D109 that setup is TWO
+  `set_clock_groups -asynchronous` statements (NOT one over 7 domains): one
+  grouping `clk_fpga_0` and one grouping `clk` -- deliberately leaving the
+  `clk_fpga_0`<->`clk` pair TIMED -- plus `set_max_delay -datapath_only 10.000`
+  both directions on that pair. This bounds the previously-untimed DSP-output ->
+  DAC distributed-RAM CDC (112x report_cdc CDC-13) that was the root cause of the
+  safe-bypass "knife-edge" (every DSP rebuild corrupting all_off passthrough).
+  Do NOT collapse it back to a single 7-domain group or drop the max_delay --
+  that reintroduces the knife-edge. With this fix, rebuilding the DSP for voicing
+  is SAFE again (the old "only the D98 bit is bypass-clean, do not rebuild for
+  voicing" rule is obsolete); still always ear-bench a new bitstream.** See
+  `DECISIONS.md` D109-D112 + `project_safebypass_knifeedge_cdc_rootcause`.
+  XADC stays dropped (`create_project.tcl` xadc lines
   commented; D74 put a bitcrusher on the ADC path). A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD
   clocks undefined at synth elaboration, applied at impl).
