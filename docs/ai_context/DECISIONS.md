@@ -6337,3 +6337,30 @@ pre-existing 3 failures + 1 error baseline.
   `DECISIONS.md` D109; root cause in memory
   `project_safebypass_knifeedge_cdc_rootcause.md`. Golden D98 placement saved at
   `/tmp/d98_routed.dcp`.
+
+## D110-D112 — Amp full revoicing (now that D109 made DSP rebuilds safe); bench-ACCEPTED `c1e3de50`
+
+- **Why:** the entire D55-D97 amp voicing was tuned against the amp's bright
+  *differentiator* input (the dead-pole bug). D109 fixed that input to a flat
+  ~120 Hz HP, so the downstream high-cuts (post-clip LPF darken, transformer HF
+  droop, treble trims) over-darkened and the many cascaded always-on soft-clips
+  over-compressed -> "muffled + amp-sim squash" on the bench. With D109 making
+  rebuilds safe, the amp was re-voiced toward a real-amp balance.
+- **D110** (first pass): halved `ampModelDarken`, transformer HF droop 3->4,
+  treble-trim halved. Not enough (still muffled).
+- **D111** (open up the compression): raised the cascaded always-on soft-clip
+  knees -- power 3.4M->6.0M, master 3.3M->5.5M, midsat 4.0M->6.5M, respres
+  3.4M->5.5M, transformer 5.2M->6.5M; asym-clip base 4.9M/4.35M -> 5.5M/4.9M;
+  pre/de-emph amount 1->2; `ampModelDarken`/treble-trim minimised. Direction
+  accepted by ear ("方向性はいい") but JC-120 clean now overflowed (master knee
+  too high let satShift7 hard-clip) and the top still lacked air.
+- **D112** (final, ACCEPTED): master knee 5.5M->4.5M (protective ceiling, JC-120
+  clean no longer overflows); **`ampPreLowpass` baseAlpha 80->140** (post-clip LPF
+  ~6 kHz -> ~12 kHz = the main "air"/HF-ceiling lever); **`ampTrebleGain` full
+  treble** (removed the 8..16 kHz top rolloff `x - x>>3 - x>>4` -> `x`); amp
+  Python defaults voiced clean (compact_v2 GAIN52/BASS52/MID58/TREB62/PRES72/
+  MSTR50; lower GAIN/MSTR keep JC-120 clean, the user raises GAIN for drive).
+- Timing fully MET throughout (D109 CDC `set_max_delay` bound holds). Deployed
+  5-site, bit `c1e3de50`. **Bench: all_off clean, amp natural/open with extended
+  top, JC-120 clean, tube models de-muffled -- user-accepted (合格).** New
+  deployed baseline. `DECISIONS.md` D110-D112; `TIMING_AND_FPGA_NOTES.md`.

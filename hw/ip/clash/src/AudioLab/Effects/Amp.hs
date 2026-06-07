@@ -63,15 +63,20 @@ ampCharForModel idx = case idx of
 -- post-clip LPF corner Hz per model is unchanged when fs doubles. baseAlpha is
 -- now 80+(char>>2) (was 128+...); the per-model darken values absorb the
 -- difference between that base and each model's bilinear-target alpha.
+-- D110: halved across the board. The amp input was a differentiator (dead-pole
+-- bug, D109) that added a strong treble tilt the whole D55-D97 voicing leaned
+-- on; with the input now a flat HP, these post-clip high-cuts over-darken (tube
+-- models read "muffled"). Reduced toward the real-amp balance so the highs
+-- survive. (old D97 96 kHz values noted.)
 ampModelDarken :: Unsigned 3 -> Unsigned 8
 ampModelDarken idx = case idx of
-  0 ->  6    -- JC-120: bright SS feel (48k: 0)
-  1 -> 12    -- Twin: bright but slightly rounded (48k: 3)
-  2 -> 17    -- AC30: keep upper-mid chime (48k: 3)
-  3 -> 31    -- Rockerverb: darker low-mid thickness (48k: 18)
-  4 -> 25    -- JCM800: tame fizz, keep upper-mid bark (48k: 10)
-  5 -> 39    -- TriAmp Mk3: tight modern fizz control (48k: 26)
-  _ ->  6
+  0 ->  1    -- JC-120: bright SS feel (D111: 3->1)
+  1 ->  3    -- Twin: glassy clean top (D111: 6->3)
+  2 ->  4    -- AC30: upper-mid chime (D111: 9->4)
+  3 ->  9    -- Rockerverb: low-mid thickness but not dull (D111: 16->9)
+  4 ->  7    -- JCM800: keep upper-mid bark (D111: 13->7)
+  5 -> 12    -- TriAmp Mk3: modern fizz control, less dull (D111: 20->12)
+  _ ->  1
 
 -- | Per-model extra darken to add only in Drive mode. Stacked on top of
 -- ``ampModelDarken`` so each model's Drive-mode tone is darker than
@@ -197,7 +202,9 @@ ampEmphShift :: Int
 ampEmphShift = 4       -- 96 kHz: +1 (was 3) keeps the ~a-few-kHz corner at 2x fs
 
 ampEmphAmount :: Int
-ampEmphAmount = 1      -- cut/restore 1/2^amount of the HF band (half)
+ampEmphAmount = 2      -- D111: 1->2, cut/restore only 1/4 (was 1/2). With the clip
+                      -- knees raised there is less aliasing to suppress, and the
+                      -- aggressive pre-emph HF cut was dulling the attack into the clip.
 
 ampPreEmphFrame :: Sample -> Frame -> Frame
 ampPreEmphFrame prevLp f =
@@ -259,8 +266,12 @@ ampAsymClip modelIdx intensity drive hyst x
   posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
   negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
-  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
-  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
+  -- D111: raise base knees (4.9M->5.5M / 4.35M->4.9M) so the first tube clip is
+  -- gentler and keeps headroom -- with the always-on power/master/midsat clips
+  -- also raised, the chain stops cascade-compressing (the "amp-sim squash" +
+  -- dull transients). The per-model ch shrink still differentiates the models.
+  posKnee = resize (5_500_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
+  negKnee = resize (4_900_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
 
@@ -307,9 +318,10 @@ ampPreLowpassFrame prev f =
   idx = ampModelIdxF f
   drive = ampDriveModeF f
   charByte = ampCharForModel idx
-  -- 96 kHz: base alpha 80 + (char >> 2) (was 128 + ...); the recomputed
-  -- ampModelDarken / ampPreLpfDriveDarken tables hold each model's LPF corner Hz.
-  baseAlpha = 80 + (charByte `shiftR` 2)
+  -- D112: base alpha 80 -> 140 (post-clip LPF corner ~6 kHz -> ~12 kHz). This
+  -- always-on lowpass was the dominant HF ceiling capping the amp's "air"/top;
+  -- with the clip knees now open (less fizz to tame) the top can extend.
+  baseAlpha = 140 + (charByte `shiftR` 2)
   -- Per-model post-clip darken (Clean-mode baseline).
   modelDarken = ampModelDarken idx
   -- Per-model Drive-mode extra darken (absorbs fizz from the harder clip).
@@ -435,16 +447,19 @@ ampToneGain x = 64 + (x `shiftR` 1)
 ampTrebleGain :: Unsigned 3 -> Unsigned 8 -> Unsigned 8
 ampTrebleGain idx x = base - modelTrim
  where
-  -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
-  -- much raw 8..16 kHz fizz when TREBLE is near 100.
-  base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
+  -- D112: full treble extension (was 64 + ((x - x>>3 - x>>4)>>1), which shaved
+  -- the 8..16 kHz top). Now matches the low/mid band gain (ampToneGain) so the
+  -- high-frequency upper limit is raised -- the requested "more air / cut".
+  base = 64 + (x `shiftR` 1)
+  -- D111: trims cut to near-zero. The differentiator input (D109) is gone, so
+  -- any treble trim just muffles. Keep tiny per-model character only.
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
-    1 ->  2                 -- Twin    : glassy, not piercing
-    2 ->  2                 -- AC30    : keep chime
-    3 ->  9                 -- Rockerv : rounded
-    4 ->  8                 -- JCM800  : bark, slight trim
-    5 -> 14                 -- TriAmp  : controlled high
+    1 ->  0                 -- Twin    : full glassy top
+    2 ->  0                 -- AC30    : full chime
+    3 ->  2                 -- Rockerv : a touch rounded
+    4 ->  1                 -- JCM800  : bark, barely trimmed
+    5 ->  3                 -- TriAmp  : slight control
     _ ->  0
 
 ampToneProductsFrame :: Frame -> Frame
@@ -470,7 +485,10 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  setMonoWet (if on then softClipK 3_400_000 (monoWet f) else monoSample f) f
+  -- D111: 3.4M -> 6.0M. This always-on "power-amp" clip was squashing every
+  -- model (incl. JC-120 clean) at ~40 % FS; raised to a gentle safety ceiling
+  -- so the amp keeps dynamics/top instead of constant compression.
+  setMonoWet (if on then softClipK 6_000_000 (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
 
@@ -491,7 +509,7 @@ ampResPresenceFilterFrame prevRes prevPresence f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  setMonoWet (if on then softClipK 3_400_000 wet else monoSample f) f
+  setMonoWet (if on then softClipK 5_500_000 wet else monoSample f) f  -- D111: 3.4M->5.5M
  where
   on = flag6 (fGate f)
   wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
@@ -575,7 +593,7 @@ ampMasterFrame env f =
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
   effLevel = level - sagByte
-  out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) effLevel))
+  out = softClipK 4_500_000 (satShift7 (mulU8 (monoWet f) effLevel))  -- D112: 5.5M->4.5M (protective ceiling so JC-120 clean doesn't overflow satShift7)
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
 -- A real tube amp's output transformer is a big part of "amp warmth" that the
@@ -601,7 +619,7 @@ ampTransformerLfShift :: Int
 ampTransformerLfShift = 7      -- 96 kHz: +1 (was 6) keeps the ~120 Hz LF split corner
 
 ampTransformerKnee :: Sample
-ampTransformerKnee = 5_200_000 -- LF core-saturation knee (loud lows bloom/compress)
+ampTransformerKnee = 6_500_000 -- D111: 5.2M->6.5M, gentler LF bloom (less low-mid mud/compression)
 
 ampTransformerFrame :: Sample -> Frame -> Frame
 ampTransformerFrame prevLp f =
@@ -628,7 +646,9 @@ ampTransformerHfShift :: Int
 ampTransformerHfShift = 2      -- 96 kHz: +1 (was 1) keeps the ~3.8 kHz HF corner
 
 ampTransformerHfDroop :: Int
-ampTransformerHfDroop = 3      -- subtract 1/2^n of the HF band (gentle ~-1.2 dB shelf)
+ampTransformerHfDroop = 6      -- D111: 4->6, essentially off (~-0.15 dB). The iron
+                              -- HF softness was a big part of the "muffled" top on
+                              -- the tube models once the differentiator input was gone.
 
 ampTransformerHfFrame :: Sample -> Frame -> Frame
 ampTransformerHfFrame prevLp f =
@@ -684,7 +704,7 @@ amp3BandHighShift :: Int
 amp3BandHighShift = 3     -- 96 kHz: +1 (was 2) keeps the ~1.9 kHz mid/high split
 
 ampMidSatKnee :: Sample
-ampMidSatKnee = 4_000_000 -- mid-band grind knee (lower = more mid saturation)
+ampMidSatKnee = 6_500_000 -- D111: 4.0M->6.5M, near-off (was over-compressing the mids = dull/boxy)
 
 ampMultibandSatFrame :: Sample -> Sample -> Frame -> Frame
 ampMultibandSatFrame prevLp1 prevLp2 f =
