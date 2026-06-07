@@ -85,21 +85,28 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
   G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
   via `mode2_right_snapshot` (D50).
-- The current accepted deployed bitstream baseline is **D79**
-  (`audio_lab.bit` md5 `f0cb0276f27187d72476a2e773dd9a6e`, `.hwh`
-  `5fa0b84e9fe852c68629c651f94e4a9d`). It keeps the D75 50 MHz DSP
-  island, D76 FP02M XADC path, and D78 footswitch IP, then adds D79
-  Overdrive model-realism changes. Routed island WNS is `-0.496 ns`;
-  the 100 MHz audio fabric is clean at `+0.532 ns / 0 fail`; user bench
-  confirmed all_off clean / no bitcrusher.
-- The DSP runs in a **50 MHz clock-domain island** (D75). Only
-  `clash_lowpass_fir_0` is clocked by `FCLK_CLK1 = 50 MHz`; the rest of the
+- The current **accepted** deployed bitstream baseline is **D112**
+  (`audio_lab.bit` md5 `c1e3de50dca946c24b1b08106f8f134c`), the amp full
+  revoicing on the D109 CDC knife-edge fix (bench-accepted 2026-06-07). The
+  two newer passes are **constant-only voicing rebuilds that are built
+  timing-clean but not yet ear-bench accepted**: **D113** (amp model-identity
+  retune, `Amp.hs`, bit `ed76421f`, deployed + smoke OK, bench pending) and
+  **D114** (non-amp effect retune across `Overdrive.hs` / `Distortion.hs` /
+  `Cab.hs` / `Reverb.hs`, bit `31c768eb`, board file-synced but the post-deploy
+  `AudioLabOverlay()` PL-load timed out / board went offline, so it is **not
+  confirmed loaded on the FPGA**). Until D113/D114 are bench-approved, D112
+  remains the baseline. See `CURRENT_STATE.md`, `DECISIONS.md` D109-D114, and
+  `TIMING_AND_FPGA_NOTES.md`. (Older accepted baselines for rollback: D98
+  `18df313f`, D79 `f0cb0276`.)
+- The DSP runs in a **40 MHz clock-domain island** (D89; was 50 MHz at D75).
+  Only `clash_lowpass_fir_0` is clocked by `FCLK_CLK1 = 40 MHz`; the rest of the
   fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays on
   `FCLK_CLK0 = 100 MHz`, bridged by two `axis_clock_converter`
-  (`cc_dsp_in` / `cc_dsp_out`) added in `island_integration.tcl`. The 50 MHz
-  island is what closed the DS-1 distortion timing (WNS -10.387 -> -0.706 ns
-  at D75; -0.368 ns at D76; -0.173 ns at D78 with phys_opt; -0.496 ns at
-  D79 after Klon clean-blend). Sample rate is **96 kHz as of D98** (was 48 kHz
+  (`cc_dsp_in` / `cc_dsp_out`) added in `island_integration.tcl`. The island
+  is what closed the DS-1 distortion timing (WNS -10.387 -> -0.706 ns at D75),
+  and D89 lowered it from 50 to 40 MHz for headroom so multiple 4x oversamplers
+  fit; the island clock is fs-independent (pitch is set by the I2S/Pmod sample
+  clock, not this clock). Sample rate is **96 kHz as of D98** (was 48 kHz
   through D97; codec double-speed via Pmod BCLK = MCLK/2, all fs-dependent DSP
   constants re-voiced; the DSP island clock is fs-independent and unchanged). The control-word CDC
   (`syncCtrl` in `LowPassFir.hs`) and `paceCount` removal in `Pipeline.hs`

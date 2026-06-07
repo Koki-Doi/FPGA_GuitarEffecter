@@ -82,7 +82,13 @@ When a previous turn stopped mid-implementation:
   Vivado bit/hwh rebuild, a fresh timing summary, deploy, programmatic smoke,
   and user ear-bench before it can be treated as accepted. D109 fixed the old
   safe-bypass CDC knife-edge, so DSP voicing rebuilds are no longer forbidden,
-  but a new bitstream still needs bench listening.
+  but a new bitstream still needs bench listening. **Accepted deployed baseline
+  is D112 (`c1e3de50`)** (amp full revoicing on the D109 fix, bench-accepted
+  2026-06-07). D113 (amp model-identity retune, bit `ed76421f`) and D114
+  (non-amp effect retune, bit `31c768eb`) are constant-only voicing rebuilds
+  that are built timing-clean but **not yet bench-accepted** (D114's PL load
+  timed out / board went offline -- not confirmed loaded). See `DECISIONS.md`
+  D109-D114 + `CURRENT_STATE.md`.
 - The audio sample rate is **96 kHz as of D98**. Pmod BCLK is MCLK/2 with
   MCLK still 12.288 MHz; LRCK is 96 kHz. Any fs-dependent DSP constant must be
   voiced for 96 kHz, not the pre-D98 48 kHz path. The 4x oversampler interp and

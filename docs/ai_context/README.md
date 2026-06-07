@@ -61,17 +61,18 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- **Current deployed baseline = D79** (2026-06-01): Overdrive realism
-  item 4 + 5a are accepted on top of the D75/D76/D78 hardware stack.
-  bit/hwh md5
-  `f0cb0276f27187d72476a2e773dd9a6e` /
-  `5fa0b84e9fe852c68629c651f94e4a9d`; routed island WNS `-0.496 ns`
-  and 100 MHz audio fabric `+0.532 ns / 0 fail`. The board was deployed
-  5-site, loaded in Pmod mode 2, and user bench confirmed all_off clean /
-  no bitcrusher. Rollback baselines: D78 (`45e78763...`, footswitch +
-  phys_opt), D76 (`9fdecae0...`, FP02M XADC), then D75. See
-  `DECISIONS.md` D79, `CURRENT_STATE.md`, `MODEL_REALISM_GAP_ANALYSIS.md`,
-  and `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`.
+- **Current accepted deployed baseline = D112** (2026-06-07): the amp full
+  revoicing on the D109 CDC knife-edge fix, bit md5
+  `c1e3de50dca946c24b1b08106f8f134c`, routed timing fully MET (WNS `+0.564 ns`).
+  Deployed 5-site, loaded in Pmod mode 2, user bench accepted (合格): all_off
+  clean, amp natural/open with extended top, JC-120 clean, tube models
+  de-muffled. **Two newer constant-only voicing rebuilds are built but pending
+  bench:** D113 (amp model-identity retune, bit `ed76421f`, deployed + smoke OK)
+  and D114 (non-amp effect retune, bit `31c768eb`, board file-synced but the
+  PL-load `AudioLabOverlay()` timed out / board went offline -- not confirmed
+  loaded). Rollback baselines: D98 (`18df313f`), D79 (`f0cb0276`), D78
+  (`45e78763`). See `DECISIONS.md` D109-D114, `CURRENT_STATE.md`, and
+  `TIMING_AND_FPGA_NOTES.md`.
 - The **Overdrive realism pass shipped** (D79). The six selectable OD
   models now differ in clip hardness (`asymSoftClipSoft` / legacy medium /
   harder fixed-shift siblings), and the CENTAUR/Klon model mixes a parallel

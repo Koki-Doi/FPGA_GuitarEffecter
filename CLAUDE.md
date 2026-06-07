@@ -119,7 +119,13 @@ When a previous turn stopped mid-implementation:
   that reintroduces the knife-edge. With this fix, rebuilding the DSP for voicing
   is SAFE again (the old "only the D98 bit is bypass-clean, do not rebuild for
   voicing" rule is obsolete); still always ear-bench a new bitstream.** See
-  `DECISIONS.md` D109-D112 + `project_safebypass_knifeedge_cdc_rootcause`.
+  `DECISIONS.md` D109-D114 + `project_safebypass_knifeedge_cdc_rootcause`.
+  **Accepted deployed baseline is D112 (`c1e3de50`).** D113 (amp
+  model-identity retune, bit `ed76421f`) and D114 (non-amp effect retune,
+  bit `31c768eb`) are constant-only voicing rebuilds that are built
+  timing-clean but **not yet bench-accepted** (D114's PL load timed out /
+  board went offline -- not confirmed loaded); D112 stays the baseline until
+  they are ear-bench approved. See `CURRENT_STATE.md`.
   XADC stays dropped (`create_project.tcl` xadc lines
   commented; D74 put a bitcrusher on the ADC path). A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD

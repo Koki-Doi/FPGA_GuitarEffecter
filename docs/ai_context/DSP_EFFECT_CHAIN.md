@@ -60,10 +60,13 @@ measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
-The latest accepted baseline is **D79 (2026-06-01), Overdrive realism on
-the DSP island**. The load-bearing clocking base is still D75:
-`clash_lowpass_fir_0` runs at `FCLK_CLK1 = 50 MHz` while the rest of the
-fabric stays at `FCLK_CLK0 = 100 MHz`, bridged by `axis_clock_converter`
+The latest accepted baseline is **D112 (2026-06-07, `c1e3de50`), amp full
+revoicing on the D109 CDC knife-edge fix** (bench-accepted). D113/D114 are
+built-but-pending constant-only voicing rebuilds (see `CURRENT_STATE.md` /
+`DECISIONS.md` D109-D114). The load-bearing clocking base is D75 as lowered by
+D89/D94: `clash_lowpass_fir_0` runs at `FCLK_CLK1` (50 MHz at D75 -> 40 MHz at
+D89 -> 33.33 MHz at D94) while the rest of the fabric stays at
+`FCLK_CLK0 = 100 MHz`, bridged by `axis_clock_converter`
 (`cc_dsp_in` / `cc_dsp_out`) added in `hw/Pynq-Z2/island_integration.tcl`.
 This closed the DSP timing (WNS -10.387 -> -0.706 ns) without touching the
 I2S/Pmod CDCs. It also removed the `paceCount` (AXIS pacing) from
