@@ -27,14 +27,42 @@ create_clock -add -name bclk -period 325 -waveform {0 162.5} [get_ports bclk]
 ##   clk_wiz_0   :  24 MHz codec mclk
 ##   audio_ext   :  12.288 MHz Pmod I2S master clock
 ##   clk_wiz_hdmi:  40 MHz HDMI pixel clock
+## D109 CDC hardening: the DSP-output -> DAC audio path crosses
+## clk_fpga_0 (100 MHz fabric) -> clk (Pmod i2s_to_stream) through a
+## distributed-RAM async FIFO whose write paths report_cdc flags as 112x
+## CDC-13 "1-bit CDC path on a non-FD primitive" (untimed under the blanket
+## async group). With the path untimed, global placement shifts (from any DSP
+## netlist change) stretch the write routing and corrupt passthrough audio
+## with NO timing-summary symptom -- the root cause of the safe-bypass
+## "knife-edge". Fix: take clk_fpga_0 and clk OUT of the same async group
+## (two separate set_clock_groups, neither pairs them) so the tool TIMES the
+## clk_fpga_0<->clk paths, then bound the datapath with set_max_delay
+## -datapath_only so the FIFO write stays tight under ANY placement. All other
+## domains stay mutually asynchronous exactly as before. (set_max_delay cannot
+## override a set_clock_groups -asynchronous on the same pair, so the pair must
+## be ungrouped first -- hence the split.)
 set_clock_groups -asynchronous \
   -group [get_clocks -quiet clk_fpga_0] \
   -group [get_clocks -quiet clk_fpga_1] \
-  -group [get_clocks -quiet clk] \
   -group [get_clocks -quiet bclk] \
   -group [get_clocks -quiet clk_out1_block_design_clk_wiz_0_0] \
   -group [get_clocks -quiet clk_out1_block_design_clk_wiz_audio_ext_0] \
   -group [get_clocks -quiet clk_out1_block_design_clk_wiz_hdmi_0]
+set_clock_groups -asynchronous \
+  -group [get_clocks -quiet clk] \
+  -group [get_clocks -quiet clk_fpga_1] \
+  -group [get_clocks -quiet bclk] \
+  -group [get_clocks -quiet clk_out1_block_design_clk_wiz_0_0] \
+  -group [get_clocks -quiet clk_out1_block_design_clk_wiz_audio_ext_0] \
+  -group [get_clocks -quiet clk_out1_block_design_clk_wiz_hdmi_0]
+## clk_fpga_0 and clk are now ungrouped (timed) relative to each other; bound
+## the audio FIFO datapath both directions. 10 ns (<= both the 100 MHz source
+## period and the 48 MHz dest period) forces the write data/WE to settle well
+## inside one read period in every build. -datapath_only ignores inter-clock
+## skew/uncertainty (correct for a CDC bound). Relax toward the dest period if
+## a build cannot route it.
+set_max_delay -datapath_only 10.000 -from [get_clocks -quiet clk_fpga_0] -to [get_clocks -quiet clk]
+set_max_delay -datapath_only 10.000 -from [get_clocks -quiet clk] -to [get_clocks -quiet clk_fpga_0]
 
 ## Audio
 

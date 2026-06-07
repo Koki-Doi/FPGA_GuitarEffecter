@@ -6302,3 +6302,38 @@ pre-existing 3 failures + 1 error baseline.
   "gentle-HP" bit breaks bypass (the established P&R knife-edge). The amp is
   bass-light on the only clean bit by design. Deployed baseline = D98.
   `DECISIONS.md` D108.
+
+## D109 — Safe-bypass knife-edge ROOT-CAUSED and FIXED (untimed audio CDC) + amp HP dead-pole fixed
+
+- **Root cause of the D58/D60/D102-D106 safe-bypass "knife-edge"**, found by
+  opening the D98 routed DCP (no rebuild): the build IS deterministic (the
+  earlier md5-diff scare was only the `.bit` header timestamp; config-frame
+  bodies are byte-identical), timing is fully MET (setup WNS +0.587 / hold WHS
+  +0.020), so the artifact is NOT a timing violation. `report_cdc` shows the
+  **DSP-output -> DAC path `clk_fpga_0 -> clk` has 112x CDC-13 "1-bit CDC path
+  on a non-FD primitive"**: `axis_switch_sink` register-slice -> `i2s_to_stream_0`
+  `trueDualPortBlockRamWrapper` RAM WE/data, i.e. a distributed-RAM async FIFO
+  with NO scoped CDC constraints, left untimed by `set_clock_groups
+  -asynchronous`. Any DSP netlist change shifts global placement -> the untimed
+  write routing stretches -> passthrough audio is corrupted with no STA symptom.
+  D98's placement happens to keep it tight; D99+ don't. So D101's "muffle" and
+  D102/104/106's "distortion" were THIS CDC artifact, not the DSP voicing.
+- **Fix (`hw/Pynq-Z2/audio_lab.xdc`):** split the single `set_clock_groups
+  -asynchronous` into two so `clk_fpga_0` and `clk` are no longer in the same
+  async group (they become timed vs each other; all other domains stay mutually
+  async exactly as before), then `set_max_delay -datapath_only 10.000` both
+  directions clk_fpga_0<->clk to bound the FIFO write under ANY placement.
+  (set_max_delay cannot override a set_clock_groups -asynchronous on the same
+  pair, so the pair must be ungrouped first.) Post-build report_cdc shows the
+  exception flipped to "Max Delay Datapath Only" and timing stays MET (WNS
+  +0.564 / WHS +0.007); the reset paths into i2s_to_stream meet the bound too.
+- **Bench: all_off / safe-bypass is CLEAN on a CHANGED DSP source** -- the first
+  time ever. This proves the CDC bound dissolves the knife-edge: **DSP voicing
+  rebuilds are now safe.** Deployed bit `a7f18ff9`.
+- Also fixed the amp input-HP **dead-pole** (`Amp.hs ampHighpassFrame`): the old
+  `prevOut * 509 `shiftR` 9` parsed as `prevOut * (509>>9)` = `prevOut * 0` (a
+  pure first difference = differentiator = bright but NO bass). Parenthesised to
+  a live pole, coef 508/512 (~120 Hz HP) so the amp finally passes lows.
+  `DECISIONS.md` D109; root cause in memory
+  `project_safebypass_knifeedge_cdc_rootcause.md`. Golden D98 placement saved at
+  `/tmp/d98_routed.dcp`.

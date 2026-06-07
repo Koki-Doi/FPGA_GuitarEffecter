@@ -147,9 +147,14 @@ ampHighpassFrame prevIn prevOut f =
  where
   on = flag6 (fGate f)
   x = monoSample f
-  -- 96 kHz: 509/512 with >>9 (was 253/256 >>8) keeps the ~90 Hz HP corner at 2x fs.
+  -- D109: live one-pole HP feedback. The old form `prevOut * 509 `shiftR` 9`
+  -- parsed (shiftR binds tighter than *) as `prevOut * (509>>9)` = prevOut*0,
+  -- i.e. a dead pole => pure first difference => NO bass into the tone stack
+  -- (the documented amp bass-light bug). Parenthesise so the pole is live and
+  -- pick coef 508/512 (a~=0.9922 => ~120 Hz HP corner @96 kHz): passes more
+  -- lows than D101's 502/512 (~298 Hz) without D100's ~90 Hz bass bloom.
   highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 509 `shiftR` 9))
+    satWide (resize x - resize prevIn + (((resize prevOut :: Wide) * 508) `shiftR` 9))
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =
