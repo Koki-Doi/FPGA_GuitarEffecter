@@ -6364,3 +6364,32 @@ pre-existing 3 failures + 1 error baseline.
   5-site, bit `c1e3de50`. **Bench: all_off clean, amp natural/open with extended
   top, JC-120 clean, tube models de-muffled -- user-accepted (合格).** New
   deployed baseline. `DECISIONS.md` D110-D112; `TIMING_AND_FPGA_NOTES.md`.
+
+## D113 — Amp model-identity constant retune; deployed, bench pending
+
+- **Why:** after D112 fixed the broad "muffled / amp-sim squash" problem, the
+  next user request was to move the amp constants closer to the real hardware
+  character. This is intentionally a constant-only voicing pass in
+  `hw/ip/clash/src/AudioLab/Effects/Amp.hs`: no new GPIO, no topology change, no
+  new stage, no new multiplier/helper.
+- **What changed:** per-model Drive deltas and second-stage bonus now spread the
+  lineup harder: JC-120/Twin stay cleaner, AC30 breaks up earlier, Rockerverb is
+  thicker/darker, JCM800 has more bite/presence, and TriAmp is tighter/stronger
+  with more fizz control. The previously-flat amp scoop biquad slots are filled:
+  Rockerverb gets a +3 dB low-mid push at 500 Hz; TriAmp gets a -3 dB modern
+  scoop at 750 Hz. Small shared realism trims restore a little transformer bloom,
+  subtle HF iron softness, and mid-dependent grind without returning to D97's
+  boxiness.
+- **Verification / deploy:** Clash VHDL generation PASS, IP repackage PASS, full
+  Vivado build PASS. Routed timing fully MET: WNS `+0.743 ns`, TNS `0.000`, WHS
+  `+0.018 ns`, THS `0.000`; route errors `0`; bus-skew reports all `MET`.
+  bit/hwh md5: `ed76421fa7a5c68c5e9e79ddae5c4526` /
+  `b4deef57b8ceb9cada033dae8ecdcd3a`. `scripts/deploy_to_pynq.sh` deployed to
+  PYNQ-Z2 `192.168.1.9`; all six bit/hwh sites md5-matched. Post-deploy smoke:
+  `AudioLabOverlay()` loaded, ADAU1761 ADC HPF `True`, input digital volume
+  `(0, 0)`, `pmod_status` present, Pmod I2S2 `VERSION=0x00480001`,
+  `MODE=2 (dsp)` readback, `sdout_alive/bclk_seen/lrclk_seen=1`. A post-clear
+  1 s Pmod status read still reached `PEAK_ABS_LEFT/RIGHT=8388607` with
+  `CLIP_COUNT=735` under the current input, so tone acceptance should start
+  with the input level checked/lowered. **Not ear-bench accepted yet; D112
+  (`c1e3de50`) remains the accepted baseline until D113 is bench-approved.**
