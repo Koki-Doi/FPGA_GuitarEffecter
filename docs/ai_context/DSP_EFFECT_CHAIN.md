@@ -62,13 +62,14 @@ choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
 The latest accepted baseline is **D112 (2026-06-07, `c1e3de50`), amp full
-revoicing on the D109 CDC knife-edge fix** (bench-accepted). D113/D114/D117 are
-built/deployed candidates that remain bench-pending; D117 fixes the RAT
-highpass dead-pole and retunes only the RAT identity constants, while D116 is a
-Python-only RAT pedalboard routing fix (see `CURRENT_STATE.md` /
-`DECISIONS.md` D109-D117). The load-bearing clocking base is D75 as lowered by
-D89/D94: `clash_lowpass_fir_0` runs at `FCLK_CLK1` (50 MHz at D75 -> 40 MHz at
-D89 -> 33.33 MHz at D94) while the rest of the fabric stays at
+revoicing on the D109 CDC knife-edge fix** (bench-accepted). D113/D114/D117/D118
+are built/deployed candidates that remain bench-pending; D117 fixes the RAT
+highpass dead-pole and retunes only the RAT identity constants, D118 is the amp
+de-muffle constant retune, and D116 is a Python-only RAT pedalboard routing fix
+(see `CURRENT_STATE.md` / `DECISIONS.md` D109-D118). The load-bearing clocking
+base is D75 as lowered by D89/D94: `clash_lowpass_fir_0` runs at `FCLK_CLK1`
+(50 MHz at D75 -> 40 MHz at D89 -> 33.33 MHz at D94), while the rest of the
+fabric stays at
 `FCLK_CLK0 = 100 MHz`, bridged by `axis_clock_converter`
 (`cc_dsp_in` / `cc_dsp_out`) added in `hw/Pynq-Z2/island_integration.tcl`.
 This closed the DSP timing (WNS -10.387 -> -0.706 ns) without touching the
@@ -453,36 +454,42 @@ was added.
 
 Per-model voicing tables (`docs/ai_context/AMP_MODEL_RESEARCH_D55.md`
 section 6 carries the original per-model rationale; values here are
-the current deployed D69+ Amp Drive Mode values, unchanged since D69):
+the current D118 Amp de-muffle deployed/PL-smoked candidate values):
 
 | idx | model        | modelDarken | trebleTrim | presenceTrim | drivePosDelta | driveNegDelta | preLpfDriveDarken | secondStageDriveBonus |
 | --- | ------------ | ----------- | ---------- | ------------ | ------------- | ------------- | ----------------- | --------------------- |
-| 0   | JC-120       | 0           | 0          | 0            | `16_200`      | `13_500`      | 6                 | 22                    |
-| 1   | Twin Reverb  | 3           | 2          | `byte >> 5`  | `85_800`      | `74_100`      | 8                 | 30                    |
-| 2   | AC30         | 3           | 2          | `byte >> 6`  | `232_400`     | `199_200`     | 12                | 42                    |
-| 3   | Rockerverb   | 18          | 9          | `byte >> 3`  | `374_400`     | `322_400`     | 20                | 62                    |
-| 4   | JCM800       | 10          | 8          | `byte >> 4`  | `462_000`     | `407_000`     | 20                | 74                    |
-| 5   | TriAmp Mk3   | 26          | 14         | `byte >> 3`  | `615_000`     | `541_200`     | 30                | 88                    |
+| 0   | JC-120       | 1           | 0          | 0            | `14_000`      | `11_500`      | 3                 | 18                    |
+| 1   | Twin Reverb  | 1           | 0          | `byte >> 6`  | `76_000`      | `64_000`      | 4                 | 26                    |
+| 2   | AC30         | 2           | 0          | `byte >> 6`  | `250_000`     | `215_000`     | 6                 | 48                    |
+| 3   | Rockerverb   | 6           | 1          | `byte >> 5`  | `410_000`     | `355_000`     | 12                | 68                    |
+| 4   | JCM800       | 3           | 0          | `byte >> 6`  | `505_000`     | `440_000`     | 9                 | 82                    |
+| 5   | TriAmp Mk3   | 8           | 2          | `byte >> 5`  | `680_000`     | `590_000`     | 16                | 92                    |
 
 `ampDrivePosDelta` / `ampDriveNegDelta` are per-model fixed scalars
 (`Unsigned 3 -> Signed 25`, **not** runtime `ch * factor` -- the
 abandoned D58 `ch * factor` form added four DSP48E1 slices and caused
 a P&R shift that introduced an audible high-frequency saturation noise
-on the ADC -> DAC bypass path). The D69 values are the requested
+on the ADC -> DAC bypass path). The D118 values are the requested
 Drive-mode factors evaluated against each model's current
 `ampCharForModel` value (`18 / 78 / 166 / 208 / 220 / 246`) so no new
 multiplier is introduced.
+
+D118 specifically backs off D113's darker amp identity pass without changing the
+stage graph: Rockerverb's amp-stack push is now +1.5 dB @ 500 Hz, TriAmp's
+modern scoop is now -2 dB @ 750 Hz, the transformer resonance is +1 dB @
+110 Hz, transformer HF droop is nearly open (`>> 6`), and the mid-band saturation
+knee is raised to `6_800_000`.
 
 | Stage | What it does |
 | --- | --- |
 | `ampHighpassFrame` | First-order HPF using the existing input/output state registers. Feedback coefficient is `253/256` (tightened from the prior `254/256` path). |
 | `ampDriveMultiplyFrame` / `ampDriveBoostFrame` | Q7-style preamp gain. Ceiling is ~19x (tightened from ~21x in the audio-analysis pass) so Amp-only and post-pedal use do not create line-direct fizz before the cabinet stage. |
 | `ampWaveshapeFrame` -> `ampAsymClip idx intensity drive x` | First-stage asymmetric soft clip. `intensity = ampCharForModel idx` (`18 / 78 / 166 / 208 / 220 / 246`) sets the per-model knee centre; the per-model `ampDrivePosDelta` / `ampDriveNegDelta` shrink the knees further only in Drive mode. The shift on the negative-side post-knee tightens from `>> 3` (Clean) to `>> 2` (Drive) -- the same D54 real-DSP-branch behaviour. |
-| `ampPreLowpassFrame` | One-pole post-clip smoothing. `baseAlpha = 128 + (ampCharForModel idx >> 2)` (range `132..189` over the six voicings), biased down by `ampModelDarken idx` (per-model Clean baseline, `0..26`); in Drive mode `ampPreLpfDriveDarken idx` (`6..30`) stacks on top so the harder clip's extra harmonics are absorbed instead of leaking out as fizz. |
-| `ampSecondStageMultiplyFrame` / `ampSecondStageFrame` | Second gain/clip stage. Gain = `112 + (ctrlA >> 3) + (ampCharForModel idx >> 2)` plus `ampSecondStageDriveBonus idx` (`22..88`) in Drive mode. The clip stage re-uses `ampAsymClip` with `intensity = ampCharForModel idx >> 1` (half-intensity, softer than the first stage) -- explicitly *not* full-intensity (the D57 anti-pattern). |
-| `ampToneFilterFrame` -> `ampToneBandFrame` -> `ampToneProductsFrame` -> `ampToneMixFrame` | Three-band B/M/T tone-stack approximation. Treble uses `ampTrebleGain idx treble`, a per-model trim (`0 / 2 / 2 / 9 / 8 / 14` from `modelTrim` table) so treble at 100 keeps 2..4 kHz bite without restoring 8..16 kHz fizz. |
+| `ampPreLowpassFrame` | One-pole post-clip smoothing. `baseAlpha = 140 + (ampCharForModel idx >> 2)` (range `144..201` over the six voicings), biased down by `ampModelDarken idx` (per-model Clean baseline, `1..8`); in Drive mode `ampPreLpfDriveDarken idx` (`3..16`) stacks on top so the harder clip's extra harmonics are absorbed without blanketing the D112 top end again. |
+| `ampSecondStageMultiplyFrame` / `ampSecondStageFrame` | Second gain/clip stage. Gain = `112 + (ctrlA >> 3) + (ampCharForModel idx >> 2)` plus `ampSecondStageDriveBonus idx` (`18..92`) in Drive mode. The clip stage re-uses `ampAsymClip` with `intensity = ampCharForModel idx >> 1` (half-intensity, softer than the first stage) -- explicitly *not* full-intensity (the D57 anti-pattern). |
+| `ampToneFilterFrame` -> `ampToneBandFrame` -> `ampToneProductsFrame` -> `ampToneMixFrame` | Three-band B/M/T tone-stack approximation. Treble uses `ampTrebleGain idx treble`, a per-model trim (`0 / 0 / 0 / 1 / 0 / 2` from `modelTrim` table) so treble at 100 keeps 2..4 kHz bite and the recovered top without restoring excessive fizz. |
 | `ampPowerFrame` | `softClipK 3_400_000` power-stage safety. |
-| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance remains internally capped (`resonance * 3/4`). Presence starts from `presence * 5/8` and subtracts a per-model `presenceTrim` (`0`, `byte >> 6`, `byte >> 5`, `byte >> 4`, `byte >> 4`, `byte >> 3`) before the mix, then runs through `softClipK 3_400_000`. |
+| `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance remains internally capped (`resonance * 3/4`). Presence starts from `presence * 5/8` and subtracts a per-model `presenceTrim` (`0`, `byte >> 6`, `byte >> 6`, `byte >> 5`, `byte >> 6`, `byte >> 5`) before the mix, then runs through `softClipK 5_500_000`. |
 | `ampMasterFrame` | Master multiply followed by `softClipK 3_300_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
 
 ## Cab IR section

@@ -6521,3 +6521,43 @@ pre-existing 3 failures + 1 error baseline.
 - **Acceptance status.** D117 is built, deployed, and PL-smoked, but **not
   ear-bench accepted**. D112 (`c1e3de50`) remains the accepted baseline until
   the user confirms RAT tone and safe-bypass/audio quality on the bench.
+
+## D118 — Amp de-muffle constant retune; deployed + PL-smoked, bench pending
+
+- **Decision.** Keep the existing Amp Simulator topology and retune only
+  constants in `hw/ip/clash/src/AudioLab/Effects/Amp.hs` after the user reported
+  that the amp still felt muffled. This pass preserves the D113 model-identity
+  spread but backs off the darker trims that masked D112's recovered top end:
+  lower `ampModelDarken` and Drive-mode `ampPreLpfDriveDarken`, reduce
+  Rockerverb's low-mid push to +1.5 dB @ 500 Hz, reduce TriAmp's modern scoop to
+  -2 dB @ 750 Hz, cut Rockerverb/TriAmp treble trims, open the per-model
+  presence trims, and soften the shared transformer/mid compression
+  (`ampTransformerKnee=6_700_000`, `ampTransformerHfDroop=6`, transformer
+  resonance +1 dB @ 110 Hz, `ampMidSatKnee=6_800_000`).
+- **Why.** D112 was bench-accepted because it reopened the amp after the D109 HP
+  pole and CDC fixes. D113 then improved model identity, but its darker Orange /
+  modern high-gain trims and shared transformer/mid realism settings could
+  accumulate into a blanket over the amp, especially before the cab. D118 keeps
+  the useful per-model differences while restoring more pick attack, chime, and
+  presence.
+- **Boundaries.** No GPIO address/byte layout, `block_design.tcl`, integration
+  Tcl, XDC, topEntity port, effect order, Python API, or new effect stage
+  changed. This is a Clash/VHDL DSP voicing change plus regenerated IP artifacts
+  and a rebuilt bit/hwh.
+- **Verification / deploy.** `make -C hw/ip/clash all` passed (Clash VHDL
+  generation and IP repackage). Full Vivado rebuild passed:
+  `write_bitstream completed successfully`, route errors `0`, timing fully MET
+  with WNS `+0.754 ns`, TNS `0.000`, WHS `+0.016 ns`, THS `0.000`, WPWS
+  `+2.845 ns`; bus-skew constraints all met with minimum slack `+8.355 ns`.
+  bit/hwh md5: `c85ada776aa04c2501f1d21fa7d8f406` /
+  `04361bc813afdf5194b7b4774a7eecde`. Deployed to PYNQ-Z2 `192.168.1.9`;
+  deploy import sanity and notebook sync passed. Programmatic smoke loaded the
+  new PL and ran Pmod I2S2 mode 2 (`dsp`) for 2 s:
+  `VERSION=0x00480001`, mode readback `2`, `sdout_alive/bclk_seen/lrclk_seen=1`,
+  frame delta `+192271` (~96 kHz), and ADC samples observed.
+- **Acceptance status.** D118 is built, deployed, and PL-smoked, but **not
+  ear-bench accepted**. The smoke saw the current physical input hit full scale
+  (`PEAK_ABS_LEFT/RIGHT=8388607`, `CLIP_COUNT=118`), so bench judgement should
+  start by lowering/checking the input level or loopback state. D112
+  (`c1e3de50`) remains the accepted baseline until the user confirms D118 safe
+  bypass and amp tone on the bench.

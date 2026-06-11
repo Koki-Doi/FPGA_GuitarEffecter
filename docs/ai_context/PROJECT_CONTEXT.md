@@ -91,11 +91,12 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   revoicing on the D109 CDC knife-edge fix (bench-accepted 2026-06-07). Newer
   work is **not yet ear-bench accepted**: **D113** (amp model-identity retune,
   bit `ed76421f`, deployed + smoke OK), **D114** (non-amp effect retune, bit
-  `31c768eb`, file-synced but PL-load smoke blocked), and **D117** (RAT
-  highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked). D116 is a
+  `31c768eb`, file-synced but PL-load smoke blocked), **D117** (RAT
+  highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), and **D118**
+  (amp de-muffle retune, bit `c85ada77`, deployed + PL-smoked). D116 is a
   Python-only RAT pedalboard routing fix and does not change the accepted
-  bitstream baseline. Until D117 is bench-approved, D112 remains the accepted
-  baseline. See `CURRENT_STATE.md`, `DECISIONS.md` D109-D117, and
+  bitstream baseline. Until D118 is bench-approved, D112 remains the accepted
+  baseline. See `CURRENT_STATE.md`, `DECISIONS.md` D109-D118, and
   `TIMING_AND_FPGA_NOTES.md`. (Older accepted baselines for rollback: D98
   `18df313f`, D79 `f0cb0276`.)
 - The DSP runs in a **33.33 MHz clock-domain island** (D94; was 50 MHz at D75
@@ -206,7 +207,7 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   output equal to its input when its enable bit is clear, sample-exact.
 - Recent D109+ builds are timing-clean, but a clean timing summary is still not
   an acceptance signal by itself. New DSP logic must be carefully pipelined and
-  bench-listened for bypass artifacts; D117 is deployed and PL-smoked but still
+  bench-listened for bypass artifacts; D118 is deployed and PL-smoked but still
   waits on ear-bench acceptance.
 - Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
   touching `LowPassFir.hs`, `block_design.tcl`, or any

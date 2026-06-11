@@ -5,7 +5,7 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-10, after D116/D117 RAT routing + DSP retune)
+## Current status (2026-06-11, after D118 Amp de-muffle retune)
 
 > Accepted deployed bitstream baseline is still **D112** (`c1e3de50`): the amp
 > full revoicing on top of the **D109 safe-bypass knife-edge fix**. D109
@@ -15,13 +15,16 @@ asking it to re-discover the project from scratch.
 > (`audio_lab.xdc`), so DSP voicing rebuilds are allowed again, but every new
 > bitstream still needs ear-bench acceptance. Newer work is pending bench:
 > D113 (amp model-identity retune, bit `ed76421f`), D114 (non-amp effect retune,
-> bit `31c768eb`, file-synced but its PL-load smoke was blocked), and **D117**
-> (RAT highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked). D116 is
+> bit `31c768eb`, file-synced but its PL-load smoke was blocked), D117 (RAT
+> highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), and **D118**
+> (Amp de-muffle constant retune, bit `c85ada77`, deployed + PL-smoked). D116 is
 > Python-only: it routes Distortion-pedalboard RAT `DRIVE/TONE/LEVEL/MIX` into
 > the dedicated RAT GPIO and maps generic brightening `TONE` through
-> `rat_filter_from_tone()`. To accept D117, bench safe-bypass plus RAT tone on
-> Pmod I2S2 mode 2; until then D112 remains the accepted baseline. Read
-> `CURRENT_STATE.md` + `DECISIONS.md` (D109-D117) +
+> `rat_filter_from_tone()`. To accept D118, bench safe-bypass plus Amp tone on
+> Pmod I2S2 mode 2; lower/check the input level first because smoke saw
+> full-scale input (`PEAK_ABS_LEFT/RIGHT=8388607`, `CLIP_COUNT=118`). Until then
+> D112 remains the accepted baseline. Read `CURRENT_STATE.md` + `DECISIONS.md`
+> (D109-D118) +
 > `TIMING_AND_FPGA_NOTES.md` first.
 
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
@@ -196,8 +199,8 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。現行 accepted baseline は D112 (`c1e3de50`) です。D117
-> (`6dc84eaf`) は timing-clean かつ deploy/PL-smoke 済みですが、bench
+> してください。現行 accepted baseline は D112 (`c1e3de50`) です。D118
+> (`c85ada77`) は timing-clean かつ deploy/PL-smoke 済みですが、bench
 > 未通過なので accepted ではありません。safe-bypass で高域ノイズが出る
 > bitstream、または `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した
 > bitstream は deploy/accept しないでください。
@@ -230,8 +233,8 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状の D117 build は timing-clean です (overall WNS `+0.644 ns`, TNS
-> `0`, WHS `+0.008 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
+> 現状の D118 build は timing-clean です (overall WNS `+0.754 ns`, TNS
+> `0`, WHS `+0.016 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
 > 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
 > `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな
 > `case` や 4 段以上の演算を詰めない方針は維持してください
