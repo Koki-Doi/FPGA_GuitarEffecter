@@ -5,7 +5,7 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-11, after D118 Amp de-muffle retune)
+## Current status (2026-06-11, after D119 Amp volume-stability fix)
 
 > Accepted deployed bitstream baseline is still **D112** (`c1e3de50`): the amp
 > full revoicing on top of the **D109 safe-bypass knife-edge fix**. D109
@@ -16,15 +16,19 @@ asking it to re-discover the project from scratch.
 > bitstream still needs ear-bench acceptance. Newer work is pending bench:
 > D113 (amp model-identity retune, bit `ed76421f`), D114 (non-amp effect retune,
 > bit `31c768eb`, file-synced but its PL-load smoke was blocked), D117 (RAT
-> highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), and **D118**
-> (Amp de-muffle constant retune, bit `c85ada77`, deployed + PL-smoked). D116 is
-> Python-only: it routes Distortion-pedalboard RAT `DRIVE/TONE/LEVEL/MIX` into
-> the dedicated RAT GPIO and maps generic brightening `TONE` through
-> `rat_filter_from_tone()`. To accept D118, bench safe-bypass plus Amp tone on
-> Pmod I2S2 mode 2; lower/check the input level first because smoke saw
-> full-scale input (`PEAK_ABS_LEFT/RIGHT=8388607`, `CLIP_COUNT=118`). Until then
+> highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), D118 (Amp
+> de-muffle constant retune, bit `c85ada77`, deployed + PL-smoked), and **D119**
+> (Amp power-sag master modulation disabled for volume stability, bit
+> `88c265cc`, built + file-synced but **not confirmed loaded / not PL-smoked**).
+> D116 is Python-only: it routes Distortion-pedalboard RAT
+> `DRIVE/TONE/LEVEL/MIX` into the dedicated RAT GPIO and maps generic
+> brightening `TONE` through `rat_filter_from_tone()`. To accept D119, first
+> restore/power-cycle the board because the D119 smoke attempt hung and then
+> `192.168.1.9` became unreachable (`No route to host`, ping host unreachable,
+> ARP incomplete). Then load `AudioLabOverlay()` once, run Pmod I2S2 mode-2
+> smoke, and bench safe-bypass plus tube-model Amp volume stability. Until then
 > D112 remains the accepted baseline. Read `CURRENT_STATE.md` + `DECISIONS.md`
-> (D109-D118) +
+> (D109-D119) +
 > `TIMING_AND_FPGA_NOTES.md` first.
 
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
@@ -199,11 +203,11 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。現行 accepted baseline は D112 (`c1e3de50`) です。D118
-> (`c85ada77`) は timing-clean かつ deploy/PL-smoke 済みですが、bench
-> 未通過なので accepted ではありません。safe-bypass で高域ノイズが出る
-> bitstream、または `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した
-> bitstream は deploy/accept しないでください。
+> してください。現行 accepted baseline は D112 (`c1e3de50`) です。D119
+> (`88c265cc`) は timing-clean かつ file-sync 済みですが、board 到達不能で
+> PL-smoke / bench 未通過なので accepted ではありません。safe-bypass で高域
+> ノイズが出る bitstream、または `TIMING_AND_FPGA_NOTES.md` の D109 CDC
+> 制約を壊した bitstream は deploy/accept しないでください。
 
 ## Adding a new effect
 
@@ -233,8 +237,8 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状の D118 build は timing-clean です (overall WNS `+0.754 ns`, TNS
-> `0`, WHS `+0.016 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
+> 現状の D119 build は timing-clean です (overall WNS `+0.699 ns`, TNS
+> `0`, WHS `+0.013 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
 > 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
 > `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな
 > `case` や 4 段以上の演算を詰めない方針は維持してください

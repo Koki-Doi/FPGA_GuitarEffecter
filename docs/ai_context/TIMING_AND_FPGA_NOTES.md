@@ -15,6 +15,7 @@
 
 | Build | WNS | TNS | Notes |
 | --- | --- | --- | --- |
+| **D119 Amp power-sag master modulation disabled -- BUILT + file-synced, PL smoke BLOCKED (`88c265cc`)** | **+0.699 ns** (overall) / WHS **+0.013 ns** | 0 | Narrow Clash DSP behaviour fix in `AudioLab/Effects/Amp.hs` after the user reported Amp ON volume pumping and clarified JC-120 does not reproduce it. The old `ampMasterFrame` dynamic sag path modulated final master level only on tube models (`idx != 0`); D119 ignores the sag envelope at the master stage and uses stable `ctrlB` MASTER directly for every model, keeping the D112 `softClipK 4_500_000` ceiling. No GPIO/topology/Tcl/XDC/block-design/topEntity/effect-order change. Clash VHDL generation PASS, IP repackage PASS, full Vivado build PASS; route errors `0`; timing fully MET (`WNS +0.699`, `TNS 0.000`, `WHS +0.013`, `THS 0.000`, `WPWS +2.845`); bus-skew constraints all `MET` (minimum slack `+8.020 ns`). bit/hwh md5 `88c265cc925cef4673277c1b49a79a02` / `8999e51470e6f6662e5b00e66390781b`. `scripts/deploy_to_pynq.sh` completed to PYNQ-Z2 `192.168.1.9`; deploy import sanity and notebook sync passed. Programmatic Pmod I2S2 mode-2 smoke was attempted but hung with no output for over 2 minutes; after interrupt, the board was unreachable (`No route to host`, ping host unreachable, ARP incomplete). **Not confirmed loaded on FPGA, not PL-smoked, not ear-bench accepted. D112 remains accepted until D119 passes smoke and bench.** |
 | **D118 Amp de-muffle constant retune -- DEPLOYED + PL-smoked, bench PENDING (`c85ada77`)** | **+0.754 ns** (overall) / WHS **+0.016 ns** | 0 | Constant-only amp voicing pass in `AudioLab/Effects/Amp.hs` after the user reported the amp still felt muffled: lower `ampModelDarken` and Drive-mode `ampPreLpfDriveDarken`, Rockerverb low-mid push reduced to +1.5 dB @ 500 Hz, TriAmp scoop reduced to -2 dB @ 750 Hz, Rockerverb/TriAmp treble trims reduced, per-model presence trims opened, and shared transformer/mid compression softened (`ampTransformerKnee=6_700_000`, `ampTransformerHfDroop=6`, transformer resonance +1 dB @ 110 Hz, `ampMidSatKnee=6_800_000`). No GPIO/topology/Tcl/XDC/block-design/topEntity/effect-order change. Clash VHDL generation PASS, IP repackage PASS, full Vivado build PASS; route errors `0`; timing fully MET (`WNS +0.754`, `TNS 0.000`, `WHS +0.016`, `THS 0.000`, `WPWS +2.845`); bus-skew constraints all `MET` (minimum slack `+8.355 ns`). bit/hwh md5 `c85ada776aa04c2501f1d21fa7d8f406` / `04361bc813afdf5194b7b4774a7eecde`. Deployed to PYNQ-Z2 `192.168.1.9`; deploy import sanity and notebook sync passed. Programmatic smoke loaded the new PL and ran Pmod I2S2 mode 2 for 2 s (`FRAME_COUNT +192271`, ~96 kHz, clocks/SDOUT alive, ADC samples observed). Current physical input clipped during smoke (`PEAK_ABS_LEFT/RIGHT=8388607`, `CLIP_COUNT=118`), so bench should lower/check input level before judging tone. **Not ear-bench accepted yet; D112 remains the accepted baseline until the user confirms audio.** |
 | **D117 RAT highpass/identity retune -- DEPLOYED + PL-smoked, bench PENDING (`6dc84eaf`)** | **+0.644 ns** (overall) / WHS **+0.008 ns** | 0 | Clash/VHDL RAT pass in `AudioLab/Effects/Distortion.hs`: fixed the RAT highpass feedback precedence bug so the `505/512` pole is live at 96 kHz, then retuned only RAT constants (drive gain, clip threshold, post low-pass alpha, FILTER range). No GPIO/topology/Tcl/XDC/block-design/topEntity change. Clash VHDL generation PASS, IP repackage PASS, full Vivado build PASS; route errors `0`; timing fully MET (`WNS +0.644`, `TNS 0.000`, `WHS +0.008`, `THS 0.000`, `WPWS +2.845`); bus-skew constraints all `MET` (minimum slack `+8.042 ns`). bit/hwh md5 `6dc84eaf46d2b19df3f600474ef749b4` / `1d05499010986cbe659af779f75e31f1`. Deployed to PYNQ-Z2 `192.168.1.9`; board repo copy and overlays registry md5-matched. Programmatic smoke loaded the new PL, Pmod I2S2 tone mode showed ~96 kHz frame cadence, and RAT MMIO words matched expected packing. **Not ear-bench accepted yet; D112 remains the accepted baseline until the user confirms audio.** |
 | **D114 non-amp effect constant retune -- BUILT clean, file-synced, PL smoke BLOCKED (`31c768eb`)** | **+0.601 ns** (overall) / WHS **+0.010 ns** | 0 | Constant-only pass across `AudioLab/Effects/Overdrive.hs`, `Distortion.hs`, `Cab.hs`, and `Reverb.hs`: no new GPIO/topology/stage/helper/multiplier and `block_design.tcl` untouched. Overdrive model constants and existing OD mid biquad slots were adjusted for more distinct TS9/OD-1/OCD/Centaur behaviour; Distortion leaves DS-1 unchanged and trims Clean Boost/TS/Metal/RAT constants; Cab British/Closed FIRs are slightly darker with subtler micro-mod; Reverb high-TONE damping is less dark. Clash VHDL generation PASS, IP repackage PASS, full Vivado build PASS; route errors `0`; bus-skew reports all `MET` (minimum slack `+7.989 ns`); bit/hwh md5 `31c768eb4788f31de21bd30977614361` / `e380ed637f145a6377e29e13c45a098d`. `scripts/deploy_to_pynq.sh` file-synced to PYNQ-Z2 `192.168.1.9`, and all six board bit/hwh sites md5-matched. **PL load/smoke is not complete:** `AudioLabOverlay()` timed out and the board stopped responding to ping/SSH, so D114 is not confirmed loaded on the FPGA and not ear-bench accepted. Power-cycle + one overlay load + Pmod mode-2 smoke are required before acceptance. |
@@ -88,13 +89,15 @@
 | **PCM5102 DAC-only bring-up (May 18, deployed)** | **-8.410 ns** | -7313.564 ns | Phase 7C: adds the free-running PCM5102 DAC tone path on PMOD JB. New RTL `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v` is a Verilog I2S master that divides MCLK by 4 (BCLK) and BCLK by 64 (LRCLK) and shifts a 48-entry / 24-bit quarter-scale sine ROM out as I2S Philips 32-bit slots. A new MMCM `clk_wiz_audio_ext` turns FCLK_CLK0 100 MHz into **12.288 MHz exact** via `DIVCLK_DIVIDE=5, MULT_F=48.0, CLKOUT0_DIVIDE_F=78.125, VCO=960 MHz`. Integration tcl `hw/Pynq-Z2/pcm5102_dac_integration.tcl` is sourced from `create_project.tcl` after `encoder_integration.tcl`. **No AXI-Lite slave**, **no new GPIO**, **no `block_design.tcl` direct edit**. XDC adds four LVCMOS33 outputs: `ext_audio_mclk_o W14 (JB1)`, `ext_audio_bclk_o Y14 (JB2)`, `ext_audio_lrclk_o T11 (JB3)`, `ext_dac_din_o V16 (JB7)`; no PULLUP. ADAU1761 path / HDMI integration / encoder integration / GPIO_CONTROL_MAP / LowPassFir DSP all untouched. **PCM1808 ADC is NOT added (Phase 7D).** The new 12.288 MHz domain (`clk_out1_block_design_clk_wiz_audio_ext_0`) reports WNS `+77.576 ns`, 0 setup or hold violations -- the new path is trivially met. The full-design WNS `-8.410 ns` lives on `clk_fpga_0` 100 MHz, the same failing domain as the existing baseline; it regresses by `0.314 ns` vs Phase 6I C2 (`-8.096 ns`) and stays inside the historical `-7..-9 ns` deploy band. Hold remains clean (`WHS = +0.052 ns`, `THS = 0.000 ns`). Utilization after place: Slice LUTs `19145` (`35.99%`), Slice Registers `21293` (`20.01%`), Block RAM Tile `9` (`6.43%`), DSPs `83` (`37.73%`). PYNQ-Z2 deploy completed; `scripts/test_pcm5102_dac_tone.py --duration 3` PASS (overlay loaded, ADAU1761 DMA / distortion GPIO / encoder `enc_in_0/s_axi` / HDMI VDMA / HDMI VTC all present; `pcm5102_dac_0` and `clk_wiz_audio_ext` correctly absent from `ip_dict` because they expose no AXI registers). Acoustic verification on PCM5102 line out is the next manual step. `DECISIONS.md` D38. |
 
 The current accepted baseline is D112: overall WNS `+0.564 ns`, bit md5
-`c1e3de50dca946c24b1b08106f8f134c`, bench-accepted on Pmod mode 2. D118
-(`c85ada77`) is the current deployed/PL-smoked bench candidate with overall WNS
-`+0.754 ns`, but it is not accepted until the user confirms safe-bypass and amp
-tone on the bench. Older accepted rollback points include D98 (`18df313f`) and
-D79 (`f0cb0276`). Treat any timing slip, D109 CDC constraint regression, or
-audible bypass-path artifact as a regression unless the tradeoff is explicit and
-bench-accepted.
+`c1e3de50dca946c24b1b08106f8f134c`, bench-accepted on Pmod mode 2. D119
+(`88c265cc`) is the current built/file-synced Amp volume-stability candidate
+with overall WNS `+0.699 ns`, but it is not confirmed loaded, not PL-smoked, and
+not accepted until the board is reachable again and the user confirms
+safe-bypass plus Amp volume stability on the bench. D118 (`c85ada77`) remains
+the last newer candidate that was PL-smoked. Older accepted rollback points
+include D98 (`18df313f`) and D79 (`f0cb0276`). Treat any timing slip, D109 CDC
+constraint regression, or audible bypass-path artifact as a regression unless
+the tradeoff is explicit and bench-accepted.
 
 **Revised engineering rule (D58 / D59 / D60 / D61 v2 / D63 / D64 all
 rejected, D62 accepted, ordered by structural distance from D62
@@ -169,12 +172,12 @@ A bitstream may be deployed only if the Vivado run prints
 the previous deployed build by an audibly meaningful margin, the 100 MHz
 audio fabric remains clean, and the bench safe-bypass check does not
 reveal bitcrusher / HF bypass artifacts. The latest accepted baseline is D112
-(`c1e3de50`, overall WNS `+0.564 ns`); D118 (`c85ada77`, overall WNS
-`+0.754 ns`) is deployed and PL-smoked but still bench-pending. If timing slips
-significantly, the D109 `clk_fpga_0`<->`clk` CDC constraints are weakened, or
-safe-bypass gets noisier, the change must be revisited (more pipeline stages,
-simpler mux structure, fewer features, or narrower retune scope) before
-adoption.
+(`c1e3de50`, overall WNS `+0.564 ns`); D119 (`88c265cc`, overall WNS
+`+0.699 ns`) is built and file-synced but still needs PL smoke and bench
+acceptance after the board is reachable again. If timing slips significantly,
+the D109 `clk_fpga_0`<->`clk` CDC constraints are weakened, or safe-bypass gets
+noisier, the change must be revisited (more pipeline stages, simpler mux
+structure, fewer features, or narrower retune scope) before adoption.
 
 When adding a new pedal or filter stage:
 

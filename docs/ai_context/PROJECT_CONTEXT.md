@@ -92,11 +92,14 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   work is **not yet ear-bench accepted**: **D113** (amp model-identity retune,
   bit `ed76421f`, deployed + smoke OK), **D114** (non-amp effect retune, bit
   `31c768eb`, file-synced but PL-load smoke blocked), **D117** (RAT
-  highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), and **D118**
-  (amp de-muffle retune, bit `c85ada77`, deployed + PL-smoked). D116 is a
-  Python-only RAT pedalboard routing fix and does not change the accepted
-  bitstream baseline. Until D118 is bench-approved, D112 remains the accepted
-  baseline. See `CURRENT_STATE.md`, `DECISIONS.md` D109-D118, and
+  highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), **D118**
+  (amp de-muffle retune, bit `c85ada77`, deployed + PL-smoked), and **D119**
+  (amp power-sag master modulation disabled for volume stability, bit
+  `88c265cc`, file-synced but PL smoke blocked because the board became
+  unreachable). D116 is a Python-only RAT pedalboard routing fix and does not
+  change the accepted bitstream baseline. Until D119 is PL-smoked and
+  bench-approved, D112 remains the accepted baseline. See `CURRENT_STATE.md`,
+  `DECISIONS.md` D109-D119, and
   `TIMING_AND_FPGA_NOTES.md`. (Older accepted baselines for rollback: D98
   `18df313f`, D79 `f0cb0276`.)
 - The DSP runs in a **33.33 MHz clock-domain island** (D94; was 50 MHz at D75
@@ -207,8 +210,9 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   output equal to its input when its enable bit is clear, sample-exact.
 - Recent D109+ builds are timing-clean, but a clean timing summary is still not
   an acceptance signal by itself. New DSP logic must be carefully pipelined and
-  bench-listened for bypass artifacts; D118 is deployed and PL-smoked but still
-  waits on ear-bench acceptance.
+  bench-listened for bypass artifacts; D119 is timing-clean and file-synced but
+  still waits on PL smoke and ear-bench acceptance after the board is reachable
+  again.
 - Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
   touching `LowPassFir.hs`, `block_design.tcl`, or any
   `axi_gpio_*` topology.

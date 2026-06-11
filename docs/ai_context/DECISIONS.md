@@ -6561,3 +6561,37 @@ pre-existing 3 failures + 1 error baseline.
   start by lowering/checking the input level or loopback state. D112
   (`c1e3de50`) remains the accepted baseline until the user confirms D118 safe
   bypass and amp tone on the bench.
+
+## D119 — Disable Amp power-sag master modulation; built, file-synced, smoke blocked
+
+- **Decision.** Disable the dynamic power-sag master-level modulation in
+  `hw/ip/clash/src/AudioLab/Effects/Amp.hs`. `ampMasterFrame` now ignores the
+  sag envelope and applies the stable `ctrlB` MASTER byte directly for every
+  amp model, followed by the existing D112 `softClipK 4_500_000` protective
+  ceiling.
+- **Why.** The user reported Amp ON volume pumping, then clarified that JC-120
+  does not exhibit it. That exactly matched the old implementation: the sag
+  path reduced final master level for tube models but forced `sagByte=0` for
+  `ampModelIdxF == 0` (JC-120). The symptom is level modulation, not model
+  identity, so the narrow fix is to remove sag from the master gain rather than
+  retune the amp constants again.
+- **Boundaries.** No GPIO address/byte layout, `block_design.tcl`, integration
+  Tcl, XDC, topEntity port, effect order, Python API, or new effect stage
+  changed. This is a Clash/VHDL DSP behaviour change plus regenerated IP
+  artifacts and a rebuilt bit/hwh. The historical `ampSagEnv` source path may
+  remain in the source/pipeline, but it no longer changes Amp output level.
+- **Verification / deploy.** `make -C hw/ip/clash all` passed (Clash VHDL
+  generation and IP repackage). Full Vivado rebuild passed:
+  `write_bitstream completed successfully`, route errors `0`, timing fully MET
+  with WNS `+0.699 ns`, TNS `0.000`, WHS `+0.013 ns`, THS `0.000`, WPWS
+  `+2.845 ns`; bus-skew constraints all met with minimum slack `+8.020 ns`.
+  bit/hwh md5: `88c265cc925cef4673277c1b49a79a02` /
+  `8999e51470e6f6662e5b00e66390781b`. `scripts/deploy_to_pynq.sh` completed to
+  PYNQ-Z2 `192.168.1.9`; deploy import sanity and notebook sync passed.
+- **Acceptance status.** D119 is **not confirmed loaded on the FPGA** and **not
+  PL-smoked**. The attempted Pmod I2S2 mode-2 smoke produced no output for over
+  2 minutes; after interrupt, the board was unreachable (`ssh: No route to
+  host`, ping `Destination Host Unreachable`, ARP incomplete). Power-cycle or
+  restore board networking, load `AudioLabOverlay()` once, run Pmod mode-2
+  smoke, then bench safe-bypass plus tube-model Amp volume stability before
+  acceptance. D112 (`c1e3de50`) remains the accepted baseline.

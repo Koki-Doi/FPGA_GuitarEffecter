@@ -62,11 +62,13 @@ choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
 The latest accepted baseline is **D112 (2026-06-07, `c1e3de50`), amp full
-revoicing on the D109 CDC knife-edge fix** (bench-accepted). D113/D114/D117/D118
-are built/deployed candidates that remain bench-pending; D117 fixes the RAT
-highpass dead-pole and retunes only the RAT identity constants, D118 is the amp
-de-muffle constant retune, and D116 is a Python-only RAT pedalboard routing fix
-(see `CURRENT_STATE.md` / `DECISIONS.md` D109-D118). The load-bearing clocking
+revoicing on the D109 CDC knife-edge fix** (bench-accepted).
+D113/D114/D117/D118/D119 are newer candidates that remain bench-pending; D117
+fixes the RAT highpass dead-pole and retunes only the RAT identity constants,
+D118 is the amp de-muffle constant retune, D119 disables Amp power-sag master
+modulation to stop tube-model volume pumping, and D116 is a Python-only RAT
+pedalboard routing fix (see `CURRENT_STATE.md` / `DECISIONS.md` D109-D119).
+The load-bearing clocking
 base is D75 as lowered by D89/D94: `clash_lowpass_fir_0` runs at `FCLK_CLK1`
 (50 MHz at D75 -> 40 MHz at D89 -> 33.33 MHz at D94), while the rest of the
 fabric stays at
@@ -454,7 +456,8 @@ was added.
 
 Per-model voicing tables (`docs/ai_context/AMP_MODEL_RESEARCH_D55.md`
 section 6 carries the original per-model rationale; values here are
-the current D118 Amp de-muffle deployed/PL-smoked candidate values):
+the current D119 Amp volume-stability candidate values; the voicing constants
+are unchanged from the D118 de-muffle pass):
 
 | idx | model        | modelDarken | trebleTrim | presenceTrim | drivePosDelta | driveNegDelta | preLpfDriveDarken | secondStageDriveBonus |
 | --- | ------------ | ----------- | ---------- | ------------ | ------------- | ------------- | ----------------- | --------------------- |
@@ -469,7 +472,7 @@ the current D118 Amp de-muffle deployed/PL-smoked candidate values):
 (`Unsigned 3 -> Signed 25`, **not** runtime `ch * factor` -- the
 abandoned D58 `ch * factor` form added four DSP48E1 slices and caused
 a P&R shift that introduced an audible high-frequency saturation noise
-on the ADC -> DAC bypass path). The D118 values are the requested
+on the ADC -> DAC bypass path). The D118/D119 values are the requested
 Drive-mode factors evaluated against each model's current
 `ampCharForModel` value (`18 / 78 / 166 / 208 / 220 / 246`) so no new
 multiplier is introduced.
@@ -479,6 +482,13 @@ stage graph: Rockerverb's amp-stack push is now +1.5 dB @ 500 Hz, TriAmp's
 modern scoop is now -2 dB @ 750 Hz, the transformer resonance is +1 dB @
 110 Hz, transformer HF droop is nearly open (`>> 6`), and the mid-band saturation
 knee is raised to `6_800_000`.
+
+D119 keeps those voicing constants but disables the dynamic power-sag master
+gain modulation. The user reported volume pumping on Amp ON and clarified that
+JC-120 did not reproduce it; the old sag path was disabled only for idx 0
+(JC-120) and reduced master level on the tube models. `ampMasterFrame` now uses
+the stable MASTER byte directly for all models. Any remaining `ampSagEnv` source
+path is historical and no longer changes output level.
 
 | Stage | What it does |
 | --- | --- |
@@ -490,7 +500,7 @@ knee is raised to `6_800_000`.
 | `ampToneFilterFrame` -> `ampToneBandFrame` -> `ampToneProductsFrame` -> `ampToneMixFrame` | Three-band B/M/T tone-stack approximation. Treble uses `ampTrebleGain idx treble`, a per-model trim (`0 / 0 / 0 / 1 / 0 / 2` from `modelTrim` table) so treble at 100 keeps 2..4 kHz bite and the recovered top without restoring excessive fizz. |
 | `ampPowerFrame` | `softClipK 3_400_000` power-stage safety. |
 | `ampResPresenceProductsFrame` / `ampResPresenceMixFrame` | Resonance remains internally capped (`resonance * 3/4`). Presence starts from `presence * 5/8` and subtracts a per-model `presenceTrim` (`0`, `byte >> 6`, `byte >> 6`, `byte >> 5`, `byte >> 6`, `byte >> 5`) before the mix, then runs through `softClipK 5_500_000`. |
-| `ampMasterFrame` | Master multiply followed by `softClipK 3_300_000` so MASTER cannot slam the Cab/EQ/Reverb stages into hard clip. |
+| `ampMasterFrame` | Stable MASTER multiply (`ctrlB` directly) followed by `softClipK 4_500_000`. D119 disables the old dynamic sag-derived master reduction so tube models do not pump relative to JC-120; the ceiling still prevents Cab/EQ/Reverb hard slams. |
 
 ## Cab IR section
 

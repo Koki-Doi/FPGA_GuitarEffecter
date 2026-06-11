@@ -581,28 +581,16 @@ ampSagEnvNext env (Just f)
   level = abs24 (monoWet f)
 
 ampMasterFrame :: Sample -> Frame -> Frame
-ampMasterFrame env f =
+ampMasterFrame _env f =
   setMonoSample (if on then out else monoSample f) f
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  idx = ampModelIdxF f
-  -- Power-amp sag: loud passages pull the master level down a touch, then it
-  -- recovers as the envelope releases. Bounded to at most half the level (no
-  -- choke) and DISABLED for JC-120 (idx 0, solid-state = stiff supply, no
-  -- sag). Reuses the existing master multiply -> no new DSP. sagRaw takes bits
-  -- 22..17 of the (non-negative) envelope = a 0..63 magnitude.
-  sagRaw0 = resize (unpack (slice d22 d17 (pack env)) :: Unsigned 6) :: Unsigned 8
-  -- Per-model sag depth. AC30 (idx 2) is class-A with cathode-bias sag and
-  -- early compression, so its supply sags ~1.5x deeper than the other tube
-  -- amps (shift+add, no DSP). Every other model keeps sagRaw0 byte-for-byte.
-  sagRaw = case idx of
-    2 -> sagRaw0 + (sagRaw0 `shiftR` 1)   -- AC30: deeper class-A sag
-    _ -> sagRaw0
-  sagCap = level `shiftR` 1
-  sagByte = if idx == 0 then 0 else min sagRaw sagCap
-  effLevel = level - sagByte
-  out = softClipK 4_500_000 (satShift7 (mulU8 (monoWet f) effLevel))  -- D112: 5.5M->4.5M (protective ceiling so JC-120 clean doesn't overflow satShift7)
+  -- D119: disable the dynamic power-sag master modulation. The user reported
+  -- Amp ON volume pumping on tube models, while JC-120 was stable; that exactly
+  -- matches the old sag path, which was disabled only for idx 0. Keep the fixed
+  -- master ceiling but make level stable for every model.
+  out = softClipK 4_500_000 (satShift7 (mulU8 (monoWet f) level))  -- D112: 5.5M->4.5M (protective ceiling so JC-120 clean doesn't overflow satShift7)
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
 -- A real tube amp's output transformer is a big part of "amp warmth" that the
