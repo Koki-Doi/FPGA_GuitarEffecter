@@ -448,7 +448,7 @@ def _guitar_effects_kwargs(sections):
     eq = sections["eq"]
     rev = sections["reverb"]
     dist_on = bool(dist["enabled"] and dist.get("pedal"))
-    return taper_guitar_effects_kwargs({
+    kwargs = {
         "noise_gate_on": bool(ns["enabled"]),
         "noise_gate_threshold": ns["threshold"],
         "overdrive_on": bool(od["enabled"]),
@@ -485,7 +485,15 @@ def _guitar_effects_kwargs(sections):
         "reverb_decay": rev["decay"],
         "reverb_tone": rev["tone"],
         "reverb_mix": rev["mix"],
-    })
+    }
+    if dist_on and dist.get("pedal") == "rat":
+        kwargs.update({
+            "rat_drive": dist["drive"],
+            "rat_filter": 100 - dist["tone"],
+            "rat_level": dist["level"],
+            "rat_mix": dist["mix"],
+        })
+    return taper_guitar_effects_kwargs(kwargs)
 
 
 def full_state_plan(state):

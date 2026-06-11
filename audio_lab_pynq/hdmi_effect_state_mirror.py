@@ -822,6 +822,8 @@ class HdmiEffectStateMirror(object):
             if value is not None:
                 guitar_kwargs[key] = value
         rat_filter_value = rat_filter if rat_filter is not None else filt
+        if model == "rat" and rat_filter_value is None and tone is not None:
+            rat_filter_value = 100 - _clamp_percent(tone)
         if model == "rat":
             for key, value in (("rat_drive", drive),
                                ("rat_filter", rat_filter_value),

@@ -31,10 +31,16 @@ def apply_distortion_state_to_words(ovl):
     """
     s = ovl._dist_state
     pedal_mask = int(s['pedal_mask']) & 0x7F
+    rat_selected = bool(pedal_mask & (1 << ovl._DIST_PEDAL_BIT['rat']))
+    rat_gate_owned = bool(s.get('_rat_gate_owned', False))
 
     gate = ovl._cached_gate_word & 0x0000FFFF
-    if pedal_mask & (1 << ovl._DIST_PEDAL_BIT['rat']):
+    if rat_selected:
         gate |= 0x10
+        s['_rat_gate_owned'] = True
+    elif rat_gate_owned:
+        gate &= ~0x10
+        s['_rat_gate_owned'] = False
     gate = _cm.set_byte(gate, 2, _cm.percent_to_u8(s['bias'], 255))
     gate = _cm.set_byte(gate, 3, _cm.percent_to_u8(s['mix'], 255))
     ovl._cached_gate_word = gate
@@ -62,6 +68,14 @@ def apply_distortion_state_to_words(ovl):
     if hasattr(ovl, 'axi_gpio_distortion'):
         ovl._write_gpio(ovl.axi_gpio_distortion,
                         ovl._cached_distortion_word)
+    if rat_selected and hasattr(ovl, 'axi_gpio_delay'):
+        rat_word = _cm.rat_word(
+            filter_=_cm.rat_filter_from_tone(s['tone']),
+            level=s['level'],
+            drive=s['drive'],
+            mix=s['mix'],
+        )
+        ovl._write_gpio(ovl.axi_gpio_delay, rat_word)
 
 
 def apply_overdrive_state_to_words(ovl, touch_gate=False, sink=None):
@@ -178,4 +192,3 @@ def refresh_cached_words(ovl, words):
     ovl._cached_gate_word = words['gate']
     ovl._cached_overdrive_word = words['overdrive']
     ovl._cached_distortion_word = words['distortion']
-

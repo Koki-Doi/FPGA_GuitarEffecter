@@ -88,28 +88,29 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   via `mode2_right_snapshot` (D50).
 - The current **accepted** deployed bitstream baseline is **D112**
   (`audio_lab.bit` md5 `c1e3de50dca946c24b1b08106f8f134c`), the amp full
-  revoicing on the D109 CDC knife-edge fix (bench-accepted 2026-06-07). The
-  two newer passes are **constant-only voicing rebuilds that are built
-  timing-clean but not yet ear-bench accepted**: **D113** (amp model-identity
-  retune, `Amp.hs`, bit `ed76421f`, deployed + smoke OK, bench pending) and
-  **D114** (non-amp effect retune across `Overdrive.hs` / `Distortion.hs` /
-  `Cab.hs` / `Reverb.hs`, bit `31c768eb`, board file-synced but the post-deploy
-  `AudioLabOverlay()` PL-load timed out / board went offline, so it is **not
-  confirmed loaded on the FPGA**). Until D113/D114 are bench-approved, D112
-  remains the baseline. See `CURRENT_STATE.md`, `DECISIONS.md` D109-D114, and
+  revoicing on the D109 CDC knife-edge fix (bench-accepted 2026-06-07). Newer
+  work is **not yet ear-bench accepted**: **D113** (amp model-identity retune,
+  bit `ed76421f`, deployed + smoke OK), **D114** (non-amp effect retune, bit
+  `31c768eb`, file-synced but PL-load smoke blocked), and **D117** (RAT
+  highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked). D116 is a
+  Python-only RAT pedalboard routing fix and does not change the accepted
+  bitstream baseline. Until D117 is bench-approved, D112 remains the accepted
+  baseline. See `CURRENT_STATE.md`, `DECISIONS.md` D109-D117, and
   `TIMING_AND_FPGA_NOTES.md`. (Older accepted baselines for rollback: D98
   `18df313f`, D79 `f0cb0276`.)
-- The DSP runs in a **40 MHz clock-domain island** (D89; was 50 MHz at D75).
-  Only `clash_lowpass_fir_0` is clocked by `FCLK_CLK1 = 40 MHz`; the rest of the
+- The DSP runs in a **33.33 MHz clock-domain island** (D94; was 50 MHz at D75
+  and 40 MHz at D89). Only `clash_lowpass_fir_0` is clocked by
+  `FCLK_CLK1 = 33.33 MHz`; the rest of the
   fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays on
   `FCLK_CLK0 = 100 MHz`, bridged by two `axis_clock_converter`
   (`cc_dsp_in` / `cc_dsp_out`) added in `island_integration.tcl`. The island
   is what closed the DS-1 distortion timing (WNS -10.387 -> -0.706 ns at D75),
-  and D89 lowered it from 50 to 40 MHz for headroom so multiple 4x oversamplers
-  fit; the island clock is fs-independent (pitch is set by the I2S/Pmod sample
-  clock, not this clock). Sample rate is **96 kHz as of D98** (was 48 kHz
-  through D97; codec double-speed via Pmod BCLK = MCLK/2, all fs-dependent DSP
-  constants re-voiced; the DSP island clock is fs-independent and unchanged). The control-word CDC
+  D89 lowered it from 50 to 40 MHz for oversampler headroom, and D94 lowered it
+  to 33.33 MHz for the later realism stack; the island clock is fs-independent
+  (pitch is set by the I2S/Pmod sample clock, not this clock). Sample rate is
+  **96 kHz as of D98** (was 48 kHz through D97; codec double-speed via Pmod
+  BCLK = MCLK/2, all fs-dependent DSP constants re-voiced; the DSP island clock
+  is fs-independent and unchanged). The control-word CDC
   (`syncCtrl` in `LowPassFir.hs`) and `paceCount` removal in `Pipeline.hs`
   are load-bearing -- see `DSP_ISLAND_CLOCK_DESIGN.md` and `DECISIONS.md` D75.
 - The Overdrive section has six selectable models on
@@ -203,9 +204,10 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   goes Python API + UI reservation -> Clash stage -> (rare) new GPIO.
 - Never break the bit-bypass property: every effect stage must produce
   output equal to its input when its enable bit is clear, sample-exact.
-- The current Vivado build already runs with negative slack
-  (see `TIMING_AND_FPGA_NOTES.md`; D79 WNS `-0.496 ns`), so new logic must
-  be carefully pipelined and bench-listened for bypass artifacts.
+- Recent D109+ builds are timing-clean, but a clean timing summary is still not
+  an acceptance signal by itself. New DSP logic must be carefully pipelined and
+  bench-listened for bypass artifacts; D117 is deployed and PL-smoked but still
+  waits on ear-bench acceptance.
 - Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
   touching `LowPassFir.hs`, `block_design.tcl`, or any
   `axi_gpio_*` topology.

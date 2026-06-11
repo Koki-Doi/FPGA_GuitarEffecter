@@ -6458,3 +6458,66 @@ pre-existing 3 failures + 1 error baseline.
   narrow helper/setter group at a time into `audio_lab_pynq/overlay/`, leave
   `AudioLabOverlay` as the compatibility facade, and prove byte output/write
   order with focused snapshot tests before deploy.
+
+## D116 — Pedalboard RAT owns routing into the existing RAT stage
+
+- **Decision.** The Distortion pedalboard's `rat` slot remains mapped onto the
+  existing dedicated RAT stage (D8), but every RAT-selected control path must
+  forward the shared Distortion knobs into the RAT GPIO: `DRIVE -> rat_drive`,
+  `LEVEL -> rat_level`, `MIX -> rat_mix`, and generic brightening `TONE` maps
+  through `control_maps.rat_filter_from_tone()` to RAT's inverse-direction
+  `FILTER` (`TONE` high = brighter, RAT `FILTER` low). This is Python/control
+  routing only; no DSP topology or GPIO layout changes.
+- **Why.** Some GUI/bridge/preset paths previously set the RAT pedal bit and
+  gate bit 4 but left the dedicated RAT word at defaults, so the visible
+  Distortion knobs did not actually shape the RAT stage. Other paths sent
+  generic `TONE` directly to RAT `FILTER`, making the control feel backwards.
+- **Boundary.** Standalone `set_guitar_effects(rat_on=True, rat_filter=...)`
+  keeps the real RAT FILTER direction and remains supported. The pedal-mask
+  writer tracks whether it owns gate bit 4 so switching from pedalboard RAT to
+  another distortion pedal clears the RAT bit, while an independently enabled
+  standalone RAT is preserved.
+- **Verification / deploy.** Python-only verification passed:
+  `git diff --check`, `py_compile`, targeted pytest (`166 passed`), direct
+  script tests, and board-side Python 3.6 smoke. Deployed to PYNQ-Z2
+  `192.168.1.9` with `scripts/deploy_to_pynq.sh`; import sanity passed,
+  notebooks synced, and no PL load was performed. Accepted bitstream baseline
+  remains D112 (`c1e3de50`); D113/D114 are still bench-pending.
+
+## D117 — RAT highpass dead-pole fixed and RAT identity retuned
+
+- **Decision.** Fix the live RAT DSP stage in
+  `hw/ip/clash/src/AudioLab/Effects/Distortion.hs` instead of adding a new
+  pedal path. RAT keeps the existing dedicated stage, GPIO word, pedal-mask bit
+  2, and gate bit 4. The highpass feedback term is now explicitly parenthesized
+  as `((prevOut * 505) `shiftR` 9)`, making the intended `505/512` pole live at
+  the 96 kHz sample rate. The retune is constant-only inside the RAT path:
+  slightly stronger drive gain, lower/stronger clip threshold, a slightly more
+  open post low-pass, and a wider FILTER alpha range so FILTER open is brighter
+  while the dark end still closes hard.
+- **Why.** The weak-RAT report was not just Python routing. The RAT highpass had
+  the same precedence failure class as the older Amp dead-pole bug:
+  `prevOut * 511 `shiftR` 9` parses as `prevOut * (511 `shiftR` 9)`, which is
+  `prevOut * 0`. That made the stage an accidental first-difference rather than
+  a proper input highpass and undermined the RAT's low-end behaviour. Fixing the
+  pole changes sound and therefore requires a full bitstream/bench cycle.
+- **Boundaries.** No `block_design.tcl`, integration Tcl, XDC, GPIO address,
+  GPIO byte layout, topEntity port, effect order, or new effect stage changed.
+  This is a Clash/VHDL DSP voicing change plus regenerated IP artifacts and a
+  rebuilt bit/hwh.
+- **Verification / deploy.** `make -C hw/ip/clash all` passed (Clash VHDL
+  generation and IP repackage). Full Vivado rebuild passed:
+  `write_bitstream completed successfully`, route errors `0`, timing fully MET
+  with WNS `+0.644 ns`, TNS `0.000`, WHS `+0.008 ns`, THS `0.000`, WPWS
+  `+2.845 ns`; bus-skew constraints all met with minimum slack `+8.042 ns`.
+  bit/hwh md5: `6dc84eaf46d2b19df3f600474ef749b4` /
+  `1d05499010986cbe659af779f75e31f1`. Deployed to PYNQ-Z2 `192.168.1.9`;
+  board md5 matched for the repo bitstream copy and the PYNQ overlays registry.
+  Programmatic smoke loaded the new PL, Pmod I2S2 tone mode ran at 96 kHz
+  (`FRAME_COUNT +192270` over 2 s, clocks/SDOUT alive), and RAT MMIO smoke
+  confirmed `rat_filter_from_tone(76)=24`, `pedal_mask=0x04`,
+  `gate_word=0xB2800914`, `distortion_word=0x047A26C2`, and
+  `rat_word=0xB27A263D`. Targeted Python tests still pass (`166 passed`).
+- **Acceptance status.** D117 is built, deployed, and PL-smoked, but **not
+  ear-bench accepted**. D112 (`c1e3de50`) remains the accepted baseline until
+  the user confirms RAT tone and safe-bypass/audio quality on the bench.

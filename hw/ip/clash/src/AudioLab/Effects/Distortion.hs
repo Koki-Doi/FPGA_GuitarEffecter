@@ -618,16 +618,19 @@ ratHighpassFrame prevIn prevOut f =
  where
   on = flag4 (fGate f)
   x = monoSample f
-  -- 96 kHz: 511/512 with >>9 (was 255/256 >>8) keeps the ~30 Hz HP corner at 2x fs.
+  -- Live one-pole HP feedback. Keep the multiply parenthesised before
+  -- shiftR; otherwise shiftR binds tighter than * and the pole collapses
+  -- to a first-difference. 505/512 tightens the RAT input around ~210 Hz,
+  -- close to the D101 RAT-only corner without changing the amp path.
   highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * 511 `shiftR` 9))
+    satWide (resize x - resize prevIn + (((resize prevOut :: Wide) * 505) `shiftR` 9))
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (monoWet f) driveGain else 0, fAccR = 0}
  where
   on = flag4 (fGate f)
-  driveGain = resize (640 + (resize (ctrlC (fRat f)) * 13 :: Unsigned 12)) :: Unsigned 12
+  driveGain = resize (704 + (resize (ctrlC (fRat f)) * 13 :: Unsigned 12)) :: Unsigned 12
 
 ratDriveBoostFrame :: Frame -> Frame
 ratDriveBoostFrame f =
@@ -653,8 +656,8 @@ ratClipThreshold :: Frame -> Sample
 ratClipThreshold f = resize clampedThreshold :: Sample
  where
   amount = ctrlC (fRat f)
-  rawThreshold = 5_800_000 - (resize (asSigned9 amount) * 10_000) :: Signed 25
-  clampedThreshold = if rawThreshold < 2_600_000 then 2_600_000 else rawThreshold
+  rawThreshold = 5_200_000 - (resize (asSigned9 amount) * 12_000) :: Signed 25
+  clampedThreshold = if rawThreshold < 2_200_000 then 2_200_000 else rawThreshold
 
 ratClipProductsFrame :: Sample -> Vec 12 Sample -> Frame -> Frame
 ratClipProductsFrame x1 hist f =
@@ -679,11 +682,10 @@ ratClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
   (q0, q1, q2, q3) = os4xSubSamples (ratClipThreshold f) x1 (monoWet f)
 
 ratPostLowpassFrame :: Sample -> Frame -> Frame
--- Global real-pedal pass: roll off more high-frequency content after the
--- hard clip, matching the darker top end of a real RAT.
--- 96 kHz: 106 (was 168) holds the same post-clip LPF corner Hz at 2x fs.
+-- RAT identity pass: keep a fixed post-clip rolloff to control alias residue,
+-- but leave a little more upper bite for the FILTER stage to shape.
 ratPostLowpassFrame prev f =
-  setMonoWet (if on then onePoleU8 106 prev (monoWet f) else monoSample f) f
+  setMonoWet (if on then onePoleU8 112 prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
 
@@ -692,9 +694,9 @@ ratToneFrame prev f =
   setMonoWet (if on then onePoleU8 alpha prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
-  -- Darker FILTER base so fully bright still has upper roll-off.
-  -- 96 kHz: bilinear-refit (was 192 - (toneA*3)>>2) to hold the tone LPF corner.
-  alpha = 128 - (ctrlA (fRat f) `shiftR` 1)
+  -- FILTER is darkening: high ctrlA lowers alpha. The 17..144 range gives a
+  -- brighter fully-open RAT while still letting the dark end close down hard.
+  alpha = 144 - (ctrlA (fRat f) `shiftR` 1)
 
 ratLevelFrame :: Frame -> Frame
 ratLevelFrame f =

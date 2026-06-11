@@ -259,6 +259,17 @@ def rat_word(filter_, level, drive, mix):
     )
 
 
+def rat_filter_from_tone(tone):
+    """Map a generic brightening TONE knob onto RAT's darkening FILTER.
+
+    The public ``rat_filter`` API keeps the real RAT-style direction
+    (higher FILTER = darker). Generic Distortion UIs expose TONE, where
+    higher should mean brighter, so RAT pedal-mask routing uses this
+    inverse mapping before building the dedicated RAT control word.
+    """
+    return 100 - clamp_percent(tone)
+
+
 def cab_word(mix, level, model, air):
     """Build the ``axi_gpio_cab`` word: ctrlA=MIX, ctrlB=LEVEL (Q7,
     clamped to <=150 first), ctrlC=MODEL (0/85/170 = the three preset

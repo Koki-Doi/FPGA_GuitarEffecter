@@ -374,9 +374,10 @@ class EncoderEffectApplier(object):
             )
             # RAT model selected: route the GUI Distortion knobs to the
             # dedicated RAT stage (set_guitar_effects forces rat_on from the
-            # pedal bit). TONE -> FILTER, LEVEL, DRIVE, and the 6th knob -> MIX.
+            # pedal bit). Generic TONE is brightening, while RAT FILTER is
+            # darkening, so invert the first knob before the normal tone taper.
             if rat_selected:
-                kwargs["rat_filter"] = _clamp_percent(dst[0])
+                kwargs["rat_filter"] = 100 - _clamp_percent(dst[0])
                 kwargs["rat_level"] = _clamp_percent(dst[1])
                 kwargs["rat_drive"] = _clamp_percent(dst[2])
                 kwargs["rat_mix"] = _clamp_percent(dst[5])

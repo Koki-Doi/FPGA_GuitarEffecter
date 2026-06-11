@@ -10,8 +10,9 @@
 > (D89), and Big Muff (D90)** -- linear-interp upsample + per-sub-sample clip +
 > 15-tap decimation FIR via the shared `os4x*` helpers in `Distortion.hs`, each
 > split products/mix (a FIR is feedforward -> pipelines freely; the IIR biquads
-> are NOT split across the feedback). The DSP island runs at **40 MHz** as of
-> D89 (was 50 MHz) for the headroom these add. Lessons: parallel multiplies beat
+> are NOT split across the feedback). The DSP island was lowered to **40 MHz** at
+> D89 for oversampler headroom and to **33.33 MHz** at D94 for the later realism
+> stack. Lessons: parallel multiplies beat
 > serial on this island; isolate a deep cascade (clip->mul->clip) in a
 > register-update path, not in series with a FIR mul (D90). See `DECISIONS.md`
 > D81-D90, `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`, and `DSP_ISLAND_CLOCK_DESIGN.md`.
@@ -61,9 +62,11 @@ choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
 The latest accepted baseline is **D112 (2026-06-07, `c1e3de50`), amp full
-revoicing on the D109 CDC knife-edge fix** (bench-accepted). D113/D114 are
-built-but-pending constant-only voicing rebuilds (see `CURRENT_STATE.md` /
-`DECISIONS.md` D109-D114). The load-bearing clocking base is D75 as lowered by
+revoicing on the D109 CDC knife-edge fix** (bench-accepted). D113/D114/D117 are
+built/deployed candidates that remain bench-pending; D117 fixes the RAT
+highpass dead-pole and retunes only the RAT identity constants, while D116 is a
+Python-only RAT pedalboard routing fix (see `CURRENT_STATE.md` /
+`DECISIONS.md` D109-D117). The load-bearing clocking base is D75 as lowered by
 D89/D94: `clash_lowpass_fir_0` runs at `FCLK_CLK1` (50 MHz at D75 -> 40 MHz at
 D89 -> 33.33 MHz at D94) while the rest of the fabric stays at
 `FCLK_CLK0 = 100 MHz`, bridged by `axis_clock_converter`

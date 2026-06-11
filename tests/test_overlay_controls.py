@@ -384,6 +384,49 @@ def test_set_distortion_pedal_rat_drives_legacy_rat_flag():
     assert last_gate & 0x10, hex(last_gate)
 
 
+def test_set_distortion_pedal_exclusive_clears_legacy_rat_flag():
+    """Switching away from RAT must clear the dedicated RAT gate bit."""
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_distortion_pedal('rat')
+    overlay.set_distortion_pedal('metal')
+    last_gate = overlay.axi_gpio_gate.writes[-1][1]
+    assert (last_gate & 0x10) == 0, hex(last_gate)
+    assert (overlay.axi_gpio_distortion.writes[-1][1] >> 24) & 0x7F == \
+        (1 << 6)
+
+
+def test_set_distortion_settings_preserves_standalone_rat_flag():
+    """A separately-enabled RAT stage is not owned by the pedal-mask writer."""
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_guitar_effects(rat_on=True)
+    overlay.set_distortion_settings(pedal='metal', bias=20, mix=50)
+    last_gate = overlay.axi_gpio_gate.writes[-1][1]
+    assert last_gate & 0x10, hex(last_gate)
+
+
+def test_set_distortion_settings_rat_writes_dedicated_rat_word():
+    """Pedalboard RAT routes shared Distortion knobs into the real RAT GPIO."""
+    from audio_lab_pynq import control_maps as cm
+
+    overlay = make_overlay_with_distortion_state()
+    overlay.set_distortion_settings(
+        pedal='rat',
+        drive=60,
+        tone=70,
+        level=30,
+        bias=50,
+        tight=50,
+        mix=80,
+    )
+    expected = cm.rat_word(
+        filter_=cm.rat_filter_from_tone(70),
+        level=30,
+        drive=60,
+        mix=80,
+    )
+    assert overlay.axi_gpio_delay.writes[-1] == (0x00, expected)
+
+
 def test_set_distortion_settings_updates_cache_and_writes():
     overlay = make_overlay_with_distortion_state()
     overlay.set_distortion_settings(
@@ -2082,6 +2125,9 @@ if __name__ == "__main__":
     test_set_distortion_pedal_disable_drops_one_bit()
     test_clear_distortion_pedals()
     test_set_distortion_pedal_rat_drives_legacy_rat_flag()
+    test_set_distortion_pedal_exclusive_clears_legacy_rat_flag()
+    test_set_distortion_settings_preserves_standalone_rat_flag()
+    test_set_distortion_settings_rat_writes_dedicated_rat_word()
     test_set_distortion_settings_updates_cache_and_writes()
     test_set_distortion_settings_preserves_other_effects_in_gate_word()
     test_set_distortion_settings_preserves_overdrive_params()

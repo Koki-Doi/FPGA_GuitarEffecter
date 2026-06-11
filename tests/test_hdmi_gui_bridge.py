@@ -195,6 +195,31 @@ def test_live_plan_tapers_gui_drive_but_keeps_levels():
     assert op.kwargs["overdrive_level"] == 80
 
 
+def test_live_plan_routes_rat_knobs_to_dedicated_rat_stage():
+    state = AppState()
+    if not hasattr(state, "all_knob_values"):
+        state.all_knob_values = {}
+    state.effect_on[4] = True
+    state.dist_model_idx = 2
+    state.all_knob_values["Distortion"] = [
+        80.0, 30.0, 60.0, 50.0, 55.0, 70.0]
+
+    plan = AudioLabGuiBridge().build_plan(state, force=True)
+    op = [op for op in plan.operations if op.method == "set_guitar_effects"][0]
+    expected = taper_guitar_effects_kwargs(dict(
+        rat_drive=60,
+        rat_filter=20,
+        rat_level=30,
+        rat_mix=70,
+    ))
+
+    assert op.kwargs["rat_on"] is True
+    assert op.kwargs["rat_drive"] == expected["rat_drive"]
+    assert op.kwargs["rat_filter"] == expected["rat_filter"]
+    assert op.kwargs["rat_level"] == 30
+    assert op.kwargs["rat_mix"] == 70
+
+
 if __name__ == "__main__":
     tests = [
         test_default_app_state_maps_to_supported_overlay_api,
@@ -208,6 +233,7 @@ if __name__ == "__main__":
         test_wah_pedal_source_does_not_overwrite_position,
         test_eq_knobs_map_gui_percent_to_overlay_level_range,
         test_live_plan_tapers_gui_drive_but_keeps_levels,
+        test_live_plan_routes_rat_knobs_to_dedicated_rat_stage,
     ]
     for test in tests:
         test()

@@ -134,6 +134,25 @@ def test_include_rat_sets_bit_2():
     assert kw.get("rat_on") is False
 
 
+def test_include_rat_routes_distortion_knobs_to_rat_stage():
+    ov = FakeOverlay()
+    ap = EncoderEffectApplier(ov, skip_rat=False)
+    state = AppState()
+    state.dist_model_idx = RAT_PEDAL_INDEX
+    state.effect_on[4] = True
+    state.all_knob_values["Distortion"] = [
+        80.0, 30.0, 60.0, 50.0, 55.0, 70.0]
+
+    ap.apply_appstate(state, force=True)
+    kw = _kwargs_of(ov, "set_guitar_effects")
+
+    assert kw is not None
+    assert kw.get("rat_drive") == gain_taper_percent(60)
+    assert kw.get("rat_filter") == tone_taper_percent(20)
+    assert kw.get("rat_level") == 30
+    assert kw.get("rat_mix") == 70
+
+
 def test_is_rat_pedal_index_helper():
     assert is_rat_pedal_index(2) is True
     assert is_rat_pedal_index(0) is False
@@ -369,6 +388,7 @@ _TEST_FUNCTIONS = [
     test_force_bypasses_throttle,
     test_skip_rat_excludes_pedal_mask_bit,
     test_include_rat_sets_bit_2,
+    test_include_rat_routes_distortion_knobs_to_rat_stage,
     test_is_rat_pedal_index_helper,
     test_effect_on_off_uses_dedicated_setters,
     test_effect_on_off_unsupported_records_label,

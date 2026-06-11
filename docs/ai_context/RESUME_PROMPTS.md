@@ -5,24 +5,23 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-07, after the D109 CDC fix + amp/effect revoicing D110-D114)
+## Current status (2026-06-10, after D116/D117 RAT routing + DSP retune)
 
-> Accepted deployed bitstream baseline is **D112** (`c1e3de50`): the amp full
-> revoicing on top of the **D109 safe-bypass knife-edge fix**. D109 root-caused
-> the long-standing "every DSP rebuild corrupts all_off passthrough" problem to
-> an **untimed DSP-output -> DAC audio CDC** and bounded it with split
+> Accepted deployed bitstream baseline is still **D112** (`c1e3de50`): the amp
+> full revoicing on top of the **D109 safe-bypass knife-edge fix**. D109
+> root-caused the long-standing "every DSP rebuild corrupts all_off passthrough"
+> problem to an **untimed DSP-output -> DAC audio CDC** and bounded it with split
 > `set_clock_groups` + `set_max_delay -datapath_only` on `clk_fpga_0`<->`clk`
-> (`audio_lab.xdc`), so **DSP voicing rebuilds are SAFE again** -- the old "only
-> the D98 bit is bypass-clean, do not rebuild for voicing" rule is obsolete
-> (still always ear-bench). On that fix the amp was fully revoiced (D110-D112,
-> bench-accepted 合格). **Two newer constant-only voicing rebuilds are built
-> timing-clean but PENDING BENCH:** D113 (amp model-identity retune, bit
-> `ed76421f`, deployed + smoke OK) and D114 (non-amp effect retune across
-> `Overdrive.hs`/`Distortion.hs`/`Cab.hs`/`Reverb.hs`, bit `31c768eb`, board
-> file-synced but the PL-load `AudioLabOverlay()` timed out / board went
-> offline, so it is **not confirmed loaded**). To accept D114: power-cycle the
-> PYNQ-Z2, load `AudioLabOverlay()` once, set Pmod I2S2 mode 2, re-run smoke +
-> ear bench. Read `CURRENT_STATE.md` + `DECISIONS.md` (D109-D114) +
+> (`audio_lab.xdc`), so DSP voicing rebuilds are allowed again, but every new
+> bitstream still needs ear-bench acceptance. Newer work is pending bench:
+> D113 (amp model-identity retune, bit `ed76421f`), D114 (non-amp effect retune,
+> bit `31c768eb`, file-synced but its PL-load smoke was blocked), and **D117**
+> (RAT highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked). D116 is
+> Python-only: it routes Distortion-pedalboard RAT `DRIVE/TONE/LEVEL/MIX` into
+> the dedicated RAT GPIO and maps generic brightening `TONE` through
+> `rat_filter_from_tone()`. To accept D117, bench safe-bypass plus RAT tone on
+> Pmod I2S2 mode 2; until then D112 remains the accepted baseline. Read
+> `CURRENT_STATE.md` + `DECISIONS.md` (D109-D117) +
 > `TIMING_AND_FPGA_NOTES.md` first.
 
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
@@ -197,11 +196,11 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。Vivado 実装で WNS が現行 accepted baseline D68
-> (`-7.333 ns`) より明らかに悪い bitstream、または safe-bypass で高域
-> ノイズが出る bitstream は deploy しないでください。現在 deployed 中の
-> bench candidate は D71 (`-9.413 ns`) ですが、D71 は bench 未通過の
-> ため accepted ではありません。
+> してください。現行 accepted baseline は D112 (`c1e3de50`) です。D117
+> (`6dc84eaf`) は timing-clean かつ deploy/PL-smoke 済みですが、bench
+> 未通過なので accepted ではありません。safe-bypass で高域ノイズが出る
+> bitstream、または `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した
+> bitstream は deploy/accept しないでください。
 
 ## Adding a new effect
 
@@ -231,16 +230,14 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状 deploy 済の WNS = -0.496 ns (D79 Overdrive realism / footswitch /
-> XADC / 50 MHz DSP island) です。100 MHz audio fabric は +0.532 ns / 0
-> fail で clean、残りの setup fail は 50 MHz DSP island 内の DS-1
-> arithmetic です。これを 0 へ寄せたい場合は、`LowPassFir.hs` の中で
-> 残った深い組合せブロックを register で分け、必要なら cab タップ
-> や reverb BRAM のアドレス経路を pipeline 化してください。1 段に
-> 大きな `case` や 4 段以上の演算を詰めない方針は維持してください
-> (`TIMING_AND_FPGA_NOTES.md` 参照)。ただし D58 / D59 / D60 / D61 v2 の
-> 反省として、WNS 改善だけでは不十分です。safe-bypass の実音確認も
-> deploy gate です。
+> 現状の D117 build は timing-clean です (overall WNS `+0.644 ns`, TNS
+> `0`, WHS `+0.008 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
+> 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
+> `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな
+> `case` や 4 段以上の演算を詰めない方針は維持してください
+> (`TIMING_AND_FPGA_NOTES.md` 参照)。ただし D58-D64 と D109 の反省として、
+> WNS 改善だけでは不十分です。safe-bypass と touched model の実音確認も
+> acceptance gate です。
 
 ## Codec / input debug
 

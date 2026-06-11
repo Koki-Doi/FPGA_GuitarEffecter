@@ -1190,6 +1190,8 @@ class AudioLabOverlay(Overlay):
         # noise_gate_on / noise_gate_threshold so the gate flag bit
         # tracks the suppressor's enabled state and the legacy
         # gate_control.ctrlB stays in sync.
+        rat_preset_on = bool(dist.get("enabled", False)) \
+            and dist.get("pedal") == "rat"
         kwargs = dict(
             noise_gate_on=bool(ns.get("enabled", False)),
             noise_gate_threshold=ns.get("threshold", 35),
@@ -1199,6 +1201,7 @@ class AudioLabOverlay(Overlay):
             overdrive_level=od.get("level", 100),
             overdrive_model=od.get("model", 0),
             distortion_on=bool(dist.get("enabled", False)),
+            rat_on=rat_preset_on,
             amp_on=bool(amp.get("enabled", False)),
             amp_input_gain=amp.get("input_gain", 35),
             amp_bass=amp.get("bass", 50),
@@ -1222,6 +1225,13 @@ class AudioLabOverlay(Overlay):
             reverb_tone=rev.get("tone", 65),
             reverb_mix=rev.get("mix", 0),
         )
+        if rat_preset_on:
+            kwargs.update(
+                rat_drive=dist.get("drive", 20),
+                rat_filter=_cm.rat_filter_from_tone(dist.get("tone", 50)),
+                rat_level=dist.get("level", 35),
+                rat_mix=dist.get("mix", 100),
+            )
         self.set_guitar_effects(**kwargs)
         return self.get_current_pedalboard_state()
 
@@ -1492,8 +1502,18 @@ class AudioLabOverlay(Overlay):
         if 'distortion_pedal_mask' in kwargs:
             s['pedal_mask'] = int(kwargs['distortion_pedal_mask']) & 0x7F
         kwargs['distortion_pedal_mask'] = s['pedal_mask']
-        if s['pedal_mask'] & (1 << self._DIST_PEDAL_BIT['rat']):
+        rat_selected = bool(
+            s['pedal_mask'] & (1 << self._DIST_PEDAL_BIT['rat']))
+        if rat_selected:
             kwargs['rat_on'] = True
+            kwargs.setdefault('rat_drive', s['drive'])
+            kwargs.setdefault('rat_filter',
+                              _cm.rat_filter_from_tone(s['tone']))
+            kwargs.setdefault('rat_level', s['level'])
+            kwargs.setdefault('rat_mix', s['mix'])
+            s['_rat_gate_owned'] = True
+        elif 'distortion_pedal_mask' in kwargs:
+            s['_rat_gate_owned'] = False
         # Overdrive cache state. ``model`` shares overdrive_control.ctrlD
         # with `distTight`; the OD knobs share the rest of the word but
         # land via their own kwargs. Keep ``_od_state`` in sync with
