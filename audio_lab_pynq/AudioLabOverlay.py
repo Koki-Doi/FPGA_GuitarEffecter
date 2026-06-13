@@ -8,6 +8,7 @@ from . import control_maps as _cm
 from . import knob_tapers as _kt
 from .overlay import register_writers as _writers
 from .overlay import model_lookup as _model_lookup
+from .overlay import effect_settings as _settings
 from .effect_defaults import (
     DISTORTION_DEFAULTS as _DISTORTION_DEFAULTS,
     DISTORTION_PEDALS as _DISTORTION_PEDALS,
@@ -649,44 +650,15 @@ class AudioLabOverlay(Overlay):
         to the dedicated GPIO; the legacy ``gate_control.ctrlB`` slot is
         also refreshed for backward compatibility with older bitstreams.
         """
-        s = self._noise_suppressor_state
-        if threshold is not None:
-            s['threshold'] = self._clamp_percent(threshold)
-        if decay is not None:
-            s['decay'] = self._clamp_percent(decay)
-        if damp is not None:
-            s['damp'] = self._clamp_percent(damp)
-        if mode is not None:
-            s['mode'] = self._clamp_range(mode, 0, 255)
-        if enabled is not None:
-            s['enabled'] = bool(enabled)
-        self._apply_noise_suppressor_state_to_word()
-        return self.get_noise_suppressor_settings()
+        return _settings.set_noise_suppressor_settings(
+            self, threshold=threshold, decay=decay, damp=damp,
+            enabled=enabled, mode=mode)
 
     def get_noise_suppressor_settings(self):
         """Return the cached noise-suppressor state plus the byte view
         of every parameter and a pointer to the GPIO that backs it.
         """
-        s = self._noise_suppressor_state
-        threshold_byte = self._noise_threshold_to_u8(s['threshold'])
-        decay_byte = self._percent_to_u8(s['decay'], 255)
-        damp_byte = self._percent_to_u8(s['damp'], 255)
-        mode_byte = int(s['mode']) & 0xFF
-        return {
-            'enabled': bool(s['enabled']),
-            'threshold': s['threshold'],
-            'threshold_byte': threshold_byte,
-            'decay': s['decay'],
-            'decay_byte': decay_byte,
-            'damp': s['damp'],
-            'damp_byte': damp_byte,
-            'mode': mode_byte,
-            'control_word': self._cached_noise_suppressor_word,
-            'reflected_to_fpga': True,
-            'gpio_name': self.NOISE_SUPPRESSOR_GPIO_NAME,
-            'has_gpio': hasattr(self, self.NOISE_SUPPRESSOR_GPIO_NAME),
-            'implementation_status': 'threshold_decay_damp_fpga',
-        }
+        return _settings.get_noise_suppressor_settings(self)
 
     # ---- Compressor public API ------------------------------------------
     #
@@ -734,48 +706,15 @@ class AudioLabOverlay(Overlay):
         ``gate_control``. Unspecified parameters keep their cached
         values. The full 32-bit word is rewritten.
         """
-        s = self._compressor_state
-        if threshold is not None:
-            s['threshold'] = self._clamp_percent(threshold)
-        if ratio is not None:
-            s['ratio'] = self._clamp_percent(ratio)
-        if response is not None:
-            s['response'] = self._clamp_percent(response)
-        if makeup is not None:
-            s['makeup'] = self._clamp_percent(makeup)
-        if enabled is not None:
-            s['enabled'] = bool(enabled)
-        self._apply_compressor_state_to_word()
-        return self.get_compressor_settings()
+        return _settings.set_compressor_settings(
+            self, threshold=threshold, ratio=ratio, response=response,
+            makeup=makeup, enabled=enabled)
 
     def get_compressor_settings(self):
         """Return the cached compressor state plus the byte view of every
         parameter and a pointer to the GPIO that backs it.
         """
-        s = self._compressor_state
-        threshold_byte = _cm.percent_to_u8(s['threshold'], 255)
-        ratio_byte = _cm.percent_to_u8(s['ratio'], 255)
-        response_byte = _cm.percent_to_u8(s['response'], 255)
-        makeup_u7 = self._makeup_to_u7(s['makeup'])
-        enable_makeup_byte = _cm.compressor_enable_makeup_byte(
-            s['enabled'], s['makeup'])
-        return {
-            'enabled': bool(s['enabled']),
-            'threshold': s['threshold'],
-            'threshold_byte': threshold_byte,
-            'ratio': s['ratio'],
-            'ratio_byte': ratio_byte,
-            'response': s['response'],
-            'response_byte': response_byte,
-            'makeup': s['makeup'],
-            'makeup_u7': makeup_u7,
-            'enable_makeup_byte': enable_makeup_byte,
-            'word': self._cached_compressor_word,
-            'reflected_to_fpga': True,
-            'gpio_name': self.COMPRESSOR_GPIO_NAME,
-            'has_gpio': hasattr(self, self.COMPRESSOR_GPIO_NAME),
-            'implementation_status': 'threshold_ratio_response_makeup_fpga',
-        }
+        return _settings.get_compressor_settings(self)
 
     # ---- Wah public API ------------------------------------------------
     #
@@ -868,39 +807,9 @@ class AudioLabOverlay(Overlay):
         change the GPIO bytes. Unspecified parameters keep their
         cached values; the full 32-bit word is rewritten.
         """
-        if position is not None and position_raw is not None:
-            raise ValueError(
-                "set_wah_settings: pass position (percent) OR "
-                "position_raw (byte), not both")
-        s = self._wah_state
-        if position is not None:
-            s['position'] = self._clamp_percent(position)
-            s['position_raw'] = None
-        if position_raw is not None:
-            s['position_raw'] = self._wah_position_raw_byte(position_raw)
-        if q is not None:
-            s['q'] = self._clamp_percent(q)
-        if volume is not None:
-            s['volume'] = self._clamp_percent(volume)
-        if bias is not None:
-            s['bias'] = self._clamp_percent(bias)
-        if enabled is not None:
-            s['enabled'] = bool(enabled)
-        if source is not None:
-            s['source'] = str(source)
-        self._apply_wah_state_to_word()
-        # D76: a standalone set_wah_settings (the FP02M pedal path, the
-        # encoder applier, a notebook) must re-route the AXIS crossbar
-        # when it toggles the Wah enable -- the Wah enable is not in the
-        # gate word, so without this a Wah-only state would stay on
-        # passthrough and never reach the DSP. Only on an explicit enable
-        # toggle, so the 100 Hz position_raw stream does not thrash the
-        # crossbar.
-        if enabled is not None:
-            self._route_effect_chain(
-                XbarSink.headphone,
-                getattr(self, '_cached_gate_word', 0) & 0xFF)
-        return self.get_wah_settings()
+        return _settings.set_wah_settings(
+            self, position=position, q=q, volume=volume, bias=bias,
+            enabled=enabled, source=source, position_raw=position_raw)
 
     def get_wah_settings(self):
         """Return the cached Wah state plus the byte view of every
@@ -913,31 +822,7 @@ class AudioLabOverlay(Overlay):
         written to the GPIO -- equal to ``percent_to_u8(position, 255)``
         when ``position_raw`` is None, or to ``position_raw`` otherwise.
         """
-        s = self._wah_state
-        position_byte = self._wah_position_byte_for_state()
-        q_byte = self._wah_q_byte(s['q'])
-        volume_byte = self._wah_volume_byte(s['volume'])
-        bias_u7 = self._wah_bias_to_u7(s['bias'])
-        enable_bias_byte = _cm.wah_enable_bias_byte(s['enabled'], s['bias'])
-        return {
-            'enabled': bool(s['enabled']),
-            'position': s.get('position', 0),
-            'position_raw': s.get('position_raw'),
-            'position_byte': position_byte,
-            'q': s['q'],
-            'q_byte': q_byte,
-            'volume': s['volume'],
-            'volume_byte': volume_byte,
-            'bias': s['bias'],
-            'bias_u7': bias_u7,
-            'enable_bias_byte': enable_bias_byte,
-            'source': str(s.get('source', 'manual')),
-            'word': self._cached_wah_word,
-            'reflected_to_fpga': True,
-            'gpio_name': self.WAH_GPIO_NAME,
-            'has_gpio': hasattr(self, self.WAH_GPIO_NAME),
-            'implementation_status': 'position_q_volume_bias_fpga_d73',
-        }
+        return _settings.get_wah_settings(self)
 
     # ---- Amp Simulator named models (D55) ------------------------------
     #
