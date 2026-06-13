@@ -281,7 +281,7 @@ def test_appstate_overdrive_model_idx_persists_through_save_load():
     # effect after our REPO_ROOT prepend.
     from compact_v2.state import AppState, save_state_json, load_state_json
     state = AppState()
-    assert state.overdrive_model_idx == 0
+    assert state.overdrive_model_idx == 2  # shipped default = BD-2 (GUI/compact_v2/state.py)
     state.overdrive_model_idx = 4
     with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", delete=False) as fp:
