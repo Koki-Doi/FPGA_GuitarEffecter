@@ -23,6 +23,16 @@ timing-bounded regardless of placement.
 The B/C/E/F source still exists in git history and was proven VHDL-equivalent, so
 re-applying is low-effort.
 
+**2026-06-13 status (refactor sweep):** the DSP items (A-section + G) are
+**blocked on a board bench** right now -- the PYNQ-Z2 is offline (see
+`CURRENT_STATE.md` D119 rollback) and the standing rule is *never accept a DSP
+bit on an equivalence/timing proof alone*, so none of F/B/C/E/G can be merged
+until the board is reachable and ear-benched. Of the board-independent items:
+**I1 is already DONE** (the `hw/ip/clash/Makefile` already lists
+`AUDIO_LAB_SRCS` as a prerequisite of `vhdl/%`, has a `regen` phony that
+`rm -rf`s the VHDL first, and bakes in `-package-id`), and a first **P1**
+increment landed (`overlay/model_lookup.py`). See the per-row notes below.
+
 ## Verification protocol (every DSP refactor)
 
 A behaviour-preserving Clash refactor still changes the bit md5 (renamed wires
@@ -59,15 +69,15 @@ One refactor per feature branch; merge `--no-ff` into `main`.
 
 | ID | What | Files | Value | Notes |
 | --- | --- | --- | --- | --- |
-| **P1** | `AudioLabOverlay.py` is the largest module. Progress: GPIO word builders are centralized in `control_maps.py`, and the register-write helpers for distortion / overdrive / noise suppressor / compressor / wah / full-chain writes are split into `audio_lab_pynq/overlay/register_writers.py` with the class methods left as compatibility delegates (deployed Python-only, D115). Next: continue extracting per-effect public setter groups into `overlay/` modules so the class becomes a thinner facade. | `audio_lab_pynq/AudioLabOverlay.py`, `audio_lab_pynq/overlay/` | High (most-touched API) | Keep the public method surface + snapshot-test byte output identical. |
-| **P2** | `GUI/compact_v2/renderer.py` (1225 lines) -> split the per-panel render functions (header / chain / fx grid) into `renderer/` modules behind the existing re-export shim. | `GUI/compact_v2/renderer.py` | Med | Pure code-move; the compact_v2 split (D26) already established the pattern. |
-| **P3** | Review `control_maps.py` (426) + `effect_presets.py` (400) for overlap with `effect_defaults.py` / `constants.py` (the A single-source work) -- fold any remaining duplicated scale/range constants into the single source. | `control_maps.py`, `effect_presets.py`, `effect_defaults.py`, `constants.py` | Med | Extends refactor A. |
+| **P1** | `AudioLabOverlay.py` is the largest module. Progress: GPIO word builders are centralized in `control_maps.py`; the register-write helpers for distortion / overdrive / noise suppressor / compressor / wah / full-chain writes are split into `audio_lab_pynq/overlay/register_writers.py` (delegates, D115); and the overdrive / pedal / amp **model name->index resolvers** are split into `audio_lab_pynq/overlay/model_lookup.py` (delegates, 2026-06-13 -- class methods keep their `cls`-based constant resolution so subclass/override semantics + byte output are identical; full suite unchanged + behaviour spot-checked). Next: continue extracting per-effect **public setter groups** (`set_*_settings` / `get_*_settings`) into `overlay/` modules so the class becomes a thinner facade. | `audio_lab_pynq/AudioLabOverlay.py`, `audio_lab_pynq/overlay/` | High (most-touched API) | Keep the public method surface + snapshot-test byte output identical. Setter groups are stateful (mutate `self._*_state`, call `_apply_*`) so they are a notch riskier than the pure resolvers -- do one effect per increment, lean on `tests/test_overlay_controls.py`. |
+| **P2** | `GUI/compact_v2/renderer.py` (1225 -> 1048 lines) -> split the per-panel render functions (header / chain / fx grid) into `renderer/` modules behind the existing re-export shim. **Progress (2026-06-13):** the three side-effect-free leaves are now extracted into `_render_compat.py` / `_render_fonts.py` / `_render_cache.py` (re-imported by `renderer.py`, so `from compact_v2.renderer import X` is unchanged); render-equivalence verified byte-identical over 60 frames (states x variants x themes). The per-panel split (the headline item) still needs the shared-cache holder + an on-LCD bench. | `GUI/compact_v2/renderer.py` | Med | **NOT a pure code-move (corrected 2026-06-13).** The module-level `_ACTIVE_RENDER_CACHE` global is *read* by the draw primitives (`draw_text` / `draw_smooth_text` / `vertical_gradient` / `_pynq_static_mode`) and *written* (`global ... = cache`) by the two frame builders; split them across modules and the `global` rebind stops being shared. A clean split therefore needs a tiny shared-cache holder (accessor get/set) OR must keep every global-touching function in one submodule. Truly side-effect-free leaves that ARE pure moves: `_RandomStateCompat`/`_rng`, `RenderCache`+`make_pynq_static_render_cache`+the `state_*_signature` helpers, and the font cache (`_base_font`/`_smooth_font`/`_measure`). Also: the renderer only runs on the board HDMI path (Pillow 5.1 / NumPy 1.16 compat shims) -- correctness is only pixel-snapshot-verifiable off-board, so bench it on the 5-inch LCD after any split. |
+| **P3** | Fold remaining duplicated scale/range constants into the single source (extends A). | `control_maps.py`, `effect_presets.py`, `effect_defaults.py`, `constants.py` | Low (re-scoped 2026-06-13) | After A there is little in-package scale/range duplication left to fold. NB `SAFE_BYPASS_DEFAULTS` deliberately differs from the per-effect default dicts (it zeroes drive/decay/gain for a silent panic) -- do NOT "dedup" it against them. The real remaining duplication is the **model-name tables** (`ts9`/`jc_120`/... ) copied across `GUI/compact_v2/knobs.py` <-> `effect_defaults.py` <-> `audio_lab_pynq/hdmi_state/{pedals,amps,overdrives}.py` <-> `effect_presets.py`; unifying those couples the GUI, package, and hdmi_state layers (which are intentionally separable) so it is a layering decision, **not** a low-risk fold. |
 
 ## C. Build / infra
 
 | ID | What | Value | Notes |
 | --- | --- | --- | --- |
-| **I1** | The clash regen mtime trap (editing an imported `AudioLab/*.hs` does NOT make `vhdl/LowPassFir` rebuild because the Makefile rule only depends on `src/LowPassFir.hs`). Add the `AudioLab/**.hs` files as prerequisites, or a `regen` phony that always `rm -rf vhdl/LowPassFir` first, and bake in the `-package-id` so the bare `make` works. | High (this has silently shipped stale logic before -- memory `project_clash_vhdl_regen_mtime_trap`) | `hw/ip/clash/Makefile`. |
+| **I1** | ~~The clash regen mtime trap (editing an imported `AudioLab/*.hs` does NOT make `vhdl/LowPassFir` rebuild because the Makefile rule only depends on `src/LowPassFir.hs`). Add the `AudioLab/**.hs` files as prerequisites, or a `regen` phony that always `rm -rf vhdl/LowPassFir` first, and bake in the `-package-id` so the bare `make` works.~~ **DONE** (verified 2026-06-13). `hw/ip/clash/Makefile` now sets `AUDIO_LAB_SRCS := $(shell find ./src/AudioLab -name '*.hs')`, lists it as a prerequisite of the `vhdl/%` rule, provides a `regen` phony (`rm -rf $(VHDLS); $(MAKE) all`), and bakes `-package-id` into `CLASH_FLAGS` so a bare `make` works. The mtime-trap memory still applies if anyone hand-`rm`s `component.xml` alone -- use `make regen` to be safe. | High (this has silently shipped stale logic before -- memory `project_clash_vhdl_regen_mtime_trap`) | `hw/ip/clash/Makefile`. |
 
 ## Suggested sequencing
 
@@ -75,8 +85,9 @@ One refactor per feature branch; merge `--no-ff` into `main`.
 2. **C** then **B** then **E** (kernel dedups) on top of the split files.
 3. **G** (per-model voicing record) once the amp file is split -- pays off every
    future voicing change.
-4. **P1 / P2** Python splits in parallel (no bench needed).
-5. **I1** Makefile fix anytime (low risk, prevents stale-logic bugs).
+4. **P1 / P2** Python splits in parallel (no bench needed -- but see the P2
+   shared-global caveat; P2 still wants an on-LCD bench).
+5. ~~**I1** Makefile fix~~ -- **DONE** (2026-06-13).
 6. **D / B2** (Pipeline Signal-level) last, only with a timing-summary review.
 
 Every DSP item (A-section + G) goes through the verification protocol above; the
