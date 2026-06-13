@@ -18,16 +18,10 @@ gateOpenThreshold :: Sample -> Sample
 gateOpenThreshold threshold =
   satWide (resize threshold + (resize threshold `shiftR` 1) + 65_536)
 gateEnvNext :: Sample -> Maybe Frame -> Sample
-gateEnvNext env Nothing = env
-gateEnvNext env (Just f)
- | not (flag0 (fGate f)) = 0
-  | level > env = level
-  | env > decay = env - decay
- | otherwise = 0
+gateEnvNext = peakFollower (flag0 . fGate) monoWet decay
  where
-  level = monoWet f
   -- 96 kHz: >>9 (was >>8) so the exponential release TIME is unchanged at 2x fs.
-  decay = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
+  decay env _ = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
 
 gateOpenNext :: Bool -> Sample -> Maybe Frame -> Bool
 gateOpenNext open _ Nothing = open
@@ -121,16 +115,10 @@ nsAttackStep = 256
 -- the new section feels familiar). Bypassed (env -> 0) when the
 -- noise_gate_on flag is clear so a re-enable starts from a clean state.
 nsEnvNext :: Sample -> Maybe Frame -> Sample
-nsEnvNext env Nothing = env
-nsEnvNext env (Just f)
-  | not (flag0 (fGate f)) = 0
-  | level > env           = level
-  | env > releaseStep     = env - releaseStep
-  | otherwise             = 0
+nsEnvNext = peakFollower (flag0 . fGate) maxAbsFrame release
  where
-  level       = maxAbsFrame f
   -- 96 kHz: >>9 (was >>8) keeps the exponential release TIME constant at 2x fs.
-  releaseStep = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
+  release env _ = resize (((resize env :: Signed 25) `shiftR` 9) + 1) :: Sample
 
 -- Stage 2 target gain: open above threshold, damp-derived closed gain
 -- below. Lives entirely inside the gain-smoother register; not its own

@@ -63,23 +63,15 @@ ampCharForModel idx = case idx of
 -- post-clip LPF corner Hz per model is unchanged when fs doubles. baseAlpha is
 -- now 80+(char>>2) (was 128+...); the per-model darken values absorb the
 -- difference between that base and each model's bilinear-target alpha.
--- D110: halved across the board. The amp input was a differentiator (dead-pole
--- bug, D109) that added a strong treble tilt the whole D55-D97 voicing leaned
--- on; with the input now a flat HP, these post-clip high-cuts over-darken (tube
--- models read "muffled"). Reduced toward the real-amp balance so the highs
--- survive. (old D97 96 kHz values noted.)
--- D118: de-muffle pass after D113 bench feedback. Keep the model spread, but
--- back off the dark Orange / modern-HG trims so the D112 top-end recovery is not
--- masked again.
 ampModelDarken :: Unsigned 3 -> Unsigned 8
 ampModelDarken idx = case idx of
-  0 ->  1    -- JC-120: bright SS feel (D111: 3->1)
-  1 ->  1    -- Twin: glassy blackface top
-  2 ->  2    -- AC30: upper-mid chime
-  3 ->  6    -- Rockerverb: still round, no longer blanket-dark
-  4 ->  3    -- JCM800: keep upper-mid bark
-  5 ->  8    -- TriAmp Mk3: modern fizz control without dulling pick attack
-  _ ->  1
+  0 ->  6    -- JC-120: bright SS feel (48k: 0)
+  1 -> 12    -- Twin: bright but slightly rounded (48k: 3)
+  2 -> 17    -- AC30: keep upper-mid chime (48k: 3)
+  3 -> 31    -- Rockerverb: darker low-mid thickness (48k: 18)
+  4 -> 25    -- JCM800: tame fizz, keep upper-mid bark (48k: 10)
+  5 -> 39    -- TriAmp Mk3: tight modern fizz control (48k: 26)
+  _ ->  6
 
 -- | Per-model extra darken to add only in Drive mode. Stacked on top of
 -- ``ampModelDarken`` so each model's Drive-mode tone is darker than
@@ -89,13 +81,13 @@ ampModelDarken idx = case idx of
 -- 96 kHz: drive-mode extra darken halved (bilinear) per model (48k values noted).
 ampPreLpfDriveDarken :: Unsigned 3 -> Unsigned 8
 ampPreLpfDriveDarken idx = case idx of
-  0 ->  3    -- JC-120: only a light safety guard
-  1 ->  4    -- Twin: keep sparkle through light breakup
-  2 ->  6    -- AC30: leave more chime in Drive
-  3 -> 12    -- Rockerverb: thick saturation without closing the cab blanket
-  4 ->  9    -- JCM800: brighter bark than the modern models
-  5 -> 16    -- TriAmp Mk3: tight modern HG, but less muffled than D113
-  _ ->  3
+  0 ->  4    -- JC-120: light fizz guard (48k: 6)
+  1 ->  6    -- Twin: glassy tube breakup (48k: 8)
+  2 -> 10    -- AC30: jangly crunch (48k: 12)
+  3 -> 16    -- Rockerverb: thick saturation without excess fizz (48k: 20)
+  4 -> 16    -- JCM800: classic-rock drive, controlled top (48k: 20)
+  5 -> 23    -- TriAmp Mk3: modern HG, kill fizz (48k: 30)
+  _ ->  4
 
 -- | Per-model second-stage gain bonus in Drive mode.
 -- D69: raised only in Drive mode so the second clipper gets a real
@@ -103,13 +95,13 @@ ampPreLpfDriveDarken idx = case idx of
 -- per-model adder (no DSP cost).
 ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
 ampSecondStageDriveBonus idx = case idx of
-  0 -> 18    -- JC-120: keep the clean channel mostly clean
-  1 -> 26    -- Twin: breakup / light OD
-  2 -> 48    -- AC30: earlier class-A-style crunch
-  3 -> 68    -- Rockerverb: thick EL34 push
-  4 -> 82    -- JCM800: classic-rock cascaded crunch
-  5 -> 92    -- TriAmp Mk3: strongest modern HG sustain, still below hard runaway
-  _ -> 18
+  0 -> 22    -- JC-120: hard-edged light drive
+  1 -> 30    -- Twin: breakup / light OD
+  2 -> 42    -- AC30: clear crunch
+  3 -> 62    -- Rockerverb: thick push
+  4 -> 74    -- JCM800: classic-rock cascaded crunch
+  5 -> 88    -- TriAmp Mk3: strongest modern HG sustain
+  _ -> 22
 
 -- | Per-model positive-side asym-clip knee delta in Drive mode.
 -- Signed 25 fits the existing arithmetic in ``ampAsymClip``.
@@ -127,13 +119,13 @@ ampSecondStageDriveBonus idx = case idx of
 -- D55/D68 (83), while still giving a stronger Drive-mode knee shrink.
 ampDrivePosDelta :: Unsigned 3 -> Signed 25
 ampDrivePosDelta idx = case idx of
-  0 ->  14_000   -- JC-120       : high-headroom solid-state
-  1 ->  76_000   -- Twin Reverb  : clean-biased glassy breakup
-  2 -> 250_000   -- AC30         : earlier chime breakup
-  3 -> 410_000   -- Rockerverb   : thick dirty-channel drive
-  4 -> 505_000   -- JCM800       : aggressive classic-rock bite
-  5 -> 680_000   -- TriAmp Mk3   : tight modern high gain
-  _ ->  14_000
+  0 ->  16_200   -- JC-120       : 18 * 900
+  1 ->  85_800   -- Twin Reverb  : 78 * 1100
+  2 -> 232_400   -- AC30         : 166 * 1400
+  3 -> 374_400   -- Rockerverb   : 208 * 1800
+  4 -> 462_000   -- JCM800       : 220 * 2100
+  5 -> 615_000   -- TriAmp Mk3   : 246 * 2500
+  _ ->  16_200
 
 -- | Per-model negative-side asym-clip knee delta in Drive mode.
 -- Slightly smaller than ``ampDrivePosDelta`` so the asymmetric
@@ -141,13 +133,13 @@ ampDrivePosDelta idx = case idx of
 -- preserved.
 ampDriveNegDelta :: Unsigned 3 -> Signed 25
 ampDriveNegDelta idx = case idx of
-  0 ->  11_500   -- JC-120       : high-headroom solid-state
-  1 ->  64_000   -- Twin Reverb  : clean-biased glassy breakup
-  2 -> 215_000   -- AC30         : earlier chime breakup
-  3 -> 355_000   -- Rockerverb   : thick dirty-channel drive
-  4 -> 440_000   -- JCM800       : aggressive classic-rock bite
-  5 -> 590_000   -- TriAmp Mk3   : tight modern high gain
-  _ ->  11_500
+  0 ->  13_500   -- JC-120       : 18 * 750
+  1 ->  74_100   -- Twin Reverb  : 78 * 950
+  2 -> 199_200   -- AC30         : 166 * 1200
+  3 -> 322_400   -- Rockerverb   : 208 * 1550
+  4 -> 407_000   -- JCM800       : 220 * 1850
+  5 -> 541_200   -- TriAmp Mk3   : 246 * 2200
+  _ ->  13_500
 
 ampHighpassFrame :: Sample -> Sample -> Frame -> Frame
 ampHighpassFrame prevIn prevOut f =
@@ -155,14 +147,9 @@ ampHighpassFrame prevIn prevOut f =
  where
   on = flag6 (fGate f)
   x = monoSample f
-  -- D109: live one-pole HP feedback. The old form `prevOut * 509 `shiftR` 9`
-  -- parsed (shiftR binds tighter than *) as `prevOut * (509>>9)` = prevOut*0,
-  -- i.e. a dead pole => pure first difference => NO bass into the tone stack
-  -- (the documented amp bass-light bug). Parenthesise so the pole is live and
-  -- pick coef 508/512 (a~=0.9922 => ~120 Hz HP corner @96 kHz): passes more
-  -- lows than D101's 502/512 (~298 Hz) without D100's ~90 Hz bass bloom.
-  highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + (((resize prevOut :: Wide) * 508) `shiftR` 9))
+  -- coef 509 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
+  -- preserved bit-exact; the stage is effectively x - prevIn).
+  highpass x prevIn prevOut = onePoleHighpass 509 9 x prevIn prevOut
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =
@@ -205,9 +192,7 @@ ampEmphShift :: Int
 ampEmphShift = 4       -- 96 kHz: +1 (was 3) keeps the ~a-few-kHz corner at 2x fs
 
 ampEmphAmount :: Int
-ampEmphAmount = 2      -- D111: 1->2, cut/restore only 1/4 (was 1/2). With the clip
-                      -- knees raised there is less aliasing to suppress, and the
-                      -- aggressive pre-emph HF cut was dulling the attack into the clip.
+ampEmphAmount = 1      -- cut/restore 1/2^amount of the HF band (half)
 
 ampPreEmphFrame :: Sample -> Frame -> Frame
 ampPreEmphFrame prevLp f =
@@ -215,7 +200,7 @@ ampPreEmphFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoWet f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampEmphShift)
+  lp = onePoleShift ampEmphShift prevLp x
   h = satWide (resize x - resize lp :: Wide)
   xpre = satWide (resize x - (resize h `shiftR` ampEmphAmount) :: Wide)
 
@@ -225,7 +210,7 @@ ampDeEmphFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoWet f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampEmphShift)
+  lp = onePoleShift ampEmphShift prevLp x
   h = satWide (resize x - resize lp :: Wide)
   xpost = satWide (resize x + (resize h `shiftR` ampEmphAmount) :: Wide)
 
@@ -269,12 +254,8 @@ ampAsymClip modelIdx intensity drive hyst x
   posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
   negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
-  -- D111: raise base knees (4.9M->5.5M / 4.35M->4.9M) so the first tube clip is
-  -- gentler and keeps headroom -- with the always-on power/master/midsat clips
-  -- also raised, the chain stops cascade-compressing (the "amp-sim squash" +
-  -- dull transients). The per-model ch shrink still differentiates the models.
-  posKnee = resize (5_500_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
-  negKnee = resize (4_900_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
+  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
+  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
 
@@ -321,10 +302,9 @@ ampPreLowpassFrame prev f =
   idx = ampModelIdxF f
   drive = ampDriveModeF f
   charByte = ampCharForModel idx
-  -- D112: base alpha 80 -> 140 (post-clip LPF corner ~6 kHz -> ~12 kHz). This
-  -- always-on lowpass was the dominant HF ceiling capping the amp's "air"/top;
-  -- with the clip knees now open (less fizz to tame) the top can extend.
-  baseAlpha = 140 + (charByte `shiftR` 2)
+  -- 96 kHz: base alpha 80 + (char >> 2) (was 128 + ...); the recomputed
+  -- ampModelDarken / ampPreLpfDriveDarken tables hold each model's LPF corner Hz.
+  baseAlpha = 80 + (charByte `shiftR` 2)
   -- Per-model post-clip darken (Clean-mode baseline).
   modelDarken = ampModelDarken idx
   -- Per-model Drive-mode extra darken (absorbs fizz from the harder clip).
@@ -371,15 +351,13 @@ ampSecondStageFrame prevOut f =
 -- The existing 3-band difference EQ (ampToneFilterFrame / ampToneBandFrame
 -- below) can tilt the bands but cannot make a resonant scoop/peak, so amp
 -- families that are defined by a resonant stack (Fender blackface mid scoop,
--- Vox AC30 chime, Orange low-mid push, Marshall mid, modern high-gain scoop)
--- all sound similar. This ONE shared peaking
+-- Vox AC30 chime, Marshall mid) all sound similar. This ONE shared peaking
 -- biquad, with coefficients muxed by ampModelIdxF, adds that resonant shape.
 -- Filled families (all hand-designed target curves, NOT schematic tables,
 -- D7/D45): Fender blackface mid scoop (JC-120 idx 0 + Twin idx 1, -5 dB @
--- 400 Hz, D83), Vox AC30 chime (idx 2, +4 dB @ 2200 Hz, D84), Rockerverb
--- low-mid push (idx 3, +1.5 dB @ 500 Hz, D118), Marshall JCM800 mid (idx 4,
--- +4 dB @ 650 Hz, D84), and TriAmp modern mid scoop (idx 5, -2 dB @ 750 Hz,
--- D118). All
+-- 400 Hz, D83), Vox AC30 chime (idx 2, +4 dB @ 2200 Hz, D84), Marshall JCM800
+-- mid (idx 4, +4 dB @ 650 Hz, D84). Rockerverb (idx 3) and TriAmp (idx 5) stay
+-- FLAT (b0 = 2^14, rest 0 -> exact unity passthrough, byte-identical). All
 -- families share this ONE biquad via the coefficient mux -- do NOT instantiate
 -- a second biquad (D58 lesson). Pipeline-split like D82 (feedforward
 -- precomputed a stage earlier, recursive stage closes the loop with two
@@ -391,20 +369,16 @@ ampScoopFeedforwardCoeffs idx = case idx of
   0 -> (16210, -31960, 15761)   -- JC-120 : Fender scoop -5 dB @ 400 Hz (48k:16044/-31169/15169)
   1 -> (16210, -31960, 15761)   -- Twin   : blackface mid scoop -5 dB @ 400 Hz
   2 -> (16901, -30680, 14101)   -- AC30   : Vox chime +4 dB @ 2200 Hz   (48k:17355/-28234/12091)
-  3 -> (16441, -32147, 15724)   -- Rockerverb: Orange low-mid push +1.5 dB @ 500 Hz
   4 -> (16582, -32061, 15508)   -- JCM800 : Marshall mid +4 dB @ 650 Hz (48k:16772/-31328/14670)
-  5 -> (16272, -31640, 15406)   -- TriAmp : modern mid scoop -2 dB @ 750 Hz
-  _ -> (16384, 0, 0)            -- reserved : flat (unity, b0 = 2^14)
+  _ -> (16384, 0, 0)            -- Rockerverb(3)/TriAmp(5) : flat (unity, b0 = 2^14)
 
 ampScoopFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 ampScoopFeedbackCoeffs idx = case idx of
   0 -> (-31960, 15587)          -- (48k: -31169/14828)
   1 -> (-31960, 15587)
   2 -> (-30680, 14617)          -- (48k: -28234/13062)
-  3 -> (-32147, 15781)
   4 -> (-32061, 15706)          -- (48k: -31328/15057)
-  5 -> (-31640, 15294)
-  _ -> (0, 0)                   -- reserved : flat (no feedback)
+  _ -> (0, 0)                   -- Rockerverb(3)/TriAmp(5) : flat (no feedback)
 
 ampToneScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 ampToneScoopFeedforwardFrame x1 x2 f =
@@ -434,9 +408,9 @@ ampToneFilterFrame prevLow prevHighLp f =
     }
  where
   x = monoWet f
-  -- 96 kHz: +1 shift (>>6 / >>3) keeps the tone-stack crossover corners.
-  low = prevLow + resize (((resize x - resize prevLow) :: Signed 25) `shiftR` 6)
-  highLp = prevHighLp + resize (((resize x - resize prevHighLp) :: Signed 25) `shiftR` 3)
+  -- 96 kHz: shift 6 / 3 keeps the tone-stack crossover corners.
+  low = onePoleShift 6 prevLow x
+  highLp = onePoleShift 3 prevHighLp x
 
 ampToneBandFrame :: Frame -> Frame
 ampToneBandFrame f =
@@ -456,19 +430,16 @@ ampToneGain x = 64 + (x `shiftR` 1)
 ampTrebleGain :: Unsigned 3 -> Unsigned 8 -> Unsigned 8
 ampTrebleGain idx x = base - modelTrim
  where
-  -- D112: full treble extension (was 64 + ((x - x>>3 - x>>4)>>1), which shaved
-  -- the 8..16 kHz top). Now matches the low/mid band gain (ampToneGain) so the
-  -- high-frequency upper limit is raised -- the requested "more air / cut".
-  base = 64 + (x `shiftR` 1)
-  -- D111: trims cut to near-zero. The differentiator input (D109) is gone, so
-  -- any treble trim just muffles. Keep tiny per-model character only.
+  -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
+  -- much raw 8..16 kHz fizz when TREBLE is near 100.
+  base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
-    1 ->  0                 -- Twin    : full glassy top
-    2 ->  0                 -- AC30    : full chime
-    3 ->  1                 -- Rockerv : rounded Orange top, less muffled
-    4 ->  0                 -- JCM800  : full bark / cut
-    5 ->  2                 -- TriAmp  : controlled modern top
+    1 ->  2                 -- Twin    : glassy, not piercing
+    2 ->  2                 -- AC30    : keep chime
+    3 ->  9                 -- Rockerv : rounded
+    4 ->  8                 -- JCM800  : bark, slight trim
+    5 -> 14                 -- TriAmp  : controlled high
     _ ->  0
 
 ampToneProductsFrame :: Frame -> Frame
@@ -494,10 +465,7 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  -- D111: 3.4M -> 6.0M. This always-on "power-amp" clip was squashing every
-  -- model (incl. JC-120 clean) at ~40 % FS; raised to a gentle safety ceiling
-  -- so the amp keeps dynamics/top instead of constant compression.
-  setMonoWet (if on then softClipK 6_000_000 (monoWet f) else monoSample f) f
+  setMonoWet (if on then softClipK 3_400_000 (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
 
@@ -512,13 +480,13 @@ ampResPresenceFilterFrame prevRes prevPresence f =
  where
   x = monoWet f
   -- Slow lowpass approximates resonance around the speaker low-end region.
-  -- 96 kHz: +1 shift (>>9 / >>4) keeps the resonance / presence corners.
-  res = prevRes + resize (((resize x - resize prevRes) :: Signed 25) `shiftR` 9)
-  presenceLp = prevPresence + resize (((resize x - resize prevPresence) :: Signed 25) `shiftR` 4)
+  -- 96 kHz: shift 9 / 4 keeps the resonance / presence corners.
+  res = onePoleShift 9 prevRes x
+  presenceLp = onePoleShift 4 prevPresence x
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  setMonoWet (if on then softClipK 5_500_000 wet else monoSample f) f  -- D111: 3.4M->5.5M
+  setMonoWet (if on then softClipK 3_400_000 wet else monoSample f) f
  where
   on = flag6 (fGate f)
   wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
@@ -547,11 +515,11 @@ ampResPresenceProductsFrame f =
   -- shaves the most.
   presenceTrim = case idx of
     0 -> 0 :: Unsigned 8         -- JC-120  : full
-    1 -> presenceByte `shiftR` 6 -- Twin    : glassy but controlled
+    1 -> presenceByte `shiftR` 5 -- Twin    : glassy but controlled
     2 -> presenceByte `shiftR` 6 -- AC30    : jangly presence
-    3 -> presenceByte `shiftR` 5 -- Rockerv : still thicker, but clearer
-    4 -> presenceByte `shiftR` 6 -- JCM800  : stronger bite/presence
-    5 -> presenceByte `shiftR` 5 -- TriAmp  : modern voicing without over-trim
+    3 -> presenceByte `shiftR` 3 -- Rockerv : darker and thicker
+    4 -> presenceByte `shiftR` 4 -- JCM800  : tight low + strong presence trim
+    5 -> presenceByte `shiftR` 3 -- TriAmp  : maximum trim, modern voicing
     _ -> 0
   high = satWide (resize (monoWet f) - resize (monoEqHighLp f))
 
@@ -571,26 +539,33 @@ ampSagReleaseStep :: Sample
 ampSagReleaseStep = 512
 
 ampSagEnvNext :: Sample -> Maybe Frame -> Sample
-ampSagEnvNext env Nothing = env
-ampSagEnvNext env (Just f)
-  | not (flag6 (fGate f))     = 0
-  | level > env               = level
-  | env > ampSagReleaseStep   = env - ampSagReleaseStep
-  | otherwise                 = 0
+ampSagEnvNext = peakFollower (flag6 . fGate) level (\_ _ -> ampSagReleaseStep)
  where
-  level = abs24 (monoWet f)
+  level f = abs24 (monoWet f)
 
 ampMasterFrame :: Sample -> Frame -> Frame
-ampMasterFrame _env f =
+ampMasterFrame env f =
   setMonoSample (if on then out else monoSample f) f
  where
   on = flag6 (fGate f)
   level = ctrlB (fAmp f)
-  -- D119: disable the dynamic power-sag master modulation. The user reported
-  -- Amp ON volume pumping on tube models, while JC-120 was stable; that exactly
-  -- matches the old sag path, which was disabled only for idx 0. Keep the fixed
-  -- master ceiling but make level stable for every model.
-  out = softClipK 4_500_000 (satShift7 (mulU8 (monoWet f) level))  -- D112: 5.5M->4.5M (protective ceiling so JC-120 clean doesn't overflow satShift7)
+  idx = ampModelIdxF f
+  -- Power-amp sag: loud passages pull the master level down a touch, then it
+  -- recovers as the envelope releases. Bounded to at most half the level (no
+  -- choke) and DISABLED for JC-120 (idx 0, solid-state = stiff supply, no
+  -- sag). Reuses the existing master multiply -> no new DSP. sagRaw takes bits
+  -- 22..17 of the (non-negative) envelope = a 0..63 magnitude.
+  sagRaw0 = resize (unpack (slice d22 d17 (pack env)) :: Unsigned 6) :: Unsigned 8
+  -- Per-model sag depth. AC30 (idx 2) is class-A with cathode-bias sag and
+  -- early compression, so its supply sags ~1.5x deeper than the other tube
+  -- amps (shift+add, no DSP). Every other model keeps sagRaw0 byte-for-byte.
+  sagRaw = case idx of
+    2 -> sagRaw0 + (sagRaw0 `shiftR` 1)   -- AC30: deeper class-A sag
+    _ -> sagRaw0
+  sagCap = level `shiftR` 1
+  sagByte = if idx == 0 then 0 else min sagRaw sagCap
+  effLevel = level - sagByte
+  out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) effLevel))
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
 -- A real tube amp's output transformer is a big part of "amp warmth" that the
@@ -616,7 +591,7 @@ ampTransformerLfShift :: Int
 ampTransformerLfShift = 7      -- 96 kHz: +1 (was 6) keeps the ~120 Hz LF split corner
 
 ampTransformerKnee :: Sample
-ampTransformerKnee = 6_700_000 -- D118: less LF bloom/compression so chords clear up
+ampTransformerKnee = 5_200_000 -- LF core-saturation knee (loud lows bloom/compress)
 
 ampTransformerFrame :: Sample -> Frame -> Frame
 ampTransformerFrame prevLp f =
@@ -624,7 +599,7 @@ ampTransformerFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerLfShift)
+  lp = onePoleShift ampTransformerLfShift prevLp x
   high = satWide (resize x - resize lp :: Wide)
   lowSat = softClipK ampTransformerKnee lp
   out = satWide (resize lowSat + resize high :: Wide)
@@ -643,8 +618,7 @@ ampTransformerHfShift :: Int
 ampTransformerHfShift = 2      -- 96 kHz: +1 (was 1) keeps the ~3.8 kHz HF corner
 
 ampTransformerHfDroop :: Int
-ampTransformerHfDroop = 6      -- D118: D113 softness was still too dark on bench.
-                              -- Keep only a very small iron rolloff.
+ampTransformerHfDroop = 3      -- subtract 1/2^n of the HF band (gentle ~-1.2 dB shelf)
 
 ampTransformerHfFrame :: Sample -> Frame -> Frame
 ampTransformerHfFrame prevLp f =
@@ -652,7 +626,7 @@ ampTransformerHfFrame prevLp f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  lp = prevLp + resize (((resize x - resize prevLp) :: Signed 25) `shiftR` ampTransformerHfShift)
+  lp = onePoleShift ampTransformerHfShift prevLp x
   h = satWide (resize x - resize lp :: Wide)            -- HF band
   out = satWide (resize x - (resize h `shiftR` ampTransformerHfDroop) :: Wide)
 
@@ -672,14 +646,13 @@ ampXfmrResFrame x1 x2 y1 y2 f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  -- 96 kHz RBJ coeffs (110 Hz, Q 0.8, +1 dB); D118 halves the D97/D113 +2 dB
-  -- bump so transformer warmth does not accumulate as mud before the cab.
+  -- 96 kHz RBJ coeffs (110 Hz, Q 0.8, +2 dB); was 16418/-32504/16090/32504/16123 @48k.
   acc =
-    mulS16 x 16392
-      + mulS16 x1 (-32629)
-      + mulS16 x2 16237
-      + mulS16 y1 32629
-      - mulS16 y2 16245 :: Wide
+    mulS16 x 16401
+      + mulS16 x1 (-32636)
+      + mulS16 x2 16236
+      + mulS16 y1 32636
+      - mulS16 y2 16253 :: Wide
   y = satShift14 acc
 
 -- Multiband (3-band) mid-focused saturation (D97, digital-sound #12). The D93
@@ -701,7 +674,7 @@ amp3BandHighShift :: Int
 amp3BandHighShift = 3     -- 96 kHz: +1 (was 2) keeps the ~1.9 kHz mid/high split
 
 ampMidSatKnee :: Sample
-ampMidSatKnee = 6_800_000 -- D118: less mid-band compression to open pick attack
+ampMidSatKnee = 4_000_000 -- mid-band grind knee (lower = more mid saturation)
 
 ampMultibandSatFrame :: Sample -> Sample -> Frame -> Frame
 ampMultibandSatFrame prevLp1 prevLp2 f =
@@ -710,8 +683,8 @@ ampMultibandSatFrame prevLp1 prevLp2 f =
  where
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
-  lp1 = prevLp1 + resize (((resize x - resize prevLp1) :: Signed 25) `shiftR` amp3BandLowShift)
-  lp2 = prevLp2 + resize (((resize x - resize prevLp2) :: Signed 25) `shiftR` amp3BandHighShift)
+  lp1 = onePoleShift amp3BandLowShift prevLp1 x
+  lp2 = onePoleShift amp3BandHighShift prevLp2 x
   low = lp1
   mid = satWide (resize lp2 - resize lp1 :: Wide)
   high = satWide (resize x - resize lp2 :: Wide)

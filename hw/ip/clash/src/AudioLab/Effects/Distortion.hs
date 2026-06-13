@@ -112,7 +112,7 @@ cleanBoostLevelFrame f =
   level = ctrlB (fDist f)
   afterLevel = satShift7 (mulU8 (monoSample f) level)
   -- High safety knee so Clean Boost only catches exceptional peaks.
-  safetyKnee = 4_050_000 :: Sample
+  safetyKnee = 3_800_000 :: Sample
 
 -- ---- tube_screamer (5 stages: HPF, mul, clip, post-LPF, level) -------
 
@@ -176,8 +176,8 @@ tubeScreamerClipFrame f =
   on = tubeScreamerOn f
   boosted = satShift8 (fAccL f)
   -- Near-symmetric soft knees keep the TS smoother than DS-1.
-  kneeP = 2_900_000 :: Sample
-  kneeN = 2_750_000 :: Sample
+  kneeP = 3_000_000 :: Sample
+  kneeN = 2_850_000 :: Sample
 
 tubeScreamerPostLpfFrame :: Sample -> Frame -> Frame
 tubeScreamerPostLpfFrame prevLp f =
@@ -223,7 +223,7 @@ metalMulFrame f =
   drive = ctrlC (fDist f)
   -- Higher drive within the existing Q12 gain path; threshold and LPF
   -- below keep the result aggressive without fizzing out.
-  gain = resize (768 + (resize drive * 12 :: Unsigned 12)) :: Unsigned 12
+  gain = resize (768 + (resize drive * 13 :: Unsigned 12)) :: Unsigned 12
 
 -- 4x oversampled hard clip (realism item 2 / R5) for Metal MT-2, the worst
 -- aliaser. A static 48 kHz hard clip generates harmonics far above Nyquist
@@ -243,7 +243,7 @@ metalMulFrame f =
 -- freely; the D87 lesson) to keep the 50 MHz island path short. Bit-exact
 -- bypass when the pedal is off.
 metalClipThreshold :: Frame -> Sample
-metalClipThreshold f = resize (if rawT < 1_450_000 then 1_450_000 else rawT) :: Sample
+metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
  where
   driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
   rawT = 3_300_000 - driveS * 6_000 :: Signed 25
@@ -322,7 +322,7 @@ metalPostLpfFrame prevLp f =
   tone = ctrlA (fDist f)
   -- Dark post-LPF keeps the high-gain top end controlled.
   -- 96 kHz: bilinear-refit (was 40 + tone>>1) to hold the same LPF corner Hz.
-  alpha = 18 + (tone `shiftR` 2)
+  alpha = 21 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -563,14 +563,9 @@ ffBiasReleaseStep :: Sample
 ffBiasReleaseStep = 2048
 
 fuzzFaceBiasEnvNext :: Sample -> Maybe Frame -> Sample
-fuzzFaceBiasEnvNext env Nothing = env
-fuzzFaceBiasEnvNext env (Just f)
-  | not (fuzzFaceOn f)        = 0
-  | level > env               = level
-  | env > ffBiasReleaseStep   = env - ffBiasReleaseStep
-  | otherwise                 = 0
+fuzzFaceBiasEnvNext = peakFollower fuzzFaceOn level (\_ _ -> ffBiasReleaseStep)
  where
-  level = abs24 (satShift8 (fAccL f))
+  level f = abs24 (satShift8 (fAccL f))
 
 fuzzFaceClipFrame :: Sample -> Frame -> Frame
 fuzzFaceClipFrame env f =
@@ -618,19 +613,16 @@ ratHighpassFrame prevIn prevOut f =
  where
   on = flag4 (fGate f)
   x = monoSample f
-  -- Live one-pole HP feedback. Keep the multiply parenthesised before
-  -- shiftR; otherwise shiftR binds tighter than * and the pole collapses
-  -- to a first-difference. 505/512 tightens the RAT input around ~210 Hz,
-  -- close to the D101 RAT-only corner without changing the amp path.
-  highpass x prevIn prevOut =
-    satWide (resize x - resize prevIn + (((resize prevOut :: Wide) * 505) `shiftR` 9))
+  -- coef 511 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
+  -- preserved bit-exact; the stage is effectively x - prevIn).
+  highpass x prevIn prevOut = onePoleHighpass 511 9 x prevIn prevOut
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (monoWet f) driveGain else 0, fAccR = 0}
  where
   on = flag4 (fGate f)
-  driveGain = resize (704 + (resize (ctrlC (fRat f)) * 13 :: Unsigned 12)) :: Unsigned 12
+  driveGain = resize (640 + (resize (ctrlC (fRat f)) * 12 :: Unsigned 12)) :: Unsigned 12
 
 ratDriveBoostFrame :: Frame -> Frame
 ratDriveBoostFrame f =
@@ -656,7 +648,7 @@ ratClipThreshold :: Frame -> Sample
 ratClipThreshold f = resize clampedThreshold :: Sample
  where
   amount = ctrlC (fRat f)
-  rawThreshold = 5_200_000 - (resize (asSigned9 amount) * 12_000) :: Signed 25
+  rawThreshold = 6_000_000 - (resize (asSigned9 amount) * 8_500) :: Signed 25
   clampedThreshold = if rawThreshold < 2_200_000 then 2_200_000 else rawThreshold
 
 ratClipProductsFrame :: Sample -> Vec 12 Sample -> Frame -> Frame
@@ -682,10 +674,11 @@ ratClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
   (q0, q1, q2, q3) = os4xSubSamples (ratClipThreshold f) x1 (monoWet f)
 
 ratPostLowpassFrame :: Sample -> Frame -> Frame
--- RAT identity pass: keep a fixed post-clip rolloff to control alias residue,
--- but leave a little more upper bite for the FILTER stage to shape.
+-- Global real-pedal pass: roll off more high-frequency content after the
+-- hard clip, matching the darker top end of a real RAT.
+-- 96 kHz: 106 (was 168) holds the same post-clip LPF corner Hz at 2x fs.
 ratPostLowpassFrame prev f =
-  setMonoWet (if on then onePoleU8 112 prev (monoWet f) else monoSample f) f
+  setMonoWet (if on then onePoleU8 106 prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
 
@@ -694,9 +687,9 @@ ratToneFrame prev f =
   setMonoWet (if on then onePoleU8 alpha prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
-  -- FILTER is darkening: high ctrlA lowers alpha. The 17..144 range gives a
-  -- brighter fully-open RAT while still letting the dark end close down hard.
-  alpha = 144 - (ctrlA (fRat f) `shiftR` 1)
+  -- Darker FILTER base so fully bright still has upper roll-off.
+  -- 96 kHz: bilinear-refit (was 192 - (toneA*3)>>2) to hold the tone LPF corner.
+  alpha = 128 - (ctrlA (fRat f) `shiftR` 1)
 
 ratLevelFrame :: Frame -> Frame
 ratLevelFrame f =

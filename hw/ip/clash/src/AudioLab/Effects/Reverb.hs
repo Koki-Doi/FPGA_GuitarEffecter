@@ -23,13 +23,13 @@ reverbToneProductsFrame :: Sample -> Sample -> Maybe Frame -> Maybe Frame
 -- recirculation path so long tails do not turn metallic. This blend is a
 -- one-pole lowpass on the comb-output stream (input weight = toneScaled/256),
 -- so its damping CORNER is fs-dependent. 96 kHz: the input weight is halved
--- D114 loosens the brightest end slightly to ((tone - tone>>4) >> 1): still
--- damped at TONE=100, but less dark now that the amp/cab path has more air.
+-- ((tone - tone>>3) >> 1) so the damping corner Hz is preserved at 2x fs (the
+-- previous-tap weight invTone rises to keep the blend unity).
 reverbToneProductsFrame tap prev = mapPipe applyTone
  where
   applyTone f =
     let tone       = ctrlB (fReverb f)
-        toneScaled = (tone - (tone `shiftR` 4)) `shiftR` 1
+        toneScaled = (tone - (tone `shiftR` 3)) `shiftR` 1
         invTone    = 255 - toneScaled
     in f
       { fAccL = mulU8 tap toneScaled

@@ -6595,3 +6595,39 @@ pre-existing 3 failures + 1 error baseline.
   restore board networking, load `AudioLabOverlay()` once, run Pmod mode-2
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
+
+## D120 — Remove Amp dynamic power-sag + static master trim; bench-REJECTED -> deployed baseline ROLLED BACK to D99
+
+- **Decision (attempt).** Follow-up to the rejected D119. Instead of D119's raw
+  MASTER level (which ran louder/harsher and was rejected), `ampMasterFrame`
+  removes the dynamic `ampSagEnv` modulation (no time-varying pumping) but
+  subtracts a STATIC per-model level trim so the average loudness stays near
+  D118: tube models `level >> 3` (~12.5 %), AC30 `>>3 + >>4` (~18.75 %), JC-120
+  exempt (byte-identical). Literal shifts (constant-folded like the old D118 sag
+  shifts). The user had picked this direction ("サグ全廃＋音量維持").
+- **Boundaries.** Clash/VHDL DSP behaviour change only (Amp.hs `ampMasterFrame`
+  + regenerated IP/bit/hwh). No GPIO/Tcl/XDC/block-design/topEntity/effect-order
+  /Python-API change. The unused `ampSagEnv` register is DCE'd by Clash.
+- **Build / deploy / smoke.** `make -C hw/ip/clash regen` + full Vivado build
+  passed, timing fully MET (WNS `+0.712 ns`, TNS `0`, WHS `+0.005 ns`, THS `0`),
+  route errors `0`; bit/hwh md5 `bd45ee197664260381d9fab64c32ade7` /
+  `6b9ca6d3496d58c88314729a90037217`. Deployed 6-site to `192.168.1.9` (all
+  md5 matched), PL-smoked (mode-2 dsp, `VERSION=0x00480001`, frame ~96.1 kHz,
+  ADC alive).
+- **Acceptance.** Bench-REJECTED ("ダメそう").
+- **Rollback to D99.** The user asked to roll back "結構前" and chose **D99**.
+  The whole post-D112 amp-retune line (D113/D117/D118 retunes, D119 sag-disable,
+  D120 static-sag-trim) is abandoned. Restored bit/hwh + full Clash src + vhdl
+  from commit `9651572` (D99, bit `83a64ffc6415fe2a3bc2aed47b6b19f9`, behaviour
+  == D98 96 kHz amp -- none of the D110-D120 revoicing), deployed 6-site (all
+  md5 `83a64ffc`), PL-smoked (~96.1 kHz, engine alive). **Deployed baseline is
+  now D99 (`83a64ffc`).** Correct D99 hwh is `de9d0e48c564da870efd978a6d54e4e7`
+  (the D99 entry / CURRENT_STATE mis-record it as `8f7bb979...`, which is D98's
+  hwh copy-pasted; D99 == D98 block design so the AXI address map is identical
+  and either hwh loads the bit correctly).
+- **Lesson.** The amp "volume pumping" the user dislikes is the `ampSagEnv`
+  power-sag (added D86/D94, active on tube models, JC-120 exempt). Both removing
+  it (D119) and removing-the-dynamics-but-static-trimming it (D120) were
+  bench-rejected. Do NOT re-attempt a sag change without a new explicit
+  direction from the user. D120 source is kept uncommitted on branch
+  `feature/amp-static-sag-d120`.
