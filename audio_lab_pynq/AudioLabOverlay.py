@@ -995,51 +995,7 @@ class AudioLabOverlay(Overlay):
         defaults loaded in ``__init__``). Sections whose GPIO is not
         present on the current overlay are omitted from the result.
         """
-        state = {}
-        if hasattr(self, "_compressor_state"):
-            try:
-                state["compressor"] = self.get_compressor_settings()
-            except Exception:
-                pass
-        if hasattr(self, "_wah_state"):
-            try:
-                state["wah"] = self.get_wah_settings()
-            except Exception:
-                pass
-        if hasattr(self, "_noise_suppressor_state"):
-            try:
-                state["noise_suppressor"] = self.get_noise_suppressor_settings()
-            except Exception:
-                pass
-        if hasattr(self, "_dist_state"):
-            try:
-                state["distortion"] = self.get_distortion_settings()
-            except Exception:
-                pass
-        if hasattr(self, "_od_state"):
-            try:
-                state["overdrive"] = self.get_overdrive_settings()
-            except Exception:
-                pass
-        # Cached words for the en-masse-written sections (overdrive,
-        # amp, cab, eq, reverb, gate flags). These are not full
-        # round-trip dicts -- the overlay does not cache every per-knob
-        # value for those sections -- but they let a notebook show what
-        # was last written.
-        cached = {}
-        for attr, key in (
-            ("_cached_gate_word", "gate"),
-            ("_cached_overdrive_word", "overdrive"),
-            ("_cached_distortion_word", "distortion_word"),
-            ("_cached_noise_suppressor_word", "noise_suppressor_word"),
-            ("_cached_compressor_word", "compressor_word"),
-            ("_cached_wah_word", "wah_word"),
-        ):
-            if hasattr(self, attr):
-                cached[key] = getattr(self, attr)
-        if cached:
-            state["cached_words"] = cached
-        return state
+        return _settings.get_current_pedalboard_state(self)
 
     @classmethod
     def reverb_control_word(cls, enabled=True, reverb=35, tone=70, mix=25):

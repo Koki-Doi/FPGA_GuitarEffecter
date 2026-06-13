@@ -284,3 +284,48 @@ def get_overdrive_settings(ovl):
         'model': ovl.OVERDRIVE_MODELS[idx],
         'model_label': ovl.OVERDRIVE_MODEL_LABELS[idx],
     }
+
+
+# ---- Whole-pedalboard read-back ------------------------------------------
+
+def get_current_pedalboard_state(ovl):
+    state = {}
+    if hasattr(ovl, "_compressor_state"):
+        try:
+            state["compressor"] = ovl.get_compressor_settings()
+        except Exception:
+            pass
+    if hasattr(ovl, "_wah_state"):
+        try:
+            state["wah"] = ovl.get_wah_settings()
+        except Exception:
+            pass
+    if hasattr(ovl, "_noise_suppressor_state"):
+        try:
+            state["noise_suppressor"] = ovl.get_noise_suppressor_settings()
+        except Exception:
+            pass
+    if hasattr(ovl, "_dist_state"):
+        try:
+            state["distortion"] = ovl.get_distortion_settings()
+        except Exception:
+            pass
+    if hasattr(ovl, "_od_state"):
+        try:
+            state["overdrive"] = ovl.get_overdrive_settings()
+        except Exception:
+            pass
+    cached = {}
+    for attr, key in (
+        ("_cached_gate_word", "gate"),
+        ("_cached_overdrive_word", "overdrive"),
+        ("_cached_distortion_word", "distortion_word"),
+        ("_cached_noise_suppressor_word", "noise_suppressor_word"),
+        ("_cached_compressor_word", "compressor_word"),
+        ("_cached_wah_word", "wah_word"),
+    ):
+        if hasattr(ovl, attr):
+            cached[key] = getattr(ovl, attr)
+    if cached:
+        state["cached_words"] = cached
+    return state
