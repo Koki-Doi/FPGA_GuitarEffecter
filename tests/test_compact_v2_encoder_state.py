@@ -128,25 +128,21 @@ def test_renderer_with_phase7g_flags_emits_status_text():
 
 
 def test_amp_sim_knob_layout_replaces_char_with_drv_mode():
-    """Amp Sim EFFECT_KNOBS must drop CHAR and add DRV MODE @ idx 7.
-    Shipped default for DRV MODE is 1; see test_amp_drive_mode_field's note --
-    D53 designed this as 0/Clean, so verify the shipped 1 is intended."""
+    """Amp Sim EFFECT_KNOBS must drop CHAR and add DRV MODE @ idx 7, default 1
+    (Drive) -- the intended shipped default (confirmed intentional 2026-06-13)."""
     from compact_v2.knobs import EFFECT_KNOBS
     labels = [label for label, _ in EFFECT_KNOBS["Amp Sim"]]
     assert "CHAR" not in labels
     assert labels[7] == "DRV MODE"
-    assert EFFECT_KNOBS["Amp Sim"][7][1] == 1  # shipped default (see docstring)
+    assert EFFECT_KNOBS["Amp Sim"][7][1] == 1  # intended default: Drive
 
 
-def test_amp_drive_mode_field_defaults_to_zero():
-    """AppState exposes amp_drive_mode; shipped default is 1 (Drive).
-    NB: D53 designed this as 0/Clean and the D112 voiced amp defaults
-    (GAIN52/BASS52/MID58/TREB62/PRES72/MSTR50) do NOT list a drive-mode change,
-    so confirm the shipped 1 is intended -- if not it is a regression in
-    GUI/compact_v2/state.py:amp_drive_mode."""
+def test_amp_drive_mode_field_default_is_drive():
+    """AppState.amp_drive_mode defaults to 1 (Drive) -- the intended shipped
+    default (confirmed intentional 2026-06-13; supersedes the D53 0/Clean design)."""
     s = AppState()
     assert hasattr(s, "amp_drive_mode")
-    assert s.amp_drive_mode == 1  # shipped default (see docstring)
+    assert s.amp_drive_mode == 1  # intended default: Drive
 
 
 def test_set_knob_on_amp_drv_mode_clamps_to_zero_or_one():
@@ -243,7 +239,7 @@ _TEST_FUNCTIONS = [
     test_renderer_with_phase7g_flags_emits_status_text,
     test_renderer_with_live_apply_flags_emits_status_text,
     test_amp_sim_knob_layout_replaces_char_with_drv_mode,
-    test_amp_drive_mode_field_defaults_to_zero,
+    test_amp_drive_mode_field_default_is_drive,
     test_set_knob_on_amp_drv_mode_clamps_to_zero_or_one,
     test_appstate_json_round_trip_persists_amp_drive_mode,
     test_legacy_state_with_char_value_loads_as_binary_drive_mode,
