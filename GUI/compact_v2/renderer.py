@@ -39,32 +39,18 @@ from .layout import (
     COMPACT_V2_LAYOUT, compact_v2_panel_boxes,
 )
 
-class _RandomStateCompat:
-    """Small adapter for NumPy 1.16, which has RandomState but no default_rng."""
-    def __init__(self, seed=None):
-        self._rng = np.random.RandomState(seed)
-
-    def integers(self, low, high=None, size=None, dtype=None, endpoint=False):
-        if high is None:
-            low, high = 0, low
-        if endpoint:
-            high = high + 1
-        values = self._rng.randint(low, high=high, size=size)
-        if dtype is not None:
-            if hasattr(values, "astype"):
-                values = values.astype(dtype)
-            else:
-                values = np.asarray(values, dtype=dtype).item()
-        return values
-
-    def uniform(self, low=0.0, high=1.0, size=None):
-        return self._rng.uniform(low, high, size)
-
-
-def _rng(seed=None):
-    if hasattr(np.random, "default_rng"):
-        return np.random.default_rng(seed)
-    return _RandomStateCompat(seed)
+# Side-effect-free leaves extracted from this module (behaviour-identical),
+# re-imported so the public `from compact_v2.renderer import X` surface is
+# unchanged. See _render_compat / _render_fonts / _render_cache.
+from ._render_compat import _RandomStateCompat, _rng
+from ._render_fonts import (
+    _base_font, _smooth_font, _measure,
+    _SMOOTH_FONT_CACHE, _SMOOTH_TTF_CANDIDATES,
+)
+from ._render_cache import (
+    RenderCache, make_pynq_static_render_cache,
+    state_semistatic_signature, state_dynamic_signature,
+)
 
 
 def _patch_old_pillow_draw_keywords():
@@ -123,40 +109,6 @@ def _pynq_static_mode() -> bool:
 
 
 
-_BASE_FONT = None
-def _base_font():
-    global _BASE_FONT
-    if _BASE_FONT is None:
-        # Try the size kwarg (Pillow 10.1+); fall back to the bitmap default.
-        try:
-            _BASE_FONT = ImageFont.load_default(size=11)
-        except TypeError:
-            _BASE_FONT = ImageFont.load_default()
-    return _BASE_FONT
-
-# Smooth TrueType cache for hero numerics (e.g. big preset id "01A").
-_SMOOTH_FONT_CACHE = {}
-_SMOOTH_TTF_CANDIDATES = [
-    "DejaVuSans-Bold.ttf", "DejaVuSans.ttf",
-    "Arial Bold.ttf", "arialbd.ttf", "Arial.ttf", "arial.ttf",
-    "Helvetica.ttf", "LiberationSans-Bold.ttf",
-]
-def _smooth_font(size: int):
-    if size in _SMOOTH_FONT_CACHE:
-        return _SMOOTH_FONT_CACHE[size]
-    f = None
-    for name in _SMOOTH_TTF_CANDIDATES:
-        try:
-            f = ImageFont.truetype(name, size)
-            break
-        except (OSError, IOError):
-            continue
-    if f is None:
-        f = _base_font()
-    _SMOOTH_FONT_CACHE[size] = f
-    return f
-
-
 def draw_smooth_text(img: Image.Image, xy, text: str, size: int, fill,
                     anchor: str = "lt", letter_spacing: int = 0):
     """Anti-aliased text for hero numerics. No NEAREST-upscale crunch."""
@@ -195,14 +147,6 @@ def draw_smooth_text(img: Image.Image, xy, text: str, size: int, fill,
     ax = {"l": 0, "m": -sw // 2, "r": -sw}[anchor[0]]
     ay = {"t": 0, "m": -sh // 2, "b": -sh}[anchor[1]]
     img.alpha_composite(scratch, (int(xy[0]) + ax, int(xy[1]) + ay))
-
-def _measure(text: str, font) -> Tuple[int, int]:
-    if hasattr(font, "getbbox"):
-        b = font.getbbox(text)
-        return (b[2] - b[0], b[3] - b[1])
-    if hasattr(font, "getsize"):
-        return font.getsize(text)
-    return (len(text) * 6, 11)
 
 def draw_text(img: Image.Image, xy, text: str, fill, scale: int = 1,
               anchor: str = "lt", letter_spacing: int = 0,
@@ -384,129 +328,8 @@ def draw_meter(img: Image.Image, x: int, y: int, w: int, h: int,
                   scale=1, anchor="rm", letter_spacing=1)
 
 
-# =============================================================================
-# RENDER CACHE / FAST RENDER PATH
-# =============================================================================
-class RenderCache:
-    """Small, PYNQ-friendly cache for PIL/NumPy rendering.
-
-    This is intentionally conservative: it avoids external dependencies and
-    keeps only a handful of full-frame entries. The largest win is avoiding
-    full redraws when the GUI state has not changed or when visual meters are
-    throttled to lower FPS.
-    """
-    def __init__(self, visualizer_fps: float = 5.0, meter_fps: float = 10.0,
-                 max_frame_entries: int = 8, pynq_static_mode: bool = False):
-        self.visualizer_fps = float(visualizer_fps)
-        self.meter_fps = float(meter_fps)
-        self.max_frame_entries = int(max_frame_entries)
-        self.pynq_static_mode = bool(pynq_static_mode)
-        self.static_layers = {}
-        self.semi_static_layers = {}
-        self.text_cache = {}
-        self.gradient_cache = {}
-        self.mask_cache = {}
-        self.glow_cache = {}
-        self.knob_body_cache = {}
-        self.chain_block_cache = {}
-        self.meter_segment_cache = {}
-        self.frame_cache = {}
-        self.frame_cache_order = []
-        self.last_static_key = None
-        self.last_semistatic_key = None
-        self.last_visualizer_time = 0.0
-        self.last_meter_time = 0.0
-        self.cached_visualizer_layer = None
-        self.cached_meter_layer = None
-        self.stats = {
-            "frame_hits": 0,
-            "frame_misses": 0,
-            "static_hits": 0,
-            "static_misses": 0,
-            "semistatic_hits": 0,
-            "semistatic_misses": 0,
-            "text_hits": 0,
-            "text_misses": 0,
-            "gradient_hits": 0,
-            "gradient_misses": 0,
-            "visualizer_updates": 0,
-            "meter_updates": 0,
-        }
-
-    def clear_frame_cache(self):
-        self.frame_cache.clear()
-        self.frame_cache_order.clear()
-
-    def put_frame(self, key, arr):
-        self.frame_cache[key] = arr
-        self.frame_cache_order.append(key)
-        while len(self.frame_cache_order) > self.max_frame_entries:
-            old = self.frame_cache_order.pop(0)
-            self.frame_cache.pop(old, None)
-
-
-
-
-def make_pynq_static_render_cache(max_frame_entries: int = 8) -> RenderCache:
-    """Cache profile for PYNQ HDMI static/change-driven display."""
-    return RenderCache(visualizer_fps=0.0, meter_fps=0.0,
-                       max_frame_entries=max_frame_entries,
-                       pynq_static_mode=True)
-
-
-def state_semistatic_signature(state: AppState):
-    """State components that require the non-background UI to be redrawn.
-
-    Do not include state.t directly; otherwise animation time invalidates the
-    cache every frame and defeats throttling.
-    """
-    return (
-        state.preset_id,
-        state.preset_name,
-        getattr(state, "preset_idx", None),
-        tuple(state.chain),
-        tuple(bool(v) for v in state.effect_on),
-        int(state.selected_effect),
-        int(state.selected_knob),
-        tuple(int(round(v))
-              for nm in EFFECTS
-              for v in state.all_knob_values.get(nm, [])),
-        getattr(state, "dist_model_idx", None),
-        getattr(state, "amp_model_idx", None),
-        getattr(state, "cab_model_idx", None),
-        getattr(state, "overdrive_model_idx", None),
-        bool(state.save_flash > 0),
-        # Phase 7G+ live-apply status: include so the status strip refreshes
-        # when the encoder runtime updates these fields.
-        bool(getattr(state, "live_apply", True)),
-        bool(getattr(state, "last_apply_ok", True)),
-        str(getattr(state, "last_apply_message", "")),
-        str(getattr(state, "last_unsupported_label", "")),
-        bool(getattr(state, "edit_mode", False)),
-        bool(getattr(state, "model_select_mode", False)),
-        bool(getattr(state, "value_dirty", False)),
-        bool(getattr(state, "apply_pending", False)),
-        str(getattr(state, "last_control_source", "")),
-    )
-
-
-def state_dynamic_signature(state: AppState, cache: RenderCache):
-    """Quantized dynamic state.
-
-    Meters and visualizer are intentionally bucketed to lower update rates.
-    This is the practical part that makes Tk/PYNQ display usable: frames between
-    buckets can reuse the previous RGB array.
-    """
-    if getattr(cache, "pynq_static_mode", False):
-        return ("static",)
-    vf = float(cache.visualizer_fps)
-    mf = float(cache.meter_fps)
-    viz_bucket = 0 if vf <= 0 else int(float(state.t) * max(0.5, vf))
-    meter_bucket = 0 if mf <= 0 else int(float(state.t) * max(1.0, mf))
-    # Level values are intentionally not part of the key; they are sampled at
-    # the beginning of each meter bucket. Including raw/quantized levels here
-    # would invalidate the frame cache almost every tick and undo throttling.
-    return (viz_bucket, meter_bucket)
+# RenderCache + make_pynq_static_render_cache + state_semistatic_signature
+# + state_dynamic_signature now live in ._render_cache (re-imported above).
 
 
 def _draw_800x480_chain(img: Image.Image, state: AppState, xy):
