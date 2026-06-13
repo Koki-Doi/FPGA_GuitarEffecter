@@ -7,6 +7,7 @@ from .AudioCodec import ADAU1761
 from . import control_maps as _cm
 from . import knob_tapers as _kt
 from .overlay import register_writers as _writers
+from .overlay import model_lookup as _model_lookup
 from .effect_defaults import (
     DISTORTION_DEFAULTS as _DISTORTION_DEFAULTS,
     DISTORTION_PEDALS as _DISTORTION_PEDALS,
@@ -330,31 +331,9 @@ class AudioLabOverlay(Overlay):
         of the 3-bit model select fall through to model 0 in the
         coefficient case lookup.
         """
-        if isinstance(model, str):
-            key = model.strip().lower().replace("-", "_").replace(" ", "_")
-            for i, name in enumerate(cls.OVERDRIVE_MODELS):
-                if key == name:
-                    return i
-            # Also accept display labels (case-insensitive) for
-            # convenience. e.g. "Ibanez / TS9" -> 0.
-            for i, label in enumerate(cls.OVERDRIVE_MODEL_LABELS):
-                if model.strip().lower() == label.strip().lower():
-                    return i
-            # Bare model number embedded in a string, e.g. "3".
-            try:
-                idx = int(model)
-            except ValueError:
-                raise ValueError(
-                    'unknown overdrive model: {!r}; valid names are {}'.format(
-                        model, ', '.join(cls.OVERDRIVE_MODELS)))
-        else:
-            try:
-                idx = int(model)
-            except (TypeError, ValueError):
-                return 0
-        if idx < 0 or idx >= cls.OVERDRIVE_MODEL_COUNT:
-            return 0
-        return idx
+        return _model_lookup.normalize_overdrive_model(
+            model, cls.OVERDRIVE_MODELS, cls.OVERDRIVE_MODEL_LABELS,
+            cls.OVERDRIVE_MODEL_COUNT)
 
     @classmethod
     def get_overdrive_model_names(cls):
@@ -374,36 +353,16 @@ class AudioLabOverlay(Overlay):
         to the documented 0..6 range. Anything outside the range or
         unknown name raises ``ValueError``.
         """
-        if isinstance(name, str):
-            try:
-                return cls._DIST_PEDAL_BIT[name]
-            except KeyError:
-                raise ValueError(
-                    'unknown distortion pedal: {!r}; valid pedals are {}'.format(
-                        name, ', '.join(cls.DISTORTION_PEDALS)))
-        idx = int(name)
-        if idx < 0 or idx >= len(cls.DISTORTION_PEDALS):
-            raise ValueError(
-                'distortion pedal index {} out of range 0..{}'.format(
-                    idx, len(cls.DISTORTION_PEDALS) - 1))
-        return idx
+        return _model_lookup.normalize_pedal_name(
+            name, cls.DISTORTION_PEDALS, cls._DIST_PEDAL_BIT)
 
     @classmethod
     def _pedal_mask_from_iterable(cls, pedals):
         """Build an 8-bit pedal mask from a sequence of names / bit
         indices, or from a dict ``{name: bool}``.
         """
-        mask = 0
-        if isinstance(pedals, dict):
-            for name, enabled in pedals.items():
-                bit = cls._normalize_pedal_name(name)
-                if enabled:
-                    mask |= (1 << bit)
-        else:
-            for entry in pedals:
-                bit = cls._normalize_pedal_name(entry)
-                mask |= (1 << bit)
-        return mask & 0x7F
+        return _model_lookup.pedal_mask_from_iterable(
+            pedals, cls._normalize_pedal_name)
 
     def _apply_distortion_state_to_words(self):
         """Patch the cached gate / overdrive / distortion words with the
@@ -1042,23 +1001,8 @@ class AudioLabOverlay(Overlay):
 
         Raises ``ValueError`` if ``name`` is not a documented model.
         """
-        if isinstance(name, int):
-            idx = int(name)
-            if 0 <= idx <= cls.AMP_MODEL_IDX_MAX:
-                return idx
-            raise ValueError(
-                "unknown amp model idx: {!r}; valid range is 0..{}".format(
-                    name, cls.AMP_MODEL_IDX_MAX))
-        if name in cls.AMP_MODELS:
-            return cls.AMP_MODELS[name]
-        # Allow title-case display labels too so notebook code can pass
-        # the human-readable name from the dropdown straight through.
-        for i, label in enumerate(cls.AMP_MODEL_LABELS):
-            if label == name:
-                return i
-        raise ValueError(
-            "unknown amp model: {!r}; valid names are {}".format(
-                name, ", ".join(cls.AMP_MODELS.keys())))
+        return _model_lookup.amp_model_to_idx(
+            name, cls.AMP_MODELS, cls.AMP_MODEL_LABELS, cls.AMP_MODEL_IDX_MAX)
 
     @classmethod
     def amp_model_to_character(cls, name):
