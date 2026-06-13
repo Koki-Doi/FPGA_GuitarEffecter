@@ -161,3 +161,126 @@ def get_wah_settings(ovl):
         'has_gpio': hasattr(ovl, ovl.WAH_GPIO_NAME),
         'implementation_status': 'position_q_volume_bias_fpga_d73',
     }
+
+
+# ---- Distortion (pedal mask + shared knobs) ------------------------------
+
+def set_distortion_pedal(ovl, name, enabled=True, exclusive=True):
+    bit = ovl._normalize_pedal_name(name)
+    mask = int(ovl._dist_state['pedal_mask']) & 0x7F
+    if enabled and exclusive:
+        mask = (1 << bit)
+    elif enabled:
+        mask |= (1 << bit)
+    else:
+        mask &= ~(1 << bit) & 0x7F
+    ovl._dist_state['pedal_mask'] = mask & 0x7F
+    ovl._apply_distortion_state_to_words()
+    return get_distortion_pedals(ovl)
+
+
+def set_distortion_pedals(ovl, **kwargs):
+    mask = int(ovl._dist_state['pedal_mask']) & 0x7F
+    for name, enabled in kwargs.items():
+        bit = ovl._normalize_pedal_name(name)
+        if enabled:
+            mask |= (1 << bit)
+        else:
+            mask &= ~(1 << bit) & 0x7F
+    ovl._dist_state['pedal_mask'] = mask & 0x7F
+    ovl._apply_distortion_state_to_words()
+    return get_distortion_pedals(ovl)
+
+
+def clear_distortion_pedals(ovl):
+    ovl._dist_state['pedal_mask'] = 0
+    ovl._apply_distortion_state_to_words()
+    return get_distortion_pedals(ovl)
+
+
+def get_distortion_pedals(ovl):
+    mask = int(ovl._dist_state['pedal_mask']) & 0x7F
+    return {name: bool(mask & (1 << i))
+            for i, name in enumerate(ovl.DISTORTION_PEDALS)}
+
+
+def set_distortion_settings(ovl, drive=None, tone=None, level=None, bias=None,
+                            tight=None, mix=None, pedal=None, pedals=None,
+                            exclusive=True):
+    if drive is not None:
+        ovl._dist_state['drive'] = ovl._clamp_percent(drive)
+    if tone is not None:
+        ovl._dist_state['tone'] = ovl._clamp_percent(tone)
+    if level is not None:
+        ovl._dist_state['level'] = ovl._clamp_percent(level)
+    if bias is not None:
+        ovl._dist_state['bias'] = ovl._clamp_percent(bias)
+    if tight is not None:
+        ovl._dist_state['tight'] = ovl._clamp_percent(tight)
+    if mix is not None:
+        ovl._dist_state['mix'] = ovl._clamp_percent(mix)
+    if pedals is not None:
+        ovl._dist_state['pedal_mask'] = ovl._pedal_mask_from_iterable(pedals)
+    if pedal is not None:
+        bit = ovl._normalize_pedal_name(pedal)
+        if exclusive:
+            ovl._dist_state['pedal_mask'] = (1 << bit)
+        else:
+            ovl._dist_state['pedal_mask'] = (
+                int(ovl._dist_state['pedal_mask']) | (1 << bit)) & 0x7F
+    ovl._apply_distortion_state_to_words()
+    return get_distortion_settings(ovl)
+
+
+def get_distortion_settings(ovl):
+    s = ovl._dist_state
+    return {
+        'pedal_mask': int(s['pedal_mask']) & 0x7F,
+        'pedals': get_distortion_pedals(ovl),
+        'drive': s['drive'],
+        'tone': s['tone'],
+        'level': s['level'],
+        'bias': s['bias'],
+        'tight': s['tight'],
+        'mix': s['mix'],
+    }
+
+
+# ---- Overdrive (selectable-model only) -----------------------------------
+
+def set_overdrive_settings(ovl, enabled=None, drive=None, tone=None,
+                           level=None, model=None, sink=None):
+    if sink is None:
+        from ..AudioLabOverlay import XbarSink
+        sink = XbarSink.headphone
+    if drive is not None:
+        ovl._od_state['drive'] = ovl._clamp_percent(drive)
+    if tone is not None:
+        ovl._od_state['tone'] = ovl._clamp_percent(tone)
+    if level is not None:
+        ovl._od_state['level'] = ovl._clamp_range(level, 0, 200)
+    if model is not None:
+        ovl._od_state['model'] = ovl._normalize_overdrive_model(model)
+    if enabled is not None:
+        ovl._od_state['enabled'] = bool(enabled)
+    ovl._apply_overdrive_state_to_words(touch_gate=enabled is not None, sink=sink)
+    return get_overdrive_settings(ovl)
+
+
+def get_overdrive_model(ovl):
+    idx = ovl._normalize_overdrive_model(ovl._od_state['model'])
+    return (idx, ovl.OVERDRIVE_MODELS[idx], ovl.OVERDRIVE_MODEL_LABELS[idx])
+
+
+def get_overdrive_settings(ovl):
+    s = ovl._od_state
+    idx = ovl._normalize_overdrive_model(s['model'])
+    return {
+        'enabled': bool(s['enabled']),
+        'drive': s['drive'],
+        'tone': s['tone'],
+        'level': s['level'],
+        'model_idx': idx,
+        'model': ovl.OVERDRIVE_MODELS[idx],
+        'model_label': ovl.OVERDRIVE_MODEL_LABELS[idx],
+    }

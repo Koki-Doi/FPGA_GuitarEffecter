@@ -386,17 +386,8 @@ class AudioLabOverlay(Overlay):
         is the safe path. ``exclusive=False`` allows stacking multiple
         pedals in series; that path is documented as advanced.
         """
-        bit = self._normalize_pedal_name(name)
-        mask = int(self._dist_state['pedal_mask']) & 0x7F
-        if enabled and exclusive:
-            mask = (1 << bit)
-        elif enabled:
-            mask |= (1 << bit)
-        else:
-            mask &= ~(1 << bit) & 0x7F
-        self._dist_state['pedal_mask'] = mask & 0x7F
-        self._apply_distortion_state_to_words()
-        return self.get_distortion_pedals()
+        return _settings.set_distortion_pedal(
+            self, name, enabled=enabled, exclusive=exclusive)
 
     def set_distortion_pedals(self, **kwargs):
         """Set multiple pedals at once via keyword arguments.
@@ -405,16 +396,7 @@ class AudioLabOverlay(Overlay):
         Names that are not in ``DISTORTION_PEDALS`` raise ValueError.
         Pedals that are not mentioned keep their current state.
         """
-        mask = int(self._dist_state['pedal_mask']) & 0x7F
-        for name, enabled in kwargs.items():
-            bit = self._normalize_pedal_name(name)
-            if enabled:
-                mask |= (1 << bit)
-            else:
-                mask &= ~(1 << bit) & 0x7F
-        self._dist_state['pedal_mask'] = mask & 0x7F
-        self._apply_distortion_state_to_words()
-        return self.get_distortion_pedals()
+        return _settings.set_distortion_pedals(self, **kwargs)
 
     def clear_distortion_pedals(self):
         """Disable every distortion pedal in one call. The
@@ -422,18 +404,14 @@ class AudioLabOverlay(Overlay):
         alone — call ``set_guitar_effects(distortion_on=False)`` if
         you also want to drop the master.
         """
-        self._dist_state['pedal_mask'] = 0
-        self._apply_distortion_state_to_words()
-        return self.get_distortion_pedals()
+        return _settings.clear_distortion_pedals(self)
 
     def get_distortion_pedals(self):
         """Return a dict ``{pedal_name: bool}`` reflecting the cached
         pedal mask. The AXI GPIO is output-only so this is a Python-side
         cache, not a register read-back.
         """
-        mask = int(self._dist_state['pedal_mask']) & 0x7F
-        return {name: bool(mask & (1 << i))
-                for i, name in enumerate(self.DISTORTION_PEDALS)}
+        return _settings.get_distortion_pedals(self)
 
     def set_distortion_settings(self, drive=None, tone=None, level=None,
                                 bias=None, tight=None, mix=None,
@@ -450,29 +428,10 @@ class AudioLabOverlay(Overlay):
         in gate_control bit 2; that is still owned by
         ``set_guitar_effects(distortion_on=...)``.
         """
-        if drive is not None:
-            self._dist_state['drive'] = self._clamp_percent(drive)
-        if tone is not None:
-            self._dist_state['tone'] = self._clamp_percent(tone)
-        if level is not None:
-            self._dist_state['level'] = self._clamp_percent(level)
-        if bias is not None:
-            self._dist_state['bias'] = self._clamp_percent(bias)
-        if tight is not None:
-            self._dist_state['tight'] = self._clamp_percent(tight)
-        if mix is not None:
-            self._dist_state['mix'] = self._clamp_percent(mix)
-        if pedals is not None:
-            self._dist_state['pedal_mask'] = self._pedal_mask_from_iterable(pedals)
-        if pedal is not None:
-            bit = self._normalize_pedal_name(pedal)
-            if exclusive:
-                self._dist_state['pedal_mask'] = (1 << bit)
-            else:
-                self._dist_state['pedal_mask'] = (
-                    int(self._dist_state['pedal_mask']) | (1 << bit)) & 0x7F
-        self._apply_distortion_state_to_words()
-        return self.get_distortion_settings()
+        return _settings.set_distortion_settings(
+            self, drive=drive, tone=tone, level=level, bias=bias,
+            tight=tight, mix=mix, pedal=pedal, pedals=pedals,
+            exclusive=exclusive)
 
     def set_distortion_drive(self, value):
         return self.set_distortion_settings(drive=value)
@@ -501,17 +460,7 @@ class AudioLabOverlay(Overlay):
         ``set_guitar_effects``; the AXI GPIO cannot be read back from
         this overlay configuration.
         """
-        s = self._dist_state
-        return {
-            'pedal_mask': int(s['pedal_mask']) & 0x7F,
-            'pedals': self.get_distortion_pedals(),
-            'drive': s['drive'],
-            'tone': s['tone'],
-            'level': s['level'],
-            'bias': s['bias'],
-            'tight': s['tight'],
-            'mix': s['mix'],
-        }
+        return _settings.get_distortion_settings(self)
 
     # ---- Overdrive public API ------------------------------------------
     #
@@ -539,10 +488,7 @@ class AudioLabOverlay(Overlay):
         snake_case identifier; ``display_label`` is the GUI string
         (e.g. ``"Ibanez / TS9"``).
         """
-        idx = self._normalize_overdrive_model(self._od_state['model'])
-        return (idx,
-                self.OVERDRIVE_MODELS[idx],
-                self.OVERDRIVE_MODEL_LABELS[idx])
+        return _settings.get_overdrive_model(self)
 
     def set_overdrive_settings(self, enabled=None, drive=None, tone=None,
                                 level=None, model=None,
@@ -565,21 +511,9 @@ class AudioLabOverlay(Overlay):
         tight byte) and -- when ``enabled`` is supplied -- the gate
         flag bit 1. Distortion / amp / cab / etc. state is preserved.
         """
-        if drive is not None:
-            self._od_state['drive'] = self._clamp_percent(drive)
-        if tone is not None:
-            self._od_state['tone'] = self._clamp_percent(tone)
-        if level is not None:
-            # level allows up to 200 historically; clamp like other level
-            # knobs (level_to_q7 clamps to 0..200 internally).
-            self._od_state['level'] = self._clamp_range(level, 0, 200)
-        if model is not None:
-            self._od_state['model'] = self._normalize_overdrive_model(model)
-        if enabled is not None:
-            self._od_state['enabled'] = bool(enabled)
-        self._apply_overdrive_state_to_words(touch_gate=enabled is not None,
-                                              sink=sink)
-        return self.get_overdrive_settings()
+        return _settings.set_overdrive_settings(
+            self, enabled=enabled, drive=drive, tone=tone, level=level,
+            model=model, sink=sink)
 
     def _apply_overdrive_state_to_words(self, touch_gate=False,
                                          sink=XbarSink.headphone):
@@ -593,17 +527,7 @@ class AudioLabOverlay(Overlay):
 
     def get_overdrive_settings(self):
         """Return the cached overdrive-section state (model + knobs)."""
-        s = self._od_state
-        idx = self._normalize_overdrive_model(s['model'])
-        return {
-            'enabled': bool(s['enabled']),
-            'drive': s['drive'],
-            'tone': s['tone'],
-            'level': s['level'],
-            'model_idx': idx,
-            'model': self.OVERDRIVE_MODELS[idx],
-            'model_label': self.OVERDRIVE_MODEL_LABELS[idx],
-        }
+        return _settings.get_overdrive_settings(self)
 
     # ---- Noise Suppressor public API ------------------------------------
 
