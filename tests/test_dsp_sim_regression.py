@@ -43,7 +43,8 @@ GAP = 8
 ORDER = ["gate", "od", "dist", "eq", "rat", "amp",
          "amp_tone", "cab", "reverb", "ns", "comp", "wah"]
 CONFIGS = ["bypass", "amp_jc120", "amp_jcm800",
-           "overdrive_ts9", "distortion_ds1", "reverb"]
+           "overdrive_ts9", "od_bd2", "od_ocd", "distortion_ds1",
+           "dist_metal", "cab", "reverb"]
 
 sys.path.insert(0, SIM_DIR)
 
@@ -127,9 +128,21 @@ def _config_words(cm, name):
     elif name == "overdrive_ts9":
         w["gate"] = cm.gate_word(overdrive_on=True)
         w["od"] = cm.overdrive_word(65, 100, 55, overdrive_model=0)
+    elif name == "od_bd2":  # voicing: brighter pre-clip biquad (peak ~2300 Hz)
+        w["gate"] = cm.gate_word(overdrive_on=True)
+        w["od"] = cm.overdrive_word(65, 100, 60, overdrive_model=2)
+    elif name == "od_ocd":  # voicing: upper-mid honk biquad (peak ~1300 Hz)
+        w["gate"] = cm.gate_word(overdrive_on=True)
+        w["od"] = cm.overdrive_word(65, 100, 65, overdrive_model=4)
     elif name == "distortion_ds1":
         w["gate"] = cm.gate_word(distortion_on=True)
         w["dist"] = cm.distortion_word(50, 50, 60, pedal_mask=1 << 3)  # ds1 = bit 3
+    elif name == "dist_metal":  # voicing: ~700 Hz mid-scoop (shared bigMuff notch)
+        w["gate"] = cm.gate_word(distortion_on=True)
+        w["dist"] = cm.distortion_word(50, 50, 70, pedal_mask=1 << 6)  # metal = bit 6
+    elif name == "cab":  # voicing: cone-breakup presence peak (~2.8 kHz biquad)
+        w["gate"] = cm.gate_word(cab_on=True)
+        w["cab"] = cm.cab_word(100, 100, 1, 50)
     elif name == "reverb":
         w["gate"] = cm.gate_word(reverb_on=True)
         w["reverb"] = cm.reverb_word(50, 65, 30)

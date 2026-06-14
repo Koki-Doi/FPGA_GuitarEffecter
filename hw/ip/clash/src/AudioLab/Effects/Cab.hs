@@ -235,6 +235,38 @@ cabSpeakerFirHistNext :: Vec 14 Sample -> Maybe Frame -> Vec 14 Sample
 cabSpeakerFirHistNext hist Nothing = hist
 cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 
+-- ---- Cone-breakup presence-peak biquad (voicing) ----------------------
+-- A real guitar speaker has a broad presence peak ~2-4 kHz (cone breakup) on
+-- top of its rolloff -- the brightening "honk" that makes a cab cut through.
+-- The 15-tap speaker FIR is far too short to resolve a peak at 2.8 kHz at
+-- 96 kHz (its main lobe is ~6 kHz wide), so this is a dedicated 2nd-order
+-- peaking biquad: RBJ, f0 = 2800 Hz, Q = 1.0, +3.5 dB, UNITY at DC and Nyquist
+-- by construction so it adds ONLY the presence peak (does not touch the FIR's
+-- DC level or >5 kHz rolloff). Hand-designed target curve (NOT a captured IR,
+-- D7), same policy as the TS / bigMuff biquads.
+-- Direct-form-I, Q14 (a0 normalised to 2^14). Split into a feedforward stage
+-- (b0*x + b1*x1 + b2*x2 into fAcc3L, no feedback -- pipelines freely) and a
+-- recursive stage (-a1*y1 - a2*y2, two multiplies, short feedback path), the
+-- D82/D83 timing form used by every island biquad. Runs after the speaker FIR;
+-- fAcc3L is free at that point (the FIR mix already consumed it). Bit-exact
+-- bypass when the cab is off.
+cabPresenceFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
+cabPresenceFeedforwardFrame x1 x2 f =
+  setMonoAcc3 (if on then ff else 0) f
+ where
+  on = flag7 (fGate f)
+  x = monoSample f
+  -- 96 kHz RBJ (2800 Hz, Q 1.0, +3.5 dB).
+  ff = mulS16 x 16948 + mulS16 x1 (-29986) + mulS16 x2 13549 :: Wide
+
+cabPresenceRecursiveFrame :: Sample -> Sample -> Frame -> Frame
+cabPresenceRecursiveFrame y1 y2 f =
+  setMonoSample (if on then y else monoSample f) f
+ where
+  on = flag7 (fGate f)
+  -- -a1 = +29986, a2 = +14112; fAcc3L holds the FF sum.
+  y = satShift14 (fAcc3L f + mulS16 y1 29986 - mulS16 y2 14112)
+
 -- ---- Cab-output micro-modulation (D96, digital-sound #11) --------------
 -- A perfectly static spectrum is a "digital" tell; real speakers / air / tubes
 -- have tiny constant movement. A VERY small LFO-modulated fractional delay on

@@ -383,7 +383,11 @@ bigMuffScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopFeedforwardFrame x1 x2 f =
   setMonoAcc3 (if on then ff else 0) f
  where
-  on = bigMuffOn f
+  -- Shared with metal (voicing): this ~700 Hz notch is also the MT-2-style
+  -- mid-scoop the metal pedal was missing. metal runs upstream, so its output
+  -- reaches this stage as monoSample; gating on metal too applies the same
+  -- scoop with no second biquad. Bypass-exact when both pedals are off.
+  on = bigMuffOn f || metalDistortionOn f
   x = monoSample f
   -- 96 kHz RBJ coeffs (700 Hz, Q 0.8, -10 dB); was 15350/-29618/14393 @48k.
   ff = mulS16 x 15841 + mulS16 x1 (-31148) + mulS16 x2 15339 :: Wide
@@ -392,7 +396,7 @@ bigMuffScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopRecursiveFrame y1 y2 f =
   setMonoSample (if on then y else monoSample f) f
  where
-  on = bigMuffOn f
+  on = bigMuffOn f || metalDistortionOn f   -- shared scoop (see feedforward note)
   -- 96 kHz: -a1 = +31148, -a2 = -14797 (was 29618 / 13359); fAcc3L holds the FF sum.
   y = satShift14 (fAcc3L f + mulS16 y1 31148 - mulS16 y2 14797)
 
