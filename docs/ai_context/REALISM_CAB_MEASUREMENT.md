@@ -57,31 +57,64 @@ target は `REALISM_REFERENCE_PRESETS.md` Cab 節 / work order step 4。
    （D121 の cone-breakup presence ~2.8 kHz 設計通り）。low end は Open 緩め
    (+0.6) / British・Closed body あり（+4.3 / +3.3）で方向は合っている。
 
-## phase 3（DSP 変更）候補メモ — 未実施
+## phase 3（DSP 変更）= D123 実施: per-model presence biquad
 
-`hw/ip/clash/src/LowPassFir.hs`（cab biquad / presence / body / air / softClip
-定数）を触る pass。次が候補だが、**rebuild + timing + bench acceptance が必須**で
-本 turn では行わない:
+最優先 gap（model separation 弱 = 3 model とも presence peak が共通 2806 Hz）の
+**根本原因は cone-breakup presence biquad の係数が全 model 共通だったこと**。
+`AudioLab/Effects/Cab.hs` の `cabPresenceFeedforwardFrame` /
+`cabPresenceRecursiveFrame` が固定係数（2800 Hz, Q1.0, +3.5 dB）を全 model に適用
+していた。これを **per-model 化**（coeff-only mux、既存 biquad 構造内、D122 amp
+scoop と同方式）:
 
-- model 別 presence center をずらして separation を作る（biquad coeff、model mux）。
-- Closed の 8-12 kHz fizz cut を強める（air / HF shelf 定数）。
-- >5 kHz rolloff を全 model でやや急に。
-- 3 model の rms を unity 付近へ（level / mix 既存定数のみで）。
+| model | RBJ peaking (96 kHz, Q14) | 狙い |
+| --- | --- | --- |
+| Open 1x12 | 3400 Hz, Q 0.8, +3.0 dB | 明るく/airy、高め・緩い presence |
+| British 2x12 | 2800 Hz, Q 1.0, +3.5 dB（**不変**） | mid-forward identity 保持 |
+| Closed 4x12 | 2300 Hz, Q 1.2, +4.0 dB | 低く/太い presence honk |
 
-修正タイプ分類（work order step 4-3）: 1/2/4 は peak/notch/shelf = biquad、
-3 は既存 air/shelf 定数、broad speaker texture が要るなら FIR/IR（license 明確な
-もののみ）。1 bitstream に Cab だけ載せ、drive/dynamics/amp と混ぜない。
+新 helper `cabPresenceFFCoeff` / `cabPresenceFBCoeff`（model = `ctrlC>>6`）。
+b1==a1（RBJ peaking）なので na1=-b1。bit-exact bypass 維持（cab off path 不変）。
+loudness 不一致・rolloff・Closed fizz は今回 scope 外（work order「1 bitstream に
+Cab だけ」方針、step 11 / 後続 pass）。ただし presence center 低下の副次で Closed
+rolloff -3.6->-4.2 / fizz -5.9->-6.1 も target 方向へ改善。
 
-## acceptance（step 4 phase 2）
+### before/after（sweep linear、bypass 差分、`measure.py cab0/1/2`）
 
-- D121 Cab 3 model が変更前 baseline として数値固定された。
-- target との差分（separation 弱・Closed fizz 逆・rolloff 緩・loudness 不一致）が
-  明文化され、phase 3 の修正対象が biquad / 定数 / FIR に分類された。
-- phase 3（実 DSP 変更）は未着手。rebuild + bench はユーザ判断で別 turn。
+| model | net peak (before -> after) | pres 2-4k | 効果 |
+| --- | --- | --- | --- |
+| Open | +3.4@2806 -> +2.7@2806(実 3400 broad) | +2.9 -> +2.3 | 明るく/緩く |
+| British | +3.2@2806 -> +3.2@2806 | +6.5 -> +6.5 | 不変 |
+| Closed | +3.2@2806 -> **+3.4@2310** | +5.5 -> +5.8 | **peak 分離・太く** |
+
+offline bypass bit-exact 確認。3 model が peak 周波数/presence 量で識別可能に。
+
+### build / deploy（D123、bench PENDING）
+
+- Clash regen PASS（`make regen` 相当、mtime trap 回避: vhdl + component.xml が M、
+  新係数 30865/28637/17087/16837/12274/14834 が VHDL に存在を確認）。
+- full Vivado build PASS、route error 0、`write_bitstream completed`。
+- timing 完全 MET: **WNS +0.595 / TNS 0 / 0 failing、WHS +0.017 / THS 0**、
+  island clk_fpga_1 +2.677、D109 CDC pair clk_fpga_0<->clk +5.610 / +6.508
+  （knife-edge bound 健在）。accepted baseline 帯（D112 +0.564 / D122 +0.614）内。
+- bit/hwh md5 `7efd41ef6d0b7a88ecd8c54217ad9c23` / `06611bce8a69b5409ff91ba54c531b76`。
+- deploy 完了、board 3 site md5 一致、PL smoke PASS（新 bit ロード、ADC HPF True）。
+- **ear-bench は未。CLAUDE.md 上 effect tone は実機 bench なしに accepted にしない。
+  D122 `1a295b8b` が bench-approved まで canonical baseline。**
+
+bench checklist（Cab 中心）: Safe Bypass clean、Cab only で Open/British/Closed の
+presence 差が聞こえるか、Closed が低めの太い presence、Open が明るい、high-gain
+through Cab の fizz、他 effect 不変。rollback は `git checkout d07c8e9 --
+hw/Pynq-Z2/bitstreams/`（D122 `1a295b8b`）+ redeploy。
+
+## acceptance（step 4）
+
+- phase 2: D121/D122 Cab 3 model が変更前 baseline として数値固定。
+- phase 3（D123）: per-model presence biquad で model separation を作成、sim A/B +
+  timing-clean build + deploy + PL-smoke 済み。**ear-bench 待ち**。
 
 ## 次工程
 
-- phase 3 に進むなら: 上記候補を 1 つずつ `tools/dsp_sim` で A/B → 良ければ
-  Vivado rebuild → timing → deploy → bench。ユーザ承認が前提。
-- phase 3 を保留して step 5（Overdrive measurement）へ進むのも可（DSP 非変更で
-  継続できる measurement 工程）。
+- ユーザ ear-bench → accepted なら `CURRENT_STATE.md` / `DECISIONS.md` を D123 で更新、
+  rejected なら上記 rollback。
+- bench 後、Cab の残 gap（loudness unity・rolloff・Closed fizz）を別 pass にするか、
+  step 5（Overdrive measurement）へ進む。

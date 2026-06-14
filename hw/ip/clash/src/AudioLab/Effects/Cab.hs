@@ -250,22 +250,44 @@ cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 -- D82/D83 timing form used by every island biquad. Runs after the speaker FIR;
 -- fAcc3L is free at that point (the FIR mix already consumed it). Bit-exact
 -- bypass when the cab is off.
+--
+-- D123: the presence biquad is now PER-MODEL (coeff-only mux, same structure)
+-- to give the three cabs distinct presence identities. The step-4 measurement
+-- (REALISM_CAB_MEASUREMENT.md) showed all three peaked at the SAME 2806 Hz
+-- (shared coeffs) -- no model separation. RBJ peaking, 96 kHz, Q14:
+--   open 1x12   3400 Hz, Q 0.8, +3.0 dB  (brighter / airier, higher center)
+--   british 2x12 2800 Hz, Q 1.0, +3.5 dB (mid-forward identity, UNCHANGED)
+--   closed 4x12 2300 Hz, Q 1.2, +4.0 dB  (lower / thicker presence honk)
+-- b1 == a1 for RBJ peaking, so na1 = -b1; only b0/b1/b2 + a2 differ per model.
+cabPresenceFFCoeff :: Unsigned 8 -> (Signed 16, Signed 16, Signed 16)
+cabPresenceFFCoeff model = case model `shiftR` 6 of
+  0 -> (17087, -28637, 12274)
+  1 -> (16948, -29986, 13549)
+  _ -> (16837, -30865, 14381)
+
+cabPresenceFBCoeff :: Unsigned 8 -> (Signed 16, Signed 16)
+cabPresenceFBCoeff model = case model `shiftR` 6 of
+  0 -> (28637, 12976)
+  1 -> (29986, 14112)
+  _ -> (30865, 14834)
+
 cabPresenceFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 cabPresenceFeedforwardFrame x1 x2 f =
   setMonoAcc3 (if on then ff else 0) f
  where
   on = flag7 (fGate f)
   x = monoSample f
-  -- 96 kHz RBJ (2800 Hz, Q 1.0, +3.5 dB).
-  ff = mulS16 x 16948 + mulS16 x1 (-29986) + mulS16 x2 13549 :: Wide
+  (b0, b1, b2) = cabPresenceFFCoeff (ctrlC (fCab f))
+  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
 
 cabPresenceRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 cabPresenceRecursiveFrame y1 y2 f =
   setMonoSample (if on then y else monoSample f) f
  where
   on = flag7 (fGate f)
-  -- -a1 = +29986, a2 = +14112; fAcc3L holds the FF sum.
-  y = satShift14 (fAcc3L f + mulS16 y1 29986 - mulS16 y2 14112)
+  -- na1 = -a1 (positive), a2; fAcc3L holds the FF sum.
+  (na1, a2) = cabPresenceFBCoeff (ctrlC (fCab f))
+  y = satShift14 (fAcc3L f + mulS16 y1 na1 - mulS16 y2 a2)
 
 -- ---- Cab-output micro-modulation (D96, digital-sound #11) --------------
 -- A perfectly static spectrum is a "digital" tell; real speakers / air / tubes
