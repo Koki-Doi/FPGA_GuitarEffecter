@@ -28,14 +28,17 @@ Audio-Lab-PYNQ/
 │   └── compact_v2/             knobs / state / layout / renderer / hit_test.py
 ├── scripts/                    デプロイ / スモーク / テスト（29 本）
 ├── tests/                      pytest
-├── tools/                      revoice.py 等の係数生成
+├── tools/
+│   └── dsp_sim/                Clash topEntity offline sim / measure.py / golden 測定
 └── docs/                       本書 + docs/ai_context/（設計・決定記録）
 ```
 
 中核の Clash ソースが「DSP 挙動の唯一の真実」、`docs/ai_context/` が「設計・決定の唯一の真実」
 という二本柱で、セッションをまたいでも一貫した開発ができる構成にしています。実機ランタイムは
 用途別に Notebook（`PmodI2S2EffectControlOneCell` / `HdmiGui` / `EncoderGuiSmoke` など）として
-提供します。
+提供します。D104/D115 以降は `Amp` / `Distortion` / overlay writer / GUI renderer も小さな
+submodule へ分割されており、ポートフォリオで見るべき top-level は「shim」ではなく、その下の
+所有 module です。
 
 ## 21. 用語集
 
@@ -48,22 +51,38 @@ Audio-Lab-PYNQ/
 | **アイランド** | DSP コアだけを隔離した低速クロックドメイン（FCLK_CLK1） |
 | **safe-bypass / all_off** | 全エフェクト OFF のバイパス経路。ビット完全一致でなければ「壊れている」 |
 | **ear-bench** | 実機試聴による受け入れ判定（合格＝採用ベースライン昇格） |
+| **offline DSP sim** | `tools/dsp_sim` で Clash `topEntity` を host CPU 上で実行する検証経路。Vivado 前に tone-curve / golden / bypass を見る |
+| **golden regression** | 代表設定の出力を保存し、意図しない DSP 変更でズレないかを見る回帰検査 |
+| **net tone-curve** | effect ON と bypass の周波数応答差。D121 では BD-2 / OCD / Metal / Cab の狙い帯域確認に使用 |
 | **ペダルマスク** | ディストーション段を mux ではなくビットマスクで選択する方式 |
 | **知見（knee）** | クリップ関数が効き始める振幅しきい値。`Sample` の絶対値（例 2,850,000） |
 | **RBJ** | Robert Bristow-Johnson のオーディオ EQ Cookbook。バイカッド係数設計の標準 |
 | **SVF** | State Variable Filter。Wah のレゾナントバンドパスに使用 |
 | **Pmod I2S2** | Digilent の I2S オーディオモジュール（CS5343 ADC + CS4344 DAC） |
-| **5 サイト同期** | bit/hwh をボード上の複数コピー場所すべてに md5 一致させるデプロイ規律 |
+| **複数コピー先同期** | bit/hwh をボード上の必要コピー場所すべてに md5 一致させるデプロイ規律 |
 | **ナイフエッジ** | 「DSP 再ビルドのたびにバイパスが壊れる」未タイミング CDC 由来の現象（D109 で解決） |
+| **D99** | D120 rollback 後にユーザーが選んだ Amp character の基準。D121 はこの Amp を触らず非 Amp だけ補正 |
+| **D121** | 現行 canonical deployed baseline。bit md5 `9a57c50a...`、D99 Amp untouched + non-Amp measured voicing |
 
 ## 22. 現状
 
-採用済みデプロイベースラインは **D112**（`c1e3de50`、D109 の CDC 修正の上にアンプを
-全面リボイス、実機試聴で合格、2026-06-07）。これに続く **D113**（アンプのモデル個性
-リチューン、bit `ed76421f`）と **D114**（アンプ以外のエフェクト定数リチューン、
-bit `31c768eb`）はタイミングクリーンでビルド済みですが、実機試聴での承認は保留中です
-（D114 は PL ロードがタイムアウトしボードがオフラインになったため、FPGA へのロード自体が
-未確認）。
+採用済みデプロイベースラインは **D121**（merge commit `d07c8e9`、bit md5
+`9a57c50ae405bce717648dc1585eaf4b`、hwh md5 `112be061b98ed16d5ff55eaa87fc3b85`）。
+2026-06-14 に build / timing / deploy / PL smoke / user bench を通過し、main へ `--no-ff`
+merge されています。
 
-最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D114）/
+D121 の位置づけ：
+
+- D109 の CDC hardening により、DSP 再ビルド時の safe-bypass 破壊リスクを根本対策済み。
+- D120 の Amp sag/static-trim 路線は bench rejected され、D99 系 Amp character へ rollback。
+- D121 は **Amp source を触らず**、Overdrive BD-2/OCD、Metal scoop、Cab presence の 4 箇所だけを
+  `tools/dsp_sim/measure.py` で測定駆動リボイス。
+- Vivado routed timing は WNS `+0.726 ns`、TNS `0`、WHS `+0.012 ns`、route errors `0`。
+- FPGA resource は LUT `30,792`、FF `28,896`、BRAM tile `6`、DSP48E1 `142`。
+
+D113-D120 の amp-retune / sag-disable / static-trim 系は、履歴上の候補または rejected branch として
+扱い、現行値としては語りません。後で問題が出た場合の rollback は D99 bitstreams を `ea6bf94`
+から復元（bit md5 `83a64ffc6415fe2a3bc2aed47b6b19f9`）して deploy します。
+
+最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D121）/
 `TIMING_AND_FPGA_NOTES.md` を参照してください。

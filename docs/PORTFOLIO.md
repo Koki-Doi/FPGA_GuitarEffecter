@@ -5,7 +5,15 @@
 DSP は関数型 HDL（Clash/Haskell）で記述し、HDMI GUI・ロータリーエンコーダ・フットスイッチ・
 エクスプレッションペダルまで自作 PL IP で統合した、フルスタックな組み込みハード／ソフト協調設計。
 
-> 本ページは概要。実装値・係数・アルゴリズム・設計の物語は **[深掘り技術付録](#深掘り技術付録)**（全 5 部）を参照。
+> 本ページはポートフォリオサイト向けの概要。実装値・係数・アルゴリズム・設計の物語は
+> **[深掘り技術付録](#深掘り技術付録)**（全 5 部）を参照。
+
+**現行の採用済みデプロイベースライン**は **D121**（merge commit `d07c8e9`、
+bit md5 `9a57c50ae405bce717648dc1585eaf4b`）。D109 の CDC 修正で DSP 再ビルド時の
+safe-bypass 破壊を根本解決したうえで、D99 の受け入れ済み Amp キャラクターはそのまま残し、
+Overdrive / Distortion / Cab の実機から外れていた帯域だけを offline DSP sim で測定・補正した
+ビルドです。Vivado routed timing は **WNS +0.726 ns / TNS 0 / WHS +0.012 ns**、実機 PL smoke と
+ユーザー bench で合格しています。
 
 ---
 
@@ -47,6 +55,9 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
   だけで Amp 6 / Overdrive 6 / Distortion 7 機種を作り分け（DSP48 数を増やさない）。
 - **アンチエイリアス 4x オーバーサンプリング** — ハードクリップ系を 4x + 15-tap デシメーション FIR
   で折り返し抑制。FIR は比率ベース（fs 非依存）で 48→96 kHz 移行時に無変更。
+- **offline DSP sim による音作りの高速化** — `tools/dsp_sim` で FPGA と同じ Clash
+  `topEntity` 固定小数点パイプラインをホスト CPU 上で実行。D121 では BD-2 / OCD / Metal / Cab の
+  net tone-curve を Vivado 前に測定し、golden 11/11 と bypass bit-exact を確認してからビット化。
 - **完全なハードウェア UI 統合** — HDMI GUI + エンコーダ + フットスイッチ + ペダルを自作 PL IP で
   実装し、Python の単一翻訳層に集約。
 
@@ -68,9 +79,9 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | サンプルレート | 96 kHz / 24-bit |
 | DSP アイランドクロック | 33.33 MHz（1 サンプル/サイクル、約 347 サイクル/サンプルの余裕） |
 | タイミング改善（アイランド導入） | WNS -10.387 ns → -0.706 ns |
-| 採用ベースライン（D112）の WNS | +0.564 ns（フルタイミング MET） |
+| 採用ベースライン（D121）の WNS | +0.726 ns（フルタイミング MET、TNS 0、route errors 0） |
 | エフェクト | 9 ブロック（Amp 6 / OD 6 / Distortion 7 / Cab 3 機種） |
-| FPGA リソース（概数） | DSP48E1 83〜137 / BRAM 6 / LUT 22k〜31k / FF 24k〜31k |
+| D121 FPGA リソース | LUT 30,792 / FF 28,896 / BRAM tile 6 / DSP48E1 142 |
 | `set_guitar_effects` レイテンシ | 940 ms → 2.6 ms（IP ハンドルキャッシュ後） |
 | 物理操作系 | エンコーダ ×3 / フットスイッチ ×3 / エクスプレッションペダル ×1 |
 
@@ -81,6 +92,7 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | レイヤー | 技術 |
 | --- | --- |
 | DSP（PL 論理） | **Clash (Haskell)** → VHDL、固定小数点、RBJ バイカッド、SVF、FIR、4x オーバーサンプリング |
+| DSP 検証 | `tools/dsp_sim`（Clash `topEntity` 実行）、`measure.py` net tone-curve、golden / bypass invariant |
 | FPGA 合成 | **Vivado 2019.1**、ブロックデザイン（Tcl 加算式）、タイミングクロージャ、CDC 解析 |
 | 制御層 | **Python 3.6**、PYNQ オーバーレイ API、MMIO / AXI-GPIO |
 | UI | HDMI フレームバッファ合成（PIL）、エンコーダ / フットスイッチ / XADC 入力 IP |
@@ -96,7 +108,7 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | --- | --- |
 | **[1/5 アーキテクチャ & DSP 実装](portfolio/01-architecture-and-dsp.md)** | システム仕様・AXI メモリマップ・クロックドメインアイランド（図解）・ナイフエッジ CDC 究明・Clash 型/数値プリミティブ・エフェクトチェーン |
 | **[2/5 各エフェクト & モデリング技法](portfolio/02-effects-and-modeling.md)** | 各エフェクトの内部レジスタ段・パラメータマッピング式・EQ/Reverb/Comp/Wah 内部実装・OD/Amp/Cab/Distortion の per-model 係数テーブル・4x オーバーサンプリングの実装 |
-| **[3/5 UI・制御・ビルド/デプロイ](portfolio/03-ui-control-build.md)** | HDMI GUI・エンコーダ/フットスイッチ/ペダル・IP レジスタマップ・`AudioLabOverlay` Python API・ビルド実コマンド・5 サイト同期・検証規律 |
+| **[3/5 UI・制御・ビルド/デプロイ](portfolio/03-ui-control-build.md)** | HDMI GUI・エンコーダ/フットスイッチ/ペダル・IP レジスタマップ・`AudioLabOverlay` Python API・ビルド実コマンド・複数コピー先同期・検証規律 |
 | **[4/5 エンジニアリングの物語](portfolio/04-engineering-story.md)** | 特出すべき成果・開発の歩み・リアリズムロードマップ（D81-D90）・設計上の課題と学び・HDMI 統合の道のり |
 | **[5/5 リファレンス](portfolio/05-reference.md)** | リポジトリ構成・用語集・現状 |
 
@@ -105,10 +117,23 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 
 ---
 
-## 現状（2026-06-07）
+## 現状（2026-06-14）
 
-採用済みデプロイベースラインは **D112**（`c1e3de50`、D109 の CDC 修正の上にアンプを全面リボイス、
-実機試聴で合格）。これに続く **D113**（アンプのモデル個性リチューン）と **D114**（アンプ以外の
-エフェクト定数リチューン）はタイミングクリーンでビルド済みだが、実機試聴での承認は保留中
-（D114 は PL ロードがタイムアウトしボードがオフラインのため FPGA へのロード自体が未確認）。
-最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D114）を参照。
+採用済みデプロイベースラインは **D121**。D121 は、D120 で bench-reject された Amp sag 変更路線を
+捨て、ユーザーが選んだ D99 系の Amp キャラクターへ戻したうえで、**Amp 以外の外れていた帯域だけ**
+を測定駆動で補正したビットストリームです。
+
+D121 の 4 つの音作り変更：
+
+1. **BD-2**：pre-clip biquad を 1500 Hz から 2300 Hz へ移し、+3.5 dB の明るい上中域へ。
+2. **OCD**：従来 flat だった pre-clip に +4 dB @ 1300 Hz の upper-mid honk を追加。
+3. **Metal**：既存 Big Muff 用の約 700 Hz scoop-notch biquad の gate を
+   `bigMuffOn || metalDistortionOn` に広げ、Metal の mid-scoop を新規段なしで実現。
+4. **Cab**：15-tap speaker FIR だけでは解像できない cone-breakup presence を、
+   FIR 後の +3.5 dB @ 2800 Hz peaking biquad で追加。
+
+すべて `tools/dsp_sim/measure.py` で Vivado 前に確認し、BD-2 peak 2310 Hz、OCD +3.7 dB @ 1290 Hz、
+Metal dip 593-720 Hz、Cab +3.2 dB @ 2806 Hz を確認済み。golden regression 11/11 と bypass
+bit-exact も通過しています。D120 / D119 の Amp sag 変更は bench-reject 済みで、明示的な新方針が
+ない限り再試行しません。最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` /
+`docs/ai_context/DECISIONS.md`（D109-D121）を参照。

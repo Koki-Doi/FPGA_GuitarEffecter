@@ -16,6 +16,12 @@ the runtime presets. Detailed per-effect gaps live in
 `MODEL_REALISM_GAP_ANALYSIS.md`; concrete implementation recipes live in
 `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`.
 
+For the newer D121-era, hardware-reference-constrained work order, read
+`REALISM_IMPROVEMENT_WORK_ORDER.md` first. It records the no-implementation
+sequence: reference presets -> measurement inputs -> target metrics -> Cab ->
+OD -> Distortion / Fuzz -> Wah -> Compressor -> Noise Suppressor -> Reverb ->
+preset loudness -> Amp -> final bench.
+
 ## Current baseline and boundary
 
 - Current accepted bitstream baseline is **D79**: bit md5

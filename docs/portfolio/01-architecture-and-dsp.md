@@ -24,6 +24,12 @@ Logic）上に実装した DSP チェーンで処理し、同モジュールの 
 までを**すべて自作の PL IP として統合**した、フルスタックな組み込みハード／
 ソフト協調設計になっています。
 
+現行の採用済みデプロイベースラインは **D121** です。これは D120 で bench-reject された
+Amp sag 変更路線を捨て、ユーザーが選んだ D99 系の Amp キャラクターを維持したまま、
+Amp 以外の外れていた帯域だけを `tools/dsp_sim` で測定して補正したビルドです。D109 の
+CDC 修正で DSP 再ビルド時の safe-bypass 破壊を根本解決したあとに、実際に音作りを変えて
+timing / golden / PL smoke / bench を通した、現在の canonical baseline です。
+
 ---
 
 ## 2. なぜ FPGA か — 設計思想
@@ -59,6 +65,24 @@ Logic）上に実装した DSP チェーンで処理し、同モジュールの 
 | ユーザー操作 | HDMI 800×480 LCD GUI、ロータリーエンコーダ ×3、フットスイッチ ×3、エクスプレッションペダル |
 | 合成環境 | Vivado 2019.1 |
 | コーデック（補助） | ADAU1761（I2C 制御、ADC HPF 常時 ON、デバッグ可視化用） |
+
+### 3.1 現行採用ビルド（D121）の実測値
+
+| 項目 | 値 |
+| --- | --- |
+| 採用日 | 2026-06-14 |
+| Git / bitstream | merge commit `d07c8e9`、bit md5 `9a57c50ae405bce717648dc1585eaf4b`、hwh md5 `112be061b98ed16d5ff55eaa87fc3b85` |
+| タイミング | WNS `+0.726 ns`、TNS `0`、WHS `+0.012 ns`、THS `0`、route errors `0` |
+| DSP island slack | `clk_fpga_1` WNS `+3.309 ns` |
+| リソース | Slice LUT `30,792`（57.88%）、Slice Register `28,896`（27.16%）、BRAM tile `6`（4.29%）、DSP48E1 `142`（64.55%） |
+| 実機 smoke | `AudioLabOverlay()` が新 bit を load、ADAU1761 ADC HPF `True`、Pmod I2S2 mode 2 (`dsp`) alive |
+| bench 判定 | ユーザー bench で一旦 accepted、その後 main へ `--no-ff` merge |
+| ロールバック | D99 bitstreams を `ea6bf94` から復元（bit md5 `83a64ffc6415fe2a3bc2aed47b6b19f9`）して deploy |
+
+この表は「ポートフォリオ用に見栄えよく丸めた値」ではなく、D121 の Vivado routed timing /
+utilization report と deploy / smoke / bench の実記録からそのまま持ってきた値です。FPGA
+プロジェクトでは、見た目の機能説明よりも **どの commit / bit / timing / bench 結果を現行値
+として語っているか**を固定することが重要です。
 
 ---
 
@@ -255,6 +279,8 @@ DSP は **Clash**（Haskell ベースの関数型 HDL）で記述し、Clash →
 | `AudioLab.Axis` | AXIS パック/アンパック、パケットヘルパー |
 | `AudioLab.Effects.*` | 各エフェクト段（Amp / Overdrive / Distortion / Cab / Reverb …） |
 | `AudioLab.Pipeline` | `fxPipeline`（段の接続） |
+| `tools/dsp_sim/Sim.hs` | Clash `topEntity` をホスト CPU 上で実行する offline DSP sim |
+| `tools/dsp_sim/measure.py` | bypass 比の net tone-curve / peak / dip を測る解析ハーネス |
 
 ### 6.2 コア型
 
@@ -289,6 +315,35 @@ type Ctrl   = BitVector 32 -- AXI GPIO ワード 1 つ
 処理を続ける。**未飽和の `Wide` を次の乗算チェーンに渡さない。** この一貫したルールが、
 オーバーフローと意図しない歪みを防ぎつつ、合成可能なビット幅を制御しています。
 
+### 6.4 offline DSP sim — Vivado 前に音作りを測る
+
+D121 から、音作りの変更は Vivado を走らせる前に `tools/dsp_sim` で測定する運用に寄せています。
+これは Python で書いた近似 DSP ではなく、**Clash の `topEntity` 固定小数点パイプラインを
+ホスト CPU 上でそのまま実行する**検証経路です。
+
+主な役割は 3 つです。
+
+| 役割 | 内容 |
+| --- | --- |
+| bypass invariant | 全エフェクト OFF 時に入力と出力が sample-exact に一致することを確認する |
+| golden regression | 代表設定（OD / Distortion / Cab など）の出力が、意図しない変更でズレないことを確認する |
+| net tone-curve | `measure.py` で「effect ON / bypass」の周波数応答差を測り、ピーク / ディップ / 帯域の位置を確認する |
+
+D121 では、この sim を使って以下を Vivado 前に確定しました。
+
+| 対象 | 狙い | offline 測定結果 |
+| --- | --- | --- |
+| BD-2 | pre-clip biquad を 1500 Hz から 2300 Hz へ移動し、明るい上中域へ | peak 約 2310 Hz |
+| OCD | flat だった pre-clip に +4 dB @ 1300 Hz の upper-mid honk を追加 | +3.7 dB @ 1290 Hz |
+| Metal | 既存 Big Muff scoop-notch を Metal にも掛け、中域を抉る | dip 593-720 Hz |
+| Cab | 15-tap FIR だけでは出しにくい cone-breakup presence を FIR 後に追加 | +3.2 dB @ 2806 Hz |
+
+重要なのは、offline sim は **Vivado / routed timing / PYNQ smoke / bench listening の代替ではない**
+という点です。33.33 MHz の DSP island と 96 kHz の音声サンプル間には妥当なサンプル投入間隔
+（idle gap）が必要で、PLL / CDC / I2S / board-level の問題は sim では分かりません。したがって
+D121 でも、sim → Clash VHDL regeneration → Vivado bit/hwh rebuild → timing summary → deploy →
+PL smoke → user bench の順で受け入れています。
+
 ---
 
 ## 7. エフェクトチェーン全体像
@@ -318,5 +373,32 @@ GUI 上の並びは **NS / CMP / WAH / OD / DIST / AMP / CAB / EQ / RVB** の 9 
 DMA トラフィックでは `fxPipeline` がサンプル値から TLAST を推定せず、`fLast` ビットを
 そのまま伝播することで S2MM の短パケット落ちを防ぎます。
 
----
+### 7.1 現行 D121 がチェーン上で変えた場所
 
+D121 は「全体を作り替えた」ビルドではありません。D120 までの amp 変更が bench で rejected
+だったため、**Amp 段は D99 系の accepted character を保持**し、外れていた非 Amp 帯域だけを
+最小変更で補正しています。チェーンで見ると、触った場所は以下の 4 点です。
+
+```
+Overdrive
+  ├─ BD-2: pre-clip biquad 1500 Hz → 2300 Hz, +3.5 dB
+  └─ OCD : new pre-clip biquad +4 dB @ 1300 Hz
+
+Distortion / Pedalboard
+  └─ Metal: Big Muff 用 scoop-notch biquad の gate を
+            bigMuffOn || metalDistortionOn に拡張
+
+Amp Simulator
+  └─ 変更なし（D99 amp character を維持）
+
+Cab IR
+  └─ speaker FIR 後に cone-breakup presence biquad +3.5 dB @ 2800 Hz
+```
+
+Metal の mid-scoop は新しいバイカッド段を足していません。既に Big Muff 用に存在していた
+約 700 Hz の scoop-notch を、Metal の出力にも通るよう gate 条件だけ広げています。Cab の
+presence は逆に、15-tap FIR のタップ長だけでは 2.8 kHz の狭いピークを十分に表現しにくい
+ため、FIR 後に peaking biquad を足しています。このように **既存段の再利用で済むところは
+再利用し、必要なところだけ段を増やす**のが D121 の設計方針です。
+
+---
