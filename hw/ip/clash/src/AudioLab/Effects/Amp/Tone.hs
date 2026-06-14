@@ -28,19 +28,23 @@ import AudioLab.Effects.Amp.Models
 -- 96 kHz RBJ coeffs (48 kHz values noted per line).
 ampScoopFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 ampScoopFeedforwardCoeffs idx = case idx of
-  0 -> (16210, -31960, 15761)   -- JC-120 : Fender scoop -5 dB @ 400 Hz (48k:16044/-31169/15169)
+  0 -> (16315, -32084, 15780)   -- JC-120 : near-flat SS clean, gentle -2 dB @ 400 Hz (voicing: was -5; a real Jazz Chorus is flat, not Fender-scooped -- now distinct from Twin)
   1 -> (16210, -31960, 15761)   -- Twin   : blackface mid scoop -5 dB @ 400 Hz
   2 -> (16901, -30680, 14101)   -- AC30   : Vox chime +4 dB @ 2200 Hz   (48k:17355/-28234/12091)
+  3 -> (16453, -32427, 15980)   -- Rockerverb : thick low-mid +3 dB @ 300 Hz (voicing: was flat)
   4 -> (16582, -32061, 15508)   -- JCM800 : Marshall mid +4 dB @ 650 Hz (48k:16772/-31328/14670)
-  _ -> (16384, 0, 0)            -- Rockerverb(3)/TriAmp(5) : flat (unity, b0 = 2^14)
+  5 -> (16064, -31446, 15421)   -- TriAmp : modern scoop -6 dB @ 750 Hz (voicing: was flat; deeper to survive power-amp compression)
+  _ -> (16384, 0, 0)            -- reserved 6/7 : flat (unity, b0 = 2^14)
 
 ampScoopFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 ampScoopFeedbackCoeffs idx = case idx of
-  0 -> (-31960, 15587)          -- (48k: -31169/14828)
-  1 -> (-31960, 15587)
-  2 -> (-30680, 14617)          -- (48k: -28234/13062)
-  4 -> (-32061, 15706)          -- (48k: -31328/15057)
-  _ -> (0, 0)                   -- Rockerverb(3)/TriAmp(5) : flat (no feedback)
+  0 -> (-32084, 15711)          -- JC-120 gentle scoop (voicing: was -31960/15587)
+  1 -> (-31960, 15587)          -- Twin (48k: -31169/14828)
+  2 -> (-30680, 14617)          -- AC30 (48k: -28234/13062)
+  3 -> (-32427, 16049)          -- Rockerverb low-mid
+  4 -> (-32061, 15706)          -- JCM800 (48k: -31328/15057)
+  5 -> (-31446, 15100)          -- TriAmp scoop (-6 dB @ 750)
+  _ -> (0, 0)                   -- reserved 6/7 : flat (no feedback)
 
 ampToneScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 ampToneScoopFeedforwardFrame x1 x2 f =

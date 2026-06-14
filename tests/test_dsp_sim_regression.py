@@ -42,7 +42,7 @@ PKGID = ("clash-prelude-1.8.1-"
 GAP = 8
 ORDER = ["gate", "od", "dist", "eq", "rat", "amp",
          "amp_tone", "cab", "reverb", "ns", "comp", "wah"]
-CONFIGS = ["bypass", "amp_jc120", "amp_jcm800",
+CONFIGS = ["bypass", "amp_jc120", "amp_jcm800", "amp_rockerverb", "amp_triamp",
            "overdrive_ts9", "od_bd2", "od_ocd", "distortion_ds1",
            "dist_metal", "cab", "reverb"]
 
@@ -125,6 +125,14 @@ def _config_words(cm, name):
         w["gate"] = cm.gate_word(amp_on=True)
         w["amp"] = cm.amp_word(30, 70, 60, 40)
         w["amp_tone"] = cm.amp_tone_word(55, 55, 60, amp_model_idx=4, amp_drive_mode=1)
+    elif name == "amp_rockerverb":  # voicing: thick low-mid +3 dB @ 300 Hz scoop biquad
+        w["gate"] = cm.gate_word(amp_on=True)
+        w["amp"] = cm.amp_word(28, 68, 55, 40)
+        w["amp_tone"] = cm.amp_tone_word(52, 52, 55, amp_model_idx=3, amp_drive_mode=1)
+    elif name == "amp_triamp":  # voicing: modern scoop -6 dB @ 750 Hz scoop biquad
+        w["gate"] = cm.gate_word(amp_on=True)
+        w["amp"] = cm.amp_word(32, 70, 58, 42)
+        w["amp_tone"] = cm.amp_tone_word(55, 52, 58, amp_model_idx=5, amp_drive_mode=1)
     elif name == "overdrive_ts9":
         w["gate"] = cm.gate_word(overdrive_on=True)
         w["od"] = cm.overdrive_word(65, 100, 55, overdrive_model=0)
