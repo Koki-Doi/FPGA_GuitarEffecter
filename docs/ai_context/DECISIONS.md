@@ -6596,6 +6596,42 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D122 — Amp per-model voicing (JC-120 flatter, Rockerverb thick low-mid, TriAmp scoop); bench-ACCEPTED, merged
+
+- **Decision.** Extend the D121 measurement-driven voicing to the amp models --
+  the user explicitly authorized touching the amp ("amp も含めて全部寄せて"),
+  which is the new explicit direction the rollback note required. Measured all 6
+  amp models offline; most already match their targets via the D83/D84 per-model
+  ampScoop biquad (AC30 chime +4 @ 2200 Hz, JCM800 mid +4 @ 650 Hz, Twin Fender
+  scoop -5 @ 400 Hz). Three were off and were fixed via the EXISTING ampScoop
+  biquad mux (coeff-only, NO new stage): (1) JC-120 (idx 0) shared Twin's
+  -5 dB @ 400 Hz Fender scoop, but a real Roland Jazz Chorus is solid-state and
+  FLAT -> softened to -2 dB @ 400 Hz, now distinct from Twin; (2) Rockerverb
+  (idx 3) was flat -> +3 dB @ 300 Hz low-mid ("thick low-mid", on top of its
+  darkest darken); (3) TriAmp (idx 5) was flat -> -6 dB @ 750 Hz modern scoop.
+  Twin/AC30/JCM800 unchanged (already on target). The differentiator input-HP
+  brightness and the power-sag are UNTOUCHED (both load-bearing / previously
+  rejected to change).
+- **Measurement finding.** The amp's cascaded always-on soft-clips partially
+  re-fill EQ *scoops* (cuts survive worse than boosts through compression):
+  JC-120-flatter and the Rockerverb boost measure clearly; the TriAmp scoop is
+  subtle at the output (~-2 dB after compression) even at -6 dB pre-clip. Kept
+  -6 dB; bench-confirmed audible.
+- **Boundaries.** Clash/VHDL coeff-only change in `Amp/Tone.hs` + regenerated
+  IP/bit/hwh. No new pipeline stage, no GPIO/Tcl/XDC/block-design/topEntity-port
+  /effect-order/Python-API change.
+- **Build / deploy / smoke.** `make -C hw/ip/clash regen` + full Vivado build,
+  timing fully MET (WNS `+0.614 ns`, TNS `0`, WHS `+0.016 ns`, THS `0`,
+  WPWS `+2.845`); island clk_fpga_1 `+2.633 ns`; route errors `0`. bit/hwh md5
+  `1a295b8be4c19f3d39b0e46268b6e801` / `eb1f70122c23f0632f2a0f7007b4610f`.
+  Deployed 3 board sites (md5-matched), PL-smoke OK (overlay loads, ADC HPF
+  `True`). bypass bit-exact (golden 13/13 incl. new amp_rockerverb/amp_triamp +
+  re-blessed amp_jc120; amp_jcm800 + all non-amp byte-identical = surgical).
+- **Status.** Bench ACCEPTED ("合格"). Merged to main (`--no-ff`); bit
+  `1a295b8b` is the new canonical deployed baseline, superseding D121. Branch
+  `feature/amp-voicing`. Rollback: D121 via `git checkout d07c8e9 --
+  hw/Pynq-Z2/bitstreams/` (bit `9a57c50a`), or D99 via `ea6bf94`, + redeploy.
+
 ## D121 — Off-target effect voicing (OD BD-2/OCD, Metal scoop, Cab presence); D99 amp untouched; bench provisionally accepted
 
 - **Decision.** First voicing pass on the rolled-back D99 baseline that targets
