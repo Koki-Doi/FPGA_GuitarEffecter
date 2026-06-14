@@ -80,8 +80,11 @@ CDC pair +1.491/+6.466）。bit/hwh md5 `3382ed563e56777cb98afd260c8aea09` /
 `d73e51f33658efcf6a1d3327a892bf29`。deploy 完了、board 2 site md5 一致、PL smoke PASS
 （bit ロード、ADC HPF True、compressor GPIO 健在）。**ear-bench 未。D124 `3367d0e3` が
 bench-approved まで canonical baseline。** branch `feature/compressor-dyna-ross`。
-release / pumping は実機で確認（response knob、sustained chord）。rollback は
-`git checkout dbca714 -- hw/Pynq-Z2/bitstreams/`（D124）+ redeploy。
+release / pumping は実機で確認（response knob、sustained chord）。
+
+**bench-ACCEPTED（合格）。`--no-ff` で main にマージ（"Merge D125"）。D125
+（`31f7b57`、bit `3382ed56`）が新 canonical baseline（D124 を supersede）。**
+rollback は `git checkout dbca714 -- hw/Pynq-Z2/bitstreams/`（D124）+ redeploy。
 
 ## step 9 Noise Suppressor — on-target
 

@@ -6596,6 +6596,41 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D125 — Compressor Dyna/Ross sustain (RATIO now effective); bench-ACCEPTED, merged
+
+- **Decision.** Realism work order steps 7-11 survey (`REALISM_DYNAMICS_REVERB_MEASUREMENT.md`)
+  on the D124 baseline: Wah on-target (POSITION sweep 466->2164 Hz, Q~3, smooth
+  exponential taper), NS on-target (closes a decaying tail 1.48->0.84 s, no
+  chatter), Reverb not measurable with the current offline harness (single
+  impulse too weak, long-decay runs time out -> ear-domain), loudness deferred
+  to last. The one offline-measurable issue was the Compressor: the RATIO knob
+  was nearly inert (ratio 10..90 -> gain reduction only -0.1..-0.6 dB) and the
+  compression was shallow (max ~2.6 dB) -- work order step 8's "RATIO の変化が
+  分かりやすいか" failed. User chose a Dyna/Ross sustain identity.
+- **Root cause.** `compTargetNext` computed
+  `excessShifted = (excess>>12)+(excess>>14)` (~0.0003x), so the envelope excess
+  mapped into a tiny `excessU12`; `reduction = excessU12*ratio/256` was therefore
+  both small and barely ratio-sensitive.
+- **Change.** `excessShifted = (excess>>10)+(excess>>11)` (~4.8x more sensitive).
+  This is the static compression curve (envelope->reduction), NOT a time
+  constant, so it is fs-independent. Only `Compressor.hs` changed; no GPIO/
+  topology/stage/multiplier/Tcl/XDC/block-design/topEntity-port change.
+- **Verification.** Offline A/B (th40/ra70): GR now -2.3/-8.3/-10.0 dB at
+  -17/-11/-6 dBFS (was -0.5/-1.2/-2.6); threshold ~-23 dBFS preserved. RATIO
+  sweep at -17 dBFS: -0.3..-3.1 dB (was -0.1..-0.6), wider at louder levels.
+  Light presets stay light (ratio 25 -> -0.8 dB). bypass bit-exact. Clash regen
+  PASS (mtime trap avoided); Vivado PASS; route errors 0; timing fully MET
+  (WNS +0.698, TNS 0, WHS +0.009, THS 0; island clk_fpga_1 +2.851; D109 CDC pair
+  clk_fpga_0<->clk +1.491/+6.466). bit/hwh md5
+  `3382ed563e56777cb98afd260c8aea09` / `d73e51f33658efcf6a1d3327a892bf29`.
+  Deployed; 2 board sites md5-matched; PL-smoke OK.
+- **Status.** Bench-ACCEPTED; merged to main (`--no-ff`, "Merge D125").
+  **D125 (`31f7b57`, bit `3382ed56`) is the new canonical deployed baseline,
+  superseding D124.** Branch `feature/compressor-dyna-ross`. Rollback to D124 via
+  `git checkout dbca714 -- hw/Pynq-Z2/bitstreams/` (bit `3367d0e3`) + redeploy.
+  Remaining realism work: Reverb (ear pass), preset loudness (last), Amp
+  reassessment (only if still limiting), final integrated board bench.
+
 ## D124 — RAT live-pole highpass fix (RAT now distorts); bench-ACCEPTED, merged
 
 - **Decision.** Realism work order steps 5 (Overdrive) + 6 (Distortion/Fuzz).
