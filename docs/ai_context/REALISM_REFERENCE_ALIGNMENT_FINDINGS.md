@@ -130,6 +130,22 @@ tables copied — public measurements + topology only (per plan ground rules).
   rejected). Touch one model at a time, only after Cab/OD/Dist/dynamics are
   stable, and only with explicit user direction (plan rank 6, high risk).
 
+## Tone-sweep confirmation (measured, drive 60, net peak vs bypass)
+
+| model | TONE 0 | TONE 50 | TONE 100 | vs real-HW |
+| --- | --- | --- | --- | --- |
+| **OD-1/SD-1 (m1)** | +1.0 @200 | **+0.0 (no peak)** | +0.0 @3276 | **FLAT — no mid peak at any tone.** SD-1 needs a moving 500-1500 Hz peak -> biggest OD gap (confirms rank 2). |
+| **BD-2 (m2)** | +1.0 @200 | +2.3 @2197 | +2.4 @2197 | Peak at 2197 Hz (= the 2-3 kHz 1st-stage peak), darkens at low TONE. Roughly aligned; real min-tone focus is ~750 Hz (minor). |
+| **TS9 (m0)** | +1.0 @200 | +3.9 @663 | +3.8 @663 | Peak ~663 Hz (= 720 Hz hump target), darkens at low TONE. On-target. |
+
+(net peak amplitudes here read lower than the gap-32 harmonic pass because this is
+a fast gap-8 / 16-tone confirmation run; the relative which-model-has-a-peak-where
+pattern is what matters. Model 1 reading +0.0 = literally no resonant peak.)
+
+The measurement confirms the reference-derived priority: **Overdrive model 1 is
+flat and has no mid character**, so if it is meant to be SD-1 it is the clearest
+gap in the drive lineup.
+
 ## Updated candidate ranking (measurement + reference backed)
 
 | Rank | Candidate | Evidence | Risk |
