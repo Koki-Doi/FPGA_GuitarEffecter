@@ -80,9 +80,10 @@ precedence `(prevOut*507)>>9`、coef 507/512 = 0.9902 ≈ 150 Hz）。**共有
   accepted 帯（D122 +0.614）内。
 - bit/hwh md5 `3367d0e3f86fdb5d8b5d501be1c71995` / `3b24f3f2fa4e8aa2ffc1530e80c4484d`。
 - deploy 完了、board 2 site md5 一致、PL smoke PASS（bit ロード、ADC HPF True）。
-- **ear-bench 未。RAT は音色変更なので実機確認が必須。D123 `7efd41ef` が bench-approved
-  まで canonical baseline。** branch `feature/rat-highpass-fix`。rollback は
-  `git checkout <D123> -- hw/Pynq-Z2/bitstreams/` + redeploy。
+- **bench-ACCEPTED。`--no-ff` で main にマージ（"Merge D124"）。D124（`526f1e8`、
+  bit `3367d0e3`）が新 canonical baseline（D123 を supersede）。** branch
+  `feature/rat-highpass-fix`。rollback は `git checkout 62d0610 --
+  hw/Pynq-Z2/bitstreams/`（D123 `7efd41ef`）+ redeploy。
 
 bench checklist: Safe Bypass clean、**RAT を選んで実際に歪む/gritty か**（従来は
 clean だった）、FILTER knob で treble が変わるか、mid-forward か、明るさが残るか、

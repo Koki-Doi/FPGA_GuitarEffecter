@@ -6596,6 +6596,47 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D124 — RAT live-pole highpass fix (RAT now distorts); bench-ACCEPTED, merged
+
+- **Decision.** Realism work order steps 5 (Overdrive) + 6 (Distortion/Fuzz).
+  Measured all 6 OD + 7 Dist models offline (`tools/dsp_sim` harmonic_profile +
+  net curve, `REALISM_OD_DIST_MEASUREMENT.md`). Everything measured on-target
+  EXCEPT RAT, which produced THD 0.0% at every drive (55..127) -- it never
+  distorted at all. OD: TS9/BD-2(D121)/OCD(D121) on-target, JanRay + Klon are
+  intentionally low-gain/transparent (JanRay distorts 4.6/9.8/11.7% at drive
+  70/90/max -- a working low-gain OD, NOT a bug), so per work order policy no
+  on-target model was over-tuned.
+- **Root cause.** `ratHighpassFrame` called `onePoleHighpass 511 9`; Haskell
+  precedence makes `prevOut * coef \`shiftR\` shift` parse as
+  `prevOut * (511 >> 9) = prevOut * 0`, so the feedback pole is dead and the
+  stage is a first difference (x - prevIn). That attenuates 1 kHz ~24 dB
+  (|H| = 2 sin(pi f / fs) ~ 0.065), so the signal reaching the drive + hard clip
+  was tiny and never clipped. The dead-pole from memory
+  `project_amp_rat_hp_dead_pole`.
+- **Change.** Inline a LIVE one-pole highpass in `ratHighpassFrame` ONLY:
+  `satWide (x - prevIn + (prevOut*507) >> 9)`, coef 507/512 = 0.9902 ~ 150 Hz.
+  The shared `FixedPoint.onePoleHighpass` and its other intentionally-dead-pole
+  callers (the amp HP, which the D101/D107 history shows must stay as-is) are
+  untouched. Only `Rat.hs` changed; no GPIO/topology/stage/multiplier/Tcl/XDC/
+  block-design/topEntity-port change.
+- **Verification.** Offline A/B: RAT now THD 17/24/26% at drive 30/55/85,
+  odd/even +77 (op-amp + diode hard clip), net peak moved 4138->720 Hz
+  (mid-forward = target), FILTER works as a treble rolloff (tilt -5.3/-10.0/-39.3
+  at FILTER 0/50/100), brightness preserved at FILTER 0, rms -28.4->-12.2 (in
+  line with other dist pedals). bypass bit-exact. Clash regen PASS (mtime trap
+  avoided, coef 507 in VHDL); full Vivado build PASS; route errors 0; timing
+  fully MET (WNS +0.619, TNS 0, WHS +0.008, THS 0; island clk_fpga_1 +2.449;
+  D109 CDC pair clk_fpga_0<->clk +5.683/+6.359). bit/hwh md5
+  `3367d0e3f86fdb5d8b5d501be1c71995` / `3b24f3f2fa4e8aa2ffc1530e80c4484d`.
+  Deployed to PYNQ-Z2 `192.168.1.9`; 2 board sites md5-matched; PL-smoke OK.
+- **Status.** Bench-ACCEPTED; merged to main (`--no-ff`, "Merge D124").
+  **D124 (`526f1e8`, bit `3367d0e3`) is the new canonical deployed baseline,
+  superseding D123.** Branch `feature/rat-highpass-fix`. Rollback to D123 via
+  `git checkout 62d0610 -- hw/Pynq-Z2/bitstreams/` (bit `7efd41ef`) + redeploy.
+  NOTE (user): overall effect completeness still considered low -- realism steps
+  7-11 (Wah/Comp/NS/Reverb/loudness) are next, and further voicing revisions are
+  expected.
+
 ## D123 — Cab per-model presence biquad (model separation); bench-ACCEPTED, merged
 
 - **Decision.** Realism work order (`REALISM_IMPROVEMENT_WORK_ORDER.md`) step 4
