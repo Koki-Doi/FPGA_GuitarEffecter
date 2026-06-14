@@ -379,26 +379,48 @@ bigMuffClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
 -- identical to the single-stage form (same coefficients, same response).
 -- x1/x2 are a 2-tap delay of the stage input, y1/y2 of the recursive output;
 -- bit-exact bypass when the pedal is off (output = input).
+-- D126: the scoop biquad is now ALSO shared with DS-1, with a coeff mux.
+-- The real BOSS DS-1 has a SHALLOW ~3 dB mid scoop (500 Hz-2 kHz) that our DS-1
+-- lacked (measured as a rising tilt, no dip). DS-1 runs upstream of this stage,
+-- so (like metal, D121) its output reaches here as monoSample -- adding ds1 to
+-- the gate applies a scoop with NO new biquad. But DS-1's scoop is much
+-- shallower / higher than the Big Muff's deep -10 dB @ 700 Hz, so when ds1 is
+-- the active pedal we select a -3 dB @ 1000 Hz Q0.7 coeff set instead. When
+-- bigMuff/metal is active the ORIGINAL coeffs are used (byte-identical, so the
+-- D90/D121 voicing is preserved). Bypass-exact when all three are off.
+bigMuffScoopFfCoeff :: Frame -> (Signed 16, Signed 16, Signed 16)
+bigMuffScoopFfCoeff f
+  | ds1On f && not (bigMuffOn f || metalDistortionOn f)
+              = (15878, -30674, 14861)   -- DS-1 : -6 dB @ 1000 Hz Q0.7. -6 dB
+                                         -- (not -3) because the DS-1's bright
+                                         -- rising tilt would bury a -3 dB notch;
+                                         -- -6 dB lands a ~-2 dB net dip = the
+                                         -- real DS-1's "almost 3 dB" 500-2k scoop.
+  | otherwise = (15841, -31148, 15339)   -- Big Muff / Metal : -10 dB @ 700 Hz
+
+bigMuffScoopFbCoeff :: Frame -> (Signed 16, Signed 16)
+bigMuffScoopFbCoeff f
+  | ds1On f && not (bigMuffOn f || metalDistortionOn f)
+              = (30674, 14356)           -- DS-1 (na1, a2)
+  | otherwise = (31148, 14797)           -- Big Muff / Metal (na1, a2)
+
 bigMuffScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopFeedforwardFrame x1 x2 f =
   setMonoAcc3 (if on then ff else 0) f
  where
-  -- Shared with metal (voicing): this ~700 Hz notch is also the MT-2-style
-  -- mid-scoop the metal pedal was missing. metal runs upstream, so its output
-  -- reaches this stage as monoSample; gating on metal too applies the same
-  -- scoop with no second biquad. Bypass-exact when both pedals are off.
-  on = bigMuffOn f || metalDistortionOn f
+  on = bigMuffOn f || metalDistortionOn f || ds1On f
   x = monoSample f
-  -- 96 kHz RBJ coeffs (700 Hz, Q 0.8, -10 dB); was 15350/-29618/14393 @48k.
-  ff = mulS16 x 15841 + mulS16 x1 (-31148) + mulS16 x2 15339 :: Wide
+  (b0, b1, b2) = bigMuffScoopFfCoeff f
+  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
 
 bigMuffScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopRecursiveFrame y1 y2 f =
   setMonoSample (if on then y else monoSample f) f
  where
-  on = bigMuffOn f || metalDistortionOn f   -- shared scoop (see feedforward note)
-  -- 96 kHz: -a1 = +31148, -a2 = -14797 (was 29618 / 13359); fAcc3L holds the FF sum.
-  y = satShift14 (fAcc3L f + mulS16 y1 31148 - mulS16 y2 14797)
+  on = bigMuffOn f || metalDistortionOn f || ds1On f   -- shared scoop (see FF note)
+  (na1, a2) = bigMuffScoopFbCoeff f
+  -- fAcc3L holds the FF sum; -a1 = +na1.
+  y = satShift14 (fAcc3L f + mulS16 y1 na1 - mulS16 y2 a2)
 
 bigMuffToneFrame :: Sample -> Frame -> Frame
 bigMuffToneFrame prevLp f =

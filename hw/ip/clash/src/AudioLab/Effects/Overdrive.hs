@@ -201,6 +201,10 @@ odUsesCleanBlend m = m == 5
 odMidFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 odMidFeedforwardCoeffs m = case m of
   0 -> (16717, -32063, 15382)   -- TS9  : +6 dB @ 720 Hz  (48k: 17036/-31323/14422)
+  1 -> (16566, -31629, 15113)   -- OD-1 : +2.5 dB @ 850 Hz (D126: gentle mid focus -- a real
+                                --        BOSS OD-1 is mildly mid-voiced, not dead-flat; far
+                                --        milder than TS9 so OD-1 stays distinct. Asym clip
+                                --        (knees 2.55M/1.75M = even harmonics) is unchanged.)
   2 -> (17039, -29789, 13091)   -- BD-2 : +3.5 dB @ 2300 Hz (voicing: brighter, was +3 @ 1500)
   4 -> (16730, -31469, 14853)   -- OCD  : +4 dB @ 1300 Hz upper-mid honk (voicing: was flat)
   _ -> (16384, 0, 0)            -- flat (unity, b0 = 2^14)
@@ -208,6 +212,7 @@ odMidFeedforwardCoeffs m = case m of
 odMidFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 odMidFeedbackCoeffs m = case m of
   0 -> (-32063, 15715)          -- TS9  (48k: -31323/15075)
+  1 -> (-31629, 15294)          -- OD-1 (gentle +2.5 dB @ 850 Hz)
   2 -> (-29789, 13745)          -- BD-2 (brighter @ 2300 Hz)
   4 -> (-31469, 15200)          -- OCD  (upper-mid honk @ 1300 Hz)
   _ -> (0, 0)                   -- flat (no feedback)

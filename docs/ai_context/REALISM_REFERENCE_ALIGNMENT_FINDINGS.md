@@ -223,6 +223,34 @@ Adding a new biquad stage costs Pipeline state + DSP; measure timing on the DS-1
 island path (the tight one) before committing — a peaking biquad is cheap (the
 D121 cab/OD adds cost ~nothing) but DS-1 shares the critical path.
 
+## D126 — pedal alignment pass IMPLEMENTED (deployed, bench PENDING)
+
+User authorized "全部一気に" (do all the pedal candidates at once). D126 bundles
+three measurement+reference-backed pedal changes (BD-2 left alone = on-target;
+amp split out to its own isolated bench per the hard rule). All coeff/mux-only on
+existing stages, bypass bit-exact, timing fully MET (WNS **+1.057**, island
++3.142, CDC pair +2.017/+6.476):
+
+1. **OD-1 (model 1) gentle mid focus**: filled the model-1 row of the existing
+   OD pre-clip biquad mux with +2.5 dB @ 850 Hz. Measured net peak +1.9 @ 877 Hz
+   (was flat). Asym clip unchanged (OD-1 identity preserved).
+2. **DS-1 mid scoop**: widened the existing Big Muff/Metal scoop biquad gate to
+   include `ds1On`, with a coeff mux: DS-1 uses **-6 dB @ 1000 Hz Q0.7** (the
+   Big Muff/Metal -10 dB @ 700 Hz coeffs are byte-identical, so those models are
+   unchanged). NO new pipeline stage. Measured net dip ~-2.4 dB @ ~1 kHz (was a
+   rising tilt with no scoop) = the real DS-1's "almost 3 dB" 500 Hz-2 kHz scoop.
+   (-6 dB pre-figure because the DS-1's bright rising tilt buries a -3 dB notch.)
+3. **RAT slew darkening**: `ratPostLowpassFrame` alpha is now DRIVE-dependent
+   (`106 - drive>>2`) so high GAIN rolls off the top (LM308 slew). Measured 8 kHz
+   net at drive 10/55/100 = -6.4 / -11.6 / -22.3 dB (drive 0 = byte-identical to
+   D124). Tames high-gain fizz like the analog circuit.
+
+bit/hwh md5 `a4db4b7b0f19c1a3aa37133b1eda35c6` / `9b33b40c56eea99cf40a3816c833f5ae`.
+Deployed to PYNQ-Z2; 2 board sites md5-matched; PL-smoke OK. **Bench PENDING.**
+Branch `feature/od1-ds1scoop-rat-realism`. Rollback to D125 via
+`git checkout 4b2236e -- hw/Pynq-Z2/bitstreams/` + redeploy. **The amp (Marshall)
+work is D127, a SEPARATE bitstream for an isolated amp bench (hard rule).**
+
 ## Next concrete step (when implementation is authorized)
 
 OD-1 is resolved (model 1 already aligned — no change required). The next
