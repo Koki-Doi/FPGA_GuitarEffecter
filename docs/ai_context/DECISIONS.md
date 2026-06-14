@@ -6596,6 +6596,44 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D123 — Cab per-model presence biquad (model separation); bench-ACCEPTED, merged
+
+- **Decision.** Realism work order (`REALISM_IMPROVEMENT_WORK_ORDER.md`) step 4
+  (Cab), phase 3. Steps 1-3 first built the measurement scaffold with NO DSP
+  change: reference presets (`REALISM_REFERENCE_PRESETS.md`), canonical inputs
+  (`REALISM_MEASUREMENT_INPUTS.md` + `tools/dsp_sim/signals.py`), target metrics
+  (`REALISM_TARGET_METRICS.md` + `tools/dsp_sim/harmonics.py`), and a `measure.py`
+  `cab0/1/2` config so each cab model measures individually. The step-4
+  measurement (`REALISM_CAB_MEASUREMENT.md`) found all three cabs peaked at the
+  SAME 2806 Hz: the cone-breakup presence biquad
+  (`cabPresenceFeedforwardFrame`/`cabPresenceRecursiveFrame`, added D121) used ONE
+  shared coeff set for every model, so Open/British/Closed had no presence
+  separation -- the work order's #1 Cab gap.
+- **Change.** Make the presence biquad per-model (coeff-only mux in the EXISTING
+  ff/rec frames, same D82/D83 split, exactly like the D122 ampScoop mux). RBJ
+  peaking, 96 kHz, Q14: open 1x12 3400 Hz Q0.8 +3.0 dB (brighter/airier),
+  british 2x12 2800 Hz Q1.0 +3.5 dB (UNCHANGED, mid-forward identity), closed
+  4x12 2300 Hz Q1.2 +4.0 dB (lower/thicker honk). New helpers
+  `cabPresenceFFCoeff` / `cabPresenceFBCoeff` (model = `ctrlC>>6`); b1==a1 for RBJ
+  peaking so na1 = -b1. No new GPIO/topology/stage/multiplier/Tcl/XDC/
+  block-design/topEntity-port change. Loudness unity / >5 kHz rolloff / Closed
+  fizz are deliberately out of scope (one-aspect Cab pass; step 11 / later pass).
+- **Verification.** Offline A/B (`tools/dsp_sim`, `measure.py cab0/1/2`): Closed
+  peak moved 2806->2310 Hz, Open presence gentler/higher (pres 2-4k +2.9->+2.3),
+  British unchanged; side effect Closed rolloff -3.6->-4.2 / fizz -5.9->-6.1
+  toward target; bypass bit-exact. Clash regen PASS (mtime trap avoided: vhdl +
+  component.xml M, new coeffs 30865/28637/17087/16837/12274/14834 in VHDL); full
+  Vivado build PASS; route errors 0; timing fully MET (WNS +0.595, TNS 0,
+  WHS +0.017, THS 0, WPWS +2.845; island clk_fpga_1 +2.677; D109 CDC pair
+  clk_fpga_0<->clk +5.610/+6.508). In the accepted baseline band (D112 +0.564 /
+  D122 +0.614). bit/hwh md5 `7efd41ef6d0b7a88ecd8c54217ad9c23` /
+  `06611bce8a69b5409ff91ba54c531b76`. Deployed to PYNQ-Z2 `192.168.1.9`; 3 board
+  sites md5-matched; PL-smoke OK (new bit loaded, ADC HPF True, GPIOs present).
+- **Status.** Bench-ACCEPTED ("合格"); merged to main (`--no-ff`, "Merge D123").
+  **D123 (`62d0610`, bit `7efd41ef`) is the new canonical deployed baseline,
+  superseding D122.** Branch `feature/cab-presence-separation`. Rollback to D122
+  via `git checkout 7c59f30 -- hw/Pynq-Z2/bitstreams/` (bit `1a295b8b`) + redeploy.
+
 ## D122 — Amp per-model voicing (JC-120 flatter, Rockerverb thick low-mid, TriAmp scoop); bench-ACCEPTED, merged
 
 - **Decision.** Extend the D121 measurement-driven voicing to the amp models --
