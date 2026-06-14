@@ -6627,10 +6627,11 @@ pre-existing 3 failures + 1 error baseline.
   `9a57c50ae405bce717648dc1585eaf4b` / `112be061b98ed16d5ff55eaa87fc3b85`.
   Deployed 3 board sites (all md5-matched), PL-smoke OK (overlay loads the new
   bit, ADC HPF `True`).
-- **Status.** Bench PROVISIONALLY accepted ("全部一旦おｋ"). Committed on branch
-  `feature/voicing-offtargets`; NOT merged to main (D99 stays the canonical
-  deployed baseline until final confirmation). Rollback: `git checkout HEAD --
-  hw/Pynq-Z2/bitstreams/` (HEAD's committed bit IS D99 `83a64ffc`) + redeploy.
+- **Status.** Bench ACCEPTED (the user confirmed "全部一旦おｋ", then asked to
+  merge). **Merged to main (`--no-ff`); D121 (`9a57c50a`) is the new canonical
+  deployed baseline, superseding D99.** Branch `feature/voicing-offtargets`.
+  Rollback if a later issue surfaces: `git checkout ea6bf94 --
+  hw/Pynq-Z2/bitstreams/` (D99 `83a64ffc`) + redeploy.
 
 ## D120 — Remove Amp dynamic power-sag + static master trim; bench-REJECTED -> deployed baseline ROLLED BACK to D99
 
