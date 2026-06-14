@@ -146,6 +146,21 @@ The measurement confirms the reference-derived priority: **Overdrive model 1 is
 flat and has no mid character**, so if it is meant to be SD-1 it is the clearest
 gap in the drive lineup.
 
+### DS-1 scoop + RAT FILTER (measured)
+
+- **DS-1 (tone 50, drive 65), net 400-2200 Hz**: 452:-1.7, 564:-0.8, 703:-0.1,
+  877:+0.4, 1094:+0.7, 1365:+1.0, 1703:+1.1, 2124:+1.1 — a gentle **rising tilt,
+  NO mid scoop** (the band minimum -1.7 is just the low edge). The real DS-1's
+  **~3 dB scoop in 500 Hz-2 kHz is absent** -> confirms rank 3 (add a shallow
+  ~-3 dB scoop ~1 kHz; it must be its OWN coeff row, not the Big Muff/Metal deep
+  -10 dB @ 700 Hz notch).
+- **RAT FILTER**: treble at 8 kHz sits ~-9 dB (vs peak) at FILTER low and ~-26 dB
+  at FILTER high, so the FILTER clearly rolls off treble and the corner moves
+  down as expected. NOTE: this quick check used out-of-range filter bytes
+  (128/255 both clamp), so the precise "does the corner reach ~475 Hz fully up"
+  question needs a proper FILTER 0..100 sweep before promoting rank 4. The
+  treble-rolls-off-with-gain (LM308 slew) trait is the more certain rank-4 gap.
+
 ## Updated candidate ranking (measurement + reference backed)
 
 | Rank | Candidate | Evidence | Risk |
