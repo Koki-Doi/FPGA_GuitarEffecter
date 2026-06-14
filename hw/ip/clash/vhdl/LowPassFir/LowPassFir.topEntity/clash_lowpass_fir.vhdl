@@ -14672,7 +14672,7 @@ begin
                         to_unsigned(12,8) when "001",
                         to_unsigned(17,8) when "010",
                         to_unsigned(31,8) when "011",
-                        to_unsigned(25,8) when "100",
+                        to_unsigned(20,8) when "100",
                         to_unsigned(39,8) when "101",
                         to_unsigned(6,8) when others;
 
