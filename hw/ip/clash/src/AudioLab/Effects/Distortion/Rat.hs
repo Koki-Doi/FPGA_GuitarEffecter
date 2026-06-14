@@ -15,9 +15,16 @@ ratHighpassFrame prevIn prevOut f =
  where
   on = flag4 (fGate f)
   x = monoSample f
-  -- coef 511 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
-  -- preserved bit-exact; the stage is effectively x - prevIn).
-  highpass x prevIn prevOut = onePoleHighpass 511 9 x prevIn prevOut
+  -- D124: LIVE one-pole highpass (~150 Hz at 96 kHz). The old `onePoleHighpass
+  -- 511 9` call rounded the feedback pole to 0 (511>>9 = 0 -> first difference
+  -- x - prevIn), which attenuated the passband ~24 dB at 1 kHz, so the signal
+  -- entering the drive + hard clip was tiny and the RAT NEVER distorted
+  -- (measured THD 0% even at max drive). Inline correct-precedence form
+  -- (prevOut*coef)>>9 so ONLY the RAT pole goes live; the shared
+  -- onePoleHighpass and its other (intentionally-dead-pole) callers are
+  -- untouched. coef 507/512 = 0.9902 -> ~150 Hz.
+  highpass x prevIn prevOut =
+    satWide (resize x - resize prevIn + ((resize prevOut * 507) `shiftR` 9 :: Wide))
 
 ratDriveMultiplyFrame :: Frame -> Frame
 ratDriveMultiplyFrame f =
