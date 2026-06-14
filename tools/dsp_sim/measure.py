@@ -88,9 +88,13 @@ def build_config(cm, name, drive=60, tone=50, level=50):
         w["amp"] = cm.amp_word(input_gain=18, master=60, presence=45, resonance=35)
         w["amp_tone"] = cm.amp_tone_word(50, 50, 50, amp_model_idx=int(name.split("_")[1]),
                                          amp_drive_mode=0)
-    elif name == "cab":
+    elif name == "cab" or (name.startswith("cab") and name[3:].isdigit()):
+        # "cab" = legacy alias for model 1 (British); "cab0".."cab2" pick the
+        # cab model so Open(0) / British(1) / Closed(2) can each be measured
+        # (REALISM_REFERENCE_PRESETS.md step 4 blocker fix).
+        model = int(name[3:]) if name[3:].isdigit() else 1
         w["gate"] = cm.gate_word(cab_on=True)
-        w["cab"] = cm.cab_word(mix=100, level=100, model=1, air=50)
+        w["cab"] = cm.cab_word(mix=100, level=100, model=model, air=50)
     else:
         raise ValueError("unknown config %r" % name)
     return [int(w[k]) & 0xFFFFFFFF for k in ORDER]
