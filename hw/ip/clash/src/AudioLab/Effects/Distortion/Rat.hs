@@ -86,10 +86,18 @@ ratPostLowpassFrame :: Sample -> Frame -> Frame
 -- Global real-pedal pass: roll off more high-frequency content after the
 -- hard clip, matching the darker top end of a real RAT.
 -- 96 kHz: 106 (was 168) holds the same post-clip LPF corner Hz at 2x fs.
+-- D126: DRIVE-DEPENDENT darkening to model the LM308's slew-rate limit -- on a
+-- real RAT, higher GAIN progressively rolls off the top end (the op-amp can't
+-- slew the high-frequency content of a high-gain square), so high drive is NOT
+-- an unlimited full-band square. alpha lowers (darker) as DRIVE rises:
+-- drive 0 -> 106 (= the accepted D124 corner, byte-identical at low drive),
+-- drive 255 -> 106-63 = 43 (noticeably darker). This tames high-gain fizz the
+-- way the analog circuit does.
 ratPostLowpassFrame prev f =
-  setMonoWet (if on then onePoleU8 106 prev (monoWet f) else monoSample f) f
+  setMonoWet (if on then onePoleU8 alpha prev (monoWet f) else monoSample f) f
  where
   on = flag4 (fGate f)
+  alpha = 106 - (ctrlC (fRat f) `shiftR` 2)
 
 ratToneFrame :: Sample -> Frame -> Frame
 ratToneFrame prev f =

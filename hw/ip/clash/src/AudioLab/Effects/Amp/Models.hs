@@ -70,7 +70,11 @@ ampModelDarken idx = case idx of
   1 -> 12    -- Twin: bright but slightly rounded (48k: 3)
   2 -> 17    -- AC30: keep upper-mid chime (48k: 3)
   3 -> 31    -- Rockerverb: darker low-mid thickness (48k: 18)
-  4 -> 25    -- JCM800: tame fizz, keep upper-mid bark (48k: 10)
+  4 -> 20    -- JCM800: D127 Marshall bright-cap nudge -- the JTM45/Marshall bright
+             -- channel has a treble-boost bright cap our model lacked; lower the
+             -- clean-mode darken 25->20 for a touch more top (bright-cap feel).
+             -- Modest + revertable; Drive-mode darken (ampPreLpfDriveDarken 4->16)
+             -- still controls high-gain fizz. (was 25; 48k: 10)
   5 -> 39    -- TriAmp Mk3: tight modern fizz control (48k: 26)
   _ ->  6
 
