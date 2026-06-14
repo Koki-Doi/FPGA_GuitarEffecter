@@ -179,9 +179,49 @@ exact WDF / imported ChowCentaur source. Any DSP edit still needs Clash regen +
 Vivado + timing + deploy + programmatic smoke + **user ear-bench**. A model that
 measures on-target stays untouched unless a bench reports a specific audible gap.
 
+## Ready implementation spec (when authorized — NOT YET IMPLEMENTED)
+
+Pre-computed 96 kHz RBJ Q14 coefficients so the top candidates are one edit away
+once the user authorizes. NOT applied; no bitstream built. All bypass-exact
+(unity outside the shaped band by construction).
+
+### Rank 2 — SD-1 (Overdrive model 1) mid peak
+
+Format matches `odMidFeedforwardCoeffs (b0,b1,b2)` and `odMidFeedbackCoeffs
+(a1,a2)` (where stored `a1 = b1`, the negative value; the recursive frame does
+`- mulS16 y1 a1`). Lowest-risk = the FIXED noon peak (one coeff row, like the
+D121 OCD addition):
+
+- **Fixed +5 dB @ 1000 Hz, Q 0.7**: `odMidFeedforwardCoeffs 1 = (16816, -31591,
+  14843)`; `odMidFeedbackCoeffs 1 = (-31591, 15275)`.
+- Optional later **tone-dependent moving peak** (matches the real SD-1
+  500->1000->1500 Hz sweep; needs a tone-indexed coeff mux, bigger change):
+  - low  (+5 dB @ 500 Hz,  Q 0.8): ff `(16577, -32256, 15697)`, fb `(-32256, 15889)`
+  - high (+5 dB @ 1500 Hz, Q 0.8): ff `(16944, -31178, 14385)`, fb `(-31178, 14945)`
+
+NOTE: if the user instead says model 1 is **OD-1** (not SD-1), do the OPPOSITE —
+keep it flat and make the clip more SYMMETRIC (raise `odKneeN 1` from 1_750_000
+toward `odKneeP`), since the true OD-1 uses a symmetric clipper. Decide first.
+
+### Rank 3 — DS-1 shallow mid scoop
+
+DS-1 lives in `Distortion/Pedals.hs` (pedal-mask path), not the OD mux, so this
+needs its OWN feedforward+recursive biquad stage (same split shape as
+`bigMuffScoopFeedforwardFrame`/`bigMuffScoopRecursiveFrame`, but DS-1-only gate
+and shallower/higher coeffs — do NOT reuse the Big Muff -10 dB @ 700 Hz notch):
+
+- **-3 dB @ 1000 Hz, Q 0.7**: feedforward `ff = mulS16 x 16132 + mulS16 x1
+  (-30978) + mulS16 x2 14912`; recursive `y = satShift14 (fAcc3L f + mulS16 y1
+  30978 - mulS16 y2 14660)`.
+
+Adding a new biquad stage costs Pipeline state + DSP; measure timing on the DS-1
+island path (the tight one) before committing — a peaking biquad is cheap (the
+D121 cab/OD adds cost ~nothing) but DS-1 shares the critical path.
+
 ## Next concrete step (when implementation is authorized)
 
 The single highest-value, measurement-backed first move is **rank 1 -> rank 2**:
-confirm model 1 should be SD-1, then add a fixed ~1 kHz mid peak to the existing
-Overdrive pre-clip biquad mux (one coeff row, like the D121 OCD addition), measure
-the harmonic + net curve, and bench. Everything else stays measure-first.
+confirm model 1 should be SD-1, then drop the fixed `+5 dB @ 1000 Hz` row above
+into the existing Overdrive pre-clip biquad mux (model 1), measure the harmonic +
+net curve in `tools/dsp_sim`, then Vivado build + deploy + ear-bench. Everything
+else stays measure-first; one candidate per bitstream/bench.
