@@ -6596,6 +6596,54 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D126 + D127 — Reference-alignment pass (OD-1/DS-1/RAT pedals + JCM800 amp); bench-ACCEPTED, merged
+
+- **Decision.** Execute `REALISM_REFERENCE_ALIGNMENT_FINDINGS.md`: the user-supplied
+  pedal/amp references (BD-2 pedalpcb + GPV, TS cushychicken, SD-1/DS-1 GPV,
+  ChowCentaur, RAT cushychicken, Fender Bassman DAFx-16, Marshall JTM45/DDSP
+  arxiv) were fetched, reduced to concrete circuit numbers, compared to the
+  current Clash constants, and turned into measurement-backed candidates. User
+  authorized "全部一気に" (all pedals) + "ampも" (amp too). All changes are
+  coeff/mux/constant-only on EXISTING stages -- NO new pipeline stage, GPIO,
+  topology, Tcl, XDC, block-design, or topEntity port.
+- **D126 pedals (`1a93984`).** (1) **OD-1 (OD model 1)**: user chose OD-1 (not
+  SD-1). OD-1's asymmetric clip (even harmonics) was ALREADY correct, so only a
+  gentle mid focus was added -- `odMidFeedforwardCoeffs/odMidFeedbackCoeffs`
+  model-1 row = +2.5 dB @ 850 Hz (was flat; far milder than TS9's +6 dB so OD-1
+  stays distinct). Asym knees unchanged. (2) **DS-1 mid scoop**: the real DS-1
+  has a ~3 dB 500 Hz-2 kHz scoop our DS-1 lacked (measured as a rising tilt).
+  Widened the EXISTING Big Muff/Metal scoop biquad gate
+  (`bigMuffScoopFeedforward/RecursiveFrame`) to include `ds1On` + a coeff mux:
+  DS-1 = -6 dB @ 1000 Hz Q0.7 (the Big Muff/Metal -10 dB @ 700 Hz coeffs are
+  byte-identical, so those models are unchanged). DS-1 runs upstream so its output
+  reaches the stage as monoSample -- NO new biquad (the D121 metal-scoop pattern).
+  -6 dB (not -3) because the DS-1's bright rising tilt buries a -3 dB notch; net
+  dip ~-2.4 dB @ 1 kHz. (3) **RAT slew darkening**: `ratPostLowpassFrame` alpha is
+  now drive-dependent (`106 - drive>>2`) so high GAIN rolls off the top, modeling
+  the LM308 slew-rate limit (the real RAT is not a full-band square at high gain).
+  8 kHz net -6.4/-11.6/-22.3 dB at drive 10/55/100; drive 0 byte-identical to D124.
+  **BD-2 left untouched** (measured on-target; no over-tuning).
+- **D127 amp (`06910c3`, kept a SEPARATE commit so it is revertable alone).**
+  JCM800 (idx 4) Marshall bright-cap nudge: `ampModelDarken` 25->20 for a touch
+  more top end (the JTM45/Marshall bright channel has a treble-boost bright cap
+  our model lacked). One model, one constant; Drive-mode darken still controls
+  high-gain fizz. sim JCM800 9 kHz net +9.8 dB (still darker than JC-120 = not
+  fizzy), other amps unchanged. Cumulative on D126 (the board needs pedals + amp
+  together since only one bit loads at a time).
+- **Verification.** Each candidate sim-A/B'd in `tools/dsp_sim` before building;
+  bypass bit-exact; Big Muff scoop confirmed byte-identical (coeff mux). Clash
+  regen PASS (mtime trap avoided); Vivado PASS; route errors 0; timing fully MET
+  (WNS +1.057 -- the coeff/mux changes cost ~nothing; island clk_fpga_1 +3.142;
+  D109 CDC pair clk_fpga_0<->clk +2.017/+6.476). bit/hwh md5
+  `7f3ac39491d05f0ed17971d8a79ea10d` / `418f8088847b45acef60a55919b8dae1`.
+  Deployed; 2 board sites md5-matched; PL-smoke OK.
+- **Status.** Bench-ACCEPTED ("全部合格"); merged to main (`--no-ff`,
+  "Merge D126+D127"). **bit `7f3ac394` is the new canonical deployed baseline,
+  superseding D125.** Branch `feature/od1-ds1scoop-rat-realism`. Rollback to D125
+  via `git checkout 4b2236e -- hw/Pynq-Z2/bitstreams/` + redeploy; the amp alone
+  is revertable via `git revert 06910c3`. Realism work order remaining: step 10
+  Reverb (ear pass), step 11 preset loudness, step 13 final integrated bench.
+
 ## D125 — Compressor Dyna/Ross sustain (RATIO now effective); bench-ACCEPTED, merged
 
 - **Decision.** Realism work order steps 7-11 survey (`REALISM_DYNAMICS_REVERB_MEASUREMENT.md`)
