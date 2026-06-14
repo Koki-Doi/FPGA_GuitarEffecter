@@ -3222,7 +3222,7 @@ architecture structural of clash_lowpass_fir is
   signal result_491                                  : clash_lowpass_fir_types.Frame;
   signal \c$case_alt_210\                            : signed(23 downto 0);
   signal result_492                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Compressor.hs:167:1-15
+  -- src/AudioLab/Effects/Compressor.hs:174:1-15
   signal \c$x_app_arg_77\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal gain_42                                     : unsigned(8 downto 0);
@@ -3236,16 +3236,16 @@ architecture structural of clash_lowpass_fir is
   signal result_494                                  : clash_lowpass_fir_types.Frame;
   signal \c$case_alt_211\                            : signed(23 downto 0);
   signal result_495                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Compressor.hs:156:1-14
+  -- src/AudioLab/Effects/Compressor.hs:163:1-14
   signal \c$x_app_arg_78\                            : signed(47 downto 0);
   signal \c$app_arg_311\                             : std_logic;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal compGain                                    : unsigned(11 downto 0) := to_unsigned(4095,12);
-  -- src/AudioLab/Effects/Compressor.hs:143:1-14
+  -- src/AudioLab/Effects/Compressor.hs:150:1-14
   signal \on_10\                                     : boolean;
-  -- src/AudioLab/Effects/Compressor.hs:143:1-14
+  -- src/AudioLab/Effects/Compressor.hs:150:1-14
   signal target                                      : unsigned(11 downto 0);
-  -- src/AudioLab/Effects/Compressor.hs:143:1-14
+  -- src/AudioLab/Effects/Compressor.hs:150:1-14
   signal step                                        : unsigned(11 downto 0);
   signal \c$case_alt_212\                            : unsigned(11 downto 0);
   signal \c$case_alt_213\                            : unsigned(11 downto 0);
@@ -27805,7 +27805,7 @@ begin
 
   excessShifted <= \c$excessShifted_app_arg_0\ + \c$excessShifted_app_arg\;
 
-  \c$shI_247\ <= (to_signed(14,64));
+  \c$shI_247\ <= (to_signed(11,64));
 
   cexcessShifted_app_arg_shiftR : block
     signal sh_249 : natural;
@@ -27817,12 +27817,12 @@ begin
         to_integer(\c$shI_247\);
     \c$excessShifted_app_arg\ <= shift_right(excess,sh_249)
         -- pragma translate_off
-        when ((to_signed(14,64)) >= 0) else (others => 'X')
+        when ((to_signed(11,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$shI_248\ <= (to_signed(12,64));
+  \c$shI_248\ <= (to_signed(10,64));
 
   cexcessShifted_app_arg_0_shiftR : block
     signal sh_250 : natural;
@@ -27834,7 +27834,7 @@ begin
         to_integer(\c$shI_248\);
     \c$excessShifted_app_arg_0\ <= shift_right(excess,sh_250)
         -- pragma translate_off
-        when ((to_signed(12,64)) >= 0) else (others => 'X')
+        when ((to_signed(10,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;

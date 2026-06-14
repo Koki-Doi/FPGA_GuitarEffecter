@@ -110,7 +110,14 @@ compTargetNext env (Just f) = Just (CompTarget on target step)
   threshold      = compThresholdSample (fComp f)
   softThreshold  = threshold - (threshold `shiftR` 3)
   excess         = env - softThreshold
-  excessShifted  = (excess `shiftR` 12) + (excess `shiftR` 14)
+  -- D125 Dyna/Ross sustain: the old (>>12 + >>14) mapped the envelope excess
+  -- into excessU12 so weakly that the gain reduction stayed ~0.1..2.6 dB and
+  -- the RATIO knob barely moved it (10..90 -> -0.1..-0.6 dB). (>>10 + >>11) is
+  -- ~4.8x more sensitive, so reduction = excessU12 * ratio/256 now reaches
+  -- ~8..12 dB on loud material AND the RATIO knob spans mild->heavy clearly.
+  -- This is the static compression curve (NOT a time constant), so it is
+  -- fs-independent. Light presets (low RATIO) stay light.
+  excessShifted  = (excess `shiftR` 10) + (excess `shiftR` 11)
   excessClamped
     | excessShifted < 0           = 0 :: Sample
     | excessShifted > unitySample = unitySample
