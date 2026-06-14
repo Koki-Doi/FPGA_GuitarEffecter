@@ -71,21 +71,26 @@ tables copied — public measurements + topology only (per plan ground rules).
   correctly); optionally add a gentle ~700 Hz input bass rolloff and let the OD
   TONE control span flat-noon -> bright-max. Plan rank 5 (only if bench flags it).
 
-### OD-1 vs SD-1 (`Overdrive.hs` model 1) — DECISION NEEDED
+### OD-1 (`Overdrive.hs` model 1) — RESOLVED: user chose OD-1 (2026-06-14)
 
-- Current: **FLAT** pre-clip biquad (no mid peak); asym knees 2.55M/1.75M (strong
-  asym -> even harmonics, odd/even +6.8 measured = asymmetric, "mild").
-- The supplied link is **SD-1**, whose defining trait is a **mid peak that MOVES
-  500 -> 1000 -> 1500 Hz with TONE**. Our model 1 has NO mid peak at all.
-- **If target = SD-1**: biggest gap in the whole OD lineup. Candidate: fill the
-  model-1 row of the EXISTING `odMidFeedforward/FeedbackCoeffs` mux with a mid
-  peak. **Low-risk first step = fixed +mid peak ~1 kHz**; the true **tone-dependent
-  moving peak (500-1500 Hz)** is a larger change (tone-indexed coeff mux). Plan
-  rank 2.
-- **If target = OD-1** (the actual OD-1 predates SD-1, has SYMMETRIC clipping):
-  then our strong asym (1.75M neg) is wrong-direction and model 1 should be more
-  symmetric + stay flat. **The user must pick OD-1 or SD-1** (plan rank 1) — the
-  two imply opposite changes.
+**CORRECTION** (an earlier draft of this doc wrongly said OD-1 is symmetric): the
+BOSS OD-1 uses **ASYMMETRIC clipping** (the 2+1 diode arrangement = even harmonics)
+and has **NO tone control**. The symmetric clipper is the Tube Screamer. OD-1 and
+SD-1 share the asymmetric clipper; the SD-1 just adds the tone control (which is
+what produces the SD-1's moving 500-1500 Hz mid peak). So:
+
+- Current model 1: **FLAT** pre-clip biquad; asym knees 2.55M/1.75M (strong asym);
+  measured THD 20.9%, odd/even +6.8 (= asymmetric, even harmonics present, mild).
+- **Against the OD-1 target this is already well-aligned**: asymmetric soft clip
+  (correct), mild gain (correct), no tone-control moving peak (correct — OD-1 has
+  no tone control). The SD-1 mid-peak candidate is **DROPPED** (not OD-1).
+- **Only optional refinement**: the real OD-1 is not dead-flat — it has a *gentle*
+  mid focus (~700-900 Hz), much milder than the TS9's +6 dB hump. Our model 1 is
+  dead flat. An OPTIONAL low-impact tweak is a gentle mid peak (pre-computed
+  below). This is cosmetic; the OD-1's identity is the asym clip, which we have.
+- **Recommendation**: model 1 is essentially on-target for OD-1. Apply the gentle
+  mid focus only if a bench wants it more mid-voiced; otherwise leave model 1
+  unchanged (no bitstream cost).
 
 ### DS-1 (`Distortion/Pedals.hs` ds1*)
 
@@ -165,12 +170,12 @@ gap in the drive lineup.
 
 | Rank | Candidate | Evidence | Risk |
 | --- | --- | --- | --- |
-| 1 | **Decide OD-1 vs SD-1** for Overdrive model 1 | Opposite changes (asym+moving-peak vs symmetric+flat); supplied link is SD-1. | None until chosen (doc/label). |
-| 2 | **Model-1 mid peak** (if SD-1): fixed +mid ~1 kHz first, moving 500-1500 Hz later | GPV SD-1 moving peak; model 1 is flat now. | Low (reuse OD biquad mux). |
-| 3 | **DS-1 shallow ~-3 dB mid scoop ~1 kHz** | GPV/boss.info 3 dB scoop 500-2k; model lacks it. | Medium (own coeff row; affects level/harshness). |
-| 4 | **RAT drive-dependent darkening + FILTER 475 Hz calibration** | LM308 slew rolloff >1 kHz with gain; FILTER bottoms 475 Hz. | Low (coeff-only in existing frames). |
-| 5 | **BD-2 flat-noon / treble-max tone + 700 Hz input rolloff** | pedalpcb: noon flat, bright from TONE, 700 Hz rolloff, -6 dB>1k. | Low (tone-law only; measured on-target so optional). |
-| 6 | **Marshall bright-cap lift + transformer LF compression check** (amp) | JTM45 bright cap + lower plate V. | High (amp history; one model at a time). |
+| ~~1~~ | ~~Decide OD-1 vs SD-1~~ — **RESOLVED: OD-1.** Model 1 already aligned (asym clip); SD-1 mid-peak dropped. | User decision 2026-06-14. | done |
+| 1 | **DS-1 shallow ~-3 dB mid scoop ~1 kHz** (now the top DSP candidate) | GPV/boss.info 3 dB scoop 500-2k; measured DS-1 has NO scoop (rising tilt). | Medium (own biquad stage on the tight DS-1 island; affects level/harshness). |
+| 2 | **RAT drive-dependent darkening + FILTER 0..100 corner check** | LM308 slew rolloff >1 kHz with gain; FILTER bottoms ~475 Hz. | Low (coeff-only in existing frames). |
+| 3 | **OD-1 optional gentle mid focus** (+2.5 dB @ 850 Hz) | OD-1 is mildly mid-voiced, model 1 is flat. Cosmetic. | Low; only if bench wants it. |
+| 4 | **BD-2 flat-noon / treble-max tone + 700 Hz input rolloff** | pedalpcb: noon flat, bright from TONE, 700 Hz rolloff, -6 dB>1k. | Low (tone-law only; measured on-target so optional). |
+| 5 | **Marshall bright-cap lift + transformer LF compression check** (amp) | JTM45 bright cap + lower plate V. | High (amp history; one model at a time). |
 
 ## Hard constraints reaffirmed (plan ground rules)
 
@@ -185,23 +190,23 @@ Pre-computed 96 kHz RBJ Q14 coefficients so the top candidates are one edit away
 once the user authorizes. NOT applied; no bitstream built. All bypass-exact
 (unity outside the shaped band by construction).
 
-### Rank 2 — SD-1 (Overdrive model 1) mid peak
+### Rank 2 — OD-1 (Overdrive model 1): RESOLVED, optional gentle mid focus only
 
-Format matches `odMidFeedforwardCoeffs (b0,b1,b2)` and `odMidFeedbackCoeffs
-(a1,a2)` (where stored `a1 = b1`, the negative value; the recursive frame does
-`- mulS16 y1 a1`). Lowest-risk = the FIXED noon peak (one coeff row, like the
-D121 OCD addition):
+User chose **OD-1**. Model 1's asymmetric clip is already correct, so the SD-1
+mid-peak (and the symmetric-clip alternative) are BOTH off the table. The only
+optional tweak is a *gentle* mid focus (the OD-1 is mildly mid-voiced, not flat).
+Format matches `odMidFeedforwardCoeffs (b0,b1,b2)` / `odMidFeedbackCoeffs (a1,a2)`:
 
-- **Fixed +5 dB @ 1000 Hz, Q 0.7**: `odMidFeedforwardCoeffs 1 = (16816, -31591,
-  14843)`; `odMidFeedbackCoeffs 1 = (-31591, 15275)`.
-- Optional later **tone-dependent moving peak** (matches the real SD-1
-  500->1000->1500 Hz sweep; needs a tone-indexed coeff mux, bigger change):
-  - low  (+5 dB @ 500 Hz,  Q 0.8): ff `(16577, -32256, 15697)`, fb `(-32256, 15889)`
-  - high (+5 dB @ 1500 Hz, Q 0.8): ff `(16944, -31178, 14385)`, fb `(-31178, 14945)`
+- **+2.5 dB @ 850 Hz, Q 0.7** (gentle): `odMidFeedforwardCoeffs 1 = (16566,
+  -31629, 15113)`; `odMidFeedbackCoeffs 1 = (-31629, 15294)`.
+- **+2.0 dB @ 900 Hz, Q 0.6** (even gentler): ff `(16562, -31341, 14834)`,
+  fb `(-31341, 15011)`.
 
-NOTE: if the user instead says model 1 is **OD-1** (not SD-1), do the OPPOSITE —
-keep it flat and make the clip more SYMMETRIC (raise `odKneeN 1` from 1_750_000
-toward `odKneeP`), since the true OD-1 uses a symmetric clipper. Decide first.
+Much milder than the TS9 +6 dB @ 720 Hz so OD-1 stays distinct from TS9. Apply
+only if a bench wants model 1 more mid-voiced; otherwise leave model 1 flat
+(it is on-target for OD-1 as-is). The asym knees (2.55M/1.75M) stay unchanged.
+
+(The SD-1 coefficients are removed: SD-1 is not the chosen target.)
 
 ### Rank 3 — DS-1 shallow mid scoop
 
@@ -220,8 +225,9 @@ D121 cab/OD adds cost ~nothing) but DS-1 shares the critical path.
 
 ## Next concrete step (when implementation is authorized)
 
-The single highest-value, measurement-backed first move is **rank 1 -> rank 2**:
-confirm model 1 should be SD-1, then drop the fixed `+5 dB @ 1000 Hz` row above
-into the existing Overdrive pre-clip biquad mux (model 1), measure the harmonic +
-net curve in `tools/dsp_sim`, then Vivado build + deploy + ear-bench. Everything
-else stays measure-first; one candidate per bitstream/bench.
+OD-1 is resolved (model 1 already aligned — no change required). The next
+measurement-backed DSP candidate is now **the DS-1 mid scoop** (rank 1): add a
+DS-1-only `-3 dB @ 1000 Hz` peaking biquad (own ff+rec stage like bigMuffScoop,
+coeffs in the spec above), measure the net scoop + THD in `tools/dsp_sim`, check
+timing on the DS-1 island path, then Vivado build + deploy + ear-bench. One
+candidate per bitstream/bench; everything else stays measure-first.
