@@ -6596,6 +6596,43 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D121 — Off-target effect voicing (OD BD-2/OCD, Metal scoop, Cab presence); D99 amp untouched; bench provisionally accepted
+
+- **Decision.** First voicing pass on the rolled-back D99 baseline that targets
+  the NON-amp effects measured off vs their real-hardware references (via the new
+  offline `tools/dsp_sim/measure.py` net-tone-curve harness), leaving the D99 amp
+  byte-for-byte untouched (`Amp.hs` not edited). Four changes: (1) OD BD-2
+  pre-clip biquad moved 1500->2300 Hz (+3 -> +3.5 dB) = brighter; (2) OD OCD given
+  a NEW pre-clip biquad peak +4 dB @ 1300 Hz (was flat) = upper-mid honk;
+  (3) Metal mid-scoop added by WIDENING the existing ~700 Hz bigMuff scoop-notch
+  biquad's gate to `bigMuffOn || metalDistortionOn` -- metal runs upstream of that
+  stage so its output already reaches it, NO new biquad; (4) Cab cone-breakup
+  presence peak = a NEW peaking biquad +3.5 dB @ 2800 Hz on the speaker-FIR output
+  (the 15-tap FIR is too short to resolve a 2.8 kHz peak at 96 kHz). RAT left
+  alone (bright = correct RAT character; it was the borderline item).
+- **Method (new, de-risks voicing).** Every change was designed + verified
+  OFFLINE first with the DSP sim + `measure.py` (net tone curve vs bypass) BEFORE
+  building -- targets hit: BD-2 peak->2310 Hz, OCD +3.7 @ 1290, Metal dip
+  593-720 Hz, Cab +3.2 @ 2806. Golden regression 11/11 incl. the new
+  od_bd2/od_ocd/dist_metal/cab vectors; bypass stays bit-exact (the knife-edge
+  invariant survives the new cab pipeline stages). The RBJ designer reproduced
+  every existing coeff exactly first, so the new coeffs are trustworthy.
+- **Boundaries.** Clash/VHDL DSP behaviour change + 2 new cab biquad Pipeline
+  stages + regenerated IP/bit/hwh. `Amp.hs` UNTOUCHED. No GPIO/Tcl/XDC/
+  block-design/topEntity-port/effect-order/Python-API change.
+- **Build / deploy / smoke.** `make -C hw/ip/clash regen` + full Vivado build
+  passed, timing fully MET (WNS `+0.726 ns`, TNS `0`, WHS `+0.012 ns`, THS `0`,
+  WPWS `+2.845`); island clk_fpga_1 `+3.309 ns` (the new cab biquad cost almost
+  nothing); route errors `0`. bit/hwh md5
+  `9a57c50ae405bce717648dc1585eaf4b` / `112be061b98ed16d5ff55eaa87fc3b85`.
+  Deployed 3 board sites (all md5-matched), PL-smoke OK (overlay loads the new
+  bit, ADC HPF `True`).
+- **Status.** Bench ACCEPTED (the user confirmed "全部一旦おｋ", then asked to
+  merge). **Merged to main (`--no-ff`); D121 (`9a57c50a`) is the new canonical
+  deployed baseline, superseding D99.** Branch `feature/voicing-offtargets`.
+  Rollback if a later issue surfaces: `git checkout ea6bf94 --
+  hw/Pynq-Z2/bitstreams/` (D99 `83a64ffc`) + redeploy.
+
 ## D120 — Remove Amp dynamic power-sag + static master trim; bench-REJECTED -> deployed baseline ROLLED BACK to D99
 
 - **Decision (attempt).** Follow-up to the rejected D119. Instead of D119's raw

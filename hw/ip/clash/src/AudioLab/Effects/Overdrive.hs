@@ -201,13 +201,15 @@ odUsesCleanBlend m = m == 5
 odMidFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 odMidFeedforwardCoeffs m = case m of
   0 -> (16717, -32063, 15382)   -- TS9  : +6 dB @ 720 Hz  (48k: 17036/-31323/14422)
-  2 -> (16760, -30796, 14185)   -- BD-2 : +3 dB @ 1500 Hz (48k: 17093/-28766/12236)
+  2 -> (17039, -29789, 13091)   -- BD-2 : +3.5 dB @ 2300 Hz (voicing: brighter, was +3 @ 1500)
+  4 -> (16730, -31469, 14853)   -- OCD  : +4 dB @ 1300 Hz upper-mid honk (voicing: was flat)
   _ -> (16384, 0, 0)            -- flat (unity, b0 = 2^14)
 
 odMidFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 odMidFeedbackCoeffs m = case m of
   0 -> (-32063, 15715)          -- TS9  (48k: -31323/15075)
-  2 -> (-30796, 14561)          -- BD-2 (48k: -28766/12945)
+  2 -> (-29789, 13745)          -- BD-2 (brighter @ 2300 Hz)
+  4 -> (-31469, 15200)          -- OCD  (upper-mid honk @ 1300 Hz)
   _ -> (0, 0)                   -- flat (no feedback)
 
 -- Feedforward stage: precompute b0*x + b1*x1 + b2*x2 into fAccL (no feedback,

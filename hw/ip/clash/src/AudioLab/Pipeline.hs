@@ -444,13 +444,28 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (cabSpeakerFirProductsFrame <$> cabSpkHist) <*> cabMixPipe
   cabSpkFirPipe = register Nothing (mapPipe cabSpeakerFirMixFrame <$> cabSpkProductsPipe)
 
+  -- Cone-breakup presence-peak biquad (voicing): +3.5 dB @ 2.8 kHz on the
+  -- speaker-FIR output (the 15-tap FIR is too short to resolve this peak).
+  -- Split FF + recursive like the bigMuff scoop (D82): x1/x2 delay the FIR
+  -- output, y1/y2 the recursive output. Bit-exact bypass when the cab is off.
+  cabPresX1 = register 0 (delayNext <$> cabPresX1 <*> (frameOr monoSample 0 <$> cabSpkFirPipe) <*> cabSpkFirPipe)
+  cabPresX2 = register 0 (delayNext <$> cabPresX2 <*> cabPresX1 <*> cabSpkFirPipe)
+  cabPresenceFfPipe =
+    register Nothing $
+      mapPipe <$> (cabPresenceFeedforwardFrame <$> cabPresX1 <*> cabPresX2) <*> cabSpkFirPipe
+  cabPresY1 = register 0 (frameOr monoSample <$> cabPresY1 <*> cabPresenceRecPipe)
+  cabPresY2 = register 0 (delayNext <$> cabPresY2 <*> cabPresY1 <*> cabPresenceRecPipe)
+  cabPresenceRecPipe =
+    register Nothing $
+      mapPipe <$> (cabPresenceRecursiveFrame <$> cabPresY1 <*> cabPresY2) <*> cabPresenceFfPipe
+
   -- Cab-output micro-modulation (D96, digital-sound #11): a tiny ~2 Hz
   -- LFO-modulated fractional delay on the cab output for organic "analog
   -- wobble". Gated on cab-on (flag7); the LFO + 128-deep line advance every active
   -- frame. linear-interp read -> one small multiply.
-  cabModLfo = register 0 (cabModLfoNext <$> cabModLfo <*> cabSpkFirPipe)
-  cabModLine = register (repeat 0) (cabModDelayNext <$> cabModLine <*> cabSpkFirPipe)
-  cabModPipe = register Nothing (mapPipe <$> (cabModFrame <$> cabModLfo <*> cabModLine) <*> cabSpkFirPipe)
+  cabModLfo = register 0 (cabModLfoNext <$> cabModLfo <*> cabPresenceRecPipe)
+  cabModLine = register (repeat 0) (cabModDelayNext <$> cabModLine <*> cabPresenceRecPipe)
+  cabModPipe = register Nothing (mapPipe <$> (cabModFrame <$> cabModLfo <*> cabModLine) <*> cabPresenceRecPipe)
 
   eqLowPrev = register 0 (frameOr monoEqLow <$> eqLowPrev <*> eqFilterPipe)
   eqHighPrev = register 0 (frameOr monoEqHighLp <$> eqHighPrev <*> eqFilterPipe)
