@@ -28,7 +28,7 @@ import AudioLab.Effects.Amp.Models
 -- 96 kHz RBJ coeffs (48 kHz values noted per line).
 ampScoopFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 ampScoopFeedforwardCoeffs idx = case idx of
-  0 -> (16315, -32084, 15780)   -- JC-120 : near-flat SS clean, gentle -2 dB @ 400 Hz (voicing: was -5; a real Jazz Chorus is flat, not Fender-scooped -- now distinct from Twin)
+  0 -> (16384, 0, 0)            -- JC-120 : FLAT (re-collation: a real Roland Jazz Chorus is a full-range SS amp with NO scoop; D122's residual -2 dB @ 400 Hz still mildly scooped it. Unity = flat. Still distinct from Twin's -5 dB scoop.)
   1 -> (16210, -31960, 15761)   -- Twin   : blackface mid scoop -5 dB @ 400 Hz
   2 -> (16901, -30680, 14101)   -- AC30   : Vox chime +4 dB @ 2200 Hz   (48k:17355/-28234/12091)
   3 -> (16453, -32427, 15980)   -- Rockerverb : thick low-mid +3 dB @ 300 Hz (voicing: was flat)
@@ -38,7 +38,7 @@ ampScoopFeedforwardCoeffs idx = case idx of
 
 ampScoopFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 ampScoopFeedbackCoeffs idx = case idx of
-  0 -> (-32084, 15711)          -- JC-120 gentle scoop (voicing: was -31960/15587)
+  0 -> (0, 0)                   -- JC-120 FLAT (no feedback -> unity passthrough, SS full-range)
   1 -> (-31960, 15587)          -- Twin (48k: -31169/14828)
   2 -> (-30680, 14617)          -- AC30 (48k: -28234/13062)
   3 -> (-32427, 16049)          -- Rockerverb low-mid
@@ -102,9 +102,9 @@ ampTrebleGain idx x = base - modelTrim
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
     1 ->  2                 -- Twin    : glassy, not piercing
-    2 ->  2                 -- AC30    : keep chime
+    2 ->  1                 -- AC30    : chime + top sparkle (was 2; less 2-4k trim)
     3 ->  9                 -- Rockerv : rounded
-    4 ->  8                 -- JCM800  : bark, slight trim
+    4 ->  8                 -- JCM800  : bark, slight trim (reverted to 8 -- presence is the D128 knob)
     5 -> 14                 -- TriAmp  : controlled high
     _ ->  0
 
