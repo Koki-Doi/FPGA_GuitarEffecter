@@ -375,6 +375,30 @@ CHAIN_PRESETS = {
     ),
 }
 
+# Step 11 (model pinning): each chain preset pins its amp / OD model index so
+# its loudness AND tone are deterministic regardless of the GUI's current model
+# selection. Without this, a preset's level depends on whatever amp the user has
+# selected (a structural reason preset loudness could not be matched). Indices:
+#   amp: 0 JC-120 / 1 Twin / 2 AC30 / 3 Rockerverb / 4 JCM800 / 5 TriAmp Mk3
+#   overdrive: 0 TS9 / 1 OD-1 / 2 BD-2 / 3 Jan Ray / 4 OCD / 5 Centaur
+# A preset omitted here falls back to amp_model_idx=None + OD model 0.
+# ``AudioLabOverlay.apply_chain_preset`` reads this by preset name.
+CHAIN_PRESET_MODELS = {
+    "Safe Bypass":                dict(amp=0,  overdrive=0),  # amp off; model irrelevant
+    "Basic Clean":                dict(amp=0,  overdrive=0),  # JC-120 clean
+    "Clean Sustain":              dict(amp=0,  overdrive=0),  # JC-120 clean
+    "Light Crunch":               dict(amp=4,  overdrive=0),  # JCM800 + TS9 boost
+    "Tube Screamer Lead":         dict(amp=4,  overdrive=0),  # JCM800
+    "RAT Rhythm":                 dict(amp=4,  overdrive=0),  # JCM800
+    "Metal Tight":                dict(amp=5,  overdrive=0),  # TriAmp modern HG
+    "Ambient Clean":              dict(amp=0,  overdrive=0),  # amp off
+    "Solo Boost":                 dict(amp=4,  overdrive=0),  # JCM800 lead
+    "Noise Controlled High Gain": dict(amp=5,  overdrive=0),  # TriAmp modern HG
+    "DS-1 Crunch":                dict(amp=4,  overdrive=0),  # JCM800
+    "Big Muff Sustain":           dict(amp=3,  overdrive=0),  # Rockerverb thick
+    "Vintage Fuzz":               dict(amp=2,  overdrive=0),  # AC30 chime
+}
+
 # Sections every chain preset must define, in the canonical apply
 # order. ``apply_chain_preset`` iterates this list to push a preset
 # into the overlay; tests use it to validate preset shape.
@@ -396,5 +420,6 @@ __all__ = [
     "COMPRESSOR_PRESETS",
     "CHAIN_PRESETS",
     "CHAIN_PRESET_SECTIONS",
+    "CHAIN_PRESET_MODELS",
     "SAFE_BYPASS_PRESET",
 ]

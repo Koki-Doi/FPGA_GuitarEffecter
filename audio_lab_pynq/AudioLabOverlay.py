@@ -893,6 +893,13 @@ class AudioLabOverlay(Overlay):
         # CHAIN_PRESETS store user-facing knob positions. Convert only at the
         # preset boundary so the public overlay percent API stays linear.
         spec = _kt.taper_chain_preset_spec(self.get_chain_preset(name))
+        # Step 11 (model pinning): a preset pins its amp / OD model so its
+        # loudness + tone are deterministic regardless of the GUI's current
+        # model selection. The pins live in one place
+        # (effect_presets.CHAIN_PRESET_MODELS); an unpinned preset (no entry)
+        # falls back to amp_model_idx=None (percent-character path) and OD 0.
+        from . import effect_presets as _ep_models
+        _pinned = _ep_models.CHAIN_PRESET_MODELS.get(name, {})
         comp = spec.get("compressor", {})
         ns = spec.get("noise_suppressor", {})
         od = spec.get("overdrive", {})
@@ -952,7 +959,7 @@ class AudioLabOverlay(Overlay):
             overdrive_drive=od.get("drive", 0),
             overdrive_tone=od.get("tone", 50),
             overdrive_level=od.get("level", 100),
-            overdrive_model=od.get("model", 0),
+            overdrive_model=_pinned.get("overdrive", od.get("model", 0)),
             distortion_on=bool(dist.get("enabled", False)),
             rat_on=rat_preset_on,
             amp_on=bool(amp.get("enabled", False)),
@@ -964,6 +971,7 @@ class AudioLabOverlay(Overlay):
             amp_resonance=amp.get("resonance", 35),
             amp_master=amp.get("master", 80),
             amp_character=amp.get("character", 35),
+            amp_model_idx=_pinned.get("amp"),
             cab_on=bool(cab.get("enabled", False)),
             cab_mix=cab.get("mix", 100),
             cab_level=cab.get("level", 100),

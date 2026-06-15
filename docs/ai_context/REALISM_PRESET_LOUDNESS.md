@@ -74,9 +74,45 @@ Python design change (add `model` keys + have `apply_chain_preset` pass
 `amp_model` / honor the OD model) -- it makes step 11 well-defined. Decide with
 the user before doing it (changes preset behavior: a preset would force its model).
 
+## Model pinning IMPLEMENTED (user chose option 1; Python-only, no rebuild)
+
+`effect_presets.CHAIN_PRESET_MODELS` now pins every chain preset's amp + OD model
+(JC-120 for clean, JCM800 for crunch/lead, TriAmp for high-gain, Rockerverb for
+Big Muff, AC30 for fuzz, etc.); `AudioLabOverlay.apply_chain_preset` reads it by
+name and passes `amp_model_idx` / `overdrive_model`. A preset's loudness + tone is
+now deterministic regardless of the GUI's current model selection -- the
+structural fix step 11 needed. No bitstream change.
+
+### Loudness with pinned models (offline, synth guitar)
+
+| preset | amp model | rms dBFS | vs Clean |
+| --- | --- | --- | --- |
+| Clean (`Basic Clean`) | 0 JC-120 | -52.3 | 0 |
+| Crunch (`Light Crunch`) | 4 JCM800 | -36.2 | +16.1 |
+| High Gain (`Noise Controlled HG`) | 5 TriAmp | -46.2 | +6.0 |
+| Ambient (`Ambient Clean`) | 0 (amp off) | -34.8 | +17.5 |
+| Solo (`Solo Boost`) | 4 JCM800 | -37.7 | +14.6 |
+
+Pinning made the comparison deterministic but the spread WIDE: the JC-120 clean
+preset reads ~15 dB quieter than the JCM800 crunch/lead presets. This is partly
+real (a clean SS amp at master 75 has low output until cranked) and partly the
+offline amp-path uncertainty. **A +15 dB correction is too drastic to apply blind
+on the sim** -- closing it would need a big master / input_gain change that risks
+the tone or the sim being wrong. So the level trim is NOT applied here; it is a
+board/ear confirmation step.
+
+## Recommended next step (board, Python-only)
+
+1. Deploy the model pinning (`bash scripts/deploy_to_pynq.sh`; no rebuild).
+2. On the board, switch Clean -> Crunch -> High Gain -> Ambient -> Solo at a fixed
+   volume and note the perceived jumps (the sim flags Clean as the quiet outlier).
+3. If confirmed, raise the quiet presets' `amp.master` / `compressor.makeup`
+   (<= 60) or trim the loud ones, edit `effect_presets.py`, redeploy (Python only),
+   re-check by ear. Keep Solo intentionally hotter.
+
 ## acceptance (step 11)
 
-- Offline survey captured + its unreliability documented (amp path + unpinned
-  model). No preset edited on flawed data.
-- Final loudness matching deferred to a board/ear pass (Python-only, no rebuild),
-  with the model-pinning option flagged as the way to make it deterministic.
+- Model pinning done (deterministic presets) -- the structural enabler.
+- Offline loudness re-measured with pinned models; Clean flagged as the quiet
+  outlier but the +15 dB correction left to board confirmation (not applied blind).
+- Final level trim is a board/ear pass (Python-only, no rebuild).
