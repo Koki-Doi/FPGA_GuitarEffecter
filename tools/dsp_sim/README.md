@@ -12,7 +12,14 @@ on a candidate you already like.
 | File | Role |
 | --- | --- |
 | `Sim.hs` | Haskell harness. Wires 12 constant control words + a gated sample stream through `LowPassFir.topEntity` and `sampleN`s the output. Bit-identical to the FPGA DSP. |
-| `run_sim.py` | Orchestrator. Builds the 12 control words with the project's own `audio_lab_pynq/control_maps.py` (imported by file path -- no `pynq` needed), generates/reads a WAV, runs the sim, writes output WAVs + objective metrics. |
+| `run_sim.py` | Orchestrator. Builds the 12 control words with the project's own `audio_lab_pynq/control_maps.py` (imported by file path -- no `pynq` needed), generates/reads a WAV, runs the sim, writes output WAVs + objective metrics (peak/rms/crest/level-stability/centroid/clip). |
+| `measure.py` | **Frequency-shaping** measurement: an effect's net tone curve vs bypass (mid hump / scoop / low-cut / HF rolloff / notch). `--batch` sweeps every model in **parallel** (`--jobs`, default = ncpu). The "is the voicing on target vs the real pedal" check. |
+| `harmonics.py` | **Harmonic / transfer** measurement on a single sine: fundamental, h2..h8, THD, odd/even ratio, alias/IMD energy. The OD/Distortion drive-character check. |
+| `reverb.py` | **Time-domain decay** measurement: RT60 (Schroeder T20), tail tone (centroid), wet level, comb echo period; `--decay-sweep` / `--tone-sweep` prove a knob is real + monotonic. The reverb axis `measure.py`/`harmonics.py` (both steady-state) could not see. |
+| `knobcheck.py` | **Per-band audio-change-per-knob** check across EVERY effect/knob: for each knob it renders two settings and reports how much the sound moves, broken down by frequency band (80/200/500/1k/3k/8k Hz) + overall, flagging "barely audible" knobs. The board-comparison artifact: "turn this knob, these bands should move by this much." |
+| `signals.py` | Canonical, level-recorded test inputs (sine / log-sweep / two-tone / impulse / decaying-sine) so every retune A/Bs against the SAME stimulus. |
+| `build_sim.sh` | One-line `-O1` build (see below). |
+| `golden_vectors.json` + `tests/test_dsp_sim_regression.py` | Tier-2 regression: bypass bit-exact invariant + per-config sha256 goldens (opt-in `DSP_SIM_TESTS=1`). |
 
 ## Build (once, and after any DSP-source edit)
 
@@ -35,9 +42,40 @@ python3 tools/dsp_sim/run_sim.py --demo --seconds 0.5
 python3 tools/dsp_sim/run_sim.py --preset amp --amp-model 4 --wav-in guitar.wav --out-dir /tmp/out
 #   --amp-model 0..5 (JC-120/Twin/AC30/Rockerverb/JCM800/TriAmp), --drive-mode 0|1
 #   --in-level (synth peak frac of FS, real guitar ~0.1-0.2), --gap, --fs
+
+# frequency shaping (tone curve) of every model, in parallel:
+python3 tools/dsp_sim/measure.py --batch                 # --jobs N to cap workers
+python3 tools/dsp_sim/measure.py --config ds1 --drive 65 # one effect, full curve
+
+# harmonic / drive character on a 1 kHz sine:
+python3 tools/dsp_sim/harmonics.py --config od_4 --drive 65
+
+# reverb decay (time-domain) -- the knob-is-real check:
+python3 tools/dsp_sim/reverb.py --decay-sweep            # RT60 vs DECAY (monotone?)
+python3 tools/dsp_sim/reverb.py --tone-sweep             # tail brightness vs TONE
+python3 tools/dsp_sim/reverb.py --decay 80 --tone 40 --mix 90
+
+# how much does each knob move the sound, per frequency band:
+python3 tools/dsp_sim/knobcheck.py --all                 # every effect/knob
+python3 tools/dsp_sim/knobcheck.py --effect amp          # one effect
+python3 tools/dsp_sim/knobcheck.py --effect eq --from 0 --to 100
 ```
 
-Outputs `input.wav`, `out_<tag>.wav` (16-bit) + a metrics line each.
+`run_sim.py` outputs `input.wav`, `out_<tag>.wav` (16-bit) + a metrics line each;
+the measurement tools print objective tables.
+
+## Comparing against the real hardware
+
+There is **no per-sample DMA capture** off the board (the Pmod ADC path is not on
+AXIS -- `pmod_i2s2_capture_probe.py` only reads aggregate counters), so a
+sample-exact sim-vs-board diff is not possible. What IS reproducible on the board
+is **behaviour**: how much the sound moves when you turn a knob, and in which
+band. `knobcheck.py` is built for exactly that comparison -- run it, then sweep
+the same knob on the GUI/encoder and check the same bands move by a comparable
+amount (a knob the sim moves 6 dB but is dead on the board, or vice-versa, is the
+discrepancy to chase). Its inputs are fixed and level-recorded (from
+`signals.py`) so the board can be driven the same way. The bypass bit-exact
+invariant remains the one true end-to-end anchor.
 
 ## How it works
 
@@ -58,9 +96,12 @@ recursive stages (biquads / wah SVF / envelopes) are `Maybe Frame`-gated and
 **hold on idle cycles**. So the harness presents each sample as *one valid cycle
 followed by `gap` idle cycles*. Feeding valid **back-to-back (`gap=0`)
 mis-times the recursive feedback and the amp/biquads oscillate at Nyquist** --
-which is NOT what the FPGA does. `gap>=8` is enough for the local recursions;
-the default `32` is a safe margin; `gap>=106` (the pipeline depth) is
-unconditionally safe but ~3x slower.
+which is NOT what the FPGA does. `gap>=8` is enough for every recursion to
+settle: gap 8 is **bit-identical** to gap 16/32/106 (verified amp/rat/reverb,
+`max|diff|=0`) -- a larger gap only burns time. **The default is therefore `8`**
+(was 32, which produced the same bytes ~2.6x slower); `gap>=106` (the pipeline
+depth) is the unconditional 1-sample-in-flight bound if a future stage ever
+needs more settling.
 
 ### Bypass is bit-exact (offline knife-edge regression)
 
@@ -83,12 +124,22 @@ D102-D108 pain) -- now checkable offline, no build. `--demo` prints
   the bitstream P&R. **Bit-integrity (timing MET, CDC, on-hardware bypass) still
   needs a Vivado build + the bench.** Use this to pick a voicing fast, then
   build/bench the winner.
-- Performance: ~3500 island-cycles/s (-O1). A 0.5 s clip at `gap=32` is a few
-  minutes; use shorter clips, `--gap 8`, or `-O2` to speed up.
+- Performance (`-O1`): ~7500 island-cycles/s = **~830 audio-samples/s at the
+  default `gap=8`** (~320/s at the old `gap=32`). So ~0.1 s of audio per second
+  of wall-clock; a 0.5 s clip is ~60 s, a 1.5 s reverb tail ~3 min. Levers:
+  keep `gap=8` (default), render the **shortest** clip that exercises the effect
+  (e.g. `reverb.py --seconds 0.8`, plenty for an RT60), and run independent
+  configs in **parallel** (`measure.py --batch --jobs N`, `reverb.py` sweeps --
+  each config is its own subprocess, so N cores ≈ N×). **`-O2` is NOT worth it:**
+  it makes the *runtime* only modestly faster but the *compile* pathologically
+  slow (>10 min on `Pipeline`/`LowPassFir`), which defeats the rebuild-in-seconds
+  point -- stay on `-O1` (`build_sim.sh`).
 
 ## Suggested next steps
 
-- **Tier 2** builds directly on this: golden-vector + bypass-invariant
-  regression tests (`gap>=8`) that run in CI without a build.
-- Cross-check one render against the FPGA (same input + config) to confirm
+- **FPGA cross-check** (the one fidelity gap left): capture the same input +
+  config off the board (Pmod mode 2) and diff against the sim render, to confirm
   end-to-end fidelity beyond the bit-exact bypass already shown.
+- Extend `measure.py --batch` / the goldens to RAT and per-cab-model configs as
+  new effects land (re-bless after an INTENTIONAL voicing change with
+  `python3 tests/test_dsp_sim_regression.py --regen`).

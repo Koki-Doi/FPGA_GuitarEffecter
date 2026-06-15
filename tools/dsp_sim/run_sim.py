@@ -35,13 +35,16 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 SIM_BIN_DEFAULT = os.path.join(REPO, "tools", "dsp_sim", "dsp_sim")
 FS24 = 1 << 23           # 24-bit full scale
 LATENCY = 106            # measured pipeline through-latency (cycles), fixed by structure
-GAP = 32                 # idle cycles after each valid sample (FPGA AXIS valid-gating).
+GAP = 8                  # idle cycles after each valid sample (FPGA AXIS valid-gating).
                          # gap=0 (back-to-back) mis-times the recursive biquad/SVF
                          # feedback and the amp oscillates at Nyquist -- NOT what the
                          # FPGA does (it gets ~347 idle island-cycles between samples).
-                         # gap>=8 is enough for the local recursions; 32 is a safe
-                         # margin. gap>=LATENCY is unconditionally safe (1 sample in
-                         # flight) but ~3x slower.
+                         # gap>=8 is enough for all recursions to settle: it is
+                         # BIT-IDENTICAL to gap=32/106 (verified amp/rat/reverb,
+                         # max|diff|=0) -- raising it only burns time. 8 is therefore
+                         # the default (was 32, ~2.6x slower for the same bytes);
+                         # gap>=LATENCY (106) is the unconditional 1-sample-in-flight
+                         # bound if a future stage ever needs more settling.
 
 # topEntity control-word order (see LowPassFir.hs t_inputs):
 WORD_ORDER = ["gate", "od", "dist", "eq", "rat", "amp",
