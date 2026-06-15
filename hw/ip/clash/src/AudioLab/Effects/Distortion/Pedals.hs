@@ -207,9 +207,11 @@ metalPostLpfFrame prevLp f =
  where
   on = metalDistortionOn f
   tone = ctrlA (fDist f)
-  -- Dark post-LPF keeps the high-gain top end controlled.
-  -- 96 kHz: bilinear-refit (was 40 + tone>>1) to hold the same LPF corner Hz.
-  alpha = 21 + (tone `shiftR` 2)
+  -- Darker post-LPF: the real Boss MT-2 rolls off ~-12 dB/oct above 1 kHz (it is
+  -- a dark, mid-boosted pedal, NOT bright). Our old base 21 let too much 2-4 kHz
+  -- through (measured +8 dB @ 2.8 kHz = nothing like an MT-2). Base 8 drops the
+  -- post-clip corner toward ~1 kHz so the +800 Hz mid boost dominates. (was 21)
+  alpha = 8 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -235,9 +237,11 @@ ds1HpfFrame prevLp f =
   (if on then setMonoSample hp else setMonoSample x) (setMonoEqLow lp f)
  where
   on = ds1On f
-  -- Moderate input low cut; tighter than TS, looser than metal.
-  -- 96 kHz: bilinear-refit (was 5 + tight>>4) to hold the same HPF corner Hz.
-  alpha = 3 + (distTight (fOd f) `shiftR` 5)
+  -- Lighter input low cut: the real DS-1 keeps a ~100 Hz low-mid bump (the
+  -- Big-Muff-style tone network), but our HPF base 3 cut ~6 dB @ 100 Hz. Base 1
+  -- lowers the HPF corner so the lows are retained (a one-pole HPF cannot make a
+  -- bump, but it can stop over-thinning the bottom). (was 3)
+  alpha = 1 + (distTight (fOd f) `shiftR` 5)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -388,21 +392,26 @@ bigMuffClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
 -- the active pedal we select a -3 dB @ 1000 Hz Q0.7 coeff set instead. When
 -- bigMuff/metal is active the ORIGINAL coeffs are used (byte-identical, so the
 -- D90/D121 voicing is preserved). Bypass-exact when all three are off.
+-- Re-collation vs the SPECIFIC real pedals (EQ curve, not just clipping):
+--   * Metal (Boss MT-2): the real Metal Zone BOOSTS its mids (narrow peak ~800 Hz)
+--     and rolls off hard above 1 kHz -- it does NOT scoop. Sharing the Big Muff
+--     -10 dB scoop made our Metal sound nothing like an MT-2 (bright + scooped).
+--     Metal now gets a +5 dB @ 800 Hz Q0.9 BOOST here (and a darker post-LPF).
+--   * DS-1: the real scoop is ~500 Hz (Big-Muff-style tone network), deeper than
+--     our old -6 dB @ 1000 Hz; moved to -8 dB @ 500 Hz Q0.7.
+--   * Big Muff: unchanged (-10 dB @ 700 Hz).
+-- Priority metal -> ds1 -> bigMuff (single pedal active at a time).
 bigMuffScoopFfCoeff :: Frame -> (Signed 16, Signed 16, Signed 16)
 bigMuffScoopFfCoeff f
-  | ds1On f && not (bigMuffOn f || metalDistortionOn f)
-              = (15878, -30674, 14861)   -- DS-1 : -6 dB @ 1000 Hz Q0.7. -6 dB
-                                         -- (not -3) because the DS-1's bright
-                                         -- rising tilt would bury a -3 dB notch;
-                                         -- -6 dB lands a ~-2 dB net dip = the
-                                         -- real DS-1's "almost 3 dB" 500-2k scoop.
-  | otherwise = (15841, -31148, 15339)   -- Big Muff / Metal : -10 dB @ 700 Hz
+  | metalDistortionOn f = (16656, -32025, 15413)   -- Metal MT-2 : +5 dB @ 800 Hz BOOST (was scoop)
+  | ds1On f             = (16032, -31581, 15566)   -- DS-1 : -8 dB @ 500 Hz Q0.7 (was -6 @ 1000)
+  | otherwise           = (15841, -31148, 15339)   -- Big Muff : -10 dB @ 700 Hz
 
 bigMuffScoopFbCoeff :: Frame -> (Signed 16, Signed 16)
 bigMuffScoopFbCoeff f
-  | ds1On f && not (bigMuffOn f || metalDistortionOn f)
-              = (30674, 14356)           -- DS-1 (na1, a2)
-  | otherwise = (31148, 14797)           -- Big Muff / Metal (na1, a2)
+  | metalDistortionOn f = (32025, 15685)           -- Metal MT-2 boost (na1, a2)
+  | ds1On f             = (31581, 15214)           -- DS-1 -8 @ 500 Hz (na1, a2)
+  | otherwise           = (31148, 14797)           -- Big Muff -10 @ 700 Hz (na1, a2)
 
 bigMuffScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopFeedforwardFrame x1 x2 f =
@@ -504,9 +513,12 @@ fuzzFaceToneFrame prevLp f =
  where
   on = fuzzFaceOn f
   tone = ctrlA (fDist f)
-  -- "Round vs. bright", still rolling off the very top.
-  -- 96 kHz: bilinear-refit (was 80 + tone>>1) to hold the same LPF corner Hz.
-  alpha = 44 + (tone `shiftR` 1)
+  -- "Round vs. bright", still rolling off the very top. Re-collation: a real Fuzz
+  -- Face is warmer / rounder than our near-flat measurement; darken the top a
+  -- touch (base 44->38). (A full Fuzz-Face mid-hump needs a new biquad stage --
+  -- deferred to its own placement budget; the dynamic Ge bias already models the
+  -- gating/cleanup character.)
+  alpha = 38 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
