@@ -155,7 +155,11 @@ ampResPresenceMixFrame f =
   setMonoWet (if on then softClipK 3_400_000 wet else monoSample f) f
  where
   on = flag6 (fGate f)
-  wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift9Wide (fAcc3L f))
+  -- Presence-effectiveness pass: the presence band (fAcc3L) was added at >>9
+  -- (/512), so the PRESENCE knob barely moved the sound (knobcheck flagged it
+  -- "barely audible") and JCM800/AC30 lacked the real 2..3 kHz presence sheen.
+  -- Add it at >>8 (2x) so PRESENCE is audible and the upper-mid "ツヤ" returns.
+  wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift8Wide (fAcc3L f))
 
 ampResPresenceProductsFrame :: Frame -> Frame
 ampResPresenceProductsFrame f =
@@ -184,10 +188,15 @@ ampResPresenceProductsFrame f =
     1 -> presenceByte `shiftR` 5 -- Twin    : glassy but controlled
     2 -> presenceByte `shiftR` 6 -- AC30    : jangly presence
     3 -> presenceByte `shiftR` 3 -- Rockerv : darker and thicker
-    4 -> presenceByte `shiftR` 4 -- JCM800  : tight low + strong presence trim
+    4 -> presenceByte `shiftR` 5 -- JCM800  : 2..3 kHz presence sheen (was >>4;
+                                 -- less trim = brighter presence, the real
+                                 -- JCM800 presence control our model under-did)
     5 -> presenceByte `shiftR` 3 -- TriAmp  : maximum trim, modern voicing
     _ -> 0
   high = satWide (resize (monoWet f) - resize (monoEqHighLp f))
+
+satShift8Wide :: Wide -> Wide
+satShift8Wide = resize . satShift8
 
 satShift9Wide :: Wide -> Wide
 satShift9Wide = resize . satShift9

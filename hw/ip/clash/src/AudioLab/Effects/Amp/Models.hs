@@ -89,23 +89,31 @@ ampPreLpfDriveDarken idx = case idx of
   0 ->  4    -- JC-120: light fizz guard (48k: 6)
   1 ->  6    -- Twin: glassy tube breakup (48k: 8)
   2 -> 10    -- AC30: jangly crunch (48k: 12)
-  3 -> 16    -- Rockerverb: thick saturation without excess fizz (48k: 20)
+  3 -> 16    -- Rockerverb: thick saturation without excess fizz (reverted to D127; less alias)
   4 -> 16    -- JCM800: classic-rock drive, controlled top (48k: 20)
-  5 -> 23    -- TriAmp Mk3: modern HG, kill fizz (48k: 30)
+  5 -> 23    -- TriAmp Mk3: modern HG, kill fizz (reverted to D127; less alias)
   _ ->  4
 
 -- | Per-model second-stage gain bonus in Drive mode.
 -- D69: raised only in Drive mode so the second clipper gets a real
 -- saturation push instead of a master-volume lift. Stays a simple
 -- per-model adder (no DSP cost).
+-- Drive vs Clean separation pass (moderate / placement-safe re-tune). The drive
+-- increase now rides ONLY on this second-stage gain bonus -- the knee-delta and
+-- pre-LPF-darken tables were reverted to D127, because the aggressive version
+-- pushed the CDC pair to the tightest slack in project history and the safe-
+-- bypass knife-edge re-appeared (bypass hiss). This is a small Unsigned 9 field
+-- (low placement risk) raised in Drive mode so Drive is clearly hotter than
+-- Clean and the high-gain pair (Rockerverb idx 3, TriAmp idx 5) saturates most.
+-- JC-120 (idx 0) is clean SS (asym-clip unused).
 ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
 ampSecondStageDriveBonus idx = case idx of
-  0 -> 22    -- JC-120: hard-edged light drive
-  1 -> 30    -- Twin: breakup / light OD
-  2 -> 42    -- AC30: clear crunch
-  3 -> 62    -- Rockerverb: thick push
-  4 -> 74    -- JCM800: classic-rock cascaded crunch
-  5 -> 88    -- TriAmp Mk3: strongest modern HG sustain
+  0 -> 22    -- JC-120: clean SS (asym-clip not used; bonus unused)
+  1 -> 33    -- Twin: clearer breakup (was 30)
+  2 -> 47    -- AC30: clear crunch (was 42)
+  3 -> 85    -- Rockerverb: thick high-gain saturation push (was 62)
+  4 -> 80    -- JCM800: classic-rock cascaded crunch (was 74)
+  5 -> 116   -- TriAmp Mk3: strongest modern HG sustain (was 88)
   _ -> 22
 
 -- | Per-model positive-side asym-clip knee delta in Drive mode.
@@ -127,9 +135,9 @@ ampDrivePosDelta idx = case idx of
   0 ->  16_200   -- JC-120       : 18 * 900
   1 ->  85_800   -- Twin Reverb  : 78 * 1100
   2 -> 232_400   -- AC30         : 166 * 1400
-  3 -> 374_400   -- Rockerverb   : 208 * 1800
+  3 -> 374_400   -- Rockerverb   : 208 * 1800 (reverted: keep D127 knee = placement-safe)
   4 -> 462_000   -- JCM800       : 220 * 2100
-  5 -> 615_000   -- TriAmp Mk3   : 246 * 2500
+  5 -> 615_000   -- TriAmp Mk3   : 246 * 2500 (reverted: keep D127 knee = placement-safe)
   _ ->  16_200
 
 -- | Per-model negative-side asym-clip knee delta in Drive mode.
@@ -141,8 +149,8 @@ ampDriveNegDelta idx = case idx of
   0 ->  13_500   -- JC-120       : 18 * 750
   1 ->  74_100   -- Twin Reverb  : 78 * 950
   2 -> 199_200   -- AC30         : 166 * 1200
-  3 -> 322_400   -- Rockerverb   : 208 * 1550
+  3 -> 322_400   -- Rockerverb   : 208 * 1550 (reverted: keep D127 knee = placement-safe)
   4 -> 407_000   -- JCM800       : 220 * 1850
-  5 -> 541_200   -- TriAmp Mk3   : 246 * 2200
+  5 -> 541_200   -- TriAmp Mk3   : 246 * 2200 (reverted: keep D127 knee = placement-safe)
   _ ->  13_500
 
