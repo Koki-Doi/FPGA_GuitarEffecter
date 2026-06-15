@@ -23,6 +23,7 @@ Then the topic file that matches the task:
 | --- | --- |
 | Adding a new effect | `docs/ai_context/EFFECT_ADDING_GUIDE.md` (+ `EFFECT_STAGE_TEMPLATE.md`) |
 | Clash / DSP edits | `docs/ai_context/DSP_EFFECT_CHAIN.md` |
+| Offline DSP voicing sim (host, no Vivado) / knob + reverb + tone measurement | `tools/dsp_sim/README.md` (`run_sim.py` render+metrics, `measure.py` tone curve, `harmonics.py` THD, `reverb.py` RT60, `knobcheck.py` per-band knob audio-change; regression `tests/test_dsp_sim_regression.py`, opt-in `DSP_SIM_TESTS=1`) |
 | Refactoring (DSP / Python / build) | `docs/ai_context/REFACTORING_CANDIDATES.md` |
 | GPIO bit allocation | `docs/ai_context/GPIO_CONTROL_MAP.md` |
 | Audio routing / passthrough debug | `docs/ai_context/AUDIO_SIGNAL_PATH.md` |

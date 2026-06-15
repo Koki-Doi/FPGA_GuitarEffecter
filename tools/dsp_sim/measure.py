@@ -11,6 +11,7 @@ ear-bench guesswork. Runs the EXACT Clash DSP on the host, no Vivado build.
   python3 tools/dsp_sim/measure.py --list
 """
 import argparse
+import concurrent.futures
 import os
 import sys
 
@@ -136,6 +137,9 @@ def main():
     ap.add_argument("--gap", type=int, default=run_sim.GAP)
     ap.add_argument("--n", type=int, default=8192)
     ap.add_argument("--batch", action="store_true")
+    ap.add_argument("--jobs", type=int, default=min(os.cpu_count() or 1, len(BATCH)),
+                    help="parallel sim workers for --batch (each config is an "
+                         "independent subprocess; default = min(ncpu, nconfigs))")
     ap.add_argument("--list", action="store_true")
     args = ap.parse_args()
     aliases = {"ts_dist": "tube_screamer", "fuzz": "fuzz_face"}
@@ -155,8 +159,15 @@ def main():
               "voicing feature; flag = looks off vs the target.\n")
         print("  %-20s %-13s %-12s %-7s | %s" %
               ("config", "peak", "dip", "tilt", "target (real hardware)"))
-        for name, drive, label, target in BATCH:
-            net = net_curve(cm, name, freqs, x, L_byp, args.fs, args.gap, drive)
+        # each config is an independent sim subprocess -> fan them out across
+        # cores (the sim dominates; the GIL is released during subprocess wait).
+        def _one(item):
+            name, drive, _label, _target = item
+            return name, net_curve(cm, name, freqs, x, L_byp, args.fs, args.gap, drive)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+            nets = dict(ex.map(_one, BATCH))
+        for name, drive, label, target in BATCH:           # print in stable order
+            net = nets[name]
             pk_i, dp_i = int(np.argmax(net)), int(np.argmin(net))
             print("  %-20s %+4.1fdB@%4dHz %+4.1fdB@%4dHz %+5.1f | %s" %
                   (label, net[pk_i], freqs[pk_i], net[dp_i], freqs[dp_i],
