@@ -131,9 +131,11 @@ metalHpfFrame prevLp f =
   (if on then setMonoSample hp else setMonoSample x) (setMonoEqLow lp f)
  where
   on = metalDistortionOn f
-  -- Tight low cut for modern-metal-style palm-mute response.
-  -- 96 kHz: bilinear-refit (was 8 + tight>>3) to hold the same HPF corner Hz.
-  alpha = 4 + (distTight (fOd f) `shiftR` 4)
+  -- Low-end restoration (re-collation: absolute-low measure showed Metal -18.7 dB
+  -- low-vs-mid = far too thin). The old base 4 + tight>>4 put the HPF corner near
+  -- ~650 Hz, gutting the 150-650 Hz body; a real MT-2 only rolls off below
+  -- ~150 Hz. Lower to 1 + tight>>6 (~120 Hz corner) so the low-mid chunk returns.
+  alpha = 1 + (distTight (fOd f) `shiftR` 6)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -170,7 +172,8 @@ metalClipThreshold :: Frame -> Sample
 metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
  where
   driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
-  rawT = 3_300_000 - driveS * 6_000 :: Signed 25
+  -- Lower threshold = harder/denser clip (dist_eval: Metal THD plateaued at 17%).
+  rawT = 2_500_000 - driveS * 6_000 :: Signed 25
 
 -- ---- Shared 4x oversampled-hard-clip helpers (realism item 2 / R5) --------
 -- Reused by every oversampled clip (Metal D88, RAT D89, ...). The clip itself
@@ -207,11 +210,11 @@ metalPostLpfFrame prevLp f =
  where
   on = metalDistortionOn f
   tone = ctrlA (fDist f)
-  -- Darker post-LPF: the real Boss MT-2 rolls off ~-12 dB/oct above 1 kHz (it is
-  -- a dark, mid-boosted pedal, NOT bright). Our old base 21 let too much 2-4 kHz
-  -- through (measured +8 dB @ 2.8 kHz = nothing like an MT-2). Base 8 drops the
-  -- post-clip corner toward ~1 kHz so the +800 Hz mid boost dominates. (was 21)
-  alpha = 8 + (tone `shiftR` 2)
+  -- Post-LPF: dark MT-2 voicing, but base 8 (~1 kHz) filtered out the saturation
+  -- EDGE too (dist_eval: THD plateaued at 17% despite crest 2.3 = hard-clipped).
+  -- Base 13 (~1.6 kHz) keeps the 1-2 kHz grind/edge of the dense clip while still
+  -- rolling off the >3 kHz fizz = saturated AND dark, like a real MT-2. (was 8)
+  alpha = 13 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -237,11 +240,10 @@ ds1HpfFrame prevLp f =
   (if on then setMonoSample hp else setMonoSample x) (setMonoEqLow lp f)
  where
   on = ds1On f
-  -- Lighter input low cut: the real DS-1 keeps a ~100 Hz low-mid bump (the
-  -- Big-Muff-style tone network), but our HPF base 3 cut ~6 dB @ 100 Hz. Base 1
-  -- lowers the HPF corner so the lows are retained (a one-pole HPF cannot make a
-  -- bump, but it can stop over-thinning the bottom). (was 3)
-  alpha = 1 + (distTight (fOd f) `shiftR` 5)
+  -- Lighter input low cut: the real DS-1 keeps a ~100 Hz low-mid bump. The D129
+  -- base-1 still cut the 100 Hz region (HPF corner ~240 Hz, low-vs-mid -6.6 dB);
+  -- tight>>6 drops the corner to ~120 Hz so the bottom is retained.
+  alpha = 1 + (distTight (fOd f) `shiftR` 6)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
   hp = satWide (resize x - resize lp :: Wide)
@@ -319,7 +321,11 @@ bigMuffPreFrame f =
 -- the voicing is preserved; only aliasing is reduced. Bit-exact bypass off.
 bigMuffOsCascade :: Sample -> Sample
 bigMuffOsCascade x =
-  softClipK 1_850_000 (satShift8 (mulU8 (softClipK 2_400_000 x) 208))
+  -- Sustain/saturation pass (dist_eval found sustain 1.00x = NO sustain; a real
+  -- Big Muff is THE sustainer). Lower both clip knees so a decaying note stays
+  -- clipped to the ceiling far longer (= the note "holds") AND the saturation is
+  -- denser. Inter-stage *208 (~0.8x) kept. (knees were 2_400_000 / 1_850_000.)
+  softClipK 1_250_000 (satShift8 (mulU8 (softClipK 1_500_000 x) 208))
 
 bigMuffOsSubSamples :: Sample -> Sample -> (Sample, Sample, Sample, Sample)
 bigMuffOsSubSamples x1 xn =
@@ -405,13 +411,15 @@ bigMuffScoopFfCoeff :: Frame -> (Signed 16, Signed 16, Signed 16)
 bigMuffScoopFfCoeff f
   | metalDistortionOn f = (16656, -32025, 15413)   -- Metal MT-2 : +5 dB @ 800 Hz BOOST (was scoop)
   | ds1On f             = (16032, -31581, 15566)   -- DS-1 : -8 dB @ 500 Hz Q0.7 (was -6 @ 1000)
-  | otherwise           = (15841, -31148, 15339)   -- Big Muff : -10 dB @ 700 Hz
+  | otherwise           = (15625, -30482, 14923)   -- Big Muff : -10 dB @ 1000 Hz (re-collation:
+                                                   -- the real Big Muff tone-middle notch is ~1 kHz,
+                                                   -- not 700 Hz -- moves the scoop up to match)
 
 bigMuffScoopFbCoeff :: Frame -> (Signed 16, Signed 16)
 bigMuffScoopFbCoeff f
   | metalDistortionOn f = (32025, 15685)           -- Metal MT-2 boost (na1, a2)
   | ds1On f             = (31581, 15214)           -- DS-1 -8 @ 500 Hz (na1, a2)
-  | otherwise           = (31148, 14797)           -- Big Muff -10 @ 700 Hz (na1, a2)
+  | otherwise           = (30482, 14163)           -- Big Muff -10 @ 1000 Hz (na1, a2)
 
 bigMuffScoopFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopFeedforwardFrame x1 x2 f =
@@ -504,8 +512,11 @@ fuzzFaceClipFrame env f =
   rawShift = env `shiftR` 4
   biasShift = if rawShift > 500_000 then 500_000 else rawShift
   -- Base asymmetry: negative half compresses harder, positive keeps cleanup room.
-  kneeP = 2_100_000 - biasShift :: Sample
-  kneeN = 1_150_000 + (biasShift `shiftR` 1) :: Sample
+  -- Sustain/saturation pass (dist_eval: sustain only 1.12x, THD max 34%): lower
+  -- knees so a real-Fuzz-Face note holds + saturates more (cleanup via the bias
+  -- envelope is preserved -- biasShift still opens the knees at low playing level).
+  kneeP = 1_400_000 - biasShift :: Sample
+  kneeN = 800_000 + (biasShift `shiftR` 1) :: Sample
 
 fuzzFaceToneFrame :: Sample -> Frame -> Frame
 fuzzFaceToneFrame prevLp f =
