@@ -1,7 +1,9 @@
 # Realism preset loudness (work order step 11)
 
-Status: **offline survey done; NOT edited (offline amp path unreliable) --
-final matching is a board/ear task** (2026-06-15). Work order step 11: even out
+Status: **model pinning IMPLEMENTED + bench-ACCEPTED ("合格"); no level trim
+needed (presets loudness-acceptable on the board with pinned models)**
+(2026-06-15). Python/control-layer only -- bitstream unchanged (D126+D127
+`7f3ac394`). Work order step 11: even out
 the loudness of the reference chain presets so preset switching has no accidental
 volume jump (Solo may be intentionally louder). Canonical baseline = D126+D127
 (`7f3ac394`).
@@ -110,9 +112,12 @@ board/ear confirmation step.
    (<= 60) or trim the loud ones, edit `effect_presets.py`, redeploy (Python only),
    re-check by ear. Keep Solo intentionally hotter.
 
-## acceptance (step 11)
+## acceptance (step 11) -- DONE
 
-- Model pinning done (deterministic presets) -- the structural enabler.
-- Offline loudness re-measured with pinned models; Clean flagged as the quiet
-  outlier but the +15 dB correction left to board confirmation (not applied blind).
-- Final level trim is a board/ear pass (Python-only, no rebuild).
+- Model pinning done (deterministic presets) -- the structural enabler. **Bench-
+  ACCEPTED ("合格"): the pinned-model presets sound right on the board and the
+  preset loudness is acceptable (no problematic jumps reported), so the offline-
+  flagged Clean "quiet outlier" did NOT need a level trim** (it was the offline
+  amp-path uncertainty, not a real ~15 dB gap). No `effect_presets.py` level edit
+  applied. If a specific jump is reported later, trim `amp.master` /
+  `compressor.makeup` (<= 60) / `cab.level` / `reverb.mix` -- Python only, no rebuild.
