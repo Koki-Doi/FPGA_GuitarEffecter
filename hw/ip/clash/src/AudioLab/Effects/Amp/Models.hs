@@ -68,13 +68,14 @@ ampModelDarken :: Unsigned 3 -> Unsigned 8
 ampModelDarken idx = case idx of
   0 ->  6    -- JC-120: bright SS feel (48k: 0)
   1 -> 12    -- Twin: bright but slightly rounded (48k: 3)
-  2 -> 17    -- AC30: keep upper-mid chime (48k: 3)
+  2 -> 11    -- AC30: top-end SPARKLE (re-collation: the chime peaked @2.2k then rolled
+             -- off; a real AC30 keeps sparkle above. Lower darken 17->11 = brighter top.)
   3 -> 31    -- Rockerverb: darker low-mid thickness (48k: 18)
-  4 -> 20    -- JCM800: D127 Marshall bright-cap nudge -- the JTM45/Marshall bright
-             -- channel has a treble-boost bright cap our model lacked; lower the
-             -- clean-mode darken 25->20 for a touch more top (bright-cap feel).
-             -- Modest + revertable; Drive-mode darken (ampPreLpfDriveDarken 4->16)
-             -- still controls high-gain fizz. (was 25; 48k: 10)
+  4 -> 16    -- JCM800: a touch more driven top (re-collation: JCM800 measured darkest at
+             -- 2-3 kHz; its base is correctly mid-forward -- the real Marshall mid is the
+             -- tone-stack @650 and PRESENCE is a separate control, which our model maps to
+             -- the now-effective PRESENCE knob (D128), so a base 2-3 kHz shelf is deferred to
+             -- a dedicated stage. Modest darken 20->16 just extends the D127 bright-cap.
   5 -> 39    -- TriAmp Mk3: tight modern fizz control (48k: 26)
   _ ->  6
 

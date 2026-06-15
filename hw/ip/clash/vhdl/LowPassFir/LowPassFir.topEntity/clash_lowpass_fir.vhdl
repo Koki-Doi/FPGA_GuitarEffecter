@@ -13113,7 +13113,7 @@ begin
   with (\c$app_arg_selection_res_4\) select
     \c$app_arg_72\ <= to_unsigned(0,8) when "000",
                       to_unsigned(2,8) when "001",
-                      to_unsigned(2,8) when "010",
+                      to_unsigned(1,8) when "010",
                       to_unsigned(9,8) when "011",
                       to_unsigned(8,8) when "100",
                       to_unsigned(14,8) when "101",
@@ -13621,8 +13621,8 @@ begin
   ds37_selection_res <= unsigned((\c$bv_45\(26 downto 24)));
 
   with (ds37_selection_res) select
-    ds37 <= ( Tuple2_0_sel0_signed_0 => to_signed(-32084,16)
-            , Tuple2_0_sel1_signed_1 => to_signed(15711,16) ) when "000",
+    ds37 <= ( Tuple2_0_sel0_signed_0 => to_signed(0,16)
+            , Tuple2_0_sel1_signed_1 => to_signed(0,16) ) when "000",
             ( Tuple2_0_sel0_signed_0 => to_signed(-31960,16)
             , Tuple2_0_sel1_signed_1 => to_signed(15587,16) ) when "001",
             ( Tuple2_0_sel0_signed_0 => to_signed(-30680,16)
@@ -13733,9 +13733,9 @@ begin
   ds_selection_res <= unsigned((\c$bv_47\(26 downto 24)));
 
   with (ds_selection_res) select
-    ds_7 <= ( Tuple3_sel0_signed_0 => to_signed(16315,16)
-            , Tuple3_sel1_signed_1 => to_signed(-32084,16)
-            , Tuple3_sel2_signed_2 => to_signed(15780,16) ) when "000",
+    ds_7 <= ( Tuple3_sel0_signed_0 => to_signed(16384,16)
+            , Tuple3_sel1_signed_1 => to_signed(0,16)
+            , Tuple3_sel2_signed_2 => to_signed(0,16) ) when "000",
             ( Tuple3_sel0_signed_0 => to_signed(16210,16)
             , Tuple3_sel1_signed_1 => to_signed(-31960,16)
             , Tuple3_sel2_signed_2 => to_signed(15761,16) ) when "001",
@@ -14640,9 +14640,9 @@ begin
   with (idx_2) select
     \c$x_app_arg_33\ <= to_unsigned(6,8) when "000",
                         to_unsigned(12,8) when "001",
-                        to_unsigned(17,8) when "010",
+                        to_unsigned(11,8) when "010",
                         to_unsigned(31,8) when "011",
-                        to_unsigned(20,8) when "100",
+                        to_unsigned(16,8) when "100",
                         to_unsigned(39,8) when "101",
                         to_unsigned(6,8) when others;
 
