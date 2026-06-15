@@ -1635,7 +1635,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_21                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_186                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:526:1-18
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:537:1-18
   signal \c$x_app_arg_41\                            : signed(47 downto 0);
   signal \c$case_alt_77\                             : signed(23 downto 0);
   signal result_187                                  : signed(23 downto 0);
@@ -1649,7 +1649,7 @@ architecture structural of clash_lowpass_fir is
   signal result_190                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_10                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:526:1-18
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:537:1-18
   signal x_96                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal fuzzFaceTonePipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -1664,9 +1664,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_11                                     : unsigned(7 downto 0);
   signal \c$case_alt_79\                             : signed(23 downto 0);
   signal result_194                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:511:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:522:1-17
   signal x_97                                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:511:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:522:1-17
   signal \c$lp_app_arg\                              : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal fuzzFaceTonePrev                            : signed(23 downto 0) := to_signed(0,24);
@@ -1680,9 +1680,9 @@ architecture structural of clash_lowpass_fir is
   signal ds1_22                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_195                                  : clash_lowpass_fir_types.Maybe;
   signal result_196                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:493:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:501:1-17
   signal \c$x_app_arg_42\                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:493:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:501:1-17
   signal \c$x_app_arg_43\                            : signed(47 downto 0);
   signal \c$case_alt_80\                             : signed(23 downto 0);
   signal result_197                                  : signed(23 downto 0);
@@ -1702,9 +1702,9 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_103\                             : std_logic;
   signal result_200                                  : boolean;
   signal result_201                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:493:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:501:1-17
   signal x_100                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:493:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:501:1-17
   signal rawShift                                    : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ffBiasEnv                                   : signed(23 downto 0) := to_signed(0,24);
@@ -1737,7 +1737,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_23                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_208                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:447:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:455:1-17
   signal \c$x_app_arg_44\                            : signed(47 downto 0);
   signal \c$case_alt_86\                             : signed(23 downto 0);
   signal result_209                                  : signed(23 downto 0);
@@ -1751,7 +1751,7 @@ architecture structural of clash_lowpass_fir is
   signal result_212                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_13                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:447:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:455:1-17
   signal x_103                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffTonePipe                             : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -1766,9 +1766,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_14                                     : unsigned(7 downto 0);
   signal \c$case_alt_88\                             : signed(23 downto 0);
   signal result_216                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:435:1-16
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:443:1-16
   signal x_104                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:435:1-16
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:443:1-16
   signal \c$lp_app_arg_0\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffTonePrev                             : signed(23 downto 0) := to_signed(0,24);
@@ -1785,12 +1785,12 @@ architecture structural of clash_lowpass_fir is
   signal result_219                                  : boolean;
   signal \c$app_arg_115\                             : std_logic;
   signal result_220                                  : boolean;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:426:1-26
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:434:1-26
   signal \c$x_app_arg_45\                            : signed(47 downto 0);
   signal \c$case_alt_89\                             : signed(23 downto 0);
   signal result_221                                  : signed(23 downto 0);
   signal result_222                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:426:1-26
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:434:1-26
   signal x_106                                       : signed(23 downto 0);
   signal \c$app_arg_116\                             : std_logic;
   signal result_223                                  : boolean;
@@ -1842,14 +1842,14 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffClip2Pipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_234                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:353:1-19
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:359:1-19
   signal \c$x_app_arg_46\                            : signed(47 downto 0);
   signal \c$app_arg_124\                             : std_logic;
   signal result_235                                  : boolean;
   signal \c$case_alt_92\                             : signed(23 downto 0);
   signal result_236                                  : signed(23 downto 0);
   signal result_237                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:353:1-19
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:359:1-19
   signal x_110                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_111                                       : clash_lowpass_fir_types.Frame;
@@ -1861,33 +1861,33 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_127\                             : signed(23 downto 0);
   signal \c$app_arg_128\                             : signed(47 downto 0);
   signal result_239                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a                                           : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b                                           : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a_0                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b_0                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b_1                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b_2                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b_3                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b_4                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal b_5                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a_1                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a_2                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a_3                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a_4                                         : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:338:1-24
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:344:1-24
   signal a_5                                         : signed(23 downto 0);
   signal \c$app_arg_129\                             : std_logic;
   signal result_240                                  : boolean;
@@ -1908,12 +1908,12 @@ architecture structural of clash_lowpass_fir is
                                            , to_signed(0,24)
                                            , to_signed(0,24)
                                            , to_signed(0,24) );
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:359:1-19
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:365:1-19
   signal \c$ds2_app_arg\                             : signed(47 downto 0);
   signal \c$case_alt_93\                             : signed(23 downto 0);
   signal result_241                                  : signed(23 downto 0);
   signal result_242                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 15);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:359:1-19
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:365:1-19
   signal f_7                                         : clash_lowpass_fir_types.Frame;
   signal \c$case_alt_94\                             : signed(23 downto 0);
   signal result_243                                  : signed(23 downto 0);
@@ -2009,7 +2009,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_26                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_264                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:284:1-13
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:286:1-13
   signal \c$x_app_arg_47\                            : signed(47 downto 0);
   signal \c$case_alt_111\                            : signed(23 downto 0);
   signal result_265                                  : signed(23 downto 0);
@@ -2023,7 +2023,7 @@ architecture structural of clash_lowpass_fir is
   signal result_268                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_16                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:284:1-13
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:286:1-13
   signal x_114                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1TonePipe                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -2038,9 +2038,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_17                                     : unsigned(7 downto 0);
   signal \c$case_alt_113\                            : signed(23 downto 0);
   signal result_272                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:272:1-12
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:274:1-12
   signal x_115                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:272:1-12
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:274:1-12
   signal \c$lp_app_arg_1\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1TonePrev                                 : signed(23 downto 0) := to_signed(0,24);
@@ -2053,7 +2053,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_27                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_273                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:260:1-12
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:262:1-12
   signal \c$x_app_arg_48\                            : signed(47 downto 0);
   signal \c$case_alt_114\                            : signed(23 downto 0);
   signal result_274                                  : signed(23 downto 0);
@@ -2065,7 +2065,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_173\                             : signed(24 downto 0);
   signal \c$app_arg_174\                             : signed(24 downto 0);
   signal result_277                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:260:1-12
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:262:1-12
   signal x_118                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_119                                       : clash_lowpass_fir_types.Frame;
@@ -2095,9 +2095,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_19                                     : unsigned(7 downto 0);
   signal \c$case_alt_118\                            : signed(23 downto 0);
   signal result_284                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:236:1-11
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:239:1-11
   signal x_121                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:236:1-11
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:239:1-11
   signal \c$lp_app_arg_2\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1HpfLpPrev                                : signed(23 downto 0) := to_signed(0,24);
@@ -2110,7 +2110,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_29                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_285                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:219:1-15
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:222:1-15
   signal \c$x_app_arg_49\                            : signed(47 downto 0);
   signal \c$case_alt_119\                            : signed(23 downto 0);
   signal result_286                                  : signed(23 downto 0);
@@ -2124,7 +2124,7 @@ architecture structural of clash_lowpass_fir is
   signal result_289                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_20                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:219:1-15
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:222:1-15
   signal x_124                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalPostLpfPipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -2139,9 +2139,9 @@ architecture structural of clash_lowpass_fir is
   signal gain_21                                     : unsigned(7 downto 0);
   signal \c$case_alt_121\                            : signed(23 downto 0);
   signal result_293                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:205:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:208:1-17
   signal x_125                                       : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:205:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:208:1-17
   signal \c$lp_app_arg_3\                            : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalPostLpPrev                             : signed(23 downto 0) := to_signed(0,24);
@@ -2154,14 +2154,14 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_30                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_294                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:193:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:196:1-17
   signal \c$x_app_arg_50\                            : signed(47 downto 0);
   signal \c$app_arg_185\                             : std_logic;
   signal result_295                                  : boolean;
   signal \c$case_alt_122\                            : signed(23 downto 0);
   signal result_296                                  : signed(23 downto 0);
   signal result_297                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:193:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:196:1-17
   signal x_128                                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_129                                       : clash_lowpass_fir_types.Frame;
@@ -2171,10 +2171,10 @@ architecture structural of clash_lowpass_fir is
   signal result_299                                  : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
   signal x_130                                       : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:170:1-18
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:172:1-18
   signal rawT                                        : signed(24 downto 0);
   signal result_300                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:183:1-22
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:186:1-22
   signal \c$ds37_app_arg\                            : signed(47 downto 0);
   signal \c$case_alt_123\                            : signed(23 downto 0);
   signal result_301                                  : signed(23 downto 0);
@@ -2259,15 +2259,15 @@ architecture structural of clash_lowpass_fir is
   signal result_314                                  : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
   signal x_131                                       : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:170:1-18
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:172:1-18
   signal rawT_0                                      : signed(24 downto 0);
   signal result_315                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:199:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:202:1-17
   signal \c$ds2_app_arg_0\                           : signed(47 downto 0);
   signal \c$case_alt_131\                            : signed(23 downto 0);
   signal result_316                                  : signed(23 downto 0);
   signal result_317                                  : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
-  -- src/AudioLab/Effects/Distortion/Pedals.hs:199:1-17
+  -- src/AudioLab/Effects/Distortion/Pedals.hs:202:1-17
   signal f_8                                         : clash_lowpass_fir_types.Frame;
   signal result_318                                  : signed(23 downto 0);
   signal \c$case_alt_132\                            : signed(23 downto 0);
@@ -16028,9 +16028,9 @@ begin
   result_197 <= to_signed(8388607,24) when result_selection_res_73 else
                 \c$case_alt_80\;
 
-  kneeP <= to_signed(2100000,24) - result_196;
+  kneeP <= to_signed(1400000,24) - result_196;
 
-  kneeN <= to_signed(1150000,24) + \c$x_app_arg_42\;
+  kneeN <= to_signed(800000,24) + \c$x_app_arg_42\;
 
   result_selection_res_74 <= result_197 > kneeP;
 
@@ -16984,8 +16984,8 @@ begin
 
   \c$case_alt_90\ <= ( Tuple2_0_sel0_signed_0 => to_signed(31581,16)
                      , Tuple2_0_sel1_signed_1 => to_signed(15214,16) ) when result_224 else
-                     ( Tuple2_0_sel0_signed_0 => to_signed(31148,16)
-                     , Tuple2_0_sel1_signed_1 => to_signed(14797,16) );
+                     ( Tuple2_0_sel0_signed_0 => to_signed(30482,16)
+                     , Tuple2_0_sel1_signed_1 => to_signed(14163,16) );
 
   \c$bv_99\ <= (x_108.Frame_sel5_fDist);
 
@@ -17193,9 +17193,9 @@ begin
   \c$case_alt_91\ <= ( Tuple3_sel0_signed_0 => to_signed(16032,16)
                      , Tuple3_sel1_signed_1 => to_signed(-31581,16)
                      , Tuple3_sel2_signed_2 => to_signed(15566,16) ) when result_231 else
-                     ( Tuple3_sel0_signed_0 => to_signed(15841,16)
-                     , Tuple3_sel1_signed_1 => to_signed(-31148,16)
-                     , Tuple3_sel2_signed_2 => to_signed(15339,16) );
+                     ( Tuple3_sel0_signed_0 => to_signed(15625,16)
+                     , Tuple3_sel1_signed_1 => to_signed(-30482,16)
+                     , Tuple3_sel2_signed_2 => to_signed(14923,16) );
 
   \c$bv_114\ <= (x_109.Frame_sel5_fDist);
 
@@ -17851,14 +17851,14 @@ begin
         ;
   end block;
 
-  result_selection_res_86 <= result_256.Tuple4_sel0_signed_0 > to_signed(2400000,24);
+  result_selection_res_86 <= result_256.Tuple4_sel0_signed_0 > to_signed(1500000,24);
 
-  result_244 <= resize((to_signed(2400000,25) + \c$app_arg_131\),24) when result_selection_res_86 else
+  result_244 <= resize((to_signed(1500000,25) + \c$app_arg_131\),24) when result_selection_res_86 else
                 \c$case_alt_95\;
 
-  \c$case_alt_selection_res_71\ <= result_256.Tuple4_sel0_signed_0 < to_signed(-2400000,24);
+  \c$case_alt_selection_res_71\ <= result_256.Tuple4_sel0_signed_0 < to_signed(-1500000,24);
 
-  \c$case_alt_95\ <= resize((to_signed(-2400000,25) + \c$app_arg_132\),24) when \c$case_alt_selection_res_71\ else
+  \c$case_alt_95\ <= resize((to_signed(-1500000,25) + \c$app_arg_132\),24) when \c$case_alt_selection_res_71\ else
                      result_256.Tuple4_sel0_signed_0;
 
   \c$shI_122\ <= (to_signed(2,64));
@@ -17871,7 +17871,7 @@ begin
         natural'high when (\c$shI_122\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_122\);
-    \c$app_arg_131\ <= shift_right((\c$app_arg_133\ - to_signed(2400000,25)),sh_124)
+    \c$app_arg_131\ <= shift_right((\c$app_arg_133\ - to_signed(1500000,25)),sh_124)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -17888,7 +17888,7 @@ begin
         natural'high when (\c$shI_123\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_123\);
-    \c$app_arg_132\ <= shift_right((\c$app_arg_133\ - to_signed(-2400000,25)),sh_125)
+    \c$app_arg_132\ <= shift_right((\c$app_arg_133\ - to_signed(-1500000,25)),sh_125)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -17897,14 +17897,14 @@ begin
 
   \c$app_arg_133\ <= resize(result_256.Tuple4_sel0_signed_0,25);
 
-  result_selection_res_87 <= result_243 > to_signed(1850000,24);
+  result_selection_res_87 <= result_243 > to_signed(1250000,24);
 
-  result_245 <= resize((to_signed(1850000,25) + \c$app_arg_134\),24) when result_selection_res_87 else
+  result_245 <= resize((to_signed(1250000,25) + \c$app_arg_134\),24) when result_selection_res_87 else
                 \c$case_alt_96\;
 
-  \c$case_alt_selection_res_72\ <= result_243 < to_signed(-1850000,24);
+  \c$case_alt_selection_res_72\ <= result_243 < to_signed(-1250000,24);
 
-  \c$case_alt_96\ <= resize((to_signed(-1850000,25) + \c$app_arg_135\),24) when \c$case_alt_selection_res_72\ else
+  \c$case_alt_96\ <= resize((to_signed(-1250000,25) + \c$app_arg_135\),24) when \c$case_alt_selection_res_72\ else
                      result_243;
 
   \c$shI_124\ <= (to_signed(2,64));
@@ -17917,7 +17917,7 @@ begin
         natural'high when (\c$shI_124\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_124\);
-    \c$app_arg_134\ <= shift_right((\c$app_arg_136\ - to_signed(1850000,25)),sh_126)
+    \c$app_arg_134\ <= shift_right((\c$app_arg_136\ - to_signed(1250000,25)),sh_126)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -17934,7 +17934,7 @@ begin
         natural'high when (\c$shI_125\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_125\);
-    \c$app_arg_135\ <= shift_right((\c$app_arg_136\ - to_signed(-1850000,25)),sh_127)
+    \c$app_arg_135\ <= shift_right((\c$app_arg_136\ - to_signed(-1250000,25)),sh_127)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -17970,14 +17970,14 @@ begin
         ;
   end block;
 
-  result_selection_res_89 <= result_256.Tuple4_sel1_signed_1 > to_signed(2400000,24);
+  result_selection_res_89 <= result_256.Tuple4_sel1_signed_1 > to_signed(1500000,24);
 
-  result_247 <= resize((to_signed(2400000,25) + \c$app_arg_138\),24) when result_selection_res_89 else
+  result_247 <= resize((to_signed(1500000,25) + \c$app_arg_138\),24) when result_selection_res_89 else
                 \c$case_alt_98\;
 
-  \c$case_alt_selection_res_74\ <= result_256.Tuple4_sel1_signed_1 < to_signed(-2400000,24);
+  \c$case_alt_selection_res_74\ <= result_256.Tuple4_sel1_signed_1 < to_signed(-1500000,24);
 
-  \c$case_alt_98\ <= resize((to_signed(-2400000,25) + \c$app_arg_139\),24) when \c$case_alt_selection_res_74\ else
+  \c$case_alt_98\ <= resize((to_signed(-1500000,25) + \c$app_arg_139\),24) when \c$case_alt_selection_res_74\ else
                      result_256.Tuple4_sel1_signed_1;
 
   \c$shI_127\ <= (to_signed(2,64));
@@ -17990,7 +17990,7 @@ begin
         natural'high when (\c$shI_127\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_127\);
-    \c$app_arg_138\ <= shift_right((\c$app_arg_140\ - to_signed(2400000,25)),sh_129)
+    \c$app_arg_138\ <= shift_right((\c$app_arg_140\ - to_signed(1500000,25)),sh_129)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18007,7 +18007,7 @@ begin
         natural'high when (\c$shI_128\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_128\);
-    \c$app_arg_139\ <= shift_right((\c$app_arg_140\ - to_signed(-2400000,25)),sh_130)
+    \c$app_arg_139\ <= shift_right((\c$app_arg_140\ - to_signed(-1500000,25)),sh_130)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18016,14 +18016,14 @@ begin
 
   \c$app_arg_140\ <= resize(result_256.Tuple4_sel1_signed_1,25);
 
-  result_selection_res_90 <= result_246 > to_signed(1850000,24);
+  result_selection_res_90 <= result_246 > to_signed(1250000,24);
 
-  result_248 <= resize((to_signed(1850000,25) + \c$app_arg_141\),24) when result_selection_res_90 else
+  result_248 <= resize((to_signed(1250000,25) + \c$app_arg_141\),24) when result_selection_res_90 else
                 \c$case_alt_99\;
 
-  \c$case_alt_selection_res_75\ <= result_246 < to_signed(-1850000,24);
+  \c$case_alt_selection_res_75\ <= result_246 < to_signed(-1250000,24);
 
-  \c$case_alt_99\ <= resize((to_signed(-1850000,25) + \c$app_arg_142\),24) when \c$case_alt_selection_res_75\ else
+  \c$case_alt_99\ <= resize((to_signed(-1250000,25) + \c$app_arg_142\),24) when \c$case_alt_selection_res_75\ else
                      result_246;
 
   \c$shI_129\ <= (to_signed(2,64));
@@ -18036,7 +18036,7 @@ begin
         natural'high when (\c$shI_129\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_129\);
-    \c$app_arg_141\ <= shift_right((\c$app_arg_143\ - to_signed(1850000,25)),sh_131)
+    \c$app_arg_141\ <= shift_right((\c$app_arg_143\ - to_signed(1250000,25)),sh_131)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18053,7 +18053,7 @@ begin
         natural'high when (\c$shI_130\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_130\);
-    \c$app_arg_142\ <= shift_right((\c$app_arg_143\ - to_signed(-1850000,25)),sh_132)
+    \c$app_arg_142\ <= shift_right((\c$app_arg_143\ - to_signed(-1250000,25)),sh_132)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18089,14 +18089,14 @@ begin
         ;
   end block;
 
-  result_selection_res_92 <= result_256.Tuple4_sel2_signed_2 > to_signed(2400000,24);
+  result_selection_res_92 <= result_256.Tuple4_sel2_signed_2 > to_signed(1500000,24);
 
-  result_250 <= resize((to_signed(2400000,25) + \c$app_arg_145\),24) when result_selection_res_92 else
+  result_250 <= resize((to_signed(1500000,25) + \c$app_arg_145\),24) when result_selection_res_92 else
                 \c$case_alt_101\;
 
-  \c$case_alt_selection_res_77\ <= result_256.Tuple4_sel2_signed_2 < to_signed(-2400000,24);
+  \c$case_alt_selection_res_77\ <= result_256.Tuple4_sel2_signed_2 < to_signed(-1500000,24);
 
-  \c$case_alt_101\ <= resize((to_signed(-2400000,25) + \c$app_arg_146\),24) when \c$case_alt_selection_res_77\ else
+  \c$case_alt_101\ <= resize((to_signed(-1500000,25) + \c$app_arg_146\),24) when \c$case_alt_selection_res_77\ else
                       result_256.Tuple4_sel2_signed_2;
 
   \c$shI_132\ <= (to_signed(2,64));
@@ -18109,7 +18109,7 @@ begin
         natural'high when (\c$shI_132\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_132\);
-    \c$app_arg_145\ <= shift_right((\c$app_arg_147\ - to_signed(2400000,25)),sh_134)
+    \c$app_arg_145\ <= shift_right((\c$app_arg_147\ - to_signed(1500000,25)),sh_134)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18126,7 +18126,7 @@ begin
         natural'high when (\c$shI_133\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_133\);
-    \c$app_arg_146\ <= shift_right((\c$app_arg_147\ - to_signed(-2400000,25)),sh_135)
+    \c$app_arg_146\ <= shift_right((\c$app_arg_147\ - to_signed(-1500000,25)),sh_135)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18135,14 +18135,14 @@ begin
 
   \c$app_arg_147\ <= resize(result_256.Tuple4_sel2_signed_2,25);
 
-  result_selection_res_93 <= result_249 > to_signed(1850000,24);
+  result_selection_res_93 <= result_249 > to_signed(1250000,24);
 
-  result_251 <= resize((to_signed(1850000,25) + \c$app_arg_148\),24) when result_selection_res_93 else
+  result_251 <= resize((to_signed(1250000,25) + \c$app_arg_148\),24) when result_selection_res_93 else
                 \c$case_alt_102\;
 
-  \c$case_alt_selection_res_78\ <= result_249 < to_signed(-1850000,24);
+  \c$case_alt_selection_res_78\ <= result_249 < to_signed(-1250000,24);
 
-  \c$case_alt_102\ <= resize((to_signed(-1850000,25) + \c$app_arg_149\),24) when \c$case_alt_selection_res_78\ else
+  \c$case_alt_102\ <= resize((to_signed(-1250000,25) + \c$app_arg_149\),24) when \c$case_alt_selection_res_78\ else
                       result_249;
 
   \c$shI_134\ <= (to_signed(2,64));
@@ -18155,7 +18155,7 @@ begin
         natural'high when (\c$shI_134\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_134\);
-    \c$app_arg_148\ <= shift_right((\c$app_arg_150\ - to_signed(1850000,25)),sh_136)
+    \c$app_arg_148\ <= shift_right((\c$app_arg_150\ - to_signed(1250000,25)),sh_136)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18172,7 +18172,7 @@ begin
         natural'high when (\c$shI_135\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_135\);
-    \c$app_arg_149\ <= shift_right((\c$app_arg_150\ - to_signed(-1850000,25)),sh_137)
+    \c$app_arg_149\ <= shift_right((\c$app_arg_150\ - to_signed(-1250000,25)),sh_137)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18208,14 +18208,14 @@ begin
         ;
   end block;
 
-  result_selection_res_95 <= result_256.Tuple4_sel3_signed_3 > to_signed(2400000,24);
+  result_selection_res_95 <= result_256.Tuple4_sel3_signed_3 > to_signed(1500000,24);
 
-  result_253 <= resize((to_signed(2400000,25) + \c$app_arg_152\),24) when result_selection_res_95 else
+  result_253 <= resize((to_signed(1500000,25) + \c$app_arg_152\),24) when result_selection_res_95 else
                 \c$case_alt_104\;
 
-  \c$case_alt_selection_res_80\ <= result_256.Tuple4_sel3_signed_3 < to_signed(-2400000,24);
+  \c$case_alt_selection_res_80\ <= result_256.Tuple4_sel3_signed_3 < to_signed(-1500000,24);
 
-  \c$case_alt_104\ <= resize((to_signed(-2400000,25) + \c$app_arg_153\),24) when \c$case_alt_selection_res_80\ else
+  \c$case_alt_104\ <= resize((to_signed(-1500000,25) + \c$app_arg_153\),24) when \c$case_alt_selection_res_80\ else
                       result_256.Tuple4_sel3_signed_3;
 
   \c$shI_137\ <= (to_signed(2,64));
@@ -18228,7 +18228,7 @@ begin
         natural'high when (\c$shI_137\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_137\);
-    \c$app_arg_152\ <= shift_right((\c$app_arg_154\ - to_signed(2400000,25)),sh_139)
+    \c$app_arg_152\ <= shift_right((\c$app_arg_154\ - to_signed(1500000,25)),sh_139)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18245,7 +18245,7 @@ begin
         natural'high when (\c$shI_138\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_138\);
-    \c$app_arg_153\ <= shift_right((\c$app_arg_154\ - to_signed(-2400000,25)),sh_140)
+    \c$app_arg_153\ <= shift_right((\c$app_arg_154\ - to_signed(-1500000,25)),sh_140)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18254,14 +18254,14 @@ begin
 
   \c$app_arg_154\ <= resize(result_256.Tuple4_sel3_signed_3,25);
 
-  result_selection_res_96 <= result_252 > to_signed(1850000,24);
+  result_selection_res_96 <= result_252 > to_signed(1250000,24);
 
-  result_254 <= resize((to_signed(1850000,25) + \c$app_arg_155\),24) when result_selection_res_96 else
+  result_254 <= resize((to_signed(1250000,25) + \c$app_arg_155\),24) when result_selection_res_96 else
                 \c$case_alt_105\;
 
-  \c$case_alt_selection_res_81\ <= result_252 < to_signed(-1850000,24);
+  \c$case_alt_selection_res_81\ <= result_252 < to_signed(-1250000,24);
 
-  \c$case_alt_105\ <= resize((to_signed(-1850000,25) + \c$app_arg_156\),24) when \c$case_alt_selection_res_81\ else
+  \c$case_alt_105\ <= resize((to_signed(-1250000,25) + \c$app_arg_156\),24) when \c$case_alt_selection_res_81\ else
                       result_252;
 
   \c$shI_139\ <= (to_signed(2,64));
@@ -18274,7 +18274,7 @@ begin
         natural'high when (\c$shI_139\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_139\);
-    \c$app_arg_155\ <= shift_right((\c$app_arg_157\ - to_signed(1850000,25)),sh_141)
+    \c$app_arg_155\ <= shift_right((\c$app_arg_157\ - to_signed(1250000,25)),sh_141)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18291,7 +18291,7 @@ begin
         natural'high when (\c$shI_140\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_140\);
-    \c$app_arg_156\ <= shift_right((\c$app_arg_157\ - to_signed(-1850000,25)),sh_142)
+    \c$app_arg_156\ <= shift_right((\c$app_arg_157\ - to_signed(-1250000,25)),sh_142)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19495,7 +19495,7 @@ begin
 
   \c$bv_145\ <= (x_123.Frame_sel4_fOd);
 
-  \c$shI_156\ <= (to_signed(5,64));
+  \c$shI_156\ <= (to_signed(6,64));
 
   clp_app_arg_2_shiftL : block
     signal sh_158 : natural;
@@ -19507,7 +19507,7 @@ begin
         to_integer(\c$shI_156\);
     \c$lp_app_arg_2\ <= shift_right((unsigned((\c$bv_145\(31 downto 24)))),sh_158)
         -- pragma translate_off
-        when ((to_signed(5,64)) >= 0) else (others => 'X')
+        when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
@@ -19865,7 +19865,7 @@ begin
 
   result_292 <= ((\c$bv_152\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_183\ = ('1'));
 
-  alpha_4 <= to_unsigned(8,8) + \c$lp_app_arg_3\;
+  alpha_4 <= to_unsigned(13,8) + \c$lp_app_arg_3\;
 
   \c$shI_160\ <= (to_signed(8,64));
 
@@ -20136,7 +20136,7 @@ begin
 
   x_130 <= unsigned((\c$bv_157\(23 downto 16)));
 
-  rawT <= to_signed(3300000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_130)))))))),25)) * to_signed(6000,25), 25));
+  rawT <= to_signed(2500000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_130)))))))),25)) * to_signed(6000,25), 25));
 
   result_300 <= resize(result_299,24);
 
@@ -20598,7 +20598,7 @@ begin
 
   x_131 <= unsigned((\c$bv_161\(23 downto 16)));
 
-  rawT_0 <= to_signed(3300000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_131)))))))),25)) * to_signed(6000,25), 25));
+  rawT_0 <= to_signed(2500000,25) - (resize((resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(x_131)))))))),25)) * to_signed(6000,25), 25));
 
   result_315 <= resize(result_314,24);
 
@@ -21155,7 +21155,7 @@ begin
   result_334 <= to_signed(8388607,24) when result_selection_res_131 else
                 \c$case_alt_141\;
 
-  alpha_5 <= to_unsigned(4,8) + \c$lp_app_arg_4\;
+  alpha_5 <= to_unsigned(1,8) + \c$lp_app_arg_4\;
 
   \c$shI_176\ <= (to_signed(8,64));
 
@@ -21190,7 +21190,7 @@ begin
 
   \c$bv_169\ <= (x_136.Frame_sel4_fOd);
 
-  \c$shI_177\ <= (to_signed(4,64));
+  \c$shI_177\ <= (to_signed(6,64));
 
   clp_app_arg_4_shiftL : block
     signal sh_179 : natural;
@@ -21202,7 +21202,7 @@ begin
         to_integer(\c$shI_177\);
     \c$lp_app_arg_4\ <= shift_right((unsigned((\c$bv_169\(31 downto 24)))),sh_179)
         -- pragma translate_off
-        when ((to_signed(4,64)) >= 0) else (others => 'X')
+        when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;

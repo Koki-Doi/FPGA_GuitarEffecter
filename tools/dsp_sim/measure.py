@@ -121,10 +121,31 @@ def tone_levels(y, fs, freqs, n):
     return np.array(out)
 
 
-def net_curve(cm, name, freqs, x, L_byp, fs, gap, drive=60):
+def net_curve(cm, name, freqs, x, L_byp, fs, gap, drive=60, absolute=False):
+    """Net dB response vs bypass. Default is median-removed (the voicing SHAPE);
+    ``absolute=True`` keeps the true level vs bypass so the **absolute low-end**
+    (how much bass the pedal actually passes) is visible -- the median-removal
+    hides a pedal that is uniformly thin (e.g. a too-tight input HPF)."""
     y = run_sim.run_dsp(SIM_BIN, build_config(cm, name, drive, 50, 50), x, gap=gap)
     net = 20 * np.log10((tone_levels(y, fs, freqs, len(x)) + 1) / (L_byp + 1))
-    return net - np.median(net)
+    return net if absolute else net - np.median(net)
+
+
+# Guitar-relevant bands for the low-end / balance summary. LOW covers below the
+# low-E (82 Hz) down to drop tunings (~62 Hz) so a thin-bass pedal is visible.
+BANDS_HZ = [("low", 40, 160), ("lowmid", 160, 500), ("mid", 500, 1500),
+            ("high", 1500, 9000)]
+
+
+def band_balance(net, freqs):
+    """Average dB in each guitar band (low/lowmid/mid/high) from an ABSOLUTE
+    net curve, plus the low-vs-mid balance (negative = bass-light = thin)."""
+    out = {}
+    for name, lo, hi in BANDS_HZ:
+        m = (freqs >= lo) & (freqs < hi)
+        out[name] = float(np.mean(net[m])) if m.any() else float("nan")
+    out["low_vs_mid"] = out["low"] - out["mid"]
+    return out
 
 
 def main():
@@ -137,6 +158,13 @@ def main():
     ap.add_argument("--gap", type=int, default=run_sim.GAP)
     ap.add_argument("--n", type=int, default=8192)
     ap.add_argument("--batch", action="store_true")
+    ap.add_argument("--check", action="store_true",
+                    help="auto-compare each model to its real-hardware target "
+                         "(targets.py) and report PASS/FAIL -- systematises the "
+                         "re-collation so a model that drifts off the real pedal is flagged")
+    ap.add_argument("--absolute", action="store_true",
+                    help="keep the TRUE level vs bypass (not median-removed) so the "
+                         "absolute low-end / bass-light pedals are visible")
     ap.add_argument("--jobs", type=int, default=min(os.cpu_count() or 1, len(BATCH)),
                     help="parallel sim workers for --batch (each config is an "
                          "independent subprocess; default = min(ncpu, nconfigs))")
@@ -149,29 +177,56 @@ def main():
     if not os.path.exists(SIM_BIN):
         sys.exit("build the sim first: tools/dsp_sim/build_sim.sh")
     cm = run_sim.load_control_maps()
-    freqs = np.round(np.logspace(np.log10(70), np.log10(9000), 26)).astype(int)
+    # floor 40 Hz (was 70) so the sub-low-E / drop-tuning region is measured --
+    # the "低音が足りない" complaints live below 80 Hz.
+    freqs = np.round(np.logspace(np.log10(40), np.log10(9000), 30)).astype(int)
     x = multitone(args.fs, freqs, args.n, args.level)
     L_byp = tone_levels(run_sim.run_dsp(SIM_BIN, build_config(cm, "bypass"), x, gap=args.gap),
                         args.fs, freqs, args.n)
 
+    if args.check:
+        import targets as tg
+        print("auto-check vs real-hardware targets (targets.py): PASS = the sim's mid "
+              "feature + bass balance match the documented real pedal/amp; FAIL = drifted.\n")
+        drive_of = {n: d for n, d, _l, _t in BATCH}
+        names = [n for n in tg.TARGETS if n in drive_of or n in ("rat_fx",)]
+
+        def _c(name):
+            return name, net_curve(cm, name, freqs, x, L_byp, args.fs, args.gap,
+                                   drive_of.get(name, 60), absolute=True)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+            nets = dict(ex.map(_c, names))
+        npass = 0
+        for name in names:
+            ok, detail = tg.compare(name, nets[name], freqs, band_balance(nets[name], freqs))
+            npass += int(ok)
+            print("  %-4s %-12s %s" % ("PASS" if ok else "FAIL", tg.TARGETS[name]["label"], detail))
+        print("\n  %d/%d models match their real-hardware target." % (npass, len(names)))
+        return
+
     if args.batch:
-        print("net tone shaping vs bypass (median-removed). peak/dip = the model's "
-              "voicing feature; flag = looks off vs the target.\n")
-        print("  %-20s %-13s %-12s %-7s | %s" %
-              ("config", "peak", "dip", "tilt", "target (real hardware)"))
+        print("net tone shaping vs bypass. peak/dip/tilt = voicing SHAPE (median-"
+              "removed); LOWvMID = absolute low(40-160) minus mid(500-1.5k) dB "
+              "(negative = bass-light / thin; the '低音が足りない' check).\n")
+        print("  %-20s %-13s %-12s %-7s %-8s | %s" %
+              ("config", "peak", "dip", "tilt", "LOWvMID", "target (real hardware)"))
         # each config is an independent sim subprocess -> fan them out across
         # cores (the sim dominates; the GIL is released during subprocess wait).
         def _one(item):
             name, drive, _label, _target = item
-            return name, net_curve(cm, name, freqs, x, L_byp, args.fs, args.gap, drive)
+            return name, net_curve(cm, name, freqs, x, L_byp, args.fs, args.gap,
+                                   drive, absolute=True)            # ABSOLUTE
         with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
             nets = dict(ex.map(_one, BATCH))
         for name, drive, label, target in BATCH:           # print in stable order
-            net = nets[name]
+            absnet = nets[name]
+            net = absnet - np.median(absnet)               # shape for peak/dip/tilt
+            bal = band_balance(absnet, freqs)
             pk_i, dp_i = int(np.argmax(net)), int(np.argmin(net))
-            print("  %-20s %+4.1fdB@%4dHz %+4.1fdB@%4dHz %+5.1f | %s" %
+            flag = " THIN" if bal["low_vs_mid"] < -8 else ""
+            print("  %-20s %+4.1fdB@%4dHz %+4.1fdB@%4dHz %+5.1f %+6.1fdB%-2s | %s" %
                   (label, net[pk_i], freqs[pk_i], net[dp_i], freqs[dp_i],
-                   net[-1] - net[0], target))
+                   net[-1] - net[0], bal["low_vs_mid"], flag, target))
         return
 
     name = aliases.get(args.config, args.config)
