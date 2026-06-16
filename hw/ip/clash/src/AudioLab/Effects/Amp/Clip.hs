@@ -185,10 +185,12 @@ ampPreLowpassFrame prev f =
   charByte = ampCharForModel idx
   -- 96 kHz: base alpha 80 + (char >> 2) (was 128 + ...); the recomputed
   -- ampModelDarken / ampPreLpfDriveDarken tables hold each model's LPF corner Hz.
-  -- HF-restore (2026-06-16): 80 -> 96 raises the post-clip LPF corner uniformly
-  -- (broadband brighten) to recover the top lost when the amp input HP stopped
-  -- being a bright differentiator (the bass fix). Pairs with ampTrebleGain floor.
-  baseAlpha = 96 + (charByte `shiftR` 2)
+  -- HF-restore (2026-06-16/17): 80 -> 102 raises the post-clip LPF corner
+  -- uniformly (broadband brighten) to recover the top lost when the amp input HP
+  -- stopped being a bright differentiator (the bass fix). This is BEFORE the tone
+  -- stack, so unlike a high ampTrebleGain floor it brightens WITHOUT compressing
+  -- the TREBLE/PRESENCE knob range (cycle 2). Pairs with ampTrebleGain floor 110.
+  baseAlpha = 102 + (charByte `shiftR` 2)
   -- Per-model post-clip darken (Clean-mode baseline).
   modelDarken = ampModelDarken idx
   -- Per-model Drive-mode extra darken (absorbs fizz from the harder clip).

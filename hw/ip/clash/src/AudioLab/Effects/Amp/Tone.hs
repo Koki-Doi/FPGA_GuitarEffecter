@@ -98,15 +98,18 @@ ampTrebleGain idx x = base - modelTrim
  where
   -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
   -- much raw 8..16 kHz fizz when TREBLE is near 100.
-  -- HF-restore (2026-06-16, "音がこもる/高域不足"): the amp input HP was a DEAD
+  -- HF-restore (2026-06-16/17, "音がこもる/高域不足"): the amp input HP was a DEAD
   -- first-difference that added ~+6 dB/oct of HF; fixing it to a live one-pole
   -- (the bass fix) removed that, leaving the high band (a differentiator) summed
-  -- at gain ~84 < 128 = ATTENUATED = muffled. Raise the floor 64 -> 145 so the
-  -- high band sits well ABOVE unity, pushing amp-alone HFslp back toward the D131
-  -- brightness the user expects while KEEPING the new bass. Pairs with the
-  -- ampPreLowpass baseAlpha 80 -> 96 (broadband clip-output brighten). The
-  -- `- x>>3 - x>>4` shaping + the cab >5 kHz rolloff keep 8-16 kHz fizz down.
-  base = 145 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
+  -- at gain ~84 < 128 = ATTENUATED = muffled. Raise the floor so the high band
+  -- sits above unity (brighter neutral). Floor 64 -> 145 fixed the muffle but a
+  -- HIGH floor COMPRESSES the TREBLE/PRESENCE knob range (knobcheck cycle 2:
+  -- TREBLE +0.9, PRESENCE -0.0 = barely audible). So back to floor 110 (still
+  -- above unity = not muffled) and move the rest of the brightness to the
+  -- baseAlpha broadband brighten (96 -> 102), which is BEFORE the tone stack so
+  -- it does NOT compress the knob range. The `- x>>3 - x>>4` shaping + the cab
+  -- >5 kHz rolloff keep 8-16 kHz fizz down.
+  base = 110 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
     1 ->  2                 -- Twin    : glassy, not piercing

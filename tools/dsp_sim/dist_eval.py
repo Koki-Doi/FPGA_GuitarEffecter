@@ -135,6 +135,31 @@ def evaluate(cm, cfg, drive):
     return {"drive": dc, "sustain": sr, "imd_db": imd_db, "fizz_db": fizz_db}
 
 
+# Amp CLEAN-mode distortion detector ("クリーンモードでも歪む" -- the issue the sim
+# did NOT catch before). A high-headroom CLEAN amp (JC-120/Twin) must stay clean
+# at a normal playing level; only the high-gain models break up "clean". Measures
+# THD at 0.12 FS (a realistic guitar peak), amp model N in Clean mode (the
+# build_config amp path = input_gain 18, drive_mode 0). ceiling = max clean THD%%.
+AMP_CLEAN = [
+    ("amp_0", "JC-120",     5),    # SS, huge headroom -> must be clean
+    ("amp_1", "Twin",       7),    # blackface clean
+    ("amp_2", "AC30",      15),    # class-A, early breakup even "clean"
+    ("amp_3", "Rockerverb", 30),   # high-gain, breaks up
+    ("amp_4", "JCM800",     30),   # high-gain
+    ("amp_5", "TriAmp",     35),   # highest-gain
+]
+AMP_CLEAN_LEVEL = 0.12
+
+
+def amp_clean_thd(cm, cfg):
+    """Clean-mode THD at a realistic 0.12 FS / 220 Hz pluck-ish input. High = the
+    amp distorts when it should be clean (power-stage softClipK ceilings + drive
+    gain). Detects the 'clean mode distorts' regression."""
+    x = sig.sine(FS, 220, 0.12, AMP_CLEAN_LEVEL)
+    y = _render(cm, cfg, 0, x)
+    return harmonics.harmonic_profile(y, FS, 220.0)["thd_pct"]
+
+
 def _print(label, r, target=None):
     print("== %s ==%s" % (label, ("   target: " + target) if target else ""))
     print("  drive curve (input dBFS -> THD%% / crest dB):")
@@ -179,6 +204,21 @@ def main():
             npass += int(ok)
             print("  %-4s %-12s %s" % ("PASS" if ok else "FAIL", label, detail))
         print("\n  %d/%d pedals match their real-pedal character." % (npass, len(BATCH)))
+        # Amp CLEAN-mode distortion detector (the '%s' issue) -- a clean amp must
+        # stay clean at a normal playing level.
+        print("\n  amp CLEAN-mode distortion @%.2f FS (high-headroom amps must stay clean):"
+              % AMP_CLEAN_LEVEL)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+            thds = dict(ex.map(lambda it: (it[0], amp_clean_thd(cm, it[0])), AMP_CLEAN))
+        cpass = 0
+        for cfg, label, ceil in AMP_CLEAN:
+            thd = thds[cfg]
+            ok = thd <= ceil
+            cpass += int(ok)
+            print("  %-4s %-12s clean THD %3.0f%% (ceiling %d%%)%s"
+                  % ("PASS" if ok else "FAIL", label, thd, ceil,
+                     "" if ok else "  <== distorts when clean"))
+        print("\n  %d/%d amps stay clean at playing level." % (cpass, len(AMP_CLEAN)))
         return
     if args.batch:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:

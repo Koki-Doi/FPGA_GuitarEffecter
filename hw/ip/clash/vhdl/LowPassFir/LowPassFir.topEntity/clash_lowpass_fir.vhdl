@@ -996,12 +996,12 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampXfmrResPipe                              : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_82                                   : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Amp/Tone.hs:338:1-15
+  -- src/AudioLab/Effects/Amp/Tone.hs:341:1-15
   signal \c$x_app_arg_16\                            : signed(47 downto 0);
   signal \c$case_alt_38\                             : signed(23 downto 0);
   signal result_83                                   : signed(23 downto 0);
   signal result_84                                   : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:338:1-15
+  -- src/AudioLab/Effects/Amp/Tone.hs:341:1-15
   signal x_37                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampXfmrResX2                                : signed(23 downto 0) := to_signed(0,24);
@@ -1027,13 +1027,13 @@ architecture structural of clash_lowpass_fir is
   signal ampXfmrHfPipe                               : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_85                                   : clash_lowpass_fir_types.Maybe;
   signal result_86                                   : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:318:1-21
+  -- src/AudioLab/Effects/Amp/Tone.hs:321:1-21
   signal x_39                                        : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_40                                        : signed(47 downto 0);
   signal \c$case_alt_39\                             : signed(23 downto 0);
   signal result_87                                   : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:318:1-21
+  -- src/AudioLab/Effects/Amp/Tone.hs:321:1-21
   signal \c$x_app_arg_17\                            : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_41                                        : signed(47 downto 0);
@@ -1041,7 +1041,7 @@ architecture structural of clash_lowpass_fir is
   signal result_88                                   : signed(23 downto 0);
   signal \c$app_arg_47\                              : signed(24 downto 0);
   signal result_89                                   : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:318:1-21
+  -- src/AudioLab/Effects/Amp/Tone.hs:321:1-21
   signal \c$x_app_arg_18\                            : signed(47 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampXfmrHfPrev                               : signed(23 downto 0) := to_signed(0,24);
@@ -1066,7 +1066,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$case_alt_43\                             : signed(23 downto 0);
   signal result_93                                   : signed(23 downto 0);
   signal result_94                                   : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:288:1-19
+  -- src/AudioLab/Effects/Amp/Tone.hs:291:1-19
   signal x_45                                        : signed(23 downto 0);
   signal \c$app_arg_51\                              : signed(24 downto 0);
   signal result_95                                   : signed(23 downto 0);
@@ -1080,7 +1080,7 @@ architecture structural of clash_lowpass_fir is
   signal ampMbSatPipe                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_96                                   : clash_lowpass_fir_types.Maybe;
   signal result_97                                   : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:374:1-20
+  -- src/AudioLab/Effects/Amp/Tone.hs:377:1-20
   signal x_47                                        : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_48                                        : signed(47 downto 0);
@@ -1099,11 +1099,11 @@ architecture structural of clash_lowpass_fir is
   signal x_50                                        : signed(47 downto 0);
   signal \c$case_alt_47\                             : signed(23 downto 0);
   signal result_101                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:374:1-20
+  -- src/AudioLab/Effects/Amp/Tone.hs:377:1-20
   signal \c$x_app_arg_19\                            : signed(47 downto 0);
   signal \c$app_arg_55\                              : signed(24 downto 0);
   signal result_102                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:374:1-20
+  -- src/AudioLab/Effects/Amp/Tone.hs:377:1-20
   signal \c$x_app_arg_20\                            : signed(47 downto 0);
   signal \c$app_arg_56\                              : signed(24 downto 0);
   signal result_103                                  : signed(23 downto 0);
@@ -1122,14 +1122,14 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_11                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_104                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal \c$x1_app_arg\                              : unsigned(7 downto 0);
   signal result_105                                  : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal \c$gain_case_alt\                           : unsigned(7 downto 0);
   signal result_106                                  : unsigned(7 downto 0);
   signal result_107                                  : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal \c$x_app_arg_21\                            : signed(47 downto 0);
   signal \c$case_alt_48\                             : signed(23 downto 0);
   signal result_108                                  : signed(23 downto 0);
@@ -1139,17 +1139,17 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_58\                              : signed(24 downto 0);
   signal \c$app_arg_59\                              : signed(24 downto 0);
   signal result_110                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal y                                           : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal x1_0                                        : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal level                                       : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal idx                                         : unsigned(2 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal sagRaw0                                     : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:238:1-14
+  -- src/AudioLab/Effects/Amp/Tone.hs:241:1-14
   signal x_53                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampSagEnv                                   : signed(23 downto 0) := to_signed(0,24);
@@ -1166,11 +1166,11 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampResPresencePipe                          : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_114                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Amp/Tone.hs:166:1-22
+  -- src/AudioLab/Effects/Amp/Tone.hs:169:1-22
   signal \c$x_app_arg_22\                            : signed(47 downto 0);
   signal \c$case_alt_53\                             : signed(23 downto 0);
   signal result_115                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:166:1-22
+  -- src/AudioLab/Effects/Amp/Tone.hs:169:1-22
   signal \c$x_app_arg_23\                            : signed(47 downto 0);
   signal \c$case_alt_54\                             : signed(23 downto 0);
   signal result_116                                  : signed(23 downto 0);
@@ -1184,7 +1184,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_61\                              : signed(24 downto 0);
   signal \c$app_arg_62\                              : signed(24 downto 0);
   signal result_119                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:166:1-22
+  -- src/AudioLab/Effects/Amp/Tone.hs:169:1-22
   signal x_56                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_57                                        : clash_lowpass_fir_types.Frame;
@@ -1206,7 +1206,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$gain_app_arg_0\                          : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal \c$gain_app_arg_1\                          : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:181:1-27
+  -- src/AudioLab/Effects/Amp/Tone.hs:184:1-27
   signal presenceByte                                : unsigned(7 downto 0);
   signal \c$app_arg_64\                              : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
@@ -1218,9 +1218,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal \c$gain_app_arg_4\                          : std_logic_vector(31 downto 0);
   signal \c$app_arg_65\                              : signed(47 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:181:1-27
+  -- src/AudioLab/Effects/Amp/Tone.hs:184:1-27
   signal \on_4\                                      : boolean;
-  -- src/AudioLab/Effects/Amp/Tone.hs:181:1-27
+  -- src/AudioLab/Effects/Amp/Tone.hs:184:1-27
   signal \c$high_app_arg_0\                          : signed(47 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampResPresenceFilterPipe                    : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -1251,19 +1251,19 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_69\                              : signed(24 downto 0);
   signal \c$app_arg_70\                              : signed(24 downto 0);
   signal result_130                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:141:1-13
+  -- src/AudioLab/Effects/Amp/Tone.hs:144:1-13
   signal x_61                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_62                                        : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_14                                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_131                                  : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Amp/Tone.hs:134:1-15
+  -- src/AudioLab/Effects/Amp/Tone.hs:137:1-15
   signal \c$x_app_arg_24\                            : signed(47 downto 0);
   signal \c$case_alt_59\                             : signed(23 downto 0);
   signal result_132                                  : signed(23 downto 0);
   signal result_133                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Tone.hs:134:1-15
+  -- src/AudioLab/Effects/Amp/Tone.hs:137:1-15
   signal x_63                                        : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_64                                        : clash_lowpass_fir_types.Frame;
@@ -1283,7 +1283,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Amp/Tone.hs:94:1-11
   signal x_65                                        : unsigned(7 downto 0);
   signal \c$app_arg_77\                              : signed(47 downto 0);
-  -- src/AudioLab/Effects/Amp/Tone.hs:120:1-20
+  -- src/AudioLab/Effects/Amp/Tone.hs:123:1-20
   signal \on_5\                                      : boolean;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal \c$gain_app_arg_6\                          : unsigned(7 downto 0);
@@ -1396,7 +1396,7 @@ architecture structural of clash_lowpass_fir is
   signal ampStage2Pipe                               : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_155                                  : clash_lowpass_fir_types.Maybe;
   signal result_156                                  : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Clip.hs:218:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
   signal x_78                                        : signed(23 downto 0);
   signal result_157                                  : signed(23 downto 0);
   signal result_158                                  : signed(23 downto 0);
@@ -1434,15 +1434,15 @@ architecture structural of clash_lowpass_fir is
   signal \c$negKnee_case_alt\                        : signed(24 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal ch                                          : signed(24 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:218:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
   signal \c$x_app_arg_29\                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:218:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
   signal \c$x_app_arg_30\                            : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:218:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
   signal \c$x_app_arg_31\                            : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:218:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
   signal idx_0                                       : unsigned(2 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:218:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
   signal \c$idx_app_arg\                             : std_logic_vector(31 downto 0);
   signal \c$case_alt_67\                             : signed(23 downto 0);
   signal result_162                                  : signed(23 downto 0);
@@ -1468,11 +1468,11 @@ architecture structural of clash_lowpass_fir is
   signal \c$gain_app_arg_8\                          : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal \c$gain_app_arg_9\                          : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:199:1-27
+  -- src/AudioLab/Effects/Amp/Clip.hs:201:1-27
   signal idx_1                                       : unsigned(2 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal \c$gain_app_arg_10\                         : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:199:1-27
+  -- src/AudioLab/Effects/Amp/Clip.hs:201:1-27
   signal \c$idx_app_arg_0\                           : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampPreLowpassPipe                           : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -13178,7 +13178,7 @@ begin
         ;
   end block;
 
-  result_136 <= (to_unsigned(145,8) + \c$app_arg_73\) - \c$app_arg_72\;
+  result_136 <= (to_unsigned(110,8) + \c$app_arg_73\) - \c$app_arg_72\;
 
   \c$app_arg_76\ <= resize((resize(x_67.Frame_sel24_fEqMidL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((to_unsigned(64,8) + \c$gain_app_arg_5\))))))))),48)), 48) when \on_5\ else
                     to_signed(0,48);
@@ -14599,7 +14599,7 @@ begin
     x_81 <= result_166 when "1",
             x_84.Frame_sel0_fL when others;
 
-  alpha <= ((to_unsigned(96,8) + \c$x_app_arg_34\) - \c$x_app_arg_33\) - \c$x_app_arg_32\;
+  alpha <= ((to_unsigned(102,8) + \c$x_app_arg_34\) - \c$x_app_arg_33\) - \c$x_app_arg_32\;
 
   \c$shI_93\ <= (to_signed(8,64));
 
@@ -14648,7 +14648,7 @@ begin
   with (idx_2) select
     \c$x_app_arg_33\ <= to_unsigned(6,8) when "000",
                         to_unsigned(12,8) when "001",
-                        to_unsigned(11,8) when "010",
+                        to_unsigned(6,8) when "010",
                         to_unsigned(31,8) when "011",
                         to_unsigned(16,8) when "100",
                         to_unsigned(39,8) when "101",
