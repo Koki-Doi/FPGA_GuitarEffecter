@@ -10,9 +10,19 @@ against it AUTOMATICALLY and flag deviations -- no more eyeballing / over-claimi
 
 Each target: ``mid=(kind, f0_hz, tol_hz)`` where kind is "peak"/"scoop"/"flat",
 and optional ``low_vs_mid=(dB, rel)`` rel in {">", "<", "~"} (the absolute
-low(40-160)-minus-mid(500-1.5k) balance, the bass-light check). Sources are the
-ElectroSmash circuit analyses + the per-model re-collations recorded in
-docs/ai_context/CURRENT_STATE.md (D129/D130/D131).
+low(40-160)-minus-mid(500-1.5k) balance, the bass-light check), and optional
+``hf=(rel, dB_per_oct)`` the 2-9 kHz treble slope (a real amp+cab ROLLS OFF =
+negative slope; a bare differentiator EQ rises = positive = 'digital/buzzy').
+Sources are the ElectroSmash circuit analyses + the per-model re-collations
+recorded in docs/ai_context/CURRENT_STATE.md (D129/D130/D131).
+
+``CLIP_TARGETS`` (used by ``dist_eval.py --check``) encodes the distortion
+CHARACTER target a single-sine THD/EQ curve cannot see: the clip TYPE (hard
+diode/square vs soft op-amp), how much it must distort (THD floor at a hot
+input), and whether it sustains. This systematises the dist_eval re-collation
+the same way ``measure.py --check`` systematises the EQ re-collation: a Metal
+that under-drives, or a DS-1 that is too soft for a Si-diode hard clipper, is
+auto-flagged instead of eyeballed.
 """
 
 # name -> dict(label, mid=(kind,f0,tol), low_vs_mid=(dB,rel) or None, src)
@@ -43,7 +53,38 @@ TARGETS = {
                         src="Boss MT-2: ~800 Hz mid boost, dark >1k, NOT gutted lows (D131)"),
     "rat_fx":      dict(label="RAT",       mid=("peak", 1000, 350), low_vs_mid=None,
                         src="ElectroSmash: ~1 kHz mid-forward, LM308 dark top (D124)"),
+    # --- Amp AS A RIG (amp -> cab). Targets are on the rig_* chain, NOT amp-
+    # alone: a real guitar amp is always heard through a speaker, and amp-alone
+    # is misleadingly bright (the tone-stack high band is a +6 dB/oct
+    # differentiator). The rig must (a) roll the top OFF (hf < 0, the speaker is
+    # a lowpass) and (b) NOT be bass-light -- a mic'd guitar cab has a strong
+    # low-mid thump, so low_vs_mid should be near unity, not -20 dB.
+    "rig_0":       dict(label="RIG JC120",  mid=("flat", 0, 0),      low_vs_mid=(">", -8),
+                        hf=("<", 0.0),
+                        src="Roland JC-120 into 2x12: clean full-range, top rolled by speaker"),
+    "rig_2":       dict(label="RIG AC30",   mid=("peak", 2500, 900), low_vs_mid=(">", -8),
+                        hf=("<", 0.0),
+                        src="Vox AC30 into 2x12: chime upper-mid, speaker rolloff"),
+    "rig_4":       dict(label="RIG JCM800", mid=("peak", 650, 250),  low_vs_mid=(">", -8),
+                        hf=("<", 0.0),
+                        src="Marshall JCM800 into 4x12: mid push ~650 Hz, speaker rolloff"),
+    # --- Cab (speaker IR). A real guitar cab = a cone-breakup presence peak in
+    # 2-4 kHz then a SHARP rolloff above ~5 kHz (a 2nd-order-ish lowpass).
+    "cab":         dict(label="CAB",        mid=("peak", 3000, 1100), low_vs_mid=None,
+                        hf=("<", -2.0),
+                        src="2x12 British: cone-breakup presence 2-4 kHz + sharp >5 kHz rolloff"),
 }
+
+
+def _hf_slope(absnet, freqs, lo=2000, hi=9000):
+    """Treble slope dB/octave across [lo,hi] (local copy of measure.hf_slope to
+    avoid a circular import: measure.py imports targets.py)."""
+    np = __import__("numpy")
+    m = (freqs >= lo) & (freqs <= hi)
+    if m.sum() < 2:
+        return float("nan")
+    x = np.log2(freqs[m].astype(float))
+    return float(np.polyfit(x - x.mean(), absnet[m], 1)[0])
 
 
 def _mid_feature(net, freqs, lo=250, hi=2500):
@@ -99,4 +140,101 @@ def compare(name, absnet, freqs, band_balance):
             ok = False; msgs.append("low_vs_mid %+.1f off ~%+.1f" % (bal, db))
         else:
             msgs.append("low_vs_mid %+.1f OK" % bal)
+    hf = t.get("hf")
+    if hf is not None:
+        rel, thr = hf
+        slp = _hf_slope(absnet, freqs)
+        if rel == "<" and slp > thr:
+            ok = False; msgs.append("HF %+.1f/oct rising (want <%+.1f = rolled off)" % (slp, thr))
+        elif rel == ">" and slp < thr:
+            ok = False; msgs.append("HF %+.1f/oct (want >%+.1f)" % (slp, thr))
+        else:
+            msgs.append("HF %+.1f/oct OK" % slp)
+    return ok, "; ".join(msgs)
+
+
+# ----- Distortion CHARACTER targets (dist_eval.py --check) -------------------
+# The PASS/FAIL axes (robust): thd_hot_min/max = THD% floor/ceiling at the
+# hottest (-6 dBFS) input = "does it distort enough / too much" (the validated
+# "歪が足りない" check -- cross-checked against harmonic_profile odd/even + h3..h7);
+# sustain_min = decay hold-time ratio floor (a Big Muff/Fuzz sustainer); cleanup
+# = THD must DROP at the quietest input (the Fuzz-Face volume cleanup).
+# clip ("hard"/"soft") is INFORMATIONAL only -- crest at a hot input is
+# confounded by the post-clip LPF (a hard square through a bright LPF rings =
+# high crest that looks soft; e.g. DS-1 crest 5.6 yet h3 -10.2 dB = hardest odd
+# harmonic of all). Sources: ElectroSmash + the dist_eval re-collation
+# (CURRENT_STATE.md D131) + the 2026-06-16 harmonic cross-check.
+CREST_HARD_DB = 3.0      # crest at hot input: shown for context (see clip note)
+CLIP_TARGETS = {
+    "clean_boost": dict(label="CleanBoost", clip=None, thd_hot_max=12,
+                        thd_hot_min=None, sustain_min=None, cleanup=False,
+                        src="transparent EP-boost, clips only when very hot"),
+    "tube_screamer": dict(label="TScreamer", clip="soft", thd_hot_min=10,
+                        thd_hot_max=None, sustain_min=None, cleanup=False,
+                        src="op-amp SOFT clip, smooth/rounded -- should NOT square hard"),
+    "ds1": dict(label="DS-1", clip="hard", thd_hot_min=35,
+                        thd_hot_max=None, sustain_min=None, cleanup=False,
+                        src="Si-diode HARD clip, aggressive square top"),
+    "big_muff": dict(label="BigMuff", clip=None, thd_hot_min=55,
+                        thd_hot_max=None, sustain_min=1.5, cleanup=False,
+                        src="two cascaded diode clips: high THD + long sustain"),
+    "fuzz_face": dict(label="FuzzFace", clip="hard", thd_hot_min=25,
+                        thd_hot_max=None, sustain_min=1.3, cleanup=True,
+                        src="transistor squares + CLEANS UP at low input + sustains"),
+    "metal": dict(label="Metal", clip="hard", thd_hot_min=18,
+                        thd_hot_max=None, sustain_min=1.3, cleanup=False,
+                        src="MT-2 high gain. NOTE the 1kHz-sine THD ceiling (~19%) is "
+                            "intrinsically capped by the dark MT-2 post-LPF (h3 rolled "
+                            "off); the 2026-06-16 gain+clip pass raised playing-level "
+                            "saturation (drive curve low-end) within the dark voicing. "
+                            "Full MT-2 THD needs the gain-staging restructure (new stage)."),
+    "rat_fx": dict(label="RAT", clip="hard", thd_hot_min=22,
+                        thd_hot_max=None, sustain_min=None, cleanup=False,
+                        src="LM308 + Si-diode hard clip, gritty square"),
+}
+
+
+def compare_clip(name, r):
+    """r = dist_eval.evaluate() dict (drive curve, sustain, imd_db, fizz_db).
+    Returns (ok, detail). Encodes the distortion-character re-collation so an
+    under-driving Metal / too-soft DS-1 is auto-flagged, not eyeballed."""
+    t = CLIP_TARGETS.get(name)
+    if t is None:
+        return True, "no target"
+    _lv, thd_hot, crest_hot = r["drive"][-1]            # loudest input (-6 dBFS)
+    ok = True
+    msgs = []
+    if t["thd_hot_min"] is not None:
+        if thd_hot < t["thd_hot_min"]:
+            ok = False; msgs.append("THD %.0f%% < %d (under-drives / 歪不足)"
+                                    % (thd_hot, t["thd_hot_min"]))
+        else:
+            msgs.append("THD %.0f%% OK" % thd_hot)
+    if t["thd_hot_max"] is not None:
+        if thd_hot > t["thd_hot_max"]:
+            ok = False; msgs.append("THD %.0f%% > %d (should stay clean)"
+                                    % (thd_hot, t["thd_hot_max"]))
+        else:
+            msgs.append("THD %.0f%% clean OK" % thd_hot)
+    # Clip TYPE is reported as INFORMATIONAL only, NOT pass/fail. crest at a hot
+    # input was tried as a hard(low)/soft(high) discriminator but it is
+    # CONFOUNDED by each pedal's post-clip LPF: a hard-clipped square through a
+    # BRIGHT post-LPF rings (Gibbs overshoot) -> HIGH crest that mimics a soft
+    # clip (DS-1 crest 5.6 but h3 -10.2 dB = the strongest odd harmonic of all =
+    # genuinely hard). Validated against harmonic_profile (odd/even + h3..h7). So
+    # crest is shown for context but does not gate -- a metric that mis-measures
+    # is worse than none.
+    if t["clip"] is not None:
+        msgs.append("clip ~%s (crest %.1f, info)" % (t["clip"], crest_hot))
+    if t["sustain_min"] is not None:
+        if r["sustain"] < t["sustain_min"]:
+            ok = False; msgs.append("sustain %.2fx < %.1f" % (r["sustain"], t["sustain_min"]))
+        else:
+            msgs.append("sustain %.2fx OK" % r["sustain"])
+    if t["cleanup"]:
+        thd_quiet = r["drive"][0][1]
+        if thd_quiet > thd_hot - 10:
+            ok = False; msgs.append("no cleanup (THD %.0f%%->%.0f%%)" % (thd_quiet, thd_hot))
+        else:
+            msgs.append("cleanup %.0f->%.0f%% OK" % (thd_quiet, thd_hot))
     return ok, "; ".join(msgs)

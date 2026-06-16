@@ -51,6 +51,14 @@ BATCH = [
     ("amp_4", 0, "AMP JCM800",  "mid push ~650Hz, bite"),
     ("amp_5", 0, "AMP TriAmp",  "modern scoop ~750Hz, tight"),
     ("cab", 0, "CAB",           "body bump ~100Hz, cone-breakup peak ~1-4kHz, sharp >5kHz rolloff"),
+    # Realistic RIG chains: a guitar amp is ALWAYS heard through a speaker cab,
+    # so amp -> cab is the meaningful voicing. The amp-ALONE rows above are
+    # misleadingly bright/thin because the amp tone-stack "high" band is a
+    # +6 dB/oct differentiator (monoWet - lowpass) with no speaker rolloff; the
+    # cab is what rolls the top off. These rows expose the amp AS HEARD.
+    ("rig_0", 0, "RIG JC120>cab",  "amp INTO cab: mids present, top rolled off"),
+    ("rig_2", 0, "RIG AC30>cab",   "chime upper-mid, top rolled off"),
+    ("rig_4", 0, "RIG JCM800>cab", "mid push ~650Hz, top rolled off"),
 ]
 
 
@@ -89,6 +97,16 @@ def build_config(cm, name, drive=60, tone=50, level=50):
         w["amp"] = cm.amp_word(input_gain=18, master=60, presence=45, resonance=35)
         w["amp_tone"] = cm.amp_tone_word(50, 50, 50, amp_model_idx=int(name.split("_")[1]),
                                          amp_drive_mode=0)
+    elif name.startswith("rig_"):
+        # Realistic chain: amp model N -> cab (British, model 1). The amp's true
+        # voicing is only meaningful into a speaker; this routes amp_on AND
+        # cab_on (pipeline order is amp -> cab) so the amp's rising-treble
+        # differentiator high band is tamed by the cab rolloff, as on a real rig.
+        idx = int(name.split("_")[1])
+        w["gate"] = cm.gate_word(amp_on=True, cab_on=True)
+        w["amp"] = cm.amp_word(input_gain=18, master=60, presence=45, resonance=35)
+        w["amp_tone"] = cm.amp_tone_word(50, 50, 50, amp_model_idx=idx, amp_drive_mode=0)
+        w["cab"] = cm.cab_word(mix=100, level=100, model=1, air=50)
     elif name == "cab" or (name.startswith("cab") and name[3:].isdigit()):
         # "cab" = legacy alias for model 1 (British); "cab0".."cab2" pick the
         # cab model so Open(0) / British(1) / Closed(2) can each be measured
@@ -146,6 +164,22 @@ def band_balance(net, freqs):
         out[name] = float(np.mean(net[m])) if m.any() else float("nan")
     out["low_vs_mid"] = out["low"] - out["mid"]
     return out
+
+
+def hf_slope(net, freqs, lo=2000, hi=9000):
+    """Treble slope in dB/OCTAVE across [lo, hi] of an ABSOLUTE net curve --
+    the brightness / 'digital fizz' axis a single mid-feature misses. A real
+    guitar amp+cab rolls the top OFF (strongly negative slope, the speaker is a
+    ~2nd-order lowpass above ~4-5 kHz); a bare op-amp/differentiator EQ RISES
+    (positive). The single number that separates 'sounds like a rig' from
+    'sounds like a buzzy DI'."""
+    m = (freqs >= lo) & (freqs <= hi)
+    if m.sum() < 2:
+        return float("nan")
+    x = np.log2(freqs[m].astype(np.float64))      # octaves
+    y = net[m]
+    a = np.polyfit(x - x.mean(), y, 1)[0]          # dB per octave
+    return float(a)
 
 
 def main():
@@ -207,9 +241,11 @@ def main():
     if args.batch:
         print("net tone shaping vs bypass. peak/dip/tilt = voicing SHAPE (median-"
               "removed); LOWvMID = absolute low(40-160) minus mid(500-1.5k) dB "
-              "(negative = bass-light / thin; the '低音が足りない' check).\n")
-        print("  %-20s %-13s %-12s %-7s %-8s | %s" %
-              ("config", "peak", "dip", "tilt", "LOWvMID", "target (real hardware)"))
+              "(negative = bass-light / thin; the '低音が足りない' check); HFslp = "
+              "treble slope dB/oct 2-9kHz (real amp+cab ROLLS OFF = negative; a "
+              "rising/+ slope = bare differentiator EQ = 'digital/buzzy').\n")
+        print("  %-20s %-13s %-12s %-7s %-8s %-8s | %s" %
+              ("config", "peak", "dip", "tilt", "LOWvMID", "HFslp", "target (real hardware)"))
         # each config is an independent sim subprocess -> fan them out across
         # cores (the sim dominates; the GIL is released during subprocess wait).
         def _one(item):
@@ -222,11 +258,13 @@ def main():
             absnet = nets[name]
             net = absnet - np.median(absnet)               # shape for peak/dip/tilt
             bal = band_balance(absnet, freqs)
+            slp = hf_slope(absnet, freqs)
             pk_i, dp_i = int(np.argmax(net)), int(np.argmin(net))
-            flag = " THIN" if bal["low_vs_mid"] < -8 else ""
-            print("  %-20s %+4.1fdB@%4dHz %+4.1fdB@%4dHz %+5.1f %+6.1fdB%-2s | %s" %
+            flags = (" THIN" if bal["low_vs_mid"] < -8 else "") + \
+                    (" BRIGHT" if slp > 2.0 else "")
+            print("  %-20s %+4.1fdB@%4dHz %+4.1fdB@%4dHz %+5.1f %+6.1fdB %+5.1f/oct%-2s | %s" %
                   (label, net[pk_i], freqs[pk_i], net[dp_i], freqs[dp_i],
-                   net[-1] - net[0], bal["low_vs_mid"], flag, target))
+                   net[-1] - net[0], bal["low_vs_mid"], slp, flags, target))
         return
 
     name = aliases.get(args.config, args.config)

@@ -169,11 +169,14 @@ metalMulFrame f =
 -- freely; the D87 lesson) to keep the 50 MHz island path short. Bit-exact
 -- bypass when the pedal is off.
 metalClipThreshold :: Frame -> Sample
-metalClipThreshold f = resize (if rawT < 1_250_000 then 1_250_000 else rawT) :: Sample
+metalClipThreshold f = resize (if rawT < 1_050_000 then 1_050_000 else rawT) :: Sample
  where
   driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
   -- Lower threshold = harder/denser clip (dist_eval: Metal THD plateaued at 17%).
-  rawT = 2_500_000 - driveS * 6_000 :: Signed 25
+  -- "歪が足りない" pass: floor 1.25M -> 1.05M + steeper slope so the clip flattens
+  -- harder across the drive range (the doubled drive gain reaches the floor
+  -- sooner), raising the dense-clip harmonics that the post-LPF then shapes.
+  rawT = 2_300_000 - driveS * 7_000 :: Signed 25
 
 -- ---- Shared 4x oversampled-hard-clip helpers (realism item 2 / R5) --------
 -- Reused by every oversampled clip (Metal D88, RAT D89, ...). The clip itself
@@ -189,7 +192,7 @@ metalClipProductsFrame x1 hist f =
     , fAcc3L = if on then s2 else 0, fAcc3R = 0 }
  where
   on = metalDistortionOn f
-  (q0, q1, q2, q3) = os4xSubSamples (metalClipThreshold f) x1 (satShift8 (fAccL f))
+  (q0, q1, q2, q3) = os4xSubSamples (metalClipThreshold f) x1 (satShift7 (fAccL f))
   (s0, s1, s2) = os4xDecimProducts q0 q1 q2 q3 hist
 
 metalClipMixFrame :: Frame -> Frame
@@ -202,7 +205,7 @@ metalClipHistNext :: Vec 12 Sample -> Sample -> Maybe Frame -> Vec 12 Sample
 metalClipHistNext hist _ Nothing = hist
 metalClipHistNext hist x1 (Just f) = os4xHistShift q0 q1 q2 q3 hist
  where
-  (q0, q1, q2, q3) = os4xSubSamples (metalClipThreshold f) x1 (satShift8 (fAccL f))
+  (q0, q1, q2, q3) = os4xSubSamples (metalClipThreshold f) x1 (satShift7 (fAccL f))
 
 metalPostLpfFrame :: Sample -> Frame -> Frame
 metalPostLpfFrame prevLp f =
@@ -212,9 +215,15 @@ metalPostLpfFrame prevLp f =
   tone = ctrlA (fDist f)
   -- Post-LPF: dark MT-2 voicing, but base 8 (~1 kHz) filtered out the saturation
   -- EDGE too (dist_eval: THD plateaued at 17% despite crest 2.3 = hard-clipped).
-  -- Base 13 (~1.6 kHz) keeps the 1-2 kHz grind/edge of the dense clip while still
-  -- rolling off the >3 kHz fizz = saturated AND dark, like a real MT-2. (was 8)
-  alpha = 13 + (tone `shiftR` 2)
+  -- "歪が足りない" pass: the clip drive was doubled (satShift8 -> satShift7 into the
+  -- os4x clip) and the clip floor lowered, so Metal saturates earlier/denser at
+  -- normal playing levels (dist_eval drive curve -36 dBFS: 1% -> 11% THD; -30:
+  -- 12% -> 16%) = the real "more 歪". The hot-input THD CEILING (~19%) is set by
+  -- THIS dark post-LPF (h3 @3 kHz is rolled off) and is intrinsic to the dark
+  -- MT-2 voicing -- raising it to 45% needs a ~5 kHz corner = fizzy/not-MT-2, so
+  -- the post-LPF stays dark (base 15, a hair above the orig 13 for the harder
+  -- clip's edge). Full MT-2 saturation needs the gain-staging restructure.
+  alpha = 15 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 

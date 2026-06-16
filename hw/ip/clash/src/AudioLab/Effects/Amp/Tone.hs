@@ -145,9 +145,13 @@ ampResPresenceFilterFrame prevRes prevPresence f =
     }
  where
   x = monoWet f
-  -- Slow lowpass approximates resonance around the speaker low-end region.
-  -- 96 kHz: shift 9 / 4 keeps the resonance / presence corners.
-  res = onePoleShift 9 prevRes x
+  -- Lowpass for the resonance band (speaker low-end resonance ~80-120 Hz).
+  -- Was shift 9 (~30 Hz corner) -- BELOW the guitar low-E (82 Hz), so the band
+  -- held almost no signal and the RESONANCE knob was DEAD (knobcheck +0.0 even
+  -- after raising the mix gain). shift 7 (~120 Hz corner) puts the band ON the
+  -- speaker-resonance region so RESONANCE actually moves the low-end thump.
+  -- 96 kHz: presence stays shift 4.
+  res = onePoleShift 7 prevRes x
   presenceLp = onePoleShift 4 prevPresence x
 
 ampResPresenceMixFrame :: Frame -> Frame
@@ -159,7 +163,11 @@ ampResPresenceMixFrame f =
   -- (/512), so the PRESENCE knob barely moved the sound (knobcheck flagged it
   -- "barely audible") and JCM800/AC30 lacked the real 2..3 kHz presence sheen.
   -- Add it at >>8 (2x) so PRESENCE is audible and the upper-mid "ツヤ" returns.
-  wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift8Wide (fAcc3L f))
+  -- RESONANCE-effectiveness pass (same fix for the low-shelf "thump" control):
+  -- the resonance band (fAcc2L) was summed at >>10 (/1024) so the RESONANCE knob
+  -- was DEAD (knobcheck +0.0 dB across every band). Add it at >>8 (4x) so
+  -- RESONANCE moves the low end like a real power-amp/speaker resonance control.
+  wet = satWide (fAccL f + satShift8Wide (fAcc2L f) + satShift8Wide (fAcc3L f))
 
 ampResPresenceProductsFrame :: Frame -> Frame
 ampResPresenceProductsFrame f =

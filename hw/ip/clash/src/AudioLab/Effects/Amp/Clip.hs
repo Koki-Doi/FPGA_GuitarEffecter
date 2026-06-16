@@ -15,9 +15,22 @@ ampHighpassFrame prevIn prevOut f =
  where
   on = flag6 (fGate f)
   x = monoSample f
-  -- coef 509 >> 9 (see FixedPoint.onePoleHighpass: the feedback term rounds to 0,
-  -- preserved bit-exact; the stage is effectively x - prevIn).
-  highpass x prevIn prevOut = onePoleHighpass 509 9 x prevIn prevOut
+  -- Low-end restoration ("低音不足" pass). The old `onePoleHighpass 509 9` was a
+  -- DEAD pole: Haskell parses `prevOut * 509 >> 9` as `prevOut * (509 >> 9)` =
+  -- `prevOut * 0`, so the stage was a bare first difference `x - prevIn` -- a
+  -- +6 dB/oct differentiator that cut the low-E ~-45 dB (rig measured
+  -- low_vs_mid -22 dB = far too thin). Make the feedback pole LIVE, but
+  -- SHIFT-ONLY (NO multiply): `prevOut - (prevOut>>7) - (prevOut>>9)` =
+  -- prevOut * (1 - 1/128 - 1/512) = prevOut * 0.9902 = exactly the coef-507 pole
+  -- (507/512), ~150 Hz corner. A multiply here (`prevOut*507`, the D124 RAT
+  -- idiom) shifted the island placement and tightened the D109 DSP-out->DAC CDC
+  -- pair to +1.079 ns (knife-edge risk); the shift-only form keeps the CDC
+  -- margin (no new DSP48). Restores body below ~300 Hz; D100's ~90 Hz was
+  -- bench-rejected as too bassy, ~150 Hz is the middle ground.
+  highpass x prevIn prevOut =
+    satWide (resize x - resize prevIn + (p - (p `shiftR` 7) - (p `shiftR` 9)))
+   where
+    p = resize prevOut :: Wide
 
 ampDriveMultiplyFrame :: Frame -> Frame
 ampDriveMultiplyFrame f =

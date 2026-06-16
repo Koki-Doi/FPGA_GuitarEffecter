@@ -154,6 +154,11 @@ def main():
     ap.add_argument("--config", default="ds1")
     ap.add_argument("--drive", type=int, default=65)
     ap.add_argument("--batch", action="store_true")
+    ap.add_argument("--check", action="store_true",
+                    help="auto-compare each pedal's distortion CHARACTER (clip "
+                         "type via crest, THD floor, sustain, Fuzz cleanup) to its "
+                         "real-pedal target (targets.CLIP_TARGETS) -- PASS/FAIL, the "
+                         "dist_eval analogue of measure.py --check for EQ")
     ap.add_argument("--jobs", type=int, default=min(os.cpu_count() or 1, len(BATCH)))
     ap.add_argument("--list", action="store_true")
     args = ap.parse_args()
@@ -163,6 +168,18 @@ def main():
     if not os.path.exists(SIM):
         sys.exit("build the sim first: tools/dsp_sim/build_sim.sh")
     cm = run_sim.load_control_maps()
+    if args.check:
+        import targets as tg
+        print("auto-check vs real-pedal distortion CHARACTER (targets.CLIP_TARGETS):\n")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+            res = dict(ex.map(lambda it: (it[0], evaluate(cm, it[0], it[1])), BATCH))
+        npass = 0
+        for cfg, drive, label, target in BATCH:
+            ok, detail = tg.compare_clip(cfg, res[cfg])
+            npass += int(ok)
+            print("  %-4s %-12s %s" % ("PASS" if ok else "FAIL", label, detail))
+        print("\n  %d/%d pedals match their real-pedal character." % (npass, len(BATCH)))
+        return
     if args.batch:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
             res = dict(ex.map(lambda it: (it[2], evaluate(cm, it[0], it[1])), BATCH))
