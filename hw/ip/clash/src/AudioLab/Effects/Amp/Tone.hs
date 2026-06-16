@@ -98,7 +98,15 @@ ampTrebleGain idx x = base - modelTrim
  where
   -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
   -- much raw 8..16 kHz fizz when TREBLE is near 100.
-  base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
+  -- HF-restore (2026-06-16, "音がこもる/高域不足"): the amp input HP was a DEAD
+  -- first-difference that added ~+6 dB/oct of HF; fixing it to a live one-pole
+  -- (the bass fix) removed that, leaving the high band (a differentiator) summed
+  -- at gain ~84 < 128 = ATTENUATED = muffled. Raise the floor 64 -> 145 so the
+  -- high band sits well ABOVE unity, pushing amp-alone HFslp back toward the D131
+  -- brightness the user expects while KEEPING the new bass. Pairs with the
+  -- ampPreLowpass baseAlpha 80 -> 96 (broadband clip-output brighten). The
+  -- `- x>>3 - x>>4` shaping + the cab >5 kHz rolloff keep 8-16 kHz fizz down.
+  base = 145 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
     1 ->  2                 -- Twin    : glassy, not piercing
@@ -301,7 +309,10 @@ ampTransformerHfShift :: Int
 ampTransformerHfShift = 2      -- 96 kHz: +1 (was 1) keeps the ~3.8 kHz HF corner
 
 ampTransformerHfDroop :: Int
-ampTransformerHfDroop = 3      -- subtract 1/2^n of the HF band (gentle ~-1.2 dB shelf)
+ampTransformerHfDroop = 6      -- subtract 1/2^n of the HF band. Was 3 (~-1.2 dB);
+                               -- raised to 6 (~-0.3 dB) as part of the 2026-06-16
+                               -- HF-restore -- the droop was tuned for the bright
+                               -- dead-HP input, now over-darkens the top.
 
 ampTransformerHfFrame :: Sample -> Frame -> Frame
 ampTransformerHfFrame prevLp f =

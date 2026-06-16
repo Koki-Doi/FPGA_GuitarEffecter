@@ -68,11 +68,26 @@ TARGETS = {
     "rig_4":       dict(label="RIG JCM800", mid=("peak", 650, 250),  low_vs_mid=(">", -8),
                         hf=("<", 0.0),
                         src="Marshall JCM800 into 4x12: mid push ~650 Hz, speaker rolloff"),
+    "rig_1":       dict(label="RIG Twin",   mid=("scoop", 400, 250), low_vs_mid=(">", -8),
+                        hf=("<", 0.0),
+                        src="Fender Twin blackface into 2x12: scooped mids + big bass, speaker rolloff"),
+    "rig_3":       dict(label="RIG Rockerv", mid=("peak", 400, 280), low_vs_mid=(">", -8),
+                        hf=("<", 0.0),
+                        src="Orange Rockerverb into 2x12: thick low-mid (+3 dB @300), speaker rolloff"),
+    "rig_5":       dict(label="RIG TriAmp", mid=("scoop", 750, 320), low_vs_mid=(">", -8),
+                        hf=("<", 0.0),
+                        src="H&K TriAmp into 2x12: modern mid scoop ~750, tight, speaker rolloff"),
     # --- Cab (speaker IR). A real guitar cab = a cone-breakup presence peak in
     # 2-4 kHz then a SHARP rolloff above ~5 kHz (a 2nd-order-ish lowpass).
-    "cab":         dict(label="CAB",        mid=("peak", 3000, 1100), low_vs_mid=None,
+    "cab":         dict(label="CAB Brit",   mid=("peak", 3000, 1100), low_vs_mid=None,
                         hf=("<", -2.0),
                         src="2x12 British: cone-breakup presence 2-4 kHz + sharp >5 kHz rolloff"),
+    "cab0":        dict(label="CAB Open",   mid=("peak", 3400, 1100), low_vs_mid=None,
+                        hf=("<", 0.0),
+                        src="1x12 open-back: brighter/airier presence ~3.4 kHz, gentler top rolloff (D123)"),
+    "cab2":        dict(label="CAB Closed", mid=("peak", 2300, 900), low_vs_mid=None,
+                        hf=("<", -2.0),
+                        src="4x12 closed: lower/thicker honk ~2.3 kHz + sharp >5 kHz rolloff (D123)"),
 }
 
 

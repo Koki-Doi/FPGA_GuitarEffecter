@@ -244,6 +244,30 @@ cross-check showed both were correct, so the source is back to D131 for those.
 Still deferred (true new-stage, beyond a safe constant change): full MT-2 THD via
 a gain-staging restructure, real-IR cab convolution, per-amp cab presence.
 
+## Ear-bench round 2 (2026-06-16, on the committed `044735eb`)
+
+The user benched `044735eb` and reported **(1) 音がこもる/高域不足 (muffled)** and
+**(2) クリーンモードでも歪む (clean distorts)**. Both verified with the sim:
+
+1. **Muffled = the bass fix's side effect.** The dead amp-HP first-difference was a
+   +6 dB/oct DIFFERENTIATOR -- it cut bass (the bug) BUT also boosted the top, and
+   the amp lineup was voiced around that bright/thin input (the
+   [[project_amp_rat_hp_dead_pole]] "load-bearing accidental voicing" warning).
+   Fixing the HP to a one-pole removed the top: amp-alone HFslp **+3.6 -> -2.4**
+   /oct (JCM800), rig tilt **+6.8 -> -7**. FIX (constants only, building): amp
+   high-band gain floor 64 -> 145 (`ampTrebleGain`), pre-LPF baseAlpha 80 -> 96
+   (`ampPreLowpassFrame`), transformer HF droop 3 -> 6. Offline: rig tilt
+   **-7 -> -1.5**, amp-alone tilt +8..+10 = top restored, bass kept.
+2. **Clean distorts = LEVEL-DEPENDENT, mostly pre-existing + hot input.** JC-120
+   clean (input_gain 18, drive 0) THD = **0%@0.06, 6.7%@0.10, 24.7%@0.20** of FS.
+   Root = the power-stage `softClipK ~3_400_000` ceilings (the power-amp
+   compression model) break up at moderate level; the restored bass adds energy;
+   AND the board input was FULL-SCALE in the PL-smoke (`PEAK_ABS=8388607` =
+   clipping at the input before the DSP). User chose to **lower the board input +
+   re-bench first** before any headroom re-voicing -- so this build ships ONLY the
+   HF-restore; the clean-mode power-headroom (raise the low-char/clean models'
+   softClipK) is a DEFERRED next step if clean still breaks up at a proper input.
+
 ## Reproduce
 
 ```sh

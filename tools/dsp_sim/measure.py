@@ -57,8 +57,13 @@ BATCH = [
     # +6 dB/oct differentiator (monoWet - lowpass) with no speaker rolloff; the
     # cab is what rolls the top off. These rows expose the amp AS HEARD.
     ("rig_0", 0, "RIG JC120>cab",  "amp INTO cab: mids present, top rolled off"),
+    ("rig_1", 0, "RIG Twin>cab",   "glassy clean, big bass, top rolled off"),
     ("rig_2", 0, "RIG AC30>cab",   "chime upper-mid, top rolled off"),
+    ("rig_3", 0, "RIG Rockerv>cab","thick low-mid, dark, top rolled off"),
     ("rig_4", 0, "RIG JCM800>cab", "mid push ~650Hz, top rolled off"),
+    ("rig_5", 0, "RIG TriAmp>cab", "modern scoop ~750Hz, tight, top rolled off"),
+    ("cab0", 0, "CAB Open1x12",    "bright/airy, presence ~3.4kHz, gentler rolloff"),
+    ("cab2", 0, "CAB Closed4x12",  "dark/thick, presence ~2.3kHz, sharp >5kHz rolloff"),
 ]
 
 
