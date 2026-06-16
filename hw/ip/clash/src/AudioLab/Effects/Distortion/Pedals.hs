@@ -169,14 +169,16 @@ metalMulFrame f =
 -- freely; the D87 lesson) to keep the 50 MHz island path short. Bit-exact
 -- bypass when the pedal is off.
 metalClipThreshold :: Frame -> Sample
-metalClipThreshold f = resize (if rawT < 1_050_000 then 1_050_000 else rawT) :: Sample
+metalClipThreshold f = resize (if rawT < 600_000 then 600_000 else rawT) :: Sample
  where
   driveS = resize (asSigned9 (ctrlC (fDist f))) :: Signed 25
-  -- Lower threshold = harder/denser clip (dist_eval: Metal THD plateaued at 17%).
-  -- "歪が足りない" pass: floor 1.25M -> 1.05M + steeper slope so the clip flattens
-  -- harder across the drive range (the doubled drive gain reaches the floor
-  -- sooner), raising the dense-clip harmonics that the post-LPF then shapes.
-  rawT = 2_300_000 - driveS * 7_000 :: Signed 25
+  -- Lower threshold = harder/denser clip. "完全飽和" pass (2026-06-17): floor
+  -- 1.05M -> 600k + steeper slope (2.3M->1.7M, *7000->*8500) so the os4x hard
+  -- clip flattens almost the whole waveform = MAXIMUM saturation density at all
+  -- playing levels (a real MT-2 is a high-gain monster). This is the os4x
+  -- (4x-oversampled) clip, so the extra harmonics are ANTI-ALIASED (no base-rate
+  -- fizz); the post-LPF below shapes them.
+  rawT = 1_700_000 - driveS * 8_500 :: Signed 25
 
 -- ---- Shared 4x oversampled-hard-clip helpers (realism item 2 / R5) --------
 -- Reused by every oversampled clip (Metal D88, RAT D89, ...). The clip itself
@@ -215,15 +217,14 @@ metalPostLpfFrame prevLp f =
   tone = ctrlA (fDist f)
   -- Post-LPF: dark MT-2 voicing, but base 8 (~1 kHz) filtered out the saturation
   -- EDGE too (dist_eval: THD plateaued at 17% despite crest 2.3 = hard-clipped).
-  -- "歪が足りない" pass: the clip drive was doubled (satShift8 -> satShift7 into the
-  -- os4x clip) and the clip floor lowered, so Metal saturates earlier/denser at
-  -- normal playing levels (dist_eval drive curve -36 dBFS: 1% -> 11% THD; -30:
-  -- 12% -> 16%) = the real "more 歪". The hot-input THD CEILING (~19%) is set by
-  -- THIS dark post-LPF (h3 @3 kHz is rolled off) and is intrinsic to the dark
-  -- MT-2 voicing -- raising it to 45% needs a ~5 kHz corner = fizzy/not-MT-2, so
-  -- the post-LPF stays dark (base 15, a hair above the orig 13 for the harder
-  -- clip's edge). Full MT-2 saturation needs the gain-staging restructure.
-  alpha = 15 + (tone `shiftR` 2)
+  -- "完全飽和" pass (2026-06-17): with the clip floor dropped to 600k the dense
+  -- clip generates far more harmonics; open the post-LPF base 15 -> 22 (~2.7 kHz
+  -- corner) so the 3rd/5th harmonic actually reach the output = AUDIBLY more
+  -- saturated/aggressive (the THD ceiling rises off the old ~19% post-LPF cap).
+  -- Still rolls off the >4-5 kHz ice-pick, and the 4x oversampling keeps
+  -- alias-fizz down, so it is "fully saturated MT-2", brighter than the previous
+  -- dark voicing (an intentional trade for more 歪; lower the TONE knob to darken).
+  alpha = 38 + (tone `shiftR` 2)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 

@@ -142,7 +142,7 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  setMonoWet (if on then softClipK 3_400_000 (monoWet f) else monoSample f) f
+  setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
 
@@ -167,7 +167,7 @@ ampResPresenceFilterFrame prevRes prevPresence f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  setMonoWet (if on then softClipK 3_400_000 wet else monoSample f) f
+  setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) wet else monoSample f) f
  where
   on = flag6 (fGate f)
   -- Presence-effectiveness pass: the presence band (fAcc3L) was added at >>9
@@ -259,7 +259,7 @@ ampMasterFrame env f =
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
   effLevel = level - sagByte
-  out = softClipK 3_300_000 (satShift7 (mulU8 (monoWet f) effLevel))
+  out = softClipK (ampPowerKnee 3_300_000 idx) (satShift7 (mulU8 (monoWet f) effLevel))
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
 -- A real tube amp's output transformer is a big part of "amp warmth" that the
