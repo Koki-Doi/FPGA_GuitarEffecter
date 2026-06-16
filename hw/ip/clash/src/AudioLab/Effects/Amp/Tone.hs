@@ -98,7 +98,18 @@ ampTrebleGain idx x = base - modelTrim
  where
   -- Keep the 2..4 kHz bite from the tone stack, but avoid restoring as
   -- much raw 8..16 kHz fizz when TREBLE is near 100.
-  base = 64 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
+  -- HF-restore (2026-06-16/17, "音がこもる/高域不足"): the amp input HP was a DEAD
+  -- first-difference that added ~+6 dB/oct of HF; fixing it to a live one-pole
+  -- (the bass fix) removed that, leaving the high band (a differentiator) summed
+  -- at gain ~84 < 128 = ATTENUATED = muffled. Raise the floor so the high band
+  -- sits above unity (brighter neutral). Floor 64 -> 145 fixed the muffle but a
+  -- HIGH floor COMPRESSES the TREBLE/PRESENCE knob range (knobcheck cycle 2:
+  -- TREBLE +0.9, PRESENCE -0.0 = barely audible). So back to floor 110 (still
+  -- above unity = not muffled) and move the rest of the brightness to the
+  -- baseAlpha broadband brighten (96 -> 102), which is BEFORE the tone stack so
+  -- it does NOT compress the knob range. The `- x>>3 - x>>4` shaping + the cab
+  -- >5 kHz rolloff keep 8-16 kHz fizz down.
+  base = 110 + ((x - (x `shiftR` 3) - (x `shiftR` 4)) `shiftR` 1)
   modelTrim = case idx of
     0 ->  0 :: Unsigned 8   -- JC-120  : full bright
     1 ->  2                 -- Twin    : glassy, not piercing
@@ -145,9 +156,13 @@ ampResPresenceFilterFrame prevRes prevPresence f =
     }
  where
   x = monoWet f
-  -- Slow lowpass approximates resonance around the speaker low-end region.
-  -- 96 kHz: shift 9 / 4 keeps the resonance / presence corners.
-  res = onePoleShift 9 prevRes x
+  -- Lowpass for the resonance band (speaker low-end resonance ~80-120 Hz).
+  -- Was shift 9 (~30 Hz corner) -- BELOW the guitar low-E (82 Hz), so the band
+  -- held almost no signal and the RESONANCE knob was DEAD (knobcheck +0.0 even
+  -- after raising the mix gain). shift 7 (~120 Hz corner) puts the band ON the
+  -- speaker-resonance region so RESONANCE actually moves the low-end thump.
+  -- 96 kHz: presence stays shift 4.
+  res = onePoleShift 7 prevRes x
   presenceLp = onePoleShift 4 prevPresence x
 
 ampResPresenceMixFrame :: Frame -> Frame
@@ -159,7 +174,11 @@ ampResPresenceMixFrame f =
   -- (/512), so the PRESENCE knob barely moved the sound (knobcheck flagged it
   -- "barely audible") and JCM800/AC30 lacked the real 2..3 kHz presence sheen.
   -- Add it at >>8 (2x) so PRESENCE is audible and the upper-mid "ツヤ" returns.
-  wet = satWide (fAccL f + satShift10Wide (fAcc2L f) + satShift8Wide (fAcc3L f))
+  -- RESONANCE-effectiveness pass (same fix for the low-shelf "thump" control):
+  -- the resonance band (fAcc2L) was summed at >>10 (/1024) so the RESONANCE knob
+  -- was DEAD (knobcheck +0.0 dB across every band). Add it at >>8 (4x) so
+  -- RESONANCE moves the low end like a real power-amp/speaker resonance control.
+  wet = satWide (fAccL f + satShift8Wide (fAcc2L f) + satShift8Wide (fAcc3L f))
 
 ampResPresenceProductsFrame :: Frame -> Frame
 ampResPresenceProductsFrame f =
@@ -293,7 +312,10 @@ ampTransformerHfShift :: Int
 ampTransformerHfShift = 2      -- 96 kHz: +1 (was 1) keeps the ~3.8 kHz HF corner
 
 ampTransformerHfDroop :: Int
-ampTransformerHfDroop = 3      -- subtract 1/2^n of the HF band (gentle ~-1.2 dB shelf)
+ampTransformerHfDroop = 6      -- subtract 1/2^n of the HF band. Was 3 (~-1.2 dB);
+                               -- raised to 6 (~-0.3 dB) as part of the 2026-06-16
+                               -- HF-restore -- the droop was tuned for the bright
+                               -- dead-HP input, now over-darkens the top.
 
 ampTransformerHfFrame :: Sample -> Frame -> Frame
 ampTransformerHfFrame prevLp f =

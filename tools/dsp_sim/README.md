@@ -13,9 +13,9 @@ on a candidate you already like.
 | --- | --- |
 | `Sim.hs` | Haskell harness. Wires 12 constant control words + a gated sample stream through `LowPassFir.topEntity` and `sampleN`s the output. Bit-identical to the FPGA DSP. |
 | `run_sim.py` | Orchestrator. Builds the 12 control words with the project's own `audio_lab_pynq/control_maps.py` (imported by file path -- no `pynq` needed), generates/reads a WAV, runs the sim, writes output WAVs + objective metrics (peak/rms/crest/level-stability/centroid/clip). |
-| `measure.py` | **Frequency-shaping** measurement: an effect's net tone curve vs bypass (mid hump / scoop / low-cut / HF rolloff / notch). `--batch` sweeps every model in **parallel** (`--jobs`); `--absolute` keeps the true level (the bass-light / LOWvMID check, 40 Hz floor); `--check` auto-compares every model to its real-hardware target (`targets.py`, PASS/FAIL). The "is the voicing on target vs the real pedal" check. |
-| `dist_eval.py` | **Distortion CHARACTER** (what THD misses): DRIVE/gain (THD% + crest vs input level = saturation depth + cleanup), SUSTAIN (decay hold-time ratio = a Big Muff/Fuzz sustainer), GRIT/IMD (two-tone intermod + >5 kHz fizz). `--batch` over the dist pedals. |
-| `targets.py` | Machine-readable real-hardware voicing TARGETS (mid peak/scoop freq + bass balance per model, from the ElectroSmash analyses) + the `compare()` used by `measure.py --check`. Encodes the re-collation so a model that drifts off the real pedal is auto-flagged. |
+| `measure.py` | **Frequency-shaping** measurement: an effect's net tone curve vs bypass (mid hump / scoop / low-cut / HF rolloff / notch). `--batch` sweeps every model in **parallel** (`--jobs`); `--absolute` keeps the true level (the bass-light / LOWvMID check, 40 Hz floor); `--check` auto-compares every model to its real-hardware target (`targets.py`, PASS/FAIL). Includes **`rig_*` chain configs (amp -> cab)** -- the amp's true voicing AS HEARD (amp-alone is misleadingly bright: its tone-stack high band is a +6 dB/oct differentiator with no speaker rolloff), and an **`HFslp` column** = treble slope dB/oct 2-9 kHz (real amp+cab ROLLS OFF = negative; a rising/+ slope = bare differentiator = "digital/buzzy"). The "is the voicing on target vs the real pedal/rig" check. |
+| `dist_eval.py` | **Distortion CHARACTER** (what THD misses): DRIVE/gain (THD% + crest vs input level = saturation depth + cleanup), SUSTAIN (decay hold-time ratio = a Big Muff/Fuzz sustainer), GRIT/IMD (two-tone intermod + >5 kHz fizz). `--batch` over the dist pedals; **`--check`** auto-compares each pedal's clip TYPE (crest), THD floor, sustain, and Fuzz cleanup to its real-pedal target (PASS/FAIL), AND each amp's **CLEAN-mode THD at a 0.12 FS playing level** (per-model ceiling -- the "clean mode distorts" detector). |
+| `targets.py` | Machine-readable real-hardware voicing TARGETS: per model `mid` peak/scoop freq (`"any"` skips a cab-confounded rig mid) + `low_vs_mid` bass balance + `hf` treble-slope -- `hf=("range",lo,hi)` on the amp-ALONE models is the **MUFFLED(<lo) / HARSH(>hi) detector** (an amp head should have presence before the cab). Covers OD/DIST + amp-alone 0..5 + rig 0..5 + cab open/brit/closed. Plus `CLIP_TARGETS` (clip type / THD floor / sustain / cleanup) + `AMP_CLEAN` ceilings used by `dist_eval.py --check`. From the ElectroSmash analyses + the D121-D131 re-collations. |
 | `harmonics.py` | **Harmonic / transfer** measurement on a single sine: fundamental, h2..h8, THD, odd/even ratio, alias/IMD energy. The OD/Distortion drive-character check. |
 | `reverb.py` | **Time-domain decay** measurement: RT60 (Schroeder T20), tail tone (centroid), wet level, comb echo period; `--decay-sweep` / `--tone-sweep` prove a knob is real + monotonic. The reverb axis `measure.py`/`harmonics.py` (both steady-state) could not see. |
 | `knobcheck.py` | **Per-band audio-change-per-knob** check across EVERY effect/knob: for each knob it renders two settings and reports how much the sound moves, broken down by frequency band (80/200/500/1k/3k/8k Hz) + overall, flagging "barely audible" knobs. The board-comparison artifact: "turn this knob, these bands should move by this much." |
@@ -47,10 +47,16 @@ python3 tools/dsp_sim/run_sim.py --preset amp --amp-model 4 --wav-in guitar.wav 
 
 # frequency shaping (tone curve) of every model, in parallel:
 python3 tools/dsp_sim/measure.py --batch                 # --jobs N to cap workers
+python3 tools/dsp_sim/measure.py --check                 # PASS/FAIL vs real-hw targets
 python3 tools/dsp_sim/measure.py --config ds1 --drive 65 # one effect, full curve
+python3 tools/dsp_sim/measure.py --config rig_4          # JCM800 INTO cab (the real rig)
 
 # harmonic / drive character on a 1 kHz sine:
 python3 tools/dsp_sim/harmonics.py --config od_4 --drive 65
+
+# distortion CHARACTER (clip type / THD / sustain), PASS/FAIL vs real pedals:
+python3 tools/dsp_sim/dist_eval.py --batch
+python3 tools/dsp_sim/dist_eval.py --check
 
 # reverb decay (time-domain) -- the knob-is-real check:
 python3 tools/dsp_sim/reverb.py --decay-sweep            # RT60 vs DECAY (monotone?)

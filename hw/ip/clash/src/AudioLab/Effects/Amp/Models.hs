@@ -68,8 +68,10 @@ ampModelDarken :: Unsigned 3 -> Unsigned 8
 ampModelDarken idx = case idx of
   0 ->  6    -- JC-120: bright SS feel (48k: 0)
   1 -> 12    -- Twin: bright but slightly rounded (48k: 3)
-  2 -> 11    -- AC30: top-end SPARKLE (re-collation: the chime peaked @2.2k then rolled
-             -- off; a real AC30 keeps sparkle above. Lower darken 17->11 = brighter top.)
+  2 ->  6    -- AC30: top-end SPARKLE. 17->11 (D130), then ->6 (2026-06-17 cycle 1):
+             -- the amp-HP bass fix removed the bright differentiator, so AC30
+             -- amp-alone went MUFFLED (HFslp -2.7 < -2). A real AC30 (Top Boost)
+             -- is CHIMEY/bright -- less darken restores the >2 kHz sparkle.
   3 -> 31    -- Rockerverb: darker low-mid thickness (48k: 18)
   4 -> 16    -- JCM800: a touch more driven top (re-collation: JCM800 measured darkest at
              -- 2-3 kHz; its base is correctly mid-forward -- the real Marshall mid is the
