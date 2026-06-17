@@ -5,23 +5,25 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-15, after D131 DIST realism)
+## Current status (2026-06-17, after D134 sim-scale candidate deploy)
 
-> Accepted deployed bitstream baseline is **D131**: merge commit `37114b9`,
-> bit md5 `fdab62d5ef229ec64dc60fe9395cbf06`, hwh md5
-> `d852ec4e737460ad016b41f0a3f71de2`. D131 restores distortion low-end and
-> saturation/sustain for DS-1 / Big Muff / Fuzz Face / Metal, and adds the
-> expanded offline distortion evaluation tooling: `tools/dsp_sim/dist_eval.py`,
-> `targets.py`, `measure.py --absolute`, and `measure.py --check`. It was built
-> timing-clean (WNS `+0.631`, WHS `+0.019`, D109 CDC pair `+3.353` / `+6.286`),
-> deployed, board md5-matched, PL-smoked at ~96.1 kHz, bench-ACCEPTED ("合格"),
-> and merged to main. D109's split `set_clock_groups` + `set_max_delay
-> -datapath_only 10.000` on `clk_fpga_0`<->`clk` remains load-bearing. D119/D120
-> Amp sag-removal/static-trim attempts were bench-rejected and are abandoned
-> without new explicit user direction. If D131 must be rolled back, restore D130
-> bitstreams from merge commit `fffa2b1` (bit `33af82f1`) and redeploy. Read
-> `CURRENT_STATE.md`, `DECISIONS.md` D109-D131, `BASELINES.md`, and
-> `TIMING_AND_FPGA_NOTES.md` first.
+> Active uncommitted/deployed candidate is **D134**: sim-scale all-effect
+> objective evaluation plus knob-visibility fixes. Local/PYNQ bit md5
+> `58b6ee84a2f0c360da97c86e5a971c85`, hwh md5
+> `c41a29b65de2b0debb6de8509468021a`; timing fully MET (WNS `+0.939`,
+> WHS `+0.014`, D109 CDC pair `+2.347` / `+6.527`). The offline suite passes:
+> `measure.py --check` 28/28, `dist_eval.py --check` 7/7 pedals + 6/6 clean
+> amps, `dynamics_eval.py --check` 5/5, `knobcheck.py --all` with no
+> barely-audible flags, and the relevant pytest suites. It was deployed and all
+> five PYNQ bit/hwh sites md5-match, but **bench acceptance is still PENDING**:
+> programmatic mode-2 smoke showed engine/frame cadence alive and ADC HPF
+> `True`, yet the input was full-scale/clipping (`PEAK_ABS_LEFT/RIGHT=8388607`,
+> rising `CLIP_COUNT`), so it is not a clean audio acceptance. The board was
+> left in Pmod `MODE=3` mute for safety. Accepted baseline remains **D133**:
+> merge commit `21c0b5a`, bit md5 `54f7f547d04f0e4d59011e4754f834ca`, hwh md5
+> `2fbc8a5ba528bb6e1d415e6339b64bdb`. Read `CURRENT_STATE.md`,
+> `DECISIONS.md` D109-D134, `BASELINES.md`, and `TIMING_AND_FPGA_NOTES.md`
+> first; run `git status --short` and `git diff --stat` before continuing.
 
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
 
@@ -195,9 +197,11 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。現行 accepted baseline は D131 (`fdab62d5`、merge
-> `37114b9`) です。bit/hwh が `BASELINES.md` の D131 と一致することを確認
-> してください。safe-bypass で高域ノイズが出る bitstream、または
+> してください。現行 accepted baseline は D133 (`54f7f547`、merge
+> `21c0b5a`) です。D134 (`58b6ee84`) は PYNQ に deploy 済みですが
+> bench 未受理 candidate です。accepted baseline として扱うには
+> safe-bypass と touched effects の実音確認が必要です。safe-bypass で
+> 高域ノイズが出る bitstream、または
 > `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した bitstream は
 > deploy/accept しないでください。
 
@@ -229,8 +233,10 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現行 D131 build は timing-clean です (overall WNS `+0.631 ns`, TNS
-> `0`, WHS `+0.019 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
+> 現行 accepted D133 build は timing-clean です (overall WNS `+0.639 ns`,
+> TNS `0`)。Active D134 candidate も timing-clean です (overall WNS
+> `+0.939 ns`, WHS `+0.014 ns`, D109 CDC pair `+2.347` / `+6.527`)。
+> DSP island は D94 以降 33.33 MHz、fabric は
 > 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
 > `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな
 > `case` や 4 段以上の演算を詰めない方針は維持してください

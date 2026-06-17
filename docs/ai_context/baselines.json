@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
+  "_comment": "Single source of truth for committed deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). current_deployed is a historical field name; it marks the current accepted committed baseline, not an uncommitted live-board candidate. Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
   "bit_path": "hw/Pynq-Z2/bitstreams/audio_lab.bit",
   "hwh_path": "hw/Pynq-Z2/bitstreams/audio_lab.hwh",
   "current_deployed": "21c0b5a",
@@ -33,6 +33,6 @@
     {"decision": "D130", "commit": "fffa2b1", "status": "accepted-superseded", "date": "2026-06-15", "note": "amp 2nd-pass EQ re-collation: JC-120 flat, AC30 sparkle, JCM800 modest top"},
     {"decision": "D131", "commit": "37114b9", "status": "accepted-superseded", "date": "2026-06-15", "note": "DIST realism: low-end + saturation/sustain fixes and offline dist_eval/targets tooling"},
     {"decision": "REALISM-0617a", "commit": "55ef823", "status": "accepted-superseded", "date": "2026-06-17", "note": "all-effects sim survey + comprehensive sim problem-detectors (muffled/clean-distort) + bass(amp HP dead->live)/HF-restore(un-muffle)/Metal drive/RESONANCE dead-knob/AC30 amp re-voicing; 3-cycle target calibration"},
-    {"decision": "REALISM-0617b", "commit": "21c0b5a", "status": "deployed", "date": "2026-06-17", "note": "Metal full saturation (os4x clip floor 1.05M->600k + post-LPF open) + clean-amp power headroom (per-model ampPowerKnee, JC-120/Twin); CURRENT DEPLOYED"}
+    {"decision": "REALISM-0617b", "commit": "21c0b5a", "status": "accepted-current", "date": "2026-06-17", "note": "Metal full saturation (os4x clip floor 1.05M->600k + post-LPF open) + clean-amp power headroom (per-model ampPowerKnee, JC-120/Twin); CURRENT ACCEPTED / COMMITTED BASELINE. D134 may be live-deployed as an uncommitted bench-pending candidate."}
   ]
 }

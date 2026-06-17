@@ -82,6 +82,12 @@ def _base(cm):
 
 
 def build_config(cm, name, drive=60, tone=50, level=50):
+    # The public pedal-mask API calls this "rat", but hardware audio for RAT is
+    # the dedicated legacy RAT stage gated by gate_control bit 4. The board-side
+    # AudioLabOverlay mirrors pedal-mask bit 2 to that gate bit; reproduce that
+    # facade behaviour here so manual `--config rat` is not a no-op.
+    if name == "rat":
+        name = "rat_fx"
     w = _base(cm)
     if name == "bypass":
         pass
@@ -184,7 +190,7 @@ def main():
     args = ap.parse_args()
     aliases = {"ts_dist": "tube_screamer", "fuzz": "fuzz_face"}
     if args.list:
-        print("pedals:", list(PEDAL_BIT), "| od_0..5 | amp_0..5 | rat_fx | cab")
+        print("pedals:", list(PEDAL_BIT), "| od_0..5 | amp_0..5 | rat_fx (alias: rat) | cab")
         return
     if not os.path.exists(SIM_BIN):
         sys.exit("build the sim first: tools/dsp_sim/build_sim.sh")

@@ -30,6 +30,7 @@ import sys
 import wave
 
 import numpy as np
+from metrics import clip_count, crest_db, peak_dbfs, rms_dbfs, spectral_centroid_hz
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SIM_BIN_DEFAULT = os.path.join(REPO, "tools", "dsp_sim", "dsp_sim")
@@ -139,31 +140,25 @@ def run_dsp(sim_bin, words, samples, gap=GAP, flush=LATENCY + 64):
 def short_term_rms_db(x, win=2048, hop=512):
     fs_floor = 1.0
     frames = []
-    for i in range(0, len(x) - win, hop):
+    for i in range(0, max(0, len(x) - win + 1), hop):
         seg = x[i:i + win].astype(np.float64)
+        frames.append(np.sqrt(np.mean(seg * seg)) + fs_floor)
+    if not frames and len(x):
+        seg = x.astype(np.float64)
         frames.append(np.sqrt(np.mean(seg * seg)) + fs_floor)
     return 20 * np.log10(np.array(frames) / FS24)
 
 
 def metrics(x, fs):
-    xf = x.astype(np.float64)
-    peak = np.max(np.abs(xf)) + 1.0
-    rms = np.sqrt(np.mean(xf * xf)) + 1.0
     st = short_term_rms_db(x)
-    active = st[st > (st.max() - 30.0)]            # frames within 30 dB of the top
-    # spectral centroid (brightness; low => muffled)
-    w = np.hanning(min(len(x), 1 << 15))
-    seg = xf[:len(w)] * w
-    spec = np.abs(np.fft.rfft(seg))
-    freqs = np.fft.rfftfreq(len(w), 1.0 / fs)
-    centroid = float(np.sum(freqs * spec) / (np.sum(spec) + 1e-9))
+    active = st[st > (st.max() - 30.0)] if st.size else st
     return {
-        "peak_dBFS": 20 * np.log10(peak / FS24),
-        "rms_dBFS": 20 * np.log10(rms / FS24),
-        "crest_dB": 20 * np.log10(peak / rms),
+        "peak_dBFS": peak_dbfs(x),
+        "rms_dBFS": rms_dbfs(x),
+        "crest_dB": crest_db(x),
         "level_stability_std_dB": float(np.std(active)),   # higher => more pumping
-        "centroid_Hz": centroid,
-        "clip_count": int(np.sum(np.abs(x) >= FS24 - 1)),
+        "centroid_Hz": spectral_centroid_hz(x[:min(len(x), 1 << 15)], fs),
+        "clip_count": clip_count(x),
     }
 
 

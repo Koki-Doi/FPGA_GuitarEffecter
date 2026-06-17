@@ -170,15 +170,12 @@ ampResPresenceMixFrame f =
   setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) wet else monoSample f) f
  where
   on = flag6 (fGate f)
-  -- Presence-effectiveness pass: the presence band (fAcc3L) was added at >>9
-  -- (/512), so the PRESENCE knob barely moved the sound (knobcheck flagged it
-  -- "barely audible") and JCM800/AC30 lacked the real 2..3 kHz presence sheen.
-  -- Add it at >>8 (2x) so PRESENCE is audible and the upper-mid "ツヤ" returns.
-  -- RESONANCE-effectiveness pass (same fix for the low-shelf "thump" control):
-  -- the resonance band (fAcc2L) was summed at >>10 (/1024) so the RESONANCE knob
-  -- was DEAD (knobcheck +0.0 dB across every band). Add it at >>8 (4x) so
-  -- RESONANCE moves the low end like a real power-amp/speaker resonance control.
-  wet = satWide (fAccL f + satShift8Wide (fAcc2L f) + satShift8Wide (fAcc3L f))
+  -- D132 knob-visibility pass: after the D121-D131 HF/bass re-voicing,
+  -- knobcheck again showed PRESENCE/RESONANCE below the 1 dB audibility floor
+  -- at the JCM800 drive op-point. Keep the existing products and safety clip,
+  -- but sum both shelves one bit hotter. This is a shift-only change: no new
+  -- stage, multiplier, GPIO, or topology.
+  wet = satWide (fAccL f + satShift7Wide (fAcc2L f) + satShift7Wide (fAcc3L f))
 
 ampResPresenceProductsFrame :: Frame -> Frame
 ampResPresenceProductsFrame f =
@@ -216,6 +213,9 @@ ampResPresenceProductsFrame f =
 
 satShift8Wide :: Wide -> Wide
 satShift8Wide = resize . satShift8
+
+satShift7Wide :: Wide -> Wide
+satShift7Wide = resize . satShift7
 
 satShift9Wide :: Wide -> Wide
 satShift9Wide = resize . satShift9
