@@ -99,17 +99,22 @@ onePoleShift :: Int -> Sample -> Sample -> Sample
 onePoleShift n prev x =
   prev + resize (((resize x - resize prev) :: Signed 25) `shiftR` n)
 
--- | First-difference "highpass" with a feedback term, as used by the amp / RAT
--- input highpass stages: @satWide (x - prevIn + prevOut * coef >> shift)@.
--- NOTE: with @coef >> shift@ (Haskell binds `shiftR` tighter than `*`), the
--- current call sites pass coef/shift where @coef >> shift == 0@, so the
--- feedback term is presently a no-op and the stage reduces to @x - prevIn@.
--- This preserves the long-standing behaviour bit-for-bit; see the FixedPoint
--- note. Kept parameterised so the pole can be enabled later by passing a coef
--- that does not round to zero.
-onePoleHighpass :: Wide -> Int -> Sample -> Sample -> Sample -> Sample
-onePoleHighpass coef shift x prevIn prevOut =
-  satWide (resize x - resize prevIn + ((resize prevOut :: Wide) * coef `shiftR` shift))
+-- (refactor H, 2026-06-17) Removed the dead `onePoleHighpass coef shift ...`.
+-- It was a FOOTGUN: `prevOut * coef `shiftR` shift` parses as
+-- `prevOut * (coef >> shift)` (shiftR binds tighter than *), which rounded to 0
+-- for every shipped coef, so the "one-pole" silently degenerated to `x - prevIn`
+-- and it repeatedly misled the docs ("amp HP live at 298 Hz" when it was the
+-- dead first difference). The two live highpass callers (amp `ampHighpassFrame`,
+-- RAT `ratHighpassFrame`) inline an EXPLICIT `(prevOut*coef) `shiftR` shift` for a
+-- real pole, so this helper had zero call sites. If a future stage wants a bare
+-- first difference, write `satWide (resize x - resize prevIn)` inline (honest).
+
+-- | Symmetric folded-FIR tap: @(a + b) * g@ in Wide. The shared kernel for the
+-- symmetric-FIR pair-sum-then-multiply used by the os4x decimation FIR, the Big
+-- Muff oversampled-clip decimation, and the cab speaker FIR (refactor E; was
+-- copied as a local `pm` / `pairMul` in each). Centre taps still use `mulS10`.
+foldTap :: Sample -> Sample -> Signed 10 -> Wide
+foldTap a b g = (resize a + resize b) * resize g
 
 -- | Symmetric soft clip with a tunable knee. Below knee it is identity;
 -- above the knee the sample is compressed by 1/4 slope.

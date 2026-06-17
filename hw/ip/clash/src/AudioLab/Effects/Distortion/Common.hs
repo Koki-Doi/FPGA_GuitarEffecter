@@ -35,11 +35,10 @@ os4xDecimProducts ::
   Sample -> Sample -> Sample -> Sample -> Vec 12 Sample -> (Wide, Wide, Wide)
 os4xDecimProducts q0 q1 q2 q3 hist = (s0, s1, s2)
  where
-  pm :: Sample -> Sample -> Signed 10 -> Wide
-  pm a b g = (resize a + resize b) * resize g
-  s0 = pm q3 (hist !! 10) (-2) + pm q2 (hist !! 9) (-3) + pm q1 (hist !! 8) (-4)
-  s1 = pm q0 (hist !! 7) 5 + pm (hist !! 0) (hist !! 6) 29 + pm (hist !! 1) (hist !! 5) 68
-  s2 = pm (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
+  -- refactor E: shared FixedPoint.foldTap (was a local `pm a b g = (a+b)*g`)
+  s0 = foldTap q3 (hist !! 10) (-2) + foldTap q2 (hist !! 9) (-3) + foldTap q1 (hist !! 8) (-4)
+  s1 = foldTap q0 (hist !! 7) 5 + foldTap (hist !! 0) (hist !! 6) 29 + foldTap (hist !! 1) (hist !! 5) 68
+  s2 = foldTap (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
 
 os4xHistShift ::
   KnownNat n => Sample -> Sample -> Sample -> Sample -> Vec n Sample -> Vec n Sample

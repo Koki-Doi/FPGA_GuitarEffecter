@@ -215,7 +215,7 @@ cabSpeakerFirProductsFrame hist f =
   on = flag7 (fGate f)
   x = monoSample f
   c = cabSpeakerFirCoeff (ctrlC (fCab f))
-  pairMul a b g = (resize a + resize b :: Wide) * resize g
+  pairMul = foldTap   -- refactor E: shared FixedPoint.foldTap = (a+b)*g
   p0 = pairMul x          (hist !! 13) (c !! 0)
          + pairMul (hist !! 0) (hist !! 12) (c !! 1)
          + pairMul (hist !! 1) (hist !! 11) (c !! 2)

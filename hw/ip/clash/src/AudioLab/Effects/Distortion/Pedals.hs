@@ -359,11 +359,10 @@ bigMuffClipProductsFrame hist f =
   on = bigMuffOn f
   -- 15-tap symmetric decimation FIR over history[0..14] (newest-first);
   -- pairs (0,14)..(6,8), center 7. Coeffs [-2,-3,-4,5,29,68,104,118].
-  pm :: Sample -> Sample -> Signed 10 -> Wide
-  pm a b g = (resize a + resize b) * resize g
-  s0 = pm (hist !! 0) (hist !! 14) (-2) + pm (hist !! 1) (hist !! 13) (-3) + pm (hist !! 2) (hist !! 12) (-4)
-  s1 = pm (hist !! 3) (hist !! 11) 5 + pm (hist !! 4) (hist !! 10) 29 + pm (hist !! 5) (hist !! 9) 68
-  s2 = pm (hist !! 6) (hist !! 8) 104 + (resize (hist !! 7) * 118 :: Wide)
+  -- refactor E: shared FixedPoint.foldTap (was a local `pm a b g = (a+b)*g`)
+  s0 = foldTap (hist !! 0) (hist !! 14) (-2) + foldTap (hist !! 1) (hist !! 13) (-3) + foldTap (hist !! 2) (hist !! 12) (-4)
+  s1 = foldTap (hist !! 3) (hist !! 11) 5 + foldTap (hist !! 4) (hist !! 10) 29 + foldTap (hist !! 5) (hist !! 9) 68
+  s2 = foldTap (hist !! 6) (hist !! 8) 104 + (resize (hist !! 7) * 118 :: Wide)
 
 bigMuffClipMixFrame :: Frame -> Frame
 bigMuffClipMixFrame f =
