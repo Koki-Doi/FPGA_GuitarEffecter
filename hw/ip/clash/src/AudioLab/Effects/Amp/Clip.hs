@@ -135,8 +135,13 @@ ampAsymClip modelIdx intensity drive hyst x
   posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
   negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
-  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
-  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
+  -- Clean-mode (drive_mode 0) extra knee headroom, per model. Raises both knees
+  -- so a clean amp stays clean to a hotter input; Drive mode passes 0 here so the
+  -- Drive voicing is byte-for-byte unchanged. See ``ampCleanKneeBonus``.
+  cleanBonus :: Signed 25
+  cleanBonus = if drive then 0 else ampCleanKneeBonus modelIdx
+  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta + cleanBonus - hystS) :: Sample
+  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + cleanBonus + hystS) :: Sample
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
 

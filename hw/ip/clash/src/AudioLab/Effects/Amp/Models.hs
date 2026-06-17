@@ -98,6 +98,53 @@ ampPowerKnee base idx = case idx of
   2 -> base + 300_000 -- AC30 : still early, but enough headroom for Clean-mode target
   _ -> base        -- Rockerverb/JCM800/TriAmp : keep power-amp compression
 
+-- | Per-model CLEAN-mode (drive_mode 0) extra waveshaper-knee headroom
+-- ("クリーンチャンネルでも歪みすぎ" fix, 2026-06-17). Before this, only JC-120
+-- (idx 0) had real clean headroom (its own 7.5M symmetric knee); every other
+-- model ran ``ampAsymClip`` at its full per-model character intensity even in
+-- Clean mode, so "Clean" was just "Drive minus the drive-knee delta" and broke
+-- up at a realistic guitar level (Twin 17% / AC30 29% / Marshall 32-36% THD at
+-- 0.20 FS in the offline sweep). This bonus is ADDED to both clip knees ONLY
+-- when drive_mode is 0 (Clean); Drive mode passes 0 here, so the Drive voicing
+-- and every drive-knee delta stay byte-for-byte unchanged. Per the user's
+-- "preserve model character" choice the values are graded: Twin gets the most
+-- (blackface clean platform -> nearly hi-fi clean), AC30 keeps some class-A
+-- early breakup (small bonus), and the high-gain Marshall/Rockerverb/TriAmp
+-- clean channels become usable-clean but still break up when pushed.
+-- Signed 25 fits the existing ``ampAsymClip`` knee arithmetic; constant/mux
+-- only (the knee is a compare+shift, no new multiply / DSP).
+ampCleanKneeBonus :: Unsigned 3 -> Signed 25
+ampCleanKneeBonus idx = case idx of
+  0 -> 0           -- JC-120 : unused (model 0 takes the dedicated 7.5M clean path)
+  1 -> 2_300_000   -- Twin   : blackface clean platform, near hi-fi clean
+  2 -> 900_000     -- AC30   : class-A, keep some early chime breakup
+  3 -> 1_500_000   -- Rockerverb : usable clean, breaks up when pushed
+  4 -> 1_600_000   -- JCM800 : usable clean, breaks up when pushed
+  5 -> 1_400_000   -- TriAmp : usable clean, breaks up when pushed
+  _ -> 0           -- 6/7 -> JC-120 fallback
+
+-- | Per-model CLEAN-mode (drive_mode 0) extra POWER / RESONANCE / MASTER
+-- soft-clip headroom (same "クリーンチャンネルでも歪みすぎ" fix, 2026-06-17). The
+-- waveshaper clean bonus (``ampCleanKneeBonus``) only un-clips the pre-tone-stack
+-- shaper; for AC30 and the high-gain Marshall/Rockerverb/TriAmp the CLEAN signal
+-- is then re-clipped by the shared power / resonance-mix / master ``softClipK``
+-- ceilings (~3.3-3.4M), which is the real clean-breakup limiter at a realistic
+-- playing level once the shaper is clean. This bonus is ADDED to those ceilings
+-- ONLY in Clean mode (Drive passes 0), so the Drive-mode power-amp
+-- compression / sag is byte-for-byte unchanged. JC-120 / Twin already have a
+-- high clean power knee from ``ampPowerKnee`` and stay clean, so they take 0 here.
+-- Graded to the user's "preserve model character" choice: AC30 keeps some class-A
+-- early breakup, the high-gain trio become usable-clean but compress when pushed.
+ampCleanPowerBonus :: Unsigned 3 -> Sample
+ampCleanPowerBonus idx = case idx of
+  0 -> 0           -- JC-120 : already 6.8M power knee
+  1 -> 0           -- Twin   : already 4.6M power knee
+  2 -> 1_000_000   -- AC30   : modest, keep class-A early breakup
+  3 -> 2_600_000   -- Rockerverb : usable clean headroom
+  4 -> 2_600_000   -- JCM800 : usable clean headroom
+  5 -> 2_200_000   -- TriAmp : usable clean headroom
+  _ -> 0           -- 6/7 -> JC-120 fallback
+
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
 -- darker / less fizz. Indexed by ``ampModelIdxF`` directly.
 -- 96 kHz: the ampPreLowpass base/darken tables are recomputed (bilinear) so the

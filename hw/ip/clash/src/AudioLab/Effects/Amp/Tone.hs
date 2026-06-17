@@ -145,9 +145,14 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) (monoWet f) else monoSample f) f
+  setMonoWet (if on then softClipK knee (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
+  idx = ampModelIdxF f
+  -- Clean-mode (drive_mode 0) extra power-stage headroom, per model; Drive keeps
+  -- the byte-identical power-amp compression. See ``ampCleanPowerBonus``.
+  cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
+  knee = ampPowerKnee 3_400_000 idx + cleanP
 
 ampResPresenceFilterFrame :: Sample -> Sample -> Frame -> Frame
 ampResPresenceFilterFrame prevRes prevPresence f =
@@ -170,9 +175,13 @@ ampResPresenceFilterFrame prevRes prevPresence f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) wet else monoSample f) f
+  setMonoWet (if on then softClipK knee wet else monoSample f) f
  where
   on = flag6 (fGate f)
+  idx = ampModelIdxF f
+  -- Clean-mode extra headroom on the resonance/presence mix clip; Drive unchanged.
+  cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
+  knee = ampPowerKnee 3_400_000 idx + cleanP
   -- D132 knob-visibility pass: after the D121-D131 HF/bass re-voicing,
   -- knobcheck again showed PRESENCE/RESONANCE below the 1 dB audibility floor
   -- at the JCM800 drive op-point. Keep the existing products and safety clip,
@@ -270,7 +279,9 @@ ampMasterFrame env f =
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
   effLevel = level - sagByte
-  out = softClipK (ampPowerKnee 3_300_000 idx) (satShift7 (mulU8 (monoWet f) effLevel))
+  -- Clean-mode extra master-stage headroom, per model; Drive keeps its ceiling.
+  cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
+  out = softClipK (ampPowerKnee 3_300_000 idx + cleanP) (satShift7 (mulU8 (monoWet f) effLevel))
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
 -- A real tube amp's output transformer is a big part of "amp warmth" that the
