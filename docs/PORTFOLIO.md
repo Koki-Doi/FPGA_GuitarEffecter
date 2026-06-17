@@ -8,12 +8,13 @@ DSP は関数型 HDL（Clash/Haskell）で記述し、HDMI GUI・ロータリー
 > 本ページはポートフォリオサイト向けの概要。実装値・係数・アルゴリズム・設計の物語は
 > **[深掘り技術付録](#深掘り技術付録)**（全 5 部）を参照。
 
-**現行の採用済みデプロイベースライン**は **D121**（merge commit `d07c8e9`、
-bit md5 `9a57c50ae405bce717648dc1585eaf4b`）。D109 の CDC 修正で DSP 再ビルド時の
-safe-bypass 破壊を根本解決したうえで、D99 の受け入れ済み Amp キャラクターはそのまま残し、
-Overdrive / Distortion / Cab の実機から外れていた帯域だけを offline DSP sim で測定・補正した
-ビルドです。Vivado routed timing は **WNS +0.726 ns / TNS 0 / WHS +0.012 ns**、実機 PL smoke と
-ユーザー bench で合格しています。
+**現行の採用済みデプロイベースライン**は **D131**（merge commit `37114b9`、
+bit md5 `fdab62d5ef229ec64dc60fe9395cbf06`、hwh md5
+`d852ec4e737460ad016b41f0a3f71de2`）。D109 の CDC 修正で DSP 再ビルド時の
+safe-bypass 破壊を根本解決したうえで、D121-D131 の測定駆動 voicing line により
+Cab / OD / Distortion / Compressor / Amp を実機寄りに更新したビルドです。Vivado
+routed timing は **WNS +0.631 ns / WHS +0.019 ns**、D109 CDC pair は
+`+3.353 ns / +6.286 ns`、実機 PL smoke とユーザー bench で合格しています。
 
 ---
 
@@ -56,8 +57,8 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 - **アンチエイリアス 4x オーバーサンプリング** — ハードクリップ系を 4x + 15-tap デシメーション FIR
   で折り返し抑制。FIR は比率ベース（fs 非依存）で 48→96 kHz 移行時に無変更。
 - **offline DSP sim による音作りの高速化** — `tools/dsp_sim` で FPGA と同じ Clash
-  `topEntity` 固定小数点パイプラインをホスト CPU 上で実行。D121 では BD-2 / OCD / Metal / Cab の
-  net tone-curve を Vivado 前に測定し、golden 11/11 と bypass bit-exact を確認してからビット化。
+  `topEntity` 固定小数点パイプラインをホスト CPU 上で実行。D121-D131 では net tone-curve、
+  harmonic、knobcheck、distortion-character 評価を Vivado 前に確認してからビット化。
 - **完全なハードウェア UI 統合** — HDMI GUI + エンコーダ + フットスイッチ + ペダルを自作 PL IP で
   実装し、Python の単一翻訳層に集約。
 
@@ -79,9 +80,9 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | サンプルレート | 96 kHz / 24-bit |
 | DSP アイランドクロック | 33.33 MHz（1 サンプル/サイクル、約 347 サイクル/サンプルの余裕） |
 | タイミング改善（アイランド導入） | WNS -10.387 ns → -0.706 ns |
-| 採用ベースライン（D121）の WNS | +0.726 ns（フルタイミング MET、TNS 0、route errors 0） |
+| 採用ベースライン（D131）の WNS | +0.631 ns（フルタイミング MET、WHS +0.019 ns、route errors 0） |
 | エフェクト | 9 ブロック（Amp 6 / OD 6 / Distortion 7 / Cab 3 機種） |
-| D121 FPGA リソース | LUT 30,792 / FF 28,896 / BRAM tile 6 / DSP48E1 142 |
+| 現行 bit / hwh | `fdab62d5ef229ec64dc60fe9395cbf06` / `d852ec4e737460ad016b41f0a3f71de2` |
 | `set_guitar_effects` レイテンシ | 940 ms → 2.6 ms（IP ハンドルキャッシュ後） |
 | 物理操作系 | エンコーダ ×3 / フットスイッチ ×3 / エクスプレッションペダル ×1 |
 
@@ -117,23 +118,21 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 
 ---
 
-## 現状（2026-06-14）
+## 現状（2026-06-15）
 
-採用済みデプロイベースラインは **D121**。D121 は、D120 で bench-reject された Amp sag 変更路線を
-捨て、ユーザーが選んだ D99 系の Amp キャラクターへ戻したうえで、**Amp 以外の外れていた帯域だけ**
-を測定駆動で補正したビットストリームです。
+採用済みデプロイベースラインは **D131**。D121 の非 Amp 測定駆動 pass から始まり、D122-D131 で
+Amp / Cab / RAT / Compressor / OD / DS-1 / Metal / Big Muff / Fuzz Face の低リスク voicing を
+段階的に実装・bench-ACCEPTED したビットストリームです。
 
-D121 の 4 つの音作り変更：
+D131 時点の主な音作り変更：
 
-1. **BD-2**：pre-clip biquad を 1500 Hz から 2300 Hz へ移し、+3.5 dB の明るい上中域へ。
-2. **OCD**：従来 flat だった pre-clip に +4 dB @ 1300 Hz の upper-mid honk を追加。
-3. **Metal**：既存 Big Muff 用の約 700 Hz scoop-notch biquad の gate を
-   `bigMuffOn || metalDistortionOn` に広げ、Metal の mid-scoop を新規段なしで実現。
-4. **Cab**：15-tap speaker FIR だけでは解像できない cone-breakup presence を、
-   FIR 後の +3.5 dB @ 2800 Hz peaking biquad で追加。
+1. **D121-D124**：BD-2 / OCD / Metal / Cab / RAT の測定駆動補正。
+2. **D125**：Compressor RATIO を Dyna/Ross sustain 方向へ修正。
+3. **D126-D130**：OD-1 / DS-1 / RAT / Amp / Klon / Metal などを実機リファレンスの EQ へ再照合。
+4. **D131**：DS-1 / Big Muff / Fuzz Face / Metal の low-end、saturation、sustain を改善し、
+   `dist_eval.py` / `targets.py` で distortion-character を自動評価。
 
-すべて `tools/dsp_sim/measure.py` で Vivado 前に確認し、BD-2 peak 2310 Hz、OCD +3.7 dB @ 1290 Hz、
-Metal dip 593-720 Hz、Cab +3.2 dB @ 2806 Hz を確認済み。golden regression 11/11 と bypass
-bit-exact も通過しています。D120 / D119 の Amp sag 変更は bench-reject 済みで、明示的な新方針が
-ない限り再試行しません。最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` /
-`docs/ai_context/DECISIONS.md`（D109-D121）を参照。
+すべて offline sim / golden / bypass invariant で Vivado 前に絞り込み、Vivado timing、
+deploy、programmatic smoke、ユーザー bench を通過したものだけを採用しています。D120 / D119 の
+Amp sag 変更は bench-reject 済みで、明示的な新方針がない限り再試行しません。最新の正確な状態は
+`docs/ai_context/CURRENT_STATE.md` / `docs/ai_context/DECISIONS.md`（D109-D131）を参照。

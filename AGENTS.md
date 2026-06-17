@@ -26,6 +26,7 @@ Then read the topic doc that matches the work:
 | --- | --- |
 | Adding a new effect | `docs/ai_context/EFFECT_ADDING_GUIDE.md` (+ `EFFECT_STAGE_TEMPLATE.md`) |
 | Clash / DSP edits | `docs/ai_context/DSP_EFFECT_CHAIN.md` |
+| DSP simulation / measured voicing | `tools/dsp_sim/README.md`, `docs/ai_context/MODEL_REALISM_GAP_ANALYSIS.md`, `docs/ai_context/DECISIONS.md` D121-D131 |
 | Refactoring (DSP / Python / build) | `docs/ai_context/REFACTORING_CANDIDATES.md` |
 | GPIO bit allocation | `docs/ai_context/GPIO_CONTROL_MAP.md` |
 | Audio routing / passthrough debug | `docs/ai_context/AUDIO_SIGNAL_PATH.md` |
@@ -35,7 +36,7 @@ Then read the topic doc that matches the work:
 | PYNQ-Z2 board operations | `docs/ai_context/PYNQ_RUNTIME.md` |
 | Wah effect / FP02M pedal | `docs/ai_context/WAH_EFFECT_INTEGRATION_PLAN.md`, `docs/ai_context/FP02M_PEDAL_INTEGRATION.md`, `docs/ai_context/XADC_INTEGRATION_DESIGN.md` |
 | Pmod I2S2 external audio | `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`, `docs/ai_context/AUDIO_SIGNAL_PATH.md` |
-| Rotary encoder runtime / GUI live apply | `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`, `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md`, `docs/ai_context/ENCODER_INPUT_MAP.md` |
+| Rotary encoder runtime / GUI live apply | `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`, `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md`, `docs/ai_context/ENCODER_INPUT_MAP.md`, `scripts/run_encoder_hdmi_gui.py` |
 | Footswitch FX toggle / preset stepping | `docs/ai_context/FOOTSWITCH_INTEGRATION.md` (+ `DECISIONS.md` D78) |
 | HDMI GUI / 5-inch LCD | `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` (+ `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected), `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`) |
 | Resuming after a stop | `docs/ai_context/RESUME_PROMPTS.md` (current prompts only; per-phase history in `docs/ai_context/RESUME_PROMPTS_HISTORY.md`) |
@@ -83,12 +84,25 @@ When a previous turn stopped mid-implementation:
   and user ear-bench before it can be treated as accepted. D109 fixed the old
   safe-bypass CDC knife-edge, so DSP voicing rebuilds are no longer forbidden,
   but a new bitstream still needs bench listening. **Accepted deployed baseline
-  is D112 (`c1e3de50`)** (amp full revoicing on the D109 fix, bench-accepted
-  2026-06-07). D113 (amp model-identity retune, bit `ed76421f`) and D114
-  (non-amp effect retune, bit `31c768eb`) are constant-only voicing rebuilds
-  that are built timing-clean but **not yet bench-accepted** (D114's PL load
-  timed out / board went offline -- not confirmed loaded). See `DECISIONS.md`
-  D109-D114 + `CURRENT_STATE.md`.
+  is the 2026-06-17 realism baseline**: merge commit `21c0b5a`, bit md5
+  `54f7f547d04f0e4d59011e4754f834ca`, hwh md5
+  `2fbc8a5ba528bb6e1d415e6339b64bdb`. It is the all-effects sim-survey amp/dist
+  re-voicing (bass HP dead-pole->live, Metal full saturation, RESONANCE dead-knob,
+  HF-restore un-muffle, AC30 chime, clean-amp power headroom) plus the
+  comprehensive `tools/dsp_sim` problem-detectors (muffled/harsh,
+  clean-distortion, all-model targets; 28/28 EQ + 7/7 dist + 6/6 clean).
+  Supersedes b3dcab00 (`55ef823`) and D131 (`fdab62d5`); roll back via
+  `git checkout 55ef823 -- hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9` (D131). D120 was bench-rejected and the
+  post-D112 sag-removal/static-trim line remains abandoned; do not re-attempt
+  Amp sag removal or static sag trimming without a new explicit user
+  direction. Roll back D131, if a later issue surfaces, by restoring D130
+  bitstreams from merge commit `fffa2b1` (bit md5 `33af82f1...`) and
+  redeploying. See `DECISIONS.md` D109-D131 and `CURRENT_STATE.md`.
+- For effect voicing work, prefer the offline DSP sim / measurement loop before
+  paying the Vivado cost: build/run `tools/dsp_sim`, use
+  `tools/dsp_sim/measure.py` for net tone-curve checks, and keep golden/bypass
+  invariants passing. The sim is a design filter, not an acceptance substitute;
+  timing, board smoke, and user bench listening still gate deployed DSP changes.
 - The audio sample rate is **96 kHz as of D98**. Pmod BCLK is MCLK/2 with
   MCLK still 12.288 MHz; LRCK is 96 kHz. Any fs-dependent DSP constant must be
   voiced for 96 kHz, not the pre-D98 48 kHz path. The 4x oversampler interp and
@@ -126,9 +140,14 @@ When a previous turn stopped mid-implementation:
   translates compact-v2 `AppState` into `AudioLabOverlay` APIs and must not do
   raw GPIO writes. RAT is selectable in the encoder GUI as of D91; keep the
   pedal bit 2 -> `rat_on` routing and Distortion knob -> `rat_*` mapping.
+  Library defaults stay conservative (`skip_rat=True`, 100 ms throttle), while
+  `scripts/run_encoder_hdmi_gui.py` opts into the current bench runtime by
+  default (`--include-rat`, `--apply-interval-ms 20`, active poll 60 Hz).
 - The 3PDT footswitch path is live in D78+ bitstreams. `axi_footswitch_input`
   is at `0x43D50000`; FS1 toggles the bound effect, FS2/FS3 step chain presets,
-  and five FS1 stomps within 3 s rebind the target effect.
+  and five FS1 stomps within 3 s rebind the target effect. The standalone HDMI
+  runner polls footswitches by default; use `--no-footswitch` only for a
+  deliberate diagnostic.
 - The compact-v2 800x480 GUI renderer is split under `GUI/compact_v2/`
   (`knobs.py` / `state.py` / `layout.py` / `renderer.py` / `hit_test.py`);
   `GUI/pynq_multi_fx_gui.py` is a thin re-export shim. The HDMI state mirror is
@@ -144,7 +163,9 @@ When a previous turn stopped mid-implementation:
   second overlay after AudioLab. For the 5-inch LCD, keep Phase 6I VESA SVGA
   `800x600 @ 60 Hz / 40 MHz`; the compact-v2 GUI occupies framebuffer
   `x=0,y=0,w=800,h=480`, with rows `480..599` black. Do not switch back to
-  720p or the rejected native 800x480 timing.
+  720p or the rejected native 800x480 timing. After a bit is already loaded,
+  prefer `download=False` smart attach patterns for display-only notebook
+  reruns to avoid knocking the 40 MHz rgb2dvi PLL out of lock.
 - Physical LCD fit and bench-audio quality cannot be fully verified by Codex.
   Programmatic smoke can narrow failures, but final acceptance for the display
   and sound comes from the user's bench confirmation.

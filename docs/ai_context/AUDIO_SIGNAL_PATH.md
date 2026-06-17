@@ -32,9 +32,10 @@ i2s_to_stream_0/so
 The reverse direction (PS-to-board playback) goes through the MM2S DMA, a
 sign-narrowing subset converter, and back into `axis_switch_sink`.
 
-`clash_lowpass_fir_0` is the only block on the **50 MHz DSP island**
-(`FCLK_CLK1`, D75). The two `axis_clock_converter` shown above
-(`cc_dsp_in` 100->50, `cc_dsp_out` 50->100, added by
+`clash_lowpass_fir_0` is the only block on the **33.33 MHz DSP island**
+(`FCLK_CLK1`; D75 50 MHz -> D89 40 MHz -> D94 33.33 MHz). The two
+`axis_clock_converter` shown above
+(`cc_dsp_in` 100->33.33, `cc_dsp_out` 33.33->100, added by
 `island_integration.tcl`) bridge it to the 100 MHz fabric; everything else
 on this diagram (`i2s_to_stream_0`, `axis_switch_*`, the DMAs, Pmod) stays
 on `FCLK_CLK0 = 100 MHz`. The DSP effect order inside `guitar_chain` is

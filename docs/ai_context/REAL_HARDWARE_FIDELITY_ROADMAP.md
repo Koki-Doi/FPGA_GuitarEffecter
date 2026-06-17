@@ -1,13 +1,21 @@
 # Real-hardware fidelity roadmap
 
-Status: **R0a (Python taper, D80) + R3 first biquad (D81) done.** D80 added
+Status: **historical roadmap, executed through the 2026-06-17 realism baseline
+`54f7f547`** (updated 2026-06-17). R0a (Python taper, D80) + R3 first biquad
+(D81) are done. D121-D131 then executed the hardware-reference-constrained
+voicing line (Cab, OD, Distortion, Compressor, Amp, offline distortion metrics),
+and the 2026-06-17 all-effects sim survey closed the rest (bass, こもり/HF,
+Metal full saturation, RESONANCE, clean-amp power headroom; all 28/28 EQ + 7/7
+dist + 6/6 amps-clean vs targets). Remaining items are new-stage only (real-IR
+cab, Fuzz mid-hump, JCM800/Vox presence shelf) -- see
+`REALISM_ALL_EFFECTS_SIM_SURVEY.md`. D80 added
 `audio_lab_pynq/knob_tapers.py`, updated live GUI/encoder/preset apply paths,
 and retuned the preset knob positions (Python-only). **D81 then landed the
 first R3 resonant biquad: the Tube Screamer ~720 Hz mid hump** (Clash, built /
 deployed / bench-accepted; new bitstream baseline `3a79745f`, island WNS
--0.193 ns). See the R3 section below. Full R0 reference capture is still
-pending and remains the recommended calibration step before further DSP
-retuning.
+-0.193 ns). See the R3 section below. For current accepted state, read
+`CURRENT_STATE.md`, `BASELINES.md`, and `DECISIONS.md` D121-D131 before using
+this roadmap.
 
 This document answers the practical question: how do we move AudioLab closer
 to real pedals, amps, and cabinets **without** violating the current project
@@ -17,19 +25,20 @@ the runtime presets. Detailed per-effect gaps live in
 `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`.
 
 For the newer D121-era, hardware-reference-constrained work order, read
-`REALISM_IMPROVEMENT_WORK_ORDER.md` first. It records the no-implementation
-sequence: reference presets -> measurement inputs -> target metrics -> Cab ->
-OD -> Distortion / Fuzz -> Wah -> Compressor -> Noise Suppressor -> Reverb ->
-preset loudness -> Amp -> final bench.
+`REALISM_IMPROVEMENT_WORK_ORDER.md` first. It records the original sequence
+and the D121-D131 execution status: reference presets -> measurement inputs ->
+target metrics -> Cab -> OD -> Distortion / Fuzz -> Wah -> Compressor -> Noise
+Suppressor -> Reverb -> preset loudness -> Amp -> final bench.
 
 ## Current baseline and boundary
 
-- Current accepted bitstream baseline is **D79**: bit md5
-  `f0cb0276f27187d72476a2e773dd9a6e`, hwh md5
-  `5fa0b84e9fe852c68629c651f94e4a9d`; island WNS `-0.496 ns`, 100 MHz
-  audio fabric `+0.532 ns / 0 fail`.
-- The DSP runs mono at 48 kHz inside the **50 MHz DSP island**. DS-1 CARRY4
-  arithmetic is the perennial critical path.
+- Current accepted bitstream baseline is **D131**: bit md5
+  `fdab62d5ef229ec64dc60fe9395cbf06`, hwh md5
+  `d852ec4e737460ad016b41f0a3f71de2`; routed WNS `+0.631 ns`, WHS
+  `+0.019 ns`, D109 CDC pair `+3.353` / `+6.286`.
+- The DSP runs mono internally at **96 kHz** inside the **33.33 MHz DSP island**
+  (D98 / D94). Metal/RAT/Big Muff are already 4x oversampled; DS-1 CARRY4 and
+  the D109 CDC pair still remain placement-sensitive.
 - `block_design.tcl` remains off-limits. New runtime control must use the
   existing GPIO topology unless the user explicitly approves a hardware
   topology phase.

@@ -53,7 +53,7 @@ submodule へ分割されており、ポートフォリオで見るべき top-le
 | **ear-bench** | 実機試聴による受け入れ判定（合格＝採用ベースライン昇格） |
 | **offline DSP sim** | `tools/dsp_sim` で Clash `topEntity` を host CPU 上で実行する検証経路。Vivado 前に tone-curve / golden / bypass を見る |
 | **golden regression** | 代表設定の出力を保存し、意図しない DSP 変更でズレないかを見る回帰検査 |
-| **net tone-curve** | effect ON と bypass の周波数応答差。D121 では BD-2 / OCD / Metal / Cab の狙い帯域確認に使用 |
+| **net tone-curve** | effect ON と bypass の周波数応答差。D121-D131 の測定駆動 voicing で使用 |
 | **ペダルマスク** | ディストーション段を mux ではなくビットマスクで選択する方式 |
 | **知見（knee）** | クリップ関数が効き始める振幅しきい値。`Sample` の絶対値（例 2,850,000） |
 | **RBJ** | Robert Bristow-Johnson のオーディオ EQ Cookbook。バイカッド係数設計の標準 |
@@ -62,27 +62,29 @@ submodule へ分割されており、ポートフォリオで見るべき top-le
 | **複数コピー先同期** | bit/hwh をボード上の必要コピー場所すべてに md5 一致させるデプロイ規律 |
 | **ナイフエッジ** | 「DSP 再ビルドのたびにバイパスが壊れる」未タイミング CDC 由来の現象（D109 で解決） |
 | **D99** | D120 rollback 後にユーザーが選んだ Amp character の基準。D121 はこの Amp を触らず非 Amp だけ補正 |
-| **D121** | 現行 canonical deployed baseline。bit md5 `9a57c50a...`、D99 Amp untouched + non-Amp measured voicing |
+| **D121** | 最初の measured non-Amp voicing baseline。bit md5 `9a57c50a...`、D99 Amp untouched + non-Amp measured voicing |
+| **D131** | 現行 canonical deployed baseline。bit md5 `fdab62d5...`、DIST low-end + saturation/sustain + offline distortion-eval tooling |
 
 ## 22. 現状
 
-採用済みデプロイベースラインは **D121**（merge commit `d07c8e9`、bit md5
-`9a57c50ae405bce717648dc1585eaf4b`、hwh md5 `112be061b98ed16d5ff55eaa87fc3b85`）。
-2026-06-14 に build / timing / deploy / PL smoke / user bench を通過し、main へ `--no-ff`
+採用済みデプロイベースラインは **D131**（merge commit `37114b9`、bit md5
+`fdab62d5ef229ec64dc60fe9395cbf06`、hwh md5 `d852ec4e737460ad016b41f0a3f71de2`）。
+2026-06-15 に build / timing / deploy / PL smoke / user bench を通過し、main へ `--no-ff`
 merge されています。
 
-D121 の位置づけ：
+D131 の位置づけ：
 
 - D109 の CDC hardening により、DSP 再ビルド時の safe-bypass 破壊リスクを根本対策済み。
-- D120 の Amp sag/static-trim 路線は bench rejected され、D99 系 Amp character へ rollback。
-- D121 は **Amp source を触らず**、Overdrive BD-2/OCD、Metal scoop、Cab presence の 4 箇所だけを
-  `tools/dsp_sim/measure.py` で測定駆動リボイス。
-- Vivado routed timing は WNS `+0.726 ns`、TNS `0`、WHS `+0.012 ns`、route errors `0`。
-- FPGA resource は LUT `30,792`、FF `28,896`、BRAM tile `6`、DSP48E1 `142`。
+- D120 の Amp sag/static-trim 路線は bench rejected され、D121 で D99 系 Amp character へ rollback
+  したあと、D122/D128/D130 の table/coeff 限定 Amp pass だけを accepted line として採用。
+- D131 は DS-1 / Big Muff / Fuzz Face / Metal の low-end、saturation、sustain を補正し、
+  `dist_eval.py` / `targets.py` で distortion-character と real-hardware target を自動評価。
+- Vivado routed timing は WNS `+0.631 ns`、WHS `+0.019 ns`、route errors `0`。
+- D109 CDC pair は `clk_fpga_0 -> clk = +3.353 ns` / `clk -> clk_fpga_0 = +6.286 ns`。
 
 D113-D120 の amp-retune / sag-disable / static-trim 系は、履歴上の候補または rejected branch として
-扱い、現行値としては語りません。後で問題が出た場合の rollback は D99 bitstreams を `ea6bf94`
-から復元（bit md5 `83a64ffc6415fe2a3bc2aed47b6b19f9`）して deploy します。
+扱い、現行値としては語りません。後で問題が出た場合の直近 rollback は D130 bitstreams を
+`fffa2b1` から復元（bit md5 `33af82f131cfff260871599e5142ef59`）して deploy します。
 
-最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D121）/
+最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D131）/
 `TIMING_AND_FPGA_NOTES.md` を参照してください。

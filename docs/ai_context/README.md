@@ -61,18 +61,20 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- **Current accepted deployed baseline = D112** (2026-06-07): the amp full
-  revoicing on the D109 CDC knife-edge fix, bit md5
-  `c1e3de50dca946c24b1b08106f8f134c`, routed timing fully MET (WNS `+0.564 ns`).
-  Deployed 5-site, loaded in Pmod mode 2, user bench accepted (合格): all_off
-  clean, amp natural/open with extended top, JC-120 clean, tube models
-  de-muffled. **Two newer constant-only voicing rebuilds are built but pending
-  bench:** D113 (amp model-identity retune, bit `ed76421f`, deployed + smoke OK)
-  and D114 (non-amp effect retune, bit `31c768eb`, board file-synced but the
-  PL-load `AudioLabOverlay()` timed out / board went offline -- not confirmed
-  loaded). Rollback baselines: D98 (`18df313f`), D79 (`f0cb0276`), D78
-  (`45e78763`). See `DECISIONS.md` D109-D114, `CURRENT_STATE.md`, and
-  `TIMING_AND_FPGA_NOTES.md`.
+- **Current accepted deployed baseline = the 2026-06-17 realism baseline**:
+  merge commit `21c0b5a`, bit md5 `54f7f547d04f0e4d59011e4754f834ca`, hwh md5
+  `2fbc8a5ba528bb6e1d415e6339b64bdb`. The all-effects-sim-survey re-voicing:
+  bass (amp input-HP dead first-difference -> live one-pole), Metal full
+  saturation (os4x clip floor 1.05M->600k), amp RESONANCE dead-knob fix, an
+  HF-restore (un-muffle), AC30 chime, and clean-amp power headroom (per-model
+  `ampPowerKnee`); plus the comprehensive `tools/dsp_sim` problem-detectors
+  (muffled/harsh, clean-distortion, all-model targets -- 28/28 EQ + 7/7 dist +
+  6/6 amps-clean vs `targets.py`). Routed timing MET (WNS `+0.639`, D109 CDC
+  pair `+1.415` / `+6.782`), deployed, PL-smoked at ~96.1 kHz, bench-accepted
+  (合格). Supersedes b3dcab00 (`55ef823`) and D131 (`fdab62d5`); rollback uses
+  `git checkout 55ef823 -- hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9`
+  (D131) + redeploy. See `CURRENT_STATE.md`, `REALISM_ALL_EFFECTS_SIM_SURVEY.md`,
+  `BASELINES.md`, and `TIMING_AND_FPGA_NOTES.md`.
 - The **Overdrive realism pass shipped** (D79). The six selectable OD
   models now differ in clip hardness (`asymSoftClipSoft` / legacy medium /
   harder fixed-shift siblings), and the CENTAUR/Klon model mixes a parallel
@@ -101,15 +103,16 @@ The current load-bearing facts:
   enable, bits[6:0] = BIAS. Added by `wah_integration.tcl`;
   `block_design.tcl` not edited. See `DECISIONS.md` D72 / D73 and
   `WAH_EFFECT_INTEGRATION_PLAN.md`.
-- The **DSP 50 MHz clock-domain island shipped** (D75). Only
-  `clash_lowpass_fir_0` runs at `FCLK_CLK1 = 50 MHz`; the rest of the
+- The **DSP clock-domain island shipped** (D75; now 33.33 MHz as of D94). Only
+  `clash_lowpass_fir_0` runs at `FCLK_CLK1 = 33.33 MHz`; the rest of the
   fabric stays at 100 MHz, bridged by `axis_clock_converter`
   (`cc_dsp_in` / `cc_dsp_out`). This closed the DS-1 distortion timing
-  (WNS `-10.387 -> -0.706 ns`) without lowering the whole fabric
+  (WNS `-10.387 -> -0.706 ns` at D75, then later timing-clean D131) without lowering the whole fabric
   (which breaks the I2S/Pmod CDCs). Load-bearing supports: `paceCount`
   removal in `Pipeline.hs`, `syncCtrl` control-word CDC in
-  `LowPassFir.hs`, `set_clock_groups` over 7 domains. See
-  `DECISIONS.md` D75 and `DSP_ISLAND_CLOCK_DESIGN.md`.
+  `LowPassFir.hs`, and the D109 split clock constraints with max-delay on
+  `clk_fpga_0`<->`clk`. See `DECISIONS.md` D75 / D89 / D94 / D109 and
+  `DSP_ISLAND_CLOCK_DESIGN.md`.
 - The **BD-2 Overdrive coefficient-only retune shipped** (D62,
   2026-05-24; superseded as the deployed baseline by D72-D79 above).
   Only model index 2 constants in `AudioLab/Effects/Overdrive.hs`

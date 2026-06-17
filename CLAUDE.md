@@ -23,7 +23,7 @@ Then the topic file that matches the task:
 | --- | --- |
 | Adding a new effect | `docs/ai_context/EFFECT_ADDING_GUIDE.md` (+ `EFFECT_STAGE_TEMPLATE.md`) |
 | Clash / DSP edits | `docs/ai_context/DSP_EFFECT_CHAIN.md` |
-| Offline DSP voicing sim (host, no Vivado) / knob + reverb + tone measurement | `tools/dsp_sim/README.md` (`run_sim.py` render+metrics, `measure.py` tone curve, `harmonics.py` THD, `reverb.py` RT60, `knobcheck.py` per-band knob audio-change; regression `tests/test_dsp_sim_regression.py`, opt-in `DSP_SIM_TESTS=1`) |
+| Offline DSP voicing sim (host, no Vivado) / knob + reverb + tone / distortion-character measurement | `tools/dsp_sim/README.md` (`run_sim.py` render+metrics, `measure.py` tone curve + `--absolute`/`--check`, `dist_eval.py` sustain/IMD/fizz, `targets.py`, `harmonics.py` THD, `reverb.py` RT60, `knobcheck.py` per-band knob audio-change; regression `tests/test_dsp_sim_regression.py`, opt-in `DSP_SIM_TESTS=1`) |
 | Refactoring (DSP / Python / build) | `docs/ai_context/REFACTORING_CANDIDATES.md` |
 | GPIO bit allocation | `docs/ai_context/GPIO_CONTROL_MAP.md` |
 | Audio routing / passthrough debug | `docs/ai_context/AUDIO_SIGNAL_PATH.md` |
@@ -32,8 +32,8 @@ Then the topic file that matches the task:
 | Bitstream build / deploy | `docs/ai_context/BUILD_AND_DEPLOY.md` |
 | PYNQ-Z2 board operations | `docs/ai_context/PYNQ_RUNTIME.md` |
 | HDMI GUI / 5-inch LCD | `docs/ai_context/HDMI_GUI_INTEGRATION_PLAN.md` (+ `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5A_OUTPUT_SIDE_DIAGNOSIS.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE5B_NATIVE_800X480_TIMING_PLAN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6F_FIX_HDMI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6G_ACTUAL_UI_X_ORIGIN.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_PORT_1PY_SPEC.md`, `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6H_NATIVE_800X480_TIMING.md` (rejected), `docs/ai_context/history/hdmi_phases/HDMI_GUI_PHASE6I_800X480_TIMING_SWEEP.md`); runtime entry is `audio_lab_pynq/notebooks/HdmiGui.ipynb` (single cell, resource monitor, `OFFSET_X` / `OFFSET_Y` calibration). |
-| Rotary encoder runtime / GUI live apply | `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`, `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md`, `docs/ai_context/ENCODER_INPUT_MAP.md`; runtime entry is `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell, dirty-flag loop with live apply + resource monitor) and `scripts/run_encoder_hdmi_gui.py` (`--live-apply` / `--skip-rat` defaults). |
-| Footswitch (FX toggle / preset stepping) | `docs/ai_context/FOOTSWITCH_INTEGRATION.md` (+ `DECISIONS.md` D78); IP `axi_footswitch_input` @ `0x43D50000`, Python `audio_lab_pynq/footswitch_input.py` + `footswitch_control.py`, runtime via `scripts/run_encoder_hdmi_gui.py --footswitch`. Source landed on `feature/footswitch-preset-fxtoggle`; bit rebuild pending. |
+| Rotary encoder runtime / GUI live apply | `docs/ai_context/ENCODER_GUI_CONTROL_SPEC.md`, `docs/ai_context/ENCODER_INPUT_IMPLEMENTATION.md`, `docs/ai_context/ENCODER_INPUT_MAP.md`; runtime entry is `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell, dirty-flag loop with live apply + resource monitor) and `scripts/run_encoder_hdmi_gui.py` (`--include-rat`, `--apply-interval-ms 20`, active poll 60 Hz defaults). |
+| Footswitch (FX toggle / preset stepping) | `docs/ai_context/FOOTSWITCH_INTEGRATION.md` (+ `DECISIONS.md` D78); IP `axi_footswitch_input` @ `0x43D50000`, Python `audio_lab_pynq/footswitch_input.py` + `footswitch_control.py`, runtime polling is default-on in `scripts/run_encoder_hdmi_gui.py` (`--no-footswitch` only for diagnostics). |
 | Pmod I2S2 external audio (mode 0/1/2/3) | `docs/ai_context/PMOD_I2S2_INTEGRATION_PLAN.md`, `docs/ai_context/AUDIO_SIGNAL_PATH.md` (Pmod I2S2 PMOD JB section), `DECISIONS.md` D48 / D49 / D50; runtime entries are `audio_lab_pynq/notebooks/PmodI2S2EffectControlOneCell.ipynb` (single cell, ipywidgets UI for mode 2 = ADC -> DSP -> DAC with the D50 mono RIGHT-slot mirror), `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb` (single cell, spawns `scripts/run_encoder_hdmi_gui.py --pmod-mode dsp` so the rotary encoder GUI drives the Pmod I2S2 mode-2 audio path), `scripts/test_pmod_i2s2.py` (`--mode tone | loopback | dsp | mute`), `scripts/pmod_i2s2_mode.py` (`--mode ... | --read | --clear`, used by the HDMI GUI Notebook for Set DSP / Refresh / Panic), and `scripts/pmod_i2s2_capture_probe.py`. |
 | Resuming after a stop | `docs/ai_context/RESUME_PROMPTS.md` (current prompts only; per-phase history in `docs/ai_context/RESUME_PROMPTS_HISTORY.md`) |
 
@@ -51,12 +51,13 @@ When a previous turn stopped mid-implementation:
 ## Hard constraints
 
 - `hw/Pynq-Z2/block_design.tcl` is **off-limits** unless the user explicitly
-  approves a block-design change. Shipped exceptions are
-  `axi_gpio_noise_suppressor` at `0x43CC0000`, added for the THRESHOLD /
-  DECAY / DAMP noise-suppressor work (`DECISIONS.md` D11), and
-  `axi_gpio_compressor` at `0x43CD0000`, added for the THRESHOLD /
-  RATIO / RESPONSE / MAKEUP compressor work (`DECISIONS.md` D14). Do
-  not remove them or shuffle their addresses.
+  approves a block-design change. Shipped additive exceptions are
+  `axi_gpio_noise_suppressor` at `0x43CC0000` (D11),
+  `axi_gpio_compressor` at `0x43CD0000` (D14), `axi_gpio_wah` at
+  `0x43D30000` (D72/D73), `xadc_wiz_a0` at `0x43D40000` (D76), and
+  `axi_footswitch_input` at `0x43D50000` (D78). These are added by
+  dedicated `*_integration.tcl` scripts sourced from `create_project.tcl`, not
+  by editing `block_design.tcl`. Do not remove them or shuffle their addresses.
 - **GPIO design is fixed** (`DECISIONS.md` D12). Names, addresses, and the
   `ctrlA` / `ctrlB` / `ctrlC` / `ctrlD` semantics in
   `docs/ai_context/GPIO_CONTROL_MAP.md` are a contract — never rename
@@ -76,10 +77,10 @@ When a previous turn stopped mid-implementation:
   `model_select` / 8-way mux design; see `docs/ai_context/DECISIONS.md`
   D6 and D9. Bit 7 of the pedal mask stays reserved for an 8th pedal
   slot.
-- Any edit to `hw/ip/clash/src/LowPassFir.hs` requires a Vivado bit/hwh
-  rebuild and a timing-summary check. A bitstream with significantly worse
-  WNS than the previous deployed build must not be deployed (latest
-  baseline is recorded in `docs/ai_context/TIMING_AND_FPGA_NOTES.md`).
+- Any edit to `hw/ip/clash/src/LowPassFir.hs` or
+  `hw/ip/clash/src/AudioLab/` that changes DSP logic requires Clash VHDL
+  regeneration, IP repackage, Vivado bit/hwh rebuild, fresh timing summary,
+  deploy, programmatic smoke, and user ear-bench before acceptance.
 - The audio sample rate is **96 kHz as of D98** (was 48 kHz through D97;
   `DECISIONS.md` D98, codec double-speed via Pmod BCLK = MCLK/2). Every
   fs-dependent DSP constant was re-voiced for 96 kHz: biquad Q14 coeffs
@@ -91,18 +92,16 @@ When a previous turn stopped mid-implementation:
   new fs-dependent stage, voice it for 96 kHz, not 48 kHz. The DSP island
   clock is unrelated to fs (see the island bullet below); raising fs did
   NOT change it.
-- The DSP runs in a **clock-domain island, FCLK_CLK1 = 40 MHz as of D89**
-  (was 50 MHz at D75; lowered to give the DS-1 critical path more budget so
-  multiple 4x oversamplers fit -- the whole design now meets timing). `DECISIONS.md`
-  D75 + D89, full record `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md`. Only
-  `clash_lowpass_fir_0` is clocked by `FCLK_CLK1` (40 MHz); the rest of the
+- The DSP runs in a **clock-domain island, FCLK_CLK1 = 33.33 MHz as of D94**
+  (50 MHz at D75, 40 MHz at D89, 33.33 MHz at D94). `DECISIONS.md`
+  D75 / D89 / D94, full record `docs/ai_context/DSP_ISLAND_CLOCK_DESIGN.md`.
+  Only `clash_lowpass_fir_0` is clocked by `FCLK_CLK1` (33.33 MHz); the rest of the
   fabric (AXI / DMA / `i2s_to_stream` / Pmod / HDMI) stays on `FCLK_CLK0`
   (100 MHz), bridged by `axis_clock_converter` `cc_dsp_in` / `cc_dsp_out`
   added in `hw/Pynq-Z2/island_integration.tcl` (additive, sourced from
   `create_project.tcl` after `wah_integration.tcl`; `block_design.tcl` is
   NOT edited). The island clock is the only consumer of FCLK_CLK1, runs
-  1 sample/cycle, and is frequency-independent (paceCount removed), so it can
-  be lowered further (33 MHz = 1000/5/6) for more headroom; pitch is set by the
+  1 sample/cycle, and is frequency-independent (paceCount removed); pitch is set by the
   I2S/Pmod sample clock, not this clock. **Do not lower the whole fabric** -- it corrupts
   the I2S/Pmod clock-domain crossings (audible bypass buzz, proven). Three
   pieces are load-bearing and must not be reverted: the `paceCount` removal
@@ -120,15 +119,20 @@ When a previous turn stopped mid-implementation:
   that reintroduces the knife-edge. With this fix, rebuilding the DSP for voicing
   is SAFE again (the old "only the D98 bit is bypass-clean, do not rebuild for
   voicing" rule is obsolete); still always ear-bench a new bitstream.** See
-  `DECISIONS.md` D109-D114 + `project_safebypass_knifeedge_cdc_rootcause`.
-  **Accepted deployed baseline is D112 (`c1e3de50`).** D113 (amp
-  model-identity retune, bit `ed76421f`) and D114 (non-amp effect retune,
-  bit `31c768eb`) are constant-only voicing rebuilds that are built
-  timing-clean but **not yet bench-accepted** (D114's PL load timed out /
-  board went offline -- not confirmed loaded); D112 stays the baseline until
-  they are ear-bench approved. See `CURRENT_STATE.md`.
-  XADC stays dropped (`create_project.tcl` xadc lines
-  commented; D74 put a bitcrusher on the ADC path). A `CRITICAL WARNING
+  `DECISIONS.md` D109-D131 + `project_safebypass_knifeedge_cdc_rootcause`.
+  **Accepted deployed baseline is the 2026-06-17 realism baseline
+  (`54f7f547`)**, merge commit `21c0b5a`, hwh md5
+  `2fbc8a5ba528bb6e1d415e6339b64bdb`. It is the all-effects sim-survey
+  re-voicing (bass: amp input-HP dead-pole -> live; Metal full saturation:
+  os4x clip floor 1.05M->600k; amp RESONANCE dead-knob fix; HF-restore
+  un-muffle; AC30 chime; clean-amp power headroom: per-model `ampPowerKnee`)
+  plus the comprehensive `tools/dsp_sim` problem-detectors (muffled/harsh,
+  clean-distortion, all-model targets). Sim: 28/28 EQ + 7/7 distortion + 6/6
+  amps-clean-at-playing-level vs `targets.py`. Supersedes b3dcab00 (`55ef823`)
+  and D131 (`fdab62d5`). Roll back to b3dcab00 via `git checkout 55ef823 --
+  hw/Pynq-Z2/bitstreams/` (or D131 via `37114b9`) and redeploy. See
+  `CURRENT_STATE.md` + `REALISM_ALL_EFFECTS_SIM_SURVEY.md`.
+  XADC is live as `xadc_wiz_a0` for the FP02M Wah pedal. A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD
   clocks undefined at synth elaboration, applied at impl).
 - Notebook-only edits do **not** rebuild the bitstream. Update the
@@ -193,11 +197,14 @@ When a previous turn stopped mid-implementation:
   into `AudioLabOverlay` writes from the encoder loop; it calls only
   `set_noise_suppressor_settings`, `set_compressor_settings`, and
   `set_guitar_effects(**kwargs)` — **no raw GPIO writes**, no
-  `set_distortion_pedal*` shortcut. Default throttle is 50 ms (D51);
-  encoder 2 force-apply path is preserved. RAT is selectable from the
-  Distortion model list as of D91 (`skip_rat=False` is now the default at
-  the entry points: `run_encoder_hdmi_gui.py --include-rat`,
-  `EncoderGuiSmoke.ipynb` `SKIP_RAT=False`). The pedalboard RAT slot
+  `set_distortion_pedal*` shortcut. The class default throttle stays
+  library-safe at 100 ms; the standalone runner opts into the current bench
+  runtime with `--include-rat`, `--apply-interval-ms 20`, active poll 60 Hz,
+  and footswitch polling on by default. Encoder 2 force-apply path is
+  preserved. RAT is selectable from the Distortion model list as of D91
+  (`skip_rat=False` is now the default at the entry points:
+  `run_encoder_hdmi_gui.py --include-rat`, `EncoderGuiSmoke.ipynb`
+  `SKIP_RAT=False`). The pedalboard RAT slot
   (`distortion_pedal_mask` bit 2) is a DSP no-op; the *real* RAT is the
   dedicated upstream stage, which `set_guitar_effects` auto-asserts
   (`rat_on=True`) whenever the rat pedal bit is in the mask. When RAT is the
@@ -210,7 +217,7 @@ When a previous turn stopped mid-implementation:
   (`50` is unity); the Cab IR `MODEL` knob is overridden by
   `AppState.cab_model_idx`. `scripts/run_encoder_hdmi_gui.py` and
   `audio_lab_pynq/notebooks/EncoderGuiSmoke.ipynb` (single cell) share
-  a dirty-flag loop with poll 30 Hz active / 10 Hz idle and a render
+  a dirty-flag loop with poll 60 Hz active / 10 Hz idle and a render
   cap of 20 fps (D51 sluggishness fix). Encoder 0 toggle fires on
   EITHER the `button_state` rising edge OR the HW `short_press` latch
   consumed via `controller.tick()`; the consumed flag guards against

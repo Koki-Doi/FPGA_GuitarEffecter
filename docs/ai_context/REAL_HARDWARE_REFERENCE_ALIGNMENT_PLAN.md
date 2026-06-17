@@ -1,9 +1,9 @@
 # Real hardware reference alignment plan
 
-Status: **planning only, no implementation** (2026-06-14). This note records
-how to use the supplied pedal / amp references to push AudioLab closer to real
-hardware without immediately changing Clash, VHDL, Python, GPIO, Tcl, or
-bitstreams.
+Status: **plan executed through D131; retained as reference-to-target map**
+(updated 2026-06-15). This note records how the supplied pedal / amp references
+were translated into measurable targets before changing Clash, VHDL, Python,
+GPIO, Tcl, or bitstreams.
 
 This document is a companion to `REALISM_IMPROVEMENT_WORK_ORDER.md`,
 `REALISM_TARGET_METRICS.md`, `REALISM_OD_DIST_MEASUREMENT.md`, and
@@ -11,14 +11,18 @@ This document is a companion to `REALISM_IMPROVEMENT_WORK_ORDER.md`,
 translation layer: public measurements and circuit writeups become measurable
 DSP targets first, and only then become implementation candidates.
 
-**Executed output: `REALISM_REFERENCE_ALIGNMENT_FINDINGS.md`** (2026-06-14) —
+**Executed output: `REALISM_REFERENCE_ALIGNMENT_FINDINGS.md` plus D126-D131**
+(updated 2026-06-15) —
 the supplied links were fetched and reduced to concrete circuit numbers
 (RAT 2300x/±0.65 V/FILTER 475 Hz; TS 720 Hz feedback HP; BD-2 700 Hz rolloff /
 2-3 kHz peak / inactive diodes / 40 dB stages; SD-1 moving mid peak 500-1500 Hz;
 DS-1 3 dB scoop 500 Hz-2 kHz + tilt tone; Klon dual path; Fender grid-current
 asym + separate tone stack; Marshall JTM45 bright cap + lower plate V), compared
 against the actual current Clash constants, and turned into a measurement-backed
-candidate ranking. Read it for the per-model gaps and the prioritized next move.
+candidate ranking. D126/D127 implemented the first OD-1 / DS-1 / RAT / JCM800
+alignment pass; D128-D131 continued the amp, OD/DS/RAT, and DIST realism line.
+Read `CURRENT_STATE.md`, `BASELINES.md`, and `DECISIONS.md` D126-D131 for the
+accepted bitstream history.
 
 ## Ground rules
 
@@ -37,10 +41,12 @@ candidate ranking. Read it for the per-model gaps and the prioritized next move.
   `hw/ip/clash/src/AudioLab/` still requires Clash regeneration, Vivado
   rebuild, timing review, deploy, programmatic smoke, and user ear-bench.
 
-## Current local baseline to measure against
+## Baseline status
 
-Current canonical deployed baseline is **D124** (RAT live-pole highpass fix,
-bench-ACCEPTED, merged). Relevant D124 facts:
+This plan was first measured against **D124** (RAT live-pole highpass fix,
+bench-ACCEPTED, merged). The current canonical deployed baseline is **D131**
+(merge `37114b9`, bit `fdab62d5ef229ec64dc60fe9395cbf06`). Relevant D124
+facts at the time of this plan:
 
 - OD 6 models were measured on-target in `REALISM_OD_DIST_MEASUREMENT.md`.
 - Distortion / Fuzz models were measured on-target after the RAT fix.

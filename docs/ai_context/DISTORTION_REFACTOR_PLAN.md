@@ -40,11 +40,12 @@ behind one big mux. Vivado WNS regressed from -7.722 ns to
 -15.067 ns. The pedal-mask design replaces that with seven
 independently enabled small stages, originally restoring WNS to
 -7.801 ns. After every pedal slot was filled by the reserved-pedal
-implementation, the deployed WNS sat at -7.535 ns. The later
-audio-analysis voicing pass retuned existing Compressor / Overdrive /
-Amp / Cab stages. The current deployed baseline after the later D62
-BD-2 coefficient-only retune is WNS `-8.497 ns`, still inside the
-accepted deploy band. Do not bring `model_select` back — see
+implementation, the deployed WNS sat at -7.535 ns. Later realism passes
+retuned existing Compressor / Overdrive / Distortion / Amp / Cab stages,
+lowered the DSP island to 33.33 MHz, and added 4x oversampling to the
+hard-clip aliasers without reintroducing the wide model mux. The current
+deployed baseline is D131 (WNS `+0.631 ns`, WHS `+0.019 ns`, bit
+`fdab62d5ef229ec64dc60fe9395cbf06`). Do not bring `model_select` back — see
 `DECISIONS.md` D6 / D9 and `TIMING_AND_FPGA_NOTES.md`.
 
 ## Control plane (final)

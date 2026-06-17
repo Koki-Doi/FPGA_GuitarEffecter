@@ -4,6 +4,10 @@ Each entry is a decision that earlier work made and that future work
 should not silently revisit. New decisions go at the bottom; old ones do
 not get removed even when superseded — they get updated.
 
+Baseline statements inside older ADRs are historical unless the newest ADRs and
+`CURRENT_STATE.md` say otherwise. The current canonical deployed baseline is
+D131, tracked in `baselines.json` / `BASELINES.md`.
+
 ---
 
 ## D1 — ADAU1761 ADC HPF is enabled by default
@@ -6426,8 +6430,9 @@ pre-existing 3 failures + 1 error baseline.
   loaded PL was alive; it also showed input clipping (`PEAK_ABS_LEFT/RIGHT =
   8388607`, post-clear 1 s `CLIP_COUNT=776`). Power-cycle the board, load
   `AudioLabOverlay()` once, set Pmod I2S2 mode 2, and re-run smoke/ear bench
-  before accepting D114. D112 remains the accepted baseline until D113/D114 are
-  bench-approved.
+  before accepting D114. Historical status: D112 stayed accepted at that point;
+  D113/D114 were superseded by later accepted baselines and are not current
+  acceptance targets.
 
 ## D115 — Python overlay facade split is bitstream-independent
 
@@ -6595,6 +6600,185 @@ pre-existing 3 failures + 1 error baseline.
   restore board networking, load `AudioLabOverlay()` once, run Pmod mode-2
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
+
+## D133 — Metal full saturation + clean-amp power headroom; bench-ACCEPTED, merged (`54f7f547`, current baseline)
+
+- **Decision.** Take on the two items D132 deferred as "new-stage". Both were
+  achievable as placement-safe constant/mux (no new multiply/stage).
+- **Clean power headroom ("クリーン用パワーヘッドルーム").** The power / resonance /
+  master `softClipK` stages compressed at a shared ~3.3-3.4M knee, so even the
+  CLEAN amps broke up at a hot input. New per-model `ampPowerKnee base idx`
+  (Models.hs): JC-120 6.8M (SS, huge headroom; waveshape clean-knee already
+  7.5M), Twin 4.6M, high-gain models keep `base` (byte-identical -- their power
+  amp SHOULD compress). Offline JC-120 clean THD @0.20 FS 24.7% -> 4.6%.
+- **Metal full saturation ("完全飽和").** os4x hard-clip floor 1.05M -> 600k
+  (+ steeper slope) = the 4x-oversampled (anti-aliased) clip flattens nearly the
+  whole waveform at every level (drive curve 18-21% THD from -36 to -6 dBFS);
+  post-LPF base 15 -> 38 lets the 3rd/5th harmonic through (fizz -19.5 dB,
+  sustain 1.99x, mid-boost @800 preserved). The 1 kHz-THD ceiling ~21% is the
+  non-fizzy post-LPF cap; "完全飽和" = max density + max audible-without-fizz.
+- **Verification.** measure --check 28/28, dist_eval 7/7 + 6/6 amps-clean;
+  goldens re-blessed (dist_metal; bypass + amps bit-identical at golden levels).
+  Timing MET (WNS `+0.639`, CDC pair `+1.415`/`+6.782`). bit/hwh
+  `54f7f547d04f0e4d59011e4754f834ca` / `2fbc8a5ba528bb6e1d415e6339b64bdb`.
+  Deployed; PL-smoke needed a cold power-cycle first (repeated `download=True`
+  hazard) then PASSED 96.1 kHz. **Bench-ACCEPTED ("合格"); merged (`21c0b5a`).
+  Supersedes D132/b3dcab00.** Rollback: `git checkout 55ef823 -- hw/Pynq-Z2/bitstreams/`.
+- **Remaining new-stage (still open):** real-IR cab, Fuzz mid-hump, JCM800/Vox
+  presence shelf.
+
+## D132 — All-effects sim survey + comprehensive detectors + bass/HF/Metal/RESONANCE amp re-voicing; bench-ACCEPTED, merged (`b3dcab00`)
+
+- **Decision.** User: effects still far from real hardware -> strengthen the
+  offline sim, survey ALL effects, fix the gaps; then (ear-bench) fix こもり/
+  高域不足 + クリーンでも歪む; then make the sim DETECT such issues + a 3-cycle
+  sim->compare-to-target->fix loop.
+- **Sim strengthened (`tools/dsp_sim`, no bitstream):** rig (amp->cab) chain
+  measurement, HF-slope metric, amp/cab + all-model targets, distortion
+  clip-character `dist_eval --check`, a MUFFLED/HARSH detector (amp-alone
+  `hf=("range",lo,hi)`), a CLEAN-mode-distortion detector (per-amp clean-THD).
+  The crest clip-type check was found CONFOUNDED by the post-LPF (Gibbs ring) ->
+  demoted to informational (DS-1/TS were false positives, validated by the
+  harmonic series -> NOT changed).
+- **Amp re-voicing (placement-safe constants/shifts):** amp input HP was a DEAD
+  first-difference again (the D101 live pole was lost in the D99 rollback) -- the
+  低音不足 root; made LIVE shift-only ~150 Hz (rig low_vs_mid -22 -> -7..-9 dB).
+  Metal drive doubled + clip floor (saturation). RESONANCE dead-knob (LPF corner
+  ~30 -> ~120 Hz + mix). HF-restore for the こもり the bass fix caused (treble
+  floor 110 + baseAlpha 102 + HF droop 6 -- un-muffle AND keep TREBLE/PRESENCE
+  knob range). AC30 darken 6 (chime).
+- **Verification.** 3-cycle convergence: 28/28 EQ + 7/7 distortion + 6/6
+  amps-clean + reverb RT60 monotonic vs targets. Timing MET (WNS `+0.597`, CDC
+  pair `+2.121`). bit/hwh `b3dcab00...` / `3db2d16f...`. **Bench-ACCEPTED ("合格");
+  merged (`55ef823`).** KEY LIMIT: NO board-audio capture, so "vs real hardware"
+  = vs the circuit-analysis `targets.py`; bypass bit-exact is the only board
+  anchor. The ear-bench "clean distorts" was largely the full-scale board input
+  (at 0.12 FS the amps measure clean) -- addressed by D133's headroom.
+- See `REALISM_ALL_EFFECTS_SIM_SURVEY.md`.
+
+## D131 — DIST realism low-end + saturation/sustain, plus distortion-eval tooling; bench-ACCEPTED, merged
+
+- **Decision.** Improve the user-reported weak/similarity-poor Distortion
+  pedals (DS-1 / Big Muff / Fuzz Face / Metal) using new offline metrics that
+  capture axes the earlier single-sine THD/net-curve checks missed. This pass
+  is constant/coeff-only inside the existing Distortion stages; no GPIO,
+  topology, Tcl, XDC, block-design, topEntity port, or new pipeline stage was
+  added.
+- **Tooling.** `tools/dsp_sim/dist_eval.py` adds distortion-character metrics:
+  input-level DRIVE/gain sweep (THD% + crest = saturation depth / cleanup),
+  SUSTAIN hold-time ratio, and two-tone GRIT/IMD with >5 kHz fizz. `measure.py`
+  gained `--absolute`, LOWvMID band balance, and a 40 Hz floor. `targets.py` +
+  `measure.py --check` make the per-model real-hardware target checks
+  repeatable; the D131 target suite passes 13/13.
+- **Voicing changes.** Low-end: Metal and DS-1 highpasses had cut too much
+  bass, so Metal's effective corner is lowered from the ~650 Hz region toward
+  ~120 Hz and DS-1's 100 Hz body is restored; Big Muff's scoop center moves
+  700 -> 1000 Hz. Saturation/sustain: the old sustain metric was wrong
+  (decay-slope fit read ~1.00x on held-square-like clips), so it was replaced
+  by hold time; Big Muff clip knees are lowered from 2.4M/1.85M to
+  1.5M/1.25M and related Fuzz/Metal thresholds are tightened. Result:
+  Big Muff sustain ~2.04x, Metal ~2.03x, Fuzz ~1.80x. Metal post-LPF alpha
+  moves 8 -> 13 to keep the saturation edge after the darker MT-2 EQ pass.
+- **Verification.** Built timing-clean: WNS `+0.631 ns`, WHS `+0.019 ns`,
+  route errors `0`, D109 CDC pair `clk_fpga_0`<->`clk`
+  `+3.353` / `+6.286`. bit/hwh md5
+  `fdab62d5ef229ec64dc60fe9395cbf06` /
+  `d852ec4e737460ad016b41f0a3f71de2`. Deployed, board md5 matched, PL smoke OK
+  at ~96.1 kHz, goldens re-blessed (`distortion_ds1`, `dist_metal`).
+- **Status.** Bench-ACCEPTED ("合格") and merged to main (`37114b9`,
+  "Merge D131 DIST realism + distortion-eval tooling"). **D131 is the current
+  canonical deployed baseline**, superseding D130. Rollback: restore D130
+  bitstreams from merge commit `fffa2b1` (bit `33af82f1`) and redeploy.
+- **Lesson.** A single-sine THD/net-curve can miss perceived distortion
+  quality: sustain, absolute low-end, and IMD/fizz need their own metrics. A
+  metric that mis-measures is worse than no metric, so `dist_eval.py` and
+  `measure.py --check` are now part of the voicing filter before Vivado.
+  Remaining new-stage realism candidates: full 60 dB+ gain staging, a Fuzz Face
+  mid-hump biquad, and a JCM800/Vox presence shelf.
+
+## D130 — Amp 2nd-pass EQ re-collation (JC-120 flat, AC30 sparkle, JCM800 top); bench-ACCEPTED, merged
+
+- **Decision.** Re-collate the six Amp models against specific amp EQ curves
+  after the D129 lesson that perceived similarity is dominated by model-specific
+  EQ. Changes stay within existing tables (`ampScoop*`, `ampModelDarken`,
+  `ampTrebleGain`); no new stage, GPIO, topology, Tcl, XDC, or topEntity change.
+- **Changes.** JC-120's residual D122 `-2 dB @ 400 Hz` scoop is removed
+  entirely: a real Roland Jazz Chorus is solid-state and full-range, so the
+  `ampScoop` row is unity. AC30 top sparkle is restored by lowering
+  `ampModelDarken` 17 -> 11 and treble trim 2 -> 1; chime remains centered near
+  2.2 kHz. JCM800 stays fundamentally mid-forward via the existing 650 Hz
+  tone-stack row; only a modest `ampModelDarken` 20 -> 16 extends the D127
+  bright-cap. A separate 2-3 kHz presence shelf is deferred to a future
+  new-stage phase.
+- **Verification / caveat.** Timing-clean: WNS `+0.576 ns`, WHS `+0.008 ns`,
+  route errors `0`. D109 CDC slack was tight (`clk_fpga_0`->`clk` `+1.251`),
+  even tighter than the D128 aggressive build that hissed, but board bench
+  confirmed safe-bypass was clean. The CDC slack number is an important warning
+  signal, not a strict accept/reject proxy; ear-bench remains mandatory.
+  bit/hwh md5 `33af82f131cfff260871599e5142ef59` /
+  `52982140729b93e4416437078ea95785`.
+- **Status.** Bench-ACCEPTED ("合格") and merged to main (`fffa2b1`), superseding
+  D129. Rollback to D129 via `git checkout 837a482 --
+  hw/Pynq-Z2/bitstreams/` (bit `4c3f13ee`) + redeploy.
+
+## D129 — OD/DS/RAT EQ re-collation against specific pedals; bench-ACCEPTED, merged
+
+- **Decision.** Re-check every OD / Distortion / RAT model against the specific
+  real pedal, not a broad category label. This was triggered when the user
+  correctly caught Metal sounding unlike a Boss MT-2. All changes reuse
+  existing biquad/LPF muxes and constants; no new stage or topology change.
+- **Changes.** Metal is flipped from the wrong deep scoop/bright top toward
+  MT-2-like mid boost and dark top: shared scoop mux becomes a +5 dB @ 800 Hz
+  mid boost for Metal, and post-LPF darkens (base 21 -> 8). Klon gains its
+  signature ~1 kHz mid bump (+4 dB @ 1000 Hz in the OD mux). OD-1 mid focus
+  rises +2.5 -> +4 dB @ 800 Hz. BD-2's baked-in 2.3 kHz lift is reduced
+  +3.5 -> +1.5 dB so noon is closer to flat. JanRay gains +1.8 dB @ 350 Hz
+  low-mid warmth. DS-1 scoop moves from -6 dB @ 1000 Hz to -8 dB @ 500 Hz with
+  a softer input HPF. Fuzz Face tone LPF is darkened slightly; a full mid-hump
+  remains deferred.
+- **Verification.** Offline checks confirmed target curves (for example Metal
+  +7.7 dB around 800 Hz with a dark top, Klon +3.2 dB around 800-1200 Hz);
+  bypass bit-exact. Timing-clean: WNS `+0.623 ns`, WHS `+0.012 ns`,
+  island `+2.304 ns`, D109 CDC pair `+5.990` / `+6.167`, route errors `0`.
+  bit/hwh md5 `4c3f13ee72634151be276e2310490ed4` /
+  `5b33645006f47a75a869df4d6b43d2db`.
+- **Status.** Bench-ACCEPTED and merged to main (`837a482`), superseding D128.
+  Rollback to D128 via `git checkout 4a8fb90 -- hw/Pynq-Z2/bitstreams/`
+  (bit `956d6f00`) + redeploy.
+- **Lesson.** Harmonic series / clipping type is necessary but not sufficient.
+  For perceived "same pedal" identity, the model's EQ curve has to match the
+  specific hardware.
+
+## D128 — Amp PRESENCE effectiveness + Drive/Clean separation; aggressive first build rejected, moderate build accepted
+
+- **Decision.** Improve Amp realism after offline vs real-hardware comparison
+  and `knobcheck.py` flagged PRESENCE as barely audible. The accepted build is
+  a moderate constant-only change in `Amp/Models.hs` and `Amp/Tone.hs`; no new
+  stage, GPIO, topology, multiplier, Tcl, XDC, or topEntity change.
+- **Accepted changes.** PRESENCE band contribution moves from `>>9` to `>>8`
+  so the knob is audible and JCM800/AC30 regain 2-3 kHz sheen. JCM800 presence
+  trim changes `>>4` -> `>>5`. Drive mode gets clearer separation by raising
+  only the small `Unsigned 9` per-model `ampSecondStageDriveBonus`, so
+  Rockerverb/TriAmp distort and JC-120/Twin remain clean/headroom-focused.
+- **Rejected attempt.** A first aggressive build also changed larger knee-delta
+  and darken tables and raised the second stage harder. It was timing-clean in
+  headline numbers but bench-REJECTED for safe-bypass hiss. The D109 CDC pair
+  had fallen to `+1.327 ns`, the tightest placement seen in the project, so the
+  safe-bypass knife-edge reappeared under that marginal routing. The accepted
+  retune reverted the large-field table changes and kept only the smaller
+  second-stage bonus increase.
+- **Verification.** Accepted build timing-clean: WNS `+0.908 ns`, WHS
+  `+0.014 ns`, island `+2.290 ns`, D109 CDC pair `+4.038` / healthy reverse,
+  route errors `0`; bypass bit-exact offline. bit/hwh md5
+  `956d6f0049a350e354e0cf864f1f6745` /
+  `7db188ef79480568a547d084ef4fba17`. Board PL smoke OK at ~96.0 kHz; goldens
+  re-blessed for the four affected amp configs.
+- **Status.** Bench-ACCEPTED ("合格") and merged to main (`4a8fb90`),
+  superseding D126+D127. Rollback to D126+D127 via `git checkout d723df1 --
+  hw/Pynq-Z2/bitstreams/` (bit `7f3ac394`) + redeploy.
+- **Lesson.** Even constant changes can perturb the critical CDC placement if
+  the touched table/logic footprint is too broad. Keep voicing rebuilds small,
+  check the D109 CDC pair, and still use ear-bench as the final gate.
 
 ## D126 + D127 — Reference-alignment pass (OD-1/DS-1/RAT pedals + JCM800 amp); bench-ACCEPTED, merged
 

@@ -5,30 +5,22 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-11, after D119 Amp volume-stability fix)
+## Current status (2026-06-15, after D131 DIST realism)
 
-> Accepted deployed bitstream baseline is still **D112** (`c1e3de50`): the amp
-> full revoicing on top of the **D109 safe-bypass knife-edge fix**. D109
-> root-caused the long-standing "every DSP rebuild corrupts all_off passthrough"
-> problem to an **untimed DSP-output -> DAC audio CDC** and bounded it with split
-> `set_clock_groups` + `set_max_delay -datapath_only` on `clk_fpga_0`<->`clk`
-> (`audio_lab.xdc`), so DSP voicing rebuilds are allowed again, but every new
-> bitstream still needs ear-bench acceptance. Newer work is pending bench:
-> D113 (amp model-identity retune, bit `ed76421f`), D114 (non-amp effect retune,
-> bit `31c768eb`, file-synced but its PL-load smoke was blocked), D117 (RAT
-> highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), D118 (Amp
-> de-muffle constant retune, bit `c85ada77`, deployed + PL-smoked), and **D119**
-> (Amp power-sag master modulation disabled for volume stability, bit
-> `88c265cc`, built + file-synced but **not confirmed loaded / not PL-smoked**).
-> D116 is Python-only: it routes Distortion-pedalboard RAT
-> `DRIVE/TONE/LEVEL/MIX` into the dedicated RAT GPIO and maps generic
-> brightening `TONE` through `rat_filter_from_tone()`. To accept D119, first
-> restore/power-cycle the board because the D119 smoke attempt hung and then
-> `192.168.1.9` became unreachable (`No route to host`, ping host unreachable,
-> ARP incomplete). Then load `AudioLabOverlay()` once, run Pmod I2S2 mode-2
-> smoke, and bench safe-bypass plus tube-model Amp volume stability. Until then
-> D112 remains the accepted baseline. Read `CURRENT_STATE.md` + `DECISIONS.md`
-> (D109-D119) +
+> Accepted deployed bitstream baseline is **D131**: merge commit `37114b9`,
+> bit md5 `fdab62d5ef229ec64dc60fe9395cbf06`, hwh md5
+> `d852ec4e737460ad016b41f0a3f71de2`. D131 restores distortion low-end and
+> saturation/sustain for DS-1 / Big Muff / Fuzz Face / Metal, and adds the
+> expanded offline distortion evaluation tooling: `tools/dsp_sim/dist_eval.py`,
+> `targets.py`, `measure.py --absolute`, and `measure.py --check`. It was built
+> timing-clean (WNS `+0.631`, WHS `+0.019`, D109 CDC pair `+3.353` / `+6.286`),
+> deployed, board md5-matched, PL-smoked at ~96.1 kHz, bench-ACCEPTED ("合格"),
+> and merged to main. D109's split `set_clock_groups` + `set_max_delay
+> -datapath_only 10.000` on `clk_fpga_0`<->`clk` remains load-bearing. D119/D120
+> Amp sag-removal/static-trim attempts were bench-rejected and are abandoned
+> without new explicit user direction. If D131 must be rolled back, restore D130
+> bitstreams from merge commit `fffa2b1` (bit `33af82f1`) and redeploy. Read
+> `CURRENT_STATE.md`, `DECISIONS.md` D109-D131, `BASELINES.md`, and
 > `TIMING_AND_FPGA_NOTES.md` first.
 
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
@@ -203,11 +195,11 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。現行 accepted baseline は D112 (`c1e3de50`) です。D119
-> (`88c265cc`) は timing-clean かつ file-sync 済みですが、board 到達不能で
-> PL-smoke / bench 未通過なので accepted ではありません。safe-bypass で高域
-> ノイズが出る bitstream、または `TIMING_AND_FPGA_NOTES.md` の D109 CDC
-> 制約を壊した bitstream は deploy/accept しないでください。
+> してください。現行 accepted baseline は D131 (`fdab62d5`、merge
+> `37114b9`) です。bit/hwh が `BASELINES.md` の D131 と一致することを確認
+> してください。safe-bypass で高域ノイズが出る bitstream、または
+> `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した bitstream は
+> deploy/accept しないでください。
 
 ## Adding a new effect
 
@@ -237,8 +229,8 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現状の D119 build は timing-clean です (overall WNS `+0.699 ns`, TNS
-> `0`, WHS `+0.013 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
+> 現行 D131 build は timing-clean です (overall WNS `+0.631 ns`, TNS
+> `0`, WHS `+0.019 ns`)。DSP island は D94 以降 33.33 MHz、fabric は
 > 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
 > `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな
 > `case` や 4 段以上の演算を詰めない方針は維持してください
@@ -661,7 +653,7 @@ asking it to re-discover the project from scratch.
 > D31 違反 / PL pin 破損リスク)、ADAU1761 / HDMI / DSP 経路の改変、
 > `git push` / `git pull` / `git fetch`。
 
-## Phase D58.2 — Balanced Amp Drive Mode saturation, fixed-scalar retake (current)
+## Phase D58.2 — Balanced Amp Drive Mode saturation, fixed-scalar retake (historical)
 
 > 続きを始める前に `git status --short` と
 > `git log -8 --oneline --decorate --graph` を実行し、
@@ -813,7 +805,7 @@ asking it to re-discover the project from scratch.
 > で再実装、HDMI / encoder / Pmod I2S2 path 改変、
 > `git push` / `git pull` / `git fetch`。
 
-## Phase D53 — Amp Sim model-only character + binary DRV MODE (current)
+## Phase D53 — Amp Sim model-only character + binary DRV MODE (historical)
 
 > 続きを始める前に `git status --short` と
 > `git log -8 --oneline --decorate --graph` を実行し、
@@ -864,7 +856,7 @@ asking it to re-discover the project from scratch.
 > 再露出すること、`AMP_DRIVE_MODE_OFFSET` を変更して既存バンドを
 > 越境させること、`git push` / `git pull` / `git fetch`。
 
-## Phase 7G+ — GUI-first encoder live apply (current)
+## Phase 7G+ — GUI-first encoder live apply (current runtime pattern)
 
 > 続きを始める前に `git status --short` と
 > `git log -8 --oneline --decorate --graph` を実行し、

@@ -1,9 +1,13 @@
 # Reference alignment findings (executing REAL_HARDWARE_REFERENCE_ALIGNMENT_PLAN.md)
 
-Status: **reference -> measurable-target translation done, measurement vs target
-documented, NO implementation** (2026-06-14). Executes the measurement matrix +
-reference-to-target step of `REAL_HARDWARE_REFERENCE_ALIGNMENT_PLAN.md` using the
-user-supplied links. Current canonical baseline = **D125** (`3382ed56`).
+Status: **historical findings, implemented across D126-D131** (updated
+2026-06-15). This document executed the measurement matrix + reference-to-target
+step of `REAL_HARDWARE_REFERENCE_ALIGNMENT_PLAN.md` using the user-supplied
+links. It is no longer "NO implementation": D126/D127 implemented the first
+OD-1 / DS-1 / RAT / JCM800 alignment pass, D128-D130 continued Amp and
+OD/DS/RAT re-collation, and D131 added DIST low-end / saturation / sustain plus
+distortion-eval tooling. Current canonical baseline = **D131** (`37114b9`, bit
+`fdab62d5ef229ec64dc60fe9395cbf06`).
 
 Method: each user link was fetched and reduced to concrete circuit numbers
 (Hz / dB / gain / clip voltage), then compared against the actual current Clash

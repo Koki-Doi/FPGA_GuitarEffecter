@@ -1,6 +1,10 @@
 # Model realism gap analysis — OD / DIST / AMP / CAB
 
-Investigation only (2026-06-01). **No implementation.** Goal: for each
+Investigation only (2026-06-01). **Historical pre-D98/pre-D90 analysis.**
+Several recommendations here were implemented later (96 kHz in D98, 4x
+oversampling for Metal/RAT/Big Muff in D88-D90, D121-D131 voicing passes).
+Use this file as the original gap map, not as the current implementation
+inventory. Goal: for each
 Overdrive / Distortion / Amp Sim / Cab IR model, document (1) what the real
 hardware does, (2) what the current Clash DSP does, (3) the gap, (4) how to
 get closer. Exact current constants live in the source files cited per
@@ -12,11 +16,12 @@ Sources read: `hw/ip/clash/src/AudioLab/Effects/{Overdrive,Distortion,Amp,Cab}.h
 `DISTORTION_ASYMSOFTCLIP_RETUNE_RESEARCH.md`,
 `GLOBAL_REAL_PEDAL_RETUNE_RESEARCH.md`, `AUDIO_RECORDING_ANALYSIS.md`.
 
-Constraint reminder (shapes the recommendations): the DSP runs **mono, 48 kHz,
-no oversampling** on the 50 MHz `clash_lowpass_fir_0` island, whose DS-1
-arithmetic is already the critical path (D75/D76; the D78 footswitch bitcrusher
-showed how little WNS margin remains). Every "add DSP" idea below must be
-weighed against that. Clash is the single DSP source of truth (D13, no C++).
+Current constraint reminder (updated 2026-06-15): the live path is mono inside
+the DSP but the external AXI/I2S contract remains stereo; audio runs at **96 kHz
+as of D98**; Metal/RAT/Big Muff now use **4x oversampling**; and the DSP island
+runs at **33.33 MHz as of D94**. Every remaining "add DSP" idea below must still
+be weighed against timing/placement, D109 CDC slack, and bench safe-bypass
+quality. Clash is the single DSP source of truth (D13, no C++).
 No schematic-exact coefficient tables / GPL code may be copied (D7/D45/D55).
 
 ---
@@ -27,14 +32,14 @@ These structural limits dominate the per-model differences; fixing any one
 helps every model more than re-tuning constants.
 
 1. **No oversampling around the nonlinearities → aliasing "digital fizz."**
-   All waveshaping (OD clip, every DIST clip, amp waveshaper) happens at
-   48 kHz. A static nonlinearity generates harmonics far above Nyquist that
+   Original finding: all waveshaping (OD clip, every DIST clip, amp waveshaper)
+   happened at 48 kHz. A static nonlinearity generates harmonics far above Nyquist that
    fold back as *inharmonic* aliasing — the metallic/fizzy edge that makes
    high-gain patches sound "digital" rather than like a real pedal/amp. Real
-   analog circuits have no aliasing. **2×–4× oversampling of just the clip
-   stages is the single biggest realism improvement available**, especially
-   for RAT / DS-1 / Metal / Big Muff / high-gain amps. Cost: extra DSP + the
-   island is timing-tight, so this is the most expensive item too.
+   analog circuits have no aliasing. **Implemented since then:** Metal/RAT/Big
+   Muff gained 4x oversampling in D88-D90 and the base sample rate moved to
+   96 kHz in D98. Remaining oversampling/new-stage ideas still need separate
+   timing and bench acceptance.
 
 2. **Memoryless waveshapers + one-pole filters → no frequency-dependent or
    dynamic clipping.** Real clipping interacts with reactive parts (feedback
@@ -188,12 +193,13 @@ distance proxy; a mic-position/dual-mic blend would be the next step.
 
 ## 5. Prioritized recommendations (impact vs FPGA cost)
 
-Ranked by realism-per-effort. **None implemented; this is the menu.**
+Ranked by realism-per-effort as of 2026-06-01. **Historical menu:** several
+items are now implemented or partially implemented; see D81-D90 and D121-D131.
 
 | # | Change | Impact | Cost / risk |
 | --- | --- | --- | --- |
 | 1 | **Real short-IR cab convolution (BRAM, 128–256 taps)** | Very high (cab + tames all high-gain fizz + model distinctness) | Medium: BRAM convolution MAC chain; BRAM available (Reverb). Adds DSP/timing. |
-| 2 | **2×–4× oversample the clip/waveshaper stages** | Very high (kills digital fizz on every OD/DIST/AMP) | High: most DSP + the 50 MHz island is timing-bound; likely needs island/clock work first. |
+| 2 | **2×–4× oversample the clip/waveshaper stages** | Very high (kills digital fizz on every OD/DIST/AMP) | Partially implemented: Metal/RAT/Big Muff are 4x oversampled, base fs is now 96 kHz, and the island is 33.33 MHz. Remaining clip/amp oversampling still needs D109 CDC/timing/bench review. |
 | 3 | **Per-family resonant tone stacks (biquads): TS hump, Muff notch, Fender/Vox/Marshall stacks** | High (fixes "samey" models; restores signature EQ) | Medium: biquads add DSP + state; one shared biquad reused per stage keeps it bounded. |
 | 4 | **Per-model clip *hardness* (curve exponent), not just knee** | Medium-high (separates diode/MOSFET/op-amp/tube character) | Low-medium: constants + one shaping op; cheapest big differentiator. |
 | 5 | **Klon clean-blend + Fuzz Face / amp dynamic bias-sag** | Medium (nails two iconic, currently-missing behaviours) | Low-medium: a parallel blend (Klon) and an input-level bias term. |

@@ -86,22 +86,25 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
   G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
   via `mode2_right_snapshot` (D50).
-- The current **accepted** deployed bitstream baseline is **D112**
-  (`audio_lab.bit` md5 `c1e3de50dca946c24b1b08106f8f134c`), the amp full
-  revoicing on the D109 CDC knife-edge fix (bench-accepted 2026-06-07). Newer
-  work is **not yet ear-bench accepted**: **D113** (amp model-identity retune,
-  bit `ed76421f`, deployed + smoke OK), **D114** (non-amp effect retune, bit
-  `31c768eb`, file-synced but PL-load smoke blocked), **D117** (RAT
-  highpass/identity retune, bit `6dc84eaf`, deployed + PL-smoked), **D118**
-  (amp de-muffle retune, bit `c85ada77`, deployed + PL-smoked), and **D119**
-  (amp power-sag master modulation disabled for volume stability, bit
-  `88c265cc`, file-synced but PL smoke blocked because the board became
-  unreachable). D116 is a Python-only RAT pedalboard routing fix and does not
-  change the accepted bitstream baseline. Until D119 is PL-smoked and
-  bench-approved, D112 remains the accepted baseline. See `CURRENT_STATE.md`,
-  `DECISIONS.md` D109-D119, and
-  `TIMING_AND_FPGA_NOTES.md`. (Older accepted baselines for rollback: D98
-  `18df313f`, D79 `f0cb0276`.)
+- The current **accepted** deployed bitstream baseline is the
+  **2026-06-17 realism baseline** (merge commit `21c0b5a`, `audio_lab.bit` md5
+  `54f7f547d04f0e4d59011e4754f834ca`, `audio_lab.hwh` md5
+  `2fbc8a5ba528bb6e1d415e6339b64bdb`). It is the all-effects-sim-survey
+  re-voicing pass: bass (amp input-HP dead first-difference -> live one-pole),
+  Metal full saturation (os4x clip floor 1.05M->600k = saturates at all levels),
+  amp RESONANCE dead-knob fix, an HF-restore that un-muffles the amp after the
+  bass fix, AC30 chime, and clean-amp **power headroom** (per-model `ampPowerKnee`
+  so JC-120/Twin stay clean at a hot input). It also strengthened
+  `tools/dsp_sim` into a comprehensive problem-detector (rig amp->cab chains,
+  HF-slope, muffled/harsh + clean-distortion detectors, all-model targets):
+  28/28 EQ + 7/7 distortion + 6/6 amps-clean vs `targets.py`. Built timing-clean
+  (WNS `+0.639`, D109 CDC pair `+1.415` / `+6.782`), deployed, PL-smoked at
+  ~96.1 kHz, bench-accepted ("合格"), merged to main. Supersedes b3dcab00
+  (`55ef823`) and D131 (`fdab62d5`); roll back via `git checkout 55ef823 --
+  hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9` (D131) + redeploy. NO
+  board-audio capture exists, so "vs real hardware" = vs the circuit-analysis
+  `targets.py`; bypass bit-exact is the only board-audio anchor. See
+  `CURRENT_STATE.md`, `REALISM_ALL_EFFECTS_SIM_SURVEY.md`, `BASELINES.md`.
 - The DSP runs in a **33.33 MHz clock-domain island** (D94; was 50 MHz at D75
   and 40 MHz at D89). Only `clash_lowpass_fir_0` is clocked by
   `FCLK_CLK1 = 33.33 MHz`; the rest of the
@@ -209,10 +212,9 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 - Never break the bit-bypass property: every effect stage must produce
   output equal to its input when its enable bit is clear, sample-exact.
 - Recent D109+ builds are timing-clean, but a clean timing summary is still not
-  an acceptance signal by itself. New DSP logic must be carefully pipelined and
-  bench-listened for bypass artifacts; D119 is timing-clean and file-synced but
-  still waits on PL smoke and ear-bench acceptance after the board is reachable
-  again.
+  an acceptance signal by itself. New DSP logic must be carefully pipelined,
+  programmatically smoked, and bench-listened for bypass artifacts before it
+  supersedes D131.
 - Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
   touching `LowPassFir.hs`, `block_design.tcl`, or any
   `axi_gpio_*` topology.
