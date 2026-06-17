@@ -58,6 +58,21 @@ ampCharForModel idx = case idx of
   5 -> 246   -- TriAmp Mk3    : modern high-gain peak
   _ -> 18    -- 6/7 reserved -> safe (JC-120)
 
+-- | Per-model power-stage soft-clip ceiling ("クリーン用パワーヘッドルーム",
+-- 2026-06-17). The power / resonance / master softClipK stages model power-amp
+-- compression at a shared ~3.3-3.4M knee, which makes even the CLEAN amps break
+-- up at a hot input (the ear-bench "クリーンでも歪む"). A real clean amp has huge
+-- headroom: JC-120 is solid-state (no power-amp sag), Twin blackface is a big
+-- clean platform. Raise their power knee so they stay clean to a much hotter
+-- signal; the high-gain models KEEP their `base` knee (their power amp SHOULD
+-- compress/sag). `base` is each stage's existing gain-model value so those amps
+-- stay byte-identical. Constant/mux only (softClipK = compare+shift, no new DSP).
+ampPowerKnee :: Sample -> Unsigned 3 -> Sample
+ampPowerKnee base idx = case idx of
+  0 -> 6_800_000   -- JC-120 : SS, huge clean headroom (waveshape clean-knee is 7.5M)
+  1 -> 4_600_000   -- Twin   : blackface clean platform, more headroom
+  _ -> base        -- AC30/Rockerverb/JCM800/TriAmp : keep power-amp compression
+
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
 -- darker / less fizz. Indexed by ``ampModelIdxF`` directly.
 -- 96 kHz: the ampPreLowpass base/darken tables are recomputed (bilinear) so the

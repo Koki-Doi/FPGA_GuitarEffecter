@@ -323,6 +323,35 @@ presence. Knob caveats: PRESENCE/RESONANCE audible-but-modest; cab AIR is
 move release-TIME which the per-band-LEVEL metric does not see (NS is
 bench-accepted).
 
+## Metal full saturation + clean power-headroom (2026-06-17, post-acceptance)
+
+User asked to take on the two items previously deferred as "new-stage". Both
+turned out to be achievable as **placement-safe constant/mux changes** (no new
+multiply/stage):
+
+- **Clean power-headroom ("クリーン用パワーヘッドルーム")**: the power / resonance /
+  master `softClipK` stages compressed at a SHARED ~3.3-3.4M knee, so even the
+  CLEAN amps broke up at a hot input. New `ampPowerKnee base idx` (Models.hs):
+  JC-120 6.8M (SS, huge headroom -- its waveshape clean-knee is already 7.5M),
+  Twin 4.6M, the high-gain models keep `base` (byte-identical -- their power amp
+  SHOULD compress). Offline: **JC-120 clean THD @0.20 FS 24.7% -> 4.6%** (and
+  ~0% at a normal 0.12 FS); gain amps unchanged.
+- **Metal full saturation ("完全飽和")**: the os4x hard-clip floor 1.05M -> 600k
+  (+ steeper slope) = the clip flattens nearly the whole waveform at EVERY
+  playing level (drive curve now 18-21% THD from -36 to -6 dBFS, was 1-19%), and
+  the post-LPF base 15 -> 38 (~3.2 kHz) lets the 3rd/5th harmonic through for
+  audibly more grind. Because the clip is the 4x-OVERSAMPLED one, the extra
+  harmonics are anti-aliased (fizz stays -19.5 dB). sustain 1.99x, mid-boost
+  @800 preserved. NOTE the 1 kHz-sine THD CEILING is still ~21% -- a square
+  through any guitar-appropriate (<~3.5 kHz) post-LPF caps there; exceeding it
+  needs a fizzy >4 kHz corner. So "完全飽和" = max DENSITY (clips at all levels)
+  + as much audible harmonic as a non-fizzy MT-2 allows. Brighter than the old
+  dark voicing (intentional, per the user's repeated "more 歪"; TONE knob darkens).
+
+Regression after both: measure --check **28/28**, dist_eval **7/7 + 6/6 clean**.
+Both placement-safe (per-model mux + constants); built/deployed separately on
+branch `feature/metal-clean-headroom`.
+
 ## Reproduce
 
 ```sh
