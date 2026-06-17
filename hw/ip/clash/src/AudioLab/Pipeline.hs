@@ -307,17 +307,28 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
       mapPipe <$> (bigMuffToneFrame <$> bigMuffTonePrev) <*> bigMuffScoopRecPipe
   bigMuffLevelPipe = register Nothing (mapPipe bigMuffLevelFrame <$> bigMuffTonePipe)
 
-  -- fuzz_face (4 stages: pre, asym clip with dynamic bias, tone+state, level).
+  -- fuzz_face (6 stages: pre, asym clip with dynamic bias, broad mid-hump
+  -- biquad, tone+state, level).
   -- ffBiasEnv (realism item 5b) is a peak-follower of the post-pre-gain level,
   -- fed into the clip so the knees drift with how hard you play. Resets to 0
   -- on bypass (bit-exact OFF). No multiply -> no new DSP.
   fuzzFacePrePipe = register Nothing (mapPipe fuzzFacePreFrame <$> bigMuffLevelPipe)
   ffBiasEnv = register 0 (fuzzFaceBiasEnvNext <$> ffBiasEnv <*> fuzzFacePrePipe)
   fuzzFaceClipPipe = register Nothing (mapPipe <$> (fuzzFaceClipFrame <$> ffBiasEnv) <*> fuzzFacePrePipe)
+  ffMidX1 = register 0 (delayNext <$> ffMidX1 <*> (frameOr monoSample 0 <$> fuzzFaceClipPipe) <*> fuzzFaceClipPipe)
+  ffMidX2 = register 0 (delayNext <$> ffMidX2 <*> ffMidX1 <*> fuzzFaceClipPipe)
+  fuzzFaceMidFfPipe =
+    register Nothing $
+      mapPipe <$> (fuzzFaceMidFeedforwardFrame <$> ffMidX1 <*> ffMidX2) <*> fuzzFaceClipPipe
+  ffMidY1 = register 0 (frameOr monoSample <$> ffMidY1 <*> fuzzFaceMidRecPipe)
+  ffMidY2 = register 0 (delayNext <$> ffMidY2 <*> ffMidY1 <*> fuzzFaceMidRecPipe)
+  fuzzFaceMidRecPipe =
+    register Nothing $
+      mapPipe <$> (fuzzFaceMidRecursiveFrame <$> ffMidY1 <*> ffMidY2) <*> fuzzFaceMidFfPipe
   fuzzFaceTonePrev = register 0 (frameOr monoEqHighLp <$> fuzzFaceTonePrev <*> fuzzFaceTonePipe)
   fuzzFaceTonePipe =
     register Nothing $
-      mapPipe <$> (fuzzFaceToneFrame <$> fuzzFaceTonePrev) <*> fuzzFaceClipPipe
+      mapPipe <$> (fuzzFaceToneFrame <$> fuzzFaceTonePrev) <*> fuzzFaceMidRecPipe
   fuzzFaceLevelPipe = register Nothing (mapPipe fuzzFaceLevelFrame <$> fuzzFaceTonePipe)
 
   -- Output of the new pedal section feeds the rest of the chain.

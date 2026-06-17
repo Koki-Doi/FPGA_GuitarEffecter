@@ -470,8 +470,8 @@ bigMuffLevelFrame f =
   -- Output safety knee leaves sustain but avoids level-stage collapse.
   safetyKnee = 3_100_000 :: Sample
 
--- ---- fuzz_face (Fuzz Face style; 4 stages: pre-gain, asym clip,
---                tone, level+safety) ----------------------------------
+-- ---- fuzz_face (Fuzz Face style; 6 stages: pre-gain, asym clip,
+--                mid-hump biquad, tone, level+safety) ------------------
 --
 -- Voiced for raw, asymmetric fuzz: the pre stage already has a hot
 -- floor so even DRIVE=0 produces some breakup, the clip stage uses
@@ -524,8 +524,35 @@ fuzzFaceClipFrame env f =
   -- Sustain/saturation pass (dist_eval: sustain only 1.12x, THD max 34%): lower
   -- knees so a real-Fuzz-Face note holds + saturates more (cleanup via the bias
   -- envelope is preserved -- biasShift still opens the knees at low playing level).
-  kneeP = 1_400_000 - biasShift :: Sample
-  kneeN = 800_000 + (biasShift `shiftR` 1) :: Sample
+  kneeP = 1_250_000 - biasShift :: Sample
+  kneeN = 700_000 + (biasShift `shiftR` 1) :: Sample
+
+-- Broad Fuzz-Face transistor / pickup-loading voice peak. The previous
+-- Fuzz Face curve was intentionally warm but almost flat, so it passed the
+-- old low-vs-mid target while still missing the "vocal" mid focus players
+-- expect from a real two-transistor fuzz into a guitar pickup. This post-clip
+-- peaking biquad adds a broad +3 dB hump around 900 Hz before the round tone
+-- LPF. It is a designed RBJ target curve at 96 kHz, not a copied schematic or
+-- VST coefficient table. Pipeline-split like the Big Muff / amp biquads so the
+-- feedback path closes with only two multiplies.
+fuzzFaceMidFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
+fuzzFaceMidFeedforwardFrame x1 x2 f =
+  setMonoAcc3 (if on then ff else 0) f
+ where
+  on = fuzzFaceOn f
+  x = monoSample f
+  ff =
+    mulS16 x 16632
+      + mulS16 x1 (-31511)
+      + mulS16 x2 14933 :: Wide
+
+fuzzFaceMidRecursiveFrame :: Sample -> Sample -> Frame -> Frame
+fuzzFaceMidRecursiveFrame y1 y2 f =
+  setMonoSample (if on then y else monoSample f) f
+ where
+  on = fuzzFaceOn f
+  -- a1 = -31511, a2 = 15181; fAcc3L holds the feedforward sum.
+  y = satShift14 (fAcc3L f + mulS16 y1 31511 - mulS16 y2 15181)
 
 fuzzFaceToneFrame :: Sample -> Frame -> Frame
 fuzzFaceToneFrame prevLp f =
@@ -533,12 +560,10 @@ fuzzFaceToneFrame prevLp f =
  where
   on = fuzzFaceOn f
   tone = ctrlA (fDist f)
-  -- "Round vs. bright", still rolling off the very top. Re-collation: a real Fuzz
-  -- Face is warmer / rounder than our near-flat measurement; darken the top a
-  -- touch (base 44->38). (A full Fuzz-Face mid-hump needs a new biquad stage --
-  -- deferred to its own placement budget; the dynamic Ge bias already models the
-  -- gating/cleanup character.)
-  alpha = 38 + (tone `shiftR` 1)
+  -- "Round vs. bright", still rolling off the very top. The new mid-hump stage
+  -- boosts the 900 Hz fundamental region, so the post tone LPF is opened a bit
+  -- to keep the transistor fuzz edge / THD visible without adding >5 kHz fizz.
+  alpha = 46 + (tone `shiftR` 1)
   x = monoSample f
   lp = onePoleU8 alpha prevLp x
 
@@ -551,4 +576,3 @@ fuzzFaceLevelFrame f =
   afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
   -- Output safety knee avoids gated collapse at high LEVEL.
   safetyKnee = 3_000_000 :: Sample
-

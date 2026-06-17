@@ -6602,6 +6602,52 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D135 — Large non-IR realism candidate (Fuzz Face mid-hump + amp/cab character); deployed/smoked, bench pending (`533d5869`)
+
+- **Decision.** User explicitly authorized a branch and all large real-amp /
+  effect / cabinet changes except IR convolution. Treat this as a deployed
+  candidate, not an accepted baseline, until the user bench-listens safe bypass
+  and the touched tones. Current accepted baseline remains D134 (`f62f132`, bit
+  `58b6ee84...`).
+- **DSP changes.** Fuzz Face now has a broad 900 Hz mid-hump biquad in the
+  Distortion pipeline, tighter asymmetric clip knees, and a more open tone LPF.
+  AC30/JCM800 `ampScoop` voicings are stronger, Amp `MIDDLE` range is more
+  audible, AC30/JCM800 get model-local presence boost, and AC30 gets slightly
+  higher clean power headroom. Cab adds a non-IR body tap from the existing
+  short-FIR accumulator so Open/British/Closed have more cabinet body without
+  convolution. `tools/dsp_sim/targets.py` now expects the Fuzz Face mid peak;
+  `golden_vectors.json` was re-blessed for intentional DSP changes.
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO byte /
+  address change, no topEntity port change, no AXI topology change, and no
+  remote git operation. Clash/VHDL/IP/bit/hwh were regenerated because DSP
+  behaviour changed.
+- **Verification.** Offline suite passed before build: `measure.py --check`
+  28/28, `dist_eval.py --check` 7/7 pedals + 6/6 clean amps,
+  `dynamics_eval.py --check` 5/5, and `knobcheck.py --all` had no
+  barely-audible flags. Regression/tool tests passed:
+  `DSP_SIM_TESTS=1 pytest tests/test_dsp_sim_regression.py` 20 passed,
+  `pytest tests/test_dsp_sim_tools.py tests/test_overlay_controls.py` 136
+  passed, plus `compileall` and `git diff --check`.
+- **Build / deploy.** `make -C hw/ip` and full Vivado build passed. Final
+  routed timing fully MET: WNS `+0.643 ns`, TNS `0.000`, WHS `+0.018 ns`,
+  THS `0.000`, route errors `0`; bus-skew constraints met with minimum slack
+  `+8.099 ns`. bit/hwh md5
+  `533d586901dc3669285a49c6d82bab9f` /
+  `731517487c6218f0e181c2b74485d7a6`.
+  `scripts/deploy_to_pynq.sh` completed; board copies under
+  `/home/xilinx/Audio-Lab-PYNQ/`, package `audio_lab_pynq/bitstreams/`, and
+  `/home/xilinx/pynq/overlays/audio_lab/` md5-match local.
+- **Smoke / status.** `AudioLabOverlay()` loaded the new bit, ADC HPF stayed
+  `True`, `R19_ADC_CONTROL == 0x23`, and required IPs were present. The
+  footswitch IP appears in HWH as `fsw_in_0/s_axi` at `0x43d50000`.
+  Pmod I2S2 mode 2 smoke ran for 3 s with `FRAME_COUNT +288374` (~96 kHz),
+  `CLIP_COUNT 0`, and ADC samples observed; Pmod was then returned to
+  `MODE=3` mute. **Bench acceptance is pending.** Branch
+  `feature/realism-large-non-ir`; do not merge to `main` or update
+  `baselines.json`/`BASELINES.md` until the user confirms the ear-bench.
+  Rollback to D134 with `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/`
+  + deploy.
+
 ## D134 — Sim-scale all-effect objective evaluation + knob-visibility fixes; bench-ACCEPTED, merged (`58b6ee84`, current accepted baseline)
 
 - **Decision.** User asked to scale the simulation further, evaluate every

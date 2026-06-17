@@ -148,10 +148,14 @@ cabIrFrame f =
   airSel = cabAirSel (ctrlD (fCab f))
   modelSel :: Unsigned 2
   modelSel = resize (model `shiftR` 6)
+  -- Non-IR mic/body voicing: real close-mic guitar cabs carry more low-mid
+  -- wood/cone body than the short early-reflection core produced. Add a
+  -- model-specific body tap before the speaker FIR. This is not convolution
+  -- and does not use captured IR data; it reuses the existing body accumulator.
   bodyExtra = case modelSel of
-    0 -> fAcc2L f `shiftR` 3
-    1 -> fAcc2L f
-    _ -> 0
+    0 -> fAcc2L f `shiftR` 2
+    1 -> fAcc2L f + (fAcc2L f `shiftR` 1)
+    _ -> fAcc2L f `shiftR` 1
   mainDark = satShift8 (fAccL f + fAcc2L f + fAcc3L f + bodyExtra)
   presenceS = fEqLowL f
   hfResWide :: Wide
