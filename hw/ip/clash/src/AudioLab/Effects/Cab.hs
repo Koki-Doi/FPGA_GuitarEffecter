@@ -23,6 +23,9 @@ cabPresenceKnee 0 = 3_600_000
 cabPresenceKnee 1 = 3_000_000
 cabPresenceKnee _ = 2_400_000
 
+cabAirSel :: Unsigned 8 -> Unsigned 2
+cabAirSel air = if air < 86 then 0 else if air < 171 then 1 else 2
+
 cabCoeff :: Unsigned 8 -> Unsigned 8 -> Unsigned 2 -> Signed 10
 cabCoeff model air index =
   case modelSel of
@@ -32,58 +35,58 @@ cabCoeff model air index =
  where
   modelSel = model `shiftR` 6
   airSel :: Unsigned 2
-  airSel = if air < 86 then 0 else if air < 171 then 1 else 2
+  airSel = cabAirSel air
   openBack i =
     case airSel of
       0 -> case i of
-        0 -> 72
-        1 -> 116
-        2 -> 48
-        _ -> 20
+        0 -> 58
+        1 -> 112
+        2 -> 62
+        _ -> 24
       1 -> case i of
         0 -> 82
         1 -> 114
         2 -> 42
         _ -> 18
       _ -> case i of
-        0 -> 90
-        1 -> 116
-        2 -> 34
-        _ -> 16
+        0 -> 112
+        1 -> 108
+        2 -> 24
+        _ -> 12
   british i =
     case airSel of
       0 -> case i of
-        0 -> 36
-        1 -> 108
-        2 -> 82
-        _ -> 34
+        0 -> 22
+        1 -> 102
+        2 -> 94
+        _ -> 42
       1 -> case i of
         0 -> 46
         1 -> 106
         2 -> 76
         _ -> 32
       _ -> case i of
-        0 -> 54
-        1 -> 106
-        2 -> 70
-        _ -> 30
+        0 -> 72
+        1 -> 110
+        2 -> 56
+        _ -> 22
   closedBack i =
     case airSel of
       0 -> case i of
-        0 -> 10
-        1 -> 68
-        2 -> 100
-        _ -> 86
+        0 -> 4
+        1 -> 62
+        2 -> 108
+        _ -> 90
       1 -> case i of
         0 -> 18
         1 -> 70
         2 -> 96
         _ -> 80
       _ -> case i of
-        0 -> 26
-        1 -> 72
-        2 -> 92
-        _ -> 74
+        0 -> 42
+        1 -> 76
+        2 -> 82
+        _ -> 64
 
 cabProductsFrame ::
   Sample -> Sample -> Sample ->
@@ -142,6 +145,7 @@ cabIrFrame f =
  where
   on = flag7 (fGate f)
   model = ctrlC (fCab f)
+  airSel = cabAirSel (ctrlD (fCab f))
   modelSel :: Unsigned 2
   modelSel = resize (model `shiftR` 6)
   bodyExtra = case modelSel of
@@ -154,9 +158,18 @@ cabIrFrame f =
   hfResWide = resize (monoSample f) - resize mainDark
   hfResSat = satWide hfResWide
   fizzSub = case modelSel of
-    0 -> hfResSat `shiftR` 3
-    1 -> hfResSat `shiftR` 3
-    _ -> (hfResSat `shiftR` 3) + (hfResSat `shiftR` 4)
+    0 -> case airSel of
+      0 -> hfResSat `shiftR` 2
+      1 -> hfResSat `shiftR` 3
+      _ -> hfResSat `shiftR` 4
+    1 -> case airSel of
+      0 -> (hfResSat `shiftR` 2) + (hfResSat `shiftR` 4)
+      1 -> hfResSat `shiftR` 3
+      _ -> hfResSat `shiftR` 4
+    _ -> case airSel of
+      0 -> (hfResSat `shiftR` 2) + (hfResSat `shiftR` 3)
+      1 -> (hfResSat `shiftR` 3) + (hfResSat `shiftR` 4)
+      _ -> hfResSat `shiftR` 3
   blendWide :: Wide
   blendWide = resize mainDark + resize presenceS - resize fizzSub
   wet = satWide blendWide

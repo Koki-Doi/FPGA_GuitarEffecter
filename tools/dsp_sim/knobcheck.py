@@ -29,8 +29,9 @@ knob on the GUI/encoder and check the same bands move by a comparable amount.
 The default transition is the usable range 25->75 (non-degenerate, readable);
 use --from 0 --to 100 for the full extremes. Input per effect (96 kHz mono,
 level-recorded so the board can be driven the same way): a 0.15-FS broadband
-multitone for tone/drive/level effects, a 220 Hz decaying pluck for the dynamics
-(comp / NS), a noise burst + tail for reverb.
+multitone for tone/drive/level effects, a 220 Hz decaying pluck for compressor,
+a faster 220 Hz pluck with a tail-window metric for Noise Suppressor, and a
+noise burst + tail for reverb.
 """
 import argparse
 import concurrent.futures
@@ -62,11 +63,14 @@ def in_multitone():
     return measure.multitone(FS, freqs, 4096, 0.15)        # drives mild clipping + shows tone
 def in_pluck():
     return sig.decaying_sine(FS, 220, 0.35, 0.12, sig.DRIVE)   # comp/NS dynamic action
+def in_ns_pluck():
+    return sig.decaying_sine_with_floor(FS, 220, 0.24, 0.045, sig.DRIVE)
 def in_reverb():
     x, _ = reverb.burst_input(FS, 0.6, level=0.45)             # burst + tail
     return x
 
-INPUTS = {"multitone": in_multitone, "pluck": in_pluck, "reverb": in_reverb}
+INPUTS = {"multitone": in_multitone, "pluck": in_pluck, "ns_pluck": in_ns_pluck,
+          "reverb": in_reverb}
 
 
 # ---- per-band level metric ---------------------------------------------------
@@ -85,6 +89,27 @@ def band_levels_db(y):
 
 def overall_db(y):
     return 20.0 * np.log10((np.sqrt(np.mean(y.astype(np.float64) ** 2)) + 1.0) / FS24)
+
+
+def metric_view(name, label, y):
+    """Pick the part of the render that carries the knob's meaning.
+
+    Noise Suppressor DECAY/DAMP act after the note falls below threshold. A
+    whole-render RMS is dominated by the preserved attack and falsely marks
+    those knobs as inert, so measure the closing tail instead.
+    """
+    if name == "noise_sup":
+        if label == "DECAY":
+            start = int(0.105 * FS)
+            stop = int(0.170 * FS)
+        elif label == "DAMP":
+            start = int(0.150 * FS)
+            stop = int(0.235 * FS)
+        else:
+            start = int(0.095 * FS)
+            stop = int(0.220 * FS)
+        return y[start:min(stop, len(y))]
+    return y
 
 
 # ---- effect definitions (enable, base params, word builder, input, knobs) ----
@@ -126,8 +151,8 @@ def _eff(cm):
             base=dict(decay=70, tone=65, mix=90),
             word=lambda p: {"reverb": cm.reverb_word(p["decay"], p["tone"], p["mix"])},
             knobs=[("DECAY", "decay"), ("TONE", "tone"), ("MIX", "mix")]),
-        "noise_sup": dict(gate=dict(noise_gate_on=True), input="pluck",
-            base=dict(threshold=35, decay=40, damp=70),
+        "noise_sup": dict(gate=dict(noise_gate_on=True), input="ns_pluck",
+            base=dict(threshold=70, decay=40, damp=70),
             word=lambda p: {"ns": cm.noise_suppressor_word(p["threshold"], p["decay"], p["damp"])},
             knobs=[("THRESHOLD", "threshold"), ("DECAY", "decay"), ("DAMP", "damp")]),
         "compressor": dict(gate=dict(), input="pluck",
@@ -169,8 +194,10 @@ def check_effect(cm, name, eff, lo, hi, jobs):
     print("== %s ==  (input %s, %d->%d)" % (name.upper(), eff["input"], lo, hi))
     print("  %-11s %s | overall" % ("knob band dB:", hdr))
     for label, key in eff["knobs"]:
-        d = band_levels_db(ren[label][hi]) - band_levels_db(ren[label][lo])
-        dov = overall_db(ren[label][hi]) - overall_db(ren[label][lo])
+        y_hi = metric_view(name, label, ren[label][hi])
+        y_lo = metric_view(name, label, ren[label][lo])
+        d = band_levels_db(y_hi) - band_levels_db(y_lo)
+        dov = overall_db(y_hi) - overall_db(y_lo)
         cells = "  ".join("%+6.1f" % v for v in d)
         flag = "  <== barely audible" if (np.max(np.abs(d)) < QUIET and abs(dov) < QUIET) else ""
         print("  %-11s %s | %+6.1f%s" % (label, cells, dov, flag))

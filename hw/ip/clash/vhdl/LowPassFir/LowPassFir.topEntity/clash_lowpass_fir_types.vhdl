@@ -44,6 +44,14 @@ package clash_lowpass_fir_types is
   end record;
   subtype rst_AudioDomain is std_logic;
   subtype clk_AudioDomain is std_logic;
+  type AmpModel is record
+    AmpModel_sel0_amChar : unsigned(7 downto 0);
+    AmpModel_sel1_amDarken : unsigned(7 downto 0);
+    AmpModel_sel2_amDriveDarken : unsigned(7 downto 0);
+    AmpModel_sel3_amSecondBonus : unsigned(8 downto 0);
+    AmpModel_sel4_amDrivePos : signed(24 downto 0);
+    AmpModel_sel5_amDriveNeg : signed(24 downto 0);
+  end record;
   type array_of_signed_24 is array (integer range <>) of signed(23 downto 0);
   type Tuple2_7 is record
     Tuple2_7_sel0_array_of_signed_24_0 : array_of_signed_24(0 to 11);
@@ -148,6 +156,8 @@ package clash_lowpass_fir_types is
   function fromSLV (slv : in std_logic_vector) return Tuple2;
   function toSLV (p : Tuple4) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return Tuple4;
+  function toSLV (p : AmpModel) return std_logic_vector;
+  function fromSLV (slv : in std_logic_vector) return AmpModel;
   function toSLV (value :  array_of_signed_24) return std_logic_vector;
   function fromSLV (slv : in std_logic_vector) return array_of_signed_24;
   function toSLV (p : Tuple2_7) return std_logic_vector;
@@ -311,6 +321,15 @@ package body clash_lowpass_fir_types is
   alias islv : std_logic_vector(0 to slv'length - 1) is slv;
   begin
     return (fromSLV(islv(0 to 23)),fromSLV(islv(24 to 47)),fromSLV(islv(48 to 71)),fromSLV(islv(72 to 95)));
+  end;
+  function toSLV (p : AmpModel) return std_logic_vector is
+  begin
+    return (toSLV(p.AmpModel_sel0_amChar) & toSLV(p.AmpModel_sel1_amDarken) & toSLV(p.AmpModel_sel2_amDriveDarken) & toSLV(p.AmpModel_sel3_amSecondBonus) & toSLV(p.AmpModel_sel4_amDrivePos) & toSLV(p.AmpModel_sel5_amDriveNeg));
+  end;
+  function fromSLV (slv : in std_logic_vector) return AmpModel is
+  alias islv : std_logic_vector(0 to slv'length - 1) is slv;
+  begin
+    return (fromSLV(islv(0 to 7)),fromSLV(islv(8 to 15)),fromSLV(islv(16 to 23)),fromSLV(islv(24 to 32)),fromSLV(islv(33 to 57)),fromSLV(islv(58 to 82)));
   end;
   function toSLV (value :  array_of_signed_24) return std_logic_vector is
     alias ivalue    : array_of_signed_24(1 to value'length) is value;

@@ -90,6 +90,21 @@ def decaying_sine(fs, f, seconds, tau, level):
     return _q24(np.sin(2 * np.pi * f * t) * env, level)
 
 
+def decaying_sine_with_floor(fs, f, seconds, tau, level, floor_level=0.006):
+    """Pluck plus deterministic broadband floor for noise-suppressor tests.
+
+    A gate/suppressor's DECAY and DAMP controls are judged on what happens after
+    the note falls below threshold. A pure sine tail can hide that behaviour in
+    narrowband nulls, so add a low-level deterministic noise floor that the
+    suppressor should close against.
+    """
+    x = decaying_sine(fs, f, seconds, tau, level)
+    rng = np.random.default_rng(20_260_617)
+    floor = _q24(rng.standard_normal(len(x)), floor_level)
+    y = x + floor
+    return np.clip(y, -(1 << 23), (1 << 23) - 1).astype(np.int64)
+
+
 # Fixed canonical catalogue: name -> (callable, recorded level, note).
 # These are the step-2 regression anchors. Changing a param here is a
 # measurement-condition change and must be recorded.
@@ -102,6 +117,8 @@ def catalogue(fs=FS_DEFAULT):
         "two_tone":      (two_tone(fs, 1000, 1100, 0.5, DRIVE),      DRIVE,  "intermodulation / non-harmonic products"),
         "impulse":       (impulse(fs, 0.5, 0.50),                    0.50,   "reverb tail / cab ring / echo density"),
         "decay_220":     (decaying_sine(fs, 220, 1.5, 0.30, DRIVE),  DRIVE,  "comp release / NS close behaviour"),
+        "ns_decay_floor": (decaying_sine_with_floor(fs, 220, 0.24, 0.045, DRIVE),
+                           DRIVE, "NS close/release against deterministic floor"),
     }
 
 

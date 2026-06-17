@@ -6,7 +6,9 @@ not get removed even when superseded — they get updated.
 
 Baseline statements inside older ADRs are historical unless the newest ADRs and
 `CURRENT_STATE.md` say otherwise. The current canonical deployed baseline is
-D131, tracked in `baselines.json` / `BASELINES.md`.
+REALISM-0617b / D133 (`21c0b5a`, bit `54f7f547...`), tracked in
+`docs/ai_context/baselines.json` / `docs/ai_context/BASELINES.md`; D134 is an
+uncommitted deployed candidate until bench-accepted.
 
 ---
 
@@ -6601,7 +6603,53 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D133 — Metal full saturation + clean-amp power headroom; bench-ACCEPTED, merged (`54f7f547`, current baseline)
+## D134 — Sim-scale all-effect objective evaluation + knob-visibility fixes; built/deployed candidate, bench PENDING
+
+- **Decision.** User asked to scale the simulation further, evaluate every
+  effect with it, and fix every item that should be fixed. Treat this as an
+  offline-objective filter plus a deployed candidate, not as an accepted
+  sound baseline until the user's bench check passes.
+- **Sim expansion.** `tools/dsp_sim/dynamics_eval.py --check` now evaluates
+  Compressor, Noise Suppressor, Wah, Reverb, and representative chain safety.
+  Shared metrics moved into `tools/dsp_sim/metrics.py`; `run_sim.py` handles
+  short rendered inputs; `measure.py --config rat` now uses the dedicated RAT
+  stage; `signals.py` adds a Noise Suppressor decay-floor stimulus; and
+  `knobcheck.py --all` uses effect-appropriate windows/thresholds so dynamics
+  controls are judged after the relevant envelope has time to move.
+- **Survey result.** The scaled sweep found no remaining `<== barely audible>`
+  knobs after fixing the only flagged areas: Amp `PRESENCE` / `RESONANCE`,
+  Cab `AIR`, and Noise Suppressor `DECAY` / `DAMP`.
+- **DSP fixes.** All fixes stay inside existing stages and existing control
+  bytes. Amp presence/resonance shelf sum is louder by one shift in
+  `Amp/Tone.hs`. Cab AIR uses low/mid/high coefficient buckets plus an
+  AIR-dependent HF-residual term in `Cab.hs`; the default AIR=50 bucket keeps
+  the D133 tone targets. Noise Suppressor closes deeper and DECAY spans wider
+  by changing closed gain and close-step shifts in `NoiseSuppressor.hs`. No
+  GPIO, address, `block_design.tcl`, XDC, topEntity port, effect order, or new
+  pipeline stage changed.
+- **Verification.** `measure.py --check` 28/28 PASS; `dist_eval.py --check`
+  7/7 pedals + 6/6 clean amps PASS; `dynamics_eval.py --check` 5/5 PASS;
+  `knobcheck.py --all` has no barely-audible flags; `pytest
+  tests/test_dsp_sim_tools.py tests/test_overlay_controls.py` 136 passed;
+  `DSP_SIM_TESTS=1 pytest tests/test_dsp_sim_regression.py` 20 passed after
+  re-blessing the six intentional Amp vectors. `compileall` and
+  `git diff --check` passed.
+- **Build / deploy.** Clash/IP and full Vivado rebuild passed. Timing fully
+  MET: WNS `+0.939 ns`, TNS `0.000`, WHS `+0.014 ns`, THS `0.000`, route
+  errors `0`; D109 CDC pair `clk_fpga_0 -> clk +2.347 ns` /
+  `clk -> clk_fpga_0 +6.527 ns`; bus-skew min slack `+8.384 ns`. bit/hwh md5
+  `58b6ee84a2f0c360da97c86e5a971c85` /
+  `c41a29b65de2b0debb6de8509468021a`. `scripts/deploy_to_pynq.sh` completed;
+  all five PYNQ bit/hwh sites md5-match local.
+- **Acceptance status.** Programmatic smoke loaded the new PL, confirmed
+  required IPs, Pmod mode-2 frame cadence near 96 kHz, ADC HPF `True`, and
+  `R19_ADC_CONTROL == 0x23`. The smoke input was full-scale/clipping
+  (`PEAK_ABS_LEFT/RIGHT=8388607`, rising `CLIP_COUNT`), so it is not clean
+  audio acceptance. The board was left in Pmod `MODE=3` mute. D133
+  (`21c0b5a`, bit `54f7f547...`) remains the accepted baseline until D134 gets
+  safe-bypass and touched-effect ear-bench acceptance.
+
+## D133 — Metal full saturation + clean-amp power headroom; bench-ACCEPTED, merged (`54f7f547`, current accepted baseline)
 
 - **Decision.** Take on the two items D132 deferred as "new-stage". Both were
   achievable as placement-safe constant/mux (no new multiply/stage).

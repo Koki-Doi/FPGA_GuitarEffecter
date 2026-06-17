@@ -42,18 +42,18 @@
         },
         {
             "name": "clash_lowpass_fir_types.vhdl",
-            "sha256": "5e862a5f21bca6963d5d80e1f3d88aca72538310f32e6f79cc4d985ef7e8a732"
+            "sha256": "4f916ec3cc844d2b42542f209143d6f15c7a74150193ad2819ababb145aee0cf"
         },
         {
             "name": "clash_lowpass_fir.vhdl",
-            "sha256": "67428a918157cdc43ce01f40d9eefe6a5334badc31f3b37ef5d1385d8195913c"
+            "sha256": "358d2025a2915de018af2826d3b583946bfd6dc5a26a4ed4aca78ee69d71c572"
         }
     ],
     "flags": [
         20,
         20
     ],
-    "hash": "71ddea9ffed6996536ac85ed70932019dc6427b60ba2fe58606d6be812eef9dc",
+    "hash": "cc44d9221db3b79cf50525619d300dbc276e909479760a1109c33040aa72fb4d",
     "top_component": {
         "name": "clash_lowpass_fir",
         "ports_flat": [

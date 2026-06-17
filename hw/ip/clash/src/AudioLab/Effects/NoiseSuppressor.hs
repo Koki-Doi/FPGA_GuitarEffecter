@@ -82,28 +82,30 @@ nsModeByte = ctrlD
 nsThresholdSample :: Ctrl -> Sample
 nsThresholdSample c = resize (asSigned9 (nsThresholdByte c)) `shiftL` 13
 
--- closed_gain = ((255 - damp_byte)^2) >> 5 -- pre-computed mapping that
+-- closed_gain = ((255 - damp_byte)^2) >> 6 -- pre-computed mapping that
 -- gives:
---   damp byte = 0   -> ~ 2032 / 4095  (about 50 % of unity)
---   damp byte = 127 -> ~  512 / 4095  (about 12.5 %)
+--   damp byte = 0   -> ~ 1016 / 4095  (about 25 % of unity)
+--   damp byte = 127 -> ~  256 / 4095  (about 6.25 %)
 --   damp byte = 255 -> 0              (full mute)
 -- One Unsigned 8 x Unsigned 8 multiply, one shift -- cheap.
 nsClosedGain :: Unsigned 8 -> GateGain
 nsClosedGain damp =
   let inv8 = (255 :: Unsigned 8) - damp
       sq16 = (resize inv8 :: Unsigned 16) * (resize inv8 :: Unsigned 16)
-  in resize (sq16 `shiftR` 5) :: GateGain
+  in resize (sq16 `shiftR` 6) :: GateGain
 
--- close_step = max(1, (255 - decay_byte) >> 3)
--- 96 kHz: >>3 (was >>2) halves the per-sample close step so the close TIME (ms)
--- is unchanged at 2x fs:
---   decay byte = 0   -> step 31  (full close in ~130 samples, ~1.4 ms @96k)
---   decay byte = 127 -> step 16  (~256 samples, ~2.7 ms)
---   decay byte = 255 -> step 1   (~4096 samples, ~43 ms; floored)
+-- close_step = max(1, (255 - decay_byte) >> 5)
+-- D132 widens the audible DECAY range. The earlier >>3 mapping closed in only
+-- ~2-5 ms across the normal 25->75 knob sweep, so release changes were mostly
+-- hidden behind the transient. The new range stays fast enough for a suppressor
+-- while making the tail time measurable:
+--   decay byte = 0   -> step 7  (full close in ~585 samples, ~6.1 ms @96k)
+--   decay byte = 127 -> step 4  (~1024 samples, ~10.7 ms)
+--   decay byte = 255 -> step 1  (~4096 samples, ~43 ms; floored)
 -- Linear ramp: simple, predictable, fits one register stage.
 nsCloseStep :: Unsigned 8 -> GateGain
 nsCloseStep d =
-  let raw = ((255 :: Unsigned 8) - d) `shiftR` 3
+  let raw = ((255 :: Unsigned 8) - d) `shiftR` 5
   in if raw == 0 then 1 else resize raw :: GateGain
 
 -- 96 kHz: halved (was 512) so the attack TIME is unchanged at 2x fs.
