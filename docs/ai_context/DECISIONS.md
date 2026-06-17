@@ -6602,7 +6602,66 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D137 — Clear Clean/Drive separation on all models + JC-120 output trim; deployed/smoked, bench pending (`bed234ec`)
+## D138 — Twin/Fender output boost + restored tube power-amp sustain; deployed/smoked, bench pending, ELEVATED CDC RISK (`01e296cd`)
+
+- **Decision.** User (going to sleep, "do maximum work") reported Fender (Twin)
+  too quiet vs the lineup and tube-amp sustain hard to hear; asked to find the
+  cause objectively in sim and fix. Builds on D137 (keeps its Clean/Drive
+  separation + JC trim). Deployed candidate, NOT accepted. Accepted baseline
+  remains D135 (`533d5869`, merge `765323b`).
+- **Objective findings (sim, `level_sustain.py`).** (1) Twin output -17.1 dBFS
+  Clean / -17.0 Drive = the quietest model by 2-5 dB (low makeup gain from
+  char 78 + the 400 Hz scoop). (2) Tube CLEAN sustain only 1.35-1.51x: the
+  D136/D137 clean-power bonus had raised the power / resonance-mix / master
+  `softClipK` knees so high that the tube amps stopped compressing in Clean
+  mode, removing the power-amp compression that sustains notes (the loud attack
+  soft-clips, the decaying tail recovers -> tail blooms = audible sustain).
+- **DSP changes.** (1) Twin (idx 1) ~+3.5 dB master boost in `ampMasterFrame`
+  (x1.5 via a saturating Unsigned-9 add so a hot MASTER cannot wrap; the 4.6M
+  master `softClipK` gently catches peaks so it stays clean); other models'
+  master byte-for-byte unchanged. (2) `ampCleanPowerBonus` pulled back ~half on
+  AC30/Rockerverb/JCM800/TriAmp (2_200_000/1_800_000/1_600_000 etc.) so the
+  SOFT power `softClipK` compresses again = restored sustain/bloom, while the
+  clean TONE is still held by the unchanged waveshaper clean bonus
+  (`ampCleanKneeBonus`). JC-120 (SS) and all Drive-mode voicing unchanged.
+- **Result (sim).** Twin -13.6/-13.5 (now level with the lineup: JC -14.8,
+  JCM -14.8, Rockerverb -13.9). Tube clean sustain 1.56-1.61x (was 1.46-1.51).
+  Clean THD @0.12 FS still clean: JC 0 / Twin 0 / AC30 6 / Rockerverb 10 /
+  JCM800 6 / TriAmp 4 (all under ceilings). `measure.py --check` 28/28,
+  `dist_eval.py --check` 7/7 pedals + 6/6 clean amps. Golden re-bless changed
+  ONLY `amp_twin` (Twin clean boost); `bypass` + all other amp/pedal/cab/reverb
+  goldens byte-identical -> Drive voicing + JC + bypass unchanged.
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO / address /
+  topEntity-port / AXI-topology change, no new multiplier (boost is a saturating
+  add, sustain is the existing softClipK), no remote git op. Clash/VHDL/IP/bit/
+  hwh regenerated.
+- **Build.** Safe Clash regen + full clean Vivado rebuild. Timing fully MET:
+  WNS `+0.625 ns`, TNS `0.000`, WHS `+0.018 ns`, THS `0.000`, WPWS `+2.845`,
+  route errors `0`, all constraints met. **⚠️ D109 CDC pair
+  `clk_fpga_0 -> clk +1.053 ns` / `clk -> clk_fpga_0 +6.774 ns`.** The forward
+  slack `+1.053` is the TIGHTEST in project history (D135 `+6.139` -> D137
+  `+1.710` -> D138 `+1.053`), BELOW both the D130 clean reference (`+1.251`)
+  and the D128 hiss reference (`+1.327`) -- the cumulative D137 drive-saturation
+  logic + this build's placement eroded the margin. Per
+  `project_safebypass_knifeedge_cdc_rootcause` the slack is a RISK INDICATOR,
+  not a strict predictor (non-monotonic: D130 clean at +1.251, D128 hiss at
+  +1.327), so it COULD be clean or COULD hiss -- **safe-bypass ear-check is the
+  decider and this build is higher-risk than any shipped before.** bit/hwh md5
+  `01e296cd53c9aa7fa9422a2c21cb7e22` / `8b1fba7377ab56f74782e92d8c225485`.
+  `scripts/deploy_to_pynq.sh` completed; board bit sites md5-match.
+- **Smoke / status.** `test_pmod_i2s2.py --mode dsp` loaded the new bit; Pmod
+  mode 2 ran 3 s `FRAME_COUNT +288364` (~96 kHz), sdout/bclk/lrclk alive, ADC
+  samples observed (programmatic smoke CANNOT detect the knife-edge hiss).
+  ADC HPF `True` via `download=False`; Pmod returned to `MODE=3` mute.
+  **Bench acceptance pending. PRIORITY CHECK = safe bypass (all effects off):
+  if it hisses/buzzes, this build hit the knife-edge -- roll back to D135 with
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + `bash
+  scripts/deploy_to_pynq.sh`, and the next attempt must shrink the DSP footprint
+  (the drive-saturation logic) to recover CDC margin.** Branch
+  `feature/amp-clean-headroom`; do not merge to `main` / update `baselines.json`
+  until accepted.
+
+## D137 — Clear Clean/Drive separation on all models + JC-120 output trim; superseded by D138 (`bed234ec`)
 
 - **Decision.** After D136 was deployed the user bench-reported that (a) Clean
   and Drive sounded nearly identical across all models, and (b) JC-120 ran too
