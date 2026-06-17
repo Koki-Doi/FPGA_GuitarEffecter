@@ -6602,6 +6602,64 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D136 — Amp clean-mode headroom (clean channel stays clean); deployed/smoked, bench pending (`9ffa7ff3`)
+
+- **Decision.** User reported the amp distorted too much even on the Clean
+  channel. Offline measurement confirmed it: only JC-120 (idx 0) had real clean
+  headroom (its dedicated 7.5M symmetric knee); every other model ran the
+  per-model `ampAsymClip` at full character intensity even in Clean mode plus
+  was re-clipped by the shared power / resonance-mix / master `softClipK`
+  ceilings (~3.3-3.4M), so "Clean" broke up at a realistic guitar level
+  (clean-mode THD at 0.20 FS: Twin 17% / AC30 29% / Rockerverb 32% /
+  JCM800 36% / TriAmp 23%). Treat as a deployed candidate, not an accepted
+  baseline, until the user bench-listens the clean channel and safe bypass.
+  Accepted baseline remains D135 (`533d5869`, merge `765323b`).
+- **DSP changes (Clean-mode only; Drive byte-identical).** Two per-model
+  Clean-mode-only headroom tables, both passing 0 in Drive mode so the Drive
+  voicing and every drive-knee delta are unchanged: `ampCleanKneeBonus`
+  (extra waveshaper clip-knee headroom on both clip stages, `Clip.hs`) and
+  `ampCleanPowerBonus` (extra power / resonance-mix / master `softClipK`
+  headroom, `Tone.hs`). Graded to the user's "preserve model character" choice:
+  Twin near hi-fi clean, AC30 keeps some class-A early breakup, the high-gain
+  Rockerverb/JCM800/TriAmp clean channels are usable-clean but break up when
+  pushed. New clean THD at 0.20 FS: Twin 6 / AC30 22 / Rockerverb 22 /
+  JCM800 25 / TriAmp 14; at 0.10 FS all <=2% except AC30 0%.
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO byte /
+  address change, no topEntity port change, no AXI topology change, no new
+  multiplier (knees are compare+shift), and no remote git operation.
+  Clash/VHDL/IP/bit/hwh regenerated because DSP behaviour changed.
+- **Verification (offline).** `measure.py --check` 28/28 (tone curves are
+  measured at a linear level below the clip knees, so the bonus is inert there
+  -- intended), `dist_eval.py --check` 7/7 pedals + 6/6 clean amps (clean THD
+  at 0.12 FS now JC-120 0 / Twin 0 / AC30 4 / Rockerverb 8 / JCM800 2 /
+  TriAmp 0), `dynamics_eval.py --check` 5/5, `knobcheck.py --all` no
+  barely-audible flags. **Golden regression `DSP_SIM_TESTS=1 pytest
+  tests/test_dsp_sim_regression.py` 20 passed with NO re-bless** -- the
+  Drive-mode amp goldens (AC30/Rockerverb/JCM800/TriAmp are drive_mode 1) and
+  the clean JC-120/Twin goldens are byte-for-byte unchanged at their test
+  levels, which independently confirms Drive mode is byte-identical and bypass
+  stays bit-exact. `git diff --check` clean.
+- **Build / deploy.** Safe Clash regen via `make -C hw/ip/clash regen`
+  (rm -rf vhdl/LowPassFir avoids the mtime trap; new constants present in
+  VHDL), full clean Vivado rebuild (`make clean && make`). Timing fully MET:
+  WNS `+0.597 ns`, TNS `0.000`, WHS `+0.007 ns`, THS `0.000`, WPWS `+2.845`,
+  route errors `0`; all user-specified constraints met. D109 CDC pair
+  `clk_fpga_0 -> clk +6.139 ns` / `clk -> clk_fpga_0 +5.966 ns` (comfortable,
+  low safe-bypass knife-edge risk -- but still ear-bench per the rule).
+  bit/hwh md5 `9ffa7ff3cb79bc0624bca9d6323b710a` /
+  `2cd059a7ede5ce42227788995ee88601`. `scripts/deploy_to_pynq.sh` completed;
+  all board bit sites md5-match local.
+- **Smoke / status.** `test_pmod_i2s2.py --mode dsp` loaded the new bit;
+  Pmod I2S2 mode 2 ran 3 s with `FRAME_COUNT +288365` (~96 kHz), STATUS
+  `sdout_alive=1`/`bclk_seen=1`/`lrclk_seen=1`, ADC samples observed (smoke
+  input clipped full-scale as in prior baselines -- a smoke-input level
+  artifact, not a DSP issue). ADC HPF confirmed `True`, `R19_ADC_CONTROL ==
+  0x23` via a `download=False` attach. Pmod returned to `MODE=3` mute.
+  **Bench acceptance is pending.** Branch `feature/amp-clean-headroom`; do not
+  merge to `main` or update `baselines.json`/`BASELINES.md` until the user
+  confirms the ear-bench. Rollback to D135 with
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
 ## D135 — Large non-IR realism (Fuzz Face mid-hump + amp/cab character); bench-ACCEPTED, merged (`533d5869`, merge `765323b`, current accepted baseline)
 
 - **Decision.** User explicitly authorized a branch and all large real-amp /
