@@ -6602,7 +6602,67 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D136 — Amp clean-mode headroom (clean channel stays clean); deployed/smoked, bench pending (`9ffa7ff3`)
+## D137 — Clear Clean/Drive separation on all models + JC-120 output trim; deployed/smoked, bench pending (`bed234ec`)
+
+- **Decision.** After D136 was deployed the user bench-reported that (a) Clean
+  and Drive sounded nearly identical across all models, and (b) JC-120 ran too
+  loud. Offline confirmed: the gain models' Clean was still ~11-15% THD @0.15 FS
+  (already breaking up, so the step to Drive was small), Drive was barely hotter
+  (dTHD only +12..+26, dRMS ~0/negative), and JC-120 used an identical 7.5M knee
+  in both modes (no Clean/Drive difference) while never compressing, so it ran
+  +3..+6 dB louder than the rest. Treat as a deployed candidate, not accepted,
+  until the user bench-listens Clean-vs-Drive on every model, JC level, and
+  **safe bypass** (see the CDC note below). D136/accepted-baseline D135 remain
+  the rollback targets.
+- **DSP changes.** (1) Clean channel genuinely clean: `ampCleanKneeBonus` /
+  `ampCleanPowerBonus` raised further (Clean / drive_mode 0 only). (2) Drive
+  clearly hotter: per-model asym-clip drive-knee deltas (`ampDrivePosDelta` /
+  `ampDriveNegDelta`) and `ampSecondStageDriveBonus` increased on every tube
+  model. (3) JC-120: the single 7.5M clean knee became a mode-dependent SS knee
+  `ampJc120Knee` (Clean 4.6M / Drive 3.2M) so JC has a real but still-cleanest
+  Drive breakup, plus a model-0-only ~-3.25 dB master output trim
+  (shift+subtract in `ampMasterFrame`) to level it with the lineup. Result
+  (THD @0.15 FS): Clean JC 0 / Twin 1 / AC30 8 / Rockerverb 8 / JCM800 5 /
+  TriAmp 3; Drive 17 / 15 / 31 / 35 / 38 / 26 -> dTHD +14..+33 (a clear,
+  obvious Clean->Drive step on every model incl. JC). JC clean output pulled
+  ~3 dB so it is no longer the loudest. Drive-mode-only paths keep Clean
+  intact; bypass stays bit-exact (golden `bypass` unchanged).
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO / address /
+  topEntity-port / AXI-topology change, no new multiplier (knees + trim are
+  compare/shift/subtract), and no remote git op. Clash/VHDL/IP/bit/hwh
+  regenerated because DSP behaviour changed.
+- **Verification (offline).** `measure.py --check` 28/28 (tone curves are
+  measured below the clip knees, so the bonuses are inert there -- intended),
+  `dist_eval.py --check` 7/7 pedals + 6/6 clean amps (all <=1% THD @0.12 FS),
+  `dynamics_eval.py --check` 5/5. Goldens re-blessed for the 5 amp configs
+  (jc120/ac30/jcm800/rockerverb/triamp); `bypass` + Twin-clean + all pedals/cab/
+  reverb goldens unchanged. `knobcheck.py --all` flagged only Amp TREBLE as
+  "barely audible" -- a known false positive of the overall-RMS heuristic on a
+  TILT control (TREBLE still tilts +0.9 dB @8 kHz vs -0.6 @200 Hz); the hotter
+  Drive op-point compresses the top slightly. Not a dead knob.
+- **Build / deploy.** Safe Clash regen (`make -C hw/ip/clash regen`) + full clean
+  Vivado rebuild. Timing fully MET: WNS `+0.565 ns`, TNS `0.000`, WHS
+  `+0.019 ns`, THS `0.000`, WPWS `+2.845`, route errors `0`, all constraints
+  met. **D109 CDC pair `clk_fpga_0 -> clk +1.710 ns` / `clk -> clk_fpga_0
+  +6.121 ns`.** The forward slack `+1.710` is in the historically-risky band:
+  above the D130 CLEAN reference (`+1.251`) and the D128 HISS reference
+  (`+1.327`), but much tighter than D135 (`+6.139`). Per
+  `project_safebypass_knifeedge_cdc_rootcause` the number is a RISK INDICATOR,
+  not a predictor -- **safe-bypass ear-check is the decider; if it hisses, roll
+  back to D135 and rebuild smaller-footprint.** bit/hwh md5
+  `bed234ecf49b44207f4c35b236c49f3e` / `7035137105683a09fee8b6c93da7ef2d`.
+  `scripts/deploy_to_pynq.sh` completed; board bit sites md5-match.
+- **Smoke / status.** `test_pmod_i2s2.py --mode dsp` loaded the new bit; Pmod
+  mode 2 ran 3 s with `FRAME_COUNT +288374` (~96 kHz), `sdout_alive=1` /
+  `bclk_seen=1` / `lrclk_seen=1`, ADC samples observed (smoke input clipped
+  full-scale -- level artifact, as prior baselines). ADC HPF `True` via a
+  `download=False` attach; Pmod returned to `MODE=3` mute. **Bench acceptance
+  is pending; safe bypass is the priority check.** Branch
+  `feature/amp-clean-headroom`; do not merge to `main` or update
+  `baselines.json` until the user confirms. Rollback to D135 with
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
+## D136 — Amp clean-mode headroom (clean channel stays clean); superseded by D137 before bench (`9ffa7ff3`)
 
 - **Decision.** User reported the amp distorted too much even on the Clean
   channel. Offline measurement confirmed it: only JC-120 (idx 0) had real clean
