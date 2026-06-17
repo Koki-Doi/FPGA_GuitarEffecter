@@ -5,23 +5,25 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-17, after D134 sim-scale accepted merge)
+## Current status (2026-06-17, after D135 large non-IR realism accepted merge)
 
-> Accepted deployed bitstream baseline is **D134**: merge commit `f62f132`,
-> sim-scale all-effect objective evaluation plus knob-visibility fixes. bit md5
-> `58b6ee84a2f0c360da97c86e5a971c85`, hwh md5
-> `c41a29b65de2b0debb6de8509468021a`; timing fully MET (WNS `+0.939`,
-> WHS `+0.014`, D109 CDC pair `+2.347` / `+6.527`). The offline suite passes:
-> `measure.py --check` 28/28, `dist_eval.py --check` 7/7 pedals + 6/6 clean
-> amps, `dynamics_eval.py --check` 5/5, `knobcheck.py --all` with no
-> barely-audible flags, and the relevant pytest suites. It was deployed and all
-> five PYNQ bit/hwh sites md5-match. Programmatic mode-2 smoke showed
-> engine/frame cadence alive and ADC HPF `True`, but its input clipped
-> full-scale (`PEAK_ABS_LEFT/RIGHT=8388607`, rising `CLIP_COUNT`), so the board
-> was left in Pmod `MODE=3` mute for safety. User then bench-ACCEPTED ("合格").
-> D133 (`21c0b5a`, bit `54f7f547...`) is the immediate rollback baseline. Read
-> `CURRENT_STATE.md`,
-> `DECISIONS.md` D109-D134, `BASELINES.md`, and `TIMING_AND_FPGA_NOTES.md`
+> Accepted deployed bitstream baseline is **D135**: merge commit `765323b`,
+> large non-IR realism (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees +
+> opened tone LPF; AC30/JCM800 stronger `ampScoop` + model-local presence; Amp
+> `MIDDLE` more audible; AC30 clean headroom; Cab non-IR body tap). bit md5
+> `533d586901dc3669285a49c6d82bab9f`, hwh md5
+> `731517487c6218f0e181c2b74485d7a6`; timing fully MET (WNS `+0.643`,
+> WHS `+0.018`, route errors `0`, bus-skew min slack `+8.099`). The offline
+> suite passes: `measure.py --check` 28/28, `dist_eval.py --check` 7/7 pedals +
+> 6/6 clean amps, `dynamics_eval.py --check` 5/5, `knobcheck.py --all` with no
+> barely-audible flags, and the relevant pytest suites (regression 20, tools +
+> overlay 136). It was deployed and the PYNQ bit/hwh board sites md5-match.
+> Programmatic mode-2 smoke showed engine/frame cadence alive (~96 kHz,
+> `FRAME_COUNT +288374`, `CLIP_COUNT 0`) and ADC HPF `True`; the board was left
+> in Pmod `MODE=3` mute for safety. User then bench-ACCEPTED and approved the
+> merge. D134 (`f62f132`, bit `58b6ee84...`) is the immediate rollback baseline.
+> Read `CURRENT_STATE.md`,
+> `DECISIONS.md` D109-D135, `BASELINES.md`, and `TIMING_AND_FPGA_NOTES.md`
 > first; run `git status --short` and `git diff --stat` before continuing.
 
 ## FP02M expression pedal -> Wah POSITION (XADC re-add on the D75 island) — DONE (D76, 2026-05-31)
@@ -196,8 +198,8 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。現行 accepted baseline は D134 (`58b6ee84`、merge
-> `f62f132`) です。D133 (`54f7f547`、merge `21c0b5a`) は immediate
+> してください。現行 accepted baseline は D135 (`533d5869`、merge
+> `765323b`) です。D134 (`58b6ee84`、merge `f62f132`) は immediate
 > rollback baseline です。safe-bypass で
 > 高域ノイズが出る bitstream、または
 > `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した bitstream は
@@ -231,8 +233,8 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現行 accepted D134 build は timing-clean です (overall WNS `+0.939 ns`,
-> TNS `0`, WHS `+0.014 ns`, D109 CDC pair `+2.347` / `+6.527`)。
+> 現行 accepted D135 build は timing-clean です (overall WNS `+0.643 ns`,
+> TNS `0`, WHS `+0.018 ns`, route errors `0`, bus-skew min slack `+8.099 ns`)。
 > DSP island は D94 以降 33.33 MHz、fabric は
 > 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
 > `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな

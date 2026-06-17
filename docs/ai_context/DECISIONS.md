@@ -6602,13 +6602,12 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D135 — Large non-IR realism candidate (Fuzz Face mid-hump + amp/cab character); deployed/smoked, bench pending (`533d5869`)
+## D135 — Large non-IR realism (Fuzz Face mid-hump + amp/cab character); bench-ACCEPTED, merged (`533d5869`, merge `765323b`, current accepted baseline)
 
 - **Decision.** User explicitly authorized a branch and all large real-amp /
-  effect / cabinet changes except IR convolution. Treat this as a deployed
-  candidate, not an accepted baseline, until the user bench-listens safe bypass
-  and the touched tones. Current accepted baseline remains D134 (`f62f132`, bit
-  `58b6ee84...`).
+  effect / cabinet changes except IR convolution. Bench ear-test PASSED; the
+  user approved merging D135 to `main`. D135 is now the **current accepted /
+  committed baseline** (merge commit `765323b`), superseding D134 (`f62f132`).
 - **DSP changes.** Fuzz Face now has a broad 900 Hz mid-hump biquad in the
   Distortion pipeline, tighter asymmetric clip knees, and a more open tone LPF.
   AC30/JCM800 `ampScoop` voicings are stronger, Amp `MIDDLE` range is more
@@ -6642,9 +6641,9 @@ pre-existing 3 failures + 1 error baseline.
   footswitch IP appears in HWH as `fsw_in_0/s_axi` at `0x43d50000`.
   Pmod I2S2 mode 2 smoke ran for 3 s with `FRAME_COUNT +288374` (~96 kHz),
   `CLIP_COUNT 0`, and ADC samples observed; Pmod was then returned to
-  `MODE=3` mute. **Bench acceptance is pending.** Branch
-  `feature/realism-large-non-ir`; do not merge to `main` or update
-  `baselines.json`/`BASELINES.md` until the user confirms the ear-bench.
+  `MODE=3` mute. **Bench acceptance: PASSED — merged to `main` as `765323b`**
+  (`--no-ff` merge of `feature/realism-large-non-ir`); `baselines.json`/
+  `BASELINES.md` updated (D135 `accepted-current`, D134 `accepted-superseded`).
   Rollback to D134 with `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/`
   + deploy.
 
