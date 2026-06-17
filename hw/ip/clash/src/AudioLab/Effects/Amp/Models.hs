@@ -95,7 +95,8 @@ ampPowerKnee :: Sample -> Unsigned 3 -> Sample
 ampPowerKnee base idx = case idx of
   0 -> 6_800_000   -- JC-120 : SS, huge clean headroom (waveshape clean-knee is 7.5M)
   1 -> 4_600_000   -- Twin   : blackface clean platform, more headroom
-  _ -> base        -- AC30/Rockerverb/JCM800/TriAmp : keep power-amp compression
+  2 -> base + 300_000 -- AC30 : still early, but enough headroom for Clean-mode target
+  _ -> base        -- Rockerverb/JCM800/TriAmp : keep power-amp compression
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
 -- darker / less fizz. Indexed by ``ampModelIdxF`` directly.
@@ -153,4 +154,3 @@ ampDrivePosDelta = amDrivePos . ampModel
 -- preserved.
 ampDriveNegDelta :: Unsigned 3 -> Signed 25
 ampDriveNegDelta = amDriveNeg . ampModel
-

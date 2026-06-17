@@ -30,9 +30,9 @@ ampScoopFeedforwardCoeffs :: Unsigned 3 -> (Signed 16, Signed 16, Signed 16)
 ampScoopFeedforwardCoeffs idx = case idx of
   0 -> (16384, 0, 0)            -- JC-120 : FLAT (re-collation: a real Roland Jazz Chorus is a full-range SS amp with NO scoop; D122's residual -2 dB @ 400 Hz still mildly scooped it. Unity = flat. Still distinct from Twin's -5 dB scoop.)
   1 -> (16210, -31960, 15761)   -- Twin   : blackface mid scoop -5 dB @ 400 Hz
-  2 -> (16901, -30680, 14101)   -- AC30   : Vox chime +4 dB @ 2200 Hz   (48k:17355/-28234/12091)
+  2 -> (17221, -30270, 13395)   -- AC30   : stronger Vox chime +5 dB @ 2300 Hz
   3 -> (16453, -32427, 15980)   -- Rockerverb : thick low-mid +3 dB @ 300 Hz (voicing: was flat)
-  4 -> (16582, -32061, 15508)   -- JCM800 : Marshall mid +4 dB @ 650 Hz (48k:16772/-31328/14670)
+  4 -> (16583, -32152, 15598)   -- JCM800 : stronger Marshall mid +4.5 dB @ 650 Hz
   5 -> (16064, -31446, 15421)   -- TriAmp : modern scoop -6 dB @ 750 Hz (voicing: was flat; deeper to survive power-amp compression)
   _ -> (16384, 0, 0)            -- reserved 6/7 : flat (unity, b0 = 2^14)
 
@@ -40,9 +40,9 @@ ampScoopFeedbackCoeffs :: Unsigned 3 -> (Signed 16, Signed 16)
 ampScoopFeedbackCoeffs idx = case idx of
   0 -> (0, 0)                   -- JC-120 FLAT (no feedback -> unity passthrough, SS full-range)
   1 -> (-31960, 15587)          -- Twin (48k: -31169/14828)
-  2 -> (-30680, 14617)          -- AC30 (48k: -28234/13062)
+  2 -> (-30270, 14232)          -- AC30 stronger chime
   3 -> (-32427, 16049)          -- Rockerverb low-mid
-  4 -> (-32061, 15706)          -- JCM800 (48k: -31328/15057)
+  4 -> (-32152, 15797)          -- JCM800 stronger Marshall mid
   5 -> (-31446, 15100)          -- TriAmp scoop (-6 dB @ 750)
   _ -> (0, 0)                   -- reserved 6/7 : flat (no feedback)
 
@@ -93,6 +93,9 @@ ampToneBandFrame f =
 ampToneGain :: Unsigned 8 -> Unsigned 8
 ampToneGain x = 64 + (x `shiftR` 1)
 
+ampMidGain :: Unsigned 8 -> Unsigned 8
+ampMidGain x = 51 + (x - (x `shiftR` 2))
+
 ampTrebleGain :: Unsigned 3 -> Unsigned 8 -> Unsigned 8
 ampTrebleGain idx x = base - modelTrim
  where
@@ -124,7 +127,7 @@ ampToneProductsFrame f =
   f
     { fAccL = if on then mulU8 (monoEqLow f) (ampToneGain (ctrlA (fAmpTone f))) else 0
     , fAccR = 0
-    , fAcc2L = if on then mulU8 (monoEqMid f) (ampToneGain (ctrlB (fAmpTone f))) else 0
+    , fAcc2L = if on then mulU8 (monoEqMid f) (ampMidGain (ctrlB (fAmpTone f))) else 0
     , fAcc2R = 0
     , fAcc3L = if on then mulU8 (monoEqHigh f) (ampTrebleGain idx (ctrlC (fAmpTone f))) else 0
     , fAcc3R = 0
@@ -192,7 +195,7 @@ ampResPresenceProductsFrame f =
  where
   on = flag6 (fGate f)
   resonance = ctrlD (fAmp f) - (ctrlD (fAmp f) `shiftR` 2)
-  presence = basePresence - presenceTrim
+  presence = basePresence - presenceTrim + presenceBoost
   presenceByte = ctrlC (fAmp f)
   idx = ampModelIdxF f
   basePresence = presenceByte - (presenceByte `shiftR` 2) - (presenceByte `shiftR` 3)
@@ -208,6 +211,14 @@ ampResPresenceProductsFrame f =
                                  -- less trim = brighter presence, the real
                                  -- JCM800 presence control our model under-did)
     5 -> presenceByte `shiftR` 3 -- TriAmp  : maximum trim, modern voicing
+    _ -> 0
+  -- Extra model-local negative-feedback presence. The shared tone-stack biquad
+  -- supplies the AC30/JCM800 mid feature, but the real amps also have a sharper
+  -- 2-4 kHz bite that was still understated once the cab rolloff was engaged.
+  -- Shift-only boost keeps this inside the existing presence product stage.
+  presenceBoost = case idx of
+    2 -> presenceByte `shiftR` 4 -- AC30: extra chime edge
+    4 -> presenceByte `shiftR` 4 -- JCM800: Marshall bite
     _ -> 0
   high = satWide (resize (monoWet f) - resize (monoEqHighLp f))
 
