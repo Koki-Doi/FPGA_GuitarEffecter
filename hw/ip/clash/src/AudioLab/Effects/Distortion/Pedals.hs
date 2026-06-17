@@ -34,7 +34,7 @@ cleanBoostLevelFrame f =
  where
   on = cleanBoostOn f
   level = ctrlB (fDist f)
-  afterLevel = satShift7 (mulU8 (monoSample f) level)
+  afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
   -- High safety knee so Clean Boost only catches exceptional peaks.
   safetyKnee = 3_800_000 :: Sample
 
@@ -91,7 +91,7 @@ tubeScreamerMulFrame f =
   on = tubeScreamerOn f
   drive = ctrlC (fDist f)
   -- Smooth drive ceiling; this should stay overdrive-like, not fuzz-like.
-  gain = resize (256 + (resize drive * 5 :: Unsigned 12)) :: Unsigned 12
+  gain = pedalDriveGain 256 5 drive    -- refactor C: shared kernel
 
 tubeScreamerClipFrame :: Frame -> Frame
 tubeScreamerClipFrame f =
@@ -121,7 +121,7 @@ tubeScreamerLevelFrame f =
  where
   on = tubeScreamerOn f
   level = ctrlB (fDist f)
-  afterLevel = satShift7 (mulU8 (monoSample f) level)
+  afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
 
 -- ---- metal_distortion (5 stages: tight HPF, mul, hard clip,
 --                        post-LPF, level) -----------------------------
@@ -149,7 +149,7 @@ metalMulFrame f =
   drive = ctrlC (fDist f)
   -- Higher drive within the existing Q12 gain path; threshold and LPF
   -- below keep the result aggressive without fizzing out.
-  gain = resize (768 + (resize drive * 13 :: Unsigned 12)) :: Unsigned 12
+  gain = pedalDriveGain 768 13 drive   -- refactor C: shared kernel
 
 -- 4x oversampled hard clip (realism item 2 / R5) for Metal MT-2, the worst
 -- aliaser. A static 48 kHz hard clip generates harmonics far above Nyquist
@@ -234,7 +234,7 @@ metalLevelFrame f =
  where
   on = metalDistortionOn f
   level = ctrlB (fDist f)
-  afterLevel = satShift7 (mulU8 (monoSample f) level)
+  afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
 
 -- ---- ds1 (BOSS DS-1 style; 5 stages: HPF, mul, asym hard/soft hybrid
 --                clip, post LPF, level+safety) ------------------------
@@ -266,7 +266,7 @@ ds1MulFrame f =
   on = ds1On f
   drive = ctrlC (fDist f)
   -- More push than TS and intentionally harder-edged.
-  gain = resize (256 + (resize drive * 9 :: Unsigned 12)) :: Unsigned 12
+  gain = pedalDriveGain 256 9 drive    -- refactor C: shared kernel
 
 ds1ClipFrame :: Frame -> Frame
 ds1ClipFrame f =
@@ -298,7 +298,7 @@ ds1LevelFrame f =
  where
   on = ds1On f
   level = ctrlB (fDist f)
-  afterLevel = satShift7 (mulU8 (monoSample f) level)
+  afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
   -- Output safety: the level stage soft-clips before reaching the
   -- post-pedal pipeline so a misuse of LEVEL cannot slam the saturator.
   safetyKnee = 3_000_000 :: Sample
@@ -320,7 +320,7 @@ bigMuffPreFrame f =
   on = bigMuffOn f
   drive = ctrlC (fDist f)
   -- Hot floor and broad sustain, but keep the ceiling below Metal.
-  gain = resize (448 + (resize drive * 11 :: Unsigned 12)) :: Unsigned 12
+  gain = pedalDriveGain 448 11 drive   -- refactor C: shared kernel
 
 -- Big Muff 4x oversampled clip cascade (realism item 2 / R5, D90). The two
 -- cascaded soft clips (clip1 -> *208 -> clip2) generate fizz that aliases at
@@ -466,7 +466,7 @@ bigMuffLevelFrame f =
  where
   on = bigMuffOn f
   level = ctrlB (fDist f)
-  afterLevel = satShift7 (mulU8 (monoSample f) level)
+  afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
   -- Output safety knee leaves sustain but avoids level-stage collapse.
   safetyKnee = 3_100_000 :: Sample
 
@@ -489,7 +489,7 @@ fuzzFacePreFrame f =
   on = fuzzFaceOn f
   drive = ctrlC (fDist f)
   -- Lower ceiling and hot asymmetry preserve cleanup without gating out.
-  gain = resize (448 + (resize drive * 8 :: Unsigned 12)) :: Unsigned 12
+  gain = pedalDriveGain 448 8 drive    -- refactor C: shared kernel
 
 -- Fuzz Face dynamic bias envelope (realism item 5b / R2). A peak-follower on
 -- the post-pre-gain ("boosted") level, same shape as the Compressor /
@@ -548,7 +548,7 @@ fuzzFaceLevelFrame f =
  where
   on = fuzzFaceOn f
   level = ctrlB (fDist f)
-  afterLevel = satShift7 (mulU8 (monoSample f) level)
+  afterLevel = distLevelRaw (monoSample f) level   -- refactor C: shared kernel
   -- Output safety knee avoids gated collapse at high LEVEL.
   safetyKnee = 3_000_000 :: Sample
 

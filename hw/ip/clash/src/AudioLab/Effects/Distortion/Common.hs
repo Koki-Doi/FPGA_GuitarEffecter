@@ -8,6 +8,17 @@ import AudioLab.Control
 import AudioLab.FixedPoint
 import AudioLab.Types
 
+-- Shared distortion pedal-stage kernels (refactor C). The drive-multiply gain
+-- `base + drive*k` (Unsigned 12) and the level-stage raw `satShift7 (mulU8
+-- sample level)` were copied per pedal; one source each now. (Clean Boost keeps
+-- its own Unsigned-11-intermediate gain inline -- the lone odd one.) Each pedal
+-- still applies its own clip to the level-stage output.
+pedalDriveGain :: Unsigned 12 -> Unsigned 12 -> Unsigned 8 -> Unsigned 12
+pedalDriveGain base k drive = base + resize drive * k
+
+distLevelRaw :: Sample -> Unsigned 8 -> Sample
+distLevelRaw sample level = satShift7 (mulU8 sample level)
+
 -- The 4 linear-interp 4x sub-sample points for the interval [x1 -> xn]
 -- (chronological: p0 at x1, p3 near xn). Shifts/adds only, no multiply.
 os4xInterp :: Sample -> Sample -> (Sample, Sample, Sample, Sample)
