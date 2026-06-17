@@ -69,12 +69,20 @@ data AmpModel = AmpModel
 ampModel :: Unsigned 3 -> AmpModel
 ampModel idx = case idx of
   --              char darken driveDk 2ndBonus  drivePos  driveNeg
-  0 -> AmpModel    18    6      4       22        16_200    13_500   -- JC-120
-  1 -> AmpModel    78   12      6       33        85_800    74_100   -- Twin Reverb
-  2 -> AmpModel   166    6     10       47       232_400   199_200   -- AC30
-  3 -> AmpModel   208   31     16       85       374_400   322_400   -- Rockerverb
-  4 -> AmpModel   220   16     16       80       462_000   407_000   -- JCM800
-  5 -> AmpModel   246   39     23      116       615_000   541_200   -- TriAmp Mk3
+  -- 2026-06-17 "clean vs drive 差を明確に": Drive-mode saturation pushed up on
+  -- every tube model (the asym-clip knee deltas shrink the Drive knee further,
+  -- and the second-stage bonus drives the second clipper harder + a touch
+  -- louder). Combined with the larger Clean-mode headroom (ampCleanKneeBonus /
+  -- ampCleanPowerBonus, Clean only) this opens a clear Clean->Drive step:
+  -- Clean stays clean, Drive is obviously driven. CDC pair had +6.1 ns margin
+  -- so the bigger deltas stay placement-safe. JC (idx 0) does not use these
+  -- (its SS knee is in Clip.hs); its values are inert.
+  0 -> AmpModel    18    6      4       22        16_200    13_500   -- JC-120 (asym-clip unused)
+  1 -> AmpModel    78   12      6       46       120_000   104_000   -- Twin Reverb
+  2 -> AmpModel   166    6     10       70       330_000   285_000   -- AC30
+  3 -> AmpModel   208   31     16      112       520_000   450_000   -- Rockerverb
+  4 -> AmpModel   220   16     16      112       640_000   570_000   -- JCM800
+  5 -> AmpModel   246   39     23      150       850_000   760_000   -- TriAmp Mk3
   _ -> AmpModel    18    6      4       22        16_200    13_500   -- 6/7 -> JC-120
 
 -- Thin projections (byte-identical to the old per-model tables). The detailed
@@ -113,14 +121,20 @@ ampPowerKnee base idx = case idx of
 -- clean channels become usable-clean but still break up when pushed.
 -- Signed 25 fits the existing ``ampAsymClip`` knee arithmetic; constant/mux
 -- only (the knee is a compare+shift, no new multiply / DSP).
+-- 2026-06-17 "clean vs drive 差を明確に": clean-mode headroom raised further so
+-- the Clean channel is genuinely clean at a playing level on every model (the
+-- gain models were still ~11-15% THD at 0.15 FS), which -- together with the
+-- hotter Drive voicing -- makes the Clean/Drive step obvious. AC30 keeps a
+-- little class-A early breakup (smaller bonus) per the "preserve character"
+-- choice.
 ampCleanKneeBonus :: Unsigned 3 -> Signed 25
 ampCleanKneeBonus idx = case idx of
-  0 -> 0           -- JC-120 : unused (model 0 takes the dedicated 7.5M clean path)
+  0 -> 0           -- JC-120 : unused (model 0 takes the dedicated SS clean path)
   1 -> 2_300_000   -- Twin   : blackface clean platform, near hi-fi clean
-  2 -> 900_000     -- AC30   : class-A, keep some early chime breakup
-  3 -> 1_500_000   -- Rockerverb : usable clean, breaks up when pushed
-  4 -> 1_600_000   -- JCM800 : usable clean, breaks up when pushed
-  5 -> 1_400_000   -- TriAmp : usable clean, breaks up when pushed
+  2 -> 1_400_000   -- AC30   : class-A, keep a little early chime breakup
+  3 -> 2_800_000   -- Rockerverb : clean channel genuinely clean (highest-gain pre)
+  4 -> 2_300_000   -- JCM800 : clean channel genuinely clean
+  5 -> 2_000_000   -- TriAmp : clean channel genuinely clean
   _ -> 0           -- 6/7 -> JC-120 fallback
 
 -- | Per-model CLEAN-mode (drive_mode 0) extra POWER / RESONANCE / MASTER
@@ -137,12 +151,12 @@ ampCleanKneeBonus idx = case idx of
 -- early breakup, the high-gain trio become usable-clean but compress when pushed.
 ampCleanPowerBonus :: Unsigned 3 -> Sample
 ampCleanPowerBonus idx = case idx of
-  0 -> 0           -- JC-120 : already 6.8M power knee
+  0 -> 0           -- JC-120 : SS clean knee handled in Clip.hs
   1 -> 0           -- Twin   : already 4.6M power knee
-  2 -> 1_000_000   -- AC30   : modest, keep class-A early breakup
-  3 -> 2_600_000   -- Rockerverb : usable clean headroom
-  4 -> 2_600_000   -- JCM800 : usable clean headroom
-  5 -> 2_200_000   -- TriAmp : usable clean headroom
+  2 -> 1_600_000   -- AC30   : keep a little class-A early breakup
+  3 -> 4_200_000   -- Rockerverb : clean channel genuinely clean (highest-gain pre)
+  4 -> 3_400_000   -- JCM800 : clean channel genuinely clean
+  5 -> 3_000_000   -- TriAmp : clean channel genuinely clean
   _ -> 0           -- 6/7 -> JC-120 fallback
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =

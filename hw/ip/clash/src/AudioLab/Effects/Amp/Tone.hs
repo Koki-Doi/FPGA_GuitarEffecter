@@ -278,7 +278,15 @@ ampMasterFrame env f =
     _ -> sagRaw0
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
-  effLevel = level - sagByte
+  effLevel0 = level - sagByte
+  -- JC-120 output trim (2026-06-17 "JC の出力が大きすぎる"). JC is the only model
+  -- that does not clip/compress in normal playing (its SS clean knee passes the
+  -- signal), so it ran ~+3..+6 dB louder than the rest of the lineup. Pull model
+  -- 0 down ~3.25 dB (x0.6875 = 1 - 1/4 - 1/16) so it sits level with the other
+  -- amps; shift+subtract only, no new DSP, every other model byte-for-byte.
+  effLevel = if idx == 0
+               then effLevel0 - (effLevel0 `shiftR` 2) - (effLevel0 `shiftR` 4)
+               else effLevel0
   -- Clean-mode extra master-stage headroom, per model; Drive keeps its ceiling.
   cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
   out = softClipK (ampPowerKnee 3_300_000 idx + cleanP) (satShift7 (mulU8 (monoWet f) effLevel))

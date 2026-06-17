@@ -161,8 +161,17 @@ ampHystBias prevOut = prevOut `shiftR` ampHystShift
 -- waveshaper colour in the normal range. No new DSP (softClipK is compare +
 -- shift, like ampAsymClip). Only model 0 is affected; every other model keeps
 -- ampAsymClip byte-for-byte.
-ampJc120CleanKnee :: Sample
-ampJc120CleanKnee = 7_500_000
+--
+-- Mode-dependent (2026-06-17 "clean vs drive 差を明確に" + "JC 出力が大きすぎる"):
+-- The old 7.5M knee never caught a normal signal, so (a) JC barely compressed
+-- and ran several dB louder than the rest of the lineup, and (b) JC's Drive
+-- channel was identical to its Clean channel (both 7.5M). Now JC Clean uses a
+-- firmer SS clean ceiling that gently compresses peaks (lower output, still
+-- clean), and JC Drive drops the knee so it audibly breaks up -- the cleanest
+-- amp of the lineup but with a real Clean/Drive distinction. softClipK is still
+-- compare+shift (no new DSP); only model 0 is affected.
+ampJc120Knee :: Bool -> Sample
+ampJc120Knee drive = if drive then 3_200_000 else 4_600_000
 
 -- ``prevOut`` is this stage's previous output (pipeline register), feeding the
 -- D95 hysteresis. JC-120 (clean) and the amp-off bypass pass hyst = 0 implicitly
@@ -177,7 +186,7 @@ ampWaveshapeFrame prevOut f =
   intensity = ampCharForModel idx
   hyst = ampHystBias prevOut
   shaped
-    | idx == 0  = softClipK ampJc120CleanKnee (monoWet f)  -- JC-120: clean SS channel
+    | idx == 0  = softClipK (ampJc120Knee drive) (monoWet f)  -- JC-120: SS clean / mild drive
     | otherwise = ampAsymClip idx intensity drive hyst (monoWet f)
 
 ampPreLowpassFrame :: Sample -> Frame -> Frame
@@ -233,8 +242,8 @@ ampSecondStageFrame prevOut f =
   intensity = ampCharForModel idx `shiftR` 1
   s2in = satShift7 (fAccL f)
   hyst = ampHystBias prevOut
-  -- JC-120 stays clean here too (same high-knee ceiling as stage 1).
+  -- JC-120 second stage: same mode-dependent SS ceiling as stage 1.
   shaped
-    | idx == 0  = softClipK ampJc120CleanKnee s2in
+    | idx == 0  = softClipK (ampJc120Knee drive) s2in
     | otherwise = ampAsymClip idx intensity drive hyst s2in
 
