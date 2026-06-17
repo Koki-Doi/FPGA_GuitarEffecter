@@ -284,9 +284,17 @@ ampMasterFrame env f =
   -- signal), so it ran ~+3..+6 dB louder than the rest of the lineup. Pull model
   -- 0 down ~3.25 dB (x0.6875 = 1 - 1/4 - 1/16) so it sits level with the other
   -- amps; shift+subtract only, no new DSP, every other model byte-for-byte.
-  effLevel = if idx == 0
-               then effLevel0 - (effLevel0 `shiftR` 2) - (effLevel0 `shiftR` 4)
-               else effLevel0
+  -- Twin/Fender output boost (2026-06-18 "fender の音が他と比べて小さい"). Twin
+  -- (idx 1) has the lowest makeup gain (char 78) plus a 400 Hz scoop, so it ran
+  -- ~3-5 dB below the lineup. Lift its master ~+3.5 dB (x1.5, saturating add in
+  -- Unsigned 9 so a hot MASTER cannot wrap); the master softClipK at the Twin
+  -- 4.6M knee gently catches any peaks so it stays clean. Other models unchanged.
+  twinLevel = resize (min (255 :: Unsigned 9)
+                          (resize effLevel0 + resize (effLevel0 `shiftR` 1))) :: Unsigned 8
+  effLevel = case idx of
+    0 -> effLevel0 - (effLevel0 `shiftR` 2) - (effLevel0 `shiftR` 4)  -- JC-120 -3.25 dB
+    1 -> twinLevel                                                    -- Twin +3.5 dB
+    _ -> effLevel0
   -- Clean-mode extra master-stage headroom, per model; Drive keeps its ceiling.
   cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
   out = softClipK (ampPowerKnee 3_300_000 idx + cleanP) (satShift7 (mulU8 (monoWet f) effLevel))

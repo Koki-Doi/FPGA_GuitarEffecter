@@ -149,14 +149,24 @@ ampCleanKneeBonus idx = case idx of
 -- high clean power knee from ``ampPowerKnee`` and stay clean, so they take 0 here.
 -- Graded to the user's "preserve model character" choice: AC30 keeps some class-A
 -- early breakup, the high-gain trio become usable-clean but compress when pushed.
+-- 2026-06-18 "tube 系のサステーンが聞き取りづらい": the power / resonance-mix /
+-- master softClipK is the power-amp compression that SUSTAINS notes (the loud
+-- attack soft-clips, the decaying tail recovers -> the tail blooms up relative
+-- to the attack = audible sustain). The D136/D137 clean-power bonus had pushed
+-- these knees so high that the tube amps stopped compressing in Clean mode, so
+-- the clean sustain dropped to ~1.35-1.5x. Pull the bonus back ~half: the power
+-- softClipK is a SOFT knee so this restores sustain/bloom with only a mild THD
+-- rise (still clean -- the clean TONE is held by the waveshaper clean bonus,
+-- ampCleanKneeBonus, which is unchanged). JC (SS) / Twin (boosted into its 4.6M
+-- knee) stay at 0.
 ampCleanPowerBonus :: Unsigned 3 -> Sample
 ampCleanPowerBonus idx = case idx of
   0 -> 0           -- JC-120 : SS clean knee handled in Clip.hs
-  1 -> 0           -- Twin   : already 4.6M power knee
-  2 -> 1_600_000   -- AC30   : keep a little class-A early breakup
-  3 -> 4_200_000   -- Rockerverb : clean channel genuinely clean (highest-gain pre)
-  4 -> 3_400_000   -- JCM800 : clean channel genuinely clean
-  5 -> 3_000_000   -- TriAmp : clean channel genuinely clean
+  1 -> 0           -- Twin   : 4.6M power knee + the +3.5 dB boost drives it for sustain
+  2 -> 800_000     -- AC30   : more class-A power compression / sustain
+  3 -> 2_200_000   -- Rockerverb : restore power-amp sustain, still clean tone
+  4 -> 1_800_000   -- JCM800 : restore power-amp sustain, still clean tone
+  5 -> 1_600_000   -- TriAmp : restore power-amp sustain, still clean tone
   _ -> 0           -- 6/7 -> JC-120 fallback
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
