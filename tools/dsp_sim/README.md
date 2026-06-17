@@ -156,9 +156,28 @@ clipping/loudness.
 
 ## Suggested next steps
 
-- **FPGA cross-check** (the one fidelity gap left): capture the same input +
-  config off the board (Pmod mode 2) and diff against the sim render, to confirm
-  end-to-end fidelity beyond the bit-exact bypass already shown.
+- **FPGA cross-check / capture workflow.** `scripts/collect_real_hw_reference.py`
+  runs on the PYNQ and writes `capture_manifest.json`, per-case `input.npy`,
+  `hw_output.npy`, and listening WAVs. `tools/dsp_sim/compare_hw_reference.py`
+  reruns `dsp_sim` with the exact topEntity control words from the manifest and
+  writes `comparison_summary*.csv/json`.
+  - Digital DMA source captures (`dma -> guitar_chain -> dma`) are a useful
+    bitstream stress test, but they are **not paced like live Pmod audio**:
+    AXI DMA presents samples back-to-back, while the Pmod line-in path presents
+    one valid sample at 96 kHz with many DSP-island idle cycles between samples.
+    Compare those captures with `--gap 0`. Comparing them to the normal `gap=8`
+    sim intentionally exposes the pacing mismatch and can make feedback/IIR
+    effects saturate.
+  - Live-tone fidelity still needs a paced source:
+    `line_in -> guitar_chain -> dma` while an external deterministic player
+    drives Pmod Line In, plus a matching `line_in -> passthrough -> dma` input
+    capture. That is the comparable data for the normal `gap=8` sim and for
+    ear-bench decisions.
+  - Example:
+    `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 scripts/collect_real_hw_reference.py --suite full`
+    on the board, then `rsync` the `measurements/real_hw/<timestamp>/` bundle
+    back and run
+    `python3 tools/dsp_sim/compare_hw_reference.py measurements/real_hw/<timestamp> --jobs 8 --gap 0 --label gap0`.
 - Keep adding PASS/FAIL targets to `dynamics_eval.py` when a bench complaint is
   not reducible to EQ or distortion character. The intended gate stack before a
   voicing build is now `measure.py --check`, `dist_eval.py --check`,

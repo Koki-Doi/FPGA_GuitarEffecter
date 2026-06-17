@@ -28,3 +28,6 @@ GUI/fx_gui_state.json
 
 # offline DSP sim harness binary (build artifact -- build with tools/dsp_sim/build_sim.sh)
 /tools/dsp_sim/dsp_sim
+
+# Real hardware capture bundles are large and machine-specific.
+/measurements/
