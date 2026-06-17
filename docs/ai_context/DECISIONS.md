@@ -6,9 +6,8 @@ not get removed even when superseded — they get updated.
 
 Baseline statements inside older ADRs are historical unless the newest ADRs and
 `CURRENT_STATE.md` say otherwise. The current canonical deployed baseline is
-REALISM-0617b / D133 (`21c0b5a`, bit `54f7f547...`), tracked in
-`docs/ai_context/baselines.json` / `docs/ai_context/BASELINES.md`; D134 is an
-uncommitted deployed candidate until bench-accepted.
+D134 (`f62f132`, bit `58b6ee84...`), tracked in
+`docs/ai_context/baselines.json` / `docs/ai_context/BASELINES.md`.
 
 ---
 
@@ -6603,7 +6602,7 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D134 — Sim-scale all-effect objective evaluation + knob-visibility fixes; built/deployed candidate, bench PENDING
+## D134 — Sim-scale all-effect objective evaluation + knob-visibility fixes; bench-ACCEPTED, merged (`58b6ee84`, current accepted baseline)
 
 - **Decision.** User asked to scale the simulation further, evaluate every
   effect with it, and fix every item that should be fixed. Treat this as an
@@ -6644,10 +6643,12 @@ pre-existing 3 failures + 1 error baseline.
 - **Acceptance status.** Programmatic smoke loaded the new PL, confirmed
   required IPs, Pmod mode-2 frame cadence near 96 kHz, ADC HPF `True`, and
   `R19_ADC_CONTROL == 0x23`. The smoke input was full-scale/clipping
-  (`PEAK_ABS_LEFT/RIGHT=8388607`, rising `CLIP_COUNT`), so it is not clean
-  audio acceptance. The board was left in Pmod `MODE=3` mute. D133
-  (`21c0b5a`, bit `54f7f547...`) remains the accepted baseline until D134 gets
-  safe-bypass and touched-effect ear-bench acceptance.
+  (`PEAK_ABS_LEFT/RIGHT=8388607`, rising `CLIP_COUNT`), so that smoke was not
+  itself clean audio acceptance; the board was left in Pmod `MODE=3` mute for
+  safety. User then bench-ACCEPTED D134 ("合格"). Merged to main with
+  `--no-ff` merge `f62f132`. D134 supersedes D133 (`21c0b5a`, bit
+  `54f7f547...`); rollback to D133 with `git checkout 21c0b5a -- hw/Pynq-Z2/bitstreams/`
+  + redeploy.
 
 ## D133 — Metal full saturation + clean-amp power headroom; bench-ACCEPTED, merged (`54f7f547`, current accepted baseline)
 
