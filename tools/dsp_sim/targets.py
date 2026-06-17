@@ -118,15 +118,10 @@ TARGETS = {
 }
 
 
-def _hf_slope(absnet, freqs, lo=2000, hi=9000):
-    """Treble slope dB/octave across [lo,hi] (local copy of measure.hf_slope to
-    avoid a circular import: measure.py imports targets.py)."""
-    np = __import__("numpy")
-    m = (freqs >= lo) & (freqs <= hi)
-    if m.sum() < 2:
-        return float("nan")
-    x = np.log2(freqs[m].astype(float))
-    return float(np.polyfit(x - x.mean(), absnet[m], 1)[0])
+# hf_slope is the shared metrics.py helper (refactor P4) -- was a hand-copied
+# `_hf_slope` here to dodge the measure<->targets circular import; metrics.py
+# imports nothing from the harness so both can use it.
+from metrics import hf_slope as _hf_slope  # noqa: E402
 
 
 def _mid_feature(net, freqs, lo=250, hi=2500):

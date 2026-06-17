@@ -8,6 +8,17 @@ import AudioLab.Control
 import AudioLab.FixedPoint
 import AudioLab.Types
 
+-- Shared distortion pedal-stage kernels (refactor C). The drive-multiply gain
+-- `base + drive*k` (Unsigned 12) and the level-stage raw `satShift7 (mulU8
+-- sample level)` were copied per pedal; one source each now. (Clean Boost keeps
+-- its own Unsigned-11-intermediate gain inline -- the lone odd one.) Each pedal
+-- still applies its own clip to the level-stage output.
+pedalDriveGain :: Unsigned 12 -> Unsigned 12 -> Unsigned 8 -> Unsigned 12
+pedalDriveGain base k drive = base + resize drive * k
+
+distLevelRaw :: Sample -> Unsigned 8 -> Sample
+distLevelRaw sample level = satShift7 (mulU8 sample level)
+
 -- The 4 linear-interp 4x sub-sample points for the interval [x1 -> xn]
 -- (chronological: p0 at x1, p3 near xn). Shifts/adds only, no multiply.
 os4xInterp :: Sample -> Sample -> (Sample, Sample, Sample, Sample)
@@ -35,11 +46,10 @@ os4xDecimProducts ::
   Sample -> Sample -> Sample -> Sample -> Vec 12 Sample -> (Wide, Wide, Wide)
 os4xDecimProducts q0 q1 q2 q3 hist = (s0, s1, s2)
  where
-  pm :: Sample -> Sample -> Signed 10 -> Wide
-  pm a b g = (resize a + resize b) * resize g
-  s0 = pm q3 (hist !! 10) (-2) + pm q2 (hist !! 9) (-3) + pm q1 (hist !! 8) (-4)
-  s1 = pm q0 (hist !! 7) 5 + pm (hist !! 0) (hist !! 6) 29 + pm (hist !! 1) (hist !! 5) 68
-  s2 = pm (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
+  -- refactor E: shared FixedPoint.foldTap (was a local `pm a b g = (a+b)*g`)
+  s0 = foldTap q3 (hist !! 10) (-2) + foldTap q2 (hist !! 9) (-3) + foldTap q1 (hist !! 8) (-4)
+  s1 = foldTap q0 (hist !! 7) 5 + foldTap (hist !! 0) (hist !! 6) 29 + foldTap (hist !! 1) (hist !! 5) 68
+  s2 = foldTap (hist !! 2) (hist !! 4) 104 + (resize (hist !! 3) * 118 :: Wide)
 
 os4xHistShift ::
   KnownNat n => Sample -> Sample -> Sample -> Sample -> Vec n Sample -> Vec n Sample

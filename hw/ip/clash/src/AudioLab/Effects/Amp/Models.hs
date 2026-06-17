@@ -48,15 +48,39 @@ ampDriveModeF f = slice d31 d31 (fAmpTone f) == (1 :: BitVector 1)
 -- give a stronger response on JCM800 / TriAmp Mk3 even before the
 -- Drive-mode branch fires. Reserved indices (6, 7) fall back to the
 -- JC-120 value so an unexpected write does not run clip_count away.
+-- | Per-model amp voicing consolidated into ONE record (refactor G, 2026-06-17):
+-- a model's voicing scalars live in ONE AmpModel literal per model instead of
+-- six parallel `case idx of` tables that every realism pass had to edit in
+-- lockstep. The original per-field functions are kept below as thin projections
+-- so every consumer (Clip.hs / Tone.hs) is byte-for-byte unchanged; the values
+-- are identical (verified by the all-6-amp-model golden regression). Reserved
+-- 6/7 -> JC-120. NOTE `ampPowerKnee` stays a separate function -- it is
+-- base-parameterised (returns the caller's `base` for the high-gain models), not
+-- a pure per-model scalar.
+data AmpModel = AmpModel
+  { amChar          :: Unsigned 8   -- ampCharForModel
+  , amDarken        :: Unsigned 8   -- ampModelDarken (Clean pre-LPF)
+  , amDriveDarken   :: Unsigned 8   -- ampPreLpfDriveDarken (Drive extra)
+  , amSecondBonus   :: Unsigned 9   -- ampSecondStageDriveBonus
+  , amDrivePos      :: Signed 25    -- ampDrivePosDelta
+  , amDriveNeg      :: Signed 25    -- ampDriveNegDelta
+  }
+
+ampModel :: Unsigned 3 -> AmpModel
+ampModel idx = case idx of
+  --              char darken driveDk 2ndBonus  drivePos  driveNeg
+  0 -> AmpModel    18    6      4       22        16_200    13_500   -- JC-120
+  1 -> AmpModel    78   12      6       33        85_800    74_100   -- Twin Reverb
+  2 -> AmpModel   166    6     10       47       232_400   199_200   -- AC30
+  3 -> AmpModel   208   31     16       85       374_400   322_400   -- Rockerverb
+  4 -> AmpModel   220   16     16       80       462_000   407_000   -- JCM800
+  5 -> AmpModel   246   39     23      116       615_000   541_200   -- TriAmp Mk3
+  _ -> AmpModel    18    6      4       22        16_200    13_500   -- 6/7 -> JC-120
+
+-- Thin projections (byte-identical to the old per-model tables). The detailed
+-- per-value rationale stays in the comment blocks above each projection below.
 ampCharForModel :: Unsigned 3 -> Unsigned 8
-ampCharForModel idx = case idx of
-  0 -> 18    -- JC-120        : high-headroom solid-state clean
-  1 -> 78    -- Twin Reverb   : glassy tube clean
-  2 -> 166   -- AC30          : earlier chime breakup
-  3 -> 208   -- Rockerverb    : thick dark saturation
-  4 -> 220   -- JCM800        : classic rock cascaded drive
-  5 -> 246   -- TriAmp Mk3    : modern high-gain peak
-  _ -> 18    -- 6/7 reserved -> safe (JC-120)
+ampCharForModel = amChar . ampModel
 
 -- | Per-model power-stage soft-clip ceiling ("クリーン用パワーヘッドルーム",
 -- 2026-06-17). The power / resonance / master softClipK stages model power-amp
@@ -80,21 +104,7 @@ ampPowerKnee base idx = case idx of
 -- now 80+(char>>2) (was 128+...); the per-model darken values absorb the
 -- difference between that base and each model's bilinear-target alpha.
 ampModelDarken :: Unsigned 3 -> Unsigned 8
-ampModelDarken idx = case idx of
-  0 ->  6    -- JC-120: bright SS feel (48k: 0)
-  1 -> 12    -- Twin: bright but slightly rounded (48k: 3)
-  2 ->  6    -- AC30: top-end SPARKLE. 17->11 (D130), then ->6 (2026-06-17 cycle 1):
-             -- the amp-HP bass fix removed the bright differentiator, so AC30
-             -- amp-alone went MUFFLED (HFslp -2.7 < -2). A real AC30 (Top Boost)
-             -- is CHIMEY/bright -- less darken restores the >2 kHz sparkle.
-  3 -> 31    -- Rockerverb: darker low-mid thickness (48k: 18)
-  4 -> 16    -- JCM800: a touch more driven top (re-collation: JCM800 measured darkest at
-             -- 2-3 kHz; its base is correctly mid-forward -- the real Marshall mid is the
-             -- tone-stack @650 and PRESENCE is a separate control, which our model maps to
-             -- the now-effective PRESENCE knob (D128), so a base 2-3 kHz shelf is deferred to
-             -- a dedicated stage. Modest darken 20->16 just extends the D127 bright-cap.
-  5 -> 39    -- TriAmp Mk3: tight modern fizz control (48k: 26)
-  _ ->  6
+ampModelDarken = amDarken . ampModel
 
 -- | Per-model extra darken to add only in Drive mode. Stacked on top of
 -- ``ampModelDarken`` so each model's Drive-mode tone is darker than
@@ -103,14 +113,7 @@ ampModelDarken idx = case idx of
 -- the extra harmonics from the stronger Drive-mode knee deltas.
 -- 96 kHz: drive-mode extra darken halved (bilinear) per model (48k values noted).
 ampPreLpfDriveDarken :: Unsigned 3 -> Unsigned 8
-ampPreLpfDriveDarken idx = case idx of
-  0 ->  4    -- JC-120: light fizz guard (48k: 6)
-  1 ->  6    -- Twin: glassy tube breakup (48k: 8)
-  2 -> 10    -- AC30: jangly crunch (48k: 12)
-  3 -> 16    -- Rockerverb: thick saturation without excess fizz (reverted to D127; less alias)
-  4 -> 16    -- JCM800: classic-rock drive, controlled top (48k: 20)
-  5 -> 23    -- TriAmp Mk3: modern HG, kill fizz (reverted to D127; less alias)
-  _ ->  4
+ampPreLpfDriveDarken = amDriveDarken . ampModel
 
 -- | Per-model second-stage gain bonus in Drive mode.
 -- D69: raised only in Drive mode so the second clipper gets a real
@@ -125,14 +128,7 @@ ampPreLpfDriveDarken idx = case idx of
 -- Clean and the high-gain pair (Rockerverb idx 3, TriAmp idx 5) saturates most.
 -- JC-120 (idx 0) is clean SS (asym-clip unused).
 ampSecondStageDriveBonus :: Unsigned 3 -> Unsigned 9
-ampSecondStageDriveBonus idx = case idx of
-  0 -> 22    -- JC-120: clean SS (asym-clip not used; bonus unused)
-  1 -> 33    -- Twin: clearer breakup (was 30)
-  2 -> 47    -- AC30: clear crunch (was 42)
-  3 -> 85    -- Rockerverb: thick high-gain saturation push (was 62)
-  4 -> 80    -- JCM800: classic-rock cascaded crunch (was 74)
-  5 -> 116   -- TriAmp Mk3: strongest modern HG sustain (was 88)
-  _ -> 22
+ampSecondStageDriveBonus = amSecondBonus . ampModel
 
 -- | Per-model positive-side asym-clip knee delta in Drive mode.
 -- Signed 25 fits the existing arithmetic in ``ampAsymClip``.
@@ -149,26 +145,12 @@ ampSecondStageDriveBonus idx = case idx of
 -- dead code). The fixed-scalar form lands at the same DSP count as
 -- D55/D68 (83), while still giving a stronger Drive-mode knee shrink.
 ampDrivePosDelta :: Unsigned 3 -> Signed 25
-ampDrivePosDelta idx = case idx of
-  0 ->  16_200   -- JC-120       : 18 * 900
-  1 ->  85_800   -- Twin Reverb  : 78 * 1100
-  2 -> 232_400   -- AC30         : 166 * 1400
-  3 -> 374_400   -- Rockerverb   : 208 * 1800 (reverted: keep D127 knee = placement-safe)
-  4 -> 462_000   -- JCM800       : 220 * 2100
-  5 -> 615_000   -- TriAmp Mk3   : 246 * 2500 (reverted: keep D127 knee = placement-safe)
-  _ ->  16_200
+ampDrivePosDelta = amDrivePos . ampModel
 
 -- | Per-model negative-side asym-clip knee delta in Drive mode.
 -- Slightly smaller than ``ampDrivePosDelta`` so the asymmetric
 -- character (negKnee was already 550 k below posKnee in D55) is
 -- preserved.
 ampDriveNegDelta :: Unsigned 3 -> Signed 25
-ampDriveNegDelta idx = case idx of
-  0 ->  13_500   -- JC-120       : 18 * 750
-  1 ->  74_100   -- Twin Reverb  : 78 * 950
-  2 -> 199_200   -- AC30         : 166 * 1200
-  3 -> 322_400   -- Rockerverb   : 208 * 1550 (reverted: keep D127 knee = placement-safe)
-  4 -> 407_000   -- JCM800       : 220 * 1850
-  5 -> 541_200   -- TriAmp Mk3   : 246 * 2200 (reverted: keep D127 knee = placement-safe)
-  _ ->  13_500
+ampDriveNegDelta = amDriveNeg . ampModel
 

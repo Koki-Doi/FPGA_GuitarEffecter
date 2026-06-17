@@ -22,6 +22,7 @@ SIM_BIN = os.path.join(REPO, "tools", "dsp_sim", "dsp_sim")
 FS24 = 1 << 23
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import run_sim  # noqa: E402
+from metrics import BANDS_HZ, band_balance, hf_slope  # noqa: E402,F401 (shared, refactor P4)
 
 ORDER = ["gate", "od", "dist", "eq", "rat", "amp",
          "amp_tone", "cab", "reverb", "ns", "comp", "wah"]
@@ -154,37 +155,9 @@ def net_curve(cm, name, freqs, x, L_byp, fs, gap, drive=60, absolute=False):
     return net if absolute else net - np.median(net)
 
 
-# Guitar-relevant bands for the low-end / balance summary. LOW covers below the
-# low-E (82 Hz) down to drop tunings (~62 Hz) so a thin-bass pedal is visible.
-BANDS_HZ = [("low", 40, 160), ("lowmid", 160, 500), ("mid", 500, 1500),
-            ("high", 1500, 9000)]
-
-
-def band_balance(net, freqs):
-    """Average dB in each guitar band (low/lowmid/mid/high) from an ABSOLUTE
-    net curve, plus the low-vs-mid balance (negative = bass-light = thin)."""
-    out = {}
-    for name, lo, hi in BANDS_HZ:
-        m = (freqs >= lo) & (freqs < hi)
-        out[name] = float(np.mean(net[m])) if m.any() else float("nan")
-    out["low_vs_mid"] = out["low"] - out["mid"]
-    return out
-
-
-def hf_slope(net, freqs, lo=2000, hi=9000):
-    """Treble slope in dB/OCTAVE across [lo, hi] of an ABSOLUTE net curve --
-    the brightness / 'digital fizz' axis a single mid-feature misses. A real
-    guitar amp+cab rolls the top OFF (strongly negative slope, the speaker is a
-    ~2nd-order lowpass above ~4-5 kHz); a bare op-amp/differentiator EQ RISES
-    (positive). The single number that separates 'sounds like a rig' from
-    'sounds like a buzzy DI'."""
-    m = (freqs >= lo) & (freqs <= hi)
-    if m.sum() < 2:
-        return float("nan")
-    x = np.log2(freqs[m].astype(np.float64))      # octaves
-    y = net[m]
-    a = np.polyfit(x - x.mean(), y, 1)[0]          # dB per octave
-    return float(a)
+# BANDS_HZ / band_balance / hf_slope moved to metrics.py (refactor P4) and
+# imported at the top -- they are shared with targets.py (which used to keep a
+# hand-copied hf_slope).
 
 
 def main():

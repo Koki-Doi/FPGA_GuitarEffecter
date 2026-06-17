@@ -42,9 +42,11 @@ PKGID = ("clash-prelude-1.8.1-"
 GAP = 8
 ORDER = ["gate", "od", "dist", "eq", "rat", "amp",
          "amp_tone", "cab", "reverb", "ns", "comp", "wah"]
-CONFIGS = ["bypass", "amp_jc120", "amp_jcm800", "amp_rockerverb", "amp_triamp",
-           "overdrive_ts9", "od_bd2", "od_ocd", "distortion_ds1",
-           "dist_metal", "cab", "reverb"]
+CONFIGS = ["bypass", "amp_jc120", "amp_twin", "amp_ac30", "amp_rockerverb",
+           "amp_jcm800", "amp_triamp",
+           "overdrive_ts9", "od_bd2", "od_ocd",
+           "dist_cleanboost", "dist_ts", "distortion_ds1", "dist_bigmuff",
+           "dist_fuzz", "dist_metal", "dist_rat", "cab", "reverb"]
 
 sys.path.insert(0, SIM_DIR)
 
@@ -133,6 +135,14 @@ def _config_words(cm, name):
         w["gate"] = cm.gate_word(amp_on=True)
         w["amp"] = cm.amp_word(32, 70, 58, 42)
         w["amp_tone"] = cm.amp_tone_word(55, 52, 58, amp_model_idx=5, amp_drive_mode=1)
+    elif name == "amp_twin":  # idx 1: Fender blackface clean (G refactor coverage)
+        w["gate"] = cm.gate_word(amp_on=True)
+        w["amp"] = cm.amp_word(22, 62, 50, 38)
+        w["amp_tone"] = cm.amp_tone_word(52, 50, 54, amp_model_idx=1, amp_drive_mode=0)
+    elif name == "amp_ac30":  # idx 2: Vox chime (G refactor coverage)
+        w["gate"] = cm.gate_word(amp_on=True)
+        w["amp"] = cm.amp_word(30, 66, 56, 40)
+        w["amp_tone"] = cm.amp_tone_word(54, 52, 56, amp_model_idx=2, amp_drive_mode=1)
     elif name == "overdrive_ts9":
         w["gate"] = cm.gate_word(overdrive_on=True)
         w["od"] = cm.overdrive_word(65, 100, 55, overdrive_model=0)
@@ -148,6 +158,21 @@ def _config_words(cm, name):
     elif name == "dist_metal":  # voicing: ~700 Hz mid-scoop (shared bigMuff notch)
         w["gate"] = cm.gate_word(distortion_on=True)
         w["dist"] = cm.distortion_word(50, 50, 70, pedal_mask=1 << 6)  # metal = bit 6
+    elif name == "dist_cleanboost":  # bit 0 (C refactor coverage)
+        w["gate"] = cm.gate_word(distortion_on=True)
+        w["dist"] = cm.distortion_word(50, 50, 60, pedal_mask=1 << 0)
+    elif name == "dist_ts":  # bit 1 tube_screamer (C refactor coverage)
+        w["gate"] = cm.gate_word(distortion_on=True)
+        w["dist"] = cm.distortion_word(50, 50, 60, pedal_mask=1 << 1)
+    elif name == "dist_bigmuff":  # bit 4 (C refactor coverage)
+        w["gate"] = cm.gate_word(distortion_on=True)
+        w["dist"] = cm.distortion_word(50, 50, 70, pedal_mask=1 << 4)
+    elif name == "dist_fuzz":  # bit 5 fuzz_face (C refactor coverage)
+        w["gate"] = cm.gate_word(distortion_on=True)
+        w["dist"] = cm.distortion_word(50, 50, 70, pedal_mask=1 << 5)
+    elif name == "dist_rat":  # dedicated RAT stage (C refactor coverage)
+        w["gate"] = cm.gate_word(rat_on=True)
+        w["rat"] = cm.rat_word(35, 100, 55, 100)
     elif name == "cab":  # voicing: cone-breakup presence peak (~2.8 kHz biquad)
         w["gate"] = cm.gate_word(cab_on=True)
         w["cab"] = cm.cab_word(100, 100, 1, 50)
