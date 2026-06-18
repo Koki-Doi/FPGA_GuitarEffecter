@@ -12284,7 +12284,7 @@ begin
                 \c$gain_case_alt_0\;
 
   with (idx) select
-    \c$gain_case_alt\ <= result_116 when "000",
+    \c$gain_case_alt\ <= result_117 - \c$ampMasterFrame_upOut_app_arg_1\ when "000",
                          result_116 when "001",
                          result_116 when "010",
                          result_116 when "011",
@@ -12293,7 +12293,7 @@ begin
                          result_117 when others;
 
   with (idx) select
-    \c$gain_case_alt_0\ <= (result_117 - \c$ampMasterFrame_upOut_app_arg_8\) - \c$ampMasterFrame_upOut_app_arg_7\ when "000",
+    \c$gain_case_alt_0\ <= \c$ampMasterFrame_upOut_app_arg_3\ when "000",
                            result_116 when "001",
                            result_116 when "010",
                            result_116 when "101",
@@ -12308,10 +12308,10 @@ begin
   with (idx) select
     \c$x_case_alt_3\ <= to_signed(0,24) when "000",
                         to_signed(0,24) when "001",
-                        to_signed(800000,24) when "010",
-                        to_signed(2200000,24) when "011",
-                        to_signed(1800000,24) when "100",
-                        to_signed(1600000,24) when "101",
+                        to_signed(1600000,24) when "010",
+                        to_signed(4200000,24) when "011",
+                        to_signed(3400000,24) when "100",
+                        to_signed(3000000,24) when "101",
                         to_signed(0,24) when others;
 
   with (idx) select
@@ -12333,16 +12333,15 @@ begin
                                       \c$ampMasterFrame_upOut_case_alt_0\;
 
   with (idx) select
-    \c$ampMasterFrame_upOut_case_alt\ <= \c$ampMasterFrame_upOut_app_arg_2\ + \c$ampMasterFrame_upOut_app_arg_4\ when "000",
-                                         (\c$ampMasterFrame_upOut_app_arg_0\ + \c$ampMasterFrame_upOut_app_arg_2\) + \c$ampMasterFrame_upOut_app_arg_6\ when "001",
-                                         \c$ampMasterFrame_upOut_app_arg_0\ + \c$ampMasterFrame_upOut_app_arg_6\ when "010",
-                                         \c$ampMasterFrame_upOut_app_arg_2\ when "011",
+    \c$ampMasterFrame_upOut_case_alt\ <= (\c$ampMasterFrame_upOut_app_arg_2\ + \c$ampMasterFrame_upOut_app_arg_0\) + \c$ampMasterFrame_upOut_app_arg_6\ when "001",
+                                         \c$ampMasterFrame_upOut_app_arg_2\ + \c$ampMasterFrame_upOut_app_arg_6\ when "010",
+                                         \c$ampMasterFrame_upOut_app_arg_0\ when "011",
                                          \c$ampMasterFrame_upOut_case_alt_1\ when "100",
                                          \c$ampMasterFrame_upOut_case_alt_1\ + \c$ampMasterFrame_upOut_app_arg_4\ when others;
 
   \c$ampMasterFrame_upOut_app_arg_0\ <= resize(\c$ampMasterFrame_upOut_app_arg_1\,9);
 
-  \c$shI_61\ <= (to_signed(1,64));
+  \c$shI_61\ <= (to_signed(3,64));
 
   campMasterFrame_upOut_app_arg_1_shiftL : block
     signal sh_61 : natural;
@@ -12354,14 +12353,14 @@ begin
         to_integer(\c$shI_61\);
     \c$ampMasterFrame_upOut_app_arg_1\ <= shift_right(result_117,sh_61)
         -- pragma translate_off
-        when ((to_signed(1,64)) >= 0) else (others => 'X')
+        when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
   \c$ampMasterFrame_upOut_app_arg_2\ <= resize(\c$ampMasterFrame_upOut_app_arg_3\,9);
 
-  \c$shI_62\ <= (to_signed(3,64));
+  \c$shI_62\ <= (to_signed(1,64));
 
   campMasterFrame_upOut_app_arg_3_shiftL : block
     signal sh_62 : natural;
@@ -12373,7 +12372,7 @@ begin
         to_integer(\c$shI_62\);
     \c$ampMasterFrame_upOut_app_arg_3\ <= shift_right(result_117,sh_62)
         -- pragma translate_off
-        when ((to_signed(3,64)) >= 0) else (others => 'X')
+        when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
@@ -12780,10 +12779,10 @@ begin
   with (idx_0) select
     \c$x_case_alt_4\ <= to_signed(0,24) when "000",
                         to_signed(0,24) when "001",
-                        to_signed(800000,24) when "010",
-                        to_signed(2200000,24) when "011",
-                        to_signed(1800000,24) when "100",
-                        to_signed(1600000,24) when "101",
+                        to_signed(1600000,24) when "010",
+                        to_signed(4200000,24) when "011",
+                        to_signed(3400000,24) when "100",
+                        to_signed(3000000,24) when "101",
                         to_signed(0,24) when others;
 
   with (idx_0) select
@@ -13357,10 +13356,10 @@ begin
   with (idx_2) select
     \c$x_case_alt_5\ <= to_signed(0,24) when "000",
                         to_signed(0,24) when "001",
-                        to_signed(800000,24) when "010",
-                        to_signed(2200000,24) when "011",
-                        to_signed(1800000,24) when "100",
-                        to_signed(1600000,24) when "101",
+                        to_signed(1600000,24) when "010",
+                        to_signed(4200000,24) when "011",
+                        to_signed(3400000,24) when "100",
+                        to_signed(3000000,24) when "101",
                         to_signed(0,24) when others;
 
   with (idx_2) select
