@@ -12288,7 +12288,7 @@ begin
                 \c$gain_case_alt_0\;
 
   with (idx) select
-    \c$gain_case_alt\ <= result_117 - \c$ampMasterFrame_upOut_app_arg_1\ when "000",
+    \c$gain_case_alt\ <= \c$ampMasterFrame_upOut_app_arg_3\ + \c$ampMasterFrame_upOut_app_arg_8\ when "000",
                          result_116 when "001",
                          result_116 when "010",
                          result_116 when "011",
@@ -14721,11 +14721,11 @@ begin
 
   with (idx_3) select
     \c$cleanBonus_case_alt\ <= to_signed(0,25) when "000",
-                               to_signed(2300000,25) when "001",
-                               to_signed(2400000,25) when "010",
-                               to_signed(2800000,25) when "011",
-                               to_signed(3000000,25) when "100",
-                               to_signed(2000000,25) when "101",
+                               to_signed(3300000,25) when "001",
+                               to_signed(3400000,25) when "010",
+                               to_signed(3800000,25) when "011",
+                               to_signed(4000000,25) when "100",
+                               to_signed(3000000,25) when "101",
                                to_signed(0,25) when others;
 
   \c$negKnee_app_arg\ <= \c$negKnee_case_scrut\.AmpModel_sel5_amDriveNeg when \c$x_app_arg_37\ else
@@ -15538,11 +15538,11 @@ begin
 
   with (idx_6) select
     \c$cleanBonus_case_alt_0\ <= to_signed(0,25) when "000",
-                                 to_signed(2300000,25) when "001",
-                                 to_signed(2400000,25) when "010",
-                                 to_signed(2800000,25) when "011",
-                                 to_signed(3000000,25) when "100",
-                                 to_signed(2000000,25) when "101",
+                                 to_signed(3300000,25) when "001",
+                                 to_signed(3400000,25) when "010",
+                                 to_signed(3800000,25) when "011",
+                                 to_signed(4000000,25) when "100",
+                                 to_signed(3000000,25) when "101",
                                  to_signed(0,25) when others;
 
   \c$negKnee_app_arg_0\ <= \c$negKnee_case_scrut_0\.AmpModel_sel5_amDriveNeg when \c$x_app_arg_40\ else
