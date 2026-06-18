@@ -161,12 +161,17 @@ ampCleanKneeBonus idx = case idx of
 -- knee) stay at 0.
 ampCleanPowerBonus :: Unsigned 3 -> Sample
 ampCleanPowerBonus idx = case idx of
+  -- 2026-06-18 "サステーンが汚い": D138 had LOWERED these knees to make the power
+  -- softClipK compress for sustain, but that compression clips the sustained
+  -- tail = gritty/dirty. Raise them back (cleaner power stage); the smooth
+  -- power-SAG envelope (ampSagEnvNext, no harmonics) carries the sustain/bloom
+  -- instead. Also keeps the CLEAN cleaner, which the user said not to over-process.
   0 -> 0           -- JC-120 : SS clean knee handled in Clip.hs
-  1 -> 0           -- Twin   : 4.6M power knee + the +3.5 dB boost drives it for sustain
-  2 -> 800_000     -- AC30   : more class-A power compression / sustain
-  3 -> 2_200_000   -- Rockerverb : restore power-amp sustain, still clean tone
-  4 -> 1_800_000   -- JCM800 : restore power-amp sustain, still clean tone
-  5 -> 1_600_000   -- TriAmp : restore power-amp sustain, still clean tone
+  1 -> 0           -- Twin   : 4.6M power knee + the boost
+  2 -> 1_600_000   -- AC30   : clean power stage (sustain from sag, not clipping)
+  3 -> 4_200_000   -- Rockerverb : clean power stage
+  4 -> 3_400_000   -- JCM800 : clean power stage
+  5 -> 3_000_000   -- TriAmp : clean power stage
   _ -> 0           -- 6/7 -> JC-120 fallback
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =

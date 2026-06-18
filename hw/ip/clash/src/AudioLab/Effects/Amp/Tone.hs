@@ -296,7 +296,7 @@ ampMasterFrame env f =
   -- Twin +3.5 trims backed out) toward a common ~-15 dBFS target, per mode.
   effLevel
     | not (ampDriveModeF f) = case idx of   -- CLEAN (normalize + input-gain-loss makeup)
-        0 -> up (s 3 + s 5)                  -- JC-120  x1.16 (+1.3 dB)
+        0 -> e - (e `shiftR` 3)              -- JC-120  x0.88 (2026-06-18 "JC 大きすぎ": SS amp does not compress so its peaks ride hot; pull it ~2.5 dB under the lineup)
         1 -> up (s 1 + s 3 + s 4)            -- Twin    x1.69 (+4.6, genuinely quiet)
         2 -> up (s 1 + s 4)                  -- AC30    x1.56 (+3.9)
         3 -> up (s 3)                        -- Rockerv x1.13 (+1.0)
@@ -304,7 +304,7 @@ ampMasterFrame env f =
         5 -> up (s 2 + s 5)                  -- TriAmp  x1.28 (+2.2)
         _ -> e
     | otherwise = case idx of               -- DRIVE (normalize only)
-        0 -> e - (e `shiftR` 2) - (e `shiftR` 4)   -- JC-120 x0.69 (-3.2, was loudest drive)
+        0 -> e `shiftR` 1                          -- JC-120 x0.50 (JC drive also pulled ~2.5 dB further under the lineup)
         1 -> up (s 2)                               -- Twin   x1.25 (+1.9)
         2 -> up (s 2)                               -- AC30   x1.25 (+1.9)
         5 -> up (s 4 + s 5)                         -- TriAmp x1.09 (+0.8)
