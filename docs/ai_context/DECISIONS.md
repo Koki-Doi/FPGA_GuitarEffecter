@@ -6602,7 +6602,60 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D141 — Chord-IMD fix: slew-limit the power-sag attack (chords no longer "detune"); BUILD PENDING, bench pending
+## D142 — Cleaner clean chords + clean <= drive level; BUILD PENDING, bench pending
+
+- **Decision.** User bench on D141: chords improved ("改善した") but asked for a bit
+  more: "クリーンチャンネルをもっとクリーンに / まだ少しだけ和音が変" (cleaner clean,
+  chords still slightly off) and "ドライブよりクリーンのほうがやや大きい" (clean slightly
+  louder than drive). Candidate on top of D141, NOT accepted. Accepted baseline
+  remains D135 (`533d5869`, merge `765323b`).
+- **Objective findings.** (1) Single-tone clean THD was ALREADY ~0% @0.20 FS on
+  every model -> the "汚い/和音が変" is a CHORD effect: a chord's summed peak is
+  higher than a single note and still grazed the clean waveshaper knees, leaving a
+  small residual in-band IMD (~2 dB above the chord floor). (2) Clean-vs-drive RMS
+  per model (synth pluck): only JC-120 had clean LOUDER than its own drive (+0.5 dB);
+  every tube model was already clean < drive (-1.6..-4.5). Clean is also less
+  compressed (peaky) so it READS louder than its RMS = the perceived "clean louder".
+- **DSP changes (clean-mode only; Drive byte-identical).** (1) `ampCleanKneeBonus`
+  +1.0M each non-JC (Twin 3.3M / AC30 3.4M / Rockerverb 3.8M / JCM800 4.0M / TriAmp
+  3.0M): the clean waveshaper knees rise so chord peaks stay below them -> clean
+  chord IMD drops to the bypass floor (Twin/Rockerverb/TriAmp) / near-floor
+  (AC30/JCM800 keep a touch of authentic class-A early breakup). Because it only
+  un-clips peaks that WERE clipping, the normal-pluck clean LEVEL is unchanged
+  (no level side effect). (2) JC-120 clean output normalization x0.88 -> x0.75
+  (`(e>>1)+(e>>2)`): clean now sits ~1.0 dB UNDER its own drive. JC uses the SS
+  clean path (no knee bonus), so only its level moved.
+- **Verification (offline).** Clean-vs-drive RMS now clean <= drive on EVERY model
+  (c-d JC -1.0 / Twin -3.7 / AC30 -2.3 / Rockerverb -2.6 / JCM800 -1.6 / TriAmp
+  -4.5); clean chord IMD at/near the bypass floor at BOTH 0.10 and 0.20 FS. Full
+  `--check` suite + golden re-bless + Vivado build _PENDING_ (results below on
+  completion).
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO / address /
+  topEntity-port / AXI-topology change, no new multiplier (constant-table +
+  shift-add), no remote git op. Clash/VHDL/IP/bit/hwh regenerated.
+- **Verification (offline, complete).** `measure.py --check` **28/28** (clean EQ
+  unchanged = knee raise did not move the tone), `dist_eval.py --check` **7/7
+  pedals + 6/6 amps 0% THD @0.12 FS**, `dynamics_eval.py --check` **4/5** (the
+  same D141 crunch_rig overage -- crunch is JCM800 DRIVE, untouched by this
+  clean-only change), `knobcheck.py --all` **0 barely-audible flags**. Clean-vs-
+  drive RMS clean <= drive on every model; clean chord IMD at/near floor at 0.10
+  and 0.20 FS.
+- **Build.** Safe Clash regen + full clean Vivado rebuild. Timing fully MET: WNS
+  `+0.547 ns`, TNS `0.000`, WHS `+0.024 ns`, THS `0.000`, WPWS `+2.845`, 0
+  failing endpoints, 0 unrouted nets, all constraints met. **D109 CDC pair
+  `clk_fpga_0 -> clk +3.183 ns` / `clk -> clk_fpga_0 +6.744 ns` -- forward slack
+  `+3.183` is COMFORTABLY above the risky band (D130 clean +1.251 / D128 hiss
+  +1.327 / D141 +1.438): LOWER knife-edge risk than the (bench-clean) D141.**
+  bit/hwh md5 `83b33415ce962b8bcadee63cc36fca0f` /
+  `74c6f12b33a3cdcf7b93dd32eb35bd9a`.
+- **Smoke / status.** _Deploy + programmatic smoke below._ **Bench acceptance
+  pending; checks: (1) clean channel cleaner / chords no longer off; (2) clean no
+  longer louder than drive; (3) safe bypass (comfortable +3.183 CDC margin).**
+  Branch `feature/amp-clean-headroom`; do not merge to `main` / update
+  `baselines.json` until accepted. Rollback to D135 with `git checkout 765323b --
+  hw/Pynq-Z2/bitstreams/` + deploy.
+
+## D141 — Chord-IMD fix: slew-limit the power-sag attack (chords no longer "detune"); built/deployed/smoked, bench IMPROVED (`e29012a8`)
 
 - **Decision.** User on D140: "音程自体が変になってる気がする。特に和音" (notes/chords
   sound detuned, esp. chords) -> "和音のシミュレーションを更に強化して" (strengthen the
