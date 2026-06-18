@@ -6654,10 +6654,21 @@ pre-existing 3 failures + 1 error baseline.
   is mode-independent so BOTH their clean and drive goldens move); amp_jc120
   (sag-exempt) + bypass + all pedal/cab/reverb goldens byte-identical (bypass
   bit-exact).
-- **Build.** _PENDING_ (safe Clash regen done, full clean Vivado rebuild running;
-  timing / CDC-pair slack / bit-hwh md5 to be filled in on completion).
-- **Smoke / status.** _PENDING build + deploy._ **Bench acceptance pending.**
-  Branch `feature/amp-clean-headroom`; do not merge to `main` / update
+- **Build.** Safe Clash regen + full clean Vivado rebuild. Timing fully MET:
+  WNS `+0.509 ns`, TNS `0.000`, WHS `+0.013 ns`, THS `0.000`, WPWS `+2.845`,
+  0 failing endpoints, 0 unrouted nets, all user-specified constraints met.
+  **⚠️ D109 CDC pair `clk_fpga_0 -> clk +1.438 ns` / `clk -> clk_fpga_0
+  +6.507 ns` -- forward slack `+1.438` is in the historically-risky band
+  (above D130 clean `+1.251` and D128 hiss `+1.327`, near D137 `+1.710`,
+  tighter than D135 `+6.139` / D140 `+5.582`). Per
+  `project_safebypass_knifeedge_cdc_rootcause` this number is a NON-MONOTONIC
+  risk indicator, not a predictor -- could be clean or hiss -- so the
+  safe-bypass ear-check is the decider.** bit/hwh md5
+  `e29012a8935b19630653ae2eabde7949` / `c7763bd8e9f2dd384ef16073dcc3e9a8`.
+- **Smoke / status.** _Deploy + programmatic smoke below._ **Bench acceptance
+  pending; PRIORITY CHECK = safe bypass (all effects off) given the +1.438 CDC
+  margin, plus the chord/detune fix on clean amps.** Branch
+  `feature/amp-clean-headroom`; do not merge to `main` / update
   `baselines.json` until accepted. Rollback to D135 with
   `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
 
