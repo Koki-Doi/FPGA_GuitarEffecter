@@ -6602,7 +6602,56 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D142 — Cleaner clean chords + clean <= drive level; BUILD PENDING, bench pending
+## D143 — ROLLBACK to D135: the D136-D142 amp-clean line is the safe-bypass CDC knife-edge; chord_eval.py kept (2026-06-19)
+
+- **Decision.** The whole `feature/amp-clean-headroom` amp-clean line (D136-D142:
+  clean-channel headroom, Clean/Drive separation, Fender level + sustain, the
+  D141 chord-IMD power-sag slew fix, the D142 cleaner-clean knee + clean<=drive
+  level) is **BENCH-REJECTED and rolled back to D135** (`533d5869`, merge
+  `765323b`). The amp Clash source (`Clip.hs` / `Models.hs` / `Tone.hs`),
+  regenerated VHDL/IP, golden vectors, and bit/hwh are restored to D135.
+  `tools/dsp_sim/chord_eval.py` (the chord-IMD / alias detector) + its README
+  entry are KEPT (the user asked to retain the chord simulation).
+- **Why (root cause CONFIRMED).** The D142 bench symptom was a constant DIGITAL
+  BUZZ ("ジー/バリバリ"), prominent with the amp on but **present even at amp-OFF
+  (all effects off = bypass)** and constant at idle = the textbook safe-bypass
+  CDC knife-edge: the DSP-out -> DAC `i2s_to_stream` FIFO write (112x untimed
+  CDC-13 LUTRAM paths, `clk_fpga_0 -> clk`) corrupted by this build's placement;
+  the amp merely amplifies the already-corrupted passthrough. Confirmed by
+  rollback: **D135 amp-OFF is CLEAN, the amp-on buzz "消えた".** So it is
+  build-specific, not physical/baseline, and NOT the voicing -- the offline sim
+  showed the D142 voicing was correct (`chord_eval.py` clean chord IMD at/near
+  the bypass floor on every model; clean RMS <= drive on every model; `measure`
+  28/28, `dist_eval` 7/7+6/6, `knobcheck` 0 flags).
+- **Two placement mitigations BOTH FAILED on the bench.** (1) Re-place via
+  `STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore` (reuse synth_1) -> Vivado converged
+  to a BYTE-IDENTICAL placement (config-frame body `cmp` == identical, only the
+  `.bit` timestamp differed) = useless. (2) Tightening the D109
+  `set_max_delay -datapath_only` 10.000 -> 6.000 ns on clk_fpga_0<->clk DID
+  change the placement (different body) and pulled the worst clk_fpga_0->clk
+  arrival 6.817 -> 4.368 ns with timing fully MET (WNS +0.611 / WHS +0.019) --
+  but the bench STILL BUZZED. So neither a blind re-place nor a tighter CDC bound
+  clears the knife-edge for the D136-D142 cumulative footprint, and the CDC-slack
+  number does NOT predict the buzz (D141 +1.438 was heard without a buzz report;
+  D142 +3.183 buzzed; D143-tightcdc arrival 4.368 buzzed).
+- **Boundaries.** `block_design.tcl` untouched; the D109 two-`set_clock_groups` +
+  `set_max_delay` XDC structure restored to 10.000 (the 6.000 experiment +
+  `rerun_impl_replace.tcl` / `rerun_impl_tightcdc.tcl` were reverted/removed,
+  uncommitted). No GPIO / address / topEntity-port change. No remote git op.
+- **Status.** D135 is the current accepted/deployed baseline again
+  (`baselines.json` current_deployed `765323b`; D141 `8a811e3` / D142 `041a007`
+  added as bench-rejected with live md5s in `BASELINES.md`). Board redeployed +
+  reloaded to clean D135 (all sites md5 `533d5869`; Pmod mode 2, ADC HPF True).
+- **Next robust attack on the knife-edge (none quick; each needs an ear-bench).**
+  (a) pblock-LOCK the `i2s_to_stream` + `axis_switch_sink` FIFO cells to a fixed
+  region so the crossing stays tight regardless of DSP changes (need the cell
+  names from a routed DCP) -- RECOMMENDED; (b) incremental P&R seeded from a
+  freshly-built clean D135 routed DCP (the old one is gone, so rebuild clean D135
+  first); (c) bisect D136-D142 for the minimal-footprint change that stays
+  bypass-clean (the smaller the footprint, the safer per
+  `project_safebypass_knifeedge_cdc_rootcause`). Do NOT keep blindly re-placing.
+
+## D142 — Cleaner clean chords + clean <= drive level; BUILT, bench-REJECTED (knife-edge buzz), ROLLED BACK to D135 (`041a007`)
 
 - **Decision.** User bench on D141: chords improved ("改善した") but asked for a bit
   more: "クリーンチャンネルをもっとクリーンに / まだ少しだけ和音が変" (cleaner clean,
@@ -6655,7 +6704,7 @@ pre-existing 3 failures + 1 error baseline.
   `baselines.json` until accepted. Rollback to D135 with `git checkout 765323b --
   hw/Pynq-Z2/bitstreams/` + deploy.
 
-## D141 — Chord-IMD fix: slew-limit the power-sag attack (chords no longer "detune"); built/deployed/smoked, bench IMPROVED (`e29012a8`)
+## D141 — Chord-IMD fix: slew-limit the power-sag attack (chords no longer "detune"); built/deployed, bench IMPROVED but ROLLED BACK to D135 with the rest of the amp-clean line (D143, knife-edge) (`e29012a8`)
 
 - **Decision.** User on D140: "音程自体が変になってる気がする。特に和音" (notes/chords
   sound detuned, esp. chords) -> "和音のシミュレーションを更に強化して" (strengthen the

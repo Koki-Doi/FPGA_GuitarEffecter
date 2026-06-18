@@ -69,20 +69,12 @@ data AmpModel = AmpModel
 ampModel :: Unsigned 3 -> AmpModel
 ampModel idx = case idx of
   --              char darken driveDk 2ndBonus  drivePos  driveNeg
-  -- 2026-06-17 "clean vs drive 差を明確に": Drive-mode saturation pushed up on
-  -- every tube model (the asym-clip knee deltas shrink the Drive knee further,
-  -- and the second-stage bonus drives the second clipper harder + a touch
-  -- louder). Combined with the larger Clean-mode headroom (ampCleanKneeBonus /
-  -- ampCleanPowerBonus, Clean only) this opens a clear Clean->Drive step:
-  -- Clean stays clean, Drive is obviously driven. CDC pair had +6.1 ns margin
-  -- so the bigger deltas stay placement-safe. JC (idx 0) does not use these
-  -- (its SS knee is in Clip.hs); its values are inert.
-  0 -> AmpModel    18    6      4       22        16_200    13_500   -- JC-120 (asym-clip unused)
-  1 -> AmpModel    78   12      6       46       120_000   104_000   -- Twin Reverb
-  2 -> AmpModel   166    6     10       70       330_000   285_000   -- AC30
-  3 -> AmpModel   208   31     16      112       520_000   450_000   -- Rockerverb
-  4 -> AmpModel   220   16     16      112       640_000   570_000   -- JCM800
-  5 -> AmpModel   246   39     23      150       850_000   760_000   -- TriAmp Mk3
+  0 -> AmpModel    18    6      4       22        16_200    13_500   -- JC-120
+  1 -> AmpModel    78   12      6       33        85_800    74_100   -- Twin Reverb
+  2 -> AmpModel   166    6     10       47       232_400   199_200   -- AC30
+  3 -> AmpModel   208   31     16       85       374_400   322_400   -- Rockerverb
+  4 -> AmpModel   220   16     16       80       462_000   407_000   -- JCM800
+  5 -> AmpModel   246   39     23      116       615_000   541_200   -- TriAmp Mk3
   _ -> AmpModel    18    6      4       22        16_200    13_500   -- 6/7 -> JC-120
 
 -- Thin projections (byte-identical to the old per-model tables). The detailed
@@ -105,80 +97,6 @@ ampPowerKnee base idx = case idx of
   1 -> 4_600_000   -- Twin   : blackface clean platform, more headroom
   2 -> base + 300_000 -- AC30 : still early, but enough headroom for Clean-mode target
   _ -> base        -- Rockerverb/JCM800/TriAmp : keep power-amp compression
-
--- | Per-model CLEAN-mode (drive_mode 0) extra waveshaper-knee headroom
--- ("クリーンチャンネルでも歪みすぎ" fix, 2026-06-17). Before this, only JC-120
--- (idx 0) had real clean headroom (its own 7.5M symmetric knee); every other
--- model ran ``ampAsymClip`` at its full per-model character intensity even in
--- Clean mode, so "Clean" was just "Drive minus the drive-knee delta" and broke
--- up at a realistic guitar level (Twin 17% / AC30 29% / Marshall 32-36% THD at
--- 0.20 FS in the offline sweep). This bonus is ADDED to both clip knees ONLY
--- when drive_mode is 0 (Clean); Drive mode passes 0 here, so the Drive voicing
--- and every drive-knee delta stay byte-for-byte unchanged. Per the user's
--- "preserve model character" choice the values are graded: Twin gets the most
--- (blackface clean platform -> nearly hi-fi clean), AC30 keeps some class-A
--- early breakup (small bonus), and the high-gain Marshall/Rockerverb/TriAmp
--- clean channels become usable-clean but still break up when pushed.
--- Signed 25 fits the existing ``ampAsymClip`` knee arithmetic; constant/mux
--- only (the knee is a compare+shift, no new multiply / DSP).
--- 2026-06-17 "clean vs drive 差を明確に": clean-mode headroom raised further so
--- the Clean channel is genuinely clean at a playing level on every model (the
--- gain models were still ~11-15% THD at 0.15 FS), which -- together with the
--- hotter Drive voicing -- makes the Clean/Drive step obvious. AC30 keeps a
--- little class-A early breakup (smaller bonus) per the "preserve character"
--- choice.
--- 2026-06-18 "クリーンチャンネルはもう少しだけクリーンに / まだ少しだけ和音が変":
--- single-tone clean THD was already ~0% @0.20 FS, but a CHORD has a higher summed
--- peak that still grazed these waveshaper knees -> a small residual in-band IMD
--- ("和音が少し変"). Raise each non-JC clean knee +1.0M so chord peaks stay below
--- the knee = cleaner chord. Drive passes 0 (byte-identical). JC uses the SS path
--- (ampJc120Knee) and is already at the chord floor, so it stays 0 here.
-ampCleanKneeBonus :: Unsigned 3 -> Signed 25
-ampCleanKneeBonus idx = case idx of
-  0 -> 0           -- JC-120 : unused (model 0 takes the dedicated SS clean path)
-  1 -> 3_300_000   -- Twin   : blackface clean platform, near hi-fi clean (+1.0M)
-  2 -> 3_400_000   -- AC30   : char 166 -> low waveshaper knee (+1.0M)
-  3 -> 3_800_000   -- Rockerverb : clean channel genuinely clean (+1.0M)
-  4 -> 4_000_000   -- JCM800 : char 220 -> low waveshaper knee (+1.0M)
-  5 -> 3_000_000   -- TriAmp : clean channel genuinely clean (+1.0M)
-  _ -> 0           -- 6/7 -> JC-120 fallback
-
--- | Per-model CLEAN-mode (drive_mode 0) extra POWER / RESONANCE / MASTER
--- soft-clip headroom (same "クリーンチャンネルでも歪みすぎ" fix, 2026-06-17). The
--- waveshaper clean bonus (``ampCleanKneeBonus``) only un-clips the pre-tone-stack
--- shaper; for AC30 and the high-gain Marshall/Rockerverb/TriAmp the CLEAN signal
--- is then re-clipped by the shared power / resonance-mix / master ``softClipK``
--- ceilings (~3.3-3.4M), which is the real clean-breakup limiter at a realistic
--- playing level once the shaper is clean. This bonus is ADDED to those ceilings
--- ONLY in Clean mode (Drive passes 0), so the Drive-mode power-amp
--- compression / sag is byte-for-byte unchanged. JC-120 / Twin already have a
--- high clean power knee from ``ampPowerKnee`` and stay clean, so they take 0 here.
--- Graded to the user's "preserve model character" choice: AC30 keeps some class-A
--- early breakup, the high-gain trio become usable-clean but compress when pushed.
--- 2026-06-18 "tube 系のサステーンが聞き取りづらい": the power / resonance-mix /
--- master softClipK is the power-amp compression that SUSTAINS notes (the loud
--- attack soft-clips, the decaying tail recovers -> the tail blooms up relative
--- to the attack = audible sustain). The D136/D137 clean-power bonus had pushed
--- these knees so high that the tube amps stopped compressing in Clean mode, so
--- the clean sustain dropped to ~1.35-1.5x. Pull the bonus back ~half: the power
--- softClipK is a SOFT knee so this restores sustain/bloom with only a mild THD
--- rise (still clean -- the clean TONE is held by the waveshaper clean bonus,
--- ampCleanKneeBonus, which is unchanged). JC (SS) / Twin (boosted into its 4.6M
--- knee) stay at 0.
-ampCleanPowerBonus :: Unsigned 3 -> Sample
-ampCleanPowerBonus idx = case idx of
-  -- 2026-06-18 "サステーンが汚い": D138 had LOWERED these knees to make the power
-  -- softClipK compress for sustain, but that compression clips the sustained
-  -- tail = gritty/dirty. Raise them back (cleaner power stage); the smooth
-  -- power-SAG envelope (ampSagEnvNext, no harmonics) carries the sustain/bloom
-  -- instead. Also keeps the CLEAN cleaner, which the user said not to over-process.
-  0 -> 0           -- JC-120 : SS clean knee handled in Clip.hs
-  1 -> 0           -- Twin   : 4.6M power knee + the boost
-  2 -> 1_600_000   -- AC30   : clean power stage (sustain from sag, not clipping)
-  3 -> 4_200_000   -- Rockerverb : clean power stage
-  4 -> 3_400_000   -- JCM800 : clean power stage
-  5 -> 3_000_000   -- TriAmp : clean power stage
-  _ -> 0           -- 6/7 -> JC-120 fallback
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
 -- darker / less fizz. Indexed by ``ampModelIdxF`` directly.

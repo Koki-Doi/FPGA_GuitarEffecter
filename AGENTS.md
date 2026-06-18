@@ -81,23 +81,30 @@ When a previous turn stopped mid-implementation:
 - Any change under `hw/ip/clash/src/LowPassFir.hs` or `hw/ip/clash/src/AudioLab/`
   that changes DSP logic requires Clash VHDL regeneration, IP repackage,
   Vivado bit/hwh rebuild, a fresh timing summary, deploy, programmatic smoke,
-  and user ear-bench before it can be treated as accepted. D109 fixed the old
-  safe-bypass CDC knife-edge, so DSP voicing rebuilds are no longer forbidden,
-  but a new bitstream still needs bench listening. **Accepted deployed baseline
-  is the 2026-06-17 realism baseline**: merge commit `21c0b5a`, bit md5
-  `54f7f547d04f0e4d59011e4754f834ca`, hwh md5
-  `2fbc8a5ba528bb6e1d415e6339b64bdb`. It is the all-effects sim-survey amp/dist
-  re-voicing (bass HP dead-pole->live, Metal full saturation, RESONANCE dead-knob,
-  HF-restore un-muffle, AC30 chime, clean-amp power headroom) plus the
-  comprehensive `tools/dsp_sim` problem-detectors (muffled/harsh,
-  clean-distortion, all-model targets; 28/28 EQ + 7/7 dist + 6/6 clean).
-  Supersedes b3dcab00 (`55ef823`) and D131 (`fdab62d5`); roll back via
-  `git checkout 55ef823 -- hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9` (D131). D120 was bench-rejected and the
-  post-D112 sag-removal/static-trim line remains abandoned; do not re-attempt
-  Amp sag removal or static sag trimming without a new explicit user
-  direction. Roll back D131, if a later issue surfaces, by restoring D130
-  bitstreams from merge commit `fffa2b1` (bit md5 `33af82f1...`) and
-  redeploying. See `DECISIONS.md` D109-D131 and `CURRENT_STATE.md`.
+  and user ear-bench before it can be treated as accepted. D109 BOUNDS (does NOT
+  eliminate) the safe-bypass CDC knife-edge, so a DSP voicing rebuild is allowed
+  but EACH new bitstream must be ear-benched for a constant DIGITAL BUZZ on the
+  bypass passthrough -- the slack number does not predict it. **Accepted deployed
+  baseline is D135**: merge commit `765323b`, bit md5
+  `533d586901dc3669285a49c6d82bab9f`, hwh md5
+  `731517487c6218f0e181c2b74485d7a6` -- large non-IR realism (Fuzz Face 900 Hz
+  mid-hump biquad + tighter clip knees + opened tone LPF; AC30/JCM800 stronger
+  `ampScoop` + model-local presence; Amp MIDDLE more audible; AC30 clean
+  headroom; Cab non-IR body tap), superseding the 2026-06-17 realism line
+  (D133 `54f7f547` merge `21c0b5a` / D134 `f62f132`). **The D136-D142
+  `feature/amp-clean-headroom` amp-clean line was BENCH-REJECTED and rolled back
+  to D135 on 2026-06-19: the cumulative footprint re-triggered the knife-edge
+  (constant digital buzz, audible at amp-off / amplified at amp-on; D135 amp-off
+  is clean). Re-placing (Explore = byte-identical placement) AND tightening the
+  CDC `set_max_delay` 10->6 ns BOTH failed. The voicing was correct in the
+  offline sim (chord IMD -> floor, clean <= drive) -- the blocker is placement.
+  `tools/dsp_sim/chord_eval.py` (chord-IMD detector) from that line was KEPT.**
+  Next robust attack: pblock-lock the `i2s_to_stream`/`axis_switch_sink` FIFO
+  cells, or incremental P&R from a freshly-built clean D135 routed DCP. The
+  post-D112 sag-removal/static-trim line (D119/D120) remains abandoned; do not
+  re-attempt Amp sag removal or static sag trimming without explicit direction.
+  Roll back further (D134) via `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/`.
+  See `DECISIONS.md` D109-D135, `CURRENT_STATE.md`, and `baselines.json`.
 - For effect voicing work, prefer the offline DSP sim / measurement loop before
   paying the Vivado cost: build/run `tools/dsp_sim`, use
   `tools/dsp_sim/measure.py` for net tone-curve checks, and keep golden/bypass

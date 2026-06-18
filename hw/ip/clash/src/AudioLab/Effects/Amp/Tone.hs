@@ -145,14 +145,9 @@ ampToneMixFrame f =
 
 ampPowerFrame :: Frame -> Frame
 ampPowerFrame f =
-  setMonoWet (if on then softClipK knee (monoWet f) else monoSample f) f
+  setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) (monoWet f) else monoSample f) f
  where
   on = flag6 (fGate f)
-  idx = ampModelIdxF f
-  -- Clean-mode (drive_mode 0) extra power-stage headroom, per model; Drive keeps
-  -- the byte-identical power-amp compression. See ``ampCleanPowerBonus``.
-  cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
-  knee = ampPowerKnee 3_400_000 idx + cleanP
 
 ampResPresenceFilterFrame :: Sample -> Sample -> Frame -> Frame
 ampResPresenceFilterFrame prevRes prevPresence f =
@@ -175,13 +170,9 @@ ampResPresenceFilterFrame prevRes prevPresence f =
 
 ampResPresenceMixFrame :: Frame -> Frame
 ampResPresenceMixFrame f =
-  setMonoWet (if on then softClipK knee wet else monoSample f) f
+  setMonoWet (if on then softClipK (ampPowerKnee 3_400_000 (ampModelIdxF f)) wet else monoSample f) f
  where
   on = flag6 (fGate f)
-  idx = ampModelIdxF f
-  -- Clean-mode extra headroom on the resonance/presence mix clip; Drive unchanged.
-  cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
-  knee = ampPowerKnee 3_400_000 idx + cleanP
   -- D132 knob-visibility pass: after the D121-D131 HF/bass re-voicing,
   -- knobcheck again showed PRESENCE/RESONANCE below the 1 dB audibility floor
   -- at the JCM800 drive op-point. Keep the existing products and safety clip,
@@ -252,31 +243,10 @@ satShift10Wide = resize . satShift10
 ampSagReleaseStep :: Sample
 ampSagReleaseStep = 512
 
--- 2026-06-18 "和音で音程が変" ROOT CAUSE + FIX. The sag was an INSTANT-attack
--- peak follower (shared peakFollower: `lvl > env -> lvl`). On a CHORD the master
--- input envelope ripples at the notes' beat frequencies (e.g. 104-82 = 22 Hz),
--- and an instant-attack follower tracks that ripple, so `effLevel = level - sag`
--- amplitude-modulates the master at the beat rate = sidebands at note +/- beat
--- (60 Hz = 82-22, 145 Hz = 123+22) = audible IN-BAND intermodulation that makes
--- chords sound detuned. JC-120 was the only clean model only because it is sag-
--- EXEMPT (idx 0). Fix: SLEW-LIMIT the attack so the sag cannot follow a chord's
--- beat ripple -- it now builds over ~tens of ms (real power-amp supply sag, not a
--- per-beat tremolo), removing the IMD while keeping the slow bloom. Release is
--- unchanged. Bespoke follower (not the shared peakFollower) so only the amp sag
--- changes; guard order matches the old one (off -> 0, hold on idle).
-ampSagAttackStep :: Sample
-ampSagAttackStep = 96   -- env rises <= 96/sample: ~tens of ms to build, well
-                        -- slower than a chord beat (~22 Hz / 45 ms) so no ripple.
-
 ampSagEnvNext :: Sample -> Maybe Frame -> Sample
-ampSagEnvNext env Nothing = env
-ampSagEnvNext env (Just f)
-  | not (flag6 (fGate f))   = 0
-  | lvl > env               = env + min (lvl - env) ampSagAttackStep  -- SLOW attack (was instant)
-  | env > ampSagReleaseStep = env - ampSagReleaseStep                 -- slow release (unchanged)
-  | otherwise               = 0
+ampSagEnvNext = peakFollower (flag6 . fGate) level (\_ _ -> ampSagReleaseStep)
  where
-  lvl = abs24 (monoWet f)
+  level f = abs24 (monoWet f)
 
 ampMasterFrame :: Sample -> Frame -> Frame
 ampMasterFrame env f =
@@ -299,40 +269,8 @@ ampMasterFrame env f =
     _ -> sagRaw0
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
-  effLevel0 = level - sagByte
-  -- Per-model + per-mode output normalization (2026-06-18 "ボリュームもまちまち
-  -- すぎ"). Replaces the earlier ad-hoc JC/Twin trims, which the Clean input-gain
-  -- reduction (Clip.hs) had made backwards (JC became the QUIETEST yet was being
-  -- pulled down; Twin was boosted yet near the top). Measured each model's RMS
-  -- @0.15 FS (clean spread 3.5 dB / drive 3.4 dB) and trims every model toward a
-  -- common ~-15 dBFS target in BOTH modes. CLEAN additionally gets back the
-  -- ~+3-5 dB that the clean input-gain reduction removed, so Clean and Drive sit
-  -- at the same level (no jump on channel switch). Shift-add only (NO new
-  -- multiplier -> keeps the master DSP/placement footprint), saturating in
-  -- Unsigned 9 so a hot MASTER cannot wrap. Multipliers in the comments.
-  e = effLevel0
-  up a = resize (min (255 :: Unsigned 9) (resize e + a)) :: Unsigned 8
-  s k = resize (e `shiftR` k) :: Unsigned 9
-  -- Factors derived from the TRUE per-model baseline (the old ad-hoc JC -3.25 /
-  -- Twin +3.5 trims backed out) toward a common ~-15 dBFS target, per mode.
-  effLevel
-    | not (ampDriveModeF f) = case idx of   -- CLEAN (normalize + input-gain-loss makeup)
-        0 -> (e `shiftR` 1) + (e `shiftR` 2) -- JC-120  x0.75 (2026-06-18 "クリーンのほうがやや大きい": JC was the ONLY model with clean louder than its own drive (+0.5 dB); SS clean does not compress so its peaks ride hot. Pull clean ~1.4 dB further so clean sits just under drive. was x0.88)
-        1 -> up (s 1 + s 3 + s 4)            -- Twin    x1.69 (+4.6, genuinely quiet)
-        2 -> up (s 1 + s 4)                  -- AC30    x1.56 (+3.9)
-        3 -> up (s 3)                        -- Rockerv x1.13 (+1.0)
-        4 -> up (s 2)                        -- JCM800  x1.25 (+1.9)
-        5 -> up (s 2 + s 5)                  -- TriAmp  x1.28 (+2.2)
-        _ -> e
-    | otherwise = case idx of               -- DRIVE (normalize only)
-        0 -> e `shiftR` 1                          -- JC-120 x0.50 (JC drive also pulled ~2.5 dB further under the lineup)
-        1 -> up (s 2)                               -- Twin   x1.25 (+1.9)
-        2 -> up (s 2)                               -- AC30   x1.25 (+1.9)
-        5 -> up (s 4 + s 5)                         -- TriAmp x1.09 (+0.8)
-        _ -> e                                       -- Rockerverb/JCM800 ~x1.0
-  -- Clean-mode extra master-stage headroom, per model; Drive keeps its ceiling.
-  cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
-  out = softClipK (ampPowerKnee 3_300_000 idx + cleanP) (satShift7 (mulU8 (monoWet f) effLevel))
+  effLevel = level - sagByte
+  out = softClipK (ampPowerKnee 3_300_000 idx) (satShift7 (mulU8 (monoWet f) effLevel))
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
 -- A real tube amp's output transformer is a big part of "amp warmth" that the

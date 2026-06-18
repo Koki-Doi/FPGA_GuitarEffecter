@@ -120,18 +120,28 @@ When a previous turn stopped mid-implementation:
   is SAFE again (the old "only the D98 bit is bypass-clean, do not rebuild for
   voicing" rule is obsolete); still always ear-bench a new bitstream.** See
   `DECISIONS.md` D109-D131 + `project_safebypass_knifeedge_cdc_rootcause`.
-  **Accepted deployed baseline is the 2026-06-17 realism baseline
-  (`54f7f547`)**, merge commit `21c0b5a`, hwh md5
-  `2fbc8a5ba528bb6e1d415e6339b64bdb`. It is the all-effects sim-survey
-  re-voicing (bass: amp input-HP dead-pole -> live; Metal full saturation:
-  os4x clip floor 1.05M->600k; amp RESONANCE dead-knob fix; HF-restore
-  un-muffle; AC30 chime; clean-amp power headroom: per-model `ampPowerKnee`)
-  plus the comprehensive `tools/dsp_sim` problem-detectors (muffled/harsh,
-  clean-distortion, all-model targets). Sim: 28/28 EQ + 7/7 distortion + 6/6
-  amps-clean-at-playing-level vs `targets.py`. Supersedes b3dcab00 (`55ef823`)
-  and D131 (`fdab62d5`). Roll back to b3dcab00 via `git checkout 55ef823 --
-  hw/Pynq-Z2/bitstreams/` (or D131 via `37114b9`) and redeploy. See
-  `CURRENT_STATE.md` + `REALISM_ALL_EFFECTS_SIM_SURVEY.md`.
+  **Accepted deployed baseline is D135 (`533d5869`, merge commit `765323b`,
+  hwh md5 `731517487c6218f0e181c2b74485d7a6`)** -- large non-IR realism
+  (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees + opened tone LPF;
+  AC30/JCM800 stronger `ampScoop` + model-local presence; Amp MIDDLE more
+  audible; AC30 clean headroom; Cab non-IR body tap), superseding the
+  2026-06-17 realism line (D133 `54f7f547` merge `21c0b5a` / D134 `f62f132`).
+  **The D136-D142 `feature/amp-clean-headroom` amp-clean line (clean-channel
+  headroom, Clean/Drive separation, Fender level, sustain, chord-IMD sag fix,
+  cleaner-clean knee) was BENCH-REJECTED and rolled back to D135 on 2026-06-19:
+  every rebuild of that cumulative footprint hit the safe-bypass CDC knife-edge
+  = a constant DIGITAL BUZZ on the bypass passthrough (audible at amp-off,
+  amplified at amp-on; D135 amp-off is clean). Re-placing (Explore directive =
+  byte-identical placement) AND tightening the CDC `set_max_delay` 10->6 ns
+  BOTH failed to clear it. The voicing source was correct in the offline sim
+  (`chord_eval.py` chord IMD -> floor, clean <= drive) -- the blocker is the
+  placement, not the voicing.** The `tools/dsp_sim/chord_eval.py` chord-IMD
+  detector from that line was KEPT. Next robust attack on the knife-edge:
+  pblock-lock the `i2s_to_stream`/`axis_switch_sink` FIFO cells, or incremental
+  P&R from a freshly-built clean D135 routed DCP -- see
+  `project_safebypass_knifeedge_cdc_rootcause`. Roll back further (D134) via
+  `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/` and redeploy. See
+  `CURRENT_STATE.md`, `DECISIONS.md` D109-D135, and `baselines.json`.
   XADC is live as `xadc_wiz_a0` for the FP02M Wah pedal. A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD
   clocks undefined at synth elaboration, applied at impl).

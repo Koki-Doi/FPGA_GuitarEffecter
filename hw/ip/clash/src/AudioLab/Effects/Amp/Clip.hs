@@ -37,20 +37,10 @@ ampDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (monoWet f) gain else 0, fAccR = 0}
  where
   on = flag6 (fGate f)
-  -- 1.0x to about 19x using Q7-style post shift (unity = 128). The
-  -- recording-analysis pass trims the ceiling again so Amp-only and post-pedal
-  -- use do not create line-direct fizz before the cabinet stage.
-  --
-  -- 2026-06-18 "アンプがめちゃくちゃ / クリーンが強入力で歪む": the broad
-  -- alias/THD diagnostic showed CLEAN mode breaking up (20-40% THD + rising
-  -- alias floor) once the input passed ~0.2 FS, because this preamp stage
-  -- amplifies x2.27 even at a low gain knob (ctrlA 18) and pushes the signal
-  -- into the 5-stage clip cascade. A real amp's CLEAN channel has noticeably
-  -- LESS preamp gain than its drive channel, so in Clean mode use a gentler
-  -- slope (x1.0..~x9) for real headroom; Drive keeps the full x1.0..~x19.
-  drive = ampDriveModeF f
-  gainSlope = if drive then 9 else 4 :: Unsigned 12
-  gain = resize (128 + (resize (ctrlA (fAmp f)) * gainSlope :: Unsigned 12)) :: Unsigned 12
+  -- 1.0x to about 19x using Q7-style post shift. The recording-analysis
+  -- pass trims the ceiling again so Amp-only and post-pedal use do not
+  -- create line-direct fizz before the cabinet stage.
+  gain = resize (128 + (resize (ctrlA (fAmp f)) * 9 :: Unsigned 12)) :: Unsigned 12
 
 ampDriveBoostFrame :: Frame -> Frame
 ampDriveBoostFrame f =
@@ -145,13 +135,8 @@ ampAsymClip modelIdx intensity drive hyst x
   posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
   negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
-  -- Clean-mode (drive_mode 0) extra knee headroom, per model. Raises both knees
-  -- so a clean amp stays clean to a hotter input; Drive mode passes 0 here so the
-  -- Drive voicing is byte-for-byte unchanged. See ``ampCleanKneeBonus``.
-  cleanBonus :: Signed 25
-  cleanBonus = if drive then 0 else ampCleanKneeBonus modelIdx
-  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta + cleanBonus - hystS) :: Sample
-  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + cleanBonus + hystS) :: Sample
+  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
+  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
 
@@ -171,17 +156,8 @@ ampHystBias prevOut = prevOut `shiftR` ampHystShift
 -- waveshaper colour in the normal range. No new DSP (softClipK is compare +
 -- shift, like ampAsymClip). Only model 0 is affected; every other model keeps
 -- ampAsymClip byte-for-byte.
---
--- Mode-dependent (2026-06-17 "clean vs drive 差を明確に" + "JC 出力が大きすぎる"):
--- The old 7.5M knee never caught a normal signal, so (a) JC barely compressed
--- and ran several dB louder than the rest of the lineup, and (b) JC's Drive
--- channel was identical to its Clean channel (both 7.5M). Now JC Clean uses a
--- firmer SS clean ceiling that gently compresses peaks (lower output, still
--- clean), and JC Drive drops the knee so it audibly breaks up -- the cleanest
--- amp of the lineup but with a real Clean/Drive distinction. softClipK is still
--- compare+shift (no new DSP); only model 0 is affected.
-ampJc120Knee :: Bool -> Sample
-ampJc120Knee drive = if drive then 3_200_000 else 4_600_000
+ampJc120CleanKnee :: Sample
+ampJc120CleanKnee = 7_500_000
 
 -- ``prevOut`` is this stage's previous output (pipeline register), feeding the
 -- D95 hysteresis. JC-120 (clean) and the amp-off bypass pass hyst = 0 implicitly
@@ -196,7 +172,7 @@ ampWaveshapeFrame prevOut f =
   intensity = ampCharForModel idx
   hyst = ampHystBias prevOut
   shaped
-    | idx == 0  = softClipK (ampJc120Knee drive) (monoWet f)  -- JC-120: SS clean / mild drive
+    | idx == 0  = softClipK ampJc120CleanKnee (monoWet f)  -- JC-120: clean SS channel
     | otherwise = ampAsymClip idx intensity drive hyst (monoWet f)
 
 ampPreLowpassFrame :: Sample -> Frame -> Frame
@@ -252,8 +228,8 @@ ampSecondStageFrame prevOut f =
   intensity = ampCharForModel idx `shiftR` 1
   s2in = satShift7 (fAccL f)
   hyst = ampHystBias prevOut
-  -- JC-120 second stage: same mode-dependent SS ceiling as stage 1.
+  -- JC-120 stays clean here too (same high-knee ceiling as stage 1).
   shaped
-    | idx == 0  = softClipK (ampJc120Knee drive) s2in
+    | idx == 0  = softClipK ampJc120CleanKnee s2in
     | otherwise = ampAsymClip idx intensity drive hyst s2in
 
