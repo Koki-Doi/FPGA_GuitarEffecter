@@ -6602,6 +6602,65 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D141 — Chord-IMD fix: slew-limit the power-sag attack (chords no longer "detune"); BUILD PENDING, bench pending
+
+- **Decision.** User on D140: "音程自体が変になってる気がする。特に和音" (notes/chords
+  sound detuned, esp. chords) -> "和音のシミュレーションを更に強化して" (strengthen the
+  chord sim) -> chose option B (clean all clean channels to JC level). Built a
+  chord-IMD detector (`tools/dsp_sim/chord_eval.py`, commit `ba72fa5`) and the
+  objective root cause turned out to be MORE localized than the proposed
+  normalization gain-staging: the power-SAG attack. Fixed there. Candidate, NOT
+  accepted. Accepted baseline remains D135 (`533d5869`, merge `765323b`).
+- **Root cause (objective).** `chord_eval.py`: a CLEAN major triad
+  (82+104+123 Hz) showed in-band 3rd-order IMD 12-19 dB above the bypass floor on
+  every NON-JC model (Twin -23.4 / AC30 -16.3 / Rockerverb -19 / JCM800 -20 /
+  TriAmp -19; spurious at ~60 Hz = 2f1-f2 and ~145 Hz), level-dependent, while
+  JC-120 sat at the -34.7 floor and was level-independent. Localized to the
+  power-SAG: `ampSagEnvNext` was an INSTANT-attack peak follower, so on a chord
+  the peak envelope ripples at the beat frequency (here 104-82 = 22 Hz) and the
+  follower tracked that ripple -> the master `effLevel = level - sagByte` is
+  amplitude-modulated at the beat -> sidebands at note±beat = audible "detuned
+  chord". Confirmed by a sag-disable test: Twin clean major IMD -23.4 -> -34.5
+  (= the JC floor). JC-120 (idx 0) is sag-exempt, hence already clean.
+- **DSP change.** Slew-limit ONLY the sag ATTACK: `ampSagAttackStep = 96`
+  (env rises <= 96/sample, ~tens of ms to build); release unchanged
+  (`ampSagReleaseStep = 512`). The follower can no longer track the fast beat
+  ripple, so the master is no longer AM'd -> clean-chord IMD drops to the JC-like
+  floor on ALL models (JC -34.7 / Twin -34.7 / AC30 -34.1 / Rockerverb -33.5 /
+  JCM800 -33.7 / TriAmp -33.7). The sag still reaches the same STEADY-STATE on a
+  sustained loud passage, so bloom/sustain is preserved (`dist_eval` sustain
+  BigMuff 2.04x / Metal 1.99x unchanged). One file: `Amp/Tone.hs`. No new
+  multiply (compare + add/shift). JC-120 path unchanged.
+- **Known trade-off (documented, accepted).** The instant attack was also
+  incidentally PEAK-LIMITING. Slowing it lets the most aggressive rig
+  (`dynamics_eval` crunch_rig = cranked JCM800 master 68 + OD-90 boost + cab) run
+  ~2 dB hotter: rms -6.0 vs the -8.0 balance ceiling -> `dynamics_eval` 4/5. This
+  is NOT clipping (peak -2.6 dBFS, clips 0) and is intrinsic to that extreme
+  patch: established robust across a full attack sweep (96->1024 only moves
+  crunch -6.0 -> -7.2, still over) AND a JCM800 power-knee trim test (3.3M->2.6M
+  bought only +0.7 dB and dulled JCM800, so reverted). A real power-supply sag IS
+  slow; the old fast sag was an incorrect fast-limiter that happened to mask this
+  cranked patch. Accepted as a non-clipping balance overage on the worst-case
+  config; normal patches (lower master, no OD stack) rarely engage the sag hard,
+  so the level impact there is negligible.
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO / address /
+  topEntity-port / AXI-topology change, no new multiplier (slew = compare +
+  add/shift), no remote git op. Clash/VHDL/IP/bit/hwh regenerated.
+- **Verification (offline).** `measure.py --check` 28/28, `dist_eval.py --check`
+  7/7 pedals + 6/6 clean amps (0% THD @0.12 FS), `dynamics_eval.py --check` 4/5
+  (crunch_rig overage above, by design), `knobcheck.py --all` only the known
+  TREBLE tilt false positive. `chord_eval.py` clean-chord IMD now JC-like on all
+  models. Golden re-bless changed amp_twin/ac30/rockerverb/jcm800/triamp (the sag
+  is mode-independent so BOTH their clean and drive goldens move); amp_jc120
+  (sag-exempt) + bypass + all pedal/cab/reverb goldens byte-identical (bypass
+  bit-exact).
+- **Build.** _PENDING_ (safe Clash regen done, full clean Vivado rebuild running;
+  timing / CDC-pair slack / bit-hwh md5 to be filled in on completion).
+- **Smoke / status.** _PENDING build + deploy._ **Bench acceptance pending.**
+  Branch `feature/amp-clean-headroom`; do not merge to `main` / update
+  `baselines.json` until accepted. Rollback to D135 with
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
 ## D140 — JC-120 output trim + dirty-sustain cleanup (clean tone untouched); deployed/smoked, bench pending (`495efbf7`)
 
 - **Decision.** User on D139: amp better ("マシになった"), but JC output still too

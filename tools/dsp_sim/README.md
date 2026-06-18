@@ -20,6 +20,7 @@ on a candidate you already like.
 | `harmonics.py` | **Harmonic / transfer** measurement on a single sine: fundamental, h2..h8, THD, odd/even ratio, alias/IMD energy. The OD/Distortion drive-character check. |
 | `reverb.py` | **Time-domain decay** measurement: RT60 (Schroeder T20), tail tone (centroid), wet level, comb echo period; `--decay-sweep` / `--tone-sweep` prove a knob is real + monotonic. The reverb axis `measure.py`/`harmonics.py` (both steady-state) could not see. |
 | `knobcheck.py` | **Per-band audio-change-per-knob** check across EVERY effect/knob: for each knob it renders two settings and reports how much the sound moves, broken down by frequency band (80/200/500/1k/3k/8k Hz) + overall, flagging "barely audible" knobs. The board-comparison artifact: "turn this knob, these bands should move by this much." |
+| `chord_eval.py` | **Chord IMD / "detuned chord" detector** (what single-tone `harmonics.py` misses): feeds real power / major-triad / 4-note chords through the DSP island and reports the INHARMONIC energy (dB rel the loudest fundamental = in-band 3rd-order intermodulation + alias floor) + the top spurious peaks, per model / mode / level, vs a bypass reference floor. `--check` PASS/FAIL clean-chord IMD ceilings; `--chord power\|major\|full`, `--amp`, `--drive`, `--level`, `--wav`. Caught the D141 power-sag instant-attack AM (beat-frequency sidebands on chords). |
 | `metrics.py` | Shared numeric helpers (`rms_dbfs`, band balance, HF slope, centroid, peak / clip count) used by the measurement tools so target checks do not carry hand-copied math. |
 | `signals.py` | Canonical, level-recorded test inputs (sine / log-sweep / two-tone / impulse / decaying-sine) so every retune A/Bs against the SAME stimulus. |
 | `build_sim.sh` | One-line `-O1` build (see below). |
@@ -64,6 +65,11 @@ python3 tools/dsp_sim/dist_eval.py --check
 python3 tools/dsp_sim/dynamics_eval.py --check
 python3 tools/dsp_sim/dynamics_eval.py --check --sections compressor,wah
 python3 tools/dsp_sim/dynamics_eval.py --batch --sections chain
+
+# chord IMD ("detuned chord") -- inharmonic energy vs bypass floor:
+python3 tools/dsp_sim/chord_eval.py --check              # clean-chord IMD ceilings (PASS/FAIL)
+python3 tools/dsp_sim/chord_eval.py --chord major        # per-model/mode/level table
+python3 tools/dsp_sim/chord_eval.py --amp 1 --drive 0 --wav /tmp/twin_clean_chord.wav
 
 # reverb decay (time-domain) -- the knob-is-real check:
 python3 tools/dsp_sim/reverb.py --decay-sweep            # RT60 vs DECAY (monotone?)
