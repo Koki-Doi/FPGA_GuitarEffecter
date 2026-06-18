@@ -6602,7 +6602,50 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D139 — Clean breakup-at-hard-input fix + per-model volume normalization; deployed/smoked, bench pending (`aa7cf3ed`)
+## D140 — JC-120 output trim + dirty-sustain cleanup (clean tone untouched); deployed/smoked, bench pending (`495efbf7`)
+
+- **Decision.** User on D139: amp better ("マシになった"), but JC output still too
+  loud, the non-Fender cleans still a bit dirty, and the sustain is gritty -- and
+  on reflection "クリーンはあまり修正をしなくてよかった" (the clean did not need heavy
+  fixing). So: NO further clean-tone processing; fix only JC level + the dirty
+  sustain. Deployed candidate, NOT accepted. Accepted baseline remains D135
+  (`533d5869`, merge `765323b`).
+- **DSP changes.** (1) Dirty sustain: D138 had LOWERED `ampCleanPowerBonus` so
+  the power `softClipK` compresses to make sustain, but that clips the sustained
+  tail = gritty. Raised the bonus back to the D137 values (clean power stage);
+  the smooth power-SAG envelope (`ampSagEnvNext`, no harmonics) carries the
+  sustain/bloom instead. (2) JC too loud: JC is solid-state and does not
+  compress, so its peaks ride hot (clean peak 0.56 vs lineup ~0.30). Pulled JC's
+  master normalization ~2 dB under the lineup (clean x1.16->x0.88 / drive
+  x0.69->x0.50); its clean peaks compress to 0.43/0.45. Side benefit of (1) (no
+  new clean processing -- just undoing D138's over-compression): the non-Fender
+  clean THD @0.15 FS drops AC30 13->8 / JCM800 15->6 / Rockerverb 2->0. CLEAN
+  tone otherwise untouched; Drive voicing unchanged; the other 5 models' levels
+  unchanged (-15.0..-15.3, spread 0.3 dB; JC -17.6/-18.3 by design).
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO / address /
+  topEntity-port / AXI-topology change, no new multiplier (constant-table +
+  shift-add), no remote git op. Clash/VHDL/IP/bit/hwh regenerated.
+- **Verification (offline).** `measure.py --check` 28/28, `dist_eval.py --check`
+  7/7 pedals + 6/6 clean amps (JC/AC30/JCM800 0% THD @0.12 FS), `dynamics_eval.py
+  --check` 5/5, `knobcheck.py --all` only the known TREBLE tilt false positive.
+  Golden re-bless changed ONLY amp_jc120 (the JC level trim); bypass + Drive +
+  Twin-clean + all pedal/cab/reverb goldens byte-identical (bypass bit-exact;
+  the AC30/JCM/Rockerverb clean cleanup is clean-mode only and those goldens are
+  drive).
+- **Build.** Safe Clash regen + full clean Vivado rebuild. Timing fully MET:
+  WNS `+1.005 ns` (best of the line), TNS 0, WHS `+0.028 ns`, THS 0, WPWS
+  `+2.845`, route errors 0, all constraints met. **D109 CDC pair
+  `clk_fpga_0 -> clk +5.582 ns` / `clk -> clk_fpga_0 +6.632 ns` -- forward slack
+  +5.582 is very comfortable (near D135 +6.139): low safe-bypass knife-edge
+  risk.** bit/hwh md5 `495efbf7ddb5debf182d73c73df4e6ac` /
+  `9225bca3a066550d8394af0fc7ff00dd`. `scripts/deploy_to_pynq.sh` completed;
+  board bit sites md5-match.
+- **Smoke / status.** Pmod mode 2 smoke + ADC HPF check below. **Bench
+  acceptance pending.** Branch `feature/amp-clean-headroom`; do not merge to
+  `main` / update `baselines.json` until accepted. Rollback to D135 with
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
+## D139 — Clean breakup-at-hard-input fix + per-model volume normalization; superseded by D140 (`aa7cf3ed`)
 
 - **Decision.** User: "アンプがめちゃくちゃ" + "ボリュームもまちまちすぎ"; asked to
   evaluate objectively in sim the axes not yet captured, and fix. Confirmed it is
