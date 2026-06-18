@@ -6602,7 +6602,66 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D138 — Twin/Fender output boost + restored tube power-amp sustain; deployed/smoked, bench pending, ELEVATED CDC RISK (`01e296cd`)
+## D139 — Clean breakup-at-hard-input fix + per-model volume normalization; deployed/smoked, bench pending (`aa7cf3ed`)
+
+- **Decision.** User: "アンプがめちゃくちゃ" + "ボリュームもまちまちすぎ"; asked to
+  evaluate objectively in sim the axes not yet captured, and fix. Confirmed it is
+  a VOICING problem, not the CDC hiss (D138 safe-bypass was clean). Builds on
+  D136-D138. Deployed candidate, NOT accepted. Accepted baseline remains D135
+  (`533d5869`, merge `765323b`).
+- **New objective tool.** Added a broad **alias/THD-vs-input-level diagnostic**
+  (1 kHz sine swept 0.08..0.40 FS; reports THD%, the `nonharmonic_dBFS` alias/
+  harshness floor relative to the fundamental, and peak) -- the "unverbalized"
+  axis the earlier fixed-0.15-FS THD metric missed.
+- **Findings.** (1) CLEAN distorted hard at a realistic pick (0.25 FS: 21-38%
+  THD + a rising alias floor) -- the preamp input-gain stage
+  (`ampDriveMultiplyFrame`, gain `128 + ctrlA*9`, unity 128) amplifies x2.27 even
+  at a low gain knob (ctrlA 18) and drives the 5-stage soft-clip cascade
+  (waveshape -> 2nd-stage -> power -> resonance-mix -> master). (2) Per-model
+  output level spread 3.5 dB clean / 3.4 dB drive, and the earlier ad-hoc JC
+  -3.25 / Twin +3.5 master trims had become BACKWARDS after the gain changes.
+- **DSP changes.** (a) Clean-mode preamp gain slope `9 -> 4` in
+  `ampDriveMultiplyFrame` (a real amp's clean channel has less preamp gain; Drive
+  keeps slope 9): clean now stays clean across the input range -- THD @0.15
+  5-26% -> 0-15%, @0.25 21-38% -> 3-25%; alias floor at low input -39 -> -76..-97
+  dB. (b) AC30/JCM800 clean knee bonus bumped (they have the lowest waveshaper
+  knees). (c) Replaced the ad-hoc JC/Twin trims with a principled **per-model +
+  per-mode output normalization** in `ampMasterFrame` (shift-add, NO new
+  multiplier, saturating Unsigned-9): all six models land at -15.0..-15.4 dBFS
+  (spread **0.3 dB**, was 3.5), and CLEAN == DRIVE level per model (no jump on
+  channel switch -- the clean makeup also restores the ~3-5 dB the clean
+  input-gain reduction removed). JC SS clean character and the Drive voicing
+  where normalization is x1.0 are unchanged.
+- **Boundaries.** No IR convolution, no `block_design.tcl`, no GPIO / address /
+  topEntity-port / AXI-topology change, **no new multiplier** (gain slope is a
+  constant on the existing `mulU12`; normalization is shift-add), no remote git
+  op. Clash/VHDL/IP/bit/hwh regenerated.
+- **Verification (offline).** `measure.py --check` 28/28 (tone curves measured
+  below the clips, unaffected), `dist_eval.py --check` 7/7 pedals + **6/6 clean
+  amps now 0-1% THD @0.12 FS** (AC30 6% -> 0%), `dynamics_eval.py --check` 5/5,
+  `knobcheck.py --all` only the known TREBLE tilt-control false positive. Golden
+  re-bless changed ONLY amp_jc120/twin/ac30/triamp (the configs whose clean
+  gain or per-mode normalization changed); **bypass + jcm800/rockerverb-drive +
+  all pedal/cab/reverb goldens byte-identical** (bypass bit-exact).
+- **Build.** Safe Clash regen + full clean Vivado rebuild. Timing fully MET:
+  WNS `+0.932 ns` (best of the recent line), TNS 0, WHS `+0.009 ns`, THS 0,
+  WPWS `+2.845`, route errors 0, all constraints met. **D109 CDC pair
+  `clk_fpga_0 -> clk +2.111 ns` / `clk -> clk_fpga_0 +7.271 ns` -- forward slack
+  +2.111 is comfortably ABOVE the D130 clean (+1.251) and D128 hiss (+1.327)
+  refs, and far better than D138 (+1.053): lower knife-edge risk.** bit/hwh md5
+  `aa7cf3ed9663f973bfb65945063af50c` / `f79683004d0725934d075d50a713325b`.
+  `scripts/deploy_to_pynq.sh` completed; board bit sites md5-match.
+- **Smoke / status.** `test_pmod_i2s2.py --mode dsp` loaded the new bit; Pmod
+  mode 2 ran 3 s `FRAME_COUNT +288361` (~96 kHz), sdout/bclk/lrclk alive, ADC
+  samples observed. ADC HPF `True` via `download=False`; Pmod returned to
+  `MODE=3` mute. **Bench acceptance pending.** PRIORITY checks: (1) safe bypass
+  clean (CDC margin is comfortable so expected fine), (2) CLEAN stays clean on
+  hard picking on every model, (3) volume consistent across models and across
+  clean/drive. Branch `feature/amp-clean-headroom`; do not merge to `main` /
+  update `baselines.json` until accepted. Rollback to D135 with
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
+## D138 — Twin/Fender output boost + restored tube power-amp sustain; superseded by D139 (`01e296cd`)
 
 - **Decision.** User (going to sleep, "do maximum work") reported Fender (Twin)
   too quiet vs the lineup and tube-amp sustain hard to hear; asked to find the
