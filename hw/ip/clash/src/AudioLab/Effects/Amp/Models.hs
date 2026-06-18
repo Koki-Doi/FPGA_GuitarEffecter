@@ -131,9 +131,9 @@ ampCleanKneeBonus :: Unsigned 3 -> Signed 25
 ampCleanKneeBonus idx = case idx of
   0 -> 0           -- JC-120 : unused (model 0 takes the dedicated SS clean path)
   1 -> 2_300_000   -- Twin   : blackface clean platform, near hi-fi clean
-  2 -> 1_400_000   -- AC30   : class-A, keep a little early chime breakup
+  2 -> 2_400_000   -- AC30   : char 166 -> low waveshaper knee; was still 13% @0.15
   3 -> 2_800_000   -- Rockerverb : clean channel genuinely clean (highest-gain pre)
-  4 -> 2_300_000   -- JCM800 : clean channel genuinely clean
+  4 -> 3_000_000   -- JCM800 : char 220 -> low waveshaper knee; was still 15% @0.15
   5 -> 2_000_000   -- TriAmp : clean channel genuinely clean
   _ -> 0           -- 6/7 -> JC-120 fallback
 

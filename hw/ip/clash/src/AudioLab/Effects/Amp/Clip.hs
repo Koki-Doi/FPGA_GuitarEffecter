@@ -37,10 +37,20 @@ ampDriveMultiplyFrame f =
   f{fAccL = if on then mulU12 (monoWet f) gain else 0, fAccR = 0}
  where
   on = flag6 (fGate f)
-  -- 1.0x to about 19x using Q7-style post shift. The recording-analysis
-  -- pass trims the ceiling again so Amp-only and post-pedal use do not
-  -- create line-direct fizz before the cabinet stage.
-  gain = resize (128 + (resize (ctrlA (fAmp f)) * 9 :: Unsigned 12)) :: Unsigned 12
+  -- 1.0x to about 19x using Q7-style post shift (unity = 128). The
+  -- recording-analysis pass trims the ceiling again so Amp-only and post-pedal
+  -- use do not create line-direct fizz before the cabinet stage.
+  --
+  -- 2026-06-18 "アンプがめちゃくちゃ / クリーンが強入力で歪む": the broad
+  -- alias/THD diagnostic showed CLEAN mode breaking up (20-40% THD + rising
+  -- alias floor) once the input passed ~0.2 FS, because this preamp stage
+  -- amplifies x2.27 even at a low gain knob (ctrlA 18) and pushes the signal
+  -- into the 5-stage clip cascade. A real amp's CLEAN channel has noticeably
+  -- LESS preamp gain than its drive channel, so in Clean mode use a gentler
+  -- slope (x1.0..~x9) for real headroom; Drive keeps the full x1.0..~x19.
+  drive = ampDriveModeF f
+  gainSlope = if drive then 9 else 4 :: Unsigned 12
+  gain = resize (128 + (resize (ctrlA (fAmp f)) * gainSlope :: Unsigned 12)) :: Unsigned 12
 
 ampDriveBoostFrame :: Frame -> Frame
 ampDriveBoostFrame f =

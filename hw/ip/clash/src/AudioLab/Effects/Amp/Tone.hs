@@ -279,22 +279,36 @@ ampMasterFrame env f =
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
   effLevel0 = level - sagByte
-  -- JC-120 output trim (2026-06-17 "JC の出力が大きすぎる"). JC is the only model
-  -- that does not clip/compress in normal playing (its SS clean knee passes the
-  -- signal), so it ran ~+3..+6 dB louder than the rest of the lineup. Pull model
-  -- 0 down ~3.25 dB (x0.6875 = 1 - 1/4 - 1/16) so it sits level with the other
-  -- amps; shift+subtract only, no new DSP, every other model byte-for-byte.
-  -- Twin/Fender output boost (2026-06-18 "fender の音が他と比べて小さい"). Twin
-  -- (idx 1) has the lowest makeup gain (char 78) plus a 400 Hz scoop, so it ran
-  -- ~3-5 dB below the lineup. Lift its master ~+3.5 dB (x1.5, saturating add in
-  -- Unsigned 9 so a hot MASTER cannot wrap); the master softClipK at the Twin
-  -- 4.6M knee gently catches any peaks so it stays clean. Other models unchanged.
-  twinLevel = resize (min (255 :: Unsigned 9)
-                          (resize effLevel0 + resize (effLevel0 `shiftR` 1))) :: Unsigned 8
-  effLevel = case idx of
-    0 -> effLevel0 - (effLevel0 `shiftR` 2) - (effLevel0 `shiftR` 4)  -- JC-120 -3.25 dB
-    1 -> twinLevel                                                    -- Twin +3.5 dB
-    _ -> effLevel0
+  -- Per-model + per-mode output normalization (2026-06-18 "ボリュームもまちまち
+  -- すぎ"). Replaces the earlier ad-hoc JC/Twin trims, which the Clean input-gain
+  -- reduction (Clip.hs) had made backwards (JC became the QUIETEST yet was being
+  -- pulled down; Twin was boosted yet near the top). Measured each model's RMS
+  -- @0.15 FS (clean spread 3.5 dB / drive 3.4 dB) and trims every model toward a
+  -- common ~-15 dBFS target in BOTH modes. CLEAN additionally gets back the
+  -- ~+3-5 dB that the clean input-gain reduction removed, so Clean and Drive sit
+  -- at the same level (no jump on channel switch). Shift-add only (NO new
+  -- multiplier -> keeps the master DSP/placement footprint), saturating in
+  -- Unsigned 9 so a hot MASTER cannot wrap. Multipliers in the comments.
+  e = effLevel0
+  up a = resize (min (255 :: Unsigned 9) (resize e + a)) :: Unsigned 8
+  s k = resize (e `shiftR` k) :: Unsigned 9
+  -- Factors derived from the TRUE per-model baseline (the old ad-hoc JC -3.25 /
+  -- Twin +3.5 trims backed out) toward a common ~-15 dBFS target, per mode.
+  effLevel
+    | not (ampDriveModeF f) = case idx of   -- CLEAN (normalize + input-gain-loss makeup)
+        0 -> up (s 3 + s 5)                  -- JC-120  x1.16 (+1.3 dB)
+        1 -> up (s 1 + s 3 + s 4)            -- Twin    x1.69 (+4.6, genuinely quiet)
+        2 -> up (s 1 + s 4)                  -- AC30    x1.56 (+3.9)
+        3 -> up (s 3)                        -- Rockerv x1.13 (+1.0)
+        4 -> up (s 2)                        -- JCM800  x1.25 (+1.9)
+        5 -> up (s 2 + s 5)                  -- TriAmp  x1.28 (+2.2)
+        _ -> e
+    | otherwise = case idx of               -- DRIVE (normalize only)
+        0 -> e - (e `shiftR` 2) - (e `shiftR` 4)   -- JC-120 x0.69 (-3.2, was loudest drive)
+        1 -> up (s 2)                               -- Twin   x1.25 (+1.9)
+        2 -> up (s 2)                               -- AC30   x1.25 (+1.9)
+        5 -> up (s 4 + s 5)                         -- TriAmp x1.09 (+0.8)
+        _ -> e                                       -- Rockerverb/JCM800 ~x1.0
   -- Clean-mode extra master-stage headroom, per model; Drive keeps its ceiling.
   cleanP = if ampDriveModeF f then 0 else ampCleanPowerBonus idx
   out = softClipK (ampPowerKnee 3_300_000 idx + cleanP) (satShift7 (mulU8 (monoWet f) effLevel))
