@@ -252,10 +252,31 @@ satShift10Wide = resize . satShift10
 ampSagReleaseStep :: Sample
 ampSagReleaseStep = 512
 
+-- 2026-06-18 "和音で音程が変" ROOT CAUSE + FIX. The sag was an INSTANT-attack
+-- peak follower (shared peakFollower: `lvl > env -> lvl`). On a CHORD the master
+-- input envelope ripples at the notes' beat frequencies (e.g. 104-82 = 22 Hz),
+-- and an instant-attack follower tracks that ripple, so `effLevel = level - sag`
+-- amplitude-modulates the master at the beat rate = sidebands at note +/- beat
+-- (60 Hz = 82-22, 145 Hz = 123+22) = audible IN-BAND intermodulation that makes
+-- chords sound detuned. JC-120 was the only clean model only because it is sag-
+-- EXEMPT (idx 0). Fix: SLEW-LIMIT the attack so the sag cannot follow a chord's
+-- beat ripple -- it now builds over ~tens of ms (real power-amp supply sag, not a
+-- per-beat tremolo), removing the IMD while keeping the slow bloom. Release is
+-- unchanged. Bespoke follower (not the shared peakFollower) so only the amp sag
+-- changes; guard order matches the old one (off -> 0, hold on idle).
+ampSagAttackStep :: Sample
+ampSagAttackStep = 96   -- env rises <= 96/sample: ~tens of ms to build, well
+                        -- slower than a chord beat (~22 Hz / 45 ms) so no ripple.
+
 ampSagEnvNext :: Sample -> Maybe Frame -> Sample
-ampSagEnvNext = peakFollower (flag6 . fGate) level (\_ _ -> ampSagReleaseStep)
+ampSagEnvNext env Nothing = env
+ampSagEnvNext env (Just f)
+  | not (flag6 (fGate f))   = 0
+  | lvl > env               = env + min (lvl - env) ampSagAttackStep  -- SLOW attack (was instant)
+  | env > ampSagReleaseStep = env - ampSagReleaseStep                 -- slow release (unchanged)
+  | otherwise               = 0
  where
-  level f = abs24 (monoWet f)
+  lvl = abs24 (monoWet f)
 
 ampMasterFrame :: Sample -> Frame -> Frame
 ampMasterFrame env f =
