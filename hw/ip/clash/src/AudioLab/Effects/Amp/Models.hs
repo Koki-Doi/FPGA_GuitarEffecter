@@ -127,14 +127,20 @@ ampPowerKnee base idx = case idx of
 -- hotter Drive voicing -- makes the Clean/Drive step obvious. AC30 keeps a
 -- little class-A early breakup (smaller bonus) per the "preserve character"
 -- choice.
+-- 2026-06-18 "クリーンチャンネルはもう少しだけクリーンに / まだ少しだけ和音が変":
+-- single-tone clean THD was already ~0% @0.20 FS, but a CHORD has a higher summed
+-- peak that still grazed these waveshaper knees -> a small residual in-band IMD
+-- ("和音が少し変"). Raise each non-JC clean knee +1.0M so chord peaks stay below
+-- the knee = cleaner chord. Drive passes 0 (byte-identical). JC uses the SS path
+-- (ampJc120Knee) and is already at the chord floor, so it stays 0 here.
 ampCleanKneeBonus :: Unsigned 3 -> Signed 25
 ampCleanKneeBonus idx = case idx of
   0 -> 0           -- JC-120 : unused (model 0 takes the dedicated SS clean path)
-  1 -> 2_300_000   -- Twin   : blackface clean platform, near hi-fi clean
-  2 -> 2_400_000   -- AC30   : char 166 -> low waveshaper knee; was still 13% @0.15
-  3 -> 2_800_000   -- Rockerverb : clean channel genuinely clean (highest-gain pre)
-  4 -> 3_000_000   -- JCM800 : char 220 -> low waveshaper knee; was still 15% @0.15
-  5 -> 2_000_000   -- TriAmp : clean channel genuinely clean
+  1 -> 3_300_000   -- Twin   : blackface clean platform, near hi-fi clean (+1.0M)
+  2 -> 3_400_000   -- AC30   : char 166 -> low waveshaper knee (+1.0M)
+  3 -> 3_800_000   -- Rockerverb : clean channel genuinely clean (+1.0M)
+  4 -> 4_000_000   -- JCM800 : char 220 -> low waveshaper knee (+1.0M)
+  5 -> 3_000_000   -- TriAmp : clean channel genuinely clean (+1.0M)
   _ -> 0           -- 6/7 -> JC-120 fallback
 
 -- | Per-model CLEAN-mode (drive_mode 0) extra POWER / RESONANCE / MASTER
