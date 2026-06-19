@@ -26,7 +26,7 @@ Then read the topic doc that matches the work:
 | --- | --- |
 | Adding a new effect | `docs/ai_context/EFFECT_ADDING_GUIDE.md` (+ `EFFECT_STAGE_TEMPLATE.md`) |
 | Clash / DSP edits | `docs/ai_context/DSP_EFFECT_CHAIN.md` |
-| DSP simulation / measured voicing | `tools/dsp_sim/README.md`, `docs/ai_context/MODEL_REALISM_GAP_ANALYSIS.md`, `docs/ai_context/DECISIONS.md` D121-D131 |
+| DSP simulation / measured voicing | `tools/dsp_sim/README.md`, `docs/ai_context/MODEL_REALISM_GAP_ANALYSIS.md`, `docs/ai_context/DECISIONS.md` D121-D145 |
 | Refactoring (DSP / Python / build) | `docs/ai_context/REFACTORING_CANDIDATES.md` |
 | GPIO bit allocation | `docs/ai_context/GPIO_CONTROL_MAP.md` |
 | Audio routing / passthrough debug | `docs/ai_context/AUDIO_SIGNAL_PATH.md` |
@@ -99,12 +99,14 @@ When a previous turn stopped mid-implementation:
   CDC `set_max_delay` 10->6 ns BOTH failed. The voicing was correct in the
   offline sim (chord IMD -> floor, clean <= drive) -- the blocker is placement.
   `tools/dsp_sim/chord_eval.py` (chord-IMD detector) from that line was KEPT.**
+  The narrower D144 chord-detune candidate was also BENCH-REJECTED ("失敗") and
+  rolled back to D135; do not reapply it as-is.
   Next robust attack: pblock-lock the `i2s_to_stream`/`axis_switch_sink` FIFO
   cells, or incremental P&R from a freshly-built clean D135 routed DCP. The
   post-D112 sag-removal/static-trim line (D119/D120) remains abandoned; do not
   re-attempt Amp sag removal or static sag trimming without explicit direction.
   Roll back further (D134) via `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/`.
-  See `DECISIONS.md` D109-D135, `CURRENT_STATE.md`, and `baselines.json`.
+  See `DECISIONS.md` D109-D145, `CURRENT_STATE.md`, and `baselines.json`.
 - For effect voicing work, prefer the offline DSP sim / measurement loop before
   paying the Vivado cost: build/run `tools/dsp_sim`, use
   `tools/dsp_sim/measure.py` for net tone-curve checks, and keep golden/bypass
@@ -163,7 +165,11 @@ When a previous turn stopped mid-implementation:
 - Notebook-only edits do **not** rebuild the bitstream. Update the notebook,
   run `bash scripts/deploy_to_pynq.sh`, and sync through the deploy script. The
   deploy path maintains the required bit/hwh copies documented in
-  `BUILD_AND_DEPLOY.md`.
+  `BUILD_AND_DEPLOY.md`. The board serves Notebooks from
+  `/home/xilinx/jupyter_notebooks/audio_lab/`; use
+  `http://192.168.1.9:9090/tree/audio_lab`. D145 requires deploy to discover
+  the configured root via `jupyter notebook list`, restore `xilinx:xilinx`
+  ownership, and JSON-validate all 15 files.
 - HDMI GUI runtime uses the integrated AudioLab overlay. Load
   `AudioLabOverlay()` once and use `audio_lab_pynq.hdmi_backend`; do not call
   `Overlay("base.bit")`, do not call `run_pynq_hdmi()`, and do not load a

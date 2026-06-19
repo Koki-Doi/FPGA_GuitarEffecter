@@ -116,10 +116,11 @@ When a previous turn stopped mid-implementation:
   DAC distributed-RAM CDC (112x report_cdc CDC-13) that was the root cause of the
   safe-bypass "knife-edge" (every DSP rebuild corrupting all_off passthrough).
   Do NOT collapse it back to a single 7-domain group or drop the max_delay --
-  that reintroduces the knife-edge. With this fix, rebuilding the DSP for voicing
-  is SAFE again (the old "only the D98 bit is bypass-clean, do not rebuild for
-  voicing" rule is obsolete); still always ear-bench a new bitstream.** See
-  `DECISIONS.md` D109-D131 + `project_safebypass_knifeedge_cdc_rootcause`.
+  that reintroduces the knife-edge. D109 bounds the crossing but does not
+  eliminate placement sensitivity: D136-D144 proved that timing-clean rebuilds
+  can still produce a constant safe-bypass buzz. Every new bitstream still
+  requires an ear-bench.** See `DECISIONS.md` D109-D145 +
+  `project_safebypass_knifeedge_cdc_rootcause`.
   **Accepted deployed baseline is D135 (`533d5869`, merge commit `765323b`,
   hwh md5 `731517487c6218f0e181c2b74485d7a6`)** -- large non-IR realism
   (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees + opened tone LPF;
@@ -136,17 +137,23 @@ When a previous turn stopped mid-implementation:
   BOTH failed to clear it. The voicing source was correct in the offline sim
   (`chord_eval.py` chord IMD -> floor, clean <= drive) -- the blocker is the
   placement, not the voicing.** The `tools/dsp_sim/chord_eval.py` chord-IMD
-  detector from that line was KEPT. Next robust attack on the knife-edge:
+  detector from that line was KEPT. The narrower D144 chord-detune candidate
+  was also BENCH-REJECTED ("失敗") and rolled back to D135. Next robust attack
+  on the knife-edge:
   pblock-lock the `i2s_to_stream`/`axis_switch_sink` FIFO cells, or incremental
   P&R from a freshly-built clean D135 routed DCP -- see
   `project_safebypass_knifeedge_cdc_rootcause`. Roll back further (D134) via
   `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/` and redeploy. See
-  `CURRENT_STATE.md`, `DECISIONS.md` D109-D135, and `baselines.json`.
+  `CURRENT_STATE.md`, `DECISIONS.md` D109-D145, and `baselines.json`.
   XADC is live as `xadc_wiz_a0` for the FP02M Wah pedal. A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD
   clocks undefined at synth elaboration, applied at impl).
 - Notebook-only edits do **not** rebuild the bitstream. Update the
-  notebook, run `bash scripts/deploy_to_pynq.sh`, done.
+  notebook, run `bash scripts/deploy_to_pynq.sh`, done. The board serves the
+  canonical tree from `/home/xilinx/jupyter_notebooks/audio_lab/`; open
+  `http://192.168.1.9:9090/tree/audio_lab`. D145 deploy logic discovers the
+  configured root with `jupyter notebook list`, restores `xilinx:xilinx`
+  ownership, and JSON-validates all 15 Notebooks.
 - HDMI GUI runtime uses the integrated AudioLab overlay. Load
   `AudioLabOverlay()` once and use `audio_lab_pynq.hdmi_backend`; do not
   call `Overlay("base.bit")`, and do not load a second overlay after

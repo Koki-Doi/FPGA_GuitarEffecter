@@ -61,18 +61,16 @@ measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
-The latest accepted baseline is the **2026-06-17 realism baseline (merge
-`21c0b5a`)**: the all-effects-sim-survey re-voicing -- bass (amp input-HP dead
-first-difference -> live one-pole), Metal full saturation (os4x clip floor
-1.05M->600k), amp RESONANCE dead-knob fix, an HF-restore (un-muffle), AC30 chime,
-and clean-amp power headroom (per-model `ampPowerKnee`) -- plus the comprehensive
-`tools/dsp_sim` problem-detectors (muffled/harsh, clean-distortion, all-model
-targets). The deployed bitstream md5 is `54f7f547d04f0e4d59011e4754f834ca`; the
-deployed HWH md5 is `2fbc8a5ba528bb6e1d415e6339b64bdb`. Bench-accepted; it
-supersedes b3dcab00 (`55ef823`, the bass/HF/Metal/RESONANCE first pass) and D131
-(`fdab62d5`, DIST realism), which in turn superseded D121-D130. D119/D120 were
-bench-rejected and remain historical only. Roll back via `git checkout 55ef823
--- hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9` (D131).
+The latest accepted baseline is **D135** (merge `765323b`): the large non-IR
+realism pass on top of the D131-D134 measurement line. It adds the Fuzz Face
+900 Hz mid-hump, tighter clip knees and opened tone LPF; stronger AC30/JCM800
+`ampScoop` + model-local presence; a more audible Amp `MIDDLE`; AC30 clean
+headroom; and a Cab non-IR body tap. The deployed bitstream md5 is
+`533d586901dc3669285a49c6d82bab9f`; HWH md5 is
+`731517487c6218f0e181c2b74485d7a6`. D136-D142 and the narrower D144
+chord-detune candidate were bench-rejected and rolled back to D135 on
+2026-06-19. D134 is the immediate accepted rollback:
+`git checkout f62f132 -- hw/Pynq-Z2/bitstreams/` + deploy.
 
 The load-bearing clocking base is D75 as lowered by D89/D94:
 `clash_lowpass_fir_0` runs at `FCLK_CLK1` (50 MHz at D75 -> 40 MHz at D89 ->
@@ -86,17 +84,18 @@ effect/knob switches do not click), and relies on the D109 split CDC hardening
 in `audio_lab.xdc`: `clk_fpga_0` and `clk` stay timed relative to each other
 with `set_max_delay -datapath_only 10.000` both directions. Do not collapse this
 back to one blanket 7-domain asynchronous group. Do not lower the whole fabric
-to 50 MHz (global-50 MHz corrupts the I2S/Pmod CDCs = bypass buzz).
+to 50 MHz (global-50 MHz corrupts the I2S/Pmod CDCs = bypass buzz). D109 bounds
+this crossing but does not guarantee a clean placement; D136-D144 showed that
+timing-clean DSP rebuilds can still re-trigger the safe-bypass knife-edge.
 
 D76 re-added the FP02M XADC path on this island, D78 added the
 `axi_footswitch_input` IP plus load-bearing `phys_opt_design`, D79 added the
-Overdrive realism changes described below, and D121-D131 are the accepted
-96 kHz realism line. D131 routed timing is `WNS = +0.631 ns`,
-`WHS = +0.019 ns`, with CDC max-delay slack
-`clk_fpga_0 -> clk = +3.353 ns` / `clk -> clk_fpga_0 = +6.286 ns`; user bench
-accepted the sound. Full records: `DSP_ISLAND_CLOCK_DESIGN.md`,
+Overdrive realism changes described below, D121-D134 formed the measured 96 kHz
+realism line, and D135 is the current accepted extension. D135 routed timing is
+`WNS = +0.643 ns`, `WHS = +0.018 ns`; user bench accepted the sound. Full
+records: `DSP_ISLAND_CLOCK_DESIGN.md`,
 `FOOTSWITCH_INTEGRATION.md`, `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`, and
-`DECISIONS.md` D75 / D78 / D79 / D109-D131.
+`DECISIONS.md` D75 / D78 / D79 / D109-D145.
 
 The older DSP-voicing baselines are D68 (global Amp / Distortion /
 Overdrive constants retune), D71 (cabinet multi-band pseudo-IR), D73
@@ -462,9 +461,10 @@ existing stages only -- no register stage, GPIO, or `topEntity` port
 was added.
 
 Per-model voicing tables (`docs/ai_context/AMP_MODEL_RESEARCH_D55.md`
-section 6 carries the original per-model rationale; values here are
-the current D131 implementation values after the D128 PRESENCE / Drive-Clean
-separation pass and D130 amp EQ re-collation):
+section 6 carries the original per-model rationale; values here are the current
+D135 scalar table values after the D128 PRESENCE / Drive-Clean separation and
+D130 amp EQ re-collation. D135's additional `ampScoop`, `MIDDLE`, presence, and
+AC30 power-headroom changes live in the tone/power tables described below):
 
 | idx | model        | ampChar | modelDarken | trebleTrim | presenceTrim | drivePosDelta | driveNegDelta | preLpfDriveDarken | secondStageDriveBonus |
 | --- | ------------ | ------- | ----------- | ---------- | ------------ | ------------- | ------------- | ----------------- | --------------------- |

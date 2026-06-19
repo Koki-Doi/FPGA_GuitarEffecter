@@ -60,31 +60,36 @@ submodule へ分割されており、ポートフォリオで見るべき top-le
 | **SVF** | State Variable Filter。Wah のレゾナントバンドパスに使用 |
 | **Pmod I2S2** | Digilent の I2S オーディオモジュール（CS5343 ADC + CS4344 DAC） |
 | **複数コピー先同期** | bit/hwh をボード上の必要コピー場所すべてに md5 一致させるデプロイ規律 |
-| **ナイフエッジ** | 「DSP 再ビルドのたびにバイパスが壊れる」未タイミング CDC 由来の現象（D109 で解決） |
+| **ナイフエッジ** | DSP 出力→DAC の placement-sensitive CDC。D109 で timing-bound したが D136-D144 で残存リスクを再確認 |
 | **D99** | D120 rollback 後にユーザーが選んだ Amp character の基準。D121 はこの Amp を触らず非 Amp だけ補正 |
 | **D121** | 最初の measured non-Amp voicing baseline。bit md5 `9a57c50a...`、D99 Amp untouched + non-Amp measured voicing |
-| **D131** | 現行 canonical deployed baseline。bit md5 `fdab62d5...`、DIST low-end + saturation/sustain + offline distortion-eval tooling |
+| **D131** | DIST low-end + saturation/sustain + offline distortion-eval tooling を確立した accepted baseline |
+| **D135** | 現行 canonical deployed baseline。bit md5 `533d5869...`、Fuzz Face mid-hump + Amp/Cab character |
+| **D144** | chord-detune sim candidate。offline 改善したが bench-rejected、D135 へ rollback |
 
 ## 22. 現状
 
-採用済みデプロイベースラインは **D131**（merge commit `37114b9`、bit md5
-`fdab62d5ef229ec64dc60fe9395cbf06`、hwh md5 `d852ec4e737460ad016b41f0a3f71de2`）。
-2026-06-15 に build / timing / deploy / PL smoke / user bench を通過し、main へ `--no-ff`
-merge されています。
+採用済みデプロイベースラインは **D135**（merge commit `765323b`、bit md5
+`533d586901dc3669285a49c6d82bab9f`、hwh md5
+`731517487c6218f0e181c2b74485d7a6`）。2026-06-17 に build / timing /
+deploy / PL smoke / user bench を通過し、main へ `--no-ff` merge されています。
 
-D131 の位置づけ：
+D135 の位置づけ：
 
-- D109 の CDC hardening により、DSP 再ビルド時の safe-bypass 破壊リスクを根本対策済み。
+- D109 の CDC hardening を保持するが、D136-D144 で placement sensitivity が
+  残ることを確認したため、safe-bypass ear-bench は必須。
 - D120 の Amp sag/static-trim 路線は bench rejected され、D121 で D99 系 Amp character へ rollback
   したあと、D122/D128/D130 の table/coeff 限定 Amp pass だけを accepted line として採用。
 - D131 は DS-1 / Big Muff / Fuzz Face / Metal の low-end、saturation、sustain を補正し、
   `dist_eval.py` / `targets.py` で distortion-character と real-hardware target を自動評価。
-- Vivado routed timing は WNS `+0.631 ns`、WHS `+0.019 ns`、route errors `0`。
-- D109 CDC pair は `clk_fpga_0 -> clk = +3.353 ns` / `clk -> clk_fpga_0 = +6.286 ns`。
+- D134 は dynamics / knob audibility を全体評価し、D135 は Fuzz Face 900 Hz
+  mid-hump、Amp MIDDLE / AC30 / JCM800、Cab body を改善。
+- Vivado routed timing は WNS `+0.643 ns`、WHS `+0.018 ns`、route errors `0`。
 
 D113-D120 の amp-retune / sag-disable / static-trim 系は、履歴上の候補または rejected branch として
-扱い、現行値としては語りません。後で問題が出た場合の直近 rollback は D130 bitstreams を
-`fffa2b1` から復元（bit md5 `33af82f131cfff260871599e5142ef59`）して deploy します。
+扱い、現行値としては語りません。D136-D144 も bench rejected です。後で
+問題が出た場合の直近 accepted rollback は D134 bitstreams を `f62f132` から
+復元して deploy します。
 
-最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D131）/
+最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D145）/
 `TIMING_AND_FPGA_NOTES.md` を参照してください。

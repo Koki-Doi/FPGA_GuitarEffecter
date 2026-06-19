@@ -12,13 +12,12 @@ the time that looked like an unfixable "P&R knife-edge" and the working rule
 became *"do NOT rebuild the DSP for voicing or refactors -- only the D98 bit is
 clean."*
 
-**D109 found and fixed the real root cause** (an untimed DSP-output -> DAC
-distributed-RAM CDC; bounded with `set_max_delay -datapath_only`, see
-`DECISIONS.md` D109 + memory `project_safebypass_knifeedge_cdc_rootcause`).
-D110-D112 then rebuilt the DSP three times (amp revoicing), all bypass-clean.
-**So the DSP refactors below are UN-BLOCKED again** -- the netlist-perturbation
-that used to corrupt passthrough no longer does, because the audio CDC is now
-timing-bounded regardless of placement.
+**D109 found and bounded the real root cause** (an untimed DSP-output -> DAC
+distributed-RAM CDC; `set_max_delay -datapath_only`, see `DECISIONS.md` D109).
+D110-D135 demonstrated multiple clean rebuilds, but D136-D144 later proved the
+crossing remains placement-sensitive even with timing MET. Refactors are not
+forbidden, but any regenerated bit still needs the full safe-bypass ear-bench;
+do not describe the crossing as placement-independent.
 
 The B/C/E/F source still exists in git history and was proven VHDL-equivalent, so
 re-applying is low-effort.
@@ -35,6 +34,10 @@ equivalence proof alone" rule still holds for the NEXT build that regenerates th
 bit from this source -- that build gets the usual timing/CDC check + ear-bench.
 Remaining DSP: **B** (biquad kernels), **D/B2** (Pipeline combinators, deferred).
 Remaining Python: **P1** orchestration tail, **P2** renderer panel split, **P3**.
+
+**2026-06-19 current baseline:** D135 (`765323b`, bit `533d5869...`). The
+D136-D142 line and D144 candidate were bench-rejected and rolled back; future
+DSP refactor builds must treat the safe-bypass CDC as a live placement risk.
 
 **(historical) 2026-06-13 status:** the DSP items were then blocked on a board
 bench (PYNQ-Z2 offline, D119 rollback); superseded by the 2026-06-17 status.

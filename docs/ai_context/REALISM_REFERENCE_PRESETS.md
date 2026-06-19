@@ -21,10 +21,10 @@ model index / pedal mask / knob 値を紐づける。
 このドキュメントは値を複製せず、上記を **pin**（名前・index で固定参照）する。
 数値を直接書くのは、harness にまだ config が無い単体基準だけ。
 
-## 共通の測定条件（reference preset 作成時 baseline は D121、現行 baseline は D131）
+## 共通の測定条件（reference preset 作成時 baseline は D121、現行 baseline は D135）
 
 - reference preset は D121 作成時に固定した anchor だが、現行 canonical deployed
-  voicing baseline は **D131**。値の pin は比較条件として維持し、実装状態は
+  voicing baseline は **D135**。値の pin は比較条件として維持し、実装状態は
   `CURRENT_STATE.md` / `BASELINES.md` を見る。
 - 単体 effect 基準は対象 effect 以外を bypass し、`build_config` の `_base`
   （gate off、他段 neutral）を起点にする。

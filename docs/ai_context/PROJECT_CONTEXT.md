@@ -35,7 +35,7 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 | `hw/Pynq-Z2/wah_integration.tcl` | Sourced after `pmod_i2s2_integration.tcl` to add `axi_gpio_wah` at `0x43D30000` (bumps `NUM_MI` 19->20, M19) and wire it to `clash_lowpass_fir_0/wah_control` (D72/D73). `block_design.tcl` not edited. |
 | `hw/Pynq-Z2/xadc_integration.tcl` + `xadc_a0.xdc` | Sourced after `wah_integration.tcl` to add the `xadc_wiz_a0` XADC Wizard at `0x43D40000` (bumps `NUM_MI` 20->21, M20) reading Arduino A0 = VAUX1 on E17/D18 for the FP02M pedal (D76). `block_design.tcl` not edited. |
 | `hw/Pynq-Z2/footswitch_integration.tcl` | Sourced after `xadc_integration.tcl` and before `island_integration.tcl` to add `axi_footswitch_input` at `0x43D50000` (bumps `NUM_MI` 21->22, M21), with `fsw0_i` / `fsw1_i` / `fsw2_i` on RP pins 11 / 12 / 35. `block_design.tcl` not edited. |
-| `hw/Pynq-Z2/island_integration.tcl` | Sourced last to build the D75 DSP clock-domain island: enables `FCLK_CLK1 = 50 MHz`, adds `rst_island_50M`, inserts `axis_clock_converter` `cc_dsp_in` (100->50) / `cc_dsp_out` (50->100) around the DSP AXIS, and moves `clash_lowpass_fir_0/clk` + `aresetn` onto FCLK1. `block_design.tcl` not edited. |
+| `hw/Pynq-Z2/island_integration.tcl` | Sourced last to build the DSP clock-domain island: introduced at 50 MHz in D75, lowered to 40 MHz in D89 and **33.33 MHz in D94**. It inserts `axis_clock_converter` `cc_dsp_in` (100->33.33) / `cc_dsp_out` (33.33->100) around the DSP AXIS and moves `clash_lowpass_fir_0/clk` + `aresetn` onto FCLK1. `block_design.tcl` not edited. |
 | `audio_lab_pynq/fp02m.py` | ZOOM FP02M expression-pedal layer: `Fp02mCalibration` (JSON load/save), `Fp02mXadcMmioReader` (reads `xadc_wiz_a0` reg `0x244` = VAUX1 via AXI MMIO), `Fp02mPositionMapper` (raw->u8 with invert / deadband / EMA / "C" anti-log taper), `Fp02mWahController`. The pedal is the sole `position_raw` writer (D74/D76). |
 | `hw/ip/clash/src/LowPassFir.hs` | The full PL DSP pipeline. Real source of truth for every effect. |
 | `hw/ip/clash/vhdl/LowPassFir/` | Clash-generated VHDL plus packaged Vivado IP. |
@@ -62,7 +62,7 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 | `GUI/pynq_multi_fx_gui.py` | 800x480 compact-v2 HDMI GUI renderer (`render_frame_800x480_compact_v2`). After the post-Phase-6I split (`DECISIONS.md` D26), this is a thin re-export shim over `GUI/compact_v2/`; the actual palette / themes / `AppState` / render functions / `hit_test_compact_v2` live in `GUI/compact_v2/{knobs,state,layout,renderer,hit_test}.py`. Every `from pynq_multi_fx_gui import X` import (including `AppState`, `EFFECT_KNOBS`, `render_frame_800x480_compact_v2`, `compact_v2_panel_boxes`, `hit_test_compact_v2`, etc.) keeps working unchanged. After the Phase 6H (1).py spec port (`d7ea0ab`), `EFFECT_KNOBS` is keyed by title-case `EFFECTS` names, `AppState` uses `all_knob_values`, and PEDAL / AMP / CAB draw the model dropdown inline. The 1280x720 reference renderer / Tk desktop preview / `run_pynq_hdmi()` were removed in `DECISIONS.md` D24. |
 | `GUI/compact_v2/` | Per-theme split of the compact-v2 GUI: `knobs.py` (per-effect knob layout + model tables + chain preset names), `state.py` (`AppState` + `save_state_json` / `load_state_json`), `layout.py` (palette + themes + `COMPACT_V2_LAYOUT` + `compact_v2_panel_boxes`), `renderer.py` (NumPy / Pillow render primitives + `RenderCache` + every `render_frame_800x480_*` builder), `hit_test.py` (`hit_test_compact_v2`). |
 | `GUI/audio_lab_gui_bridge.py` | Dry-run-first bridge from GUI `AppState` to existing `AudioLabOverlay` control APIs. |
-| `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install/refresh package, mirror bit/hwh into PYNQ overlays registry, install notebooks, import sanity check. |
+| `scripts/deploy_to_pynq.sh` | One-shot deploy: rsync, install/refresh package, mirror bit/hwh into PYNQ overlays registry, discover the configured Jupyter root, install and JSON-validate all Notebooks with `xilinx:xilinx` ownership, and run import sanity checks. |
 | `scripts/audio_diagnostics.py` | CLI wrapper for diagnostics. |
 | `scripts/test_hdmi_800x480_frame.py` | 5-inch LCD smoke: compact 800x480 GUI at framebuffer `x=0,y=0`. Originally written for the Phase 5C `1280x720` signal; the same script also works against the Phase 6I `800x600` SVGA framebuffer because the renderer still emits an 800x480 frame and the backend composes it at `(0,0)`. |
 | `audio_lab_pynq/control_maps.py` | Pack / unpack / clamp helpers for AXI GPIO control words. Single source of truth for byte encoding. Per-effect word builders live here (`gate_word` / `overdrive_word` / `distortion_word` / `amp_word` / `amp_tone_word` / `noise_suppressor_word` / `compressor_word` / `wah_word` / `reverb_word` / `eq_word` / `rat_word` / `cab_word`); `AudioLabOverlay.guitar_effect_control_words` delegates to them. |
@@ -86,25 +86,21 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
   G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
   via `mode2_right_snapshot` (D50).
-- The current **accepted** deployed bitstream baseline is the
-  **2026-06-17 realism baseline** (merge commit `21c0b5a`, `audio_lab.bit` md5
-  `54f7f547d04f0e4d59011e4754f834ca`, `audio_lab.hwh` md5
-  `2fbc8a5ba528bb6e1d415e6339b64bdb`). It is the all-effects-sim-survey
-  re-voicing pass: bass (amp input-HP dead first-difference -> live one-pole),
-  Metal full saturation (os4x clip floor 1.05M->600k = saturates at all levels),
-  amp RESONANCE dead-knob fix, an HF-restore that un-muffles the amp after the
-  bass fix, AC30 chime, and clean-amp **power headroom** (per-model `ampPowerKnee`
-  so JC-120/Twin stay clean at a hot input). It also strengthened
-  `tools/dsp_sim` into a comprehensive problem-detector (rig amp->cab chains,
-  HF-slope, muffled/harsh + clean-distortion detectors, all-model targets):
-  28/28 EQ + 7/7 distortion + 6/6 amps-clean vs `targets.py`. Built timing-clean
-  (WNS `+0.639`, D109 CDC pair `+1.415` / `+6.782`), deployed, PL-smoked at
-  ~96.1 kHz, bench-accepted ("合格"), merged to main. Supersedes b3dcab00
-  (`55ef823`) and D131 (`fdab62d5`); roll back via `git checkout 55ef823 --
-  hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9` (D131) + redeploy. NO
-  board-audio capture exists, so "vs real hardware" = vs the circuit-analysis
-  `targets.py`; bypass bit-exact is the only board-audio anchor. See
-  `CURRENT_STATE.md`, `REALISM_ALL_EFFECTS_SIM_SURVEY.md`, `BASELINES.md`.
+- The current **accepted** deployed bitstream baseline is **D135** (merge
+  commit `765323b`, `audio_lab.bit` md5
+  `533d586901dc3669285a49c6d82bab9f`, `audio_lab.hwh` md5
+  `731517487c6218f0e181c2b74485d7a6`). It adds the large non-IR realism pass:
+  Fuzz Face 900 Hz mid-hump + tighter clip knees + opened tone LPF,
+  AC30/JCM800 stronger `ampScoop` and model-local presence, more audible Amp
+  `MIDDLE`, AC30 clean headroom, and a Cab non-IR body tap. Offline verification
+  passed 28/28 tone targets, 7/7 pedal checks, 6/6 clean-amp checks, dynamics,
+  knob audibility, and golden/bypass regression; routed WNS is `+0.643 ns` and
+  WHS `+0.018 ns`. D136-D142 and the narrower D144 chord-detune candidate were
+  bench-rejected after re-triggering placement-sensitive safe-bypass artifacts;
+  the board and repository were rolled back to D135 on 2026-06-19. D134
+  (`f62f132`) is the immediate accepted rollback point. See `CURRENT_STATE.md`,
+  `BASELINES.md`, `DECISIONS.md` D135-D145, and
+  `TIMING_AND_FPGA_NOTES.md`.
 - The DSP runs in a **33.33 MHz clock-domain island** (D94; was 50 MHz at D75
   and 40 MHz at D89). Only `clash_lowpass_fir_0` is clocked by
   `FCLK_CLK1 = 33.33 MHz`; the rest of the
@@ -180,7 +176,8 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 - Deploy target on the board:
   - Repo / package source: `/home/xilinx/Audio-Lab-PYNQ/`
   - Notebooks (Jupyter root): `/home/xilinx/jupyter_notebooks/audio_lab/`
-  - Jupyter URL: `http://192.168.1.9:9090/tree`
+  - Notebook tree: `http://192.168.1.9:9090/tree/audio_lab`
+  - Main Notebook: `http://192.168.1.9:9090/tree/audio_lab/AudioLab.ipynb`
 - Notebooks shipped with the pedal-mask build:
   `InputDebug.ipynb`, `GuitarEffectsChain.ipynb`,
   `GuitarEffectSwitcher.ipynb` (now with a Distortion Pedalboard
@@ -214,7 +211,8 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 - Recent D109+ builds are timing-clean, but a clean timing summary is still not
   an acceptance signal by itself. New DSP logic must be carefully pipelined,
   programmatically smoked, and bench-listened for bypass artifacts before it
-  supersedes D131.
+  supersedes D135. D136-D144 proved that D109 bounds but does not eliminate the
+  placement-sensitive safe-bypass knife-edge.
 - Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
   touching `LowPassFir.hs`, `block_design.tcl`, or any
   `axi_gpio_*` topology.

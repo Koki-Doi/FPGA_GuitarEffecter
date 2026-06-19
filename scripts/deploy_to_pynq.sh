@@ -27,7 +27,8 @@ PYNQ_USER="${PYNQ_USER:-xilinx}"
 PYNQ_REPO_DIR="${PYNQ_REPO_DIR:-/home/xilinx/Audio-Lab-PYNQ}"
 PYNQ_NB_DIR="${PYNQ_NB_DIR:-/home/xilinx/jupyter_notebooks}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
-PYNQ_JUPYTER_URL="http://${PYNQ_HOST}:9090/tree"
+PYNQ_JUPYTER_ROOT_URL="http://${PYNQ_HOST}:9090/tree"
+PYNQ_JUPYTER_URL="${PYNQ_JUPYTER_ROOT_URL}/audio_lab"
 
 SSH_TARGET="${PYNQ_USER}@${PYNQ_HOST}"
 SSH_BASE_OPTS=(-o ConnectTimeout=5 -o ServerAliveInterval=10 -o ServerAliveCountMax=3)
@@ -65,7 +66,7 @@ EOF
 # --- 1. SSH key bootstrap -------------------------------------------------
 
 log "Using PYNQ_HOST=$PYNQ_HOST"
-log "Jupyter: $PYNQ_JUPYTER_URL"
+log "Jupyter notebooks: $PYNQ_JUPYTER_URL"
 log "target: $SSH_TARGET"
 
 if ! ping -c 1 -W 2 "$PYNQ_HOST" >/dev/null 2>&1; then
@@ -232,23 +233,34 @@ PY'
 
 # --- 7. Install notebooks via the package's own helper -------------------
 #
-# Most PYNQ images expose `/home/xilinx/jupyter_notebooks` as the notebook
-# root, but the lab board's Jupyter daemon currently starts with CWD
-# `/home/xilinx` and no explicit `--notebook-dir`. Install to the configured
-# location and, when the live daemon root differs, mirror to that root too so
-# the Notebook UI shows `audio_lab/` immediately after deploy.
+# `jupyter notebook list` reports the configured notebook_dir/root_dir. The
+# daemon process CWD is not authoritative because NotebookApp may override it.
+# Fall back to the process CWD only on images where the list command is absent.
 
-REMOTE_JUPYTER_CWD=$(ssh_keyauth '
-pid=$(pgrep -f "jupyter-notebook --no-browser --allow-root" | head -n1)
+REMOTE_JUPYTER_ROOT=$(ssh_keyauth '
+root=$(
+    sudo -n jupyter notebook list 2>/dev/null |
+    awk -F " :: " "/^http/{print \$2; exit}"
+)
+if [ -n "$root" ]; then
+    printf "%s\n" "$root"
+    exit
+fi
+pid=$(pgrep -f "jupyter-notebook.*--no-browser.*--allow-root" | head -n1)
 if [ -n "$pid" ]; then
-    sudo readlink "/proc/$pid/cwd" 2>/dev/null || true
+    sudo -n readlink "/proc/$pid/cwd" 2>/dev/null || true
 fi
 ' || true)
 
 NB_INSTALL_DIRS=("$PYNQ_NB_DIR")
-if [[ -n "$REMOTE_JUPYTER_CWD" && "$REMOTE_JUPYTER_CWD" != "$PYNQ_NB_DIR" ]]; then
-    NB_INSTALL_DIRS+=("$REMOTE_JUPYTER_CWD")
+if [[ -n "$REMOTE_JUPYTER_ROOT" && "$REMOTE_JUPYTER_ROOT" != "$PYNQ_NB_DIR" ]]; then
+    NB_INSTALL_DIRS+=("$REMOTE_JUPYTER_ROOT")
 fi
+
+EXPECTED_NOTEBOOK_COUNT=$(
+    find "$REPO_ROOT/audio_lab_pynq/notebooks" -maxdepth 1 -type f -name '*.ipynb' |
+        wc -l
+)
 
 for NB_DIR in "${NB_INSTALL_DIRS[@]}"; do
     log "installing notebooks under $NB_DIR/audio_lab"
@@ -260,10 +272,29 @@ from audio_lab_pynq import install_notebooks
 install_notebooks(\"$NB_DIR\")
 print(\"notebooks installed: $NB_DIR/audio_lab/\")
 '
+        if [ '$HAS_PWLESS_SUDO' -eq 1 ]; then
+            sudo -n chown -R '$PYNQ_USER:$PYNQ_USER' '$NB_DIR/audio_lab'
+        fi
 "
 
-    log "notebook placement on PYNQ ($NB_DIR/audio_lab):"
-    ssh_remote "ls -1 '$NB_DIR/audio_lab' | sed 's/^/  /'"
+    log "verifying notebook placement on PYNQ ($NB_DIR/audio_lab)"
+    ssh_remote "python3 - <<'PY'
+import glob
+import json
+import os
+
+root = '$NB_DIR/audio_lab'
+paths = sorted(glob.glob(os.path.join(root, '*.ipynb')))
+if len(paths) != $EXPECTED_NOTEBOOK_COUNT:
+    raise SystemExit(
+        'notebook count mismatch: expected $EXPECTED_NOTEBOOK_COUNT, got {}'.format(len(paths))
+    )
+for path in paths:
+    with open(path, 'r', encoding='utf-8') as handle:
+        json.load(handle)
+print('  valid notebooks:', len(paths))
+print('  main notebook:', os.path.join(root, 'AudioLab.ipynb'))
+PY"
 done
 
 # --- 8. Summary ----------------------------------------------------------
@@ -273,8 +304,10 @@ cat <<EOF
 ----------------------------------------------------------------------
 Deploy complete.
 
-  Jupyter UI         ${PYNQ_JUPYTER_URL}
-  Notebooks dir      $PYNQ_NB_DIR/audio_lab/
+  Jupyter notebooks  ${PYNQ_JUPYTER_URL}
+  Main notebook      ${PYNQ_JUPYTER_URL}/AudioLab.ipynb
+  Jupyter root       ${PYNQ_JUPYTER_ROOT_URL}
+  Notebooks dir      ${REMOTE_JUPYTER_ROOT:-$PYNQ_NB_DIR}/audio_lab/
   Repo on PYNQ       $PYNQ_REPO_DIR/
   Diagnostic CLI     ssh ${SSH_TARGET} \\
                      'sudo env PYTHONPATH=${PYNQ_REPO_DIR} python3 ${PYNQ_REPO_DIR}/scripts/audio_diagnostics.py --help'

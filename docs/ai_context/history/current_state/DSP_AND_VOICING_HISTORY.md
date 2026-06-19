@@ -842,7 +842,7 @@ still slightly negative; not a regression versus the historical
 deploy band, but the build is not formally clean. Treat any further
 timing slip with suspicion. The full chronology (with per-build
 notes) is in
-[`TIMING_AND_FPGA_NOTES.md`](TIMING_AND_FPGA_NOTES.md).
+[`TIMING_AND_FPGA_NOTES.md`](../../TIMING_AND_FPGA_NOTES.md).
 
 ## Notebooks
 

@@ -10,7 +10,9 @@ This file captures the operational facts about the lab board.
 | User | `xilinx` |
 | SSH key auth | configured (see `scripts/deploy_to_pynq.sh`) |
 | Passwordless `sudo` | configured (`/etc/sudoers.d/xilinx-nopasswd`) |
-| Jupyter URL | `http://192.168.1.9:9090/tree` |
+| Jupyter Notebook tree | `http://192.168.1.9:9090/tree/audio_lab` |
+| Main Notebook | `http://192.168.1.9:9090/tree/audio_lab/AudioLab.ipynb` |
+| Jupyter root | `http://192.168.1.9:9090/tree` |
 
 Because key auth is in place, the deploy script never asks for a password.
 If a future agent runs `ssh-copy-id` again, it will need an interactive
@@ -168,6 +170,13 @@ those paths under user `xilinx`, it will fail. Common offenders:
 
 When in doubt, `sudo chown -R xilinx:xilinx /home/xilinx/audio_diag`
 before re-running diagnostics from the user account.
+
+`scripts/deploy_to_pynq.sh` handles the Notebook tree separately: it reads the
+actual configured root from `sudo jupyter notebook list`, refreshes
+`<root>/audio_lab/`, restores `xilinx:xilinx` ownership, and validates all
+15 `.ipynb` files as JSON. Do not infer the Notebook root from
+`/proc/<jupyter-pid>/cwd`; on this board the process CWD is `/home/xilinx` but
+NotebookApp serves `/home/xilinx/jupyter_notebooks`.
 
 ## Codec health-check shortcut
 

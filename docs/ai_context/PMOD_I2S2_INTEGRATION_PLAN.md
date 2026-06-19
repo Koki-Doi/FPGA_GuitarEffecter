@@ -4,7 +4,7 @@
 PMOD JB audio path について、最初の Phase Pmod-0 設計メモと、その後の
 実装・deploy 済み仕様をまとめる。
 
-## Current deployed status (D48 / D49 / D50, active through D79)
+## Current deployed status (D48 / D49 / D50, active through D135)
 
 Pmod I2S2 は現行デプロイ済み build の **active audio path** です。
 `hw/Pynq-Z2/create_project.tcl` は `pmod_i2s2_integration.tcl` を
@@ -34,24 +34,24 @@ Current implementation:
   `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb`,
   `scripts/test_pmod_i2s2.py`, `scripts/pmod_i2s2_mode.py`,
   `scripts/pmod_i2s2_capture_probe.py`.
-- Latest deployed bitstream baseline is D79 Overdrive realism on the D75
-  DSP island: island WNS `-0.496 ns`, 100 MHz audio fabric `+0.532 ns /
-  0 fail`, bit/hwh md5 `f0cb0276f27187d72476a2e773dd9a6e` /
-  `5fa0b84e9fe852c68629c651f94e4a9d`. The Pmod I2S2 RTL / Tcl / XDC
-  path itself is unchanged from D48-D50; D79 only changes Clash Overdrive
-  math on the existing DSP path.
+- Latest accepted deployed bitstream baseline is D135 (merge `765323b`):
+  overall WNS `+0.643 ns`, WHS `+0.018 ns`, bit/hwh md5
+  `533d586901dc3669285a49c6d82bab9f` /
+  `731517487c6218f0e181c2b74485d7a6`. The Pmod I2S2 RTL / Tcl / XDC
+  path itself remains the D48-D50 design, with D98 changing its dividers to
+  96 kHz and later decisions changing the downstream Clash DSP voicing.
 
 The original Phase Pmod-0 planning text remains below as history. Any
 sections that say "planning only" or "do not change RTL/XDC/Tcl" describe
 that earlier docs-only phase, not the current repository state.
 
 関連:
-- `docs/ai_context/CURRENT_STATE.md` (current D79 / Pmod mode 2 state)
+- `docs/ai_context/CURRENT_STATE.md` (current D135 / Pmod mode 2 state)
 - `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (retired PCM5102 / PCM1808 history)
 - `docs/ai_context/IO_PIN_RESERVATION.md` (PMOD / RPi / Arduino header の pin 予約台帳)
 - `docs/ai_context/AUDIO_SIGNAL_PATH.md` (内部 AXIS DSP 経路と外付け codec 接続点)
 - `docs/ai_context/TIMING_AND_FPGA_NOTES.md` (deploy band と WNS baseline)
-- `docs/ai_context/DECISIONS.md` (D45 / D48 / D49 / D50 / D75-D79)
+- `docs/ai_context/DECISIONS.md` (D45 / D48 / D49 / D50 / D75-D145)
 
 ---
 
@@ -250,9 +250,11 @@ Phase Pmod-1 から Phase Pmod-4 までの初期仕様 (下表は D97 までの 
 
 ---
 
-## 8. Future 96 kHz experiment
+## 8. Historical Phase Pmod-5 96 kHz plan (implemented differently at D98)
 
-Phase Pmod-5 (別 branch、48 kHz 安定後) で検討。**初期実装ではやらない**。
+This section preserves the pre-D98 plan. The deployed D98+ implementation uses
+96 kHz with **MCLK still 12.288 MHz** (128fs double-speed) and BCLK 6.144 MHz;
+the planned 24.576 MHz MCLK below was not adopted.
 
 | 項目 | 値 |
 | --- | --- |
@@ -288,8 +290,8 @@ Phase Pmod-5 (別 branch、48 kHz 安定後) で検討。**初期実装ではや
   深さは同じ、ただし sample rate 倍化で連続サンプル間の cycle budget が
   半分になる → register stage を増やす必要が出る可能性)。
 
-96 kHz は **48 kHz Pmod I2S2 経路が安定 + ADAU との A/B 比較が完了**
-してから開始すること。Safe Bypass のみで音が通るところから始める。
+This gate was completed at D98. Current work must use the deployed 96 kHz
+constants and must not revive the 24.576 MHz planning assumption.
 
 ---
 

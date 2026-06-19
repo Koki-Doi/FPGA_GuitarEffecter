@@ -5,7 +5,33 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-17, after D135 large non-IR realism accepted merge)
+## Current status (2026-06-19, after D145 Notebook visibility fix)
+
+> **D135 is again the live deployed and accepted committed baseline.** D144
+> (narrow D135-based chord-detune candidate: `ampSagAttackStep = 96` plus
+> clean-mode `ampCleanKneeBonus` / `ampCleanPowerBonus`) was bench-rejected by
+> the user ("失敗") and rolled back. D144 must not be treated as accepted and is
+> not in `baselines.json`. The rollback restored DSP Clash source, regenerated
+> VHDL/IP, golden vectors, and bit/hwh from D135 commit `765323b`. Local and
+> board bit/hwh md5 are D135: bit `533d586901dc3669285a49c6d82bab9f`, hwh
+> `731517487c6218f0e181c2b74485d7a6`. Board copies under
+> `/home/xilinx/Audio-Lab-PYNQ/`, `audio_lab_pynq/bitstreams/`, and
+> `/home/xilinx/pynq/overlays/audio_lab/` md5-match. Rollback smoke passed:
+> `AudioLabOverlay()` loads, ADC HPF True, `R19_ADC_CONTROL 0x23`, Pmod mode 2
+> `FRAME_COUNT +288368` over 3 s (~96 kHz), and Pmod was returned to
+> `MODE=3` mute. D145 then fixed Notebook visibility in
+> `scripts/deploy_to_pynq.sh`: Jupyter root is now discovered from
+> `sudo jupyter notebook list`, not the daemon process CWD. The canonical board
+> tree is `/home/xilinx/jupyter_notebooks/audio_lab/`; deploy verified all
+> 15/15 `.ipynb` files as valid JSON, restored `xilinx:xilinx` ownership, and
+> prints `http://192.168.1.9:9090/tree/audio_lab` plus the direct
+> `AudioLab.ipynb` URL. If chord-detune work resumes, do not reapply D144 as-is; first
+> address the safe-bypass CDC knife-edge / placement sensitivity, then re-bench.
+> Read `CURRENT_STATE.md`, `DECISIONS.md` D143-D145, D109, `BASELINES.md`, and
+> `TIMING_AND_FPGA_NOTES.md` first; run `git status --short` and
+> `git diff --stat` before continuing.
+
+## Previous accepted status (2026-06-17, after D135 large non-IR realism accepted merge)
 
 > Accepted deployed bitstream baseline is **D135**: merge commit `765323b`,
 > large non-IR realism (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees +

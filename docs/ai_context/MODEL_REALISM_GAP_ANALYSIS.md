@@ -2,13 +2,19 @@
 
 Investigation only (2026-06-01). **Historical pre-D98/pre-D90 analysis.**
 Several recommendations here were implemented later (96 kHz in D98, 4x
-oversampling for Metal/RAT/Big Muff in D88-D90, D121-D131 voicing passes).
+oversampling for Metal/RAT/Big Muff in D88-D90, D121-D135 voicing passes).
 Use this file as the original gap map, not as the current implementation
 inventory. Goal: for each
 Overdrive / Distortion / Amp Sim / Cab IR model, document (1) what the real
 hardware does, (2) what the current Clash DSP does, (3) the gap, (4) how to
 get closer. Exact current constants live in the source files cited per
 section; this doc is the analysis layer on top of them.
+
+Current boundary (2026-06-19): accepted deployed baseline is D135
+(`533d5869...`). D144's simulation-proven chord-detune candidate was
+bench-rejected and rolled back because the rebuilt placement did not pass the
+hardware acceptance gate. New recommendations here are design inputs, never
+acceptance evidence.
 
 Sources read: `hw/ip/clash/src/AudioLab/Effects/{Overdrive,Distortion,Amp,Cab}.hs`,
 `GUI/compact_v2/knobs.py` (model lists), `REAL_PEDAL_VOICING_TARGETS.md`,

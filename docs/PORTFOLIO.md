@@ -8,13 +8,13 @@ DSP は関数型 HDL（Clash/Haskell）で記述し、HDMI GUI・ロータリー
 > 本ページはポートフォリオサイト向けの概要。実装値・係数・アルゴリズム・設計の物語は
 > **[深掘り技術付録](#深掘り技術付録)**（全 5 部）を参照。
 
-**現行の採用済みデプロイベースライン**は **D131**（merge commit `37114b9`、
-bit md5 `fdab62d5ef229ec64dc60fe9395cbf06`、hwh md5
-`d852ec4e737460ad016b41f0a3f71de2`）。D109 の CDC 修正で DSP 再ビルド時の
-safe-bypass 破壊を根本解決したうえで、D121-D131 の測定駆動 voicing line により
-Cab / OD / Distortion / Compressor / Amp を実機寄りに更新したビルドです。Vivado
-routed timing は **WNS +0.631 ns / WHS +0.019 ns**、D109 CDC pair は
-`+3.353 ns / +6.286 ns`、実機 PL smoke とユーザー bench で合格しています。
+**現行の採用済みデプロイベースライン**は **D135**（merge commit `765323b`、
+bit md5 `533d586901dc3669285a49c6d82bab9f`、hwh md5
+`731517487c6218f0e181c2b74485d7a6`）。D121-D134 の測定駆動 voicing / sim
+拡張に、Fuzz Face 900 Hz mid-hump、Amp/Cab character 強化を重ねたビルドです。
+Vivado routed timing は **WNS +0.643 ns / WHS +0.018 ns**、実機 PL smoke と
+ユーザー bench で合格しています。D136-D142 と D144 は timing-clean / sim-good
+でも safe-bypass を含む bench acceptance を通せず、D135 へ rollback しました。
 
 ---
 
@@ -80,9 +80,9 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | サンプルレート | 96 kHz / 24-bit |
 | DSP アイランドクロック | 33.33 MHz（1 サンプル/サイクル、約 347 サイクル/サンプルの余裕） |
 | タイミング改善（アイランド導入） | WNS -10.387 ns → -0.706 ns |
-| 採用ベースライン（D131）の WNS | +0.631 ns（フルタイミング MET、WHS +0.019 ns、route errors 0） |
+| 採用ベースライン（D135）の WNS | +0.643 ns（フルタイミング MET、WHS +0.018 ns、route errors 0） |
 | エフェクト | 9 ブロック（Amp 6 / OD 6 / Distortion 7 / Cab 3 機種） |
-| 現行 bit / hwh | `fdab62d5ef229ec64dc60fe9395cbf06` / `d852ec4e737460ad016b41f0a3f71de2` |
+| 現行 bit / hwh | `533d586901dc3669285a49c6d82bab9f` / `731517487c6218f0e181c2b74485d7a6` |
 | `set_guitar_effects` レイテンシ | 940 ms → 2.6 ms（IP ハンドルキャッシュ後） |
 | 物理操作系 | エンコーダ ×3 / フットスイッチ ×3 / エクスプレッションペダル ×1 |
 
@@ -118,21 +118,26 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 
 ---
 
-## 現状（2026-06-15）
+## 現状（2026-06-19）
 
-採用済みデプロイベースラインは **D131**。D121 の非 Amp 測定駆動 pass から始まり、D122-D131 で
-Amp / Cab / RAT / Compressor / OD / DS-1 / Metal / Big Muff / Fuzz Face の低リスク voicing を
-段階的に実装・bench-ACCEPTED したビットストリームです。
+採用済みデプロイベースラインは **D135**。D121 の非 Amp 測定駆動 pass から
+D131 の distortion tooling、D134 の dynamics/knob 全体評価、D135 の
+Fuzz Face / Amp / Cab character 強化までを段階的に実装・bench-ACCEPTED
+したビットストリームです。
 
-D131 時点の主な音作り変更：
+D135 までの主な音作り変更：
 
 1. **D121-D124**：BD-2 / OCD / Metal / Cab / RAT の測定駆動補正。
 2. **D125**：Compressor RATIO を Dyna/Ross sustain 方向へ修正。
 3. **D126-D130**：OD-1 / DS-1 / RAT / Amp / Klon / Metal などを実機リファレンスの EQ へ再照合。
 4. **D131**：DS-1 / Big Muff / Fuzz Face / Metal の low-end、saturation、sustain を改善し、
    `dist_eval.py` / `targets.py` で distortion-character を自動評価。
+5. **D134-D135**：全 effect / knob の objective check を拡張し、Fuzz Face
+   mid-hump、Amp MIDDLE / AC30 / JCM800、Cab body を改善。
 
 すべて offline sim / golden / bypass invariant で Vivado 前に絞り込み、Vivado timing、
 deploy、programmatic smoke、ユーザー bench を通過したものだけを採用しています。D120 / D119 の
-Amp sag 変更は bench-reject 済みで、明示的な新方針がない限り再試行しません。最新の正確な状態は
-`docs/ai_context/CURRENT_STATE.md` / `docs/ai_context/DECISIONS.md`（D109-D131）を参照。
+Amp sag 変更は bench-reject 済みです。D144 の chord-detune 候補も offline
+sim では改善したものの bench-reject され、D135 へ rollback しました。最新の
+正確な状態は `docs/ai_context/CURRENT_STATE.md` /
+`docs/ai_context/DECISIONS.md`（D109-D145）を参照。

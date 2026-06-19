@@ -139,7 +139,8 @@ recommended reservation is:
 | Device name | `PYNQ-Z2` |
 | MAC address | `00:05:6B:02:CA:04` |
 | Reserved IP | `192.168.1.9` |
-| Jupyter | `http://192.168.1.9:9090/tree` |
+| Jupyter notebooks | `http://192.168.1.9:9090/tree/audio_lab` |
+| Jupyter root | `http://192.168.1.9:9090/tree` |
 | SSH | `ssh xilinx@192.168.1.9` |
 
 Set this in the router management UI; the repository cannot create the
@@ -163,7 +164,8 @@ PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh
 
 The script:
 
-- Prints the selected `PYNQ_HOST` and Jupyter URL.
+- Prints the selected `PYNQ_HOST`, direct Notebook tree URL, main Notebook URL,
+  and Jupyter root URL.
 - Fails with a DHCP-reservation checklist when the reserved address is
   unreachable.
 - Verifies / installs the SSH key on the board.
@@ -175,10 +177,23 @@ The script:
 - Mirrors `audio_lab.bit` / `audio_lab.hwh` into
   `/usr/local/lib/python3.6/dist-packages/pynq/overlays/audio_lab/`
   so bare `Overlay("audio_lab")` resolves to the same build.
-- Re-installs the notebooks under `/home/xilinx/jupyter_notebooks/audio_lab/`.
+- Discovers the configured Jupyter server root from
+  `sudo jupyter notebook list` (process CWD is fallback only), then re-installs
+  the Notebooks under its `audio_lab/` directory. `PYNQ_NB_DIR` is also
+  maintained when it intentionally differs.
+- Restores the Notebook tree to `xilinx:xilinx`, requires the deployed
+  top-level `.ipynb` count to match the repository source count, and JSON-parses
+  every Notebook. A zero-byte or truncated file fails deploy.
 - Runs an import sanity check.
 
 It never stores or logs the board password.
+
+The current board resolves the Jupyter root to
+`/home/xilinx/jupyter_notebooks`; open the installed tree directly:
+
+```text
+http://192.168.1.9:9090/tree/audio_lab
+```
 
 ## Smoke test on the board
 

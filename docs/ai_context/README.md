@@ -61,20 +61,23 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- **Current accepted deployed baseline = the 2026-06-17 realism baseline**:
-  merge commit `21c0b5a`, bit md5 `54f7f547d04f0e4d59011e4754f834ca`, hwh md5
-  `2fbc8a5ba528bb6e1d415e6339b64bdb`. The all-effects-sim-survey re-voicing:
-  bass (amp input-HP dead first-difference -> live one-pole), Metal full
-  saturation (os4x clip floor 1.05M->600k), amp RESONANCE dead-knob fix, an
-  HF-restore (un-muffle), AC30 chime, and clean-amp power headroom (per-model
-  `ampPowerKnee`); plus the comprehensive `tools/dsp_sim` problem-detectors
-  (muffled/harsh, clean-distortion, all-model targets -- 28/28 EQ + 7/7 dist +
-  6/6 amps-clean vs `targets.py`). Routed timing MET (WNS `+0.639`, D109 CDC
-  pair `+1.415` / `+6.782`), deployed, PL-smoked at ~96.1 kHz, bench-accepted
-  (合格). Supersedes b3dcab00 (`55ef823`) and D131 (`fdab62d5`); rollback uses
-  `git checkout 55ef823 -- hw/Pynq-Z2/bitstreams/` (b3dcab00) or `37114b9`
-  (D131) + redeploy. See `CURRENT_STATE.md`, `REALISM_ALL_EFFECTS_SIM_SURVEY.md`,
-  `BASELINES.md`, and `TIMING_AND_FPGA_NOTES.md`.
+- **Current accepted deployed baseline = D135**: merge commit `765323b`, bit
+  md5 `533d586901dc3669285a49c6d82bab9f`, hwh md5
+  `731517487c6218f0e181c2b74485d7a6`. It is the large non-IR realism pass:
+  Fuzz Face 900 Hz mid-hump + tighter knees + opened tone LPF; AC30/JCM800
+  stronger `ampScoop` + model-local presence; more audible Amp `MIDDLE`; AC30
+  clean headroom; Cab non-IR body tap. Routed timing MET (WNS `+0.643`, WHS
+  `+0.018`), deploy/smoke/ear-bench passed, and it was merged to `main`.
+  D136-D142 and the narrower D144 chord-detune candidate were bench-rejected
+  after re-triggering the placement-sensitive safe-bypass artifact; repository
+  and board were rolled back to D135 on 2026-06-19. D134 (`f62f132`) is the
+  immediate accepted rollback. See `CURRENT_STATE.md`, `BASELINES.md`,
+  `DECISIONS.md` D135-D145, and `TIMING_AND_FPGA_NOTES.md`.
+- The board Jupyter root is `/home/xilinx/jupyter_notebooks`; deployed
+  Notebooks are under `audio_lab/` and should be opened at
+  `http://192.168.1.9:9090/tree/audio_lab`. D145 changed deploy-root discovery
+  to `sudo jupyter notebook list`, restores `xilinx:xilinx` ownership, and
+  JSON-validates all 15 Notebooks after every deploy.
 - The **Overdrive realism pass shipped** (D79). The six selectable OD
   models now differ in clip hardness (`asymSoftClipSoft` / legacy medium /
   harder fixed-shift siblings), and the CENTAUR/Klon model mixes a parallel

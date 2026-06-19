@@ -8,6 +8,11 @@ cost, timing risk, GPIO impact, and the build/validation gate.
 
 ## Implementation progress (2026-06-01) — item 4 & 5a accepted as D79
 
+> This section is a historical D79 implementation record. The current accepted
+> deployed baseline is D135 (`765323b`, bit `533d5869...`); D144 was
+> bench-rejected and rolled back. Use `CURRENT_STATE.md` / `BASELINES.md` for
+> current status before applying any recipe below.
+>
 > Items 1 & 2 skipped per request. Items 4 and 5a were implemented in priority
 > order, built, deployed, bench-auditioned, and accepted as **D79**. `main`
 > now carries bit `f0cb0276f27187d72476a2e773dd9a6e` / hwh
@@ -148,13 +153,16 @@ Read first: `DSP_EFFECT_CHAIN.md` (stage order), `Types.hs` (Frame),
 From the source (verified):
 
 - **Sample = `Signed 24`** (`±8_388_607` full-scale), **Wide = `Signed 48`**
-  (accumulators), mono, **48 kHz**, one sample/cycle fully-pipelined.
-- DSP runs on the **50 MHz island** (`clash_lowpass_fir_0`, FCLK1; D75). Its
-  DS-1 CARRY4 arithmetic is the critical path; D78 showed adding *anything*
-  (even an unrelated AXI master) can tip it into an audible bitcrusher.
+  (accumulators), mono, **96 kHz**, one sample/cycle fully-pipelined.
+- DSP runs on the **33.33 MHz island** (`clash_lowpass_fir_0`, FCLK1; D75
+  introduced 50 MHz, D89 lowered to 40 MHz, D94 to 33.33 MHz). DS-1
+  arithmetic and the output CDC remain placement-sensitive; D78 and
+  D136-D144 showed that even unrelated footprint changes can cause audible
+  corruption.
   **Every item here must be followed by a WNS-vs-baseline review + bench
-  audio.** Current accepted baseline: D79 `f0cb0276` (island WNS -0.496 ns,
-  audio fabric +0.532 / 0 fail); D78 `45e78763` is the rollback.
+  audio.** Current accepted baseline: D135 (`765323b`, overall WNS
+  `+0.643 ns`, bit `533d5869...`); D134 (`f62f132`, bit `58b6ee84...`) is
+  the immediate accepted rollback.
 - **Helpers available** (`FixedPoint.hs`): `mulU8/9/10/12` (Sample×unsigned →
   Wide), `mulS10` (Sample×Signed10 → Wide), `satWide`, `satShift7..12`,
   `softClip`, `softClipK knee`, `asymSoftClip kneeP kneeN`,

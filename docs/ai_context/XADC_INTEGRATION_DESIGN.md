@@ -1,7 +1,7 @@
 # XADC Wizard integration (ACCEPTED + committed on the D75 island; D76 baseline)
 
 Status: **accepted on bench and committed** as part of **D76**
-(2026-05-31), and still present in the current D79 bitstream. The D74 build
+(2026-05-31), and still present in the current D135 bitstream. The D74 build
 (below) had been deployed but held out of git
 because of a bitcrusher on the ADC path; that defect was later proven to
 be the D74 100 MHz audio-AXIS P&R degradation, **not** the XADC. On the
@@ -15,7 +15,9 @@ FP02M layer. D76 routed timing: overall WNS `-0.368 ns` (100 MHz audio
 fabric WNS `+0.614 ns`, 0 failing; the only 22 failures are intra-50 MHz
 DSP DS-1 arithmetic); bit/hwh md5 `9fdecae0c7d7cf3c59422cec2b30368f` /
 `a9fd74082482aa1b074fc3c31ccd6283`, deployed 5-site. See `DECISIONS.md`
-D76, `DSP_ISLAND_CLOCK_DESIGN.md`, and `FP02M_PEDAL_INTEGRATION.md`.
+D76, `DSP_ISLAND_CLOCK_DESIGN.md`, and `FP02M_PEDAL_INTEGRATION.md`. The
+current island is 33.33 MHz; the 50 MHz values below are the D76-era build
+record.
 
 The "Build result (2026-05-29)" section below is the original D74 build
 record (committed-baseline = D72/D73 at that time), retained for history.

@@ -21,8 +21,8 @@ asym + separate tone stack; Marshall JTM45 bright cap + lower plate V), compared
 against the actual current Clash constants, and turned into a measurement-backed
 candidate ranking. D126/D127 implemented the first OD-1 / DS-1 / RAT / JCM800
 alignment pass; D128-D131 continued the amp, OD/DS/RAT, and DIST realism line.
-Read `CURRENT_STATE.md`, `BASELINES.md`, and `DECISIONS.md` D126-D131 for the
-accepted bitstream history.
+Read `CURRENT_STATE.md`, `BASELINES.md`, and `DECISIONS.md` D126-D145 for the
+accepted bitstream history and later rejected chord/amp-clean experiments.
 
 ## Ground rules
 
@@ -44,8 +44,8 @@ accepted bitstream history.
 ## Baseline status
 
 This plan was first measured against **D124** (RAT live-pole highpass fix,
-bench-ACCEPTED, merged). The current canonical deployed baseline is **D131**
-(merge `37114b9`, bit `fdab62d5ef229ec64dc60fe9395cbf06`). Relevant D124
+bench-ACCEPTED, merged). The current canonical deployed baseline is **D135**
+(merge `765323b`, bit `533d586901dc3669285a49c6d82bab9f`). Relevant D124
 facts at the time of this plan:
 
 - OD 6 models were measured on-target in `REALISM_OD_DIST_MEASUREMENT.md`.

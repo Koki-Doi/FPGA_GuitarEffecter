@@ -6,7 +6,7 @@ not get removed even when superseded — they get updated.
 
 Baseline statements inside older ADRs are historical unless the newest ADRs and
 `CURRENT_STATE.md` say otherwise. The current canonical deployed baseline is
-D134 (`f62f132`, bit `58b6ee84...`), tracked in
+D135 (`765323b`, bit `533d5869...`), tracked in
 `docs/ai_context/baselines.json` / `docs/ai_context/BASELINES.md`.
 
 ---
@@ -6308,7 +6308,7 @@ pre-existing 3 failures + 1 error baseline.
   bass-light on the only clean bit by design. Deployed baseline = D98.
   `DECISIONS.md` D108.
 
-## D109 — Safe-bypass knife-edge ROOT-CAUSED and FIXED (untimed audio CDC) + amp HP dead-pole fixed
+## D109 — Safe-bypass knife-edge ROOT-CAUSED and BOUNDED (untimed audio CDC) + amp HP dead-pole fixed
 
 - **Root cause of the D58/D60/D102-D106 safe-bypass "knife-edge"**, found by
   opening the D98 routed DCP (no rebuild): the build IS deterministic (the
@@ -6327,14 +6327,17 @@ pre-existing 3 failures + 1 error baseline.
   -asynchronous` into two so `clk_fpga_0` and `clk` are no longer in the same
   async group (they become timed vs each other; all other domains stay mutually
   async exactly as before), then `set_max_delay -datapath_only 10.000` both
-  directions clk_fpga_0<->clk to bound the FIFO write under ANY placement.
+  directions clk_fpga_0<->clk to bound the FIFO write path and make it visible
+  to timing analysis.
   (set_max_delay cannot override a set_clock_groups -asynchronous on the same
   pair, so the pair must be ungrouped first.) Post-build report_cdc shows the
   exception flipped to "Max Delay Datapath Only" and timing stays MET (WNS
   +0.564 / WHS +0.007); the reset paths into i2s_to_stream meet the bound too.
 - **Bench: all_off / safe-bypass is CLEAN on a CHANGED DSP source** -- the first
-  time ever. This proves the CDC bound dissolves the knife-edge: **DSP voicing
-  rebuilds are now safe.** Deployed bit `a7f18ff9`.
+  time ever. This proved that the CDC bound materially improved rebuild
+  robustness for that placement. Later D136-D144 builds showed that it does
+  **not** make every placement safe; every regenerated bit still requires a
+  safe-bypass ear-bench. Deployed bit `a7f18ff9`.
 - Also fixed the amp input-HP **dead-pole** (`Amp.hs ampHighpassFrame`): the old
   `prevOut * 509 `shiftR` 9` parsed as `prevOut * (509>>9)` = `prevOut * 0` (a
   pure first difference = differentiator = bright but NO bass). Parenthesised to
@@ -6343,14 +6346,15 @@ pre-existing 3 failures + 1 error baseline.
   `project_safebypass_knifeedge_cdc_rootcause.md`. Golden D98 placement saved at
   `/tmp/d98_routed.dcp`.
 
-## D110-D112 — Amp full revoicing (now that D109 made DSP rebuilds safe); bench-ACCEPTED `c1e3de50`
+## D110-D112 — Amp full revoicing after D109 bounded the DSP CDC; bench-ACCEPTED `c1e3de50`
 
 - **Why:** the entire D55-D97 amp voicing was tuned against the amp's bright
   *differentiator* input (the dead-pole bug). D109 fixed that input to a flat
   ~120 Hz HP, so the downstream high-cuts (post-clip LPF darken, transformer HF
   droop, treble trims) over-darkened and the many cascaded always-on soft-clips
-  over-compressed -> "muffled + amp-sim squash" on the bench. With D109 making
-  rebuilds safe, the amp was re-voiced toward a real-amp balance.
+  over-compressed -> "muffled + amp-sim squash" on the bench. With D109
+  constraining the previously untimed crossing, the amp was re-voiced toward a
+  real-amp balance and still gated by an ear-bench.
 - **D110** (first pass): halved `ampModelDarken`, transformer HF droop 3->4,
   treble-trim halved. Not enough (still muffled).
 - **D111** (open up the compression): raised the cascaded always-on soft-clip
@@ -6601,6 +6605,96 @@ pre-existing 3 failures + 1 error baseline.
   restore board networking, load `AudioLabOverlay()` once, run Pmod mode-2
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
+
+## D145 — Discover the configured Jupyter root and verify all deployed Notebooks (2026-06-19)
+
+- **Problem.** The user reported that the Notebook was not visible. All 15
+  source and board `.ipynb` files existed and parsed as JSON, but
+  `scripts/deploy_to_pynq.sh` inferred the live root from
+  `/proc/<jupyter-pid>/cwd`. On this board that CWD is `/home/xilinx` while
+  NotebookApp explicitly sets
+  `notebook_dir=/home/xilinx/jupyter_notebooks`. The old inference therefore
+  created a misleading duplicate `/home/xilinx/audio_lab/` tree and did not
+  prove that the browser-visible tree was the one just refreshed.
+- **Decision.** Treat `sudo jupyter notebook list` as the authoritative runtime
+  root source and parse the path after `::`. Use process CWD only as a fallback
+  for older images where the list command is unavailable. Install to
+  `PYNQ_NB_DIR` and additionally to the detected root only when they differ.
+- **Deploy invariants.** After `install_notebooks(...)`, recursively restore
+  ownership to `xilinx:xilinx`, require the deployed top-level `.ipynb` count
+  to match the repository source count, and parse every file with Python's
+  `json` module. A truncated or missing Notebook now fails the deploy instead
+  of leaving a successful-looking summary.
+- **User-visible path.** The deploy summary now points directly to
+  `http://192.168.1.9:9090/tree/audio_lab` and
+  `/tree/audio_lab/AudioLab.ipynb`, while retaining `/tree` as the server-root
+  link.
+- **Verification / boundary.** Re-deploy completed against PYNQ-Z2
+  `192.168.1.9`: the runtime root resolved to
+  `/home/xilinx/jupyter_notebooks`, exactly one canonical tree was refreshed,
+  all **15/15** Notebooks parsed as JSON, and the tree is owned by
+  `xilinx:xilinx`. This is deploy/documentation only; no DSP, bit/hwh, GPIO,
+  XDC, topology, or `block_design.tcl` change. D135 remains the accepted
+  deployed bitstream.
+
+## D144 — Chord-detune sim fix narrowly reapplied on D135; bench-REJECTED, rolled back to D135 (2026-06-19)
+
+- **Decision.** Re-fix the user-reported "和音で音程が変" problem with the
+  smallest simulation-proven subset on top of the accepted D135 baseline, not by
+  reviving the whole bench-rejected D136-D142 amp-clean line. The change is
+  Clash DSP only in `Amp/Tone.hs`, `Amp/Models.hs`, and `Amp/Clip.hs`; no
+  GPIO/topology/XDC/block-design/topEntity-port/Python API change.
+- **Root cause / sim evidence.** `tools/dsp_sim/chord_eval.py` reproduced the
+  issue on a clean major triad at 0.15 FS: bypass floor `-35.7 dB`, JC-120
+  `-34.7 PASS`, but Twin `-15.8`, AC30 `-11.5`, Rockerverb `-7.7`, JCM800
+  `-8.5`, TriAmp `-8.3` FAIL with spurious ~60/145/290 Hz components. This is
+  the D141 root cause: instant-attack `ampSagEnvNext` tracks chord beat ripple
+  and amplitude-modulates `ampMasterFrame`, so sidebands read as detuned chords.
+- **DSP change.** (1) Reintroduced the D141-style sag attack slew:
+  `ampSagAttackStep = 96`, release unchanged, gate behaviour unchanged. Sag-only
+  fixed Twin (`-33.6`) but left high-gain clean chords above the bypass floor.
+  (2) Added a narrow clean-mode headroom bonus: `ampCleanKneeBonus` raises the
+  model-local clean waveshaper knees in `ampAsymClip`, and
+  `ampCleanPowerBonus` raises clean-mode power/resonance/master `ampPowerKnee`
+  thresholds. These bonuses are zero in Drive mode; the sag attack change still
+  affects tube sag generally. NOT included: D136-D142 clean preamp gain slope,
+  per-model output normalization, JC clean normalization, drive-saturation
+  retunes, or any placement/XDC mitigation.
+- **Offline verification.** Final chord sim at 0.15 FS: bypass `-35.7`, JC
+  `-34.7`, Twin `-33.6`, AC30 `-32.5`, Rockerverb `-32.9`, JCM800 `-33.5`,
+  TriAmp `-33.9` -- all near the bypass floor. `measure.py --check` **28/28**,
+  `dist_eval.py --check` **7/7 pedals + 6/6 amps clean**, and
+  `DSP_SIM_TESTS=1 pytest tests/test_dsp_sim_regression.py` **20 passed** after
+  intentional golden re-bless. `dynamics_eval.py --check` remains **4/5** with
+  the known D141 trade-off: `crunch_rig` is ~2 dB above the old RMS ceiling
+  (peak `-2.6 dBFS`, clips `0`) because slow sag no longer acts as an incorrect
+  fast limiter.
+- **Build / deploy / smoke.** `make -C hw/ip/clash regen` and full clean Vivado
+  rebuild passed. Timing fully MET: WNS `+0.658 ns`, TNS `0`, WHS `+0.017 ns`,
+  THS `0`, WPWS `+2.845 ns`, route failed/unrouted `0`; D109 CDC pair
+  `clk_fpga_0 -> clk +1.090 ns`, `clk -> clk_fpga_0 +6.721 ns`. bit/hwh md5
+  `8bf2894a452ba21b4881246af0c71967` /
+  `6f80e240bae78381135a774fdacca1ba`. Deployed to PYNQ-Z2 `192.168.1.9`;
+  smoke OK: `AudioLabOverlay()` loads, ADC HPF `True`, `R19_ADC_CONTROL 0x23`,
+  Pmod mode 2 `FRAME_COUNT +288360` over 3 s (~96 kHz), required IPs present.
+  Pmod returned to `MODE=3` mute for safety. The smoke input hit full scale
+  (`CLIP_COUNT 6`), so it is not a tonal acceptance sensor.
+- **Acceptance status / rollback.** User bench rejected this candidate
+  ("失敗") and requested rollback to D135. D144 is **bench-REJECTED, not merged,
+  not in `docs/ai_context/baselines.json`, and must not be treated as
+  accepted**. Rollback completed by restoring DSP Clash source, regenerated
+  VHDL/IP, golden vectors, and bit/hwh from D135 commit `765323b`. Local and
+  board bit/hwh are back to D135 md5
+  `533d586901dc3669285a49c6d82bab9f` /
+  `731517487c6218f0e181c2b74485d7a6`. Deployed to PYNQ-Z2 `192.168.1.9`;
+  board copies under `/home/xilinx/Audio-Lab-PYNQ/`,
+  `audio_lab_pynq/bitstreams/`, and `/home/xilinx/pynq/overlays/audio_lab/`
+  md5-match D135. Rollback smoke OK: `AudioLabOverlay()` loads, ADC HPF `True`,
+  `R19_ADC_CONTROL 0x23`, Pmod mode 2 `FRAME_COUNT +288368` over 3 s (~96 kHz),
+  required IPs present; Pmod returned to `MODE=3` mute. D135 (`765323b`, bit
+  `533d5869`) is again the live deployed and accepted committed baseline. If
+  chord-detune work resumes, do not reapply D144 as-is; first address the
+  safe-bypass CDC knife-edge / placement sensitivity, then re-bench.
 
 ## D143 — ROLLBACK to D135: the D136-D142 amp-clean line is the safe-bypass CDC knife-edge; chord_eval.py kept (2026-06-19)
 
@@ -7098,7 +7192,7 @@ pre-existing 3 failures + 1 error baseline.
   Rollback to D134 with `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/`
   + deploy.
 
-## D134 — Sim-scale all-effect objective evaluation + knob-visibility fixes; bench-ACCEPTED, merged (`58b6ee84`, current accepted baseline)
+## D134 — Sim-scale all-effect objective evaluation + knob-visibility fixes; bench-ACCEPTED, merged (`58b6ee84`, then-current accepted baseline)
 
 - **Decision.** User asked to scale the simulation further, evaluate every
   effect with it, and fix every item that should be fixed. Treat this as an
@@ -7146,7 +7240,7 @@ pre-existing 3 failures + 1 error baseline.
   `54f7f547...`); rollback to D133 with `git checkout 21c0b5a -- hw/Pynq-Z2/bitstreams/`
   + redeploy.
 
-## D133 — Metal full saturation + clean-amp power headroom; bench-ACCEPTED, merged (`54f7f547`, current accepted baseline)
+## D133 — Metal full saturation + clean-amp power headroom; bench-ACCEPTED, merged (`54f7f547`, then-current accepted baseline)
 
 - **Decision.** Take on the two items D132 deferred as "new-stage". Both were
   achievable as placement-safe constant/mux (no new multiply/stage).
@@ -7231,8 +7325,9 @@ pre-existing 3 failures + 1 error baseline.
   `d852ec4e737460ad016b41f0a3f71de2`. Deployed, board md5 matched, PL smoke OK
   at ~96.1 kHz, goldens re-blessed (`distortion_ds1`, `dist_metal`).
 - **Status.** Bench-ACCEPTED ("合格") and merged to main (`37114b9`,
-  "Merge D131 DIST realism + distortion-eval tooling"). **D131 is the current
-  canonical deployed baseline**, superseding D130. Rollback: restore D130
+  "Merge D131 DIST realism + distortion-eval tooling"). **D131 became the
+  canonical deployed baseline at that point** and was later superseded by D135.
+  Rollback from D131: restore D130
   bitstreams from merge commit `fffa2b1` (bit `33af82f1`) and redeploy.
 - **Lesson.** A single-sine THD/net-curve can miss perceived distortion
   quality: sustain, absolute low-end, and IMD/fizz need their own metrics. A
