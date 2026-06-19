@@ -5,9 +5,29 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-19, after D145 Notebook visibility fix)
+## Current status (2026-06-19, D146 CDC pblock candidate; board recovery required)
 
-> **D135 is again the live deployed and accepted committed baseline.** D144
+> **D135 remains the accepted committed baseline.** The accepted D135+D145
+> repository state is marked by annotated local tag `v1.0.0` at `eead0bf`;
+> the tag was not pushed. D146 is a structural candidate on branch
+> `feature/d146-cdc-pblock`: implementation-only hard pblock
+> `pblock_audio_output_cdc` at `SLICE_X100Y116:SLICE_X113Y137` locks the
+> `axis_switch_sink` transfer-mux-0 register slice and `i2s_to_stream` write-side
+> distributed-RAM wrapper. No DSP/GPIO/clock/`block_design.tcl` change and the
+> D109 10 ns bidirectional max-delay bounds are unchanged. Build passed with WNS
+> `+0.571`, WHS `+0.018`, route errors `0`, bus-skew min `+8.126`, CDC pair
+> `+3.131` / `+6.670 ns`; bit/hwh md5 are
+> `55d431d9488d039fb1bfd9e4963871c8` /
+> `9e4075000ecd338e24a355df36db7e8c`. Deploy file sync and Notebook checks
+> passed, but the first Pmod mode-2 smoke produced no output and the board became
+> unreachable before mute/readback. D146 is therefore **PL-smoke blocked and
+> bench-pending**, not accepted and not in `baselines.json`; current Pmod mode is
+> unknown. After power/network recovery: load `AudioLabOverlay()` once, verify
+> ADC HPF True / `R19=0x23`, run mode 2 for 3 s and confirm ~96 kHz frames, force
+> mode 3 mute, verify deployed md5 copies, then user-check all-effects-off
+> safe-bypass for constant digital buzz. Only after that may D146 be accepted.
+>
+> Historical context: D144
 > (narrow D135-based chord-detune candidate: `ampSagAttackStep = 96` plus
 > clean-mode `ampCleanKneeBonus` / `ampCleanPowerBonus`) was bench-rejected by
 > the user ("失敗") and rolled back. D144 must not be treated as accepted and is
@@ -25,9 +45,9 @@ asking it to re-discover the project from scratch.
 > tree is `/home/xilinx/jupyter_notebooks/audio_lab/`; deploy verified all
 > 15/15 `.ipynb` files as valid JSON, restored `xilinx:xilinx` ownership, and
 > prints `http://192.168.1.9:9090/tree/audio_lab` plus the direct
-> `AudioLab.ipynb` URL. If chord-detune work resumes, do not reapply D144 as-is; first
-> address the safe-bypass CDC knife-edge / placement sensitivity, then re-bench.
-> Read `CURRENT_STATE.md`, `DECISIONS.md` D143-D145, D109, `BASELINES.md`, and
+> `AudioLab.ipynb` URL. If chord-detune work resumes, do not reapply D144 as-is;
+> finish and bench D146 first. Read `CURRENT_STATE.md`, `DECISIONS.md` D143-D146,
+> D109, `BASELINES.md`, and
 > `TIMING_AND_FPGA_NOTES.md` first; run `git status --short` and
 > `git diff --stat` before continuing.
 

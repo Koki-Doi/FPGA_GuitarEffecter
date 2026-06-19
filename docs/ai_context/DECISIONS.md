@@ -6606,6 +6606,60 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D146 — Hard-pblock the placement-sensitive axis_switch_sink -> i2s_to_stream CDC (2026-06-19)
+
+- **Baseline release marker.** Before changing the FPGA implementation, create
+  annotated local tag `v1.0.0` at `eead0bf` (accepted D135 audio plus D145
+  deploy-root fix). The tag is a rollback/release marker only; no remote git
+  operation was performed.
+- **Decision.** Keep the D109 clock relationship and bidirectional
+  `set_max_delay -datapath_only 10.000` constraints unchanged, and add a hard
+  implementation-only pblock around both sides of the placement-sensitive
+  output crossing. `audio_lab_cdc_pblock.xdc` creates
+  `pblock_audio_output_cdc` at `SLICE_X100Y116:SLICE_X113Y137` with
+  `IS_SOFT=false`. It selects the transfer-mux-0 `gen_AB_reg_slice` primitives
+  under `axis_switch_sink` and the write-side true-dual-port distributed RAM
+  wrapper under `i2s_to_stream`.
+- **Cell identification.** The cell names and region came from a fresh,
+  timing-clean D135 routed checkpoint, not the stale D144 checkpoint. The
+  read-only `report_cdc_fifo_placement.tcl` helper found all 112 D109 CDC-13
+  paths, 111 matching source primitives, and 125 matching target primitives.
+  Vivado folds the target primitives to the RAM hierarchy root when assigning
+  the pblock, so the implemented pblock reports 112 assigned objects (111
+  source primitives plus one target hierarchy root). Reopening the final routed
+  DCP reproduces those selection counts and the pblock region.
+- **Project integration.** `create_project.tcl` adds the XDC to `constrs_1` as
+  `USED_IN_SYNTHESIS=false`, `USED_IN_IMPLEMENTATION=true`, and
+  `PROCESSING_ORDER=LATE`, then emits CDC and pblock membership reports after
+  implementation. `rerun_impl_with_cdc_pblock.tcl` provides the bounded
+  synth-reuse/fresh-place-and-route workflow used for this candidate. No DSP,
+  generated Clash/VHDL IP, GPIO, address, clock, AXI topology, or
+  `block_design.tcl` change is included.
+- **Build result.** Fresh D135 before the pblock was timing-clean (WNS
+  `+0.643 ns`, WHS `+0.018 ns`; CDC `+1.433` / `+7.081 ns`). The D146 fresh
+  implementation completed with all constraints met: WNS `+0.571 ns`, TNS
+  `0`, WHS `+0.018 ns`, THS `0`, WPWS `+2.845 ns`; 59999 nets fully routed,
+  route errors `0`; bus-skew minimum slack `+8.126 ns`. The D109 CDC pair is
+  `clk_fpga_0 -> clk +3.131 ns` / reverse `+6.670 ns`, and all 112 CDC-13
+  entries retain `Max Delay Datapath Only`. bit/hwh md5 are
+  `55d431d9488d039fb1bfd9e4963871c8` /
+  `9e4075000ecd338e24a355df36db7e8c`; routed DCP md5 is
+  `f71922a1d3ede0c05c3efed4e4c6d2dc`.
+- **Deploy / blocked smoke.** `scripts/deploy_to_pynq.sh` completed file sync,
+  import sanity, overlay registry sync, and 15/15 Notebook JSON validation on
+  `192.168.1.9`. The immediately following Pmod mode-2 smoke returned no
+  diagnostic output; before the separate mode-3 mute command, the board became
+  unreachable and remained absent from ping/ARP (`Destination Host
+  Unreachable`). Consequently the PL load, ADC HPF / `R19=0x23`, frame cadence,
+  current Pmod mode, and audio output are not proven for D146.
+- **Acceptance status.** **Built and file-deployed, but PL smoke BLOCKED and
+  BENCH PENDING.** D146 is not in `baselines.json`; D135 (`765323b`, bit
+  `533d5869`) remains the accepted committed baseline. After board recovery,
+  load the overlay once, verify HPF and 96 kHz mode-2 counters, force mode 3
+  mute, compare all deployed md5s, and perform the decisive all-effects-off
+  safe-bypass ear-bench. The pblock is a structural mitigation, not proof that
+  the constant digital buzz is gone.
+
 ## D145 — Discover the configured Jupyter root and verify all deployed Notebooks (2026-06-19)
 
 - **Problem.** The user reported that the Notebook was not visible. All 15
