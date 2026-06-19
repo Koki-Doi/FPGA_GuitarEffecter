@@ -98,6 +98,21 @@ set pblock_source_cells [get_cells -hierarchical -quiet -filter \
     "IS_PRIMITIVE == 1 && NAME =~ $pblock_source_pattern"]
 set pblock_target_cells [get_cells -hierarchical -quiet -filter \
     "IS_PRIMITIVE == 1 && NAME =~ $pblock_target_pattern"]
+
+# A stable, timestamp-free physical fingerprint for comparing independent
+# implementation variants.  D146 acceptance requires multiple genuinely
+# different placements, not merely .bit files with different headers.
+set fp [open [file join $out_dir cdc_placement.tsv] w]
+puts $fp "cell\tref\tloc\tbel"
+foreach cell [lsort -unique [concat $pblock_source_cells $pblock_target_cells]] {
+    puts $fp [join [list \
+        $cell \
+        [optional_property REF_NAME $cell] \
+        [optional_property LOC $cell] \
+        [optional_property BEL $cell]] "\t"]
+}
+close $fp
+
 set fp [open [file join $out_dir pblock_selection.txt] w]
 puts $fp "source_pattern=$pblock_source_pattern"
 puts $fp "source_primitives=[llength $pblock_source_cells]"

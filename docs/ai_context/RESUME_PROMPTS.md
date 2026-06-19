@@ -5,7 +5,7 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-19, D146 CDC pblock candidate; board recovery required)
+## Current status (2026-06-19, D146 three-placement ear verdict pending)
 
 > **D135 remains the accepted committed baseline.** The accepted D135+D145
 > repository state is marked by annotated local tag `v1.0.0` at `eead0bf`;
@@ -19,13 +19,25 @@ asking it to re-discover the project from scratch.
 > `+3.131` / `+6.670 ns`; bit/hwh md5 are
 > `55d431d9488d039fb1bfd9e4963871c8` /
 > `9e4075000ecd338e24a355df36db7e8c`. Deploy file sync and Notebook checks
-> passed, but the first Pmod mode-2 smoke produced no output and the board became
-> unreachable before mute/readback. D146 is therefore **PL-smoke blocked and
-> bench-pending**, not accepted and not in `baselines.json`; current Pmod mode is
-> unknown. After power/network recovery: load `AudioLabOverlay()` once, verify
-> ADC HPF True / `R19=0x23`, run mode 2 for 3 s and confirm ~96 kHz frames, force
-> mode 3 mute, verify deployed md5 copies, then user-check all-effects-off
-> safe-bypass for constant digital buzz. Only after that may D146 be accepted.
+> passed. The first smoke attempt lost board connectivity, but after cold
+> restart all checked bit copies md5-matched and the one-load smoke passed:
+> required IPs present, ADC HPF True / `R19=0x23`, mode 2, clocks/SDOUT alive,
+> `FRAME_COUNT +288550/3 s`, then mode 3 mute readback. Input clipped full-scale
+> (`CLIP_COUNT +59`), so this is not a tonal gate. Roadmap item 3 is active:
+> build at least three distinct placement fingerprints using
+> `rerun_impl_with_cdc_pblock.tcl`, and require every bit to pass timing/CDC,
+> exact-md5 deploy, programmatic smoke, and user all-off safe-bypass listening.
+> This is now complete except the user's acoustic verdict. A/default
+> (`fp f7bde6a4`, bit `55d431d9`, WNS/WHS `+0.571/+0.018`, CDC
+> `+3.131/+6.670`, frames `+288550`), C/`ExtraNetDelay_high`
+> (`fp 5b5a0f95`, bit `2eee129f`, `+0.486/+0.016`, CDC `+1.942/+6.768`,
+> frames `+288533`), and D/`AltSpreadLogic_high` (`fp f16c704e`, bit
+> `01859530`, `+0.383/+0.024`, CDC `+0.911/+5.946`, frames `+288318`) are
+> genuinely distinct and all passed static/programmatic gates. `Explore` was
+> identical to A and excluded. A/C/D each had an all-off/Wah-off listening
+> window and final mute; ask the user for buzz/no-buzz per variant. Board is D
+> in mode 3 mute; local tracked bit is A. D146 is not accepted and not in
+> `baselines.json` until all three ear verdicts pass.
 >
 > Historical context: D144
 > (narrow D135-based chord-detune candidate: `ampSagAttackStep = 96` plus

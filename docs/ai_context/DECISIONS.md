@@ -6645,20 +6645,47 @@ pre-existing 3 failures + 1 error baseline.
   `55d431d9488d039fb1bfd9e4963871c8` /
   `9e4075000ecd338e24a355df36db7e8c`; routed DCP md5 is
   `f71922a1d3ede0c05c3efed4e4c6d2dc`.
-- **Deploy / blocked smoke.** `scripts/deploy_to_pynq.sh` completed file sync,
-  import sanity, overlay registry sync, and 15/15 Notebook JSON validation on
-  `192.168.1.9`. The immediately following Pmod mode-2 smoke returned no
-  diagnostic output; before the separate mode-3 mute command, the board became
-  unreachable and remained absent from ping/ARP (`Destination Host
-  Unreachable`). Consequently the PL load, ADC HPF / `R19=0x23`, frame cadence,
-  current Pmod mode, and audio output are not proven for D146.
-- **Acceptance status.** **Built and file-deployed, but PL smoke BLOCKED and
-  BENCH PENDING.** D146 is not in `baselines.json`; D135 (`765323b`, bit
-  `533d5869`) remains the accepted committed baseline. After board recovery,
-  load the overlay once, verify HPF and 96 kHz mode-2 counters, force mode 3
-  mute, compare all deployed md5s, and perform the decisive all-effects-off
-  safe-bypass ear-bench. The pblock is a structural mitigation, not proof that
-  the constant digital buzz is gone.
+- **Deploy / smoke.** `scripts/deploy_to_pynq.sh` completed file sync, import
+  sanity, overlay registry sync, and 15/15 Notebook JSON validation on
+  `192.168.1.9`. The first Pmod mode-2 attempt coincided with the board becoming
+  unreachable before readback. After a cold restart, all four checked board
+  bit copies md5-matched `55d431d9`, then the one-load smoke passed: required
+  IPs present, ADC HPF `True`, `R19=0x23`, mode 2 readback, I2S clocks/SDOUT
+  alive, and `FRAME_COUNT +288550` over 3 s (~96.18 kHz). Final mode 3 mute
+  readback passed. The input was full-scale (`CLIP_COUNT +59`), so this proves
+  engine health only and is not tonal acceptance.
+- **Strengthened acceptance gate (roadmap item 3).** A single clean bit is not
+  enough. `rerun_impl_with_cdc_pblock.tcl` now accepts a label plus place/route
+  directives, archives each routed DCP/bit/hwh without replacing the deployed
+  candidate, and emits a timestamp-free `cdc_placement.tsv` over all 236
+  selected source/target primitives. D146 is stable only after at least three
+  genuinely distinct placement fingerprints all meet setup/hold, route,
+  bus-skew, D109 CDC/report, programmatic mode-2 smoke, and user all-effects-off
+  safe-bypass listening. A failed variant rejects the pblock dimensions or
+  cell selection; it must not be explained away by choosing the one clean bit.
+- **Multi-build result.** `Explore` produced the same CDC placement fingerprint
+  as default (`f7bde6a4`) and does not count as an independent sample. Three
+  distinct placements passed every static and programmatic gate:
+  - A / `Default`: fingerprint `f7bde6a4`, bit `55d431d9`, WNS/WHS
+    `+0.571/+0.018 ns`, CDC `+3.131/+6.670 ns`, bus-skew minimum `+8.126 ns`,
+    mode-2 frames `+288550/3 s`, clips `59`.
+  - C / `ExtraNetDelay_high`: fingerprint `5b5a0f95`, bit `2eee129f`, WNS/WHS
+    `+0.486/+0.016 ns`, CDC `+1.942/+6.768 ns`, bus-skew minimum `+8.160 ns`,
+    mode-2 frames `+288533/3 s`, clips `24`.
+  - D / `AltSpreadLogic_high`: fingerprint `f16c704e`, bit `01859530`, WNS/WHS
+    `+0.383/+0.024 ns`, CDC `+0.911/+5.946 ns`, bus-skew minimum `+8.252 ns`,
+    mode-2 frames `+288318/3 s`, clips `27`.
+  All have TNS/THS `0`, route errors `0`, the expected pblock/cell counts and
+  D109 exceptions, exact-md5 deploy copies, ADC HPF `True`, `R19=0x23`, and
+  final mode 3 readback. All-off/Wah-off listening windows were presented for
+  A/C/D. The input was full-scale during programmatic smoke, so only the user's
+  explicit buzz/no-buzz verdict can close the acoustic column.
+- **Acceptance status.** **Built, deployed and PL-smoked; multi-build and bench
+  verdict is pending.** D146 is not in `baselines.json`; D135 (`765323b`, bit
+  `533d5869`) remains the accepted committed baseline. The board is left on
+  D146-D in mode 3 mute; the local tracked bit is restored to D146-A. The
+  pblock is a structural mitigation, not proof that the constant digital buzz
+  is gone.
 
 ## D145 — Discover the configured Jupyter root and verify all deployed Notebooks (2026-06-19)
 
