@@ -1426,7 +1426,7 @@ architecture structural of clash_lowpass_fir is
   signal ampStage2Pipe                         : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_162                            : clash_lowpass_fir_types.Maybe;
   signal result_163                            : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:224:1-19
   signal x_79                                  : signed(23 downto 0);
   signal result_164                            : signed(23 downto 0);
   signal result_165                            : signed(23 downto 0);
@@ -1455,6 +1455,10 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal negKnee_5                             : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
+  signal cleanBonus                            : signed(24 downto 0);
+  -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
+  signal \c$cleanBonus_case_alt\               : signed(24 downto 0);
+  -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal hystS                                 : signed(24 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal \c$negKnee_app_arg\                   : signed(24 downto 0);
@@ -1462,15 +1466,15 @@ architecture structural of clash_lowpass_fir is
   signal \c$negKnee_case_scrut\                : clash_lowpass_fir_types.AmpModel;
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal ch                                    : signed(24 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:224:1-19
   signal \c$x_app_arg_33\                      : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:224:1-19
   signal \c$x_case_alt_3\                      : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:224:1-19
   signal \c$x_case_scrut\                      : clash_lowpass_fir_types.AmpModel;
-  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:224:1-19
   signal idx_1                                 : unsigned(2 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:220:1-19
+  -- src/AudioLab/Effects/Amp/Clip.hs:224:1-19
   signal \c$idx_app_arg\                       : std_logic_vector(31 downto 0);
   signal \c$case_alt_69\                       : signed(23 downto 0);
   signal result_169                            : signed(23 downto 0);
@@ -1494,17 +1498,17 @@ architecture structural of clash_lowpass_fir is
   signal \c$gain_case_alt_3\                   : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal \c$gain_case_scrut\                   : clash_lowpass_fir_types.AmpModel;
-  -- src/AudioLab/Effects/Amp/Clip.hs:201:1-27
+  -- src/AudioLab/Effects/Amp/Clip.hs:205:1-27
   signal idx_2                                 : unsigned(2 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal \c$gain_app_arg_11\                   : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:201:1-27
+  -- src/AudioLab/Effects/Amp/Clip.hs:205:1-27
   signal \c$idx_app_arg_0\                     : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampPreLowpassPipe                     : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_171                            : clash_lowpass_fir_types.Maybe;
   signal result_172                            : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Clip.hs:179:1-18
+  -- src/AudioLab/Effects/Amp/Clip.hs:183:1-18
   signal x_82                                  : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:91:1-9
   signal alpha                                 : unsigned(7 downto 0);
@@ -1513,15 +1517,15 @@ architecture structural of clash_lowpass_fir is
   signal gain_8                                : unsigned(7 downto 0);
   signal \c$case_alt_71\                       : signed(23 downto 0);
   signal result_173                            : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:179:1-18
+  -- src/AudioLab/Effects/Amp/Clip.hs:183:1-18
   signal \c$x_app_arg_34\                      : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:179:1-18
+  -- src/AudioLab/Effects/Amp/Clip.hs:183:1-18
   signal \c$x_case_alt_4\                      : unsigned(7 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:179:1-18
+  -- src/AudioLab/Effects/Amp/Clip.hs:183:1-18
   signal \c$x_case_scrut_0\                    : clash_lowpass_fir_types.AmpModel;
-  -- src/AudioLab/Effects/Amp/Clip.hs:179:1-18
+  -- src/AudioLab/Effects/Amp/Clip.hs:183:1-18
   signal idx_3                                 : unsigned(2 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:179:1-18
+  -- src/AudioLab/Effects/Amp/Clip.hs:183:1-18
   signal \c$idx_app_arg_1\                     : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampPreLpPrev                          : signed(23 downto 0) := to_signed(0,24);
@@ -1533,7 +1537,7 @@ architecture structural of clash_lowpass_fir is
   signal ampShapePipe                          : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_174                            : clash_lowpass_fir_types.Maybe;
   signal result_175                            : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Amp/Clip.hs:166:1-17
+  -- src/AudioLab/Effects/Amp/Clip.hs:170:1-17
   signal x_84                                  : signed(23 downto 0);
   signal result_176                            : signed(23 downto 0);
   signal result_177                            : signed(23 downto 0);
@@ -1562,6 +1566,10 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal negKnee_6                             : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
+  signal cleanBonus_0                          : signed(24 downto 0);
+  -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
+  signal \c$cleanBonus_case_alt_0\             : signed(24 downto 0);
+  -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal hystS_0                               : signed(24 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal \c$negKnee_app_arg_0\                 : signed(24 downto 0);
@@ -1569,13 +1577,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$negKnee_case_scrut_0\              : clash_lowpass_fir_types.AmpModel;
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal ch_0                                  : signed(24 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:166:1-17
+  -- src/AudioLab/Effects/Amp/Clip.hs:170:1-17
   signal \c$x_app_arg_35\                      : signed(23 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:166:1-17
+  -- src/AudioLab/Effects/Amp/Clip.hs:170:1-17
   signal \c$x_case_scrut_1\                    : clash_lowpass_fir_types.AmpModel;
-  -- src/AudioLab/Effects/Amp/Clip.hs:166:1-17
+  -- src/AudioLab/Effects/Amp/Clip.hs:170:1-17
   signal idx_4                                 : unsigned(2 downto 0);
-  -- src/AudioLab/Effects/Amp/Clip.hs:166:1-17
+  -- src/AudioLab/Effects/Amp/Clip.hs:170:1-17
   signal \c$idx_app_arg_2\                     : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampShapePrev                          : signed(23 downto 0) := to_signed(0,24);
@@ -12081,8 +12089,8 @@ begin
                    & std_logic_vector(result_115.Frame_sel35_fAcc3R)))) when others;
 
   with (idx) select
-    \c$x_app_arg_22\ <= to_signed(6800000,24) when "000",
-                        to_signed(4600000,24) when "001",
+    \c$x_app_arg_22\ <= to_signed(8200000,24) when "000",
+                        to_signed(6800000,24) when "001",
                         to_signed(3600000,24) when "010",
                         to_signed(3300000,24) when others;
 
@@ -12384,8 +12392,8 @@ begin
   \c$x_app_arg_selection_res_0\ <= unsigned((\c$bv_37\(26 downto 24)));
 
   with (\c$x_app_arg_selection_res_0\) select
-    \c$x_app_arg_24\ <= to_signed(6800000,24) when "000",
-                        to_signed(4600000,24) when "001",
+    \c$x_app_arg_24\ <= to_signed(8200000,24) when "000",
+                        to_signed(6800000,24) when "001",
                         to_signed(3700000,24) when "010",
                         to_signed(3400000,24) when others;
 
@@ -13010,8 +13018,8 @@ begin
   \c$x_app_arg_selection_res_1\ <= unsigned((\c$bv_41\(26 downto 24)));
 
   with (\c$x_app_arg_selection_res_1\) select
-    \c$x_app_arg_27\ <= to_signed(6800000,24) when "000",
-                        to_signed(4600000,24) when "001",
+    \c$x_app_arg_27\ <= to_signed(8200000,24) when "000",
+                        to_signed(6800000,24) when "001",
                         to_signed(3700000,24) when "010",
                         to_signed(3400000,24) when others;
 
@@ -14410,7 +14418,7 @@ begin
 
   \c$satWideOut_case_scrut\ <= result_169 > posKnee;
 
-  posKnee <= resize((((to_signed(4900000,25) - (resize(ch * to_signed(7000,25), 25))) - \c$posKnee_app_arg\) - hystS),24);
+  posKnee <= resize(((((to_signed(4900000,25) - (resize(ch * to_signed(7000,25), 25))) - \c$posKnee_app_arg\) - hystS) + cleanBonus),24);
 
   \c$posKnee_app_arg\ <= \c$negKnee_case_scrut\.AmpModel_sel4_amDrivePos when drive else
                          to_signed(0,25);
@@ -14437,7 +14445,14 @@ begin
 
   \c$satWideOut_app_arg_5\ <= -negKnee_5;
 
-  negKnee_5 <= resize((((to_signed(4350000,25) - (resize(ch * to_signed(6200,25), 25))) - \c$negKnee_app_arg\) + hystS),24);
+  negKnee_5 <= resize(((((to_signed(4350000,25) - (resize(ch * to_signed(6200,25), 25))) - \c$negKnee_app_arg\) + hystS) + cleanBonus),24);
+
+  cleanBonus <= to_signed(0,25) when drive else
+                \c$cleanBonus_case_alt\;
+
+  with (idx_1) select
+    \c$cleanBonus_case_alt\ <= to_signed(2500000,25) when "001",
+                               to_signed(0,25) when others;
 
   hystS <= resize(\c$x_app_arg_33\,25);
 
@@ -15206,7 +15221,7 @@ begin
 
   \c$satWideOut_case_scrut_0\ <= x_89.Frame_sel18_fWetL > posKnee_0;
 
-  posKnee_0 <= resize((((to_signed(4900000,25) - (resize(ch_0 * to_signed(7000,25), 25))) - \c$posKnee_app_arg_0\) - hystS_0),24);
+  posKnee_0 <= resize(((((to_signed(4900000,25) - (resize(ch_0 * to_signed(7000,25), 25))) - \c$posKnee_app_arg_0\) - hystS_0) + cleanBonus_0),24);
 
   \c$posKnee_app_arg_0\ <= \c$negKnee_case_scrut_0\.AmpModel_sel4_amDrivePos when drive_0 else
                            to_signed(0,25);
@@ -15233,7 +15248,14 @@ begin
 
   \c$satWideOut_app_arg_13\ <= -negKnee_6;
 
-  negKnee_6 <= resize((((to_signed(4350000,25) - (resize(ch_0 * to_signed(6200,25), 25))) - \c$negKnee_app_arg_0\) + hystS_0),24);
+  negKnee_6 <= resize(((((to_signed(4350000,25) - (resize(ch_0 * to_signed(6200,25), 25))) - \c$negKnee_app_arg_0\) + hystS_0) + cleanBonus_0),24);
+
+  cleanBonus_0 <= to_signed(0,25) when drive_0 else
+                  \c$cleanBonus_case_alt_0\;
+
+  with (idx_4) select
+    \c$cleanBonus_case_alt_0\ <= to_signed(2500000,25) when "001",
+                                 to_signed(0,25) when others;
 
   hystS_0 <= resize(\c$x_app_arg_35\,25);
 

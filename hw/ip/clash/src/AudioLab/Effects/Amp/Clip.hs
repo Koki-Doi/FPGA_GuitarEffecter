@@ -135,8 +135,12 @@ ampAsymClip modelIdx intensity drive hyst x
   posDriveDelta = if drive then ampDrivePosDelta modelIdx else 0
   negDriveDelta :: Signed 25
   negDriveDelta = if drive then ampDriveNegDelta modelIdx else 0
-  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS) :: Sample
-  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS) :: Sample
+  -- D148: extra clean-mode-only headroom per model (Twin). Zero in Drive mode
+  -- and for every other model, so Drive + non-Twin clean stay byte-identical.
+  cleanBonus :: Signed 25
+  cleanBonus = if drive then 0 else ampCleanKneeBonus modelIdx
+  posKnee = resize (4_900_000 - ch * 7_000 - posDriveDelta - hystS + cleanBonus) :: Sample
+  negKnee = resize (4_350_000 - ch * 6_200 - negDriveDelta + hystS + cleanBonus) :: Sample
   posShift = 2 :: Int
   negShift = if drive then 2 else 3
 
