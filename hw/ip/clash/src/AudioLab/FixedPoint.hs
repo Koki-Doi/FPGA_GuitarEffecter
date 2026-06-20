@@ -73,6 +73,13 @@ satShift12 = satWide . (`shiftR` 12)
 satShift14 :: Wide -> Sample
 satShift14 = satWide . (`shiftR` 14)
 
+-- | Q16 accumulator scale-back for the cab speaker FIR (B1 / R4 step B): the
+-- 31-tap rolloff FIR uses Signed-16 coeffs whose unity-DC sum is 2^16, so the
+-- accumulated convolution is scaled back by 16 (was satShift8 / sum 256 for the
+-- 15-tap Signed-10 FIR).
+satShift16 :: Wide -> Sample
+satShift16 = satWide . (`shiftR` 16)
+
 softClip :: Sample -> Sample
 softClip x
   | x > knee = resize (resize knee + (((resize x :: Signed 25) - resize knee) `shiftR` 2) :: Signed 25)
@@ -115,6 +122,12 @@ onePoleShift n prev x =
 -- copied as a local `pm` / `pairMul` in each). Centre taps still use `mulS10`.
 foldTap :: Sample -> Sample -> Signed 10 -> Wide
 foldTap a b g = (resize a + resize b) * resize g
+
+-- | Signed-16 folded-FIR tap: @(a + b) * g@ in Wide, the higher-precision
+-- coefficient form for the B1 cab speaker FIR (31-tap, Q16 coeffs). Maps to the
+-- same DSP48 25x18 pre-adder MAC as @foldTap@ (a+b is 25-bit, g is 16-bit).
+foldTap16 :: Sample -> Sample -> Signed 16 -> Wide
+foldTap16 a b g = (resize a + resize b) * resize g
 
 -- | Symmetric soft clip with a tunable knee. Below knee it is identity;
 -- above the knee the sample is compressed by 1/4 slope.

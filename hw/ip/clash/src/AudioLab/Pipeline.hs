@@ -445,10 +445,11 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)
 
-  -- 15-tap symmetric speaker-rolloff FIR (realism item 1, step A): an additive
-  -- post-stage on the cab output. cabSpkHist holds the 14-deep output history
-  -- (shifted on active frames); the FIR folds to 8 mulS10. Bit-exact bypass
-  -- when the cab is off. Does not touch the accepted D71 nonlinear cab core.
+  -- 31-tap symmetric speaker-rolloff FIR (realism item 1, R4 step B1): an
+  -- additive post-stage on the cab output. cabSpkHist holds the 30-deep output
+  -- history (shifted on active frames); the FIR folds to 16 DSP48 MACs (Signed-16
+  -- Q16 coeffs) for a real-4x12 sharp rolloff. Bit-exact bypass when the cab is
+  -- off. Does not touch the accepted D71 nonlinear core or the presence biquad.
   cabSpkHist = register (repeat 0) (cabSpeakerFirHistNext <$> cabSpkHist <*> cabMixPipe)
   cabSpkProductsPipe =
     register Nothing $
