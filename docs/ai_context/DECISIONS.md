@@ -6,7 +6,7 @@ not get removed even when superseded — they get updated.
 
 Baseline statements inside older ADRs are historical unless the newest ADRs and
 `CURRENT_STATE.md` say otherwise. The current canonical deployed baseline is
-D135 (`765323b`, bit `533d5869...`), tracked in
+D149 (`1468e93`, bit `f536711c...`), tracked in
 `docs/ai_context/baselines.json` / `docs/ai_context/BASELINES.md`.
 
 ---
@@ -6605,6 +6605,43 @@ pre-existing 3 failures + 1 error baseline.
   restore board networking, load `AudioLabOverlay()` once, run Pmod mode-2
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
+
+## D149 — Cab real-IR step B1: 31-tap rolloff-only speaker FIR (Option Y); bench-ACCEPTED, current baseline (`1468e93`, bit `f536711c`) (2026-06-20)
+
+- **Decision.** Take on R4 (the biggest remaining cab realism lever) sim-first.
+  Replace the 15-tap symmetric speaker FIR (`cabSpeakerFirCoeff` /
+  `cabSpeakerFirProductsFrame` / `cabSpeakerFirMixFrame` in
+  `AudioLab/Effects/Cab.hs`) with a **31-tap rolloff-only folded FIR** (Signed-16
+  Q16, unity-DC sum 2^16, 16 folded DSP48 = +8 over the 8-tap-folded 15-tap), so
+  the cab gets a real-4x12 sharp >5 kHz rolloff. Do NOT touch the accepted
+  nonlinear 4-tap core, the per-model presence biquad, the micro-mod, GPIO,
+  clocks, topology, `block_design.tcl`, the D109 constraints, or the D146 pblock.
+  Defer the full 128-tap BRAM/time-mux-MAC IR (step B2).
+- **Why Option Y (rolloff-only FIR + keep the biquad).** The sim-first tool
+  `tools/dsp_sim/cab_ir.py` (pure-numpy IR design, validated against the same
+  `targets.compare` the board uses) showed the headline rolloff win needs only a
+  few taps; resolving the 2-4 kHz presence PEAK is what needs ~95+ taps. The
+  design already has a per-model presence biquad (D123), so let the FIR carry
+  ONLY the rolloff and keep the biquad for the peak. That makes 31 taps
+  sufficient at the lowest risk: a pure extension of the ACCEPTED folded-pair FIR
+  structure with NO BRAM, NO multi-cycle MAC FSM, and NO change to the
+  load-bearing D75 `acceptReady = readyOut` handshake (the knife-edge's scariest
+  failure class is avoided). Full design rationale + the deferred-B2 go/no-go:
+  `docs/ai_context/CAB_IR_R4_STEP_B_PLAN.md`.
+- **How.** `cabSpeakerFirCoeff :: Unsigned 8 -> Vec 16 (Signed 16)` (31-tap Q16
+  folded half per model, re-emit via `cab_ir.py --rolloff-only --taps 31
+  --emit-clash`); products spread across the SIX Wide partial fields (<=3 each,
+  same add depth as the 15-tap); mix `satShift8` -> `satShift16`; history `Vec
+  14` -> `Vec 30`. `FixedPoint.hs` adds `foldTap16` + `satShift16` (additive).
+- **Acceptance.** Offline: rolloff 5-12k open -9->-17 / brit -11->-23 / closed
+  -11->-28 dB/oct; `measure.py --check` all PASS; dsp_sim regression = ONLY the
+  cab golden changed (re-blessed), bypass bit-exact, every other config
+  byte-identical. Build: WNS `+0.597` / WHS `+0.008` / WPWS `+2.845`, route 0, 0
+  VIOLATED; D109 CDC pair fwd `+1.416` / rev `+7.154`; D146 hard pblock intact
+  (112 cells `SLICE_X100Y116:SLICE_X113Y137`); DSP `181/220`. Deployed (4 board
+  copies md5-match), PL smoke PASS (mode 2 ~96.1 kHz). **User bench: "合格".**
+  Committed to `main` (`1468e93`); D149 supersedes D148.
+- **Rollback.** `git checkout 96ef899 -- hw/Pynq-Z2/bitstreams/` + redeploy (D148).
 
 ## D148 — JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ) (2026-06-20)
 

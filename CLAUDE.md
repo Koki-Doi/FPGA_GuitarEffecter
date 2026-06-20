@@ -121,8 +121,17 @@ When a previous turn stopped mid-implementation:
   can still produce a constant safe-bypass buzz. Every new bitstream still
   requires an ear-bench.** See `DECISIONS.md` D109-D148 +
   `project_safebypass_knifeedge_cdc_rootcause`.
-  **Accepted deployed baseline is D148 (bit md5 `972d9ba6645dd966e6bdcb5bc3daf478`,
-  hwh md5 `2b888ff1ec3168cd64e1b679bbbc71be`, merge commit `96ef899`)** -- the
+  **Accepted deployed baseline is D149 (bit md5 `f536711c0c93006bcb55c2da211064dd`,
+  hwh md5 `bfff6f2ea665573cd1340e30c29b2364`, commit `1468e93`)** -- cab real-IR
+  step B1 = a 31-tap rolloff-only speaker FIR (Signed-16 Q16, +8 DSP) giving a
+  real-4x12 sharp >5 kHz rolloff while the existing presence biquad keeps the
+  2-4 kHz peak (Option Y; sim-first via `tools/dsp_sim/cab_ir.py` +
+  `docs/ai_context/CAB_IR_R4_STEP_B_PLAN.md`; the full 128-tap time-mux MAC = B2
+  is deferred). Bypass bit-exact (only the cab golden re-blessed); build MET
+  WNS +0.597, D109 CDC pair fwd +1.416, D146 pblock intact, DSP 181/220.
+  The immediate accepted rollback is **D148 (bit md5
+  `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
+  `2b888ff1ec3168cd64e1b679bbbc71be`, merge commit `96ef899`)** -- the
   JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ; bypass confirmed
   clean = NOT CDC). Localized with the new `tools/dsp_sim/clip_onset.py`: JC
   broke up ~0.18 FS at the power/master soft knee, Twin ~0.12-0.18 FS at the
