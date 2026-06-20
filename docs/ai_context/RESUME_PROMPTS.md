@@ -5,7 +5,26 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-19, D146 three-placement ear verdict pending)
+## Current status (2026-06-20, D147 sag-only candidate ear verdict pending)
+
+> **D135 remains the accepted committed baseline.** D147 is the current board
+> candidate on `feature/d147-sag-attack`, built on the unaccepted D146 hard
+> pblock. It changes only the tube Amp sag attack to a 96-count/sample slew;
+> release, clean headroom/knees, model levels, GPIO, clocks, topology,
+> `block_design.tcl`, and D109 constraints are unchanged. It does not reapply
+> the rejected D144 bundle. Exact sim improves every tube model but fully passes
+> only Twin: JC/Twin/AC30/Rockerverb/JCM800/TriAmp clean-chord IMD is
+> `-34.7/-33.6/-17.3/-10.0/-11.0/-10.5 dB`, or 2/6 pass. Static build passes
+> at WNS/WHS `+0.686/+0.021 ns`, route errors `0`, bus-skew minimum `+8.153`,
+> D109 CDC `+1.395/+6.497 ns`; pblock counts remain 112 assigned and 111/125
+> source/target primitives. bit/hwh md5 are `03bdbc2ffa6962e8d86135ed2f69e367`
+> / `969834614ef6d4e2551f16e983dc6ab3`. Exact-md5 deploy and smoke pass
+> (`FRAME_COUNT +288542/3 s`, ADC HPF True, `R19=0x23`); the board is mode 3
+> mute after all-off, Twin Clean, and AC30 Clean listening windows. Ask the
+> user for (1) all-off buzz/no-buzz, (2) Twin chord improvement, and (3) AC30
+> residual chord quality. D147 is not accepted and `baselines.json` is
+> unchanged. Read `CURRENT_STATE.md`, `DECISIONS.md` D147/D146/D145,
+> `TIMING_AND_FPGA_NOTES.md`, and `tools/dsp_sim/README.md` before continuing.
 
 > **D135 remains the accepted committed baseline.** The accepted D135+D145
 > repository state is marked by annotated local tag `v1.0.0` at `eead0bf`;

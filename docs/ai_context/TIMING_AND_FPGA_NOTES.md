@@ -15,6 +15,7 @@
 
 | Build | WNS | TNS | Notes |
 | --- | --- | --- | --- |
+| **D147 isolated Amp sag-attack slew -- DEPLOYED + PL-smoked, PARTIAL OFFLINE IMPROVEMENT, BENCH VERDICT PENDING** | **+0.686 ns** (overall) / WHS **+0.021 ns** | 0 | Only `ampSagAttackStep=96`; no D144 clean-headroom bundle. Chord IMD improves every tube model and Twin newly passes, but total is only 2/6. Hard pblock remains `SLICE_X100Y116:SLICE_X113Y137`, 112 assigned objects, 111/125 source/target primitives; placement fingerprint `116c19a6`. route errors `0`; bus-skew min `+8.153`; D109 CDC `+1.395/+6.497 ns`; exceptions intact. bit/hwh `03bdbc2ffa6962e8d86135ed2f69e367` / `969834614ef6d4e2551f16e983dc6ab3`. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288542/3 s`, `CLIP_COUNT +56`, final mute. All-off, Twin Clean, and AC30 Clean windows completed; user verdict pending. D135 remains accepted. |
 | **D146-A hard audio-output CDC pblock -- DEPLOYED + PL-smoked, BENCH VERDICT PENDING** | **+0.571 ns** (overall) / WHS **+0.018 ns** | 0 | Default placement, fingerprint `f7bde6a4`. Hard `pblock_audio_output_cdc` (`SLICE_X100Y116:SLICE_X113Y137`), 112 assigned objects, 111/125 source/target primitives. route errors `0`; bus-skew min `+8.126`; D109 CDC `+3.131/+6.670 ns`; exceptions intact. bit `55d431d9488d039fb1bfd9e4963871c8`; HWH `9e4075000ecd338e24a355df36db7e8c`. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288550/3 s`, final mute. Full-scale input (`CLIP_COUNT +59`). All-off listening window completed; user verdict pending. |
 | **D146-C `ExtraNetDelay_high` -- distinct placement, DEPLOYED + PL-smoked, BENCH VERDICT PENDING** | **+0.486 ns** (overall) / WHS **+0.016 ns** | 0 | Fingerprint `5b5a0f95`; bit `2eee129f4d12b048650041df4b2e4bd0`; route errors `0`; bus-skew min `+8.160`; D109 CDC `+1.942/+6.768 ns`; pblock counts/exceptions intact. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288533/3 s`, `CLIP_COUNT +24`, final mute. All-off listening window completed; user verdict pending. |
 | **D146-D `AltSpreadLogic_high` -- distinct placement, DEPLOYED + PL-smoked, BENCH VERDICT PENDING** | **+0.383 ns** (overall) / WHS **+0.024 ns** | 0 | Fingerprint `f16c704e`; bit `018595308774b18414119703f6e1f964`; route errors `0`; bus-skew min `+8.252`; D109 CDC `+0.911/+5.946 ns`; pblock counts/exceptions intact. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288318/3 s`, `CLIP_COUNT +27`, final mute. All-off listening window completed; user verdict pending. Board currently holds D in mode 3 mute; local tracked candidate remains A. |
@@ -109,10 +110,12 @@ The current accepted baseline remains D135: overall WNS `+0.643 ns`, WHS
 `+0.018 ns`, bit md5 `533d586901dc3669285a49c6d82bab9f`, HWH md5
 `731517487c6218f0e181c2b74485d7a6`, bench-accepted on Pmod mode 2 and merged
 at `765323b` (also marked by local annotated tag `v1.0.0` at the later D145
-documentation/deploy commit `eead0bf`). D146 is a built/file-deployed pblock
-candidate, not an accepted baseline: its post-restart programmatic smoke passed,
-and three distinct placements passed the static/programmatic gate, but the
-user's per-bit ear-bench verdict is still pending. D134
+documentation/deploy commit `eead0bf`). D147 is the current deployed candidate:
+its single sag-attack change, clean build, static gate, and programmatic smoke
+passed, but offline chord acceptance is only 2/6 and the user's acoustic verdict
+is pending. It inherits the unaccepted D146 pblock; D146's three distinct
+placements passed the static/programmatic gate, but their per-bit ear-bench
+verdict is also still pending. D134
 (`f62f132`, bit `58b6ee84`) is the immediate accepted
 rollback point; D132 (`55ef823`, bit `b3dcab00`) and D131 (`37114b9`, bit
 `fdab62d5`) are older realism rollbacks. D119/D120 are rejected/abandoned

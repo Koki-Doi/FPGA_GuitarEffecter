@@ -6606,6 +6606,54 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D147 — Re-test only the Amp sag-attack slew after output-CDC containment (2026-06-20)
+
+- **Decision.** Resume roadmap item 4 with one isolated voicing variable. In
+  `AudioLab/Effects/Amp/Tone.hs`, replace the tube Amp sag follower's instant
+  attack with `ampSagAttackStep = 96`; keep `ampSagReleaseStep = 512`, Amp
+  enable/reset/idle behaviour, and every other voicing constant unchanged. Do
+  not reapply D144's clean-mode knee/power-headroom bundle. The shared
+  Compressor / Noise Suppressor / Fuzz Face `peakFollower` is untouched.
+- **Why.** D141/D144 localized the perceived chord detune to sag-envelope
+  beat-frequency AM, but D144 combined sag slew with a second headroom change
+  and was bench-rejected while the safe-bypass CDC placement was uncontrolled.
+  D147 separates the sag hypothesis on the D146 pblock branch so its acoustic
+  effect can be judged independently.
+- **Offline result.** Exact fixed-point `chord_eval.py --check-only` moves
+  clean major-chord IMD from D135
+  JC/Twin/AC30/Rockerverb/JCM800/TriAmp
+  `-34.7/-15.8/-11.5/-7.7/-8.5/-8.3 dB` to
+  `-34.7/-33.6/-17.3/-10.0/-11.0/-10.5 dB`. Twin newly passes, but AC30 and
+  the three high-gain clean models remain above their ceilings: **2/6 pass**.
+  This is a partial improvement, not a complete chord fix. `--check-only` was
+  added so the acceptance ceilings can run without the exhaustive survey.
+  `measure.py --check` passes 28/28; `dist_eval.py --check` passes 7/7 pedals
+  plus 6/6 clean amps; regression pytest passes 20/20 after re-blessing only
+  the five tube-amp goldens (bypass and JC-120 unchanged).
+  `dynamics_eval.py --check` remains 4/5: only the already-documented
+  `crunch_rig` slow-sag trade-off fails (`peak -2.6 dBFS`, `rms -6.0 dBFS`,
+  clips 0), because sag no longer acts as an accidental fast limiter.
+- **Build / static gate.** Clash/VHDL/IP regeneration and a clean Vivado 2019.1
+  build pass. Timing is fully met: WNS `+0.686 ns`, TNS `0`, WHS `+0.021 ns`,
+  THS `0`, WPWS `+2.845 ns`; route errors `0`; bus-skew minimum `+8.153 ns`.
+  D109 CDC remains timed at `clk_fpga_0 -> clk +1.395 ns` and reverse
+  `+6.497 ns`. The hard pblock remains
+  `SLICE_X100Y116:SLICE_X113Y137`, with 112 assigned objects and 111/125
+  source/target primitives. Its physical fingerprint is `116c19a6`. bit/hwh
+  md5: `03bdbc2ffa6962e8d86135ed2f69e367` /
+  `969834614ef6d4e2551f16e983dc6ab3`; routed DCP md5
+  `7ded4991635702a3333896e180eb34e0`.
+- **Deploy / smoke.** All four runtime bit/hwh copies md5-match. Deploy import
+  checks and all 15 Notebook JSON checks pass. One-load mode-2 smoke passes:
+  required IPs and clocks alive, ADC HPF `True`, `R19=0x23`, and
+  `FRAME_COUNT +288542/3 s`. Input was full-scale (`CLIP_COUNT +56`), so this
+  proves engine health only. All-off/Wah-off, Twin Clean, and AC30 Clean
+  listening windows were presented; every window returned to mode 3 mute.
+- **Acceptance status.** **Candidate only.** The user's buzz/chord verdict is
+  pending, D146's three-placement ear verdict is still unresolved, and four of
+  six offline chord ceilings still fail. Do not update `baselines.json` or call
+  D147 accepted. D135 remains the accepted baseline.
+
 ## D146 — Hard-pblock the placement-sensitive axis_switch_sink -> i2s_to_stream CDC (2026-06-19)
 
 - **Baseline release marker.** Before changing the FPGA implementation, create
