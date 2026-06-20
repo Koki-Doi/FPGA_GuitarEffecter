@@ -5,6 +5,32 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## Current status (2026-06-20, D148 clean-headroom fix BENCH-ACCEPTED + merged to main)
+
+> **D148 is the new accepted committed baseline** (`--no-ff` merged into `main`;
+> carries the D146 hard pblock + D147 sag slew + the D148 clean headroom),
+> superseding D135. It was the follow-up to the D147 JC/Fender partial fail. User confirmed safe bypass is
+> CLEAN and the 音割れ is playing-only = a voicing headroom limit, not CDC. New
+> `tools/dsp_sim/clip_onset.py` localized it: JC-120 broke up by ~0.18 FS and Twin
+> by ~0.12-0.18 FS (gain models break early by design). Fix (placement-safe
+> constants/mux, no new multiply): `ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M
+> (Models.hs) and a clean-mode-only `ampCleanKneeBonus` (Twin 2.5M, others 0) in
+> `ampAsymClip` (Clip.hs); both now stay clean to ~0.25 FS. Surgical: golden
+> regression 20/20 with NO re-bless (bypass bit-exact, all models byte-identical
+> at golden levels); `measure.py --check` 28/28; `dist_eval.py --check` 7/7 + 6/6;
+> `dynamics_eval.py --check` 4/5 (pre-existing crunch_rig); `chord_eval
+> --check-only` 2/6 = same as D147. Build MET: WNS `+0.526`, WHS `+0.014`, route
+> errors `0`, D109 CDC pair MET (pblock self-check fwd `+1.632`), pblock intact
+> (112 cells), XDC max_delay 10 ns. bit/hwh md5
+> `972d9ba6645dd966e6bdcb5bc3daf478` / `2b888ff1ec3168cd64e1b679bbbc71be`. Four
+> board bit copies md5-match, 15/15 Notebooks valid, mode-2 smoke PASS
+> (`FRAME_COUNT +288366/3 s`), board in mode 3 mute. **BENCH-ACCEPTED ("完璧");
+> merged to `main`, D148 = new accepted baseline.** `baselines.json` updated
+> (D148 accepted-current, D135 accepted-superseded). Rollback to D135:
+> `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy. Read
+> `CURRENT_STATE.md`, `DECISIONS.md` D148/D147/D146, and `tools/dsp_sim/README.md`
+> (clip_onset.py) before continuing.
+
 ## Current status (2026-06-20, D147 bench partial fail: JC/Fender clipping)
 
 > **D135 remains the accepted committed baseline.** D147 is the current board

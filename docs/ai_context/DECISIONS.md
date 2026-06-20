@@ -6606,6 +6606,62 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D148 — JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ) (2026-06-20)
+
+- **Decision.** Raise only the clean-headroom of the two clean-platform amps so
+  they stop breaking up at a hot-but-realistic pick, without touching Drive,
+  other models, GPIO, clocks, topology, `block_design.tcl`, the D109 constraints,
+  or the D146 pblock. Three placement-safe constant/mux changes in
+  `AudioLab/Effects/Amp/`: `ampPowerKnee 0` (JC-120) `6.8M -> 8.2M`,
+  `ampPowerKnee 1` (Twin) `4.6M -> 6.8M` (Models.hs), and a new clean-mode-only
+  per-model `ampCleanKneeBonus` (Twin idx 1 = `2.5M`, every other model 0) added
+  into `ampAsymClip`'s pos/neg knees ONLY when `drive == False` (Clip.hs). No new
+  multiply (softClipK / ampAsymClip stay compare + shift). Builds on the
+  D146 pblock + D147 sag branch `feature/d147-sag-attack`; D147's sag slew is
+  retained.
+- **Why.** D147 bench: JC-120 and Fender/Twin Reverb audibly clip, other models
+  fine. User confirmed the safe-bypass (all effects off) is CLEAN and the 音割れ
+  is **playing-only** — so this is purely a voicing headroom limit, not the CDC
+  knife-edge. New `tools/dsp_sim/clip_onset.py` swept clean input level per model
+  and localized it: at `input_gain 18 / master 60`, JC-120 stayed clean only to
+  ~0.18 FS (THD 7% @0.25), Twin to ~0.12-0.18 FS (THD 12% @0.18); the gain models
+  break up early by design and the user does not mind. JC-120 is sag-exempt and
+  byte-identical to D135, so this clip exists in the accepted baseline too — the
+  user is now asking to fix it. Localization: raising Twin's power knee did NOT
+  move its onset (crest stayed high = soft-harmonic), proving Twin clips at the
+  `ampAsymClip` waveshaper, while JC's clip is the power/master soft knee — hence
+  the two different levers.
+- **Offline result.** `clip_onset.py` after the fix: JC-120 and Twin both stay
+  clean to ~0.25 FS (JC THD 0->1% @0.25, Twin 0.1% @0.18 / 8% @0.25). Surgical:
+  the knees only engage above ~0.18 FS, so normal levels are byte-identical and
+  **the golden regression passes 20/20 with NO re-bless** (bypass still bit-exact,
+  every model byte-identical at golden levels). `measure.py --check` 28/28;
+  `dist_eval.py --check` 7/7 pedals + 6/6 clean amps (JC/Twin clean THD @0.12 still
+  0%, AC30/Rockerverb/JCM800/TriAmp byte-identical 13/23/23/15);
+  `dynamics_eval.py --check` 4/5 (same pre-existing D141 `crunch_rig` slow-sag
+  trade-off, not this change); `chord_eval.py --check-only` 2/6 — identical to
+  D147 (JC -34.7 / Twin -33.6 pass), so D147's chord improvement is preserved.
+- **Build / static gate.** Clash/VHDL/IP regen (new constants confirmed in the
+  generated VHDL: 8200000 x3, 6800000 x3, 2500000 x2) + clean Vivado build pass.
+  Timing fully MET: WNS `+0.526 ns`, TNS `0`, WHS `+0.014 ns`, THS `0`,
+  WPWS `+2.845`; route errors `0` (59999 nets routed). D109 CDC pair MET; the
+  pblock self-check forward path has `+1.632 ns` slack against its 6 ns window
+  (arrival ~4.37 ns, slightly better than the bench-clean D147 ~4.6 ns); reverse
+  `+2.972 ns`. XDC max_delay is the canonical 10 ns (not the rejected 6 ns). Hard
+  pblock intact: `SLICE_X100Y116:SLICE_X113Y137`, 112 assigned cells. bit/hwh md5
+  `972d9ba6645dd966e6bdcb5bc3daf478` / `2b888ff1ec3168cd64e1b679bbbc71be`.
+- **Deploy / smoke.** All four runtime bit copies md5-match; 15/15 Notebooks
+  valid. One-load mode-2 smoke PASS: mode 2, `FRAME_COUNT +288366/3 s` (~96 kHz),
+  sdout/bclk/lrclk alive, ADC HPF True, CLIP_COUNT 0 (input full-scale, engine
+  health only). Board left in mode 3 mute.
+- **Bench verdict / acceptance status.** **BENCH-ACCEPTED ("完璧").** JC-120 and
+  Fender/Twin clean no longer break up at a hot pick, other amp models unchanged,
+  safe bypass still clean. `--no-ff` merged into `main`; D148 is the new accepted /
+  committed baseline (D146 hard pblock + D147 sag slew + D148 clean headroom),
+  superseding D135. `baselines.json` updated (D148 accepted-current, D135
+  accepted-superseded). Rollback to D135:
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
 ## D147 — Re-test only the Amp sag-attack slew after output-CDC containment (2026-06-20)
 
 - **Decision.** Resume roadmap item 4 with one isolated voicing variable. In
