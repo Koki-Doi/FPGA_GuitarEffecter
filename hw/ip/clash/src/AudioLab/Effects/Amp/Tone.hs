@@ -235,18 +235,30 @@ satShift10Wide :: Wide -> Wide
 satShift10Wide = resize . satShift10
 
 -- Power-amp sag envelope (realism item 5b / R2, part 2). A slow peak-follower
--- of the master-input level (same shape as the Compressor / NoiseSuppressor /
--- Fuzz-bias envelopes: instant attack, slow linear release for the
--- "recovers-after-the-transient" sag character, reset to 0 when the amp is
--- off so bypass stays bit-exact). No multiply (abs + compare + subtract).
+-- of the master-input level, reset to 0 when the amp is off so bypass stays
+-- bit-exact. No multiply (abs + compare + add/subtract).
 -- 96 kHz: halved (was 1024) so the sag recovery TIME is unchanged at 2x fs.
 ampSagReleaseStep :: Sample
 ampSagReleaseStep = 512
 
+-- D147: slew-limit ONLY the amp-sag attack. The old instant attack followed a
+-- chord's beat-frequency envelope ripple and amplitude-modulated ampMasterFrame,
+-- creating in-band IMD that sounded like detuned notes. A real supply sag builds
+-- over milliseconds rather than jumping on every local peak. Keep release,
+-- enable/reset and idle-hold behaviour unchanged; do not alter the shared
+-- peakFollower used by Compressor / NoiseSuppressor / Fuzz Face.
+ampSagAttackStep :: Sample
+ampSagAttackStep = 96
+
 ampSagEnvNext :: Sample -> Maybe Frame -> Sample
-ampSagEnvNext = peakFollower (flag6 . fGate) level (\_ _ -> ampSagReleaseStep)
+ampSagEnvNext env Nothing = env
+ampSagEnvNext env (Just f)
+  | not (flag6 (fGate f))   = 0
+  | lvl > env               = env + min (lvl - env) ampSagAttackStep
+  | env > ampSagReleaseStep = env - ampSagReleaseStep
+  | otherwise               = 0
  where
-  level f = abs24 (monoWet f)
+  lvl = abs24 (monoWet f)
 
 ampMasterFrame :: Sample -> Frame -> Frame
 ampMasterFrame env f =

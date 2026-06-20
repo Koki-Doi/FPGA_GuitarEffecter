@@ -93,10 +93,28 @@ ampCharForModel = amChar . ampModel
 -- stay byte-identical. Constant/mux only (softClipK = compare+shift, no new DSP).
 ampPowerKnee :: Sample -> Unsigned 3 -> Sample
 ampPowerKnee base idx = case idx of
-  0 -> 6_800_000   -- JC-120 : SS, huge clean headroom (waveshape clean-knee is 7.5M)
-  1 -> 4_600_000   -- Twin   : blackface clean platform, more headroom
+  0 -> 8_200_000   -- JC-120 : SS, huge clean headroom (waveshape clean-knee is 7.5M)
+  1 -> 6_800_000   -- Twin   : blackface clean platform, more headroom
   2 -> base + 300_000 -- AC30 : still early, but enough headroom for Clean-mode target
   _ -> base        -- Rockerverb/JCM800/TriAmp : keep power-amp compression
+
+-- | Per-model CLEAN-mode asym-clip knee bonus (D148, "JC/Fender 音割れ" fix).
+-- The bench reported JC-120 and Fender/Twin Reverb audibly break up at a hot
+-- (but realistic, ~0.18-0.25 FS) pick while the gain models sound right. The
+-- clip-onset sweep (`tools/dsp_sim/clip_onset.py`) localized Twin's breakup to
+-- the per-model `ampAsymClip` waveshaper (raising its power knee did NOT move the
+-- onset, and crest stayed high = soft-harmonic, not a downstream hard clip). A
+-- real blackface Twin is a big clean platform, so raise ONLY Twin's clean-mode
+-- asym knees so it stays clean to a much hotter input. Added ONLY in Clean mode
+-- (`drive == False`), so the Drive-mode voicing is byte-for-byte unchanged; every
+-- other model returns 0 (byte-identical). JC-120 (idx 0) does not call ampAsymClip
+-- at all (its clean channel is the high-knee softClipK), so it is unaffected here;
+-- its headroom comes from the raised `ampPowerKnee 0` above. Constant/mux only --
+-- no new multiply (ampAsymClip stays compare + shift).
+ampCleanKneeBonus :: Unsigned 3 -> Signed 25
+ampCleanKneeBonus idx = case idx of
+  1 -> 2_500_000   -- Twin Reverb : blackface clean headroom (clean-mode only)
+  _ -> 0
 
 -- | Per-model post-clip pre-LPF darken (Clean-mode baseline). Larger =
 -- darker / less fizz. Indexed by ``ampModelIdxF`` directly.

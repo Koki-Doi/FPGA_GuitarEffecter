@@ -36,6 +36,15 @@ update_ip_catalog
 # accept `if` in `.xdc`, hence the two-file split.
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab.xdc
 add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_pmod_i2s2.xdc
+# D146: floorplan the placement-sensitive axis_switch_sink -> i2s_to_stream
+# distributed-RAM crossing.  The hierarchy only exists after synthesis, so
+# keep this constraint implementation-only and process it after the pin/clock
+# constraints.  block_design.tcl remains untouched.
+add_files -fileset constrs_1 -norecurse $origin_dir/audio_lab_cdc_pblock.xdc
+set cdc_pblock_xdc [get_files -quiet $origin_dir/audio_lab_cdc_pblock.xdc]
+set_property USED_IN_SYNTHESIS false $cdc_pblock_xdc
+set_property USED_IN_IMPLEMENTATION true $cdc_pblock_xdc
+set_property PROCESSING_ORDER LATE $cdc_pblock_xdc
 # D74/D76: Arduino A0 analog input (XADC VAUX1 = E17/D18) for the FP02M pedal.
 # Re-enabled on the D75 DSP-island build: the D74 rejection (bitcrusher on the
 # ADC path) was caused by the -11 ns / 100 MHz audio-AXIS P&R degradation, not
@@ -150,6 +159,18 @@ report_utilization -hierarchical -file $rpt_dir/utilization_hierarchical.rpt
 report_high_fanout_nets -file $rpt_dir/high_fanout_nets.rpt
 report_control_sets -file $rpt_dir/control_sets.rpt
 report_design_analysis -timing -file $rpt_dir/design_analysis_timing.rpt
+report_cdc -details -file $rpt_dir/report_cdc.rpt
+
+set d146_pblock [get_pblocks -quiet pblock_audio_output_cdc]
+if {[llength $d146_pblock] == 1} {
+    set fp [open $rpt_dir/pblock_audio_output_cdc.rpt w]
+    puts $fp "grid_ranges=[get_property GRID_RANGES $d146_pblock]"
+    puts $fp "assigned_cells=[llength [get_cells -quiet -of_objects $d146_pblock]]"
+    foreach cell [lsort [get_cells -quiet -of_objects $d146_pblock]] {
+        puts $fp $cell
+    }
+    close $fp
+}
 
 close_design
 

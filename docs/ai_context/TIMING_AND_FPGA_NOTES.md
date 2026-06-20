@@ -15,6 +15,10 @@
 
 | Build | WNS | TNS | Notes |
 | --- | --- | --- | --- |
+| **D147 isolated Amp sag-attack slew -- DEPLOYED + PL-smoked, BENCH PARTIAL FAIL (JC/Fender clip)** | **+0.686 ns** (overall) / WHS **+0.021 ns** | 0 | Only `ampSagAttackStep=96`; no D144 clean-headroom bundle. Chord IMD improves every tube model and Twin newly passes, but total is only 2/6. Hard pblock remains `SLICE_X100Y116:SLICE_X113Y137`, 112 assigned objects, 111/125 source/target primitives; placement fingerprint `116c19a6`. route errors `0`; bus-skew min `+8.153`; D109 CDC `+1.395/+6.497 ns`; exceptions intact. bit/hwh `03bdbc2ffa6962e8d86135ed2f69e367` / `969834614ef6d4e2551f16e983dc6ab3`. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288542/3 s`, `CLIP_COUNT +56`, final mute. User hears clipping on JC-120 and Fender/Twin Reverb; other Amp models sound good. All-off buzz was not separately reported. D147 remains unaccepted; D135 remains accepted. |
+| **D146-A hard audio-output CDC pblock -- DEPLOYED + PL-smoked, BENCH VERDICT PENDING** | **+0.571 ns** (overall) / WHS **+0.018 ns** | 0 | Default placement, fingerprint `f7bde6a4`. Hard `pblock_audio_output_cdc` (`SLICE_X100Y116:SLICE_X113Y137`), 112 assigned objects, 111/125 source/target primitives. route errors `0`; bus-skew min `+8.126`; D109 CDC `+3.131/+6.670 ns`; exceptions intact. bit `55d431d9488d039fb1bfd9e4963871c8`; HWH `9e4075000ecd338e24a355df36db7e8c`. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288550/3 s`, final mute. Full-scale input (`CLIP_COUNT +59`). All-off listening window completed; user verdict pending. |
+| **D146-C `ExtraNetDelay_high` -- distinct placement, DEPLOYED + PL-smoked, BENCH VERDICT PENDING** | **+0.486 ns** (overall) / WHS **+0.016 ns** | 0 | Fingerprint `5b5a0f95`; bit `2eee129f4d12b048650041df4b2e4bd0`; route errors `0`; bus-skew min `+8.160`; D109 CDC `+1.942/+6.768 ns`; pblock counts/exceptions intact. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288533/3 s`, `CLIP_COUNT +24`, final mute. All-off listening window completed; user verdict pending. |
+| **D146-D `AltSpreadLogic_high` -- distinct placement, DEPLOYED + PL-smoked, BENCH VERDICT PENDING** | **+0.383 ns** (overall) / WHS **+0.024 ns** | 0 | Fingerprint `f16c704e`; bit `018595308774b18414119703f6e1f964`; route errors `0`; bus-skew min `+8.252`; D109 CDC `+0.911/+5.946 ns`; pblock counts/exceptions intact. Exact-md5 deploy + HPF/R19/IP/clock smoke passed, `FRAME_COUNT +288318/3 s`, `CLIP_COUNT +27`, final mute. All-off listening window completed; user verdict pending. Board currently holds D in mode 3 mute; local tracked candidate remains A. |
 | **D144 chord-detune candidate -- PL-smoked, bench-REJECTED, ROLLED BACK** | **+0.658 ns** (overall) / WHS **+0.017 ns** | 0 | Narrow D135-based candidate: sag attack slew plus clean-mode waveshaper/power headroom. Offline chord IMD moved near the bypass floor and the regression suite passed, but hardware bench verdict was "失敗". D109 CDC pair was `clk_fpga_0 -> clk +1.090 ns` / reverse `+6.721 ns`; programmatic smoke could not predict the rejection. bit/hwh md5 `8bf2894a452ba21b4881246af0c71967` / `6f80e240bae78381135a774fdacca1ba`. Source, generated VHDL/IP, goldens, and board bit/hwh were restored to D135. Not in `baselines.json`; do not use as an acceptance target. |
 | **D135 large non-IR realism (Fuzz Face mid-hump + amp/cab character) -- DEPLOYED + PL-smoked, bench-ACCEPTED, MERGED (`765323b`)** | **+0.643 ns** (overall) / WHS **+0.018 ns** | 0 | Current accepted deployed baseline. Fuzz Face 900 Hz mid-hump biquad + tighter asymmetric clip knees + opened tone LPF; AC30/JCM800 stronger `ampScoop` + model-local presence boost; Amp `MIDDLE` more audible; AC30 more clean power headroom; Cab non-IR body tap from the existing short-FIR accumulator. No IR convolution, no GPIO/topology/Tcl/XDC/block-design/topEntity/new-stage change; Clash/VHDL/IP/bit/hwh regenerated because DSP behaviour changed. Offline suite PASS (`measure.py --check` 28/28, `dist_eval.py --check` 7/7 pedals + 6/6 clean amps, `dynamics_eval.py --check` 5/5, `knobcheck.py --all` no barely-audible flags, regression 20 + tools/overlay 136 pytest). Route errors `0`; bus-skew min slack `+8.099 ns`; board bit/hwh sites md5-matched. Programmatic mode-2 smoke ran ~96 kHz (`FRAME_COUNT +288374`, `CLIP_COUNT 0`, ADC HPF `True`), then board left in Pmod `MODE=3` mute; user bench-ACCEPTED. bit/hwh md5 `533d586901dc3669285a49c6d82bab9f` / `731517487c6218f0e181c2b74485d7a6`. Rollback to D134 via `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/` + redeploy. |
 | **D134 sim-scale all-effect objective evaluation + knob-visibility fixes -- DEPLOYED + PL-smoked, bench-ACCEPTED, MERGED (`f62f132`)** | **+0.939 ns** (overall) / WHS **+0.014 ns** | 0 | Historical accepted baseline superseded by D135. Sim expansion adds `dynamics_eval.py --check`, shared metrics, Noise Suppressor-specific stimulus/windows, and all-knob audibility coverage; DSP fixes are existing-stage constants/shifts for Amp `PRESENCE`/`RESONANCE`, Cab `AIR`, and Noise Suppressor `DECAY`/`DAMP`. No GPIO/topology/Tcl/XDC/block-design/topEntity/new-stage change. D109 CDC pair slack `clk_fpga_0 -> clk +2.347 ns` / `clk -> clk_fpga_0 +6.527 ns`; route errors `0`; bus-skew min slack `+8.384 ns`; all five PYNQ bit/hwh sites md5-matched. Programmatic smoke loaded PL and showed ~96 kHz frame cadence with ADC HPF `True`, but that smoke input clipped full-scale (`PEAK_ABS_LEFT/RIGHT=8388607`, rising `CLIP_COUNT`); user then bench-ACCEPTED. bit/hwh md5 `58b6ee84a2f0c360da97c86e5a971c85` / `c41a29b65de2b0debb6de8509468021a`. |
@@ -102,10 +106,18 @@
 | **Selectable Overdrive model build (May 18, deployed, D46)** | **-8.105 ns** | -6643.894 ns | D46: generic Overdrive retired and replaced by six selectable models (TS9 / OD-1 / BD-2 / Jan Ray / OCD / CENTAUR). Implementation is constant-coefficient tables (`odDriveK / odKneeP / odKneeN / odSafetyKnee` in `AudioLab/Effects/Overdrive.hs`) selected by a 3-bit `overdriveModel` field that lives in `axi_gpio_overdrive.ctrlD[2:0]` -- the same byte as `distTight` (top 5 bits), because every Clash consumer of `distTight` shifts right by 3 or 4 and already discards the low 3 bits. No new register stage, no new multiplier, no `topEntity` port change, no `block_design.tcl` change, no new GPIO. WNS regresses by `0.174 ns` vs the Phase 7D close-out baseline (`-7.931 ns -> -8.105 ns`); still inside the historical `-7..-9 ns` deploy band and well clear of the rejected May 4 -15.067 ns `model_select` shape. Hold remains clean (`WHS = +0.044 ns`, `THS = 0.000 ns`). Utilization after place: Slice LUTs `19159` (`36.01%`), Slice Registers `21287` (`20.01%`), Block RAM Tile `9` (`6.43%`), DSPs `83` (`37.73%`); essentially identical to the Phase 7D close-out figure (delta of a handful of LUT/REG from the new constant LUT muxes). `ADAU1761` Clash IP was re-generated to bitwise-identical VHDL during the rebuild. PYNQ deploy + on-board smoke pending. |
 | **PCM5102 DAC-only bring-up (May 18, deployed)** | **-8.410 ns** | -7313.564 ns | Phase 7C: adds the free-running PCM5102 DAC tone path on PMOD JB. New RTL `hw/ip/pcm5102_dac_tone/src/pcm5102_dac_tone.v` is a Verilog I2S master that divides MCLK by 4 (BCLK) and BCLK by 64 (LRCLK) and shifts a 48-entry / 24-bit quarter-scale sine ROM out as I2S Philips 32-bit slots. A new MMCM `clk_wiz_audio_ext` turns FCLK_CLK0 100 MHz into **12.288 MHz exact** via `DIVCLK_DIVIDE=5, MULT_F=48.0, CLKOUT0_DIVIDE_F=78.125, VCO=960 MHz`. Integration tcl `hw/Pynq-Z2/pcm5102_dac_integration.tcl` is sourced from `create_project.tcl` after `encoder_integration.tcl`. **No AXI-Lite slave**, **no new GPIO**, **no `block_design.tcl` direct edit**. XDC adds four LVCMOS33 outputs: `ext_audio_mclk_o W14 (JB1)`, `ext_audio_bclk_o Y14 (JB2)`, `ext_audio_lrclk_o T11 (JB3)`, `ext_dac_din_o V16 (JB7)`; no PULLUP. ADAU1761 path / HDMI integration / encoder integration / GPIO_CONTROL_MAP / LowPassFir DSP all untouched. **PCM1808 ADC is NOT added (Phase 7D).** The new 12.288 MHz domain (`clk_out1_block_design_clk_wiz_audio_ext_0`) reports WNS `+77.576 ns`, 0 setup or hold violations -- the new path is trivially met. The full-design WNS `-8.410 ns` lives on `clk_fpga_0` 100 MHz, the same failing domain as the existing baseline; it regresses by `0.314 ns` vs Phase 6I C2 (`-8.096 ns`) and stays inside the historical `-7..-9 ns` deploy band. Hold remains clean (`WHS = +0.052 ns`, `THS = 0.000 ns`). Utilization after place: Slice LUTs `19145` (`35.99%`), Slice Registers `21293` (`20.01%`), Block RAM Tile `9` (`6.43%`), DSPs `83` (`37.73%`). PYNQ-Z2 deploy completed; `scripts/test_pcm5102_dac_tone.py --duration 3` PASS (overlay loaded, ADAU1761 DMA / distortion GPIO / encoder `enc_in_0/s_axi` / HDMI VDMA / HDMI VTC all present; `pcm5102_dac_0` and `clk_wiz_audio_ext` correctly absent from `ip_dict` because they expose no AXI registers). Acoustic verification on PCM5102 line out is the next manual step. `DECISIONS.md` D38. |
 
-The current accepted baseline is D135: overall WNS `+0.643 ns`, WHS
+The current accepted baseline remains D135: overall WNS `+0.643 ns`, WHS
 `+0.018 ns`, bit md5 `533d586901dc3669285a49c6d82bab9f`, HWH md5
 `731517487c6218f0e181c2b74485d7a6`, bench-accepted on Pmod mode 2 and merged
-at `765323b`. D134 (`f62f132`, bit `58b6ee84`) is the immediate accepted
+at `765323b` (also marked by local annotated tag `v1.0.0` at the later D145
+documentation/deploy commit `eead0bf`). D147 is the current deployed candidate:
+its single sag-attack change, clean build, static gate, and programmatic smoke
+passed, but offline chord acceptance is only 2/6 and the bench reports clipping
+on JC-120 and Fender/Twin Reverb (other Amp models sound good). It inherits the
+unaccepted D146 pblock; D146's three distinct
+placements passed the static/programmatic gate, but their per-bit ear-bench
+verdict is also still pending. D134
+(`f62f132`, bit `58b6ee84`) is the immediate accepted
 rollback point; D132 (`55ef823`, bit `b3dcab00`) and D131 (`37114b9`, bit
 `fdab62d5`) are older realism rollbacks. D119/D120 are rejected/abandoned
 historical builds; do not use them as acceptance targets. Older accepted
@@ -113,6 +125,39 @@ rollback points include D121 (`9a57c50a`), D98 (`18df313f`), and D79
 (`f0cb0276`). Treat any timing slip, D109 CDC constraint regression, or audible
 bypass-path artifact as a regression unless the tradeoff is explicit and
 bench-accepted.
+
+## D146 multi-build CDC acceptance gate
+
+The output-CDC pblock is considered stable only when **all** of the following
+hold for at least three fresh implementations with distinct
+`cdc_placement.tsv` hashes:
+
+1. `write_bitstream` succeeds; route errors and unrouted nets are zero.
+2. Setup/hold/pulse-width and bus-skew constraints all meet.
+3. The pblock exists at the documented grid range, contains 112 assigned
+   objects, and selection still finds 111 source + 125 target primitives.
+4. All 112 CDC-13 paths retain `Max Delay Datapath Only`; the D109 clock-pair
+   bounds are not weakened.
+5. The exact built bit is deployed and md5-matches every runtime copy.
+6. One-load programmatic smoke confirms ADC HPF / `R19=0x23`, required IPs,
+   mode-2 readback and ~96 kHz frame cadence, then returns mode 3 mute.
+7. The user hears no constant digital buzz in all-effects-off / Wah-off safe
+   bypass for every variant.
+
+Do not accept a build family by selecting the one clean placement and ignoring
+a failing sibling. A failed variant means the pblock region or selected cell
+set is not yet a robust containment of the knife-edge.
+
+| Variant | Place directive | Placement fp | bit md5 | WNS/WHS | CDC fwd/rev | Programmatic | Ear verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| A | `Default` | `f7bde6a4` | `55d431d9` | `+0.571/+0.018` | `+3.131/+6.670` | PASS | pending |
+| B | `Explore` | `f7bde6a4` | `1537cd8d` | `+0.571/+0.018` | `+3.131/+6.670` | duplicate; not counted | n/a |
+| C | `ExtraNetDelay_high` | `5b5a0f95` | `2eee129f` | `+0.486/+0.016` | `+1.942/+6.768` | PASS | pending |
+| D | `AltSpreadLogic_high` | `f16c704e` | `01859530` | `+0.383/+0.024` | `+0.911/+5.946` | PASS | pending |
+
+A/C/D each had exact-md5 deploy, HPF/R19 and ~96 kHz frame checks, then an
+all-off/Wah-off listening window and mode-3 readback. The board is currently D
+in mute; local tracked candidate is A.
 
 **Revised engineering rule (D58 / D59 / D60 / D61 v2 / D63 / D64 all
 rejected, D62 accepted, ordered by structural distance from D62

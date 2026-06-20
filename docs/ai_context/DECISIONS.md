@@ -6606,6 +6606,199 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D148 — JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ) (2026-06-20)
+
+- **Decision.** Raise only the clean-headroom of the two clean-platform amps so
+  they stop breaking up at a hot-but-realistic pick, without touching Drive,
+  other models, GPIO, clocks, topology, `block_design.tcl`, the D109 constraints,
+  or the D146 pblock. Three placement-safe constant/mux changes in
+  `AudioLab/Effects/Amp/`: `ampPowerKnee 0` (JC-120) `6.8M -> 8.2M`,
+  `ampPowerKnee 1` (Twin) `4.6M -> 6.8M` (Models.hs), and a new clean-mode-only
+  per-model `ampCleanKneeBonus` (Twin idx 1 = `2.5M`, every other model 0) added
+  into `ampAsymClip`'s pos/neg knees ONLY when `drive == False` (Clip.hs). No new
+  multiply (softClipK / ampAsymClip stay compare + shift). Builds on the
+  D146 pblock + D147 sag branch `feature/d147-sag-attack`; D147's sag slew is
+  retained.
+- **Why.** D147 bench: JC-120 and Fender/Twin Reverb audibly clip, other models
+  fine. User confirmed the safe-bypass (all effects off) is CLEAN and the 音割れ
+  is **playing-only** — so this is purely a voicing headroom limit, not the CDC
+  knife-edge. New `tools/dsp_sim/clip_onset.py` swept clean input level per model
+  and localized it: at `input_gain 18 / master 60`, JC-120 stayed clean only to
+  ~0.18 FS (THD 7% @0.25), Twin to ~0.12-0.18 FS (THD 12% @0.18); the gain models
+  break up early by design and the user does not mind. JC-120 is sag-exempt and
+  byte-identical to D135, so this clip exists in the accepted baseline too — the
+  user is now asking to fix it. Localization: raising Twin's power knee did NOT
+  move its onset (crest stayed high = soft-harmonic), proving Twin clips at the
+  `ampAsymClip` waveshaper, while JC's clip is the power/master soft knee — hence
+  the two different levers.
+- **Offline result.** `clip_onset.py` after the fix: JC-120 and Twin both stay
+  clean to ~0.25 FS (JC THD 0->1% @0.25, Twin 0.1% @0.18 / 8% @0.25). Surgical:
+  the knees only engage above ~0.18 FS, so normal levels are byte-identical and
+  **the golden regression passes 20/20 with NO re-bless** (bypass still bit-exact,
+  every model byte-identical at golden levels). `measure.py --check` 28/28;
+  `dist_eval.py --check` 7/7 pedals + 6/6 clean amps (JC/Twin clean THD @0.12 still
+  0%, AC30/Rockerverb/JCM800/TriAmp byte-identical 13/23/23/15);
+  `dynamics_eval.py --check` 4/5 (same pre-existing D141 `crunch_rig` slow-sag
+  trade-off, not this change); `chord_eval.py --check-only` 2/6 — identical to
+  D147 (JC -34.7 / Twin -33.6 pass), so D147's chord improvement is preserved.
+- **Build / static gate.** Clash/VHDL/IP regen (new constants confirmed in the
+  generated VHDL: 8200000 x3, 6800000 x3, 2500000 x2) + clean Vivado build pass.
+  Timing fully MET: WNS `+0.526 ns`, TNS `0`, WHS `+0.014 ns`, THS `0`,
+  WPWS `+2.845`; route errors `0` (59999 nets routed). D109 CDC pair MET; the
+  pblock self-check forward path has `+1.632 ns` slack against its 6 ns window
+  (arrival ~4.37 ns, slightly better than the bench-clean D147 ~4.6 ns); reverse
+  `+2.972 ns`. XDC max_delay is the canonical 10 ns (not the rejected 6 ns). Hard
+  pblock intact: `SLICE_X100Y116:SLICE_X113Y137`, 112 assigned cells. bit/hwh md5
+  `972d9ba6645dd966e6bdcb5bc3daf478` / `2b888ff1ec3168cd64e1b679bbbc71be`.
+- **Deploy / smoke.** All four runtime bit copies md5-match; 15/15 Notebooks
+  valid. One-load mode-2 smoke PASS: mode 2, `FRAME_COUNT +288366/3 s` (~96 kHz),
+  sdout/bclk/lrclk alive, ADC HPF True, CLIP_COUNT 0 (input full-scale, engine
+  health only). Board left in mode 3 mute.
+- **Bench verdict / acceptance status.** **BENCH-ACCEPTED ("完璧").** JC-120 and
+  Fender/Twin clean no longer break up at a hot pick, other amp models unchanged,
+  safe bypass still clean. `--no-ff` merged into `main`; D148 is the new accepted /
+  committed baseline (D146 hard pblock + D147 sag slew + D148 clean headroom),
+  superseding D135. `baselines.json` updated (D148 accepted-current, D135
+  accepted-superseded). Rollback to D135:
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy.
+
+## D147 — Re-test only the Amp sag-attack slew after output-CDC containment (2026-06-20)
+
+- **Decision.** Resume roadmap item 4 with one isolated voicing variable. In
+  `AudioLab/Effects/Amp/Tone.hs`, replace the tube Amp sag follower's instant
+  attack with `ampSagAttackStep = 96`; keep `ampSagReleaseStep = 512`, Amp
+  enable/reset/idle behaviour, and every other voicing constant unchanged. Do
+  not reapply D144's clean-mode knee/power-headroom bundle. The shared
+  Compressor / Noise Suppressor / Fuzz Face `peakFollower` is untouched.
+- **Why.** D141/D144 localized the perceived chord detune to sag-envelope
+  beat-frequency AM, but D144 combined sag slew with a second headroom change
+  and was bench-rejected while the safe-bypass CDC placement was uncontrolled.
+  D147 separates the sag hypothesis on the D146 pblock branch so its acoustic
+  effect can be judged independently.
+- **Offline result.** Exact fixed-point `chord_eval.py --check-only` moves
+  clean major-chord IMD from D135
+  JC/Twin/AC30/Rockerverb/JCM800/TriAmp
+  `-34.7/-15.8/-11.5/-7.7/-8.5/-8.3 dB` to
+  `-34.7/-33.6/-17.3/-10.0/-11.0/-10.5 dB`. Twin newly passes, but AC30 and
+  the three high-gain clean models remain above their ceilings: **2/6 pass**.
+  This is a partial improvement, not a complete chord fix. `--check-only` was
+  added so the acceptance ceilings can run without the exhaustive survey.
+  `measure.py --check` passes 28/28; `dist_eval.py --check` passes 7/7 pedals
+  plus 6/6 clean amps; regression pytest passes 20/20 after re-blessing only
+  the five tube-amp goldens (bypass and JC-120 unchanged).
+  `dynamics_eval.py --check` remains 4/5: only the already-documented
+  `crunch_rig` slow-sag trade-off fails (`peak -2.6 dBFS`, `rms -6.0 dBFS`,
+  clips 0), because sag no longer acts as an accidental fast limiter.
+- **Build / static gate.** Clash/VHDL/IP regeneration and a clean Vivado 2019.1
+  build pass. Timing is fully met: WNS `+0.686 ns`, TNS `0`, WHS `+0.021 ns`,
+  THS `0`, WPWS `+2.845 ns`; route errors `0`; bus-skew minimum `+8.153 ns`.
+  D109 CDC remains timed at `clk_fpga_0 -> clk +1.395 ns` and reverse
+  `+6.497 ns`. The hard pblock remains
+  `SLICE_X100Y116:SLICE_X113Y137`, with 112 assigned objects and 111/125
+  source/target primitives. Its physical fingerprint is `116c19a6`. bit/hwh
+  md5: `03bdbc2ffa6962e8d86135ed2f69e367` /
+  `969834614ef6d4e2551f16e983dc6ab3`; routed DCP md5
+  `7ded4991635702a3333896e180eb34e0`.
+- **Deploy / smoke.** All four runtime bit/hwh copies md5-match. Deploy import
+  checks and all 15 Notebook JSON checks pass. One-load mode-2 smoke passes:
+  required IPs and clocks alive, ADC HPF `True`, `R19=0x23`, and
+  `FRAME_COUNT +288542/3 s`. Input was full-scale (`CLIP_COUNT +56`), so this
+  proves engine health only. All-off/Wah-off, Twin Clean, and AC30 Clean
+  listening windows were presented; every window returned to mode 3 mute.
+- **Bench verdict / acceptance status.** **Partial fail; candidate only.** The
+  user reports that JC-120 and Fender/Twin Reverb audibly clip, while the other
+  Amp models sound good. This is not explained by the 0.15-FS offline check:
+  JC-120 is byte-unchanged/sag-exempt and measures clean, while Twin passes the
+  chord ceiling. The earlier board smoke input was full-scale, so the next
+  investigation must reproduce JC/Twin at controlled input levels and measure
+  where the level-dependent clipping begins before changing more voicing. Do
+  not attribute the JC symptom to sag without evidence. The user did not give a
+  separate all-off buzz verdict; D146's three-placement ear verdict is also
+  unresolved, and four of six offline chord ceilings still fail. Do not update
+  `baselines.json` or call D147 accepted. Board remains on D147 in mode 3 mute;
+  D135 remains the accepted baseline.
+
+## D146 — Hard-pblock the placement-sensitive axis_switch_sink -> i2s_to_stream CDC (2026-06-19)
+
+- **Baseline release marker.** Before changing the FPGA implementation, create
+  annotated local tag `v1.0.0` at `eead0bf` (accepted D135 audio plus D145
+  deploy-root fix). The tag is a rollback/release marker only; no remote git
+  operation was performed.
+- **Decision.** Keep the D109 clock relationship and bidirectional
+  `set_max_delay -datapath_only 10.000` constraints unchanged, and add a hard
+  implementation-only pblock around both sides of the placement-sensitive
+  output crossing. `audio_lab_cdc_pblock.xdc` creates
+  `pblock_audio_output_cdc` at `SLICE_X100Y116:SLICE_X113Y137` with
+  `IS_SOFT=false`. It selects the transfer-mux-0 `gen_AB_reg_slice` primitives
+  under `axis_switch_sink` and the write-side true-dual-port distributed RAM
+  wrapper under `i2s_to_stream`.
+- **Cell identification.** The cell names and region came from a fresh,
+  timing-clean D135 routed checkpoint, not the stale D144 checkpoint. The
+  read-only `report_cdc_fifo_placement.tcl` helper found all 112 D109 CDC-13
+  paths, 111 matching source primitives, and 125 matching target primitives.
+  Vivado folds the target primitives to the RAM hierarchy root when assigning
+  the pblock, so the implemented pblock reports 112 assigned objects (111
+  source primitives plus one target hierarchy root). Reopening the final routed
+  DCP reproduces those selection counts and the pblock region.
+- **Project integration.** `create_project.tcl` adds the XDC to `constrs_1` as
+  `USED_IN_SYNTHESIS=false`, `USED_IN_IMPLEMENTATION=true`, and
+  `PROCESSING_ORDER=LATE`, then emits CDC and pblock membership reports after
+  implementation. `rerun_impl_with_cdc_pblock.tcl` provides the bounded
+  synth-reuse/fresh-place-and-route workflow used for this candidate. No DSP,
+  generated Clash/VHDL IP, GPIO, address, clock, AXI topology, or
+  `block_design.tcl` change is included.
+- **Build result.** Fresh D135 before the pblock was timing-clean (WNS
+  `+0.643 ns`, WHS `+0.018 ns`; CDC `+1.433` / `+7.081 ns`). The D146 fresh
+  implementation completed with all constraints met: WNS `+0.571 ns`, TNS
+  `0`, WHS `+0.018 ns`, THS `0`, WPWS `+2.845 ns`; 59999 nets fully routed,
+  route errors `0`; bus-skew minimum slack `+8.126 ns`. The D109 CDC pair is
+  `clk_fpga_0 -> clk +3.131 ns` / reverse `+6.670 ns`, and all 112 CDC-13
+  entries retain `Max Delay Datapath Only`. bit/hwh md5 are
+  `55d431d9488d039fb1bfd9e4963871c8` /
+  `9e4075000ecd338e24a355df36db7e8c`; routed DCP md5 is
+  `f71922a1d3ede0c05c3efed4e4c6d2dc`.
+- **Deploy / smoke.** `scripts/deploy_to_pynq.sh` completed file sync, import
+  sanity, overlay registry sync, and 15/15 Notebook JSON validation on
+  `192.168.1.9`. The first Pmod mode-2 attempt coincided with the board becoming
+  unreachable before readback. After a cold restart, all four checked board
+  bit copies md5-matched `55d431d9`, then the one-load smoke passed: required
+  IPs present, ADC HPF `True`, `R19=0x23`, mode 2 readback, I2S clocks/SDOUT
+  alive, and `FRAME_COUNT +288550` over 3 s (~96.18 kHz). Final mode 3 mute
+  readback passed. The input was full-scale (`CLIP_COUNT +59`), so this proves
+  engine health only and is not tonal acceptance.
+- **Strengthened acceptance gate (roadmap item 3).** A single clean bit is not
+  enough. `rerun_impl_with_cdc_pblock.tcl` now accepts a label plus place/route
+  directives, archives each routed DCP/bit/hwh without replacing the deployed
+  candidate, and emits a timestamp-free `cdc_placement.tsv` over all 236
+  selected source/target primitives. D146 is stable only after at least three
+  genuinely distinct placement fingerprints all meet setup/hold, route,
+  bus-skew, D109 CDC/report, programmatic mode-2 smoke, and user all-effects-off
+  safe-bypass listening. A failed variant rejects the pblock dimensions or
+  cell selection; it must not be explained away by choosing the one clean bit.
+- **Multi-build result.** `Explore` produced the same CDC placement fingerprint
+  as default (`f7bde6a4`) and does not count as an independent sample. Three
+  distinct placements passed every static and programmatic gate:
+  - A / `Default`: fingerprint `f7bde6a4`, bit `55d431d9`, WNS/WHS
+    `+0.571/+0.018 ns`, CDC `+3.131/+6.670 ns`, bus-skew minimum `+8.126 ns`,
+    mode-2 frames `+288550/3 s`, clips `59`.
+  - C / `ExtraNetDelay_high`: fingerprint `5b5a0f95`, bit `2eee129f`, WNS/WHS
+    `+0.486/+0.016 ns`, CDC `+1.942/+6.768 ns`, bus-skew minimum `+8.160 ns`,
+    mode-2 frames `+288533/3 s`, clips `24`.
+  - D / `AltSpreadLogic_high`: fingerprint `f16c704e`, bit `01859530`, WNS/WHS
+    `+0.383/+0.024 ns`, CDC `+0.911/+5.946 ns`, bus-skew minimum `+8.252 ns`,
+    mode-2 frames `+288318/3 s`, clips `27`.
+  All have TNS/THS `0`, route errors `0`, the expected pblock/cell counts and
+  D109 exceptions, exact-md5 deploy copies, ADC HPF `True`, `R19=0x23`, and
+  final mode 3 readback. All-off/Wah-off listening windows were presented for
+  A/C/D. The input was full-scale during programmatic smoke, so only the user's
+  explicit buzz/no-buzz verdict can close the acoustic column.
+- **Acceptance status.** **Built, deployed and PL-smoked; multi-build and bench
+  verdict is pending.** D146 is not in `baselines.json`; D135 (`765323b`, bit
+  `533d5869`) remains the accepted committed baseline. The board is left on
+  D146-D in mode 3 mute; the local tracked bit is restored to D146-A. The
+  pblock is a structural mitigation, not proof that the constant digital buzz
+  is gone.
+
 ## D145 — Discover the configured Jupyter root and verify all deployed Notebooks (2026-06-19)
 
 - **Problem.** The user reported that the Notebook was not visible. All 15

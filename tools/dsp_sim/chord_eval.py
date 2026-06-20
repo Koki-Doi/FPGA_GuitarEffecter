@@ -28,6 +28,7 @@ Usage:
   python3 tools/dsp_sim/chord_eval.py --chord major   # one chord
   python3 tools/dsp_sim/chord_eval.py --amp 4 --drive 1 --level 0.15 --wav /tmp/c.wav  # dump a wav
   python3 tools/dsp_sim/chord_eval.py --check         # PASS/FAIL clean-chord IMD ceilings
+  python3 tools/dsp_sim/chord_eval.py --check-only    # ceilings only; skip the exhaustive survey
 
 It also measures the BYPASS chord (amp off) as the reference floor, so the number
 reported is what the AMP adds on top of the test signal's own windowing leakage.
@@ -141,6 +142,8 @@ def main():
     ap.add_argument("--level", type=float, default=None)
     ap.add_argument("--wav", default=None, help="dump the chord output WAV (needs --amp)")
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--check-only", action="store_true",
+                    help="run only the clean major-chord ceiling checks")
     args = ap.parse_args()
     if not os.path.exists(SIM):
         sys.exit("build the sim first: tools/dsp_sim/build_sim.sh")
@@ -156,7 +159,7 @@ def main():
               (args.wav, idb, ["%.0fHz/%.0f" % (f, d) for f, d in pk]))
         return
 
-    chords = [args.chord] if args.chord else list(CHORDS)
+    chords = [] if args.check_only else ([args.chord] if args.chord else list(CHORDS))
     levels = [args.level] if args.level else [0.10, 0.20]
 
     # bypass reference (amp off) per chord/level
@@ -177,7 +180,7 @@ def main():
                 print("    %-11s clean %+6.1f | drive %+6.1f   clean-spurious: %s"
                       % (name, ci, di, sp))
 
-    if args.check:
+    if args.check or args.check_only:
         print("\n--- clean-chord IMD check (major triad @0.15 FS) ---")
         ch = CHORDS["major"]
         x = _chord_signal(ch, 0.2, 0.15)

@@ -5,9 +5,91 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-19, after D145 Notebook visibility fix)
+## Current status (2026-06-20, D148 clean-headroom fix BENCH-ACCEPTED + merged to main)
 
-> **D135 is again the live deployed and accepted committed baseline.** D144
+> **D148 is the new accepted committed baseline** (`--no-ff` merged into `main`;
+> carries the D146 hard pblock + D147 sag slew + the D148 clean headroom),
+> superseding D135. It was the follow-up to the D147 JC/Fender partial fail. User confirmed safe bypass is
+> CLEAN and the 音割れ is playing-only = a voicing headroom limit, not CDC. New
+> `tools/dsp_sim/clip_onset.py` localized it: JC-120 broke up by ~0.18 FS and Twin
+> by ~0.12-0.18 FS (gain models break early by design). Fix (placement-safe
+> constants/mux, no new multiply): `ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M
+> (Models.hs) and a clean-mode-only `ampCleanKneeBonus` (Twin 2.5M, others 0) in
+> `ampAsymClip` (Clip.hs); both now stay clean to ~0.25 FS. Surgical: golden
+> regression 20/20 with NO re-bless (bypass bit-exact, all models byte-identical
+> at golden levels); `measure.py --check` 28/28; `dist_eval.py --check` 7/7 + 6/6;
+> `dynamics_eval.py --check` 4/5 (pre-existing crunch_rig); `chord_eval
+> --check-only` 2/6 = same as D147. Build MET: WNS `+0.526`, WHS `+0.014`, route
+> errors `0`, D109 CDC pair MET (pblock self-check fwd `+1.632`), pblock intact
+> (112 cells), XDC max_delay 10 ns. bit/hwh md5
+> `972d9ba6645dd966e6bdcb5bc3daf478` / `2b888ff1ec3168cd64e1b679bbbc71be`. Four
+> board bit copies md5-match, 15/15 Notebooks valid, mode-2 smoke PASS
+> (`FRAME_COUNT +288366/3 s`), board in mode 3 mute. **BENCH-ACCEPTED ("完璧");
+> merged to `main`, D148 = new accepted baseline.** `baselines.json` updated
+> (D148 accepted-current, D135 accepted-superseded). Rollback to D135:
+> `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy. Read
+> `CURRENT_STATE.md`, `DECISIONS.md` D148/D147/D146, and `tools/dsp_sim/README.md`
+> (clip_onset.py) before continuing.
+
+## Current status (2026-06-20, D147 bench partial fail: JC/Fender clipping)
+
+> **D135 remains the accepted committed baseline.** D147 is the current board
+> candidate on `feature/d147-sag-attack`, built on the unaccepted D146 hard
+> pblock. It changes only the tube Amp sag attack to a 96-count/sample slew;
+> release, clean headroom/knees, model levels, GPIO, clocks, topology,
+> `block_design.tcl`, and D109 constraints are unchanged. It does not reapply
+> the rejected D144 bundle. Exact sim improves every tube model but fully passes
+> only Twin: JC/Twin/AC30/Rockerverb/JCM800/TriAmp clean-chord IMD is
+> `-34.7/-33.6/-17.3/-10.0/-11.0/-10.5 dB`, or 2/6 pass. Static build passes
+> at WNS/WHS `+0.686/+0.021 ns`, route errors `0`, bus-skew minimum `+8.153`,
+> D109 CDC `+1.395/+6.497 ns`; pblock counts remain 112 assigned and 111/125
+> source/target primitives. bit/hwh md5 are `03bdbc2ffa6962e8d86135ed2f69e367`
+> / `969834614ef6d4e2551f16e983dc6ab3`. Exact-md5 deploy and smoke pass
+> (`FRAME_COUNT +288542/3 s`, ADC HPF True, `R19=0x23`); the board is mode 3
+> mute after all-off, Twin Clean, and AC30 Clean listening windows. **User bench
+> verdict: JC-120 and Fender/Twin Reverb audibly clip; the other Amp models
+> sound good.** The all-off buzz verdict was not separately reported. D147 is
+> not accepted and `baselines.json` is unchanged. JC-120 is sag-exempt and its
+> golden is unchanged, while Twin passes the 0.15-FS offline chord ceiling;
+> therefore do not blindly retune sag. First reproduce JC/Twin at controlled
+> input levels, compare their onset of clipping against D135, and localize the
+> responsible gain/headroom stage. Board is D147 in mode 3 mute. Read
+> `CURRENT_STATE.md`, `DECISIONS.md` D147/D146/D145,
+> `TIMING_AND_FPGA_NOTES.md`, and `tools/dsp_sim/README.md` before continuing.
+
+> **D135 remains the accepted committed baseline.** The accepted D135+D145
+> repository state is marked by annotated local tag `v1.0.0` at `eead0bf`;
+> the tag was not pushed. D146 is a structural candidate on branch
+> `feature/d146-cdc-pblock`: implementation-only hard pblock
+> `pblock_audio_output_cdc` at `SLICE_X100Y116:SLICE_X113Y137` locks the
+> `axis_switch_sink` transfer-mux-0 register slice and `i2s_to_stream` write-side
+> distributed-RAM wrapper. No DSP/GPIO/clock/`block_design.tcl` change and the
+> D109 10 ns bidirectional max-delay bounds are unchanged. Build passed with WNS
+> `+0.571`, WHS `+0.018`, route errors `0`, bus-skew min `+8.126`, CDC pair
+> `+3.131` / `+6.670 ns`; bit/hwh md5 are
+> `55d431d9488d039fb1bfd9e4963871c8` /
+> `9e4075000ecd338e24a355df36db7e8c`. Deploy file sync and Notebook checks
+> passed. The first smoke attempt lost board connectivity, but after cold
+> restart all checked bit copies md5-matched and the one-load smoke passed:
+> required IPs present, ADC HPF True / `R19=0x23`, mode 2, clocks/SDOUT alive,
+> `FRAME_COUNT +288550/3 s`, then mode 3 mute readback. Input clipped full-scale
+> (`CLIP_COUNT +59`), so this is not a tonal gate. Roadmap item 3 is active:
+> build at least three distinct placement fingerprints using
+> `rerun_impl_with_cdc_pblock.tcl`, and require every bit to pass timing/CDC,
+> exact-md5 deploy, programmatic smoke, and user all-off safe-bypass listening.
+> This is now complete except the user's acoustic verdict. A/default
+> (`fp f7bde6a4`, bit `55d431d9`, WNS/WHS `+0.571/+0.018`, CDC
+> `+3.131/+6.670`, frames `+288550`), C/`ExtraNetDelay_high`
+> (`fp 5b5a0f95`, bit `2eee129f`, `+0.486/+0.016`, CDC `+1.942/+6.768`,
+> frames `+288533`), and D/`AltSpreadLogic_high` (`fp f16c704e`, bit
+> `01859530`, `+0.383/+0.024`, CDC `+0.911/+5.946`, frames `+288318`) are
+> genuinely distinct and all passed static/programmatic gates. `Explore` was
+> identical to A and excluded. A/C/D each had an all-off/Wah-off listening
+> window and final mute; ask the user for buzz/no-buzz per variant. Board is D
+> in mode 3 mute; local tracked bit is A. D146 is not accepted and not in
+> `baselines.json` until all three ear verdicts pass.
+>
+> Historical context: D144
 > (narrow D135-based chord-detune candidate: `ampSagAttackStep = 96` plus
 > clean-mode `ampCleanKneeBonus` / `ampCleanPowerBonus`) was bench-rejected by
 > the user ("失敗") and rolled back. D144 must not be treated as accepted and is
@@ -25,9 +107,9 @@ asking it to re-discover the project from scratch.
 > tree is `/home/xilinx/jupyter_notebooks/audio_lab/`; deploy verified all
 > 15/15 `.ipynb` files as valid JSON, restored `xilinx:xilinx` ownership, and
 > prints `http://192.168.1.9:9090/tree/audio_lab` plus the direct
-> `AudioLab.ipynb` URL. If chord-detune work resumes, do not reapply D144 as-is; first
-> address the safe-bypass CDC knife-edge / placement sensitivity, then re-bench.
-> Read `CURRENT_STATE.md`, `DECISIONS.md` D143-D145, D109, `BASELINES.md`, and
+> `AudioLab.ipynb` URL. If chord-detune work resumes, do not reapply D144 as-is;
+> finish and bench D146 first. Read `CURRENT_STATE.md`, `DECISIONS.md` D143-D146,
+> D109, `BASELINES.md`, and
 > `TIMING_AND_FPGA_NOTES.md` first; run `git status --short` and
 > `git diff --stat` before continuing.
 

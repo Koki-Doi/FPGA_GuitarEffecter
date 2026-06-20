@@ -20,7 +20,8 @@ on a candidate you already like.
 | `harmonics.py` | **Harmonic / transfer** measurement on a single sine: fundamental, h2..h8, THD, odd/even ratio, alias/IMD energy. The OD/Distortion drive-character check. |
 | `reverb.py` | **Time-domain decay** measurement: RT60 (Schroeder T20), tail tone (centroid), wet level, comb echo period; `--decay-sweep` / `--tone-sweep` prove a knob is real + monotonic. The reverb axis `measure.py`/`harmonics.py` (both steady-state) could not see. |
 | `knobcheck.py` | **Per-band audio-change-per-knob** check across EVERY effect/knob: for each knob it renders two settings and reports how much the sound moves, broken down by frequency band (80/200/500/1k/3k/8k Hz) + overall, flagging "barely audible" knobs. The board-comparison artifact: "turn this knob, these bands should move by this much." |
-| `chord_eval.py` | **Chord IMD / "detuned chord" detector** (what single-tone `harmonics.py` misses): feeds real power / major-triad / 4-note chords through the DSP island and reports the INHARMONIC energy (dB rel the loudest fundamental = in-band 3rd-order intermodulation + alias floor) + the top spurious peaks, per model / mode / level, vs a bypass reference floor. `--check` PASS/FAIL clean-chord IMD ceilings; `--chord power\|major\|full`, `--amp`, `--drive`, `--level`, `--wav`. Caught the D141 power-sag instant-attack AM (beat-frequency sidebands on chords). |
+| `clip_onset.py` | **Clean-amp clipping-onset sweep** (D148, the JC-120 / Fender-Twin "playing-only 音割れ" follow-up the fixed-0.12-FS ceiling could not see): sweeps input level per amp model in Clean mode and reports THD% / peak FS / crest / hard-clip count at each level, so the level where audible breakup begins is explicit and the responsible gain/headroom stage can be localized (e.g. raising Twin's power knee did NOT move its onset = it clips at the asym waveshaper, not downstream). `--models 0,1,2,4`, `--drive-mode`, `--freq`. |
+| `chord_eval.py` | **Chord IMD / "detuned chord" detector** (what single-tone `harmonics.py` misses): feeds real power / major-triad / 4-note chords through the DSP island and reports the INHARMONIC energy (dB rel the loudest fundamental = in-band 3rd-order intermodulation + alias floor) + the top spurious peaks, per model / mode / level, vs a bypass reference floor. `--check` runs the full survey plus PASS/FAIL clean-chord IMD ceilings; `--check-only` skips the survey and runs only those ceilings; `--chord power\|major\|full`, `--amp`, `--drive`, `--level`, `--wav`. Caught the D141 power-sag instant-attack AM (beat-frequency sidebands on chords). |
 | `metrics.py` | Shared numeric helpers (`rms_dbfs`, band balance, HF slope, centroid, peak / clip count) used by the measurement tools so target checks do not carry hand-copied math. |
 | `signals.py` | Canonical, level-recorded test inputs (sine / log-sweep / two-tone / impulse / decaying-sine) so every retune A/Bs against the SAME stimulus. |
 | `build_sim.sh` | One-line `-O1` build (see below). |
@@ -29,8 +30,15 @@ on a candidate you already like.
 `chord_eval.py` is retained as a detector, not an accepted voicing prescription.
 It identified the power-sag beat-frequency AM in D141 and showed D144 near the
 bypass IMD floor offline, but D144 failed the hardware bench and was rolled back
-to D135. Any future chord fix still requires a new bitstream, safe-bypass
-ear-bench, and tonal bench acceptance.
+to D135. D147 re-tests only the sag-attack slew as an isolated candidate: Twin
+passes, but AC30 and the three high-gain clean modes remain above their ceilings,
+so it is a partial result rather than a complete chord fix. Its hardware bench
+also reports clipping on JC-120 and Fender/Twin Reverb even though JC is
+sag-exempt and Twin passes at the current 0.15-FS test level; the next sim work
+must therefore add a controlled input-level/clipping-onset sweep for those two
+models instead of treating the current ceiling as sufficient. Any future chord
+fix still requires a new bitstream, safe-bypass ear-bench, and tonal bench
+acceptance.
 
 ## Build (once, and after any DSP-source edit)
 
@@ -74,6 +82,7 @@ python3 tools/dsp_sim/dynamics_eval.py --batch --sections chain
 
 # chord IMD ("detuned chord") -- inharmonic energy vs bypass floor:
 python3 tools/dsp_sim/chord_eval.py --check              # clean-chord IMD ceilings (PASS/FAIL)
+python3 tools/dsp_sim/chord_eval.py --check-only         # ceilings only (skip full survey)
 python3 tools/dsp_sim/chord_eval.py --chord major        # per-model/mode/level table
 python3 tools/dsp_sim/chord_eval.py --amp 1 --drive 0 --wav /tmp/twin_clean_chord.wav
 
