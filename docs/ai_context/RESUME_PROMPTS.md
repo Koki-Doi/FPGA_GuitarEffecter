@@ -5,6 +5,31 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## Current status (2026-06-21, D150 OD/DS chord-IMD fix — CANDIDATE built+deployed, PENDING BENCH)
+
+> **D149 remains the accepted committed baseline on `main`** (cab real-IR B1,
+> bit `f536711c`). **D150 is a built+deployed CANDIDATE on branch
+> `feature/d150-od-ds-chord-imd`, pending the user's ear-bench.** The user
+> reported "OD、DS の歪かたが変。特に和音". Sim先行 found the chord mud is IN-BAND
+> intermodulation (oversampling proven useless via a numpy 1x-vs-4x test), and
+> the gainy OD models (OD-1/BD-2/OCD/Klon) + DS-1 used ASYMMETRIC clip slopes →
+> strong even-order sum/difference tones (the "detuned chord"). Fix = symmetrise
+> the clip slope (new `FixedPoint.symSoftClipMed` pos>>2 neg>>2; `odClipHardness`
+> 4=symSoftClipMed / OCD→3=asymSoftClipHard; `odKneeN` raised toward kneeP; DS-1
+> clip `asymSoftClip`→`symSoftClipMed` knee 1.9M→2.15M). TS9/JanRay untouched.
+> Placement-safe constants, no os4x, no new pipeline. Sim: chord IMD better at
+> every level + even→odd shift; `measure --check` 28/28; `dist_eval --check`
+> 7/7+6/6; regression = only od_ocd+distortion_ds1 goldens changed (re-blessed),
+> bypass bit-exact. Build MET WNS `+0.522`/WHS `+0.012`; **D109 CDC pair fwd
+> `+1.009`** (lower than D149's +1.416 — a RISK INDICATOR, ear-bench all-off
+> bypass carefully; D146 pblock intact 112 cells); DSP 183/220. bit/hwh md5
+> `29f5fe01…` / `fbb69e36…`. Deployed (4 copies md5-match), mode-2 smoke PASS
+> (`+288369/3 s`), board mode 3 mute. **NEXT: user ear-bench.** If 合格 → merge
+> `feature/d150-od-ds-chord-imd` to `main` + update `baselines.json` (D150
+> accepted-current, D149 accepted-superseded). If rejected → redeploy D149
+> (`git checkout 1468e93 -- hw/Pynq-Z2/bitstreams/`). Read `CURRENT_STATE.md` +
+> `DECISIONS.md` D150 before continuing.
+
 ## Current status (2026-06-20, D148 clean-headroom fix BENCH-ACCEPTED + merged to main)
 
 > **D148 is the new accepted committed baseline** (`--no-ff` merged into `main`;
