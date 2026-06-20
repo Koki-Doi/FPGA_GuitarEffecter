@@ -61,18 +61,24 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- **Current accepted deployed baseline = D135**: merge commit `765323b`, bit
-  md5 `533d586901dc3669285a49c6d82bab9f`, hwh md5
-  `731517487c6218f0e181c2b74485d7a6`. It is the large non-IR realism pass:
-  Fuzz Face 900 Hz mid-hump + tighter knees + opened tone LPF; AC30/JCM800
-  stronger `ampScoop` + model-local presence; more audible Amp `MIDDLE`; AC30
-  clean headroom; Cab non-IR body tap. Routed timing MET (WNS `+0.643`, WHS
-  `+0.018`), deploy/smoke/ear-bench passed, and it was merged to `main`.
-  D136-D142 and the narrower D144 chord-detune candidate were bench-rejected
-  after re-triggering the placement-sensitive safe-bypass artifact; repository
-  and board were rolled back to D135 on 2026-06-19. D134 (`f62f132`) is the
-  immediate accepted rollback. See `CURRENT_STATE.md`, `BASELINES.md`,
-  `DECISIONS.md` D135-D145, and `TIMING_AND_FPGA_NOTES.md`.
+- **Current accepted deployed baseline = D148**: merge commit `96ef899`, bit
+  md5 `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
+  `2b888ff1ec3168cd64e1b679bbbc71be`. It is the JC-120 / Fender-Twin
+  clean-headroom fix for a playing-only `音割れ` (bypass confirmed clean = NOT the
+  CDC knife-edge), localized with the new `tools/dsp_sim/clip_onset.py` and fixed
+  with placement-safe knee constants (`ampPowerKnee` JC 6.8M->8.2M + Twin
+  4.6M->6.8M + clean-only `ampCleanKneeBonus`); golden 20/20 needed no re-bless.
+  The merge also carries the D146 hard audio-output CDC pblock
+  (`SLICE_X100Y116:SLICE_X113Y137`) and the D147 amp sag-attack slew. Routed
+  timing MET (WNS `+0.526`, WHS `+0.014`), deploy/smoke/ear-bench passed
+  ("完璧"), merged to `main`. It supersedes the long-standing **D135**
+  (`765323b`, bit `533d586901dc3669285a49c6d82bab9f`), which is the immediate
+  accepted rollback (`git checkout 765323b -- hw/Pynq-Z2/bitstreams/`). The
+  D136-D142 amp-clean line and the narrower D144 chord-detune candidate were
+  bench-rejected after re-triggering the placement-sensitive safe-bypass
+  artifact (rolled back to D135 on 2026-06-19); D146's hard pblock is what let
+  the clean-headroom voicing finally land. See `CURRENT_STATE.md`,
+  `BASELINES.md`, `DECISIONS.md` D135-D148, and `TIMING_AND_FPGA_NOTES.md`.
 - The board Jupyter root is `/home/xilinx/jupyter_notebooks`; deployed
   Notebooks are under `audio_lab/` and should be opened at
   `http://192.168.1.9:9090/tree/audio_lab`. D145 changed deploy-root discovery

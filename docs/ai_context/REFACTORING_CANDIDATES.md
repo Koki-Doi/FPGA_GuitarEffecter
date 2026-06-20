@@ -35,9 +35,11 @@ bit from this source -- that build gets the usual timing/CDC check + ear-bench.
 Remaining DSP: **B** (biquad kernels), **D/B2** (Pipeline combinators, deferred).
 Remaining Python: **P1** orchestration tail, **P2** renderer panel split, **P3**.
 
-**2026-06-19 current baseline:** D135 (`765323b`, bit `533d5869...`). The
-D136-D142 line and D144 candidate were bench-rejected and rolled back; future
-DSP refactor builds must treat the safe-bypass CDC as a live placement risk.
+**2026-06-20 current baseline:** D148 (`96ef899`, bit `972d9ba6...`) = JC/Twin
+clean-headroom fix + D146 hard CDC pblock + D147 sag slew, superseding D135
+(`765323b`). The D136-D142 line and D144 candidate were bench-rejected and rolled
+back to D135 before the D146 pblock let the clean-headroom voicing land; future
+DSP refactor builds must still treat the safe-bypass CDC as a live placement risk.
 
 **(historical) 2026-06-13 status:** the DSP items were then blocked on a board
 bench (PYNQ-Z2 offline, D119 rollback); superseded by the 2026-06-17 status.

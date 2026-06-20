@@ -64,32 +64,37 @@ submodule へ分割されており、ポートフォリオで見るべき top-le
 | **D99** | D120 rollback 後にユーザーが選んだ Amp character の基準。D121 はこの Amp を触らず非 Amp だけ補正 |
 | **D121** | 最初の measured non-Amp voicing baseline。bit md5 `9a57c50a...`、D99 Amp untouched + non-Amp measured voicing |
 | **D131** | DIST low-end + saturation/sustain + offline distortion-eval tooling を確立した accepted baseline |
-| **D135** | 現行 canonical deployed baseline。bit md5 `533d5869...`、Fuzz Face mid-hump + Amp/Cab character |
+| **D135** | Fuzz Face mid-hump + Amp/Cab character。bit md5 `533d5869...`、D148 までの rollback target |
 | **D144** | chord-detune sim candidate。offline 改善したが bench-rejected、D135 へ rollback |
+| **D146** | audio-output CDC を hard pblock（`SLICE_X100Y116:SLICE_X113Y137`）で物理固定 = knife-edge への robust attack |
+| **D147** | amp sag-attack slew（`ampSagAttackStep=96`）= chord-IMD 修正 |
+| **D148** | 現行 canonical deployed baseline。bit md5 `972d9ba6...`、JC-120 / Fender-Twin clean-headroom fix（`clip_onset.py` 局在化）、D135 を supersede |
 
 ## 22. 現状
 
-採用済みデプロイベースラインは **D135**（merge commit `765323b`、bit md5
-`533d586901dc3669285a49c6d82bab9f`、hwh md5
-`731517487c6218f0e181c2b74485d7a6`）。2026-06-17 に build / timing /
-deploy / PL smoke / user bench を通過し、main へ `--no-ff` merge されています。
+採用済みデプロイベースラインは **D148**（merge commit `96ef899`、bit md5
+`972d9ba6645dd966e6bdcb5bc3daf478`、hwh md5
+`2b888ff1ec3168cd64e1b679bbbc71be`）。2026-06-20 に build / timing /
+deploy / PL smoke / user bench を通過（「完璧」）し、main へ `--no-ff` merge されています。
 
-D135 の位置づけ：
+D148 の位置づけ：
 
-- D109 の CDC hardening を保持するが、D136-D144 で placement sensitivity が
-  残ることを確認したため、safe-bypass ear-bench は必須。
-- D120 の Amp sag/static-trim 路線は bench rejected され、D121 で D99 系 Amp character へ rollback
-  したあと、D122/D128/D130 の table/coeff 限定 Amp pass だけを accepted line として採用。
-- D131 は DS-1 / Big Muff / Fuzz Face / Metal の low-end、saturation、sustain を補正し、
-  `dist_eval.py` / `targets.py` で distortion-character と real-hardware target を自動評価。
-- D134 は dynamics / knob audibility を全体評価し、D135 は Fuzz Face 900 Hz
-  mid-hump、Amp MIDDLE / AC30 / JCM800、Cab body を改善。
-- Vivado routed timing は WNS `+0.643 ns`、WHS `+0.018 ns`、route errors `0`。
+- D109 の CDC hardening を保持しつつ、D146 で audio-output CDC を hard pblock
+  （`SLICE_X100Y116:SLICE_X113Y137`）で物理固定 = knife-edge への robust attack。
+  これにより D136-D144 で詰まっていた clean-headroom 系の voicing が land 可能に。
+- D147 は amp sag-attack slew（`ampSagAttackStep=96`）で chord-IMD を修正。
+- D148 は JC-120 / Fender-Twin の演奏時のみの音割れ（bypass は clean = CDC ではない）を
+  新規 `clip_onset.py` で局在化し、placement-safe な knee 定数のみで修正
+  （`ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M + clean-mode-only `ampCleanKneeBonus`）。
+  golden 20/20 NO re-bless（bypass bit-exact）。
+- D135 までの累積（D131 の DIST tooling、D134 の全 knob 評価、D135 の Fuzz Face
+  mid-hump + Amp/Cab character）は D148 にそのまま含まれます。
+- Vivado routed timing は WNS `+0.526 ns`、WHS `+0.014 ns`、route errors `0`。
 
 D113-D120 の amp-retune / sag-disable / static-trim 系は、履歴上の候補または rejected branch として
-扱い、現行値としては語りません。D136-D144 も bench rejected です。後で
-問題が出た場合の直近 accepted rollback は D134 bitstreams を `f62f132` から
+扱い、現行値としては語りません。D136-D144 も bench rejected です（D146 の hard pblock 前）。
+後で問題が出た場合の直近 accepted rollback は D135 bitstreams を `765323b` から
 復元して deploy します。
 
-最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D145）/
+最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D148）/
 `TIMING_AND_FPGA_NOTES.md` を参照してください。

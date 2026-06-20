@@ -85,28 +85,34 @@ When a previous turn stopped mid-implementation:
   eliminate) the safe-bypass CDC knife-edge, so a DSP voicing rebuild is allowed
   but EACH new bitstream must be ear-benched for a constant DIGITAL BUZZ on the
   bypass passthrough -- the slack number does not predict it. **Accepted deployed
-  baseline is D135**: merge commit `765323b`, bit md5
-  `533d586901dc3669285a49c6d82bab9f`, hwh md5
-  `731517487c6218f0e181c2b74485d7a6` -- large non-IR realism (Fuzz Face 900 Hz
-  mid-hump biquad + tighter clip knees + opened tone LPF; AC30/JCM800 stronger
-  `ampScoop` + model-local presence; Amp MIDDLE more audible; AC30 clean
-  headroom; Cab non-IR body tap), superseding the 2026-06-17 realism line
-  (D133 `54f7f547` merge `21c0b5a` / D134 `f62f132`). **The D136-D142
-  `feature/amp-clean-headroom` amp-clean line was BENCH-REJECTED and rolled back
-  to D135 on 2026-06-19: the cumulative footprint re-triggered the knife-edge
-  (constant digital buzz, audible at amp-off / amplified at amp-on; D135 amp-off
-  is clean). Re-placing (Explore = byte-identical placement) AND tightening the
-  CDC `set_max_delay` 10->6 ns BOTH failed. The voicing was correct in the
-  offline sim (chord IMD -> floor, clean <= drive) -- the blocker is placement.
-  `tools/dsp_sim/chord_eval.py` (chord-IMD detector) from that line was KEPT.**
-  The narrower D144 chord-detune candidate was also BENCH-REJECTED ("失敗") and
-  rolled back to D135; do not reapply it as-is.
-  Next robust attack: pblock-lock the `i2s_to_stream`/`axis_switch_sink` FIFO
-  cells, or incremental P&R from a freshly-built clean D135 routed DCP. The
-  post-D112 sag-removal/static-trim line (D119/D120) remains abandoned; do not
-  re-attempt Amp sag removal or static sag trimming without explicit direction.
-  Roll back further (D134) via `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/`.
-  See `DECISIONS.md` D109-D145, `CURRENT_STATE.md`, and `baselines.json`.
+  baseline is D148**: merge commit `96ef899`, bit md5
+  `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
+  `2b888ff1ec3168cd64e1b679bbbc71be` -- the JC-120 / Fender-Twin clean-headroom
+  fix for a playing-only `音割れ` (bypass confirmed clean = NOT CDC), localized
+  with the new `tools/dsp_sim/clip_onset.py` (JC ~0.18 FS at the power/master
+  soft knee, Twin ~0.12-0.18 FS at the `ampAsymClip` waveshaper) and fixed with
+  placement-safe knee constants only (`ampPowerKnee` JC 6.8M->8.2M + Twin
+  4.6M->6.8M + clean-mode-only `ampCleanKneeBonus`, Twin 2.5M); golden 20/20 NO
+  re-bless. The merge ALSO carries D146 (hard pblock locking the audio-output CDC
+  cells to `SLICE_X100Y116:SLICE_X113Y137` -- the robust knife-edge attack) and
+  D147 (amp sag-attack slew `ampSagAttackStep=96`). It supersedes the
+  long-standing **D135** (`765323b`, bit `533d586901dc3669285a49c6d82bab9f`) =
+  large non-IR realism (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees +
+  opened tone LPF; AC30/JCM800 stronger `ampScoop` + model-local presence; Amp
+  MIDDLE more audible; AC30 clean headroom; Cab non-IR body tap). **History: the
+  D136-D142 `feature/amp-clean-headroom` amp-clean line was BENCH-REJECTED and
+  rolled back to D135 on 2026-06-19: the cumulative footprint re-triggered the
+  knife-edge (constant digital buzz). Re-placing (Explore = byte-identical
+  placement) AND tightening the CDC `set_max_delay` 10->6 ns BOTH failed; the
+  voicing was correct in the offline sim -- the blocker was placement. The
+  narrower D144 chord-detune candidate was also BENCH-REJECTED ("失敗") and rolled
+  back to D135.** The robust attack that finally landed = the D146 hard pblock
+  above (the `tools/dsp_sim/chord_eval.py` chord-IMD detector and `clip_onset.py`
+  from that arc were KEPT). The post-D112 sag-removal/static-trim line
+  (D119/D120) remains abandoned; do not re-attempt Amp sag removal or static sag
+  trimming without explicit direction. Roll back to D135 via
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/`.
+  See `DECISIONS.md` D109-D148, `CURRENT_STATE.md`, and `baselines.json`.
 - For effect voicing work, prefer the offline DSP sim / measurement loop before
   paying the Vivado cost: build/run `tools/dsp_sim`, use
   `tools/dsp_sim/measure.py` for net tone-curve checks, and keep golden/bypass

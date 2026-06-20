@@ -1,16 +1,18 @@
 # Real-hardware fidelity roadmap
 
-Status: **historical roadmap, executed through D135 (`533d5869`)**
-(updated 2026-06-19). R0a (Python taper, D80) + R3 first biquad
+Status: **historical roadmap, executed through D135 (`533d5869`); current baseline D148 (`96ef899`)**
+(updated 2026-06-20). R0a (Python taper, D80) + R3 first biquad
 (D81) are done. D121-D131 then executed the hardware-reference-constrained
 voicing line (Cab, OD, Distortion, Compressor, Amp, offline distortion metrics),
 and the 2026-06-17 all-effects sim survey closed the rest (bass, こもり/HF,
 Metal full saturation, RESONANCE, clean-amp power headroom; all 28/28 EQ + 7/7
 dist + 6/6 amps-clean vs targets). D134 then scaled dynamics/knob coverage and
 D135 implemented the Fuzz Face mid-hump plus additional Amp/Cab character.
-Remaining high-cost item is chiefly real-IR cab convolution; chord-detune
-voicing cannot resume safely until the placement-sensitive safe-bypass CDC is
-made robust. See `REALISM_ALL_EFFECTS_SIM_SURVEY.md`. D80 added
+After D135 the safe-bypass CDC was made robust with the D146 hard pblock
+(`SLICE_X100Y116:SLICE_X113Y137`), which let the D147 amp sag-attack slew and the
+D148 JC/Twin clean-headroom fix land (bench-ACCEPTED, current baseline D148).
+Remaining high-cost item is chiefly real-IR cab convolution. See
+`REALISM_ALL_EFFECTS_SIM_SURVEY.md`. D80 added
 `audio_lab_pynq/knob_tapers.py`, updated live GUI/encoder/preset apply paths,
 and retuned the preset knob positions (Python-only). **D81 then landed the
 first R3 resonant biquad: the Tube Screamer ~720 Hz mid hump** (Clash, built /
@@ -34,10 +36,12 @@ Suppressor -> Reverb -> preset loudness -> Amp -> final bench.
 
 ## Current baseline and boundary
 
-- Current accepted bitstream baseline is **D135**: bit md5
-  `533d586901dc3669285a49c6d82bab9f`, hwh md5
-  `731517487c6218f0e181c2b74485d7a6`; routed WNS `+0.643 ns`, WHS
-  `+0.018 ns`. D136-D142 and D144 were bench-rejected and rolled back.
+- Current accepted bitstream baseline is **D148**: bit md5
+  `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
+  `2b888ff1ec3168cd64e1b679bbbc71be`; routed WNS `+0.526 ns`, WHS
+  `+0.014 ns` (JC/Twin clean-headroom fix + D146 hard CDC pblock + D147 sag slew,
+  supersedes D135 `533d5869`). D136-D142 and D144 were bench-rejected and rolled
+  back to D135 before the D146 pblock made the crossing robust.
 - The DSP runs mono internally at **96 kHz** inside the **33.33 MHz DSP island**
   (D98 / D94). Metal/RAT/Big Muff are already 4x oversampled; DS-1 CARRY4 and
   the D109 CDC pair still remain placement-sensitive.
@@ -109,7 +113,7 @@ Amp GAIN positions were adjusted so the tapered hardware writes stay near the
 previous practical voicings. Full reference capture is still pending and should
 be the next calibration step before more DSP retuning.
 
-- Build a small capture matrix for the real references and the current D135
+- Build a small capture matrix for the real references and the current D148
   AudioLab models. At minimum: TS9, DS-1, Big Muff, Fuzz Face, one clean amp,
   one high-gain amp, and all three Cab models.
 - Normalize comparison by input level and output loudness. A louder model can

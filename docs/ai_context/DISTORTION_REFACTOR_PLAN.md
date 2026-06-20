@@ -44,8 +44,8 @@ implementation, the deployed WNS sat at -7.535 ns. Later realism passes
 retuned existing Compressor / Overdrive / Distortion / Amp / Cab stages,
 lowered the DSP island to 33.33 MHz, and added 4x oversampling to the
 hard-clip aliasers without reintroducing the wide model mux. The current
-deployed baseline is D135 (WNS `+0.643 ns`, WHS `+0.018 ns`, bit
-`533d586901dc3669285a49c6d82bab9f`). Do not bring `model_select` back — see
+deployed baseline is D148 (WNS `+0.526 ns`, WHS `+0.014 ns`, bit
+`972d9ba6645dd966e6bdcb5bc3daf478`). Do not bring `model_select` back — see
 `DECISIONS.md` D6 / D9 and `TIMING_AND_FPGA_NOTES.md`.
 
 ## Control plane (final)

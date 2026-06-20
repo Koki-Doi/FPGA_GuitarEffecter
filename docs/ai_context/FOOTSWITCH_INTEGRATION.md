@@ -10,7 +10,7 @@ encoder IP (`ENCODER_INPUT_MAP.md`). See `DECISIONS.md` D78.
 > it as the deployed baseline while keeping this footswitch IP. Bench audio
 > is CLEAN after the phys_opt fix (see "Bitcrusher" below), and the user
 > wired the final RP pins 11/12/35 and confirmed FS1 FX toggle plus FS2/FS3
-> preset stepping on the final bit. The IP remains live in the current D135
+> preset stepping on the final bit. The IP remains live in the current D148
 > baseline; the DSP island was later lowered from the D78-era 50 MHz to
 > 33.33 MHz, while this input IP stays on the 100 MHz fabric.
 

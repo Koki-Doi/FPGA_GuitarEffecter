@@ -4,7 +4,7 @@
 PMOD JB audio path について、最初の Phase Pmod-0 設計メモと、その後の
 実装・deploy 済み仕様をまとめる。
 
-## Current deployed status (D48 / D49 / D50, active through D135)
+## Current deployed status (D48 / D49 / D50, active through D148)
 
 Pmod I2S2 は現行デプロイ済み build の **active audio path** です。
 `hw/Pynq-Z2/create_project.tcl` は `pmod_i2s2_integration.tcl` を
@@ -34,9 +34,9 @@ Current implementation:
   `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb`,
   `scripts/test_pmod_i2s2.py`, `scripts/pmod_i2s2_mode.py`,
   `scripts/pmod_i2s2_capture_probe.py`.
-- Latest accepted deployed bitstream baseline is D135 (merge `765323b`):
-  overall WNS `+0.643 ns`, WHS `+0.018 ns`, bit/hwh md5
-  `533d586901dc3669285a49c6d82bab9f` /
+- Latest accepted deployed bitstream baseline is D148 (merge `96ef899`):
+  overall WNS `+0.526 ns`, WHS `+0.014 ns`, bit/hwh md5
+  `972d9ba6645dd966e6bdcb5bc3daf478` /
   `731517487c6218f0e181c2b74485d7a6`. The Pmod I2S2 RTL / Tcl / XDC
   path itself remains the D48-D50 design, with D98 changing its dividers to
   96 kHz and later decisions changing the downstream Clash DSP voicing.
@@ -46,7 +46,7 @@ sections that say "planning only" or "do not change RTL/XDC/Tcl" describe
 that earlier docs-only phase, not the current repository state.
 
 関連:
-- `docs/ai_context/CURRENT_STATE.md` (current D135 / Pmod mode 2 state)
+- `docs/ai_context/CURRENT_STATE.md` (current D148 / Pmod mode 2 state)
 - `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (retired PCM5102 / PCM1808 history)
 - `docs/ai_context/IO_PIN_RESERVATION.md` (PMOD / RPi / Arduino header の pin 予約台帳)
 - `docs/ai_context/AUDIO_SIGNAL_PATH.md` (内部 AXIS DSP 経路と外付け codec 接続点)

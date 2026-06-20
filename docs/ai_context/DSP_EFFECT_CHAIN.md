@@ -61,16 +61,27 @@ measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
-The latest accepted baseline is **D135** (merge `765323b`): the large non-IR
-realism pass on top of the D131-D134 measurement line. It adds the Fuzz Face
+The latest accepted baseline is **D148** (merge `96ef899`): the JC-120 /
+Fender-Twin clean-headroom fix on top of D135. It targets a playing-only
+`音割れ` (bypass confirmed clean = NOT the CDC knife-edge), localized with the new
+`tools/dsp_sim/clip_onset.py` (JC broke up ~0.18 FS at the power/master soft
+knee, Twin ~0.12-0.18 FS at the `ampAsymClip` waveshaper) and fixed with
+placement-safe knee constants only (`ampPowerKnee` JC 6.8M->8.2M + Twin
+4.6M->6.8M plus a clean-mode-only `ampCleanKneeBonus`, Twin 2.5M); both now clean
+to ~0.25 FS. Surgical -- golden 20/20 needed no re-bless (bypass bit-exact). The
+merge also carries the D146 hard audio-output CDC pblock
+(`SLICE_X100Y116:SLICE_X113Y137`) and the D147 amp sag-attack slew
+(`ampSagAttackStep=96`, the chord-IMD fix). The deployed bitstream md5 is
+`972d9ba6645dd966e6bdcb5bc3daf478`; HWH md5 is
+`2b888ff1ec3168cd64e1b679bbbc71be`. It supersedes **D135** (`765323b`, bit
+`533d586901dc3669285a49c6d82bab9f`) = the large non-IR realism pass (Fuzz Face
 900 Hz mid-hump, tighter clip knees and opened tone LPF; stronger AC30/JCM800
 `ampScoop` + model-local presence; a more audible Amp `MIDDLE`; AC30 clean
-headroom; and a Cab non-IR body tap. The deployed bitstream md5 is
-`533d586901dc3669285a49c6d82bab9f`; HWH md5 is
-`731517487c6218f0e181c2b74485d7a6`. D136-D142 and the narrower D144
-chord-detune candidate were bench-rejected and rolled back to D135 on
-2026-06-19. D134 is the immediate accepted rollback:
-`git checkout f62f132 -- hw/Pynq-Z2/bitstreams/` + deploy.
+headroom; Cab non-IR body tap), which is the immediate accepted rollback:
+`git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy. The D136-D142
+amp-clean line and the narrower D144 chord-detune candidate were bench-rejected
+and rolled back to D135 on 2026-06-19; the D146 hard pblock is what let the
+clean-headroom voicing finally land in D148.
 
 The load-bearing clocking base is D75 as lowered by D89/D94:
 `clash_lowpass_fir_0` runs at `FCLK_CLK1` (50 MHz at D75 -> 40 MHz at D89 ->
@@ -91,8 +102,9 @@ timing-clean DSP rebuilds can still re-trigger the safe-bypass knife-edge.
 D76 re-added the FP02M XADC path on this island, D78 added the
 `axi_footswitch_input` IP plus load-bearing `phys_opt_design`, D79 added the
 Overdrive realism changes described below, D121-D134 formed the measured 96 kHz
-realism line, and D135 is the current accepted extension. D135 routed timing is
-`WNS = +0.643 ns`, `WHS = +0.018 ns`; user bench accepted the sound. Full
+realism line, D135 extended it, and D148 (carrying D146/D147) is the current
+accepted extension. D148 routed timing is `WNS = +0.526 ns`, `WHS = +0.014 ns`;
+user bench accepted the sound ("完璧"). Full
 records: `DSP_ISLAND_CLOCK_DESIGN.md`,
 `FOOTSWITCH_INTEGRATION.md`, `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`, and
 `DECISIONS.md` D75 / D78 / D79 / D109-D145.

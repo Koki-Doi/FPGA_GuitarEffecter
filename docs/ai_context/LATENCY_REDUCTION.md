@@ -122,7 +122,7 @@ Static estimates are not enough (the D74/D78 "bench it" lesson applies). Measure
    effect's own group delay; then re-measure with the Amp/Cab on to see the
    added DSP filtering group delay (still small, but real for the resonant
    filters).
-3. Use the current 96 kHz D135 baseline for the primary measurement. A historical
+3. Use the current 96 kHz D148 baseline for the primary measurement. A historical
    D97-or-earlier 48 kHz bit may be used only for a controlled A/B comparison.
 
 ## Recommendation

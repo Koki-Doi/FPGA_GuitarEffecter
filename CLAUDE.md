@@ -119,32 +119,39 @@ When a previous turn stopped mid-implementation:
   that reintroduces the knife-edge. D109 bounds the crossing but does not
   eliminate placement sensitivity: D136-D144 proved that timing-clean rebuilds
   can still produce a constant safe-bypass buzz. Every new bitstream still
-  requires an ear-bench.** See `DECISIONS.md` D109-D145 +
+  requires an ear-bench.** See `DECISIONS.md` D109-D148 +
   `project_safebypass_knifeedge_cdc_rootcause`.
-  **Accepted deployed baseline is D135 (`533d5869`, merge commit `765323b`,
-  hwh md5 `731517487c6218f0e181c2b74485d7a6`)** -- large non-IR realism
-  (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees + opened tone LPF;
-  AC30/JCM800 stronger `ampScoop` + model-local presence; Amp MIDDLE more
-  audible; AC30 clean headroom; Cab non-IR body tap), superseding the
-  2026-06-17 realism line (D133 `54f7f547` merge `21c0b5a` / D134 `f62f132`).
-  **The D136-D142 `feature/amp-clean-headroom` amp-clean line (clean-channel
-  headroom, Clean/Drive separation, Fender level, sustain, chord-IMD sag fix,
-  cleaner-clean knee) was BENCH-REJECTED and rolled back to D135 on 2026-06-19:
-  every rebuild of that cumulative footprint hit the safe-bypass CDC knife-edge
-  = a constant DIGITAL BUZZ on the bypass passthrough (audible at amp-off,
-  amplified at amp-on; D135 amp-off is clean). Re-placing (Explore directive =
-  byte-identical placement) AND tightening the CDC `set_max_delay` 10->6 ns
-  BOTH failed to clear it. The voicing source was correct in the offline sim
-  (`chord_eval.py` chord IMD -> floor, clean <= drive) -- the blocker is the
-  placement, not the voicing.** The `tools/dsp_sim/chord_eval.py` chord-IMD
-  detector from that line was KEPT. The narrower D144 chord-detune candidate
-  was also BENCH-REJECTED ("失敗") and rolled back to D135. Next robust attack
-  on the knife-edge:
-  pblock-lock the `i2s_to_stream`/`axis_switch_sink` FIFO cells, or incremental
-  P&R from a freshly-built clean D135 routed DCP -- see
-  `project_safebypass_knifeedge_cdc_rootcause`. Roll back further (D134) via
-  `git checkout f62f132 -- hw/Pynq-Z2/bitstreams/` and redeploy. See
-  `CURRENT_STATE.md`, `DECISIONS.md` D109-D145, and `baselines.json`.
+  **Accepted deployed baseline is D148 (bit md5 `972d9ba6645dd966e6bdcb5bc3daf478`,
+  hwh md5 `2b888ff1ec3168cd64e1b679bbbc71be`, merge commit `96ef899`)** -- the
+  JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ; bypass confirmed
+  clean = NOT CDC). Localized with the new `tools/dsp_sim/clip_onset.py`: JC
+  broke up ~0.18 FS at the power/master soft knee, Twin ~0.12-0.18 FS at the
+  `ampAsymClip` waveshaper. Fix = placement-safe constants/mux (no new
+  multiply): `ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M + a clean-mode-only
+  `ampCleanKneeBonus` (Twin 2.5M); both now clean to ~0.25 FS. Surgical -- golden
+  20/20 NO re-bless (bypass bit-exact). The D148 merge `96ef899` ALSO carries
+  **D146** (hard pblock locking the audio-output CDC cells to
+  `SLICE_X100Y116:SLICE_X113Y137`, the robust knife-edge attack) and **D147**
+  (amp sag-attack slew `ampSagAttackStep=96`, the chord-IMD fix re-accepted from
+  the rolled-back D141). D148 supersedes the long-standing D135 baseline
+  (`533d5869`, merge `765323b`) = large non-IR realism (Fuzz Face 900 Hz mid-hump
+  biquad + tighter clip knees + opened tone LPF; AC30/JCM800 stronger `ampScoop`
+  + model-local presence; Amp MIDDLE more audible; AC30 clean headroom; Cab
+  non-IR body tap).
+  **History: the D136-D142 `feature/amp-clean-headroom` amp-clean line
+  (clean-channel headroom, Clean/Drive separation, Fender level, sustain,
+  chord-IMD sag fix, cleaner-clean knee) was BENCH-REJECTED and rolled back to
+  D135 on 2026-06-19: every rebuild of that cumulative footprint hit the
+  safe-bypass CDC knife-edge = a constant DIGITAL BUZZ on the bypass passthrough.
+  Re-placing (Explore = byte-identical placement) AND tightening the CDC
+  `set_max_delay` 10->6 ns BOTH failed to clear it; the voicing was correct in
+  the offline sim. The narrower D144 chord-detune candidate was also
+  BENCH-REJECTED ("失敗") and rolled back to D135.** The robust knife-edge attack
+  that finally landed = the D146 hard pblock above (the
+  `tools/dsp_sim/chord_eval.py` chord-IMD detector and `clip_onset.py` from this
+  arc were KEPT). Roll back to D135 via
+  `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` and redeploy. See
+  `CURRENT_STATE.md`, `DECISIONS.md` D109-D148, and `baselines.json`.
   XADC is live as `xadc_wiz_a0` for the FP02M Wah pedal. A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD
   clocks undefined at synth elaboration, applied at impl).

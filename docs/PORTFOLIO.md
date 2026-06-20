@@ -8,13 +8,16 @@ DSP は関数型 HDL（Clash/Haskell）で記述し、HDMI GUI・ロータリー
 > 本ページはポートフォリオサイト向けの概要。実装値・係数・アルゴリズム・設計の物語は
 > **[深掘り技術付録](#深掘り技術付録)**（全 5 部）を参照。
 
-**現行の採用済みデプロイベースライン**は **D135**（merge commit `765323b`、
-bit md5 `533d586901dc3669285a49c6d82bab9f`、hwh md5
-`731517487c6218f0e181c2b74485d7a6`）。D121-D134 の測定駆動 voicing / sim
-拡張に、Fuzz Face 900 Hz mid-hump、Amp/Cab character 強化を重ねたビルドです。
-Vivado routed timing は **WNS +0.643 ns / WHS +0.018 ns**、実機 PL smoke と
-ユーザー bench で合格しています。D136-D142 と D144 は timing-clean / sim-good
-でも safe-bypass を含む bench acceptance を通せず、D135 へ rollback しました。
+**現行の採用済みデプロイベースライン**は **D148**（merge commit `96ef899`、
+bit md5 `972d9ba6645dd966e6bdcb5bc3daf478`、hwh md5
+`2b888ff1ec3168cd64e1b679bbbc71be`）。JC-120 / Fender-Twin の演奏時のみの音割れを
+新規 `tools/dsp_sim/clip_onset.py` で局在化し、placement-safe な knee 定数のみで
+修正したビルドで、D146 hard CDC pblock と D147 amp sag-attack slew も同梱し、D135
+（`765323b`）を supersede します。Vivado routed timing は **WNS +0.526 ns /
+WHS +0.014 ns**、実機 PL smoke とユーザー bench で合格（「完璧」）しています。
+D136-D142 と D144 は timing-clean / sim-good でも safe-bypass を含む bench
+acceptance を通せず一旦 D135 へ rollback しましたが、D146 の hard pblock で
+audio-output CDC を物理固定してから clean-headroom voicing が land しました。
 
 ---
 
@@ -80,7 +83,7 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | サンプルレート | 96 kHz / 24-bit |
 | DSP アイランドクロック | 33.33 MHz（1 サンプル/サイクル、約 347 サイクル/サンプルの余裕） |
 | タイミング改善（アイランド導入） | WNS -10.387 ns → -0.706 ns |
-| 採用ベースライン（D135）の WNS | +0.643 ns（フルタイミング MET、WHS +0.018 ns、route errors 0） |
+| 採用ベースライン（D148）の WNS | +0.526 ns（フルタイミング MET、WHS +0.014 ns、route errors 0） |
 | エフェクト | 9 ブロック（Amp 6 / OD 6 / Distortion 7 / Cab 3 機種） |
 | 現行 bit / hwh | `533d586901dc3669285a49c6d82bab9f` / `731517487c6218f0e181c2b74485d7a6` |
 | `set_guitar_effects` レイテンシ | 940 ms → 2.6 ms（IP ハンドルキャッシュ後） |
@@ -118,14 +121,15 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 
 ---
 
-## 現状（2026-06-19）
+## 現状（2026-06-20）
 
-採用済みデプロイベースラインは **D135**。D121 の非 Amp 測定駆動 pass から
-D131 の distortion tooling、D134 の dynamics/knob 全体評価、D135 の
-Fuzz Face / Amp / Cab character 強化までを段階的に実装・bench-ACCEPTED
+採用済みデプロイベースラインは **D148**（`96ef899`、D135 を supersede）。D121 の
+非 Amp 測定駆動 pass から D131 の distortion tooling、D134 の dynamics/knob 全体
+評価、D135 の Fuzz Face / Amp / Cab character 強化、D146 hard CDC pblock、D147 amp
+sag-attack slew、D148 JC/Twin clean-headroom fix までを段階的に実装・bench-ACCEPTED
 したビットストリームです。
 
-D135 までの主な音作り変更：
+主な音作り / 安定化変更：
 
 1. **D121-D124**：BD-2 / OCD / Metal / Cab / RAT の測定駆動補正。
 2. **D125**：Compressor RATIO を Dyna/Ross sustain 方向へ修正。
@@ -134,10 +138,14 @@ D135 までの主な音作り変更：
    `dist_eval.py` / `targets.py` で distortion-character を自動評価。
 5. **D134-D135**：全 effect / knob の objective check を拡張し、Fuzz Face
    mid-hump、Amp MIDDLE / AC30 / JCM800、Cab body を改善。
+6. **D146-D148**：safe-bypass CDC を hard pblock（`SLICE_X100Y116:SLICE_X113Y137`）で
+   物理固定し、amp sag-attack slew（chord-IMD 修正）と JC-120 / Fender-Twin の
+   clean-headroom fix（`clip_onset.py` で局在化）を land。
 
 すべて offline sim / golden / bypass invariant で Vivado 前に絞り込み、Vivado timing、
 deploy、programmatic smoke、ユーザー bench を通過したものだけを採用しています。D120 / D119 の
-Amp sag 変更は bench-reject 済みです。D144 の chord-detune 候補も offline
-sim では改善したものの bench-reject され、D135 へ rollback しました。最新の
-正確な状態は `docs/ai_context/CURRENT_STATE.md` /
-`docs/ai_context/DECISIONS.md`（D109-D145）を参照。
+Amp sag 変更は bench-reject 済みです。D136-D142 と D144 の chord-detune 候補も
+offline sim では改善したものの bench-reject され一旦 D135 へ rollback しましたが、
+D146 の hard pblock で crossing を物理固定してから clean-headroom voicing が
+land しました。最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` /
+`docs/ai_context/DECISIONS.md`（D109-D148）を参照。

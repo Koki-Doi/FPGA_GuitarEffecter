@@ -86,21 +86,30 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
   G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
   via `mode2_right_snapshot` (D50).
-- The current **accepted** deployed bitstream baseline is **D135** (merge
-  commit `765323b`, `audio_lab.bit` md5
-  `533d586901dc3669285a49c6d82bab9f`, `audio_lab.hwh` md5
-  `731517487c6218f0e181c2b74485d7a6`). It adds the large non-IR realism pass:
-  Fuzz Face 900 Hz mid-hump + tighter clip knees + opened tone LPF,
-  AC30/JCM800 stronger `ampScoop` and model-local presence, more audible Amp
-  `MIDDLE`, AC30 clean headroom, and a Cab non-IR body tap. Offline verification
-  passed 28/28 tone targets, 7/7 pedal checks, 6/6 clean-amp checks, dynamics,
-  knob audibility, and golden/bypass regression; routed WNS is `+0.643 ns` and
-  WHS `+0.018 ns`. D136-D142 and the narrower D144 chord-detune candidate were
-  bench-rejected after re-triggering placement-sensitive safe-bypass artifacts;
-  the board and repository were rolled back to D135 on 2026-06-19. D134
-  (`f62f132`) is the immediate accepted rollback point. See `CURRENT_STATE.md`,
-  `BASELINES.md`, `DECISIONS.md` D135-D145, and
-  `TIMING_AND_FPGA_NOTES.md`.
+- The current **accepted** deployed bitstream baseline is **D148** (merge
+  commit `96ef899`, `audio_lab.bit` md5
+  `972d9ba6645dd966e6bdcb5bc3daf478`, `audio_lab.hwh` md5
+  `2b888ff1ec3168cd64e1b679bbbc71be`). It is the JC-120 / Fender-Twin
+  clean-headroom fix for a playing-only `音割れ` (bypass confirmed clean = NOT
+  CDC): the new `tools/dsp_sim/clip_onset.py` localized JC breaking up
+  ~0.18 FS at the power/master soft knee and Twin ~0.12-0.18 FS at the
+  `ampAsymClip` waveshaper. The fix is placement-safe constants/mux (no new
+  multiply): `ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M plus a
+  clean-mode-only `ampCleanKneeBonus` (Twin 2.5M), both now clean to ~0.25 FS;
+  golden 20/20 needed NO re-bless (bypass bit-exact). The merge also carries
+  **D146** (a hard pblock locking the audio-output CDC cells to
+  `SLICE_X100Y116:SLICE_X113Y137` -- the robust safe-bypass knife-edge attack)
+  and **D147** (amp sag-attack slew `ampSagAttackStep=96`, the chord-IMD fix
+  re-accepted from the rolled-back D141). Routed WNS is `+0.526 ns`, WHS
+  `+0.014 ns`, route errors 0, D109 CDC pair MET. D148 supersedes the
+  long-standing **D135** baseline (`765323b`, bit `533d586901dc3669285a49c6d82bab9f`),
+  which remains the rollback target
+  (`git checkout 765323b -- hw/Pynq-Z2/bitstreams/`). The D136-D142
+  amp-clean-headroom line and the narrower D144 chord-detune candidate were
+  bench-rejected after re-triggering the placement-sensitive safe-bypass
+  artifact (rolled back to D135 on 2026-06-19); D146's hard pblock is what
+  finally let the clean-headroom voicing land. See `CURRENT_STATE.md`,
+  `BASELINES.md`, `DECISIONS.md` D135-D148, and `TIMING_AND_FPGA_NOTES.md`.
 - The DSP runs in a **33.33 MHz clock-domain island** (D94; was 50 MHz at D75
   and 40 MHz at D89). Only `clash_lowpass_fir_0` is clocked by
   `FCLK_CLK1 = 33.33 MHz`; the rest of the
@@ -211,8 +220,10 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
 - Recent D109+ builds are timing-clean, but a clean timing summary is still not
   an acceptance signal by itself. New DSP logic must be carefully pipelined,
   programmatically smoked, and bench-listened for bypass artifacts before it
-  supersedes D135. D136-D144 proved that D109 bounds but does not eliminate the
-  placement-sensitive safe-bypass knife-edge.
+  supersedes the current baseline. D136-D144 proved that D109 bounds but does
+  not eliminate the placement-sensitive safe-bypass knife-edge; D146's hard
+  pblock (`SLICE_X100Y116:SLICE_X113Y137`) is the robust mitigation that finally
+  let a clean-headroom voicing (D148) land.
 - Read [`EFFECT_ADDING_GUIDE.md`](EFFECT_ADDING_GUIDE.md) before
   touching `LowPassFir.hs`, `block_design.tcl`, or any
   `axi_gpio_*` topology.

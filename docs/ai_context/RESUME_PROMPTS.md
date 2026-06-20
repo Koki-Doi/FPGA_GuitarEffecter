@@ -31,7 +31,7 @@ asking it to re-discover the project from scratch.
 > `CURRENT_STATE.md`, `DECISIONS.md` D148/D147/D146, and `tools/dsp_sim/README.md`
 > (clip_onset.py) before continuing.
 
-## Current status (2026-06-20, D147 bench partial fail: JC/Fender clipping)
+## Previous status (2026-06-20, D147 bench partial fail: JC/Fender clipping; superseded by D148)
 
 > **D135 remains the accepted committed baseline.** D147 is the current board
 > candidate on `feature/d147-sag-attack`, built on the unaccepted D146 hard
@@ -306,8 +306,8 @@ asking it to re-discover the project from scratch.
 > deploy は `PYNQ_HOST=192.168.1.9 bash scripts/deploy_to_pynq.sh` を
 > 使ってください。実機 Python 実行は
 > `sudo env PYTHONPATH=/home/xilinx/Audio-Lab-PYNQ python3 ...` を経由
-> してください。現行 accepted baseline は D135 (`533d5869`、merge
-> `765323b`) です。D134 (`58b6ee84`、merge `f62f132`) は immediate
+> してください。現行 accepted baseline は D148 (`972d9ba6`、merge
+> `96ef899`) です。D135 (`533d5869`、merge `765323b`) は immediate
 > rollback baseline です。safe-bypass で
 > 高域ノイズが出る bitstream、または
 > `TIMING_AND_FPGA_NOTES.md` の D109 CDC 制約を壊した bitstream は
@@ -341,8 +341,8 @@ asking it to re-discover the project from scratch.
 
 ## Tightening WNS
 
-> 現行 accepted D135 build は timing-clean です (overall WNS `+0.643 ns`,
-> TNS `0`, WHS `+0.018 ns`, route errors `0`, bus-skew min slack `+8.099 ns`)。
+> 現行 accepted D148 build は timing-clean です (overall WNS `+0.526 ns`,
+> TNS `0`, WHS `+0.014 ns`, route errors `0`)。
 > DSP island は D94 以降 33.33 MHz、fabric は
 > 100 MHz のままです。さらに DSP を増やす場合も、`LowPassFir.hs` /
 > `AudioLab/` の深い組合せブロックを register で分け、1 段に大きな

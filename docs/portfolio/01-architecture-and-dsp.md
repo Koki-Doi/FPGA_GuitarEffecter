@@ -24,10 +24,13 @@ Logic）上に実装した DSP チェーンで処理し、同モジュールの 
 までを**すべて自作の PL IP として統合**した、フルスタックな組み込みハード／
 ソフト協調設計になっています。
 
-現行の採用済みデプロイベースラインは **D135** です。D121-D134 の測定駆動
-voicing / sim 拡張に、Fuzz Face 900 Hz mid-hump と Amp/Cab character 強化を
-重ね、timing / golden / PL smoke / bench を通した canonical baseline です。
-D136-D142 と D144 は bench acceptance を通せず D135 へ rollback しました。
+現行の採用済みデプロイベースラインは **D148**（`96ef899`、D135 を supersede）
+です。D121-D135 の測定駆動 voicing / sim 拡張に、D146 hard CDC pblock、D147 amp
+sag-attack slew、D148 JC-120 / Fender-Twin clean-headroom fix を重ね、
+timing / golden / PL smoke / bench を通した canonical baseline です。
+D136-D142 と D144 は bench acceptance を通せず一旦 D135 へ rollback しましたが、
+D146 の hard pblock で safe-bypass CDC を物理固定してから clean-headroom voicing
+が land しました。
 
 ---
 
@@ -65,19 +68,19 @@ D136-D142 と D144 は bench acceptance を通せず D135 へ rollback しまし
 | 合成環境 | Vivado 2019.1 |
 | コーデック（補助） | ADAU1761（I2C 制御、ADC HPF 常時 ON、デバッグ可視化用） |
 
-### 3.1 現行採用ビルド（D135）の実測値
+### 3.1 現行採用ビルド（D148）の実測値
 
 | 項目 | 値 |
 | --- | --- |
-| 採用日 | 2026-06-17 |
-| Git / bitstream | merge commit `765323b`、bit md5 `533d586901dc3669285a49c6d82bab9f`、hwh md5 `731517487c6218f0e181c2b74485d7a6` |
-| タイミング | WNS `+0.643 ns`、WHS `+0.018 ns`、route errors `0` |
-| D109 CDC slack | `clk_fpga_0 -> clk = +6.139 ns`、`clk -> clk_fpga_0 = +5.966 ns` |
-| 実機 smoke | board md5 match、PL smoke OK（Pmod I2S2 mode 2、~96.1 kHz、ADC HPF `True`） |
-| bench 判定 | ユーザー bench で accepted、その後 main へ `--no-ff` merge |
-| ロールバック | D134 bitstreams を `f62f132` から復元（bit md5 `58b6ee84a2f0c360da97c86e5a971c85`）して deploy |
+| 採用日 | 2026-06-20 |
+| Git / bitstream | merge commit `96ef899`、bit md5 `972d9ba6645dd966e6bdcb5bc3daf478`、hwh md5 `2b888ff1ec3168cd64e1b679bbbc71be` |
+| タイミング | WNS `+0.526 ns`、WHS `+0.014 ns`、route errors `0` |
+| D109 CDC slack | `clk_fpga_0 -> clk = +1.632 ns`（pair MET） |
+| 実機 smoke | board md5 match、PL smoke OK（Pmod I2S2 mode 2、~96 kHz、ADC HPF `True`） |
+| bench 判定 | ユーザー bench で accepted（「完璧」）、その後 main へ `--no-ff` merge |
+| ロールバック | D135 bitstreams を `765323b` から復元（bit md5 `533d586901dc3669285a49c6d82bab9f`）して deploy |
 
-この表は「ポートフォリオ用に見栄えよく丸めた値」ではなく、D135 の Vivado routed timing /
+この表は「ポートフォリオ用に見栄えよく丸めた値」ではなく、D148 の Vivado routed timing /
 deploy / smoke / bench の実記録からそのまま持ってきた値です。FPGA
 プロジェクトでは、見た目の機能説明よりも **どの commit / bit / timing / bench 結果を現行値
 として語っているか**を固定することが重要です。

@@ -3,7 +3,7 @@
 Only the top entry is the current state. Older "Latest work" entries are
 chronological history retained for rollback and debugging context; phrases such
 as "new canonical baseline" in those older entries describe the state at that
-time and are superseded by the D135 accepted baseline (`533d5869`, merge `765323b`) unless the top entry says otherwise.
+time and are superseded by the D148 accepted baseline (`972d9ba6`, merge `96ef899`) unless the top entry says otherwise.
 
 Latest work: **2026-06-20 (D148 JC-120 / Fender-Twin clean-headroom fix; BUILT, DEPLOYED + PL-SMOKED, BENCH-ACCEPTED, MERGED to main):** Follow-up to the D147 partial fail. User confirmed the safe bypass (all effects off) is CLEAN and the JC/Fender 音割れ is **playing-only**, so it is a voicing headroom limit, not the CDC knife-edge. Added `tools/dsp_sim/clip_onset.py` (clean-input-level sweep) which localized it: at `input_gain 18 / master 60` JC-120 stayed clean only to ~0.18 FS (7% THD @0.25) and Twin to ~0.12-0.18 FS (12% @0.18), while the gain models break up early by design (the user does not mind). JC-120 is sag-exempt and byte-identical to D135, so this clip is in the accepted baseline too. Localization showed the two amps clip at DIFFERENT stages: raising Twin's power knee did not move its onset (crest stayed high = soft-harmonic) = Twin clips at the `ampAsymClip` waveshaper, while JC clips at the power/master soft knee. Fix (placement-safe constants/mux only, no new multiply, built on the D146 pblock + D147 sag branch): `ampPowerKnee 0` JC 6.8M->8.2M, `ampPowerKnee 1` Twin 4.6M->6.8M (Models.hs), and a clean-mode-only per-model `ampCleanKneeBonus` (Twin 2.5M, others 0) folded into `ampAsymClip` pos/neg knees only when `drive == False` (Clip.hs). After the fix both JC-120 and Twin stay clean to ~0.25 FS. Surgical: the knees only engage above ~0.18 FS so normal levels are byte-identical -- **golden regression 20/20 with NO re-bless** (bypass still bit-exact, every model byte-identical at golden levels). `measure.py --check` 28/28; `dist_eval.py --check` 7/7 pedals + 6/6 clean amps (JC/Twin clean THD @0.12 still 0%, AC30/Rockerverb/JCM800/TriAmp byte-identical 13/23/23/15); `dynamics_eval.py --check` 4/5 (same pre-existing D141 `crunch_rig` slow-sag trade-off); `chord_eval.py --check-only` 2/6 = identical to D147 (JC -34.7 / Twin -33.6 pass, chord improvement preserved). Clash/VHDL/IP regen (new constants verified in the generated VHDL) + clean Vivado build pass: WNS `+0.526 ns`, TNS `0`, WHS `+0.014 ns`, THS `0`, WPWS `+2.845`, route errors `0` (59999 nets); D109 CDC pair MET (pblock self-check fwd `+1.632 ns` vs 6 ns window = arrival ~4.37 ns, slightly better than the bench-clean D147 ~4.6 ns; reverse `+2.972`); XDC max_delay canonical 10 ns; hard pblock intact `SLICE_X100Y116:SLICE_X113Y137`, 112 cells. bit/hwh md5 `972d9ba6645dd966e6bdcb5bc3daf478` / `2b888ff1ec3168cd64e1b679bbbc71be`. All four runtime bit copies md5-match; 15/15 Notebooks valid. One-load mode-2 smoke PASS: mode 2, `FRAME_COUNT +288366/3 s` (~96 kHz), sdout/bclk/lrclk alive, ADC HPF True, CLIP_COUNT 0 (input full-scale = engine health only). Board left in mode 3 mute. **Status: BENCH-ACCEPTED ("完璧"); `--no-ff` MERGED into `main` -- D148 is the new accepted / committed baseline, superseding D135.** It carries the D146 hard pblock + D147 sag slew + the D148 clean-headroom fix. `baselines.json` updated (D148 accepted-current, D135 accepted-superseded). Rollback to D135: `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` + deploy. Was branch `feature/d147-sag-attack`.
 
@@ -512,14 +512,15 @@ See `DECISIONS.md` D45 / D48 / D49 / D50.
   smart-attach via `download=False` when bit already loaded —
   protects the rgb2dvi PLL at the 800 MHz VCO lower edge from
   re-`download=True` knock-outs in the same Jupyter session).
-- **Latest PL timing baseline**: D135 overall WNS `+0.643 ns`, WHS
-  `+0.018 ns`, route errors `0`; bit/hwh md5
-  `533d586901dc3669285a49c6d82bab9f` /
-  `731517487c6218f0e181c2b74485d7a6`. The DSP island is 33.33 MHz and
+- **Latest PL timing baseline**: D148 overall WNS `+0.526 ns`, WHS
+  `+0.014 ns`, route errors `0`; bit/hwh md5
+  `972d9ba6645dd966e6bdcb5bc3daf478` /
+  `2b888ff1ec3168cd64e1b679bbbc71be`. The DSP island is 33.33 MHz and
   the rest of the fabric remains 100 MHz. Immediate accepted rollback is
-  D134 (`f62f132`, bit `58b6ee84...`). D144 was bench-rejected despite
-  timing closure, so safe-bypass ear-bench remains mandatory. See
-  `TIMING_AND_FPGA_NOTES.md`.
+  D135 (`765323b`, bit `533d5869...`). D136-D144 were bench-rejected despite
+  timing closure (re-triggered the safe-bypass CDC knife-edge); the D146 hard
+  pblock then made the crossing robust, so safe-bypass ear-bench remains
+  mandatory. See `TIMING_AND_FPGA_NOTES.md`.
 - **Encoder GUI live apply (Phase 7G+)**: `EncoderEffectApplier` is the
   only Python object allowed to translate the compact-v2 `AppState`
   into `AudioLabOverlay` calls from the encoder runtime. It uses
