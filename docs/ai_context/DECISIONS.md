@@ -6649,10 +6649,18 @@ pre-existing 3 failures + 1 error baseline.
   `FRAME_COUNT +288542/3 s`. Input was full-scale (`CLIP_COUNT +56`), so this
   proves engine health only. All-off/Wah-off, Twin Clean, and AC30 Clean
   listening windows were presented; every window returned to mode 3 mute.
-- **Acceptance status.** **Candidate only.** The user's buzz/chord verdict is
-  pending, D146's three-placement ear verdict is still unresolved, and four of
-  six offline chord ceilings still fail. Do not update `baselines.json` or call
-  D147 accepted. D135 remains the accepted baseline.
+- **Bench verdict / acceptance status.** **Partial fail; candidate only.** The
+  user reports that JC-120 and Fender/Twin Reverb audibly clip, while the other
+  Amp models sound good. This is not explained by the 0.15-FS offline check:
+  JC-120 is byte-unchanged/sag-exempt and measures clean, while Twin passes the
+  chord ceiling. The earlier board smoke input was full-scale, so the next
+  investigation must reproduce JC/Twin at controlled input levels and measure
+  where the level-dependent clipping begins before changing more voicing. Do
+  not attribute the JC symptom to sag without evidence. The user did not give a
+  separate all-off buzz verdict; D146's three-placement ear verdict is also
+  unresolved, and four of six offline chord ceilings still fail. Do not update
+  `baselines.json` or call D147 accepted. Board remains on D147 in mode 3 mute;
+  D135 remains the accepted baseline.
 
 ## D146 — Hard-pblock the placement-sensitive axis_switch_sink -> i2s_to_stream CDC (2026-06-19)
 

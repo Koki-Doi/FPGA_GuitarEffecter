@@ -31,8 +31,13 @@ It identified the power-sag beat-frequency AM in D141 and showed D144 near the
 bypass IMD floor offline, but D144 failed the hardware bench and was rolled back
 to D135. D147 re-tests only the sag-attack slew as an isolated candidate: Twin
 passes, but AC30 and the three high-gain clean modes remain above their ceilings,
-so it is a partial result rather than a complete chord fix. Any future chord fix
-still requires a new bitstream, safe-bypass ear-bench, and tonal bench acceptance.
+so it is a partial result rather than a complete chord fix. Its hardware bench
+also reports clipping on JC-120 and Fender/Twin Reverb even though JC is
+sag-exempt and Twin passes at the current 0.15-FS test level; the next sim work
+must therefore add a controlled input-level/clipping-onset sweep for those two
+models instead of treating the current ceiling as sufficient. Any future chord
+fix still requires a new bitstream, safe-bypass ear-bench, and tonal bench
+acceptance.
 
 ## Build (once, and after any DSP-source edit)
 

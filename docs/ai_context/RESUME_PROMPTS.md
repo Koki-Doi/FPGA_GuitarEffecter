@@ -5,7 +5,7 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-20, D147 sag-only candidate ear verdict pending)
+## Current status (2026-06-20, D147 bench partial fail: JC/Fender clipping)
 
 > **D135 remains the accepted committed baseline.** D147 is the current board
 > candidate on `feature/d147-sag-attack`, built on the unaccepted D146 hard
@@ -20,10 +20,15 @@ asking it to re-discover the project from scratch.
 > source/target primitives. bit/hwh md5 are `03bdbc2ffa6962e8d86135ed2f69e367`
 > / `969834614ef6d4e2551f16e983dc6ab3`. Exact-md5 deploy and smoke pass
 > (`FRAME_COUNT +288542/3 s`, ADC HPF True, `R19=0x23`); the board is mode 3
-> mute after all-off, Twin Clean, and AC30 Clean listening windows. Ask the
-> user for (1) all-off buzz/no-buzz, (2) Twin chord improvement, and (3) AC30
-> residual chord quality. D147 is not accepted and `baselines.json` is
-> unchanged. Read `CURRENT_STATE.md`, `DECISIONS.md` D147/D146/D145,
+> mute after all-off, Twin Clean, and AC30 Clean listening windows. **User bench
+> verdict: JC-120 and Fender/Twin Reverb audibly clip; the other Amp models
+> sound good.** The all-off buzz verdict was not separately reported. D147 is
+> not accepted and `baselines.json` is unchanged. JC-120 is sag-exempt and its
+> golden is unchanged, while Twin passes the 0.15-FS offline chord ceiling;
+> therefore do not blindly retune sag. First reproduce JC/Twin at controlled
+> input levels, compare their onset of clipping against D135, and localize the
+> responsible gain/headroom stage. Board is D147 in mode 3 mute. Read
+> `CURRENT_STATE.md`, `DECISIONS.md` D147/D146/D145,
 > `TIMING_AND_FPGA_NOTES.md`, and `tools/dsp_sim/README.md` before continuing.
 
 > **D135 remains the accepted committed baseline.** The accepted D135+D145
