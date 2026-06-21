@@ -6606,7 +6606,55 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D152 — chord HF "汚い/ブツブツ" = in-band IMD; cab headroom + cab-presence pull-back (CANDIDATE, built+deployed, PENDING BENCH) (2026-06-21)
+## D153 — JC-120 / Twin too hot (音割れ); restore cab peak-limit + JC/Twin level trim (CANDIDATE, built+deployed, board needs power-cycle, PENDING BENCH) (2026-06-21)
+
+- **Symptom.** Benching D152: JC-120 + Fender/Twin output too large -> 音割れ
+  (clipping). The D152 cab-headroom raise lifted `cabSpeakerKnee` (the cab's FINAL
+  output soft-clip), which had been incidentally PEAK-LIMITING the clean amps'
+  hot output; removing that limiting made JC/Twin ~+1.3 dB louder and peakier
+  (~0.59 -> ~0.70 FS) = 音割れ on the board's analog path. (dsp_sim: no digital
+  +/-FS clip, so it is the hot level into the DAC/analog stage, not a wrap.)
+- **Insight (sim).** The `cabSpeakerKnee` does BOTH jobs at once: it limits the
+  peak (good) AND, when a chord clips it, generates chord IMD (the D152 fix was
+  partly from raising it). So it cannot simply be restored (chord dirt returns)
+  nor kept high (音割れ). Decouple: keep the knee LOW (peak-limited) but feed it a
+  SMALLER signal so a chord no longer drives it into clipping.
+- **Fix (placement-safe; Cab.hs + Tone.hs constant/shift-only, no new structure).**
+  1. `Cab.hs cabSpeakerKnee` restored to the D151 values (5.6/4.0/2.8M) -- the cab
+     peak limiter is back, so the output ceiling returns to the safe D151 level.
+  2. KEEP the D152 EARLY-stage cab headroom (`cabBodyResKnee` 3.0/2.3/1.8M,
+     `cabPresenceKnee` 4.6/4.0/3.3M) and the D152 presence-peak pull-back
+     (+4.5/5.0/5.5 dB) -- the chord-IMD cleanup is generated there.
+  3. `Tone.hs ampMasterFrame`: trim ONLY JC-120 / Twin master ~-1.3 dB (x0.86,
+     shift-only). This lowers the signal feeding the cab's final soft-clip, so a
+     chord hits it less = the D152 chord cleanup is retained WITHOUT the high knee
+     that caused the hot output; and it directly brings JC/Twin loudness back to /
+     just under D151. Every other model byte-identical (trim = 0).
+- **Result (sim).** JC/Twin peak back to <= D151 (JC in 0.4 note 0.730 (D152) ->
+  0.612 (~D151 0.646); 音割れ fixed, even a touch quieter as the user wanted).
+  Chord HF retained near D152 (JC full-chord @0.4 -32.0 vs D152 -32.6, D151
+  -28.0). `measure --check` 28/28 (NO retarget). `dist_eval --check` 7/7 + 6/6
+  (JC/Twin clean THD still clean at the lower level). Regression: only `amp_jc120`
+  + `amp_twin` goldens changed (the trim; re-blessed); the `cab` golden is
+  unchanged (the cabSpeakerKnee restore + early-knee raises are below the 0.04-FS
+  golden test level, and the presence biquad = the D152 value already blessed);
+  bypass bit-exact.
+- **Build.** WNS `+0.561` / WHS `+0.020`, route 0 failed; D109 CDC pair fwd
+  `+2.059` / rev `+6.378` (MET); D146 pblock intact (112 cells); DSP `183/220`.
+  bit md5 `5c0086b0ab95552de48f4ce381bb940c`, hwh `5a373a38c51efd85c87a14a457fe065f`.
+- **Deploy.** Synced (board copies md5-match `5c0086b0` before the smoke).
+  **The post-deploy mode-2 smoke's `AudioLabOverlay(download=True)` hung and the
+  board went unreachable -- the known repeated-download hazard
+  (`feedback_deploy_smoke_avoid_repeated_download`), NOT a D153 fault. The board
+  needs a COLD POWER-CYCLE; then run a notebook cell once to load D153.**
+- **Status.** CANDIDATE on branch `feature/d153-jc-twin-level`; `main` stays at
+  the accepted D151. Supersedes the D152 candidate (D152's chord fix is folded in;
+  D152 alone was too hot). **PENDING USER EAR-BENCH after a board power-cycle** --
+  (a) JC/Twin no longer 音割れ / not too loud, (b) chords still clean (D152
+  benefit), (c) brightness OK. If accepted, merge + `baselines.json`. If rejected,
+  redeploy D151: `git checkout 238ec53 -- hw/Pynq-Z2/bitstreams/`.
+
+## D152 — chord HF "汚い/ブツブツ" = in-band IMD; cab headroom + cab-presence pull-back (CANDIDATE, superseded by D153 -- was too hot/音割れ) (2026-06-21)
 
 - **Symptom.** User: JC-120 + Fender/Twin chord high-end is "汚い" (long-standing),
   and on ALL amps a large chord makes the top "ややブツブツ" (slight crackle).

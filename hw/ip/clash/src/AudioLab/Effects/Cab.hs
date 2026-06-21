@@ -15,10 +15,17 @@ import AudioLab.Types
 -- and generate less IMD; this cleans the clean amps' rig top ~+6 dB. softClipK =
 -- compare + shift, so this is constant-only (no new DSP). Pairs with the D152
 -- cab-presence pull-back below.
+-- D153: the cabSpeakerKnee is the FINAL output soft-clip = the cab's peak
+-- LIMITER. D152 raised it (for chord headroom) but that removed the peak
+-- limiting, so the clean amps came out too hot = 音割れ on the board. Restore it
+-- to the D151 values (peak ceiling back) -- the chord-IMD headroom is kept on the
+-- EARLY cab stages (cabBodyResKnee / cabPresenceKnee, still raised below) where
+-- the IMD is actually generated, so the chord stays clean while the output level
+-- returns to the safe D151 ceiling.
 cabSpeakerKnee :: Unsigned 2 -> Sample
-cabSpeakerKnee 0 = 6_500_000   -- D152: 5.6M -> 6.5M
-cabSpeakerKnee 1 = 5_200_000   -- D152: 4.0M -> 5.2M
-cabSpeakerKnee _ = 3_900_000   -- D152: 2.8M -> 3.9M
+cabSpeakerKnee 0 = 5_600_000   -- D153: back to D151 (D152 was 6.5M)
+cabSpeakerKnee 1 = 4_000_000   -- D153: back to D151 (D152 was 5.2M)
+cabSpeakerKnee _ = 2_800_000   -- D153: back to D151 (D152 was 3.9M)
 
 cabBodyResKnee :: Unsigned 2 -> Sample
 cabBodyResKnee 0 = 3_000_000   -- D152: 2.4M -> 3.0M

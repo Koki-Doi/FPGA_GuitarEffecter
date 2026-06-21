@@ -281,7 +281,19 @@ ampMasterFrame env f =
     _ -> sagRaw0
   sagCap = level `shiftR` 1
   sagByte = if idx == 0 then 0 else min sagRaw sagCap
-  effLevel = level - sagByte
+  effLevel0 = level - sagByte
+  -- D153: JC-120 / Twin (the clean, hottest models) were too loud = 音割れ on the
+  -- board. Trim ONLY their master ~-1.3 dB (x0.86, shift-only). Together with the
+  -- restored D151 cabSpeakerKnee (the peak limiter) this brings their output back
+  -- to / just under the safe D151 ceiling, AND -- because the trim lowers the
+  -- signal feeding the cab's final soft-clip -- the chord hits that clip less, so
+  -- the D152 chord-IMD cleanup is retained without the high speaker knee that
+  -- caused the hot output. Every other model byte-identical (trim = 0).
+  levelTrim = case idx of
+    0 -> (effLevel0 `shiftR` 3) + (effLevel0 `shiftR` 6)   -- JC-120 : ~-1.3 dB
+    1 -> (effLevel0 `shiftR` 3) + (effLevel0 `shiftR` 6)   -- Twin   : ~-1.3 dB
+    _ -> 0
+  effLevel = effLevel0 - levelTrim
   out = softClipK (ampPowerKnee 3_300_000 idx) (satShift7 (mulU8 (monoWet f) effLevel))
 
 -- ---- Output-transformer emulation (D94, DIGITAL_SOUND_REDUCTION.md #9) --
