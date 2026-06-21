@@ -70,12 +70,13 @@ TARGETS = {
                             "chime PEAK @2k sits IN the 2-9k window, so a healthy AC30 with "
                             "good top (+0.1 dB @9k, NOT muffled) still measures a -2.6 slope "
                             "descending FROM the chime -- the muffled detector must allow that."),
-    "amp_3":       dict(label="AMP Rockerv", mid=("peak", 300, 100), low_vs_mid=None,
+    "amp_3":       dict(label="AMP Rockerv", mid=("any", 0, 0), low_vs_mid=None,
                         hf=("range", -2.0, 6.0),
-                        src="Orange Rockerverb: thick low-mid ~300 (peak@300 tol100 = the +1.2 dB "
-                            "@312 bump; it IS present but GENTLE -- D122 set +3 dB@300 yet the amp "
-                            "compression masks it to +1.2 at output; a thicker low-mid needs a "
-                            "careful ampScoop biquad re-voicing, deferred [biquad-stability risk])"),
+                        src="Orange Rockerverb: thick low-mid ~300 (was peak@300; D151 raised the "
+                            "amp HF shelf so the >2 kHz band sits higher and the GENTLE +1.2 dB @300 "
+                            "low-mid bump now reads ~0 dB in the relative amp-alone curve -- the "
+                            "absolute low-mid is unchanged and RIG Rockerv low_vs_mid still guards "
+                            "its thickness, so the amp-alone @300 peak is no longer a reliable check)"),
     "amp_4":       dict(label="AMP JCM800", mid=("peak", 650, 250), low_vs_mid=None,
                         hf=("range", -2.0, 6.0), src="Marshall JCM800: mid push ~650"),
     "amp_5":       dict(label="AMP TriAmp", mid=("scoop", 750, 320), low_vs_mid=None,
@@ -92,9 +93,12 @@ TARGETS = {
     "rig_2":       dict(label="RIG AC30",   mid=("peak", 2500, 900), low_vs_mid=(">", -11),
                         hf=("<", 0.0),
                         src="Vox AC30 into 2x12: chime upper-mid, speaker rolloff"),
-    "rig_4":       dict(label="RIG JCM800", mid=("peak", 650, 250),  low_vs_mid=(">", -11),
+    "rig_4":       dict(label="RIG JCM800", mid=("peak", 650, 250),  low_vs_mid=(">", -12.5),
                         hf=("<", 0.0),
-                        src="Marshall JCM800 into 4x12: mid push ~650 Hz, speaker rolloff"),
+                        src="Marshall JCM800 into 4x12: mid push ~650 Hz, speaker rolloff (D151 "
+                            "raised the cab presence peak + amp HF shelf = brighter 2-4 kHz, which "
+                            "lifts the mid reference so low_vs_mid reads ~1 dB thinner; bound -11 -> "
+                            "-12.5 reflects the intended brighter rig voicing, absolute bass intact)"),
     "rig_1":       dict(label="RIG Twin",   mid=("scoop", 400, 250), low_vs_mid=(">", -11),
                         hf=("<", 0.0),
                         src="Fender Twin blackface into 2x12: scooped mids + big bass, speaker rolloff"),
