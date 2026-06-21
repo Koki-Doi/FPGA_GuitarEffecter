@@ -6606,6 +6606,64 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D152 — chord HF "汚い/ブツブツ" = in-band IMD; cab headroom + cab-presence pull-back (CANDIDATE, built+deployed, PENDING BENCH) (2026-06-21)
+
+- **Symptom.** User: JC-120 + Fender/Twin chord high-end is "汚い" (long-standing),
+  and on ALL amps a large chord makes the top "ややブツブツ" (slight crackle).
+- **Root cause -- NOT aliasing, NOT overflow.** dsp_sim: the HF (2-8 kHz)
+  inharmonic energy grows with input level on every amp (JC -105 dB @0.2 ->
+  -38 @0.4 -> -30 @0.8). Overflow ruled out (zero +/-FS pile-up, max sample jump
+  <0.07). A numpy 1x-vs-4x oversampling test (`/tmp/amp_os_test.py`) showed
+  **oversampling does NOTHING** (delta +0.0 even for a high chord + hard clip) --
+  so it is **in-band intermodulation** (the chord partials' sum/difference
+  products f_i+/-f_j land in 2-8 kHz, all below Nyquist), exactly the D150 OD/DS
+  class, NOT folded alias. Therefore the user-requested 4x oversampling of the amp
+  clip would have been a large/risky rebuild for ZERO benefit (pre-checked in
+  numpy before building -- the key save).
+- **Why it got more audible.** It is physics (distorting a chord always makes
+  in-band IMD), but the D151 brightening (cab presence +3 dB + the amp HF shelf,
+  both in 2-8 kHz) AMPLIFIED the pre-existing IMD = the new "全アンプ大入力でブツブツ".
+  Inherent tradeoff: brighter top <-> more audible chord IMD.
+- **Levers tried that FAILED (sim).** (a) Strengthening the anti-alias pre/de
+  emphasis (`ampEmphAmount` 1->0, enable for JC) made it WORSE (the de stage
+  re-amplifies the post-clip garbage). (b) Raising the clean-amp waveshaper knees
+  (JC `ampJc120CleanKnee`, Twin `ampCleanKneeBonus`) did nothing for JC (its IMD
+  is generated downstream, not at the waveshaper) and overflowed Twin (knee > 2^23).
+  Both reverted.
+- **Fix (user-chosen: cab headroom + cab-presence pull-back; placement-safe,
+  constant/coeff-only, NO new DSP, Cab.hs only).**
+  1. Raise the cab saturation HEADROOM (moderate): `cabSpeakerKnee`
+     5.6/4.0/2.8M -> 6.5/5.2/3.9M, `cabBodyResKnee` 2.4/1.6/1.2M -> 3.0/2.3/1.8M,
+     `cabPresenceKnee` 3.6/3.0/2.4M -> 4.6/4.0/3.3M (open/british/closed). The cab
+     clips large chords less -> less cab-stage IMD (cleans the clean amps' rig top
+     ~+4-5 dB; gain amps' chord dirt is amp-side and partly intended, so ~unchanged).
+  2. Pull the D151 cab presence-peak biquad back +6.0/+6.5/+7.0 -> +4.5/+5.0/+5.5
+     dB (it sat right in the 2-4 kHz where the IMD is densest = amplifying it);
+     still +1.5 dB over the pre-D151 baseline, so most of the D151 brightness is
+     kept. f0/Q unchanged, D149 rolloff FIR untouched.
+- **Result (sim).** Rig chord HF (full chord): clean amps cleaner (JC 0.4
+  -28.0 -> -32.6, Twin improved) while rig brightness is mostly kept (JC 2-4 kHz
+  -3.9 vs D151 -3.4, D150 -5.2). `measure --check` 28/28 (NO retarget needed --
+  CAB Brit peak +2.9 dB still passes, RIG JCM800 low_vs_mid -11.6 passes the
+  D151 -12.5 bound). `dist_eval --check` 7/7 + 6/6 (amp/pedals untouched).
+  Regression: ONLY the `cab` golden changed (re-blessed); bypass bit-exact; every
+  amp + OD/DIST byte-identical.
+- **Build.** WNS `+0.506` / WHS `+0.014`, route 0 failed; D109 CDC pair fwd
+  `+5.337` / rev `+6.964` (MET, the SAFEST margin of the D149-D152 arc); D146
+  pblock intact (112 cells); DSP `181/220`. bit md5
+  `f2f77b4556c0410c08bf4972783fa279`, hwh `094ce7425fa6cc2c8523c210a9941753`.
+- **Deploy + PL smoke.** 3 board copies md5-match; mode-2 ADC->DSP->DAC
+  `FRAME_COUNT +288365/3 s` (~96 kHz) PASS. Board in mode 3 mute.
+- **Status.** CANDIDATE on branch `feature/d152-chord-hf-imd`; `main` stays at the
+  accepted D151. **PENDING USER EAR-BENCH** -- (a) JC/Twin chords cleaner on top,
+  (b) large-chord ブツブツ reduced, (c) amps still acceptably bright, (d) all-off
+  bypass clean. If accepted, merge + update `baselines.json`. If rejected,
+  redeploy D151: `git checkout 238ec53 -- hw/Pynq-Z2/bitstreams/`.
+- **Note for the future.** A fuller chord-IMD reduction across the GAIN amps is
+  NOT an oversampling problem (proven). It would need either more amp-stage
+  headroom (trades loudness/character) or multiband distortion (big change). The
+  brightness<->chord-cleanliness tradeoff is fundamental to a clipping amp.
+
 ## D151 — amp HF brighten: post-amp HF shelf + raised cab presence peak; bench-ACCEPTED, current baseline (`238ec53`, bit `9f9e71a2`) (2026-06-21)
 
 - **Symptom.** User: "amp の高音成分が足りない" (rig use, cab ON).

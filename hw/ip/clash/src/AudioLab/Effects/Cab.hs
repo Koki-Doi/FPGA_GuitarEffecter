@@ -8,20 +8,27 @@ import AudioLab.Control
 import AudioLab.FixedPoint
 import AudioLab.Types
 
+-- D152 (chord HF "汚い/ブツブツ" fix): the dirty chord top is in-band
+-- intermodulation from the cab's saturation/cone nonlinearity clipping large
+-- chords (oversampling proven useless -- it is NOT aliasing). Raise the cab
+-- saturation HEADROOM (moderate) so moderate-large chords stay below the knees
+-- and generate less IMD; this cleans the clean amps' rig top ~+6 dB. softClipK =
+-- compare + shift, so this is constant-only (no new DSP). Pairs with the D152
+-- cab-presence pull-back below.
 cabSpeakerKnee :: Unsigned 2 -> Sample
-cabSpeakerKnee 0 = 5_600_000
-cabSpeakerKnee 1 = 4_000_000
-cabSpeakerKnee _ = 2_800_000
+cabSpeakerKnee 0 = 6_500_000   -- D152: 5.6M -> 6.5M
+cabSpeakerKnee 1 = 5_200_000   -- D152: 4.0M -> 5.2M
+cabSpeakerKnee _ = 3_900_000   -- D152: 2.8M -> 3.9M
 
 cabBodyResKnee :: Unsigned 2 -> Sample
-cabBodyResKnee 0 = 2_400_000
-cabBodyResKnee 1 = 1_600_000
-cabBodyResKnee _ = 1_200_000
+cabBodyResKnee 0 = 3_000_000   -- D152: 2.4M -> 3.0M
+cabBodyResKnee 1 = 2_300_000   -- D152: 1.6M -> 2.3M
+cabBodyResKnee _ = 1_800_000   -- D152: 1.2M -> 1.8M
 
 cabPresenceKnee :: Unsigned 2 -> Sample
-cabPresenceKnee 0 = 3_600_000
-cabPresenceKnee 1 = 3_000_000
-cabPresenceKnee _ = 2_400_000
+cabPresenceKnee 0 = 4_600_000   -- D152: 3.6M -> 4.6M
+cabPresenceKnee 1 = 4_000_000   -- D152: 3.0M -> 4.0M
+cabPresenceKnee _ = 3_300_000   -- D152: 2.4M -> 3.3M
 
 cabAirSel :: Unsigned 8 -> Unsigned 2
 cabAirSel air = if air < 86 then 0 else if air < 171 then 1 else 2
@@ -294,30 +301,30 @@ cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 -- to give the three cabs distinct presence identities. The step-4 measurement
 -- (REALISM_CAB_MEASUREMENT.md) showed all three peaked at the SAME 2806 Hz
 -- (shared coeffs) -- no model separation. RBJ peaking, 96 kHz, Q14:
---   open 1x12   3400 Hz, Q 0.8, +6.0 dB  (brighter / airier, higher center)
---   british 2x12 2800 Hz, Q 1.0, +6.5 dB (mid-forward identity)
---   closed 4x12 2300 Hz, Q 1.2, +7.0 dB  (lower / thicker presence honk)
+--   open 1x12   3400 Hz, Q 0.8, +4.5 dB  (brighter / airier, higher center)
+--   british 2x12 2800 Hz, Q 1.0, +5.0 dB (mid-forward identity)
+--   closed 4x12 2300 Hz, Q 1.2, +5.5 dB  (lower / thicker presence honk)
 -- b1 == a1 for RBJ peaking, so na1 = -b1; only b0/b1/b2 + a2 differ per model.
--- D151 (user: "amp の高音成分が足りない", rig use): the presence peak gains were
--- raised +3.0/+3.5/+4.0 -> +6.0/+6.5/+7.0 dB. The amp-side TREBLE/PRESENCE bands
--- (and a new amp HF shelf) move a RIG's 2-4 kHz <1 dB because the cab dominates
--- the rig's surviving top; THIS biquad is the post-FIR last cab shaping, so its
--- 2-4 kHz peak passes straight to the rig output = the effective rig-brightness
--- lever. f0/Q unchanged; the D149 >5 kHz rolloff FIR is untouched. Coeffs from
--- the RBJ peaking formula (verified to reproduce the old gains exactly).
+-- D151 raised these +3.0/+3.5/+4.0 -> +6.0/+6.5/+7.0 dB for rig brightness ("amp の
+-- 高音成分が足りない"). D152 PULLS BACK to +4.5/+5.0/+5.5 dB: the D151 peak sat right
+-- in the 2-4 kHz where a distorted chord's in-band intermod is densest, so it
+-- amplified the chord IMD = the "和音の高音が汚い / 大入力でブツブツ". Pulling it back
+-- ~1.5 dB cuts that IMD amplification while keeping most of D151's brightness
+-- (still +1.5 dB over the pre-D151 baseline). f0/Q unchanged; D149 rolloff FIR
+-- untouched. Coeffs from the RBJ peaking formula.
 cabPresenceFFCoeff :: Unsigned 8 -> (Signed 16, Signed 16, Signed 16)
 cabPresenceFFCoeff model = case model `shiftR` 6 of
-  0 -> (17835, -29117, 12018)
-  1 -> (17460, -30319, 13375)
-  _ -> (17198, -31099, 14257)
+  0 -> (17454, -28885, 12161)
+  1 -> (17200, -30159, 13473)
+  _ -> (17014, -30987, 14327)
 
 cabPresenceFBCoeff :: Unsigned 8 -> (Signed 16, Signed 16)
 cabPresenceFBCoeff model = case model `shiftR` 6 of
-  0 -> (29117, 13469)
-  1 -> (30319, 14451)
-  _ -> (31099, 15070)
--- NB: raising these gains (D151) is what actually brightens the RIG; the amp-side
--- HF shelf / TREBLE / PRESENCE move a rig's 2-4 kHz <1 dB (the cab dominates).
+  0 -> (28885, 13231)
+  1 -> (30159, 14288)
+  _ -> (30987, 14957)
+-- NB: the cab presence peak + the cab sat headroom (above) are the rig levers;
+-- the amp-side HF shelf / TREBLE / PRESENCE move a rig's 2-4 kHz <1 dB.
 
 cabPresenceFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 cabPresenceFeedforwardFrame x1 x2 f =
