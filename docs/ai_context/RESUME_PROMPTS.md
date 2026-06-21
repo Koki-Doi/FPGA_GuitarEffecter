@@ -5,6 +5,54 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## Current status (2026-06-21, D153 JC/Twin 音割れ fix — built+deployed, board needs power-cycle, PENDING BENCH)
+
+> **D151 remains the accepted committed baseline on `main`** (bit `9f9e71a2`).
+> **D153 is a built+deployed CANDIDATE on branch `feature/d153-jc-twin-level`,
+> superseding the D152 candidate; PENDING BENCH after a board COLD POWER-CYCLE.**
+> Benching D152, JC/Twin were too loud -> 音割れ: D152's `cabSpeakerKnee` raise
+> removed the cab final soft-clip's incidental peak-limiting (+1.3 dB). That knee
+> also generates chord IMD when clipped (part of the D152 fix), so it can't just
+> be restored. D153 decouples: (1) restore `cabSpeakerKnee` to D151 (peak limiter
+> back); (2) keep the D152 early-stage cab headroom (body/presence knees) +
+> presence pull-back (where the chord IMD is generated); (3) trim JC/Twin master
+> ~-1.3 dB (shift-only) so the cab final clip is fed less = chord stays clean +
+> output back to <= D151. JC/Twin peak <= D151 (音割れ fixed), chord HF kept (JC
+> @0.4 -32.0 vs D152 -32.6). measure 28/28, dist_eval 7/7+6/6, regression = only
+> amp_jc120+amp_twin goldens (re-blessed), bypass bit-exact. Build MET WNS
+> `+0.561`, D109 CDC fwd `+2.059`, pblock 112, DSP 183. bit/hwh `5c0086b0…` /
+> `5a373a38…`. Deployed (md5-match). **The smoke's download=True hung the board
+> (known hazard) -> COLD POWER-CYCLE the PYNQ, run a notebook cell once to load
+> D153, THEN ear-bench.** If 合格 -> merge `feature/d153-jc-twin-level` to `main`
+> + `baselines.json` (D153 accepted-current, D151 accepted-superseded). If
+> rejected -> redeploy D151 (`git checkout 238ec53 -- hw/Pynq-Z2/bitstreams/`).
+> Read `CURRENT_STATE.md` + `DECISIONS.md` D153/D152 before continuing.
+
+## Current status (2026-06-21, D152 chord-HF/IMD fix — CANDIDATE superseded by D153)
+
+> **D151 remains the accepted committed baseline on `main`** (amp HF brighten,
+> bit `9f9e71a2`). **D152 is a built+deployed CANDIDATE on branch
+> `feature/d152-chord-hf-imd`, pending bench.** User: JC/Twin chord top "汚い" +
+> all amps large-chord top "ブツブツ". **CONFIRMED (numpy 1x-vs-4x): this is
+> in-band IMD (chord sum/diff products in 2-8 kHz, <Nyquist), NOT aliasing -- 4x
+> oversampling does NOTHING (the user's first choice would have been a big rebuild
+> for zero gain; pre-checked in numpy before building).** D151's brightening
+> amplified the pre-existing IMD. Fix (user-chosen, Cab.hs constant/coeff-only,
+> no new DSP): (1) raise cab sat headroom (speaker/body/presence knees ~+1.5M);
+> (2) pull the D151 cab presence-peak back +6.0/6.5/7.0->+4.5/5.0/5.5 dB (keeps
+> most brightness). Clean amps' rig chord HF ~+4-5 dB cleaner, brightness mostly
+> kept; gain amps ~unchanged (amp-side, partly intended). `measure --check` 28/28
+> (no retarget), `dist_eval --check` 7/7+6/6, regression = only `cab` golden
+> changed (re-blessed), bypass bit-exact. Build MET WNS `+0.506`; D109 CDC pair
+> fwd `+5.337` (safest of the arc); pblock 112; DSP 181. bit/hwh `f2f77b45…` /
+> `094ce742…`. Deployed (3 copies md5-match), mode-2 smoke PASS, board mute.
+> **NEXT: user ear-bench.** If 合格 -> merge `feature/d152-chord-hf-imd` to `main`
+> + update `baselines.json` (D152 accepted-current, D151 accepted-superseded). If
+> rejected -> redeploy D151 (`git checkout 238ec53 -- hw/Pynq-Z2/bitstreams/`).
+> Future chord-IMD work on the GAIN amps is NOT oversampling (proven) -- it needs
+> amp headroom (trades loudness) or multiband distortion (big). Read
+> `CURRENT_STATE.md` + `DECISIONS.md` D152 before continuing.
+
 ## Current status (2026-06-21, D151 amp HF brighten — BENCH-ACCEPTED, merged to main; D152 next)
 
 > **D151 is the new accepted committed baseline on `main`** (merge `238ec53`,
