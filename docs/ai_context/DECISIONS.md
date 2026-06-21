@@ -6606,7 +6606,7 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D153 — JC-120 / Twin too hot (音割れ); restore cab peak-limit + JC/Twin level trim (CANDIDATE, built+deployed, board needs power-cycle, PENDING BENCH) (2026-06-21)
+## D153 — JC-120 / Twin too hot (音割れ); restore cab peak-limit + JC/Twin level trim; bench-ACCEPTED, current baseline (`b86c88a`, bit `5c0086b0`) (2026-06-21)
 
 - **Symptom.** Benching D152: JC-120 + Fender/Twin output too large -> 音割れ
   (clipping). The D152 cab-headroom raise lifted `cabSpeakerKnee` (the cab's FINAL
@@ -6647,12 +6647,14 @@ pre-existing 3 failures + 1 error baseline.
   board went unreachable -- the known repeated-download hazard
   (`feedback_deploy_smoke_avoid_repeated_download`), NOT a D153 fault. The board
   needs a COLD POWER-CYCLE; then run a notebook cell once to load D153.**
-- **Status.** CANDIDATE on branch `feature/d153-jc-twin-level`; `main` stays at
-  the accepted D151. Supersedes the D152 candidate (D152's chord fix is folded in;
-  D152 alone was too hot). **PENDING USER EAR-BENCH after a board power-cycle** --
-  (a) JC/Twin no longer 音割れ / not too loud, (b) chords still clean (D152
-  benefit), (c) brightness OK. If accepted, merge + `baselines.json`. If rejected,
-  redeploy D151: `git checkout 238ec53 -- hw/Pynq-Z2/bitstreams/`.
+- **Status.** **User bench: 合格.** `--no-ff` merged into `main` (merge
+  `b86c88a`); D153 supersedes D151 and carries the D152 chord-IMD cleanup.
+  `baselines.json` updated (D153 accepted-current, D151 accepted-superseded).
+  Note: the post-deploy board hang (download hazard) + cold power-cycle left all
+  15 board notebooks + some bit copies 0-byte (unclean-poweroff data loss); a
+  re-deploy (no download) restored all 15 notebooks VALID and all bit copies to
+  md5 `5c0086b0`.
+- **Rollback.** `git checkout 238ec53 -- hw/Pynq-Z2/bitstreams/` + redeploy (D151).
 
 ## D152 — chord HF "汚い/ブツブツ" = in-band IMD; cab headroom + cab-presence pull-back (CANDIDATE, superseded by D153 -- was too hot/音割れ) (2026-06-21)
 

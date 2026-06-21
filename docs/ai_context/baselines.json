@@ -2,7 +2,7 @@
  "_comment": "Single source of truth for committed deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). current_deployed is a historical field name; it marks the current accepted committed baseline, not an uncommitted live-board candidate. Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
  "bit_path": "hw/Pynq-Z2/bitstreams/audio_lab.bit",
  "hwh_path": "hw/Pynq-Z2/bitstreams/audio_lab.hwh",
- "current_deployed": "238ec53",
+ "current_deployed": "b86c88a",
  "baselines": [
   {
    "decision": "D90",
@@ -266,9 +266,16 @@
   {
    "decision": "D151",
    "commit": "238ec53",
-   "status": "accepted-current",
+   "status": "accepted-superseded",
    "date": "2026-06-21",
    "note": "amp HF brighten (rig use): post-amp shift-only HF shelf (ampHfShelfFrame, amp-on, skips JC-120) + per-model cab presence-peak biquad +3.0/3.5/4.0->6.0/6.5/7.0 dB (D149 >5kHz rolloff FIR untouched, the effective rig lever); placement-safe no new DSP, bypass bit-exact (only 5 tube-amp + cab goldens changed); rig 2-4kHz +2-3 dB"
+  },
+  {
+   "decision": "D153",
+   "commit": "b86c88a",
+   "status": "accepted-current",
+   "date": "2026-06-21",
+   "note": "JC-120/Twin \u97f3\u5272\u308c fix (D152 cab-headroom made the clean amps too hot): restore cabSpeakerKnee to D151 (peak limiter) + keep D152 early-stage cab headroom (body/presence knees) + presence-peak pull-back (+4.5/5.0/5.5 dB) + trim JC/Twin master ~-1.3 dB (ampMasterFrame, shift-only). Carries the D152 chord-IMD cleanup. Placement-safe constant/shift-only, no new DSP; bypass bit-exact (only amp_jc120+amp_twin goldens changed)"
   }
  ]
 }
