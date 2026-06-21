@@ -2,7 +2,7 @@
  "_comment": "Single source of truth for committed deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). current_deployed is a historical field name; it marks the current accepted committed baseline, not an uncommitted live-board candidate. Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
  "bit_path": "hw/Pynq-Z2/bitstreams/audio_lab.bit",
  "hwh_path": "hw/Pynq-Z2/bitstreams/audio_lab.hwh",
- "current_deployed": "112ae9a",
+ "current_deployed": "238ec53",
  "baselines": [
   {
    "decision": "D90",
@@ -259,9 +259,16 @@
   {
    "decision": "D150",
    "commit": "112ae9a",
-   "status": "accepted-current",
+   "status": "accepted-superseded",
    "date": "2026-06-21",
    "note": "OD/DS symmetric-clip chord-IMD fix: symmetrise gainy OD models (OD-1/BD-2/OCD/Klon) + DS-1 clip slope (new FixedPoint.symSoftClipMed; odClipHardness 4/OCD->3; odKneeN raised; DS-1->symSoftClipMed knee 2.15M) to remove even-order chord IMD; placement-safe, no os4x, bypass bit-exact (only od_ocd+distortion_ds1 goldens changed)"
+  },
+  {
+   "decision": "D151",
+   "commit": "238ec53",
+   "status": "accepted-current",
+   "date": "2026-06-21",
+   "note": "amp HF brighten (rig use): post-amp shift-only HF shelf (ampHfShelfFrame, amp-on, skips JC-120) + per-model cab presence-peak biquad +3.0/3.5/4.0->6.0/6.5/7.0 dB (D149 >5kHz rolloff FIR untouched, the effective rig lever); placement-safe no new DSP, bypass bit-exact (only 5 tube-amp + cab goldens changed); rig 2-4kHz +2-3 dB"
   }
  ]
 }

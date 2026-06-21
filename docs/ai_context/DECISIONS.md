@@ -6606,7 +6606,7 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D151 — amp HF brighten: post-amp HF shelf + raised cab presence peak (CANDIDATE, built+deployed, PENDING BENCH) (2026-06-21)
+## D151 — amp HF brighten: post-amp HF shelf + raised cab presence peak; bench-ACCEPTED, current baseline (`238ec53`, bit `9f9e71a2`) (2026-06-21)
 
 - **Symptom.** User: "amp の高音成分が足りない" (rig use, cab ON).
 - **Sim findings.** measure --check already PASSed all amp/rig/cab HF targets (the
@@ -6648,11 +6648,13 @@ pre-existing 3 failures + 1 error baseline.
   `9f9e71a2b47012dedea7c93b75f844fc`, hwh `70c4e3f85c3888656a55017e5d620532`.
 - **Deploy + PL smoke.** 3 board copies md5-match `9f9e71a2`; mode-2 ADC->DSP->DAC
   `FRAME_COUNT +288333/3 s` (~96 kHz) PASS. Board left in mode 3 mute.
-- **Status.** CANDIDATE on branch `feature/d151-amp-hf-brighten`; `main` stays at
-  the accepted D150. **PENDING USER EAR-BENCH** -- listen for (a) brighter amps in
-  the rig and (b) all-off bypass still clean. If accepted, merge to `main` +
-  update `baselines.json`. If rejected, redeploy D150:
-  `git checkout 112ae9a -- hw/Pynq-Z2/bitstreams/`.
+- **Status.** **User bench: "合格".** `--no-ff` merged into `main` (merge
+  `238ec53`); D151 supersedes D150. `baselines.json` updated (D151
+  accepted-current, D150 accepted-superseded). The fwd-slack margin (+1.697,
+  safer than D150) held -- bypass clean.
+- **Known follow-up (D152).** User reports a long-standing separate issue: JC-120
+  and Fender/Twin CHORD high-end is "汚い" (dirty/harsh). Investigate next.
+- **Rollback.** `git checkout 112ae9a -- hw/Pynq-Z2/bitstreams/` + redeploy (D150).
 
 ## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1; bench-ACCEPTED, current baseline (`112ae9a`, bit `29f5fe01`) (2026-06-21)
 
