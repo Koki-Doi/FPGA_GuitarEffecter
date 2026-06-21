@@ -5,6 +5,31 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## Current status (2026-06-21, overnight ABC: A merged; B no-fix; C/D155 built-not-deployed)
+
+> **Accepted baseline on `main` AND on the board = D153** (bit `5c0086b0`). The
+> overnight "ABC" batch:
+> - **A (done, on `main` `98a4c93`)**: `deploy_to_pynq.sh` now md5-verifies every
+>   board bit/hwh copy vs the repo with NO overlay download (catches the D153
+>   0-byte corruption class), and the printed smoke is no-download by default with
+>   a download-hazard warning. Tooling only.
+> - **B/D154 (investigated, NOT shipped)**: reducing gain-amp chord IMD has no
+>   safe blind lever -- drive-darken = zero rig effect (regenerated downstream);
+>   the only effective levers (gain/level cut) change character/loudness + undo
+>   D151 brightness; the real fix is multiband distortion (big). Deferred for
+>   ear-in-loop.
+> - **C/D155 (BUILT + COMMITTED on `feature/overnight-d154-d155`, NOT deployed)**:
+>   cab speaker FIR 31->47 taps (low-risk Option-Y folded extension, NOT the
+>   high-risk 128-tap BRAM B2). measure 28/28, only cab golden changed, bypass
+>   bit-exact. Build WNS `+0.319`, **D109 CDC fwd `+0.989` = LOWEST of the arc =
+>   elevated buzz risk**, pblock 112, DSP 206/220. bit `8d875cc8`. Left UNDEPLOYED
+>   (board stays D153) because of the CDC flag + marginal/darker benefit + the
+>   unattended download hazard. **To bench C: `git checkout <D155 commit> --
+>   hw/Pynq-Z2/bitstreams/ && bash scripts/deploy_to_pynq.sh`, load once, then
+>   ear-bench all-off bypass for buzz + judge the darker cab top; if bad stay on
+>   D153 (`git checkout b86c88a -- hw/Pynq-Z2/bitstreams/`).**
+> Read `CURRENT_STATE.md` + `DECISIONS.md` D155/D154 before continuing.
+
 ## Current status (2026-06-21, D153 JC/Twin 音割れ fix — BENCH-ACCEPTED, merged to main)
 
 > **D153 is the new accepted committed baseline on `main`** (merge `b86c88a`,

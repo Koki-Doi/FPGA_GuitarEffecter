@@ -512,38 +512,38 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_5                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_35                             : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$readPosQ4_app_arg\                 : std_logic;
   signal result_36                             : unsigned(15 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$readPosQ4_app_arg_0\               : unsigned(31 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$wild2_app_arg\                     : unsigned(15 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$wild2_app_arg_0\                   : signed(63 downto 0);
   signal result_37                             : signed(63 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$x_case_alt\                        : signed(23 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$x_app_arg_4\                       : signed(63 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal \c$x_app_arg_5\                       : signed(30 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_21                                  : signed(47 downto 0);
   signal \c$case_alt_11\                       : signed(23 downto 0);
   signal result_38                             : signed(23 downto 0);
   signal result_39                             : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal x1                                    : signed(63 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal wild2                                 : signed(63 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal x_22                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal tapA                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal readPosQ4                             : unsigned(15 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:384:1-11
+  -- src/AudioLab/Effects/Cab.hs:406:1-11
   signal lower                                 : unsigned(15 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal cabModLfo                             : unsigned(15 downto 0) := to_unsigned(0,16);
@@ -678,20 +678,20 @@ architecture structural of clash_lowpass_fir is
                                            , to_signed(0,24)
                                            , to_signed(0,24)
                                            , to_signed(0,24) );
-  -- src/AudioLab/Effects/Cab.hs:380:1-15
+  -- src/AudioLab/Effects/Cab.hs:402:1-15
   signal f_3                                   : clash_lowpass_fir_types.Frame;
   signal result_40                             : clash_lowpass_fir_types.array_of_signed_24(0 to 127);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal cabPresenceRecPipe                    : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_41                             : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Cab.hs:346:1-25
+  -- src/AudioLab/Effects/Cab.hs:368:1-25
   signal \c$x_app_arg_6\                       : signed(47 downto 0);
   signal \c$case_alt_12\                       : signed(23 downto 0);
   signal result_42                             : signed(23 downto 0);
   signal result_43                             : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Cab.hs:346:1-25
+  -- src/AudioLab/Effects/Cab.hs:368:1-25
   signal x_23                                  : signed(23 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:329:1-18
+  -- src/AudioLab/Effects/Cab.hs:351:1-18
   signal ds_0                                  : unsigned(7 downto 0);
   signal result_44                             : clash_lowpass_fir_types.Tuple2_0;
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -710,7 +710,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1_6                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_45                             : clash_lowpass_fir_types.Maybe;
   signal \c$app_arg_19\                        : signed(47 downto 0);
-  -- src/AudioLab/Effects/Cab.hs:323:1-18
+  -- src/AudioLab/Effects/Cab.hs:345:1-18
   signal ds_1                                  : unsigned(7 downto 0);
   signal result_46                             : clash_lowpass_fir_types.Tuple3;
   signal result_47                             : clash_lowpass_fir_types.Frame;
@@ -729,12 +729,12 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal cabSpkFirPipe                         : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_48                             : clash_lowpass_fir_types.Maybe;
-  -- src/AudioLab/Effects/Cab.hs:280:1-21
+  -- src/AudioLab/Effects/Cab.hs:302:1-21
   signal \c$x_app_arg_7\                       : signed(47 downto 0);
   signal \c$case_alt_13\                       : signed(23 downto 0);
   signal result_49                             : signed(23 downto 0);
   signal result_50                             : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Cab.hs:280:1-21
+  -- src/AudioLab/Effects/Cab.hs:302:1-21
   signal x_27                                  : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_28                                  : clash_lowpass_fir_types.Frame;
@@ -752,10 +752,10 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_28\                        : signed(23 downto 0);
   signal \c$app_arg_29\                        : signed(15 downto 0);
   signal \c$app_arg_30\                        : signed(47 downto 0);
-  signal \c$app_arg_31\                        : signed(47 downto 0);
+  signal \c$app_arg_31\                        : signed(23 downto 0);
   signal \c$app_arg_32\                        : signed(23 downto 0);
-  signal \c$app_arg_33\                        : signed(23 downto 0);
-  signal \c$app_arg_34\                        : signed(15 downto 0);
+  signal \c$app_arg_33\                        : signed(15 downto 0);
+  signal \c$app_arg_34\                        : signed(47 downto 0);
   signal \c$app_arg_35\                        : signed(47 downto 0);
   signal \c$app_arg_36\                        : signed(23 downto 0);
   signal \c$app_arg_37\                        : signed(23 downto 0);
@@ -765,57 +765,105 @@ architecture structural of clash_lowpass_fir is
   signal \c$app_arg_41\                        : signed(23 downto 0);
   signal \c$app_arg_42\                        : signed(15 downto 0);
   signal \c$app_arg_43\                        : signed(47 downto 0);
-  signal \c$app_arg_44\                        : signed(47 downto 0);
+  signal \c$app_arg_44\                        : signed(23 downto 0);
   signal \c$app_arg_45\                        : signed(23 downto 0);
-  signal \c$app_arg_46\                        : signed(23 downto 0);
-  signal \c$app_arg_47\                        : signed(15 downto 0);
-  signal \c$app_arg_48\                        : signed(47 downto 0);
+  signal \c$app_arg_46\                        : signed(15 downto 0);
+  signal \c$app_arg_47\                        : signed(47 downto 0);
+  signal \c$app_arg_48\                        : signed(23 downto 0);
   signal \c$app_arg_49\                        : signed(23 downto 0);
-  signal \c$app_arg_50\                        : signed(23 downto 0);
-  signal \c$app_arg_51\                        : signed(15 downto 0);
+  signal \c$app_arg_50\                        : signed(15 downto 0);
+  signal \c$app_arg_51\                        : signed(47 downto 0);
   signal \c$app_arg_52\                        : signed(47 downto 0);
   signal \c$app_arg_53\                        : signed(23 downto 0);
   signal \c$app_arg_54\                        : signed(23 downto 0);
   signal \c$app_arg_55\                        : signed(15 downto 0);
   signal \c$app_arg_56\                        : signed(47 downto 0);
-  signal \c$app_arg_57\                        : signed(47 downto 0);
+  signal \c$app_arg_57\                        : signed(23 downto 0);
   signal \c$app_arg_58\                        : signed(23 downto 0);
-  signal \c$app_arg_59\                        : signed(23 downto 0);
-  signal \c$app_arg_60\                        : signed(15 downto 0);
-  signal \c$app_arg_61\                        : signed(47 downto 0);
+  signal \c$app_arg_59\                        : signed(15 downto 0);
+  signal \c$app_arg_60\                        : signed(47 downto 0);
+  signal \c$app_arg_61\                        : signed(23 downto 0);
   signal \c$app_arg_62\                        : signed(23 downto 0);
-  signal \c$app_arg_63\                        : signed(23 downto 0);
-  signal \c$app_arg_64\                        : signed(15 downto 0);
-  signal \c$app_arg_65\                        : signed(47 downto 0);
+  signal \c$app_arg_63\                        : signed(15 downto 0);
+  signal \c$app_arg_64\                        : signed(47 downto 0);
+  signal \c$app_arg_65\                        : signed(23 downto 0);
   signal \c$app_arg_66\                        : signed(23 downto 0);
-  signal \c$app_arg_67\                        : signed(23 downto 0);
-  signal \c$app_arg_68\                        : signed(15 downto 0);
+  signal \c$app_arg_67\                        : signed(15 downto 0);
+  signal \c$app_arg_68\                        : signed(47 downto 0);
   signal \c$app_arg_69\                        : signed(47 downto 0);
-  signal \c$app_arg_70\                        : signed(47 downto 0);
+  signal \c$app_arg_70\                        : signed(23 downto 0);
   signal \c$app_arg_71\                        : signed(23 downto 0);
-  signal \c$app_arg_72\                        : signed(23 downto 0);
-  signal \c$app_arg_73\                        : signed(15 downto 0);
-  signal \c$app_arg_74\                        : signed(47 downto 0);
+  signal \c$app_arg_72\                        : signed(15 downto 0);
+  signal \c$app_arg_73\                        : signed(47 downto 0);
+  signal \c$app_arg_74\                        : signed(23 downto 0);
   signal \c$app_arg_75\                        : signed(23 downto 0);
-  signal \c$app_arg_76\                        : signed(23 downto 0);
-  signal \c$app_arg_77\                        : signed(15 downto 0);
-  signal \c$app_arg_78\                        : signed(47 downto 0);
-  signal \c$app_arg_79\                        : signed(47 downto 0);
-  signal \c$app_arg_80\                        : signed(23 downto 0);
-  signal \c$app_arg_81\                        : signed(23 downto 0);
-  signal \c$app_arg_82\                        : signed(15 downto 0);
-  signal \c$app_arg_83\                        : signed(47 downto 0);
-  signal \c$app_arg_84\                        : signed(23 downto 0);
-  signal \c$app_arg_85\                        : signed(15 downto 0);
+  signal \c$app_arg_76\                        : signed(15 downto 0);
+  signal \c$app_arg_77\                        : signed(47 downto 0);
+  signal \c$app_arg_78\                        : signed(23 downto 0);
+  signal \c$app_arg_79\                        : signed(23 downto 0);
+  signal \c$app_arg_80\                        : signed(15 downto 0);
+  signal \c$app_arg_81\                        : signed(47 downto 0);
+  signal \c$app_arg_82\                        : signed(23 downto 0);
+  signal \c$app_arg_83\                        : signed(23 downto 0);
+  signal \c$app_arg_84\                        : signed(15 downto 0);
+  signal \c$app_arg_85\                        : signed(47 downto 0);
   signal \c$app_arg_86\                        : signed(47 downto 0);
+  signal \c$app_arg_87\                        : signed(23 downto 0);
+  signal \c$app_arg_88\                        : signed(23 downto 0);
+  signal \c$app_arg_89\                        : signed(15 downto 0);
+  signal \c$app_arg_90\                        : signed(47 downto 0);
+  signal \c$app_arg_91\                        : signed(23 downto 0);
+  signal \c$app_arg_92\                        : signed(23 downto 0);
+  signal \c$app_arg_93\                        : signed(15 downto 0);
+  signal \c$app_arg_94\                        : signed(47 downto 0);
+  signal \c$app_arg_95\                        : signed(23 downto 0);
+  signal \c$app_arg_96\                        : signed(23 downto 0);
+  signal \c$app_arg_97\                        : signed(15 downto 0);
+  signal \c$app_arg_98\                        : signed(47 downto 0);
+  signal \c$app_arg_99\                        : signed(23 downto 0);
+  signal \c$app_arg_100\                       : signed(23 downto 0);
+  signal \c$app_arg_101\                       : signed(15 downto 0);
+  signal \c$app_arg_102\                       : signed(47 downto 0);
+  signal \c$app_arg_103\                       : signed(47 downto 0);
+  signal \c$app_arg_104\                       : signed(23 downto 0);
+  signal \c$app_arg_105\                       : signed(23 downto 0);
+  signal \c$app_arg_106\                       : signed(15 downto 0);
+  signal \c$app_arg_107\                       : signed(47 downto 0);
+  signal \c$app_arg_108\                       : signed(23 downto 0);
+  signal \c$app_arg_109\                       : signed(23 downto 0);
+  signal \c$app_arg_110\                       : signed(15 downto 0);
+  signal \c$app_arg_111\                       : signed(47 downto 0);
+  signal \c$app_arg_112\                       : signed(23 downto 0);
+  signal \c$app_arg_113\                       : signed(23 downto 0);
+  signal \c$app_arg_114\                       : signed(15 downto 0);
+  signal \c$app_arg_115\                       : signed(47 downto 0);
+  signal \c$app_arg_116\                       : signed(23 downto 0);
+  signal \c$app_arg_117\                       : signed(15 downto 0);
+  signal \c$app_arg_118\                       : signed(47 downto 0);
   signal result_52                             : clash_lowpass_fir_types.Frame;
-  -- src/AudioLab/Effects/Cab.hs:253:1-26
+  -- src/AudioLab/Effects/Cab.hs:267:1-26
   signal \on_1\                                : boolean;
-  -- src/AudioLab/Effects/Cab.hs:232:1-18
+  -- src/AudioLab/Effects/Cab.hs:243:1-18
   signal ds_2                                  : unsigned(7 downto 0);
-  signal result_53                             : clash_lowpass_fir_types.array_of_signed_16(0 to 15);
+  signal result_53                             : clash_lowpass_fir_types.array_of_signed_16(0 to 23);
   -- src/AudioLab/Pipeline.hs:53:1-10
-  signal cabSpkHist                            : clash_lowpass_fir_types.array_of_signed_24(0 to 29) := clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
+  signal cabSpkHist                            : clash_lowpass_fir_types.array_of_signed_24(0 to 45) := clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
+                                           , to_signed(0,24)
                                            , to_signed(0,24)
                                            , to_signed(0,24)
                                            , to_signed(0,24)
@@ -845,9 +893,9 @@ architecture structural of clash_lowpass_fir is
                                            , to_signed(0,24)
                                            , to_signed(0,24)
                                            , to_signed(0,24) );
-  -- src/AudioLab/Effects/Cab.hs:288:1-21
+  -- src/AudioLab/Effects/Cab.hs:310:1-21
   signal f_4                                   : clash_lowpass_fir_types.Frame;
-  signal result_54                             : clash_lowpass_fir_types.array_of_signed_24(0 to 29);
+  signal result_54                             : clash_lowpass_fir_types.array_of_signed_24(0 to 45);
   -- src/AudioLab/Types.hs:80:1-7
   signal x_29                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -857,12 +905,12 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Cab.hs:196:1-16
   signal x_30                                  : signed(23 downto 0);
   signal result_57                             : signed(23 downto 0);
-  signal \c$app_arg_87\                        : signed(24 downto 0);
-  signal \c$app_arg_88\                        : signed(24 downto 0);
+  signal \c$app_arg_119\                       : signed(24 downto 0);
+  signal \c$app_arg_120\                       : signed(24 downto 0);
   signal result_58                             : signed(23 downto 0);
-  signal \c$app_arg_89\                        : signed(24 downto 0);
-  signal \c$app_arg_90\                        : signed(24 downto 0);
-  signal \c$app_arg_91\                        : signed(24 downto 0);
+  signal \c$app_arg_121\                       : signed(24 downto 0);
+  signal \c$app_arg_122\                       : signed(24 downto 0);
+  signal \c$app_arg_123\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee                               : signed(23 downto 0);
   signal \c$case_alt_14\                       : signed(23 downto 0);
@@ -940,19 +988,19 @@ architecture structural of clash_lowpass_fir is
   signal ds1_9                                 : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_68                             : clash_lowpass_fir_types.Maybe;
   signal result_69                             : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_92\                        : signed(47 downto 0);
+  signal \c$app_arg_124\                       : signed(47 downto 0);
   signal result_70                             : signed(47 downto 0);
   signal \c$case_alt_20\                       : signed(47 downto 0);
   signal \c$case_alt_21\                       : signed(47 downto 0);
   signal \c$case_alt_22\                       : signed(47 downto 0);
-  signal \c$app_arg_93\                        : signed(47 downto 0);
+  signal \c$app_arg_125\                       : signed(47 downto 0);
   signal result_71                             : signed(23 downto 0);
-  signal \c$app_arg_94\                        : signed(24 downto 0);
-  signal \c$app_arg_95\                        : signed(24 downto 0);
+  signal \c$app_arg_126\                       : signed(24 downto 0);
+  signal \c$app_arg_127\                       : signed(24 downto 0);
   signal result_72                             : signed(23 downto 0);
-  signal \c$app_arg_96\                        : signed(24 downto 0);
-  signal \c$app_arg_97\                        : signed(24 downto 0);
-  signal \c$app_arg_98\                        : signed(24 downto 0);
+  signal \c$app_arg_128\                       : signed(24 downto 0);
+  signal \c$app_arg_129\                       : signed(24 downto 0);
+  signal \c$app_arg_130\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee_0                             : signed(23 downto 0);
   signal \c$case_alt_23\                       : signed(23 downto 0);
@@ -961,24 +1009,24 @@ architecture structural of clash_lowpass_fir is
   signal \c$bodyClipped_app_arg\               : signed(47 downto 0);
   -- src/AudioLab/Effects/Cab.hs:131:1-11
   signal \c$bodyClipped_app_arg_0\             : signed(23 downto 0);
-  signal \c$app_arg_99\                        : signed(23 downto 0);
+  signal \c$app_arg_131\                       : signed(23 downto 0);
   -- src/AudioLab/Effects/Cab.hs:131:1-11
   signal \on_2\                                : boolean;
   signal \c$case_alt_24\                       : signed(23 downto 0);
   signal \c$case_alt_25\                       : signed(23 downto 0);
   signal result_74                             : signed(23 downto 0);
-  signal \c$app_arg_100\                       : signed(24 downto 0);
-  signal \c$app_arg_101\                       : signed(24 downto 0);
+  signal \c$app_arg_132\                       : signed(24 downto 0);
+  signal \c$app_arg_133\                       : signed(24 downto 0);
   signal result_75                             : signed(23 downto 0);
-  signal \c$app_arg_102\                       : signed(24 downto 0);
-  signal \c$app_arg_103\                       : signed(24 downto 0);
-  signal \c$app_arg_104\                       : signed(24 downto 0);
+  signal \c$app_arg_134\                       : signed(24 downto 0);
+  signal \c$app_arg_135\                       : signed(24 downto 0);
+  signal \c$app_arg_136\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee_1                             : signed(23 downto 0);
   signal \c$case_alt_26\                       : signed(23 downto 0);
   signal result_76                             : signed(23 downto 0);
-  signal \c$app_arg_105\                       : signed(47 downto 0);
-  signal \c$app_arg_106\                       : signed(23 downto 0);
+  signal \c$app_arg_137\                       : signed(47 downto 0);
+  signal \c$app_arg_138\                       : signed(23 downto 0);
   -- src/AudioLab/Effects/Cab.hs:131:1-11
   signal modelSel_0                            : unsigned(1 downto 0);
   -- src/AudioLab/Effects/Cab.hs:131:1-11
@@ -989,7 +1037,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1_10                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_77                             : clash_lowpass_fir_types.Maybe;
   signal result_78                             : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_107\                       : signed(47 downto 0);
+  signal \c$app_arg_139\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Cab.hs:44:1-8
   signal ds_3                                  : unsigned(7 downto 0);
   signal \c$case_alt_27\                       : unsigned(1 downto 0);
@@ -1006,7 +1054,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$case_alt_32\                       : signed(9 downto 0);
   signal \c$case_alt_33\                       : signed(9 downto 0);
   signal \c$case_alt_34\                       : signed(9 downto 0);
-  signal \c$app_arg_108\                       : signed(47 downto 0);
+  signal \c$app_arg_140\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Cab.hs:108:1-16
   signal \on_3\                                : boolean;
   -- src/AudioLab/Effects/Cab.hs:44:1-8
@@ -1061,7 +1109,7 @@ architecture structural of clash_lowpass_fir is
   signal x_39                                  : signed(47 downto 0);
   signal \c$case_alt_44\                       : signed(23 downto 0);
   signal result_90                             : signed(23 downto 0);
-  signal \c$app_arg_109\                       : signed(24 downto 0);
+  signal \c$app_arg_141\                       : signed(24 downto 0);
   signal result_91                             : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:388:1-15
   signal \c$x_app_arg_18\                      : signed(47 downto 0);
@@ -1117,7 +1165,7 @@ architecture structural of clash_lowpass_fir is
   signal x_45                                  : signed(47 downto 0);
   signal \c$case_alt_47\                       : signed(23 downto 0);
   signal result_98                             : signed(23 downto 0);
-  signal \c$app_arg_110\                       : signed(24 downto 0);
+  signal \c$app_arg_142\                       : signed(24 downto 0);
   signal result_99                             : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:356:1-21
   signal \c$x_app_arg_21\                      : signed(47 downto 0);
@@ -1132,9 +1180,9 @@ architecture structural of clash_lowpass_fir is
   signal result_100                            : clash_lowpass_fir_types.Maybe;
   signal result_101                            : signed(23 downto 0);
   signal \c$case_alt_48\                       : signed(23 downto 0);
-  signal \c$app_arg_111\                       : signed(24 downto 0);
-  signal \c$app_arg_112\                       : signed(24 downto 0);
-  signal \c$app_arg_113\                       : signed(24 downto 0);
+  signal \c$app_arg_143\                       : signed(24 downto 0);
+  signal \c$app_arg_144\                       : signed(24 downto 0);
+  signal \c$app_arg_145\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_47                                  : signed(47 downto 0);
   signal \c$case_alt_49\                       : signed(23 downto 0);
@@ -1146,7 +1194,7 @@ architecture structural of clash_lowpass_fir is
   signal result_104                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Amp/Tone.hs:326:1-19
   signal x_49                                  : signed(23 downto 0);
-  signal \c$app_arg_114\                       : signed(24 downto 0);
+  signal \c$app_arg_146\                       : signed(24 downto 0);
   signal result_105                            : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampXfmrLpPrev                         : signed(23 downto 0) := to_signed(0,24);
@@ -1170,20 +1218,20 @@ architecture structural of clash_lowpass_fir is
   signal result_109                            : signed(23 downto 0);
   signal result_110                            : signed(23 downto 0);
   signal \c$case_alt_53\                       : signed(23 downto 0);
-  signal \c$app_arg_115\                       : signed(24 downto 0);
-  signal \c$app_arg_116\                       : signed(24 downto 0);
-  signal \c$app_arg_117\                       : signed(24 downto 0);
+  signal \c$app_arg_147\                       : signed(24 downto 0);
+  signal \c$app_arg_148\                       : signed(24 downto 0);
+  signal \c$app_arg_149\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_54                                  : signed(47 downto 0);
   signal \c$case_alt_54\                       : signed(23 downto 0);
   signal result_111                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:448:1-20
   signal \c$x_app_arg_22\                      : signed(47 downto 0);
-  signal \c$app_arg_118\                       : signed(24 downto 0);
+  signal \c$app_arg_150\                       : signed(24 downto 0);
   signal result_112                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:448:1-20
   signal \c$x_app_arg_23\                      : signed(47 downto 0);
-  signal \c$app_arg_119\                       : signed(24 downto 0);
+  signal \c$app_arg_151\                       : signed(24 downto 0);
   signal result_113                            : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampMbLp2Prev                          : signed(23 downto 0) := to_signed(0,24);
@@ -1204,12 +1252,12 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Amp/Tone.hs:264:1-14
   signal x_57                                  : signed(23 downto 0);
   signal result_116                            : signed(23 downto 0);
-  signal \c$app_arg_120\                       : signed(24 downto 0);
-  signal \c$app_arg_121\                       : signed(24 downto 0);
+  signal \c$app_arg_152\                       : signed(24 downto 0);
+  signal \c$app_arg_153\                       : signed(24 downto 0);
   signal result_117                            : signed(23 downto 0);
-  signal \c$app_arg_122\                       : signed(24 downto 0);
-  signal \c$app_arg_123\                       : signed(24 downto 0);
-  signal \c$app_arg_124\                       : signed(24 downto 0);
+  signal \c$app_arg_154\                       : signed(24 downto 0);
+  signal \c$app_arg_155\                       : signed(24 downto 0);
+  signal \c$app_arg_156\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee_2                             : signed(23 downto 0);
   signal \c$case_alt_55\                       : signed(23 downto 0);
@@ -1278,12 +1326,12 @@ architecture structural of clash_lowpass_fir is
   signal \c$case_alt_61\                       : signed(23 downto 0);
   signal result_129                            : signed(23 downto 0);
   signal result_130                            : signed(23 downto 0);
-  signal \c$app_arg_125\                       : signed(24 downto 0);
-  signal \c$app_arg_126\                       : signed(24 downto 0);
+  signal \c$app_arg_157\                       : signed(24 downto 0);
+  signal \c$app_arg_158\                       : signed(24 downto 0);
   signal result_131                            : signed(23 downto 0);
-  signal \c$app_arg_127\                       : signed(24 downto 0);
-  signal \c$app_arg_128\                       : signed(24 downto 0);
-  signal \c$app_arg_129\                       : signed(24 downto 0);
+  signal \c$app_arg_159\                       : signed(24 downto 0);
+  signal \c$app_arg_160\                       : signed(24 downto 0);
+  signal \c$app_arg_161\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee_3                             : signed(23 downto 0);
   signal result_132                            : clash_lowpass_fir_types.Frame;
@@ -1295,7 +1343,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1_12                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_133                            : clash_lowpass_fir_types.Maybe;
   signal result_134                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_130\                       : signed(47 downto 0);
+  signal \c$app_arg_162\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_63                                  : signed(47 downto 0);
   signal \c$case_alt_62\                       : signed(23 downto 0);
@@ -1318,7 +1366,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$gain_app_arg_6\                    : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:184:1-27
   signal presenceByte                          : unsigned(7 downto 0);
-  signal \c$app_arg_131\                       : signed(47 downto 0);
+  signal \c$app_arg_163\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_7                                : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
@@ -1327,7 +1375,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$gain_app_arg_8\                    : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal \c$gain_app_arg_9\                    : std_logic_vector(31 downto 0);
-  signal \c$app_arg_132\                       : signed(47 downto 0);
+  signal \c$app_arg_164\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:184:1-27
   signal \on_4\                                : boolean;
   -- src/AudioLab/Effects/Amp/Tone.hs:184:1-27
@@ -1336,9 +1384,9 @@ architecture structural of clash_lowpass_fir is
   signal ampResPresenceFilterPipe              : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_136                            : clash_lowpass_fir_types.Maybe;
   signal result_137                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_133\                       : signed(24 downto 0);
+  signal \c$app_arg_165\                       : signed(24 downto 0);
   signal result_138                            : signed(23 downto 0);
-  signal \c$app_arg_134\                       : signed(24 downto 0);
+  signal \c$app_arg_166\                       : signed(24 downto 0);
   signal result_139                            : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampPresencePrev                       : signed(23 downto 0) := to_signed(0,24);
@@ -1358,12 +1406,12 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Amp/Tone.hs:147:1-13
   signal \c$x_app_arg_29\                      : signed(23 downto 0);
   signal result_141                            : signed(23 downto 0);
-  signal \c$app_arg_135\                       : signed(24 downto 0);
-  signal \c$app_arg_136\                       : signed(24 downto 0);
+  signal \c$app_arg_167\                       : signed(24 downto 0);
+  signal \c$app_arg_168\                       : signed(24 downto 0);
   signal result_142                            : signed(23 downto 0);
-  signal \c$app_arg_137\                       : signed(24 downto 0);
-  signal \c$app_arg_138\                       : signed(24 downto 0);
-  signal \c$app_arg_139\                       : signed(24 downto 0);
+  signal \c$app_arg_169\                       : signed(24 downto 0);
+  signal \c$app_arg_170\                       : signed(24 downto 0);
+  signal \c$app_arg_171\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee_4                             : signed(23 downto 0);
   signal result_143                            : clash_lowpass_fir_types.Frame;
@@ -1387,18 +1435,18 @@ architecture structural of clash_lowpass_fir is
   signal ds1_15                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_147                            : clash_lowpass_fir_types.Maybe;
   signal result_148                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_140\                       : signed(47 downto 0);
-  signal \c$app_arg_141\                       : unsigned(7 downto 0);
-  signal \c$app_arg_142\                       : unsigned(7 downto 0);
-  signal \c$app_arg_143\                       : unsigned(7 downto 0);
-  signal \c$app_arg_144\                       : unsigned(7 downto 0);
+  signal \c$app_arg_172\                       : signed(47 downto 0);
+  signal \c$app_arg_173\                       : unsigned(7 downto 0);
+  signal \c$app_arg_174\                       : unsigned(7 downto 0);
+  signal \c$app_arg_175\                       : unsigned(7 downto 0);
+  signal \c$app_arg_176\                       : unsigned(7 downto 0);
   signal result_149                            : unsigned(7 downto 0);
-  signal \c$app_arg_145\                       : signed(47 downto 0);
+  signal \c$app_arg_177\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal \c$gain_app_arg_10\                   : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:97:1-10
   signal x_70                                  : unsigned(7 downto 0);
-  signal \c$app_arg_146\                       : signed(47 downto 0);
+  signal \c$app_arg_178\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:126:1-20
   signal \on_5\                                : boolean;
   -- src/AudioLab/FixedPoint.hs:28:1-5
@@ -1427,9 +1475,9 @@ architecture structural of clash_lowpass_fir is
   signal ampToneFilterPipe                     : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_154                            : clash_lowpass_fir_types.Maybe;
   signal result_155                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_147\                       : signed(24 downto 0);
+  signal \c$app_arg_179\                       : signed(24 downto 0);
   signal result_156                            : signed(23 downto 0);
-  signal \c$app_arg_148\                       : signed(24 downto 0);
+  signal \c$app_arg_180\                       : signed(24 downto 0);
   signal result_157                            : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ampToneHighPrev                       : signed(23 downto 0) := to_signed(0,24);
@@ -1468,7 +1516,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_17                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_161                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_149\                       : signed(47 downto 0);
+  signal \c$app_arg_181\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Amp/Tone.hs:50:1-28
   signal ds_7                                  : clash_lowpass_fir_types.Tuple3;
   signal result_162                            : clash_lowpass_fir_types.Frame;
@@ -1498,7 +1546,7 @@ architecture structural of clash_lowpass_fir is
   signal x_81                                  : signed(47 downto 0);
   signal \c$case_alt_68\                       : signed(23 downto 0);
   signal result_166                            : signed(23 downto 0);
-  signal \c$app_arg_150\                       : signed(24 downto 0);
+  signal \c$app_arg_182\                       : signed(24 downto 0);
   signal result_167                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:89:1-14
   signal \c$x_app_arg_34\                      : signed(47 downto 0);
@@ -1517,9 +1565,9 @@ architecture structural of clash_lowpass_fir is
   signal result_170                            : signed(23 downto 0);
   signal result_171                            : signed(23 downto 0);
   signal \c$case_alt_69\                       : signed(23 downto 0);
-  signal \c$app_arg_151\                       : signed(24 downto 0);
-  signal \c$app_arg_152\                       : signed(24 downto 0);
-  signal \c$app_arg_153\                       : signed(24 downto 0);
+  signal \c$app_arg_183\                       : signed(24 downto 0);
+  signal \c$app_arg_184\                       : signed(24 downto 0);
+  signal \c$app_arg_185\                       : signed(24 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal drive                                 : boolean;
   signal result_172                            : signed(23 downto 0);
@@ -1577,7 +1625,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1_18                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_176                            : clash_lowpass_fir_types.Maybe;
   signal \c$case_alt_72\                       : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_154\                       : signed(47 downto 0);
+  signal \c$app_arg_186\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal \c$gain_app_arg_12\                   : unsigned(8 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
@@ -1598,7 +1646,7 @@ architecture structural of clash_lowpass_fir is
   signal x_86                                  : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha                                 : unsigned(7 downto 0);
-  signal \c$app_arg_155\                       : signed(47 downto 0);
+  signal \c$app_arg_187\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_8                                : unsigned(7 downto 0);
   signal \c$case_alt_73\                       : signed(23 downto 0);
@@ -1628,9 +1676,9 @@ architecture structural of clash_lowpass_fir is
   signal result_182                            : signed(23 downto 0);
   signal result_183                            : signed(23 downto 0);
   signal \c$case_alt_74\                       : signed(23 downto 0);
-  signal \c$app_arg_156\                       : signed(24 downto 0);
-  signal \c$app_arg_157\                       : signed(24 downto 0);
-  signal \c$app_arg_158\                       : signed(24 downto 0);
+  signal \c$app_arg_188\                       : signed(24 downto 0);
+  signal \c$app_arg_189\                       : signed(24 downto 0);
+  signal \c$app_arg_190\                       : signed(24 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:121:1-11
   signal drive_0                               : boolean;
   signal result_184                            : signed(23 downto 0);
@@ -1693,7 +1741,7 @@ architecture structural of clash_lowpass_fir is
   signal x_92                                  : signed(47 downto 0);
   signal \c$case_alt_77\                       : signed(23 downto 0);
   signal result_190                            : signed(23 downto 0);
-  signal \c$app_arg_159\                       : signed(24 downto 0);
+  signal \c$app_arg_191\                       : signed(24 downto 0);
   signal result_191                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Amp/Clip.hs:79:1-15
   signal \c$x_app_arg_39\                      : signed(47 downto 0);
@@ -1720,7 +1768,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_20                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_195                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_160\                       : signed(47 downto 0);
+  signal \c$app_arg_192\                       : signed(47 downto 0);
   signal \c$case_alt_79\                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_9                                : unsigned(11 downto 0);
@@ -1759,13 +1807,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_43\                      : signed(47 downto 0);
   signal \c$case_alt_81\                       : signed(23 downto 0);
   signal result_200                            : signed(23 downto 0);
-  signal \c$app_arg_161\                       : std_logic;
+  signal \c$app_arg_193\                       : std_logic;
   signal result_201                            : boolean;
   signal result_202                            : signed(23 downto 0);
   signal \c$case_alt_82\                       : signed(23 downto 0);
-  signal \c$app_arg_162\                       : signed(24 downto 0);
-  signal \c$app_arg_163\                       : signed(24 downto 0);
-  signal \c$app_arg_164\                       : signed(24 downto 0);
+  signal \c$app_arg_194\                       : signed(24 downto 0);
+  signal \c$app_arg_195\                       : signed(24 downto 0);
+  signal \c$app_arg_196\                       : signed(24 downto 0);
   signal result_203                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_10                               : unsigned(7 downto 0);
@@ -1775,11 +1823,11 @@ architecture structural of clash_lowpass_fir is
   signal fuzzFaceTonePipe                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_204                            : clash_lowpass_fir_types.Maybe;
   signal result_205                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_165\                       : std_logic;
+  signal \c$app_arg_197\                       : std_logic;
   signal result_206                            : boolean;
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_0                               : unsigned(7 downto 0);
-  signal \c$app_arg_166\                       : signed(47 downto 0);
+  signal \c$app_arg_198\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_11                               : unsigned(7 downto 0);
   signal \c$case_alt_83\                       : signed(23 downto 0);
@@ -1799,7 +1847,7 @@ architecture structural of clash_lowpass_fir is
   signal result_208                            : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:555:1-25
   signal \c$x_app_arg_44\                      : signed(47 downto 0);
-  signal \c$app_arg_167\                       : std_logic;
+  signal \c$app_arg_199\                       : std_logic;
   signal result_209                            : boolean;
   signal \c$case_alt_84\                       : signed(23 downto 0);
   signal result_210                            : signed(23 downto 0);
@@ -1821,9 +1869,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_22                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_212                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_168\                       : std_logic;
+  signal \c$app_arg_200\                       : std_logic;
   signal result_213                            : boolean;
-  signal \c$app_arg_169\                       : signed(47 downto 0);
+  signal \c$app_arg_201\                       : signed(47 downto 0);
   signal result_214                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ffMidX2                               : signed(23 downto 0) := to_signed(0,24);
@@ -1852,15 +1900,15 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/FixedPoint.hs:146:1-12
   signal kneeN                                 : signed(23 downto 0);
   signal result_218                            : signed(23 downto 0);
-  signal \c$app_arg_170\                       : signed(24 downto 0);
-  signal \c$app_arg_171\                       : signed(24 downto 0);
+  signal \c$app_arg_202\                       : signed(24 downto 0);
+  signal \c$app_arg_203\                       : signed(24 downto 0);
   signal result_219                            : signed(23 downto 0);
-  signal \c$app_arg_172\                       : signed(24 downto 0);
-  signal \c$app_arg_173\                       : signed(24 downto 0);
-  signal \c$app_arg_174\                       : signed(24 downto 0);
+  signal \c$app_arg_204\                       : signed(24 downto 0);
+  signal \c$app_arg_205\                       : signed(24 downto 0);
+  signal \c$app_arg_206\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:146:1-12
   signal negKneeN                              : signed(23 downto 0);
-  signal \c$app_arg_175\                       : std_logic;
+  signal \c$app_arg_207\                       : std_logic;
   signal result_220                            : boolean;
   signal result_221                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:515:1-17
@@ -1869,7 +1917,7 @@ architecture structural of clash_lowpass_fir is
   signal rawShift                              : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ffBiasEnv                             : signed(23 downto 0) := to_signed(0,24);
-  signal \c$app_arg_176\                       : std_logic;
+  signal \c$app_arg_208\                       : std_logic;
   -- src/AudioLab/FixedPoint.hs:240:1-12
   signal \c$level_app_arg\                     : signed(47 downto 0);
   signal \c$case_alt_86\                       : signed(23 downto 0);
@@ -1887,9 +1935,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal fuzzFacePrePipe                       : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_226                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_177\                       : std_logic;
+  signal \c$app_arg_209\                       : std_logic;
   signal result_227                            : boolean;
-  signal \c$app_arg_178\                       : signed(47 downto 0);
+  signal \c$app_arg_210\                       : signed(47 downto 0);
   signal \c$case_alt_90\                       : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_12                               : unsigned(11 downto 0);
@@ -1902,13 +1950,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_47\                      : signed(47 downto 0);
   signal \c$case_alt_91\                       : signed(23 downto 0);
   signal result_229                            : signed(23 downto 0);
-  signal \c$app_arg_179\                       : std_logic;
+  signal \c$app_arg_211\                       : std_logic;
   signal result_230                            : boolean;
   signal result_231                            : signed(23 downto 0);
   signal \c$case_alt_92\                       : signed(23 downto 0);
-  signal \c$app_arg_180\                       : signed(24 downto 0);
-  signal \c$app_arg_181\                       : signed(24 downto 0);
-  signal \c$app_arg_182\                       : signed(24 downto 0);
+  signal \c$app_arg_212\                       : signed(24 downto 0);
+  signal \c$app_arg_213\                       : signed(24 downto 0);
+  signal \c$app_arg_214\                       : signed(24 downto 0);
   signal result_232                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_13                               : unsigned(7 downto 0);
@@ -1918,11 +1966,11 @@ architecture structural of clash_lowpass_fir is
   signal bigMuffTonePipe                       : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_233                            : clash_lowpass_fir_types.Maybe;
   signal result_234                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_183\                       : std_logic;
+  signal \c$app_arg_215\                       : std_logic;
   signal result_235                            : boolean;
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_1                               : unsigned(7 downto 0);
-  signal \c$app_arg_184\                       : signed(47 downto 0);
+  signal \c$app_arg_216\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_14                               : unsigned(7 downto 0);
   signal \c$case_alt_93\                       : signed(23 downto 0);
@@ -1940,11 +1988,11 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffScoopRecPipe                   : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_237                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_185\                       : std_logic;
+  signal \c$app_arg_217\                       : std_logic;
   signal result_238                            : boolean;
-  signal \c$app_arg_186\                       : std_logic;
+  signal \c$app_arg_218\                       : std_logic;
   signal result_239                            : boolean;
-  signal \c$app_arg_187\                       : std_logic;
+  signal \c$app_arg_219\                       : std_logic;
   signal result_240                            : boolean;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:448:1-26
   signal \c$x_app_arg_48\                      : signed(47 downto 0);
@@ -1953,10 +2001,10 @@ architecture structural of clash_lowpass_fir is
   signal result_242                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:448:1-26
   signal x_114                                 : signed(23 downto 0);
-  signal \c$app_arg_188\                       : std_logic;
+  signal \c$app_arg_220\                       : std_logic;
   signal result_243                            : boolean;
   signal \c$case_alt_95\                       : clash_lowpass_fir_types.Tuple2_0;
-  signal \c$app_arg_189\                       : std_logic;
+  signal \c$app_arg_221\                       : std_logic;
   signal result_244                            : boolean;
   signal result_245                            : clash_lowpass_fir_types.Tuple2_0;
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -1974,17 +2022,17 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_24                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_246                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_190\                       : std_logic;
+  signal \c$app_arg_222\                       : std_logic;
   signal result_247                            : boolean;
-  signal \c$app_arg_191\                       : std_logic;
+  signal \c$app_arg_223\                       : std_logic;
   signal result_248                            : boolean;
-  signal \c$app_arg_192\                       : std_logic;
+  signal \c$app_arg_224\                       : std_logic;
   signal result_249                            : boolean;
-  signal \c$app_arg_193\                       : signed(47 downto 0);
-  signal \c$app_arg_194\                       : std_logic;
+  signal \c$app_arg_225\                       : signed(47 downto 0);
+  signal \c$app_arg_226\                       : std_logic;
   signal result_250                            : boolean;
   signal \c$case_alt_96\                       : clash_lowpass_fir_types.Tuple3;
-  signal \c$app_arg_195\                       : std_logic;
+  signal \c$app_arg_227\                       : std_logic;
   signal result_251                            : boolean;
   signal result_252                            : clash_lowpass_fir_types.Tuple3;
   signal result_253                            : clash_lowpass_fir_types.Frame;
@@ -2005,7 +2053,7 @@ architecture structural of clash_lowpass_fir is
   signal result_254                            : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:373:1-19
   signal \c$x_app_arg_49\                      : signed(47 downto 0);
-  signal \c$app_arg_196\                       : std_logic;
+  signal \c$app_arg_228\                       : std_logic;
   signal result_255                            : boolean;
   signal \c$case_alt_97\                       : signed(23 downto 0);
   signal result_256                            : signed(23 downto 0);
@@ -2017,33 +2065,33 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_25                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_258                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_197\                       : signed(23 downto 0);
-  signal \c$app_arg_198\                       : signed(23 downto 0);
-  signal \c$app_arg_199\                       : signed(47 downto 0);
-  signal \c$app_arg_200\                       : signed(23 downto 0);
-  signal \c$app_arg_201\                       : signed(23 downto 0);
-  signal \c$app_arg_202\                       : signed(47 downto 0);
-  signal \c$app_arg_203\                       : signed(23 downto 0);
-  signal \c$app_arg_204\                       : signed(23 downto 0);
-  signal \c$app_arg_205\                       : signed(47 downto 0);
-  signal \c$app_arg_206\                       : signed(47 downto 0);
-  signal \c$app_arg_207\                       : signed(23 downto 0);
-  signal \c$app_arg_208\                       : signed(23 downto 0);
-  signal \c$app_arg_209\                       : signed(47 downto 0);
-  signal \c$app_arg_210\                       : signed(23 downto 0);
-  signal \c$app_arg_211\                       : signed(23 downto 0);
-  signal \c$app_arg_212\                       : signed(47 downto 0);
-  signal \c$app_arg_213\                       : signed(23 downto 0);
-  signal \c$app_arg_214\                       : signed(23 downto 0);
-  signal \c$app_arg_215\                       : signed(47 downto 0);
-  signal \c$app_arg_216\                       : signed(47 downto 0);
-  signal \c$app_arg_217\                       : signed(23 downto 0);
-  signal \c$app_arg_218\                       : signed(23 downto 0);
-  signal \c$app_arg_219\                       : signed(47 downto 0);
-  signal \c$app_arg_220\                       : signed(23 downto 0);
-  signal \c$app_arg_221\                       : signed(47 downto 0);
+  signal \c$app_arg_229\                       : signed(23 downto 0);
+  signal \c$app_arg_230\                       : signed(23 downto 0);
+  signal \c$app_arg_231\                       : signed(47 downto 0);
+  signal \c$app_arg_232\                       : signed(23 downto 0);
+  signal \c$app_arg_233\                       : signed(23 downto 0);
+  signal \c$app_arg_234\                       : signed(47 downto 0);
+  signal \c$app_arg_235\                       : signed(23 downto 0);
+  signal \c$app_arg_236\                       : signed(23 downto 0);
+  signal \c$app_arg_237\                       : signed(47 downto 0);
+  signal \c$app_arg_238\                       : signed(47 downto 0);
+  signal \c$app_arg_239\                       : signed(23 downto 0);
+  signal \c$app_arg_240\                       : signed(23 downto 0);
+  signal \c$app_arg_241\                       : signed(47 downto 0);
+  signal \c$app_arg_242\                       : signed(23 downto 0);
+  signal \c$app_arg_243\                       : signed(23 downto 0);
+  signal \c$app_arg_244\                       : signed(47 downto 0);
+  signal \c$app_arg_245\                       : signed(23 downto 0);
+  signal \c$app_arg_246\                       : signed(23 downto 0);
+  signal \c$app_arg_247\                       : signed(47 downto 0);
+  signal \c$app_arg_248\                       : signed(47 downto 0);
+  signal \c$app_arg_249\                       : signed(23 downto 0);
+  signal \c$app_arg_250\                       : signed(23 downto 0);
+  signal \c$app_arg_251\                       : signed(47 downto 0);
+  signal \c$app_arg_252\                       : signed(23 downto 0);
+  signal \c$app_arg_253\                       : signed(47 downto 0);
   signal result_259                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_222\                       : std_logic;
+  signal \c$app_arg_254\                       : std_logic;
   signal result_260                            : boolean;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bmClipHist                            : clash_lowpass_fir_types.array_of_signed_24(0 to 15) := clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
@@ -2071,56 +2119,56 @@ architecture structural of clash_lowpass_fir is
   signal f_7                                   : clash_lowpass_fir_types.Frame;
   signal \c$case_alt_99\                       : signed(23 downto 0);
   signal result_263                            : signed(23 downto 0);
-  signal \c$app_arg_223\                       : signed(47 downto 0);
+  signal \c$app_arg_255\                       : signed(47 downto 0);
   signal result_264                            : signed(23 downto 0);
   signal \c$case_alt_100\                      : signed(23 downto 0);
-  signal \c$app_arg_224\                       : signed(24 downto 0);
-  signal \c$app_arg_225\                       : signed(24 downto 0);
-  signal \c$app_arg_226\                       : signed(24 downto 0);
+  signal \c$app_arg_256\                       : signed(24 downto 0);
+  signal \c$app_arg_257\                       : signed(24 downto 0);
+  signal \c$app_arg_258\                       : signed(24 downto 0);
   signal result_265                            : signed(23 downto 0);
   signal \c$case_alt_101\                      : signed(23 downto 0);
-  signal \c$app_arg_227\                       : signed(24 downto 0);
-  signal \c$app_arg_228\                       : signed(24 downto 0);
-  signal \c$app_arg_229\                       : signed(24 downto 0);
+  signal \c$app_arg_259\                       : signed(24 downto 0);
+  signal \c$app_arg_260\                       : signed(24 downto 0);
+  signal \c$app_arg_261\                       : signed(24 downto 0);
   signal \c$case_alt_102\                      : signed(23 downto 0);
   signal result_266                            : signed(23 downto 0);
-  signal \c$app_arg_230\                       : signed(47 downto 0);
+  signal \c$app_arg_262\                       : signed(47 downto 0);
   signal result_267                            : signed(23 downto 0);
   signal \c$case_alt_103\                      : signed(23 downto 0);
-  signal \c$app_arg_231\                       : signed(24 downto 0);
-  signal \c$app_arg_232\                       : signed(24 downto 0);
-  signal \c$app_arg_233\                       : signed(24 downto 0);
+  signal \c$app_arg_263\                       : signed(24 downto 0);
+  signal \c$app_arg_264\                       : signed(24 downto 0);
+  signal \c$app_arg_265\                       : signed(24 downto 0);
   signal result_268                            : signed(23 downto 0);
   signal \c$case_alt_104\                      : signed(23 downto 0);
-  signal \c$app_arg_234\                       : signed(24 downto 0);
-  signal \c$app_arg_235\                       : signed(24 downto 0);
-  signal \c$app_arg_236\                       : signed(24 downto 0);
+  signal \c$app_arg_266\                       : signed(24 downto 0);
+  signal \c$app_arg_267\                       : signed(24 downto 0);
+  signal \c$app_arg_268\                       : signed(24 downto 0);
   signal \c$case_alt_105\                      : signed(23 downto 0);
   signal result_269                            : signed(23 downto 0);
-  signal \c$app_arg_237\                       : signed(47 downto 0);
+  signal \c$app_arg_269\                       : signed(47 downto 0);
   signal result_270                            : signed(23 downto 0);
   signal \c$case_alt_106\                      : signed(23 downto 0);
-  signal \c$app_arg_238\                       : signed(24 downto 0);
-  signal \c$app_arg_239\                       : signed(24 downto 0);
-  signal \c$app_arg_240\                       : signed(24 downto 0);
+  signal \c$app_arg_270\                       : signed(24 downto 0);
+  signal \c$app_arg_271\                       : signed(24 downto 0);
+  signal \c$app_arg_272\                       : signed(24 downto 0);
   signal result_271                            : signed(23 downto 0);
   signal \c$case_alt_107\                      : signed(23 downto 0);
-  signal \c$app_arg_241\                       : signed(24 downto 0);
-  signal \c$app_arg_242\                       : signed(24 downto 0);
-  signal \c$app_arg_243\                       : signed(24 downto 0);
+  signal \c$app_arg_273\                       : signed(24 downto 0);
+  signal \c$app_arg_274\                       : signed(24 downto 0);
+  signal \c$app_arg_275\                       : signed(24 downto 0);
   signal \c$case_alt_108\                      : signed(23 downto 0);
   signal result_272                            : signed(23 downto 0);
-  signal \c$app_arg_244\                       : signed(47 downto 0);
+  signal \c$app_arg_276\                       : signed(47 downto 0);
   signal result_273                            : signed(23 downto 0);
   signal \c$case_alt_109\                      : signed(23 downto 0);
-  signal \c$app_arg_245\                       : signed(24 downto 0);
-  signal \c$app_arg_246\                       : signed(24 downto 0);
-  signal \c$app_arg_247\                       : signed(24 downto 0);
+  signal \c$app_arg_277\                       : signed(24 downto 0);
+  signal \c$app_arg_278\                       : signed(24 downto 0);
+  signal \c$app_arg_279\                       : signed(24 downto 0);
   signal result_274                            : signed(23 downto 0);
   signal \c$case_alt_110\                      : signed(23 downto 0);
-  signal \c$app_arg_248\                       : signed(24 downto 0);
-  signal \c$app_arg_249\                       : signed(24 downto 0);
-  signal \c$app_arg_250\                       : signed(24 downto 0);
+  signal \c$app_arg_280\                       : signed(24 downto 0);
+  signal \c$app_arg_281\                       : signed(24 downto 0);
+  signal \c$app_arg_282\                       : signed(24 downto 0);
   signal result_275                            : clash_lowpass_fir_types.Tuple4;
   -- src/AudioLab/Effects/Distortion/Common.hs:25:1-10
   signal xnw                                   : signed(47 downto 0);
@@ -2129,15 +2177,15 @@ architecture structural of clash_lowpass_fir is
   signal result_276                            : clash_lowpass_fir_types.Tuple4;
   signal \c$case_alt_111\                      : signed(23 downto 0);
   signal result_277                            : signed(23 downto 0);
-  signal \c$app_arg_251\                       : signed(47 downto 0);
-  signal \c$app_arg_252\                       : signed(47 downto 0);
+  signal \c$app_arg_283\                       : signed(47 downto 0);
+  signal \c$app_arg_284\                       : signed(47 downto 0);
   signal \c$case_alt_112\                      : signed(23 downto 0);
   signal result_278                            : signed(23 downto 0);
-  signal \c$app_arg_253\                       : signed(47 downto 0);
+  signal \c$app_arg_285\                       : signed(47 downto 0);
   signal \c$case_alt_113\                      : signed(23 downto 0);
   signal result_279                            : signed(23 downto 0);
-  signal \c$app_arg_254\                       : signed(47 downto 0);
-  signal \c$app_arg_255\                       : signed(47 downto 0);
+  signal \c$app_arg_286\                       : signed(47 downto 0);
+  signal \c$app_arg_287\                       : signed(47 downto 0);
   signal result_280                            : clash_lowpass_fir_types.array_of_signed_24(0 to 15);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bmClipInPrev                          : signed(23 downto 0) := to_signed(0,24);
@@ -2152,9 +2200,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal bigMuffPrePipe                        : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_282                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_256\                       : std_logic;
+  signal \c$app_arg_288\                       : std_logic;
   signal result_283                            : boolean;
-  signal \c$app_arg_257\                       : signed(47 downto 0);
+  signal \c$app_arg_289\                       : signed(47 downto 0);
   signal \c$case_alt_115\                      : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_15                               : unsigned(11 downto 0);
@@ -2167,13 +2215,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_50\                      : signed(47 downto 0);
   signal \c$case_alt_116\                      : signed(23 downto 0);
   signal result_285                            : signed(23 downto 0);
-  signal \c$app_arg_258\                       : std_logic;
+  signal \c$app_arg_290\                       : std_logic;
   signal result_286                            : boolean;
   signal result_287                            : signed(23 downto 0);
   signal \c$case_alt_117\                      : signed(23 downto 0);
-  signal \c$app_arg_259\                       : signed(24 downto 0);
-  signal \c$app_arg_260\                       : signed(24 downto 0);
-  signal \c$app_arg_261\                       : signed(24 downto 0);
+  signal \c$app_arg_291\                       : signed(24 downto 0);
+  signal \c$app_arg_292\                       : signed(24 downto 0);
+  signal \c$app_arg_293\                       : signed(24 downto 0);
   signal result_288                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_16                               : unsigned(7 downto 0);
@@ -2183,11 +2231,11 @@ architecture structural of clash_lowpass_fir is
   signal ds1TonePipe                           : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_289                            : clash_lowpass_fir_types.Maybe;
   signal result_290                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_262\                       : std_logic;
+  signal \c$app_arg_294\                       : std_logic;
   signal result_291                            : boolean;
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_2                               : unsigned(7 downto 0);
-  signal \c$app_arg_263\                       : signed(47 downto 0);
+  signal \c$app_arg_295\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_17                               : unsigned(7 downto 0);
   signal \c$case_alt_118\                      : signed(23 downto 0);
@@ -2211,13 +2259,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_51\                      : signed(47 downto 0);
   signal \c$case_alt_119\                      : signed(23 downto 0);
   signal result_294                            : signed(23 downto 0);
-  signal \c$app_arg_264\                       : std_logic;
+  signal \c$app_arg_296\                       : std_logic;
   signal result_295                            : boolean;
   signal result_296                            : signed(23 downto 0);
   signal \c$case_alt_120\                      : signed(23 downto 0);
-  signal \c$app_arg_265\                       : signed(24 downto 0);
-  signal \c$app_arg_266\                       : signed(24 downto 0);
-  signal \c$app_arg_267\                       : signed(24 downto 0);
+  signal \c$app_arg_297\                       : signed(24 downto 0);
+  signal \c$app_arg_298\                       : signed(24 downto 0);
+  signal \c$app_arg_299\                       : signed(24 downto 0);
   signal result_297                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:272:1-12
   signal x_126                                 : signed(23 downto 0);
@@ -2226,9 +2274,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_28                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_298                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_268\                       : std_logic;
+  signal \c$app_arg_300\                       : std_logic;
   signal result_299                            : boolean;
-  signal \c$app_arg_269\                       : signed(47 downto 0);
+  signal \c$app_arg_301\                       : signed(47 downto 0);
   signal \c$case_alt_121\                      : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_18                               : unsigned(11 downto 0);
@@ -2236,7 +2284,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1HpfPipe                            : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_300                            : clash_lowpass_fir_types.Maybe;
   signal result_301                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_270\                       : std_logic;
+  signal \c$app_arg_302\                       : std_logic;
   signal result_302                            : boolean;
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_128                                 : signed(47 downto 0);
@@ -2244,7 +2292,7 @@ architecture structural of clash_lowpass_fir is
   signal result_303                            : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_3                               : unsigned(7 downto 0);
-  signal \c$app_arg_271\                       : signed(47 downto 0);
+  signal \c$app_arg_303\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_19                               : unsigned(7 downto 0);
   signal \c$case_alt_123\                      : signed(23 downto 0);
@@ -2268,13 +2316,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_52\                      : signed(47 downto 0);
   signal \c$case_alt_124\                      : signed(23 downto 0);
   signal result_306                            : signed(23 downto 0);
-  signal \c$app_arg_272\                       : std_logic;
+  signal \c$app_arg_304\                       : std_logic;
   signal result_307                            : boolean;
   signal result_308                            : signed(23 downto 0);
   signal \c$case_alt_125\                      : signed(23 downto 0);
-  signal \c$app_arg_273\                       : signed(24 downto 0);
-  signal \c$app_arg_274\                       : signed(24 downto 0);
-  signal \c$app_arg_275\                       : signed(24 downto 0);
+  signal \c$app_arg_305\                       : signed(24 downto 0);
+  signal \c$app_arg_306\                       : signed(24 downto 0);
+  signal \c$app_arg_307\                       : signed(24 downto 0);
   signal result_309                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_20                               : unsigned(7 downto 0);
@@ -2284,11 +2332,11 @@ architecture structural of clash_lowpass_fir is
   signal metalPostLpfPipe                      : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_310                            : clash_lowpass_fir_types.Maybe;
   signal result_311                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_276\                       : std_logic;
+  signal \c$app_arg_308\                       : std_logic;
   signal result_312                            : boolean;
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_4                               : unsigned(7 downto 0);
-  signal \c$app_arg_277\                       : signed(47 downto 0);
+  signal \c$app_arg_309\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_21                               : unsigned(7 downto 0);
   signal \c$case_alt_126\                      : signed(23 downto 0);
@@ -2310,7 +2358,7 @@ architecture structural of clash_lowpass_fir is
   signal result_314                            : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:201:1-17
   signal \c$x_app_arg_53\                      : signed(47 downto 0);
-  signal \c$app_arg_278\                       : std_logic;
+  signal \c$app_arg_310\                       : std_logic;
   signal result_315                            : boolean;
   signal \c$case_alt_127\                      : signed(23 downto 0);
   signal result_316                            : signed(23 downto 0);
@@ -2332,43 +2380,43 @@ architecture structural of clash_lowpass_fir is
   signal \c$ds37_app_arg\                      : signed(47 downto 0);
   signal \c$case_alt_128\                      : signed(23 downto 0);
   signal result_321                            : signed(23 downto 0);
-  signal \c$app_arg_279\                       : signed(23 downto 0);
-  signal \c$app_arg_280\                       : signed(47 downto 0);
-  signal \c$app_arg_281\                       : signed(23 downto 0);
-  signal \c$app_arg_282\                       : signed(23 downto 0);
-  signal \c$app_arg_283\                       : signed(47 downto 0);
-  signal \c$app_arg_284\                       : signed(23 downto 0);
-  signal \c$app_arg_285\                       : signed(23 downto 0);
-  signal \c$app_arg_286\                       : signed(47 downto 0);
-  signal \c$app_arg_287\                       : signed(23 downto 0);
-  signal \c$app_arg_288\                       : signed(23 downto 0);
-  signal \c$app_arg_289\                       : signed(47 downto 0);
-  signal \c$app_arg_290\                       : signed(23 downto 0);
-  signal \c$app_arg_291\                       : signed(47 downto 0);
-  signal \c$app_arg_292\                       : signed(23 downto 0);
-  signal \c$app_arg_293\                       : signed(47 downto 0);
-  signal \c$app_arg_294\                       : signed(23 downto 0);
-  signal \c$app_arg_295\                       : signed(47 downto 0);
-  signal \c$app_arg_296\                       : signed(23 downto 0);
+  signal \c$app_arg_311\                       : signed(23 downto 0);
+  signal \c$app_arg_312\                       : signed(47 downto 0);
+  signal \c$app_arg_313\                       : signed(23 downto 0);
+  signal \c$app_arg_314\                       : signed(23 downto 0);
+  signal \c$app_arg_315\                       : signed(47 downto 0);
+  signal \c$app_arg_316\                       : signed(23 downto 0);
+  signal \c$app_arg_317\                       : signed(23 downto 0);
+  signal \c$app_arg_318\                       : signed(47 downto 0);
+  signal \c$app_arg_319\                       : signed(23 downto 0);
+  signal \c$app_arg_320\                       : signed(23 downto 0);
+  signal \c$app_arg_321\                       : signed(47 downto 0);
+  signal \c$app_arg_322\                       : signed(23 downto 0);
+  signal \c$app_arg_323\                       : signed(47 downto 0);
+  signal \c$app_arg_324\                       : signed(23 downto 0);
+  signal \c$app_arg_325\                       : signed(47 downto 0);
+  signal \c$app_arg_326\                       : signed(23 downto 0);
+  signal \c$app_arg_327\                       : signed(47 downto 0);
+  signal \c$app_arg_328\                       : signed(23 downto 0);
   signal result_322                            : clash_lowpass_fir_types.Tuple3_0;
-  signal \c$app_arg_297\                       : signed(47 downto 0);
-  signal \c$app_arg_298\                       : signed(47 downto 0);
-  signal \c$app_arg_299\                       : signed(47 downto 0);
+  signal \c$app_arg_329\                       : signed(47 downto 0);
+  signal \c$app_arg_330\                       : signed(47 downto 0);
+  signal \c$app_arg_331\                       : signed(47 downto 0);
   signal result_323                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_300\                       : std_logic;
+  signal \c$app_arg_332\                       : std_logic;
   signal result_324                            : boolean;
   signal result_325                            : signed(23 downto 0);
   signal \c$case_alt_129\                      : signed(23 downto 0);
-  signal \c$app_arg_301\                       : signed(23 downto 0);
+  signal \c$app_arg_333\                       : signed(23 downto 0);
   signal result_326                            : signed(23 downto 0);
   signal \c$case_alt_130\                      : signed(23 downto 0);
-  signal \c$app_arg_302\                       : signed(23 downto 0);
+  signal \c$app_arg_334\                       : signed(23 downto 0);
   signal result_327                            : signed(23 downto 0);
   signal \c$case_alt_131\                      : signed(23 downto 0);
-  signal \c$app_arg_303\                       : signed(23 downto 0);
+  signal \c$app_arg_335\                       : signed(23 downto 0);
   signal result_328                            : signed(23 downto 0);
   signal \c$case_alt_132\                      : signed(23 downto 0);
-  signal \c$app_arg_304\                       : signed(23 downto 0);
+  signal \c$app_arg_336\                       : signed(23 downto 0);
   signal result_329                            : clash_lowpass_fir_types.Tuple4;
   -- src/AudioLab/Effects/Distortion/Common.hs:36:1-14
   signal p0                                    : signed(23 downto 0);
@@ -2385,15 +2433,15 @@ architecture structural of clash_lowpass_fir is
   signal result_330                            : clash_lowpass_fir_types.Tuple4;
   signal \c$case_alt_133\                      : signed(23 downto 0);
   signal result_331                            : signed(23 downto 0);
-  signal \c$app_arg_305\                       : signed(47 downto 0);
-  signal \c$app_arg_306\                       : signed(47 downto 0);
+  signal \c$app_arg_337\                       : signed(47 downto 0);
+  signal \c$app_arg_338\                       : signed(47 downto 0);
   signal \c$case_alt_134\                      : signed(23 downto 0);
   signal result_332                            : signed(23 downto 0);
-  signal \c$app_arg_307\                       : signed(47 downto 0);
+  signal \c$app_arg_339\                       : signed(47 downto 0);
   signal \c$case_alt_135\                      : signed(23 downto 0);
   signal result_333                            : signed(23 downto 0);
-  signal \c$app_arg_308\                       : signed(47 downto 0);
-  signal \c$app_arg_309\                       : signed(47 downto 0);
+  signal \c$app_arg_340\                       : signed(47 downto 0);
+  signal \c$app_arg_341\                       : signed(47 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalClipHist                         : clash_lowpass_fir_types.array_of_signed_24(0 to 11) := clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
                                            , to_signed(0,24)
@@ -2422,16 +2470,16 @@ architecture structural of clash_lowpass_fir is
   signal f_8                                   : clash_lowpass_fir_types.Frame;
   signal result_338                            : signed(23 downto 0);
   signal \c$case_alt_137\                      : signed(23 downto 0);
-  signal \c$app_arg_310\                       : signed(23 downto 0);
+  signal \c$app_arg_342\                       : signed(23 downto 0);
   signal result_339                            : signed(23 downto 0);
   signal \c$case_alt_138\                      : signed(23 downto 0);
-  signal \c$app_arg_311\                       : signed(23 downto 0);
+  signal \c$app_arg_343\                       : signed(23 downto 0);
   signal result_340                            : signed(23 downto 0);
   signal \c$case_alt_139\                      : signed(23 downto 0);
-  signal \c$app_arg_312\                       : signed(23 downto 0);
+  signal \c$app_arg_344\                       : signed(23 downto 0);
   signal result_341                            : signed(23 downto 0);
   signal \c$case_alt_140\                      : signed(23 downto 0);
-  signal \c$app_arg_313\                       : signed(23 downto 0);
+  signal \c$app_arg_345\                       : signed(23 downto 0);
   signal result_342                            : clash_lowpass_fir_types.Tuple4;
   -- src/AudioLab/Effects/Distortion/Common.hs:36:1-14
   signal p0_0                                  : signed(23 downto 0);
@@ -2448,15 +2496,15 @@ architecture structural of clash_lowpass_fir is
   signal result_343                            : clash_lowpass_fir_types.Tuple4;
   signal \c$case_alt_141\                      : signed(23 downto 0);
   signal result_344                            : signed(23 downto 0);
-  signal \c$app_arg_314\                       : signed(47 downto 0);
-  signal \c$app_arg_315\                       : signed(47 downto 0);
+  signal \c$app_arg_346\                       : signed(47 downto 0);
+  signal \c$app_arg_347\                       : signed(47 downto 0);
   signal \c$case_alt_142\                      : signed(23 downto 0);
   signal result_345                            : signed(23 downto 0);
-  signal \c$app_arg_316\                       : signed(47 downto 0);
+  signal \c$app_arg_348\                       : signed(47 downto 0);
   signal \c$case_alt_143\                      : signed(23 downto 0);
   signal result_346                            : signed(23 downto 0);
-  signal \c$app_arg_317\                       : signed(47 downto 0);
-  signal \c$app_arg_318\                       : signed(47 downto 0);
+  signal \c$app_arg_349\                       : signed(47 downto 0);
+  signal \c$app_arg_350\                       : signed(47 downto 0);
   signal result_347                            : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalClipInPrev                       : signed(23 downto 0) := to_signed(0,24);
@@ -2471,9 +2519,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal metalMulPipe                          : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_349                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_319\                       : std_logic;
+  signal \c$app_arg_351\                       : std_logic;
   signal result_350                            : boolean;
-  signal \c$app_arg_320\                       : signed(47 downto 0);
+  signal \c$app_arg_352\                       : signed(47 downto 0);
   signal \c$case_alt_145\                      : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_22                               : unsigned(11 downto 0);
@@ -2481,7 +2529,7 @@ architecture structural of clash_lowpass_fir is
   signal metalHpfPipe                          : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_351                            : clash_lowpass_fir_types.Maybe;
   signal result_352                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_321\                       : std_logic;
+  signal \c$app_arg_353\                       : std_logic;
   signal result_353                            : boolean;
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_141                                 : signed(47 downto 0);
@@ -2489,7 +2537,7 @@ architecture structural of clash_lowpass_fir is
   signal result_354                            : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_5                               : unsigned(7 downto 0);
-  signal \c$app_arg_322\                       : signed(47 downto 0);
+  signal \c$app_arg_354\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_23                               : unsigned(7 downto 0);
   signal \c$case_alt_147\                      : signed(23 downto 0);
@@ -2513,13 +2561,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_54\                      : signed(47 downto 0);
   signal \c$case_alt_148\                      : signed(23 downto 0);
   signal result_357                            : signed(23 downto 0);
-  signal \c$app_arg_323\                       : std_logic;
+  signal \c$app_arg_355\                       : std_logic;
   signal result_358                            : boolean;
   signal result_359                            : signed(23 downto 0);
   signal \c$case_alt_149\                      : signed(23 downto 0);
-  signal \c$app_arg_324\                       : signed(24 downto 0);
-  signal \c$app_arg_325\                       : signed(24 downto 0);
-  signal \c$app_arg_326\                       : signed(24 downto 0);
+  signal \c$app_arg_356\                       : signed(24 downto 0);
+  signal \c$app_arg_357\                       : signed(24 downto 0);
+  signal \c$app_arg_358\                       : signed(24 downto 0);
   signal result_360                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_24                               : unsigned(7 downto 0);
@@ -2529,11 +2577,11 @@ architecture structural of clash_lowpass_fir is
   signal tsPostLpfPipe                         : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_361                            : clash_lowpass_fir_types.Maybe;
   signal result_362                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_327\                       : std_logic;
+  signal \c$app_arg_359\                       : std_logic;
   signal result_363                            : boolean;
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_6                               : unsigned(7 downto 0);
-  signal \c$app_arg_328\                       : signed(47 downto 0);
+  signal \c$app_arg_360\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_25                               : unsigned(7 downto 0);
   signal \c$case_alt_150\                      : signed(23 downto 0);
@@ -2557,13 +2605,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_55\                      : signed(47 downto 0);
   signal \c$case_alt_151\                      : signed(23 downto 0);
   signal result_366                            : signed(23 downto 0);
-  signal \c$app_arg_329\                       : std_logic;
+  signal \c$app_arg_361\                       : std_logic;
   signal result_367                            : boolean;
   signal result_368                            : signed(23 downto 0);
   signal \c$case_alt_152\                      : signed(23 downto 0);
-  signal \c$app_arg_330\                       : signed(24 downto 0);
-  signal \c$app_arg_331\                       : signed(24 downto 0);
-  signal \c$app_arg_332\                       : signed(24 downto 0);
+  signal \c$app_arg_362\                       : signed(24 downto 0);
+  signal \c$app_arg_363\                       : signed(24 downto 0);
+  signal \c$app_arg_364\                       : signed(24 downto 0);
   signal result_369                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:97:1-21
   signal x_149                                 : signed(23 downto 0);
@@ -2572,9 +2620,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_34                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_370                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_333\                       : std_logic;
+  signal \c$app_arg_365\                       : std_logic;
   signal result_371                            : boolean;
-  signal \c$app_arg_334\                       : signed(47 downto 0);
+  signal \c$app_arg_366\                       : signed(47 downto 0);
   signal \c$case_alt_153\                      : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_26                               : unsigned(11 downto 0);
@@ -2583,7 +2631,7 @@ architecture structural of clash_lowpass_fir is
   signal result_372                            : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:72:1-20
   signal \c$x_app_arg_56\                      : signed(47 downto 0);
-  signal \c$app_arg_335\                       : std_logic;
+  signal \c$app_arg_367\                       : std_logic;
   signal result_373                            : boolean;
   signal \c$case_alt_154\                      : signed(23 downto 0);
   signal result_374                            : signed(23 downto 0);
@@ -2614,7 +2662,7 @@ architecture structural of clash_lowpass_fir is
   signal tsHpfPipe                             : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_376                            : clash_lowpass_fir_types.Maybe;
   signal result_377                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_336\                       : std_logic;
+  signal \c$app_arg_368\                       : std_logic;
   signal result_378                            : boolean;
   -- src/AudioLab/FixedPoint.hs:52:1-7
   signal x_153                                 : signed(47 downto 0);
@@ -2622,7 +2670,7 @@ architecture structural of clash_lowpass_fir is
   signal result_379                            : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_7                               : unsigned(7 downto 0);
-  signal \c$app_arg_337\                       : signed(47 downto 0);
+  signal \c$app_arg_369\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_27                               : unsigned(7 downto 0);
   signal \c$case_alt_156\                      : signed(23 downto 0);
@@ -2646,13 +2694,13 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_57\                      : signed(47 downto 0);
   signal \c$case_alt_157\                      : signed(23 downto 0);
   signal result_382                            : signed(23 downto 0);
-  signal \c$app_arg_338\                       : std_logic;
+  signal \c$app_arg_370\                       : std_logic;
   signal result_383                            : boolean;
   signal result_384                            : signed(23 downto 0);
   signal \c$case_alt_158\                      : signed(23 downto 0);
-  signal \c$app_arg_339\                       : signed(24 downto 0);
-  signal \c$app_arg_340\                       : signed(24 downto 0);
-  signal \c$app_arg_341\                       : signed(24 downto 0);
+  signal \c$app_arg_371\                       : signed(24 downto 0);
+  signal \c$app_arg_372\                       : signed(24 downto 0);
+  signal \c$app_arg_373\                       : signed(24 downto 0);
   signal result_385                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_28                               : unsigned(7 downto 0);
@@ -2665,7 +2713,7 @@ architecture structural of clash_lowpass_fir is
   signal result_386                            : clash_lowpass_fir_types.Maybe;
   -- src/AudioLab/Effects/Distortion/Pedals.hs:26:1-20
   signal \c$x_app_arg_58\                      : signed(47 downto 0);
-  signal \c$app_arg_342\                       : std_logic;
+  signal \c$app_arg_374\                       : std_logic;
   signal result_387                            : boolean;
   signal \c$case_alt_159\                      : signed(23 downto 0);
   signal result_388                            : signed(23 downto 0);
@@ -2677,9 +2725,9 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_37                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_390                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_343\                       : std_logic;
+  signal \c$app_arg_375\                       : std_logic;
   signal result_391                            : boolean;
-  signal \c$app_arg_344\                       : signed(47 downto 0);
+  signal \c$app_arg_376\                       : signed(47 downto 0);
   signal \c$case_alt_160\                      : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_29                               : unsigned(11 downto 0);
@@ -2694,9 +2742,9 @@ architecture structural of clash_lowpass_fir is
   signal result_393                            : signed(23 downto 0);
   signal result_394                            : signed(23 downto 0);
   signal \c$case_alt_162\                      : signed(23 downto 0);
-  signal \c$app_arg_345\                       : signed(24 downto 0);
-  signal \c$app_arg_346\                       : signed(24 downto 0);
-  signal \c$app_arg_347\                       : signed(24 downto 0);
+  signal \c$app_arg_377\                       : signed(24 downto 0);
+  signal \c$app_arg_378\                       : signed(24 downto 0);
+  signal \c$app_arg_379\                       : signed(24 downto 0);
   signal result_395                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_30                               : unsigned(7 downto 0);
@@ -2725,7 +2773,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_61\                      : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_8                               : unsigned(7 downto 0);
-  signal \c$app_arg_348\                       : signed(47 downto 0);
+  signal \c$app_arg_380\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_32                               : unsigned(7 downto 0);
   signal \c$case_alt_164\                      : signed(23 downto 0);
@@ -2746,7 +2794,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_62\                      : unsigned(7 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_9                               : unsigned(7 downto 0);
-  signal \c$app_arg_349\                       : signed(47 downto 0);
+  signal \c$app_arg_381\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_33                               : unsigned(7 downto 0);
   signal \c$case_alt_165\                      : signed(23 downto 0);
@@ -2783,43 +2831,43 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Distortion/Rat.hs:57:1-16
   signal rawThreshold                          : signed(24 downto 0);
   signal result_410                            : signed(23 downto 0);
-  signal \c$app_arg_350\                       : signed(23 downto 0);
-  signal \c$app_arg_351\                       : signed(47 downto 0);
-  signal \c$app_arg_352\                       : signed(23 downto 0);
-  signal \c$app_arg_353\                       : signed(23 downto 0);
-  signal \c$app_arg_354\                       : signed(47 downto 0);
-  signal \c$app_arg_355\                       : signed(23 downto 0);
-  signal \c$app_arg_356\                       : signed(23 downto 0);
-  signal \c$app_arg_357\                       : signed(47 downto 0);
-  signal \c$app_arg_358\                       : signed(23 downto 0);
-  signal \c$app_arg_359\                       : signed(23 downto 0);
-  signal \c$app_arg_360\                       : signed(47 downto 0);
-  signal \c$app_arg_361\                       : signed(23 downto 0);
-  signal \c$app_arg_362\                       : signed(47 downto 0);
-  signal \c$app_arg_363\                       : signed(23 downto 0);
-  signal \c$app_arg_364\                       : signed(47 downto 0);
-  signal \c$app_arg_365\                       : signed(23 downto 0);
-  signal \c$app_arg_366\                       : signed(47 downto 0);
-  signal \c$app_arg_367\                       : signed(23 downto 0);
+  signal \c$app_arg_382\                       : signed(23 downto 0);
+  signal \c$app_arg_383\                       : signed(47 downto 0);
+  signal \c$app_arg_384\                       : signed(23 downto 0);
+  signal \c$app_arg_385\                       : signed(23 downto 0);
+  signal \c$app_arg_386\                       : signed(47 downto 0);
+  signal \c$app_arg_387\                       : signed(23 downto 0);
+  signal \c$app_arg_388\                       : signed(23 downto 0);
+  signal \c$app_arg_389\                       : signed(47 downto 0);
+  signal \c$app_arg_390\                       : signed(23 downto 0);
+  signal \c$app_arg_391\                       : signed(23 downto 0);
+  signal \c$app_arg_392\                       : signed(47 downto 0);
+  signal \c$app_arg_393\                       : signed(23 downto 0);
+  signal \c$app_arg_394\                       : signed(47 downto 0);
+  signal \c$app_arg_395\                       : signed(23 downto 0);
+  signal \c$app_arg_396\                       : signed(47 downto 0);
+  signal \c$app_arg_397\                       : signed(23 downto 0);
+  signal \c$app_arg_398\                       : signed(47 downto 0);
+  signal \c$app_arg_399\                       : signed(23 downto 0);
   signal result_411                            : clash_lowpass_fir_types.Tuple3_0;
-  signal \c$app_arg_368\                       : signed(47 downto 0);
-  signal \c$app_arg_369\                       : signed(47 downto 0);
-  signal \c$app_arg_370\                       : signed(47 downto 0);
+  signal \c$app_arg_400\                       : signed(47 downto 0);
+  signal \c$app_arg_401\                       : signed(47 downto 0);
+  signal \c$app_arg_402\                       : signed(47 downto 0);
   signal result_412                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Distortion/Rat.hs:64:1-20
   signal \on_6\                                : boolean;
   signal result_413                            : signed(23 downto 0);
   signal \c$case_alt_167\                      : signed(23 downto 0);
-  signal \c$app_arg_371\                       : signed(23 downto 0);
+  signal \c$app_arg_403\                       : signed(23 downto 0);
   signal result_414                            : signed(23 downto 0);
   signal \c$case_alt_168\                      : signed(23 downto 0);
-  signal \c$app_arg_372\                       : signed(23 downto 0);
+  signal \c$app_arg_404\                       : signed(23 downto 0);
   signal result_415                            : signed(23 downto 0);
   signal \c$case_alt_169\                      : signed(23 downto 0);
-  signal \c$app_arg_373\                       : signed(23 downto 0);
+  signal \c$app_arg_405\                       : signed(23 downto 0);
   signal result_416                            : signed(23 downto 0);
   signal \c$case_alt_170\                      : signed(23 downto 0);
-  signal \c$app_arg_374\                       : signed(23 downto 0);
+  signal \c$app_arg_406\                       : signed(23 downto 0);
   signal result_417                            : clash_lowpass_fir_types.Tuple4;
   -- src/AudioLab/Effects/Distortion/Common.hs:36:1-14
   signal p0_1                                  : signed(23 downto 0);
@@ -2836,15 +2884,15 @@ architecture structural of clash_lowpass_fir is
   signal result_418                            : clash_lowpass_fir_types.Tuple4;
   signal \c$case_alt_171\                      : signed(23 downto 0);
   signal result_419                            : signed(23 downto 0);
-  signal \c$app_arg_375\                       : signed(47 downto 0);
-  signal \c$app_arg_376\                       : signed(47 downto 0);
+  signal \c$app_arg_407\                       : signed(47 downto 0);
+  signal \c$app_arg_408\                       : signed(47 downto 0);
   signal \c$case_alt_172\                      : signed(23 downto 0);
   signal result_420                            : signed(23 downto 0);
-  signal \c$app_arg_377\                       : signed(47 downto 0);
+  signal \c$app_arg_409\                       : signed(47 downto 0);
   signal \c$case_alt_173\                      : signed(23 downto 0);
   signal result_421                            : signed(23 downto 0);
-  signal \c$app_arg_378\                       : signed(47 downto 0);
-  signal \c$app_arg_379\                       : signed(47 downto 0);
+  signal \c$app_arg_410\                       : signed(47 downto 0);
+  signal \c$app_arg_411\                       : signed(47 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratClipHist                           : clash_lowpass_fir_types.array_of_signed_24(0 to 11) := clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
                                            , to_signed(0,24)
@@ -2869,16 +2917,16 @@ architecture structural of clash_lowpass_fir is
   signal f_9                                   : clash_lowpass_fir_types.Frame;
   signal result_425                            : signed(23 downto 0);
   signal \c$case_alt_174\                      : signed(23 downto 0);
-  signal \c$app_arg_380\                       : signed(23 downto 0);
+  signal \c$app_arg_412\                       : signed(23 downto 0);
   signal result_426                            : signed(23 downto 0);
   signal \c$case_alt_175\                      : signed(23 downto 0);
-  signal \c$app_arg_381\                       : signed(23 downto 0);
+  signal \c$app_arg_413\                       : signed(23 downto 0);
   signal result_427                            : signed(23 downto 0);
   signal \c$case_alt_176\                      : signed(23 downto 0);
-  signal \c$app_arg_382\                       : signed(23 downto 0);
+  signal \c$app_arg_414\                       : signed(23 downto 0);
   signal result_428                            : signed(23 downto 0);
   signal \c$case_alt_177\                      : signed(23 downto 0);
-  signal \c$app_arg_383\                       : signed(23 downto 0);
+  signal \c$app_arg_415\                       : signed(23 downto 0);
   signal result_429                            : clash_lowpass_fir_types.Tuple4;
   -- src/AudioLab/Effects/Distortion/Common.hs:36:1-14
   signal p0_2                                  : signed(23 downto 0);
@@ -2895,15 +2943,15 @@ architecture structural of clash_lowpass_fir is
   signal result_430                            : clash_lowpass_fir_types.Tuple4;
   signal \c$case_alt_178\                      : signed(23 downto 0);
   signal result_431                            : signed(23 downto 0);
-  signal \c$app_arg_384\                       : signed(47 downto 0);
-  signal \c$app_arg_385\                       : signed(47 downto 0);
+  signal \c$app_arg_416\                       : signed(47 downto 0);
+  signal \c$app_arg_417\                       : signed(47 downto 0);
   signal \c$case_alt_179\                      : signed(23 downto 0);
   signal result_432                            : signed(23 downto 0);
-  signal \c$app_arg_386\                       : signed(47 downto 0);
+  signal \c$app_arg_418\                       : signed(47 downto 0);
   signal \c$case_alt_180\                      : signed(23 downto 0);
   signal result_433                            : signed(23 downto 0);
-  signal \c$app_arg_387\                       : signed(47 downto 0);
-  signal \c$app_arg_388\                       : signed(47 downto 0);
+  signal \c$app_arg_419\                       : signed(47 downto 0);
+  signal \c$app_arg_420\                       : signed(47 downto 0);
   signal result_434                            : clash_lowpass_fir_types.array_of_signed_24(0 to 11);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ratClipInPrev                         : signed(23 downto 0) := to_signed(0,24);
@@ -2917,7 +2965,7 @@ architecture structural of clash_lowpass_fir is
   signal x_174                                 : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:98:1-9
   signal alpha_10                              : unsigned(7 downto 0);
-  signal \c$app_arg_389\                       : signed(47 downto 0);
+  signal \c$app_arg_421\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_34                               : unsigned(7 downto 0);
   signal \c$case_alt_181\                      : signed(23 downto 0);
@@ -2951,7 +2999,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_43                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_441                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_390\                       : signed(47 downto 0);
+  signal \c$app_arg_422\                       : signed(47 downto 0);
   signal \c$case_alt_183\                      : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_35                               : unsigned(11 downto 0);
@@ -3009,10 +3057,10 @@ architecture structural of clash_lowpass_fir is
   signal ds1_45                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_451                            : clash_lowpass_fir_types.Maybe;
   signal result_452                            : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_391\                       : signed(47 downto 0);
+  signal \c$app_arg_423\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_37                               : unsigned(7 downto 0);
-  signal \c$app_arg_392\                       : signed(47 downto 0);
+  signal \c$app_arg_424\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Distortion/Legacy.hs:51:1-27
   signal \on_7\                                : boolean;
   -- src/AudioLab/Effects/Distortion/Legacy.hs:51:1-27
@@ -3035,7 +3083,7 @@ architecture structural of clash_lowpass_fir is
   signal x_188                                 : signed(23 downto 0);
   signal result_455                            : signed(23 downto 0);
   signal \c$case_alt_187\                      : signed(23 downto 0);
-  signal \c$app_arg_393\                       : signed(23 downto 0);
+  signal \c$app_arg_425\                       : signed(23 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_189                                 : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -3057,7 +3105,7 @@ architecture structural of clash_lowpass_fir is
   signal result_461                            : signed(24 downto 0);
   -- src/AudioLab/Effects/Distortion/Legacy.hs:23:1-28
   signal rawThreshold_1                        : signed(24 downto 0);
-  signal \c$app_arg_394\                       : signed(47 downto 0);
+  signal \c$app_arg_426\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_38                               : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Distortion/Legacy.hs:23:1-28
@@ -3073,12 +3121,12 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Overdrive.hs:314:1-19
   signal x_193                                 : signed(23 downto 0);
   signal result_464                            : signed(23 downto 0);
-  signal \c$app_arg_395\                       : signed(24 downto 0);
-  signal \c$app_arg_396\                       : signed(24 downto 0);
+  signal \c$app_arg_427\                       : signed(24 downto 0);
+  signal \c$app_arg_428\                       : signed(24 downto 0);
   signal result_465                            : signed(23 downto 0);
-  signal \c$app_arg_397\                       : signed(24 downto 0);
-  signal \c$app_arg_398\                       : signed(24 downto 0);
-  signal \c$app_arg_399\                       : signed(24 downto 0);
+  signal \c$app_arg_429\                       : signed(24 downto 0);
+  signal \c$app_arg_430\                       : signed(24 downto 0);
+  signal \c$app_arg_431\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:135:1-9
   signal negKnee_7                             : signed(23 downto 0);
   signal \c$case_alt_189\                      : signed(23 downto 0);
@@ -3120,8 +3168,8 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal ds1_50                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_473                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_400\                       : signed(47 downto 0);
-  signal \c$app_arg_401\                       : signed(47 downto 0);
+  signal \c$app_arg_432\                       : signed(47 downto 0);
+  signal \c$app_arg_433\                       : signed(47 downto 0);
   signal result_474                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/FixedPoint.hs:28:1-5
   signal gain_41                               : unsigned(7 downto 0);
@@ -3143,52 +3191,52 @@ architecture structural of clash_lowpass_fir is
   signal \c$odKneePOut\                        : signed(23 downto 0);
   signal \c$odKneeNOut\                        : signed(23 downto 0);
   signal result_476                            : signed(23 downto 0);
-  signal \c$app_arg_402\                       : signed(24 downto 0);
-  signal \c$app_arg_403\                       : signed(24 downto 0);
+  signal \c$app_arg_434\                       : signed(24 downto 0);
+  signal \c$app_arg_435\                       : signed(24 downto 0);
   signal result_477                            : signed(23 downto 0);
-  signal \c$app_arg_404\                       : signed(24 downto 0);
-  signal \c$app_arg_405\                       : signed(24 downto 0);
-  signal \c$app_arg_406\                       : signed(24 downto 0);
+  signal \c$app_arg_436\                       : signed(24 downto 0);
+  signal \c$app_arg_437\                       : signed(24 downto 0);
+  signal \c$app_arg_438\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:197:1-14
   signal negKneeN_0                            : signed(23 downto 0);
   signal result_478                            : signed(23 downto 0);
-  signal \c$app_arg_407\                       : signed(24 downto 0);
-  signal \c$app_arg_408\                       : signed(24 downto 0);
+  signal \c$app_arg_439\                       : signed(24 downto 0);
+  signal \c$app_arg_440\                       : signed(24 downto 0);
   signal result_479                            : signed(23 downto 0);
-  signal \c$app_arg_409\                       : signed(24 downto 0);
-  signal \c$app_arg_410\                       : signed(24 downto 0);
-  signal \c$app_arg_411\                       : signed(24 downto 0);
+  signal \c$app_arg_441\                       : signed(24 downto 0);
+  signal \c$app_arg_442\                       : signed(24 downto 0);
+  signal \c$app_arg_443\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:165:1-16
   signal negKneeN_1                            : signed(23 downto 0);
   signal result_480                            : signed(23 downto 0);
-  signal \c$app_arg_412\                       : signed(24 downto 0);
-  signal \c$app_arg_413\                       : signed(24 downto 0);
+  signal \c$app_arg_444\                       : signed(24 downto 0);
+  signal \c$app_arg_445\                       : signed(24 downto 0);
   signal result_481                            : signed(23 downto 0);
-  signal \c$app_arg_414\                       : signed(24 downto 0);
-  signal \c$app_arg_415\                       : signed(24 downto 0);
-  signal \c$app_arg_416\                       : signed(24 downto 0);
+  signal \c$app_arg_446\                       : signed(24 downto 0);
+  signal \c$app_arg_447\                       : signed(24 downto 0);
+  signal \c$app_arg_448\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:146:1-12
   signal negKneeN_2                            : signed(23 downto 0);
   signal result_482                            : signed(23 downto 0);
-  signal \c$app_arg_417\                       : signed(24 downto 0);
-  signal \c$app_arg_418\                       : signed(24 downto 0);
+  signal \c$app_arg_449\                       : signed(24 downto 0);
+  signal \c$app_arg_450\                       : signed(24 downto 0);
   signal result_483                            : signed(23 downto 0);
-  signal \c$app_arg_419\                       : signed(24 downto 0);
-  signal \c$app_arg_420\                       : signed(24 downto 0);
-  signal \c$app_arg_421\                       : signed(24 downto 0);
+  signal \c$app_arg_451\                       : signed(24 downto 0);
+  signal \c$app_arg_452\                       : signed(24 downto 0);
+  signal \c$app_arg_453\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:173:1-15
   signal negKneeN_3                            : signed(23 downto 0);
   signal result_484                            : signed(23 downto 0);
-  signal \c$app_arg_422\                       : signed(24 downto 0);
-  signal \c$app_arg_423\                       : signed(24 downto 0);
+  signal \c$app_arg_454\                       : signed(24 downto 0);
+  signal \c$app_arg_455\                       : signed(24 downto 0);
   signal result_485                            : signed(23 downto 0);
-  signal \c$app_arg_424\                       : signed(24 downto 0);
-  signal \c$app_arg_425\                       : signed(24 downto 0);
-  signal \c$app_arg_426\                       : signed(24 downto 0);
+  signal \c$app_arg_456\                       : signed(24 downto 0);
+  signal \c$app_arg_457\                       : signed(24 downto 0);
+  signal \c$app_arg_458\                       : signed(24 downto 0);
   -- src/AudioLab/FixedPoint.hs:181:1-16
   signal negKneeN_4                            : signed(23 downto 0);
   signal result_486                            : signed(23 downto 0);
-  signal \c$app_arg_427\                       : signed(47 downto 0);
+  signal \c$app_arg_459\                       : signed(47 downto 0);
   signal result_487                            : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Effects/Overdrive.hs:272:1-23
   signal x_199                                 : signed(23 downto 0);
@@ -3225,7 +3273,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Types.hs:80:1-7
   signal ds1_52                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_491                            : clash_lowpass_fir_types.Maybe;
-  signal \c$app_arg_428\                       : signed(47 downto 0);
+  signal \c$app_arg_460\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Overdrive.hs:241:1-28
   signal ds_8                                  : clash_lowpass_fir_types.Tuple3;
   signal result_492                            : clash_lowpass_fir_types.Frame;
@@ -3257,7 +3305,7 @@ architecture structural of clash_lowpass_fir is
   signal ds1_53                                : clash_lowpass_fir_types.Maybe := std_logic_vector'("0" & "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
   signal result_496                            : clash_lowpass_fir_types.Maybe;
   signal \c$case_alt_194\                      : clash_lowpass_fir_types.Frame;
-  signal \c$app_arg_429\                       : signed(47 downto 0);
+  signal \c$app_arg_461\                       : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:37:1-6
   signal gain_42                               : unsigned(11 downto 0);
   -- src/AudioLab/FixedPoint.hs:37:1-6
@@ -3274,14 +3322,14 @@ architecture structural of clash_lowpass_fir is
   signal result_499                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Wah.hs:306:1-13
   signal \c$x_app_arg_79\                      : signed(47 downto 0);
-  signal \c$app_arg_430\                       : unsigned(9 downto 0);
+  signal \c$app_arg_462\                       : unsigned(9 downto 0);
   signal result_500                            : unsigned(9 downto 0);
-  signal \c$app_arg_431\                       : std_logic;
-  signal \c$app_arg_432\                       : std_logic_vector(31 downto 0);
+  signal \c$app_arg_463\                       : std_logic;
+  signal \c$app_arg_464\                       : std_logic_vector(31 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal wahBand                               : signed(23 downto 0) := to_signed(0,24);
-  signal \c$app_arg_433\                       : std_logic;
-  signal \c$app_arg_434\                       : signed(47 downto 0);
+  signal \c$app_arg_465\                       : std_logic;
+  signal \c$app_arg_466\                       : signed(47 downto 0);
   signal \c$case_alt_196\                      : signed(23 downto 0);
   signal result_501                            : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
@@ -3302,20 +3350,20 @@ architecture structural of clash_lowpass_fir is
   signal \c$case_alt_200\                      : signed(23 downto 0);
   signal \c$case_alt_201\                      : signed(23 downto 0);
   signal result_506                            : signed(23 downto 0);
-  signal \c$app_arg_435\                       : signed(47 downto 0);
+  signal \c$app_arg_467\                       : signed(47 downto 0);
   -- src/AudioLab/Effects/Wah.hs:151:1-9
   signal raw                                   : unsigned(7 downto 0);
   signal result_507                            : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Wah.hs:151:1-9
   signal \c$raw_app_arg\                       : unsigned(7 downto 0);
-  signal \c$app_arg_436\                       : std_logic;
-  signal \c$app_arg_437\                       : std_logic_vector(31 downto 0);
+  signal \c$app_arg_468\                       : std_logic;
+  signal \c$app_arg_469\                       : std_logic_vector(31 downto 0);
   -- src/AudioLab/Effects/Wah.hs:234:1-13
   signal f_11                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal wahLow                                : signed(23 downto 0) := to_signed(0,24);
-  signal \c$app_arg_438\                       : std_logic;
-  signal \c$app_arg_439\                       : signed(47 downto 0);
+  signal \c$app_arg_470\                       : std_logic;
+  signal \c$app_arg_471\                       : signed(47 downto 0);
   signal \c$case_alt_202\                      : signed(23 downto 0);
   signal result_508                            : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:52:1-7
@@ -3338,14 +3386,14 @@ architecture structural of clash_lowpass_fir is
   signal x_210                                 : signed(17 downto 0);
   signal result_512                            : unsigned(7 downto 0);
   signal \c$case_alt_206\                      : unsigned(7 downto 0);
-  signal \c$app_arg_440\                       : signed(63 downto 0);
+  signal \c$app_arg_472\                       : signed(63 downto 0);
   -- src/AudioLab/Effects/Wah.hs:125:1-15
   signal \c$x_app_arg_80\                      : signed(17 downto 0);
   signal result_513                            : unsigned(7 downto 0);
   signal result_514                            : unsigned(15 downto 0);
   signal \c$case_alt_207\                      : unsigned(15 downto 0);
   signal \c$case_alt_208\                      : unsigned(15 downto 0);
-  signal \c$app_arg_441\                       : unsigned(15 downto 0);
+  signal \c$app_arg_473\                       : unsigned(15 downto 0);
   signal \c$tupIn\                             : clash_lowpass_fir_types.Tuple2_1;
   signal \c$tupIn_case_alt\                    : clash_lowpass_fir_types.Tuple2_1;
   signal \c$tupIn_case_alt_0\                  : clash_lowpass_fir_types.Tuple2_1;
@@ -3353,8 +3401,8 @@ architecture structural of clash_lowpass_fir is
   signal \c$tupIn_case_scrut\                  : boolean;
   signal \c$tupIn_case_scrut_0\                : boolean;
   signal \c$tupIn_case_scrut_1\                : boolean;
-  signal \c$app_arg_442\                       : std_logic;
-  signal \c$app_arg_443\                       : unsigned(7 downto 0);
+  signal \c$app_arg_474\                       : std_logic;
+  signal \c$app_arg_475\                       : unsigned(7 downto 0);
   -- src/AudioLab/Effects/Wah.hs:225:1-13
   signal f_13                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -3378,7 +3426,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$case_alt_216\                      : signed(63 downto 0);
   -- src/AudioLab/Effects/Wah.hs:188:1-16
   signal nudged_1                              : signed(10 downto 0);
-  signal \c$app_arg_444\                       : boolean;
+  signal \c$app_arg_476\                       : boolean;
   -- src/AudioLab/Effects/Wah.hs:188:1-16
   signal stepDelta                             : signed(10 downto 0);
   -- src/AudioLab/Effects/Wah.hs:188:1-16
@@ -3387,8 +3435,8 @@ architecture structural of clash_lowpass_fir is
   signal prevSigned                            : signed(10 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
   signal x_211                                 : unsigned(7 downto 0);
-  signal \c$app_arg_445\                       : std_logic;
-  signal \c$app_arg_446\                       : std_logic_vector(31 downto 0);
+  signal \c$app_arg_477\                       : std_logic;
+  signal \c$app_arg_478\                       : std_logic_vector(31 downto 0);
   -- src/AudioLab/Effects/Wah.hs:188:1-16
   signal f_14                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:80:1-7
@@ -3403,8 +3451,8 @@ architecture structural of clash_lowpass_fir is
   signal \c$x_app_arg_81\                      : signed(47 downto 0);
   -- src/AudioLab/FixedPoint.hs:31:1-5
   signal gain_43                               : unsigned(8 downto 0);
-  signal \c$app_arg_447\                       : std_logic;
-  signal \c$app_arg_448\                       : unsigned(7 downto 0);
+  signal \c$app_arg_479\                       : std_logic;
+  signal \c$app_arg_480\                       : unsigned(7 downto 0);
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal x_213                                 : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Pipeline.hs:53:1-10
@@ -3415,7 +3463,7 @@ architecture structural of clash_lowpass_fir is
   signal result_525                            : signed(23 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:163:1-14
   signal \c$x_app_arg_82\                      : signed(47 downto 0);
-  signal \c$app_arg_449\                       : std_logic;
+  signal \c$app_arg_481\                       : std_logic;
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal compGain                              : unsigned(11 downto 0) := to_unsigned(4095,12);
   -- src/AudioLab/Effects/Compressor.hs:150:1-14
@@ -3433,8 +3481,8 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Pipeline.hs:53:1-10
   signal \c$compGain_app_arg\                  : clash_lowpass_fir_types.Maybe_1 := std_logic_vector'("0" & "-------------------------");
   signal result_527                            : clash_lowpass_fir_types.Maybe_1;
-  signal \c$app_arg_450\                       : unsigned(11 downto 0);
-  signal \c$app_arg_451\                       : unsigned(11 downto 0);
+  signal \c$app_arg_482\                       : unsigned(11 downto 0);
+  signal \c$app_arg_483\                       : unsigned(11 downto 0);
   signal \c$case_alt_224\                      : unsigned(11 downto 0);
   -- src/AudioLab/Effects/Compressor.hs:106:1-14
   signal \on_11\                               : boolean;
@@ -3461,7 +3509,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Effects/Compressor.hs:65:1-19
   signal base                                  : signed(23 downto 0);
   signal result_531                            : signed(23 downto 0);
-  signal \c$app_arg_452\                       : signed(23 downto 0);
+  signal \c$app_arg_484\                       : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
   signal x_214                                 : unsigned(7 downto 0);
   signal result_532                            : unsigned(7 downto 0);
@@ -3492,8 +3540,8 @@ architecture structural of clash_lowpass_fir is
   signal distance                              : unsigned(7 downto 0);
   signal \c$case_alt_227\                      : signed(23 downto 0);
   signal result_537                            : signed(23 downto 0);
-  signal \c$app_arg_453\                       : std_logic;
-  signal \c$app_arg_454\                       : std_logic_vector(31 downto 0);
+  signal \c$app_arg_485\                       : std_logic;
+  signal \c$app_arg_486\                       : std_logic_vector(31 downto 0);
   -- src/AudioLab/FixedPoint.hs:240:1-12
   signal f_16                                  : clash_lowpass_fir_types.Frame;
   -- src/AudioLab/Types.hs:80:1-7
@@ -3527,14 +3575,14 @@ architecture structural of clash_lowpass_fir is
   signal result_547                            : unsigned(11 downto 0);
   signal result_548                            : unsigned(11 downto 0);
   signal \c$case_alt_233\                      : unsigned(11 downto 0);
-  signal \c$app_arg_455\                       : signed(23 downto 0);
+  signal \c$app_arg_487\                       : signed(23 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:142:1-12
   signal threshold                             : signed(23 downto 0);
   -- src/AudioLab/FixedPoint.hs:10:1-9
   signal x_217                                 : unsigned(7 downto 0);
   signal result_549                            : unsigned(11 downto 0);
   signal result_550                            : unsigned(15 downto 0);
-  signal \c$app_arg_456\                       : unsigned(15 downto 0);
+  signal \c$app_arg_488\                       : unsigned(15 downto 0);
   -- src/AudioLab/Effects/NoiseSuppressor.hs:92:1-12
   signal inv8                                  : unsigned(7 downto 0);
   signal \c$nsClosedGainOut_app_arg\           : std_logic_vector(31 downto 0);
@@ -3571,7 +3619,7 @@ architecture structural of clash_lowpass_fir is
   -- src/AudioLab/Axis.hs:15:1-9
   signal validIn                               : boolean;
   signal result_560                            : clash_lowpass_fir_types.Tuple2_2;
-  signal \c$app_arg_457\                       : std_logic_vector(47 downto 0);
+  signal \c$app_arg_489\                       : std_logic_vector(47 downto 0);
   -- src/AudioLab/Axis.hs:15:1-9
   signal mono_0                                : signed(23 downto 0);
   signal result_561                            : clash_lowpass_fir_types.Maybe;
@@ -3795,7 +3843,7 @@ architecture structural of clash_lowpass_fir is
   signal \c$bv_17\                             : std_logic_vector(31 downto 0);
   signal \c$bv_18\                             : std_logic_vector(31 downto 0);
   signal \c$shI_20\                            : signed(63 downto 0);
-  signal \c$vec_1\                             : clash_lowpass_fir_types.array_of_signed_24(0 to 30);
+  signal \c$vec_1\                             : clash_lowpass_fir_types.array_of_signed_24(0 to 46);
   signal result_sel_alt_143                    : clash_lowpass_fir_types.Tuple2_5;
   signal x_selection_res_8                     : std_logic_vector(0 downto 0);
   signal \c$bv_19\                             : std_logic_vector(31 downto 0);
@@ -9666,11 +9714,11 @@ begin
 
   -- index begin
   indexVec_3 : block
-    signal vec_index_4 : integer range 0 to 30-1;
+    signal vec_index_4 : integer range 0 to 46-1;
   begin
-    vec_index_4 <= to_integer((to_signed(29,64)))
+    vec_index_4 <= to_integer((to_signed(45,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_20\ <= cabSpkHist(vec_index_4);
@@ -9679,11 +9727,11 @@ begin
 
   -- index begin
   indexVec_4 : block
-    signal vec_index_5 : integer range 0 to 16-1;
+    signal vec_index_5 : integer range 0 to 24-1;
   begin
     vec_index_5 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
     \c$app_arg_21\ <= result_53(vec_index_5);
@@ -9694,11 +9742,11 @@ begin
 
   -- index begin
   indexVec_5 : block
-    signal vec_index_6 : integer range 0 to 30-1;
+    signal vec_index_6 : integer range 0 to 46-1;
   begin
     vec_index_6 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_23\ <= cabSpkHist(vec_index_6);
@@ -9707,11 +9755,11 @@ begin
 
   -- index begin
   indexVec_6 : block
-    signal vec_index_7 : integer range 0 to 30-1;
+    signal vec_index_7 : integer range 0 to 46-1;
   begin
-    vec_index_7 <= to_integer((to_signed(28,64)))
+    vec_index_7 <= to_integer((to_signed(44,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_24\ <= cabSpkHist(vec_index_7);
@@ -9720,11 +9768,11 @@ begin
 
   -- index begin
   indexVec_7 : block
-    signal vec_index_8 : integer range 0 to 16-1;
+    signal vec_index_8 : integer range 0 to 24-1;
   begin
     vec_index_8 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
     \c$app_arg_25\ <= result_53(vec_index_8);
@@ -9735,11 +9783,11 @@ begin
 
   -- index begin
   indexVec_8 : block
-    signal vec_index_9 : integer range 0 to 30-1;
+    signal vec_index_9 : integer range 0 to 46-1;
   begin
     vec_index_9 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_27\ <= cabSpkHist(vec_index_9);
@@ -9748,11 +9796,11 @@ begin
 
   -- index begin
   indexVec_9 : block
-    signal vec_index_10 : integer range 0 to 30-1;
+    signal vec_index_10 : integer range 0 to 46-1;
   begin
-    vec_index_10 <= to_integer((to_signed(27,64)))
+    vec_index_10 <= to_integer((to_signed(43,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_28\ <= cabSpkHist(vec_index_10);
@@ -9761,11 +9809,11 @@ begin
 
   -- index begin
   indexVec_10 : block
-    signal vec_index_11 : integer range 0 to 16-1;
+    signal vec_index_11 : integer range 0 to 24-1;
   begin
     vec_index_11 <= to_integer((to_signed(2,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
     \c$app_arg_29\ <= result_53(vec_index_11);
@@ -9774,57 +9822,57 @@ begin
 
   \c$app_arg_30\ <= resize(((resize(\c$app_arg_27\,48)) + (resize(\c$app_arg_28\,48))) * (resize(\c$app_arg_29\,48)), 48);
 
-  \c$app_arg_31\ <= (\c$app_arg_22\ + \c$app_arg_26\) + \c$app_arg_30\ when \on_1\ else
-                    to_signed(0,48);
-
   -- index begin
   indexVec_11 : block
-    signal vec_index_12 : integer range 0 to 30-1;
+    signal vec_index_12 : integer range 0 to 46-1;
   begin
     vec_index_12 <= to_integer((to_signed(2,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_32\ <= cabSpkHist(vec_index_12);
+    \c$app_arg_31\ <= cabSpkHist(vec_index_12);
   end block;
   -- index end
 
   -- index begin
   indexVec_12 : block
-    signal vec_index_13 : integer range 0 to 30-1;
+    signal vec_index_13 : integer range 0 to 46-1;
   begin
-    vec_index_13 <= to_integer((to_signed(26,64)))
+    vec_index_13 <= to_integer((to_signed(42,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_33\ <= cabSpkHist(vec_index_13);
+    \c$app_arg_32\ <= cabSpkHist(vec_index_13);
   end block;
   -- index end
 
   -- index begin
   indexVec_13 : block
-    signal vec_index_14 : integer range 0 to 16-1;
+    signal vec_index_14 : integer range 0 to 24-1;
   begin
     vec_index_14 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_34\ <= result_53(vec_index_14);
+    \c$app_arg_33\ <= result_53(vec_index_14);
   end block;
   -- index end
 
-  \c$app_arg_35\ <= resize(((resize(\c$app_arg_32\,48)) + (resize(\c$app_arg_33\,48))) * (resize(\c$app_arg_34\,48)), 48);
+  \c$app_arg_34\ <= resize(((resize(\c$app_arg_31\,48)) + (resize(\c$app_arg_32\,48))) * (resize(\c$app_arg_33\,48)), 48);
+
+  \c$app_arg_35\ <= ((\c$app_arg_22\ + \c$app_arg_26\) + \c$app_arg_30\) + \c$app_arg_34\ when \on_1\ else
+                    to_signed(0,48);
 
   -- index begin
   indexVec_14 : block
-    signal vec_index_15 : integer range 0 to 30-1;
+    signal vec_index_15 : integer range 0 to 46-1;
   begin
     vec_index_15 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_36\ <= cabSpkHist(vec_index_15);
@@ -9833,11 +9881,11 @@ begin
 
   -- index begin
   indexVec_15 : block
-    signal vec_index_16 : integer range 0 to 30-1;
+    signal vec_index_16 : integer range 0 to 46-1;
   begin
-    vec_index_16 <= to_integer((to_signed(25,64)))
+    vec_index_16 <= to_integer((to_signed(41,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_37\ <= cabSpkHist(vec_index_16);
@@ -9846,11 +9894,11 @@ begin
 
   -- index begin
   indexVec_16 : block
-    signal vec_index_17 : integer range 0 to 16-1;
+    signal vec_index_17 : integer range 0 to 24-1;
   begin
     vec_index_17 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
     \c$app_arg_38\ <= result_53(vec_index_17);
@@ -9861,11 +9909,11 @@ begin
 
   -- index begin
   indexVec_17 : block
-    signal vec_index_18 : integer range 0 to 30-1;
+    signal vec_index_18 : integer range 0 to 46-1;
   begin
     vec_index_18 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_40\ <= cabSpkHist(vec_index_18);
@@ -9874,11 +9922,11 @@ begin
 
   -- index begin
   indexVec_18 : block
-    signal vec_index_19 : integer range 0 to 30-1;
+    signal vec_index_19 : integer range 0 to 46-1;
   begin
-    vec_index_19 <= to_integer((to_signed(24,64)))
+    vec_index_19 <= to_integer((to_signed(40,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_41\ <= cabSpkHist(vec_index_19);
@@ -9887,11 +9935,11 @@ begin
 
   -- index begin
   indexVec_19 : block
-    signal vec_index_20 : integer range 0 to 16-1;
+    signal vec_index_20 : integer range 0 to 24-1;
   begin
     vec_index_20 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
     \c$app_arg_42\ <= result_53(vec_index_20);
@@ -9900,98 +9948,98 @@ begin
 
   \c$app_arg_43\ <= resize(((resize(\c$app_arg_40\,48)) + (resize(\c$app_arg_41\,48))) * (resize(\c$app_arg_42\,48)), 48);
 
-  \c$app_arg_44\ <= (\c$app_arg_35\ + \c$app_arg_39\) + \c$app_arg_43\ when \on_1\ else
-                    to_signed(0,48);
-
   -- index begin
   indexVec_20 : block
-    signal vec_index_21 : integer range 0 to 30-1;
+    signal vec_index_21 : integer range 0 to 46-1;
   begin
     vec_index_21 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_45\ <= cabSpkHist(vec_index_21);
+    \c$app_arg_44\ <= cabSpkHist(vec_index_21);
   end block;
   -- index end
 
   -- index begin
   indexVec_21 : block
-    signal vec_index_22 : integer range 0 to 30-1;
+    signal vec_index_22 : integer range 0 to 46-1;
   begin
-    vec_index_22 <= to_integer((to_signed(23,64)))
+    vec_index_22 <= to_integer((to_signed(39,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_46\ <= cabSpkHist(vec_index_22);
+    \c$app_arg_45\ <= cabSpkHist(vec_index_22);
   end block;
   -- index end
 
   -- index begin
   indexVec_22 : block
-    signal vec_index_23 : integer range 0 to 16-1;
+    signal vec_index_23 : integer range 0 to 24-1;
   begin
     vec_index_23 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_47\ <= result_53(vec_index_23);
+    \c$app_arg_46\ <= result_53(vec_index_23);
   end block;
   -- index end
 
-  \c$app_arg_48\ <= resize(((resize(\c$app_arg_45\,48)) + (resize(\c$app_arg_46\,48))) * (resize(\c$app_arg_47\,48)), 48);
+  \c$app_arg_47\ <= resize(((resize(\c$app_arg_44\,48)) + (resize(\c$app_arg_45\,48))) * (resize(\c$app_arg_46\,48)), 48);
 
   -- index begin
   indexVec_23 : block
-    signal vec_index_24 : integer range 0 to 30-1;
+    signal vec_index_24 : integer range 0 to 46-1;
   begin
     vec_index_24 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_49\ <= cabSpkHist(vec_index_24);
+    \c$app_arg_48\ <= cabSpkHist(vec_index_24);
   end block;
   -- index end
 
   -- index begin
   indexVec_24 : block
-    signal vec_index_25 : integer range 0 to 30-1;
+    signal vec_index_25 : integer range 0 to 46-1;
   begin
-    vec_index_25 <= to_integer((to_signed(22,64)))
+    vec_index_25 <= to_integer((to_signed(38,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_50\ <= cabSpkHist(vec_index_25);
+    \c$app_arg_49\ <= cabSpkHist(vec_index_25);
   end block;
   -- index end
 
   -- index begin
   indexVec_25 : block
-    signal vec_index_26 : integer range 0 to 16-1;
+    signal vec_index_26 : integer range 0 to 24-1;
   begin
     vec_index_26 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_51\ <= result_53(vec_index_26);
+    \c$app_arg_50\ <= result_53(vec_index_26);
   end block;
   -- index end
 
-  \c$app_arg_52\ <= resize(((resize(\c$app_arg_49\,48)) + (resize(\c$app_arg_50\,48))) * (resize(\c$app_arg_51\,48)), 48);
+  \c$app_arg_51\ <= resize(((resize(\c$app_arg_48\,48)) + (resize(\c$app_arg_49\,48))) * (resize(\c$app_arg_50\,48)), 48);
+
+  \c$app_arg_52\ <= ((\c$app_arg_39\ + \c$app_arg_43\) + \c$app_arg_47\) + \c$app_arg_51\ when \on_1\ else
+                    to_signed(0,48);
 
   -- index begin
   indexVec_26 : block
-    signal vec_index_27 : integer range 0 to 30-1;
+    signal vec_index_27 : integer range 0 to 46-1;
   begin
     vec_index_27 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_53\ <= cabSpkHist(vec_index_27);
@@ -10000,11 +10048,11 @@ begin
 
   -- index begin
   indexVec_27 : block
-    signal vec_index_28 : integer range 0 to 30-1;
+    signal vec_index_28 : integer range 0 to 46-1;
   begin
-    vec_index_28 <= to_integer((to_signed(21,64)))
+    vec_index_28 <= to_integer((to_signed(37,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
     \c$app_arg_54\ <= cabSpkHist(vec_index_28);
@@ -10013,11 +10061,11 @@ begin
 
   -- index begin
   indexVec_28 : block
-    signal vec_index_29 : integer range 0 to 16-1;
+    signal vec_index_29 : integer range 0 to 24-1;
   begin
     vec_index_29 <= to_integer((to_signed(8,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
     \c$app_arg_55\ <= result_53(vec_index_29);
@@ -10026,289 +10074,617 @@ begin
 
   \c$app_arg_56\ <= resize(((resize(\c$app_arg_53\,48)) + (resize(\c$app_arg_54\,48))) * (resize(\c$app_arg_55\,48)), 48);
 
-  \c$app_arg_57\ <= (\c$app_arg_48\ + \c$app_arg_52\) + \c$app_arg_56\ when \on_1\ else
-                    to_signed(0,48);
-
   -- index begin
   indexVec_29 : block
-    signal vec_index_30 : integer range 0 to 30-1;
+    signal vec_index_30 : integer range 0 to 46-1;
   begin
     vec_index_30 <= to_integer((to_signed(8,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_58\ <= cabSpkHist(vec_index_30);
+    \c$app_arg_57\ <= cabSpkHist(vec_index_30);
   end block;
   -- index end
 
   -- index begin
   indexVec_30 : block
-    signal vec_index_31 : integer range 0 to 30-1;
+    signal vec_index_31 : integer range 0 to 46-1;
   begin
-    vec_index_31 <= to_integer((to_signed(20,64)))
+    vec_index_31 <= to_integer((to_signed(36,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_59\ <= cabSpkHist(vec_index_31);
+    \c$app_arg_58\ <= cabSpkHist(vec_index_31);
   end block;
   -- index end
 
   -- index begin
   indexVec_31 : block
-    signal vec_index_32 : integer range 0 to 16-1;
+    signal vec_index_32 : integer range 0 to 24-1;
   begin
     vec_index_32 <= to_integer((to_signed(9,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_60\ <= result_53(vec_index_32);
+    \c$app_arg_59\ <= result_53(vec_index_32);
   end block;
   -- index end
 
-  \c$app_arg_61\ <= resize(((resize(\c$app_arg_58\,48)) + (resize(\c$app_arg_59\,48))) * (resize(\c$app_arg_60\,48)), 48);
+  \c$app_arg_60\ <= resize(((resize(\c$app_arg_57\,48)) + (resize(\c$app_arg_58\,48))) * (resize(\c$app_arg_59\,48)), 48);
 
   -- index begin
   indexVec_32 : block
-    signal vec_index_33 : integer range 0 to 30-1;
+    signal vec_index_33 : integer range 0 to 46-1;
   begin
     vec_index_33 <= to_integer((to_signed(9,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_62\ <= cabSpkHist(vec_index_33);
+    \c$app_arg_61\ <= cabSpkHist(vec_index_33);
   end block;
   -- index end
 
   -- index begin
   indexVec_33 : block
-    signal vec_index_34 : integer range 0 to 30-1;
+    signal vec_index_34 : integer range 0 to 46-1;
   begin
-    vec_index_34 <= to_integer((to_signed(19,64)))
+    vec_index_34 <= to_integer((to_signed(35,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_63\ <= cabSpkHist(vec_index_34);
+    \c$app_arg_62\ <= cabSpkHist(vec_index_34);
   end block;
   -- index end
 
   -- index begin
   indexVec_34 : block
-    signal vec_index_35 : integer range 0 to 16-1;
+    signal vec_index_35 : integer range 0 to 24-1;
   begin
     vec_index_35 <= to_integer((to_signed(10,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_64\ <= result_53(vec_index_35);
+    \c$app_arg_63\ <= result_53(vec_index_35);
   end block;
   -- index end
 
-  \c$app_arg_65\ <= resize(((resize(\c$app_arg_62\,48)) + (resize(\c$app_arg_63\,48))) * (resize(\c$app_arg_64\,48)), 48);
+  \c$app_arg_64\ <= resize(((resize(\c$app_arg_61\,48)) + (resize(\c$app_arg_62\,48))) * (resize(\c$app_arg_63\,48)), 48);
 
   -- index begin
   indexVec_35 : block
-    signal vec_index_36 : integer range 0 to 30-1;
+    signal vec_index_36 : integer range 0 to 46-1;
   begin
     vec_index_36 <= to_integer((to_signed(10,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_66\ <= cabSpkHist(vec_index_36);
+    \c$app_arg_65\ <= cabSpkHist(vec_index_36);
   end block;
   -- index end
 
   -- index begin
   indexVec_36 : block
-    signal vec_index_37 : integer range 0 to 30-1;
+    signal vec_index_37 : integer range 0 to 46-1;
   begin
-    vec_index_37 <= to_integer((to_signed(18,64)))
+    vec_index_37 <= to_integer((to_signed(34,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_67\ <= cabSpkHist(vec_index_37);
+    \c$app_arg_66\ <= cabSpkHist(vec_index_37);
   end block;
   -- index end
 
   -- index begin
   indexVec_37 : block
-    signal vec_index_38 : integer range 0 to 16-1;
+    signal vec_index_38 : integer range 0 to 24-1;
   begin
     vec_index_38 <= to_integer((to_signed(11,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_68\ <= result_53(vec_index_38);
+    \c$app_arg_67\ <= result_53(vec_index_38);
   end block;
   -- index end
 
-  \c$app_arg_69\ <= resize(((resize(\c$app_arg_66\,48)) + (resize(\c$app_arg_67\,48))) * (resize(\c$app_arg_68\,48)), 48);
+  \c$app_arg_68\ <= resize(((resize(\c$app_arg_65\,48)) + (resize(\c$app_arg_66\,48))) * (resize(\c$app_arg_67\,48)), 48);
 
-  \c$app_arg_70\ <= (\c$app_arg_61\ + \c$app_arg_65\) + \c$app_arg_69\ when \on_1\ else
+  \c$app_arg_69\ <= ((\c$app_arg_56\ + \c$app_arg_60\) + \c$app_arg_64\) + \c$app_arg_68\ when \on_1\ else
                     to_signed(0,48);
 
   -- index begin
   indexVec_38 : block
-    signal vec_index_39 : integer range 0 to 30-1;
+    signal vec_index_39 : integer range 0 to 46-1;
   begin
     vec_index_39 <= to_integer((to_signed(11,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_71\ <= cabSpkHist(vec_index_39);
+    \c$app_arg_70\ <= cabSpkHist(vec_index_39);
   end block;
   -- index end
 
   -- index begin
   indexVec_39 : block
-    signal vec_index_40 : integer range 0 to 30-1;
+    signal vec_index_40 : integer range 0 to 46-1;
   begin
-    vec_index_40 <= to_integer((to_signed(17,64)))
+    vec_index_40 <= to_integer((to_signed(33,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_72\ <= cabSpkHist(vec_index_40);
+    \c$app_arg_71\ <= cabSpkHist(vec_index_40);
   end block;
   -- index end
 
   -- index begin
   indexVec_40 : block
-    signal vec_index_41 : integer range 0 to 16-1;
+    signal vec_index_41 : integer range 0 to 24-1;
   begin
     vec_index_41 <= to_integer((to_signed(12,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_73\ <= result_53(vec_index_41);
+    \c$app_arg_72\ <= result_53(vec_index_41);
   end block;
   -- index end
 
-  \c$app_arg_74\ <= resize(((resize(\c$app_arg_71\,48)) + (resize(\c$app_arg_72\,48))) * (resize(\c$app_arg_73\,48)), 48);
+  \c$app_arg_73\ <= resize(((resize(\c$app_arg_70\,48)) + (resize(\c$app_arg_71\,48))) * (resize(\c$app_arg_72\,48)), 48);
 
   -- index begin
   indexVec_41 : block
-    signal vec_index_42 : integer range 0 to 30-1;
+    signal vec_index_42 : integer range 0 to 46-1;
   begin
     vec_index_42 <= to_integer((to_signed(12,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_75\ <= cabSpkHist(vec_index_42);
+    \c$app_arg_74\ <= cabSpkHist(vec_index_42);
   end block;
   -- index end
 
   -- index begin
   indexVec_42 : block
-    signal vec_index_43 : integer range 0 to 30-1;
+    signal vec_index_43 : integer range 0 to 46-1;
   begin
-    vec_index_43 <= to_integer((to_signed(16,64)))
+    vec_index_43 <= to_integer((to_signed(32,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_76\ <= cabSpkHist(vec_index_43);
+    \c$app_arg_75\ <= cabSpkHist(vec_index_43);
   end block;
   -- index end
 
   -- index begin
   indexVec_43 : block
-    signal vec_index_44 : integer range 0 to 16-1;
+    signal vec_index_44 : integer range 0 to 24-1;
   begin
     vec_index_44 <= to_integer((to_signed(13,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_77\ <= result_53(vec_index_44);
+    \c$app_arg_76\ <= result_53(vec_index_44);
   end block;
   -- index end
 
-  \c$app_arg_78\ <= resize(((resize(\c$app_arg_75\,48)) + (resize(\c$app_arg_76\,48))) * (resize(\c$app_arg_77\,48)), 48);
-
-  \c$app_arg_79\ <= \c$app_arg_74\ + \c$app_arg_78\ when \on_1\ else
-                    to_signed(0,48);
+  \c$app_arg_77\ <= resize(((resize(\c$app_arg_74\,48)) + (resize(\c$app_arg_75\,48))) * (resize(\c$app_arg_76\,48)), 48);
 
   -- index begin
   indexVec_44 : block
-    signal vec_index_45 : integer range 0 to 30-1;
+    signal vec_index_45 : integer range 0 to 46-1;
   begin
     vec_index_45 <= to_integer((to_signed(13,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_80\ <= cabSpkHist(vec_index_45);
+    \c$app_arg_78\ <= cabSpkHist(vec_index_45);
   end block;
   -- index end
 
   -- index begin
   indexVec_45 : block
-    signal vec_index_46 : integer range 0 to 30-1;
+    signal vec_index_46 : integer range 0 to 46-1;
   begin
-    vec_index_46 <= to_integer((to_signed(15,64)))
+    vec_index_46 <= to_integer((to_signed(31,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_81\ <= cabSpkHist(vec_index_46);
+    \c$app_arg_79\ <= cabSpkHist(vec_index_46);
   end block;
   -- index end
 
   -- index begin
   indexVec_46 : block
-    signal vec_index_47 : integer range 0 to 16-1;
+    signal vec_index_47 : integer range 0 to 24-1;
   begin
     vec_index_47 <= to_integer((to_signed(14,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 24
     -- pragma translate_on
                  ;
-    \c$app_arg_82\ <= result_53(vec_index_47);
+    \c$app_arg_80\ <= result_53(vec_index_47);
   end block;
   -- index end
 
-  \c$app_arg_83\ <= resize(((resize(\c$app_arg_80\,48)) + (resize(\c$app_arg_81\,48))) * (resize(\c$app_arg_82\,48)), 48);
+  \c$app_arg_81\ <= resize(((resize(\c$app_arg_78\,48)) + (resize(\c$app_arg_79\,48))) * (resize(\c$app_arg_80\,48)), 48);
 
   -- index begin
   indexVec_47 : block
-    signal vec_index_48 : integer range 0 to 30-1;
+    signal vec_index_48 : integer range 0 to 46-1;
   begin
     vec_index_48 <= to_integer((to_signed(14,64)))
     -- pragma translate_off
-                 mod 30
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_84\ <= cabSpkHist(vec_index_48);
+    \c$app_arg_82\ <= cabSpkHist(vec_index_48);
   end block;
   -- index end
 
   -- index begin
   indexVec_48 : block
-    signal vec_index_49 : integer range 0 to 16-1;
+    signal vec_index_49 : integer range 0 to 46-1;
   begin
-    vec_index_49 <= to_integer((to_signed(15,64)))
+    vec_index_49 <= to_integer((to_signed(30,64)))
     -- pragma translate_off
-                 mod 16
+                 mod 46
     -- pragma translate_on
                  ;
-    \c$app_arg_85\ <= result_53(vec_index_49);
+    \c$app_arg_83\ <= cabSpkHist(vec_index_49);
   end block;
   -- index end
 
-  \c$app_arg_86\ <= \c$app_arg_83\ + (resize((resize(\c$app_arg_84\,48)) * (resize(\c$app_arg_85\,48)), 48)) when \on_1\ else
+  -- index begin
+  indexVec_49 : block
+    signal vec_index_50 : integer range 0 to 24-1;
+  begin
+    vec_index_50 <= to_integer((to_signed(15,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_84\ <= result_53(vec_index_50);
+  end block;
+  -- index end
+
+  \c$app_arg_85\ <= resize(((resize(\c$app_arg_82\,48)) + (resize(\c$app_arg_83\,48))) * (resize(\c$app_arg_84\,48)), 48);
+
+  \c$app_arg_86\ <= ((\c$app_arg_73\ + \c$app_arg_77\) + \c$app_arg_81\) + \c$app_arg_85\ when \on_1\ else
                     to_signed(0,48);
+
+  -- index begin
+  indexVec_50 : block
+    signal vec_index_51 : integer range 0 to 46-1;
+  begin
+    vec_index_51 <= to_integer((to_signed(15,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_87\ <= cabSpkHist(vec_index_51);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_51 : block
+    signal vec_index_52 : integer range 0 to 46-1;
+  begin
+    vec_index_52 <= to_integer((to_signed(29,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_88\ <= cabSpkHist(vec_index_52);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_52 : block
+    signal vec_index_53 : integer range 0 to 24-1;
+  begin
+    vec_index_53 <= to_integer((to_signed(16,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_89\ <= result_53(vec_index_53);
+  end block;
+  -- index end
+
+  \c$app_arg_90\ <= resize(((resize(\c$app_arg_87\,48)) + (resize(\c$app_arg_88\,48))) * (resize(\c$app_arg_89\,48)), 48);
+
+  -- index begin
+  indexVec_53 : block
+    signal vec_index_54 : integer range 0 to 46-1;
+  begin
+    vec_index_54 <= to_integer((to_signed(16,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_91\ <= cabSpkHist(vec_index_54);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_54 : block
+    signal vec_index_55 : integer range 0 to 46-1;
+  begin
+    vec_index_55 <= to_integer((to_signed(28,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_92\ <= cabSpkHist(vec_index_55);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_55 : block
+    signal vec_index_56 : integer range 0 to 24-1;
+  begin
+    vec_index_56 <= to_integer((to_signed(17,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_93\ <= result_53(vec_index_56);
+  end block;
+  -- index end
+
+  \c$app_arg_94\ <= resize(((resize(\c$app_arg_91\,48)) + (resize(\c$app_arg_92\,48))) * (resize(\c$app_arg_93\,48)), 48);
+
+  -- index begin
+  indexVec_56 : block
+    signal vec_index_57 : integer range 0 to 46-1;
+  begin
+    vec_index_57 <= to_integer((to_signed(17,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_95\ <= cabSpkHist(vec_index_57);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_57 : block
+    signal vec_index_58 : integer range 0 to 46-1;
+  begin
+    vec_index_58 <= to_integer((to_signed(27,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_96\ <= cabSpkHist(vec_index_58);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_58 : block
+    signal vec_index_59 : integer range 0 to 24-1;
+  begin
+    vec_index_59 <= to_integer((to_signed(18,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_97\ <= result_53(vec_index_59);
+  end block;
+  -- index end
+
+  \c$app_arg_98\ <= resize(((resize(\c$app_arg_95\,48)) + (resize(\c$app_arg_96\,48))) * (resize(\c$app_arg_97\,48)), 48);
+
+  -- index begin
+  indexVec_59 : block
+    signal vec_index_60 : integer range 0 to 46-1;
+  begin
+    vec_index_60 <= to_integer((to_signed(18,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_99\ <= cabSpkHist(vec_index_60);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_60 : block
+    signal vec_index_61 : integer range 0 to 46-1;
+  begin
+    vec_index_61 <= to_integer((to_signed(26,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_100\ <= cabSpkHist(vec_index_61);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_61 : block
+    signal vec_index_62 : integer range 0 to 24-1;
+  begin
+    vec_index_62 <= to_integer((to_signed(19,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_101\ <= result_53(vec_index_62);
+  end block;
+  -- index end
+
+  \c$app_arg_102\ <= resize(((resize(\c$app_arg_99\,48)) + (resize(\c$app_arg_100\,48))) * (resize(\c$app_arg_101\,48)), 48);
+
+  \c$app_arg_103\ <= ((\c$app_arg_90\ + \c$app_arg_94\) + \c$app_arg_98\) + \c$app_arg_102\ when \on_1\ else
+                     to_signed(0,48);
+
+  -- index begin
+  indexVec_62 : block
+    signal vec_index_63 : integer range 0 to 46-1;
+  begin
+    vec_index_63 <= to_integer((to_signed(19,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_104\ <= cabSpkHist(vec_index_63);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_63 : block
+    signal vec_index_64 : integer range 0 to 46-1;
+  begin
+    vec_index_64 <= to_integer((to_signed(25,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_105\ <= cabSpkHist(vec_index_64);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_64 : block
+    signal vec_index_65 : integer range 0 to 24-1;
+  begin
+    vec_index_65 <= to_integer((to_signed(20,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_106\ <= result_53(vec_index_65);
+  end block;
+  -- index end
+
+  \c$app_arg_107\ <= resize(((resize(\c$app_arg_104\,48)) + (resize(\c$app_arg_105\,48))) * (resize(\c$app_arg_106\,48)), 48);
+
+  -- index begin
+  indexVec_65 : block
+    signal vec_index_66 : integer range 0 to 46-1;
+  begin
+    vec_index_66 <= to_integer((to_signed(20,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_108\ <= cabSpkHist(vec_index_66);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_66 : block
+    signal vec_index_67 : integer range 0 to 46-1;
+  begin
+    vec_index_67 <= to_integer((to_signed(24,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_109\ <= cabSpkHist(vec_index_67);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_67 : block
+    signal vec_index_68 : integer range 0 to 24-1;
+  begin
+    vec_index_68 <= to_integer((to_signed(21,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_110\ <= result_53(vec_index_68);
+  end block;
+  -- index end
+
+  \c$app_arg_111\ <= resize(((resize(\c$app_arg_108\,48)) + (resize(\c$app_arg_109\,48))) * (resize(\c$app_arg_110\,48)), 48);
+
+  -- index begin
+  indexVec_68 : block
+    signal vec_index_69 : integer range 0 to 46-1;
+  begin
+    vec_index_69 <= to_integer((to_signed(21,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_112\ <= cabSpkHist(vec_index_69);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_69 : block
+    signal vec_index_70 : integer range 0 to 46-1;
+  begin
+    vec_index_70 <= to_integer((to_signed(23,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_113\ <= cabSpkHist(vec_index_70);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_70 : block
+    signal vec_index_71 : integer range 0 to 24-1;
+  begin
+    vec_index_71 <= to_integer((to_signed(22,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_114\ <= result_53(vec_index_71);
+  end block;
+  -- index end
+
+  \c$app_arg_115\ <= resize(((resize(\c$app_arg_112\,48)) + (resize(\c$app_arg_113\,48))) * (resize(\c$app_arg_114\,48)), 48);
+
+  -- index begin
+  indexVec_71 : block
+    signal vec_index_72 : integer range 0 to 46-1;
+  begin
+    vec_index_72 <= to_integer((to_signed(22,64)))
+    -- pragma translate_off
+                 mod 46
+    -- pragma translate_on
+                 ;
+    \c$app_arg_116\ <= cabSpkHist(vec_index_72);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_72 : block
+    signal vec_index_73 : integer range 0 to 24-1;
+  begin
+    vec_index_73 <= to_integer((to_signed(23,64)))
+    -- pragma translate_off
+                 mod 24
+    -- pragma translate_on
+                 ;
+    \c$app_arg_117\ <= result_53(vec_index_73);
+  end block;
+  -- index end
+
+  \c$app_arg_118\ <= ((\c$app_arg_107\ + \c$app_arg_111\) + \c$app_arg_115\) + (resize((resize(\c$app_arg_116\,48)) * (resize(\c$app_arg_117\,48)), 48)) when \on_1\ else
+                     to_signed(0,48);
 
   result_52 <= ( Frame_sel0_fL => x_29.Frame_sel0_fL
                , Frame_sel1_fR => x_29.Frame_sel1_fR
@@ -10340,12 +10716,12 @@ begin
                , Frame_sel27_fEqHighR => x_29.Frame_sel27_fEqHighR
                , Frame_sel28_fEqHighLpL => x_29.Frame_sel28_fEqHighLpL
                , Frame_sel29_fEqHighLpR => x_29.Frame_sel29_fEqHighLpR
-               , Frame_sel30_fAccL => \c$app_arg_31\
-               , Frame_sel31_fAccR => \c$app_arg_44\
-               , Frame_sel32_fAcc2L => \c$app_arg_57\
-               , Frame_sel33_fAcc2R => \c$app_arg_70\
-               , Frame_sel34_fAcc3L => \c$app_arg_79\
-               , Frame_sel35_fAcc3R => \c$app_arg_86\ );
+               , Frame_sel30_fAccL => \c$app_arg_35\
+               , Frame_sel31_fAccR => \c$app_arg_52\
+               , Frame_sel32_fAcc2L => \c$app_arg_69\
+               , Frame_sel33_fAcc2R => \c$app_arg_86\
+               , Frame_sel34_fAcc3L => \c$app_arg_103\
+               , Frame_sel35_fAcc3R => \c$app_arg_118\ );
 
   \c$bv_17\ <= (x_29.Frame_sel3_fGate);
 
@@ -10371,60 +10747,100 @@ begin
   end block;
 
   with (ds_2) select
-    result_53 <= clash_lowpass_fir_types.array_of_signed_16'( to_signed(-6,16)
-                                                            , to_signed(-17,16)
-                                                            , to_signed(-39,16)
-                                                            , to_signed(-82,16)
+    result_53 <= clash_lowpass_fir_types.array_of_signed_16'( to_signed(4,16)
+                                                            , to_signed(7,16)
+                                                            , to_signed(10,16)
+                                                            , to_signed(14,16)
+                                                            , to_signed(16,16)
+                                                            , to_signed(16,16)
+                                                            , to_signed(13,16)
+                                                            , to_signed(1,16)
+                                                            , to_signed(-24,16)
+                                                            , to_signed(-71,16)
                                                             , to_signed(-145,16)
-                                                            , to_signed(-221,16)
-                                                            , to_signed(-271,16)
-                                                            , to_signed(-228,16)
-                                                            , to_signed(26,16)
-                                                            , to_signed(634,16)
-                                                            , to_signed(1738,16)
-                                                            , to_signed(3366,16)
-                                                            , to_signed(5417,16)
-                                                            , to_signed(7546,16)
-                                                            , to_signed(9527,16)
-                                                            , to_signed(11047,16) ) when x"00",
-                 clash_lowpass_fir_types.array_of_signed_16'( to_signed(-46,16)
-                                                            , to_signed(-64,16)
-                                                            , to_signed(-96,16)
-                                                            , to_signed(-137,16)
-                                                            , to_signed(-169,16)
-                                                            , to_signed(-156,16)
-                                                            , to_signed(-46,16)
-                                                            , to_signed(223,16)
-                                                            , to_signed(720,16)
-                                                            , to_signed(1504,16)
-                                                            , to_signed(2600,16)
-                                                            , to_signed(3962,16)
-                                                            , to_signed(5457,16)
-                                                            , to_signed(6853,16)
-                                                            , to_signed(7926,16)
-                                                            , to_signed(8475,16) ) when x"01",
-                 clash_lowpass_fir_types.array_of_signed_16'( to_signed(-62,16)
-                                                            , to_signed(-70,16)
-                                                            , to_signed(-83,16)
-                                                            , to_signed(-87,16)
-                                                            , to_signed(-54,16)
-                                                            , to_signed(55,16)
-                                                            , to_signed(284,16)
-                                                            , to_signed(675,16)
-                                                            , to_signed(1262,16)
-                                                            , to_signed(2054,16)
-                                                            , to_signed(3026,16)
-                                                            , to_signed(4108,16)
-                                                            , to_signed(5188,16)
-                                                            , to_signed(6125,16)
-                                                            , to_signed(6797,16)
-                                                            , to_signed(7102,16) ) when others;
+                                                            , to_signed(-245,16)
+                                                            , to_signed(-355,16)
+                                                            , to_signed(-447,16)
+                                                            , to_signed(-469,16)
+                                                            , to_signed(-346,16)
+                                                            , to_signed(35,16)
+                                                            , to_signed(786,16)
+                                                            , to_signed(2006,16)
+                                                            , to_signed(3671,16)
+                                                            , to_signed(5661,16)
+                                                            , to_signed(7655,16)
+                                                            , to_signed(9496,16)
+                                                            , to_signed(10948,16) ) when x"00",
+                 clash_lowpass_fir_types.array_of_signed_16'( to_signed(19,16)
+                                                            , to_signed(18,16)
+                                                            , to_signed(16,16)
+                                                            , to_signed(11,16)
+                                                            , to_signed(-1,16)
+                                                            , to_signed(-24,16)
+                                                            , to_signed(-60,16)
+                                                            , to_signed(-114,16)
+                                                            , to_signed(-186,16)
+                                                            , to_signed(-269,16)
+                                                            , to_signed(-351,16)
+                                                            , to_signed(-408,16)
+                                                            , to_signed(-408,16)
+                                                            , to_signed(-313,16)
+                                                            , to_signed(-79,16)
+                                                            , to_signed(334,16)
+                                                            , to_signed(968,16)
+                                                            , to_signed(1848,16)
+                                                            , to_signed(2972,16)
+                                                            , to_signed(4280,16)
+                                                            , to_signed(5648,16)
+                                                            , to_signed(6885,16)
+                                                            , to_signed(7825,16)
+                                                            , to_signed(8318,16) ) when x"01",
+                 clash_lowpass_fir_types.array_of_signed_16'( to_signed(9,16)
+                                                            , to_signed(3,16)
+                                                            , to_signed(-7,16)
+                                                            , to_signed(-23,16)
+                                                            , to_signed(-48,16)
+                                                            , to_signed(-84,16)
+                                                            , to_signed(-132,16)
+                                                            , to_signed(-188,16)
+                                                            , to_signed(-243,16)
+                                                            , to_signed(-286,16)
+                                                            , to_signed(-297,16)
+                                                            , to_signed(-252,16)
+                                                            , to_signed(-126,16)
+                                                            , to_signed(108,16)
+                                                            , to_signed(472,16)
+                                                            , to_signed(984,16)
+                                                            , to_signed(1648,16)
+                                                            , to_signed(2452,16)
+                                                            , to_signed(3361,16)
+                                                            , to_signed(4311,16)
+                                                            , to_signed(5218,16)
+                                                            , to_signed(5980,16)
+                                                            , to_signed(6520,16)
+                                                            , to_signed(6773,16) ) when others;
 
   -- register begin
   cabSpkHist_register : process(clk,aresetn)
   begin
     if aresetn =  '0'  then
       cabSpkHist <= clash_lowpass_fir_types.array_of_signed_24'( to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
+                                             , to_signed(0,24)
                                              , to_signed(0,24)
                                              , to_signed(0,24)
                                              , to_signed(0,24)
@@ -10464,7 +10880,7 @@ begin
 
   \c$vec_1\ <= (clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(clash_lowpass_fir_types.array_of_signed_24'(0 => f_4.Frame_sel0_fL)) & clash_lowpass_fir_types.array_of_signed_24'(cabSpkHist)));
 
-  result_sel_alt_143 <= (\c$vec_1\(0 to 30-1),\c$vec_1\(30 to \c$vec_1\'high));
+  result_sel_alt_143 <= (\c$vec_1\(0 to 46-1),\c$vec_1\(46 to \c$vec_1\'high));
 
   with (cabMixPipe(1068 downto 1068)) select
     result_54 <= cabSpkHist when "0",
@@ -10569,12 +10985,12 @@ begin
 
   result_selection_res_16 <= result_59 > \c$x_app_arg_10\;
 
-  result_57 <= resize((\c$app_arg_88\ + \c$app_arg_87\),24) when result_selection_res_16 else
+  result_57 <= resize((\c$app_arg_120\ + \c$app_arg_119\),24) when result_selection_res_16 else
                result_58;
 
   \c$shI_21\ <= (to_signed(2,64));
 
-  capp_arg_87_shiftR : block
+  capp_arg_119_shiftR : block
     signal sh_21 : natural;
   begin
     sh_21 <=
@@ -10582,23 +10998,23 @@ begin
         natural'high when (\c$shI_21\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_21\);
-    \c$app_arg_87\ <= shift_right((\c$app_arg_90\ - \c$app_arg_88\),sh_21)
+    \c$app_arg_119\ <= shift_right((\c$app_arg_122\ - \c$app_arg_120\),sh_21)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_88\ <= resize(\c$x_app_arg_10\,25);
+  \c$app_arg_120\ <= resize(\c$x_app_arg_10\,25);
 
   result_selection_res_17 <= result_59 < negKnee;
 
-  result_58 <= resize((\c$app_arg_91\ + \c$app_arg_89\),24) when result_selection_res_17 else
+  result_58 <= resize((\c$app_arg_123\ + \c$app_arg_121\),24) when result_selection_res_17 else
                result_59;
 
   \c$shI_22\ <= (to_signed(2,64));
 
-  capp_arg_89_shiftR : block
+  capp_arg_121_shiftR : block
     signal sh_22 : natural;
   begin
     sh_22 <=
@@ -10606,16 +11022,16 @@ begin
         natural'high when (\c$shI_22\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_22\);
-    \c$app_arg_89\ <= shift_right((\c$app_arg_90\ - \c$app_arg_91\),sh_22)
+    \c$app_arg_121\ <= shift_right((\c$app_arg_122\ - \c$app_arg_123\),sh_22)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_90\ <= resize(result_59,25);
+  \c$app_arg_122\ <= resize(result_59,25);
 
-  \c$app_arg_91\ <= resize(negKnee,25);
+  \c$app_arg_123\ <= resize(negKnee,25);
 
   negKnee <= -\c$x_app_arg_10\;
 
@@ -11070,7 +11486,7 @@ begin
                , Frame_sel19_fWetR => x_36.Frame_sel19_fWetR
                , Frame_sel20_fFbL => x_36.Frame_sel20_fFbL
                , Frame_sel21_fFbR => x_36.Frame_sel21_fFbR
-               , Frame_sel22_fEqLowL => \c$app_arg_99\
+               , Frame_sel22_fEqLowL => \c$app_arg_131\
                , Frame_sel23_fEqLowR => to_signed(0,24)
                , Frame_sel24_fEqMidL => x_36.Frame_sel24_fEqMidL
                , Frame_sel25_fEqMidR => x_36.Frame_sel25_fEqMidR
@@ -11082,11 +11498,11 @@ begin
                , Frame_sel31_fAccR => x_36.Frame_sel31_fAccR
                , Frame_sel32_fAcc2L => x_36.Frame_sel32_fAcc2L
                , Frame_sel33_fAcc2R => x_36.Frame_sel33_fAcc2R
-               , Frame_sel34_fAcc3L => \c$app_arg_92\
+               , Frame_sel34_fAcc3L => \c$app_arg_124\
                , Frame_sel35_fAcc3R => x_36.Frame_sel35_fAcc3R );
 
-  \c$app_arg_92\ <= result_70 when \on_2\ else
-                    to_signed(0,48);
+  \c$app_arg_124\ <= result_70 when \on_2\ else
+                     to_signed(0,48);
 
   with (modelSel_0) select
     result_70 <= \c$case_alt_21\ when "00",
@@ -11103,7 +11519,7 @@ begin
         natural'high when (\c$shI_33\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_33\);
-    \c$case_alt_20\ <= shift_left(\c$app_arg_93\,sh_33)
+    \c$case_alt_20\ <= shift_left(\c$app_arg_125\,sh_33)
         -- pragma translate_off
         when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -11120,7 +11536,7 @@ begin
         natural'high when (\c$shI_34\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_34\);
-    \c$case_alt_21\ <= shift_left(\c$app_arg_93\,sh_34)
+    \c$case_alt_21\ <= shift_left(\c$app_arg_125\,sh_34)
         -- pragma translate_off
         when ((to_signed(5,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -11137,23 +11553,23 @@ begin
         natural'high when (\c$shI_35\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_35\);
-    \c$case_alt_22\ <= shift_left(\c$app_arg_93\,sh_35)
+    \c$case_alt_22\ <= shift_left(\c$app_arg_125\,sh_35)
         -- pragma translate_off
         when ((to_signed(7,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_93\ <= resize(result_71,48);
+  \c$app_arg_125\ <= resize(result_71,48);
 
   result_selection_res_24 <= result_73 > \c$bodyClipped_app_arg_0\;
 
-  result_71 <= resize((\c$app_arg_95\ + \c$app_arg_94\),24) when result_selection_res_24 else
+  result_71 <= resize((\c$app_arg_127\ + \c$app_arg_126\),24) when result_selection_res_24 else
                result_72;
 
   \c$shI_36\ <= (to_signed(2,64));
 
-  capp_arg_94_shiftR : block
+  capp_arg_126_shiftR : block
     signal sh_36 : natural;
   begin
     sh_36 <=
@@ -11161,23 +11577,23 @@ begin
         natural'high when (\c$shI_36\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_36\);
-    \c$app_arg_94\ <= shift_right((\c$app_arg_97\ - \c$app_arg_95\),sh_36)
+    \c$app_arg_126\ <= shift_right((\c$app_arg_129\ - \c$app_arg_127\),sh_36)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_95\ <= resize(\c$bodyClipped_app_arg_0\,25);
+  \c$app_arg_127\ <= resize(\c$bodyClipped_app_arg_0\,25);
 
   result_selection_res_25 <= result_73 < negKnee_0;
 
-  result_72 <= resize((\c$app_arg_98\ + \c$app_arg_96\),24) when result_selection_res_25 else
+  result_72 <= resize((\c$app_arg_130\ + \c$app_arg_128\),24) when result_selection_res_25 else
                result_73;
 
   \c$shI_37\ <= (to_signed(2,64));
 
-  capp_arg_96_shiftR : block
+  capp_arg_128_shiftR : block
     signal sh_37 : natural;
   begin
     sh_37 <=
@@ -11185,16 +11601,16 @@ begin
         natural'high when (\c$shI_37\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_37\);
-    \c$app_arg_96\ <= shift_right((\c$app_arg_97\ - \c$app_arg_98\),sh_37)
+    \c$app_arg_128\ <= shift_right((\c$app_arg_129\ - \c$app_arg_130\),sh_37)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_97\ <= resize(result_73,25);
+  \c$app_arg_129\ <= resize(result_73,25);
 
-  \c$app_arg_98\ <= resize(negKnee_0,25);
+  \c$app_arg_130\ <= resize(negKnee_0,25);
 
   negKnee_0 <= -\c$bodyClipped_app_arg_0\;
 
@@ -11230,8 +11646,8 @@ begin
                                  to_signed(2300000,24) when "01",
                                  to_signed(1800000,24) when others;
 
-  \c$app_arg_99\ <= \c$case_alt_24\ when \on_2\ else
-                    to_signed(0,24);
+  \c$app_arg_131\ <= \c$case_alt_24\ when \on_2\ else
+                     to_signed(0,24);
 
   \c$bv_21\ <= (x_36.Frame_sel3_fGate);
 
@@ -11258,14 +11674,14 @@ begin
         ;
   end block;
 
-  result_selection_res_27 <= result_76 > \c$app_arg_106\;
+  result_selection_res_27 <= result_76 > \c$app_arg_138\;
 
-  result_74 <= resize((\c$app_arg_101\ + \c$app_arg_100\),24) when result_selection_res_27 else
+  result_74 <= resize((\c$app_arg_133\ + \c$app_arg_132\),24) when result_selection_res_27 else
                result_75;
 
   \c$shI_40\ <= (to_signed(2,64));
 
-  capp_arg_100_shiftR : block
+  capp_arg_132_shiftR : block
     signal sh_40 : natural;
   begin
     sh_40 <=
@@ -11273,23 +11689,23 @@ begin
         natural'high when (\c$shI_40\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_40\);
-    \c$app_arg_100\ <= shift_right((\c$app_arg_103\ - \c$app_arg_101\),sh_40)
+    \c$app_arg_132\ <= shift_right((\c$app_arg_135\ - \c$app_arg_133\),sh_40)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_101\ <= resize(\c$app_arg_106\,25);
+  \c$app_arg_133\ <= resize(\c$app_arg_138\,25);
 
   result_selection_res_28 <= result_76 < negKnee_1;
 
-  result_75 <= resize((\c$app_arg_104\ + \c$app_arg_102\),24) when result_selection_res_28 else
+  result_75 <= resize((\c$app_arg_136\ + \c$app_arg_134\),24) when result_selection_res_28 else
                result_76;
 
   \c$shI_41\ <= (to_signed(2,64));
 
-  capp_arg_102_shiftR : block
+  capp_arg_134_shiftR : block
     signal sh_41 : natural;
   begin
     sh_41 <=
@@ -11297,32 +11713,32 @@ begin
         natural'high when (\c$shI_41\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_41\);
-    \c$app_arg_102\ <= shift_right((\c$app_arg_103\ - \c$app_arg_104\),sh_41)
+    \c$app_arg_134\ <= shift_right((\c$app_arg_135\ - \c$app_arg_136\),sh_41)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_103\ <= resize(result_76,25);
+  \c$app_arg_135\ <= resize(result_76,25);
 
-  \c$app_arg_104\ <= resize(negKnee_1,25);
+  \c$app_arg_136\ <= resize(negKnee_1,25);
 
-  negKnee_1 <= -\c$app_arg_106\;
+  negKnee_1 <= -\c$app_arg_138\;
 
-  \c$case_alt_selection_res_19\ <= \c$app_arg_105\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_19\ <= \c$app_arg_137\ < to_signed(-8388608,48);
 
   \c$case_alt_26\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_19\ else
-                     resize(\c$app_arg_105\,24);
+                     resize(\c$app_arg_137\,24);
 
-  result_selection_res_29 <= \c$app_arg_105\ > to_signed(8388607,48);
+  result_selection_res_29 <= \c$app_arg_137\ > to_signed(8388607,48);
 
   result_76 <= to_signed(8388607,24) when result_selection_res_29 else
                \c$case_alt_26\;
 
   \c$shI_42\ <= (to_signed(8,64));
 
-  capp_arg_105_shiftR : block
+  capp_arg_137_shiftR : block
     signal sh_42 : natural;
   begin
     sh_42 <=
@@ -11330,7 +11746,7 @@ begin
         natural'high when (\c$shI_42\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_42\);
-    \c$app_arg_105\ <= shift_right(x_36.Frame_sel30_fAccL,sh_42)
+    \c$app_arg_137\ <= shift_right(x_36.Frame_sel30_fAccL,sh_42)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -11338,7 +11754,7 @@ begin
   end block;
 
   with (modelSel_0) select
-    \c$app_arg_106\ <= to_signed(4600000,24) when "00",
+    \c$app_arg_138\ <= to_signed(4600000,24) when "00",
                        to_signed(4000000,24) when "01",
                        to_signed(3300000,24) when others;
 
@@ -11445,14 +11861,14 @@ begin
                , Frame_sel27_fEqHighR => x_40.Frame_sel27_fEqHighR
                , Frame_sel28_fEqHighLpL => x_40.Frame_sel28_fEqHighLpL
                , Frame_sel29_fEqHighLpR => x_40.Frame_sel29_fEqHighLpR
-               , Frame_sel30_fAccL => \c$app_arg_108\
+               , Frame_sel30_fAccL => \c$app_arg_140\
                , Frame_sel31_fAccR => to_signed(0,48)
-               , Frame_sel32_fAcc2L => \c$app_arg_107\
+               , Frame_sel32_fAcc2L => \c$app_arg_139\
                , Frame_sel33_fAcc2R => to_signed(0,48)
                , Frame_sel34_fAcc3L => to_signed(0,48)
                , Frame_sel35_fAcc3R => to_signed(0,48) );
 
-  \c$app_arg_107\ <= (resize((resize(cabD2,48)) * (resize(result_82,48)), 48)) + (resize((resize(cabD3,48)) * (resize(result_80,48)), 48)) when \on_3\ else
+  \c$app_arg_139\ <= (resize((resize(cabD2,48)) * (resize(result_82,48)), 48)) + (resize((resize(cabD3,48)) * (resize(result_80,48)), 48)) when \on_3\ else
                      to_signed(0,48);
 
   \c$shI_44\ <= (to_signed(6,64));
@@ -11549,7 +11965,7 @@ begin
                        to_signed(96,10) when "01",
                        to_signed(82,10) when others;
 
-  \c$app_arg_108\ <= (resize((resize(x_40.Frame_sel0_fL,48)) * (resize(result_86,48)), 48)) + (resize((resize(cabD1,48)) * (resize(result_84,48)), 48)) when \on_3\ else
+  \c$app_arg_140\ <= (resize((resize(x_40.Frame_sel0_fL,48)) * (resize(result_86,48)), 48)) + (resize((resize(cabD1,48)) * (resize(result_84,48)), 48)) when \on_3\ else
                      to_signed(0,48);
 
   \c$bv_23\ <= (x_40.Frame_sel3_fGate);
@@ -11844,7 +12260,7 @@ begin
 
   \c$shI_49\ <= (to_signed(3,64));
 
-  capp_arg_109_shiftR : block
+  capp_arg_141_shiftR : block
     signal sh_49 : natural;
   begin
     sh_49 <=
@@ -11852,14 +12268,14 @@ begin
         natural'high when (\c$shI_49\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_49\);
-    \c$app_arg_109\ <= shift_right(((resize(x_42.Frame_sel0_fL,25)) - (resize(ampHfShelfPrev,25))),sh_49)
+    \c$app_arg_141\ <= shift_right(((resize(x_42.Frame_sel0_fL,25)) - (resize(ampHfShelfPrev,25))),sh_49)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_91 <= ampHfShelfPrev + (resize(\c$app_arg_109\,24));
+  result_91 <= ampHfShelfPrev + (resize(\c$app_arg_141\,24));
 
   \c$x_app_arg_18\ <= resize(x_42.Frame_sel0_fL,48);
 
@@ -12208,7 +12624,7 @@ begin
 
   \c$shI_52\ <= (to_signed(2,64));
 
-  capp_arg_110_shiftR : block
+  capp_arg_142_shiftR : block
     signal sh_52 : natural;
   begin
     sh_52 <=
@@ -12216,14 +12632,14 @@ begin
         natural'high when (\c$shI_52\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_52\);
-    \c$app_arg_110\ <= shift_right(((resize(x_50.Frame_sel0_fL,25)) - (resize(ampXfmrHfPrev,25))),sh_52)
+    \c$app_arg_142\ <= shift_right(((resize(x_50.Frame_sel0_fL,25)) - (resize(ampXfmrHfPrev,25))),sh_52)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_99 <= ampXfmrHfPrev + (resize(\c$app_arg_110\,24));
+  result_99 <= ampXfmrHfPrev + (resize(\c$app_arg_142\,24));
 
   \c$x_app_arg_21\ <= resize(x_50.Frame_sel0_fL,48);
 
@@ -12296,17 +12712,17 @@ begin
 
   result_selection_res_39 <= result_105 > to_signed(5200000,24);
 
-  result_101 <= resize((to_signed(5200000,25) + \c$app_arg_111\),24) when result_selection_res_39 else
+  result_101 <= resize((to_signed(5200000,25) + \c$app_arg_143\),24) when result_selection_res_39 else
                 \c$case_alt_48\;
 
   \c$case_alt_selection_res_29\ <= result_105 < to_signed(-5200000,24);
 
-  \c$case_alt_48\ <= resize((to_signed(-5200000,25) + \c$app_arg_112\),24) when \c$case_alt_selection_res_29\ else
+  \c$case_alt_48\ <= resize((to_signed(-5200000,25) + \c$app_arg_144\),24) when \c$case_alt_selection_res_29\ else
                      result_105;
 
   \c$shI_53\ <= (to_signed(2,64));
 
-  capp_arg_111_shiftR : block
+  capp_arg_143_shiftR : block
     signal sh_53 : natural;
   begin
     sh_53 <=
@@ -12314,7 +12730,7 @@ begin
         natural'high when (\c$shI_53\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_53\);
-    \c$app_arg_111\ <= shift_right((\c$app_arg_113\ - to_signed(5200000,25)),sh_53)
+    \c$app_arg_143\ <= shift_right((\c$app_arg_145\ - to_signed(5200000,25)),sh_53)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -12323,7 +12739,7 @@ begin
 
   \c$shI_54\ <= (to_signed(2,64));
 
-  capp_arg_112_shiftR : block
+  capp_arg_144_shiftR : block
     signal sh_54 : natural;
   begin
     sh_54 <=
@@ -12331,14 +12747,14 @@ begin
         natural'high when (\c$shI_54\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_54\);
-    \c$app_arg_112\ <= shift_right((\c$app_arg_113\ - to_signed(-5200000,25)),sh_54)
+    \c$app_arg_144\ <= shift_right((\c$app_arg_145\ - to_signed(-5200000,25)),sh_54)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_113\ <= resize(result_105,25);
+  \c$app_arg_145\ <= resize(result_105,25);
 
   x_47 <= (resize(x_55.Frame_sel0_fL,48)) - (resize(result_105,48));
 
@@ -12412,7 +12828,7 @@ begin
 
   \c$shI_55\ <= (to_signed(7,64));
 
-  capp_arg_114_shiftR : block
+  capp_arg_146_shiftR : block
     signal sh_55 : natural;
   begin
     sh_55 <=
@@ -12420,14 +12836,14 @@ begin
         natural'high when (\c$shI_55\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_55\);
-    \c$app_arg_114\ <= shift_right(((resize(x_55.Frame_sel0_fL,25)) - (resize(ampXfmrLpPrev,25))),sh_55)
+    \c$app_arg_146\ <= shift_right(((resize(x_55.Frame_sel0_fL,25)) - (resize(ampXfmrLpPrev,25))),sh_55)
         -- pragma translate_off
         when ((to_signed(7,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_105 <= ampXfmrLpPrev + (resize(\c$app_arg_114\,24));
+  result_105 <= ampXfmrLpPrev + (resize(\c$app_arg_146\,24));
 
   -- register begin
   ampXfmrLpPrev_register : process(clk,aresetn)
@@ -12568,17 +12984,17 @@ begin
 
   result_selection_res_44 <= result_111 > to_signed(4000000,24);
 
-  result_110 <= resize((to_signed(4000000,25) + \c$app_arg_115\),24) when result_selection_res_44 else
+  result_110 <= resize((to_signed(4000000,25) + \c$app_arg_147\),24) when result_selection_res_44 else
                 \c$case_alt_53\;
 
   \c$case_alt_selection_res_34\ <= result_111 < to_signed(-4000000,24);
 
-  \c$case_alt_53\ <= resize((to_signed(-4000000,25) + \c$app_arg_116\),24) when \c$case_alt_selection_res_34\ else
+  \c$case_alt_53\ <= resize((to_signed(-4000000,25) + \c$app_arg_148\),24) when \c$case_alt_selection_res_34\ else
                      result_111;
 
   \c$shI_56\ <= (to_signed(2,64));
 
-  capp_arg_115_shiftR : block
+  capp_arg_147_shiftR : block
     signal sh_56 : natural;
   begin
     sh_56 <=
@@ -12586,7 +13002,7 @@ begin
         natural'high when (\c$shI_56\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_56\);
-    \c$app_arg_115\ <= shift_right((\c$app_arg_117\ - to_signed(4000000,25)),sh_56)
+    \c$app_arg_147\ <= shift_right((\c$app_arg_149\ - to_signed(4000000,25)),sh_56)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -12595,7 +13011,7 @@ begin
 
   \c$shI_57\ <= (to_signed(2,64));
 
-  capp_arg_116_shiftR : block
+  capp_arg_148_shiftR : block
     signal sh_57 : natural;
   begin
     sh_57 <=
@@ -12603,14 +13019,14 @@ begin
         natural'high when (\c$shI_57\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_57\);
-    \c$app_arg_116\ <= shift_right((\c$app_arg_117\ - to_signed(-4000000,25)),sh_57)
+    \c$app_arg_148\ <= shift_right((\c$app_arg_149\ - to_signed(-4000000,25)),sh_57)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_117\ <= resize(result_111,25);
+  \c$app_arg_149\ <= resize(result_111,25);
 
   x_54 <= \c$x_app_arg_22\ - \c$x_app_arg_23\;
 
@@ -12628,7 +13044,7 @@ begin
 
   \c$shI_58\ <= (to_signed(3,64));
 
-  capp_arg_118_shiftR : block
+  capp_arg_150_shiftR : block
     signal sh_58 : natural;
   begin
     sh_58 <=
@@ -12636,20 +13052,20 @@ begin
         natural'high when (\c$shI_58\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_58\);
-    \c$app_arg_118\ <= shift_right(((resize(x_56.Frame_sel0_fL,25)) - (resize(ampMbLp2Prev,25))),sh_58)
+    \c$app_arg_150\ <= shift_right(((resize(x_56.Frame_sel0_fL,25)) - (resize(ampMbLp2Prev,25))),sh_58)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_112 <= ampMbLp2Prev + (resize(\c$app_arg_118\,24));
+  result_112 <= ampMbLp2Prev + (resize(\c$app_arg_150\,24));
 
   \c$x_app_arg_23\ <= resize(result_113,48);
 
   \c$shI_59\ <= (to_signed(6,64));
 
-  capp_arg_119_shiftR : block
+  capp_arg_151_shiftR : block
     signal sh_59 : natural;
   begin
     sh_59 <=
@@ -12657,14 +13073,14 @@ begin
         natural'high when (\c$shI_59\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_59\);
-    \c$app_arg_119\ <= shift_right(((resize(x_56.Frame_sel0_fL,25)) - (resize(ampMbLp1Prev,25))),sh_59)
+    \c$app_arg_151\ <= shift_right(((resize(x_56.Frame_sel0_fL,25)) - (resize(ampMbLp1Prev,25))),sh_59)
         -- pragma translate_off
         when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_113 <= ampMbLp1Prev + (resize(\c$app_arg_119\,24));
+  result_113 <= ampMbLp1Prev + (resize(\c$app_arg_151\,24));
 
   -- register begin
   ampMbLp2Prev_register : process(clk,aresetn)
@@ -12797,12 +13213,12 @@ begin
 
   result_selection_res_46 <= result_118 > \c$x_app_arg_25\;
 
-  result_116 <= resize((\c$app_arg_121\ + \c$app_arg_120\),24) when result_selection_res_46 else
+  result_116 <= resize((\c$app_arg_153\ + \c$app_arg_152\),24) when result_selection_res_46 else
                 result_117;
 
   \c$shI_60\ <= (to_signed(2,64));
 
-  capp_arg_120_shiftR : block
+  capp_arg_152_shiftR : block
     signal sh_60 : natural;
   begin
     sh_60 <=
@@ -12810,23 +13226,23 @@ begin
         natural'high when (\c$shI_60\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_60\);
-    \c$app_arg_120\ <= shift_right((\c$app_arg_123\ - \c$app_arg_121\),sh_60)
+    \c$app_arg_152\ <= shift_right((\c$app_arg_155\ - \c$app_arg_153\),sh_60)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_121\ <= resize(\c$x_app_arg_25\,25);
+  \c$app_arg_153\ <= resize(\c$x_app_arg_25\,25);
 
   result_selection_res_47 <= result_118 < negKnee_2;
 
-  result_117 <= resize((\c$app_arg_124\ + \c$app_arg_122\),24) when result_selection_res_47 else
+  result_117 <= resize((\c$app_arg_156\ + \c$app_arg_154\),24) when result_selection_res_47 else
                 result_118;
 
   \c$shI_61\ <= (to_signed(2,64));
 
-  capp_arg_122_shiftR : block
+  capp_arg_154_shiftR : block
     signal sh_61 : natural;
   begin
     sh_61 <=
@@ -12834,16 +13250,16 @@ begin
         natural'high when (\c$shI_61\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_61\);
-    \c$app_arg_122\ <= shift_right((\c$app_arg_123\ - \c$app_arg_124\),sh_61)
+    \c$app_arg_154\ <= shift_right((\c$app_arg_155\ - \c$app_arg_156\),sh_61)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_123\ <= resize(result_118,25);
+  \c$app_arg_155\ <= resize(result_118,25);
 
-  \c$app_arg_124\ <= resize(negKnee_2,25);
+  \c$app_arg_156\ <= resize(negKnee_2,25);
 
   negKnee_2 <= -\c$x_app_arg_25\;
 
@@ -13170,12 +13586,12 @@ begin
 
   result_selection_res_56 <= result_129 > \c$x_app_arg_26\;
 
-  result_130 <= resize((\c$app_arg_126\ + \c$app_arg_125\),24) when result_selection_res_56 else
+  result_130 <= resize((\c$app_arg_158\ + \c$app_arg_157\),24) when result_selection_res_56 else
                 result_131;
 
   \c$shI_69\ <= (to_signed(2,64));
 
-  capp_arg_125_shiftR : block
+  capp_arg_157_shiftR : block
     signal sh_69 : natural;
   begin
     sh_69 <=
@@ -13183,23 +13599,23 @@ begin
         natural'high when (\c$shI_69\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_69\);
-    \c$app_arg_125\ <= shift_right((\c$app_arg_128\ - \c$app_arg_126\),sh_69)
+    \c$app_arg_157\ <= shift_right((\c$app_arg_160\ - \c$app_arg_158\),sh_69)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_126\ <= resize(\c$x_app_arg_26\,25);
+  \c$app_arg_158\ <= resize(\c$x_app_arg_26\,25);
 
   result_selection_res_57 <= result_129 < negKnee_3;
 
-  result_131 <= resize((\c$app_arg_129\ + \c$app_arg_127\),24) when result_selection_res_57 else
+  result_131 <= resize((\c$app_arg_161\ + \c$app_arg_159\),24) when result_selection_res_57 else
                 result_129;
 
   \c$shI_70\ <= (to_signed(2,64));
 
-  capp_arg_127_shiftR : block
+  capp_arg_159_shiftR : block
     signal sh_70 : natural;
   begin
     sh_70 <=
@@ -13207,16 +13623,16 @@ begin
         natural'high when (\c$shI_70\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_70\);
-    \c$app_arg_127\ <= shift_right((\c$app_arg_128\ - \c$app_arg_129\),sh_70)
+    \c$app_arg_159\ <= shift_right((\c$app_arg_160\ - \c$app_arg_161\),sh_70)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_128\ <= resize(result_129,25);
+  \c$app_arg_160\ <= resize(result_129,25);
 
-  \c$app_arg_129\ <= resize(negKnee_3,25);
+  \c$app_arg_161\ <= resize(negKnee_3,25);
 
   negKnee_3 <= -\c$x_app_arg_26\;
 
@@ -13347,14 +13763,14 @@ begin
                 , Frame_sel27_fEqHighR => result_135
                 , Frame_sel28_fEqHighLpL => x_64.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_64.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_132\
+                , Frame_sel30_fAccL => \c$app_arg_164\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_131\
+                , Frame_sel32_fAcc2L => \c$app_arg_163\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
-                , Frame_sel34_fAcc3L => \c$app_arg_130\
+                , Frame_sel34_fAcc3L => \c$app_arg_162\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
-  \c$app_arg_130\ <= resize((resize(result_135,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(((((presenceByte - \c$gain_app_arg_6\) - \c$gain_app_arg_5\) - \c$gain_app_arg_4\) + \c$gain_app_arg_3\))))))))),48)), 48) when \on_4\ else
+  \c$app_arg_162\ <= resize((resize(result_135,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(((((presenceByte - \c$gain_app_arg_6\) - \c$gain_app_arg_5\) - \c$gain_app_arg_4\) + \c$gain_app_arg_3\))))))))),48)), 48) when \on_4\ else
                      to_signed(0,48);
 
   x_63 <= \c$high_app_arg_0\ - (resize(x_64.Frame_sel28_fEqHighLpL,48));
@@ -13474,7 +13890,7 @@ begin
 
   presenceByte <= unsigned((\c$gain_app_arg_9\(23 downto 16)));
 
-  \c$app_arg_131\ <= resize((resize(x_64.Frame_sel22_fEqLowL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_7)))))))),48)), 48) when \on_4\ else
+  \c$app_arg_163\ <= resize((resize(x_64.Frame_sel22_fEqLowL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_7)))))))),48)), 48) when \on_4\ else
                      to_signed(0,48);
 
   gain_7 <= \c$gain_app_arg_8\ - \c$gain_app_arg_7\;
@@ -13500,7 +13916,7 @@ begin
 
   \c$gain_app_arg_9\ <= x_64.Frame_sel8_fAmp;
 
-  \c$app_arg_132\ <= \c$high_app_arg_0\ when \on_4\ else
+  \c$app_arg_164\ <= \c$high_app_arg_0\ when \on_4\ else
                      to_signed(0,48);
 
   \c$bv_42\ <= (x_64.Frame_sel3_fGate);
@@ -13598,7 +14014,7 @@ begin
 
   \c$shI_77\ <= (to_signed(4,64));
 
-  capp_arg_133_shiftR : block
+  capp_arg_165_shiftR : block
     signal sh_77 : natural;
   begin
     sh_77 <=
@@ -13606,18 +14022,18 @@ begin
         natural'high when (\c$shI_77\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_77\);
-    \c$app_arg_133\ <= shift_right(((resize(x_65.Frame_sel18_fWetL,25)) - (resize(ampPresencePrev,25))),sh_77)
+    \c$app_arg_165\ <= shift_right(((resize(x_65.Frame_sel18_fWetL,25)) - (resize(ampPresencePrev,25))),sh_77)
         -- pragma translate_off
         when ((to_signed(4,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_138 <= ampPresencePrev + (resize(\c$app_arg_133\,24));
+  result_138 <= ampPresencePrev + (resize(\c$app_arg_165\,24));
 
   \c$shI_78\ <= (to_signed(7,64));
 
-  capp_arg_134_shiftR : block
+  capp_arg_166_shiftR : block
     signal sh_78 : natural;
   begin
     sh_78 <=
@@ -13625,14 +14041,14 @@ begin
         natural'high when (\c$shI_78\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_78\);
-    \c$app_arg_134\ <= shift_right(((resize(x_65.Frame_sel18_fWetL,25)) - (resize(ampResPrev,25))),sh_78)
+    \c$app_arg_166\ <= shift_right(((resize(x_65.Frame_sel18_fWetL,25)) - (resize(ampResPrev,25))),sh_78)
         -- pragma translate_off
         when ((to_signed(7,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_139 <= ampResPrev + (resize(\c$app_arg_134\,24));
+  result_139 <= ampResPrev + (resize(\c$app_arg_166\,24));
 
   -- register begin
   ampPresencePrev_register : process(clk,aresetn)
@@ -13730,12 +14146,12 @@ begin
 
   result_selection_res_59 <= x_67.Frame_sel18_fWetL > \c$x_app_arg_29\;
 
-  result_141 <= resize((\c$app_arg_136\ + \c$app_arg_135\),24) when result_selection_res_59 else
+  result_141 <= resize((\c$app_arg_168\ + \c$app_arg_167\),24) when result_selection_res_59 else
                 result_142;
 
   \c$shI_79\ <= (to_signed(2,64));
 
-  capp_arg_135_shiftR : block
+  capp_arg_167_shiftR : block
     signal sh_79 : natural;
   begin
     sh_79 <=
@@ -13743,23 +14159,23 @@ begin
         natural'high when (\c$shI_79\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_79\);
-    \c$app_arg_135\ <= shift_right((\c$app_arg_138\ - \c$app_arg_136\),sh_79)
+    \c$app_arg_167\ <= shift_right((\c$app_arg_170\ - \c$app_arg_168\),sh_79)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_136\ <= resize(\c$x_app_arg_29\,25);
+  \c$app_arg_168\ <= resize(\c$x_app_arg_29\,25);
 
   result_selection_res_60 <= x_67.Frame_sel18_fWetL < negKnee_4;
 
-  result_142 <= resize((\c$app_arg_139\ + \c$app_arg_137\),24) when result_selection_res_60 else
+  result_142 <= resize((\c$app_arg_171\ + \c$app_arg_169\),24) when result_selection_res_60 else
                 x_67.Frame_sel18_fWetL;
 
   \c$shI_80\ <= (to_signed(2,64));
 
-  capp_arg_137_shiftR : block
+  capp_arg_169_shiftR : block
     signal sh_80 : natural;
   begin
     sh_80 <=
@@ -13767,16 +14183,16 @@ begin
         natural'high when (\c$shI_80\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_80\);
-    \c$app_arg_137\ <= shift_right((\c$app_arg_138\ - \c$app_arg_139\),sh_80)
+    \c$app_arg_169\ <= shift_right((\c$app_arg_170\ - \c$app_arg_171\),sh_80)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_138\ <= resize(x_67.Frame_sel18_fWetL,25);
+  \c$app_arg_170\ <= resize(x_67.Frame_sel18_fWetL,25);
 
-  \c$app_arg_139\ <= resize(negKnee_4,25);
+  \c$app_arg_171\ <= resize(negKnee_4,25);
 
   negKnee_4 <= -\c$x_app_arg_29\;
 
@@ -14031,20 +14447,20 @@ begin
                 , Frame_sel27_fEqHighR => x_72.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_72.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_72.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_146\
+                , Frame_sel30_fAccL => \c$app_arg_178\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_145\
+                , Frame_sel32_fAcc2L => \c$app_arg_177\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
-                , Frame_sel34_fAcc3L => \c$app_arg_140\
+                , Frame_sel34_fAcc3L => \c$app_arg_172\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
-  \c$app_arg_140\ <= resize((resize(x_72.Frame_sel26_fEqHighL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_149)))))))),48)), 48) when \on_5\ else
+  \c$app_arg_172\ <= resize((resize(x_72.Frame_sel26_fEqHighL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_149)))))))),48)), 48) when \on_5\ else
                      to_signed(0,48);
 
   \c$app_arg_selection_res_4\ <= unsigned((\c$x_app_arg_31\(26 downto 24)));
 
   with (\c$app_arg_selection_res_4\) select
-    \c$app_arg_141\ <= to_unsigned(0,8) when "000",
+    \c$app_arg_173\ <= to_unsigned(0,8) when "000",
                        to_unsigned(2,8) when "001",
                        to_unsigned(1,8) when "010",
                        to_unsigned(9,8) when "011",
@@ -14054,7 +14470,7 @@ begin
 
   \c$shI_82\ <= (to_signed(1,64));
 
-  capp_arg_142_shiftL : block
+  capp_arg_174_shiftL : block
     signal sh_82 : natural;
   begin
     sh_82 <=
@@ -14062,7 +14478,7 @@ begin
         natural'high when (\c$shI_82\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_82\);
-    \c$app_arg_142\ <= shift_right((((unsigned((\c$x_app_arg_31\(23 downto 16)))) - \c$app_arg_144\) - \c$app_arg_143\),sh_82)
+    \c$app_arg_174\ <= shift_right((((unsigned((\c$x_app_arg_31\(23 downto 16)))) - \c$app_arg_176\) - \c$app_arg_175\),sh_82)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -14071,7 +14487,7 @@ begin
 
   \c$shI_83\ <= (to_signed(4,64));
 
-  capp_arg_143_shiftL : block
+  capp_arg_175_shiftL : block
     signal sh_83 : natural;
   begin
     sh_83 <=
@@ -14079,7 +14495,7 @@ begin
         natural'high when (\c$shI_83\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_83\);
-    \c$app_arg_143\ <= shift_right((unsigned((\c$x_app_arg_31\(23 downto 16)))),sh_83)
+    \c$app_arg_175\ <= shift_right((unsigned((\c$x_app_arg_31\(23 downto 16)))),sh_83)
         -- pragma translate_off
         when ((to_signed(4,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -14088,7 +14504,7 @@ begin
 
   \c$shI_84\ <= (to_signed(3,64));
 
-  capp_arg_144_shiftL : block
+  capp_arg_176_shiftL : block
     signal sh_84 : natural;
   begin
     sh_84 <=
@@ -14096,16 +14512,16 @@ begin
         natural'high when (\c$shI_84\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_84\);
-    \c$app_arg_144\ <= shift_right((unsigned((\c$x_app_arg_31\(23 downto 16)))),sh_84)
+    \c$app_arg_176\ <= shift_right((unsigned((\c$x_app_arg_31\(23 downto 16)))),sh_84)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_149 <= (to_unsigned(110,8) + \c$app_arg_142\) - \c$app_arg_141\;
+  result_149 <= (to_unsigned(110,8) + \c$app_arg_174\) - \c$app_arg_173\;
 
-  \c$app_arg_145\ <= resize((resize(x_72.Frame_sel24_fEqMidL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((to_unsigned(51,8) + (x_70 - \c$gain_app_arg_10\)))))))))),48)), 48) when \on_5\ else
+  \c$app_arg_177\ <= resize((resize(x_72.Frame_sel24_fEqMidL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((to_unsigned(51,8) + (x_70 - \c$gain_app_arg_10\)))))))))),48)), 48) when \on_5\ else
                      to_signed(0,48);
 
   \c$shI_85\ <= (to_signed(2,64));
@@ -14127,7 +14543,7 @@ begin
 
   x_70 <= unsigned((\c$x_app_arg_31\(15 downto 8)));
 
-  \c$app_arg_146\ <= resize((resize(x_72.Frame_sel22_fEqLowL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((to_unsigned(64,8) + \c$gain_app_arg_11\))))))))),48)), 48) when \on_5\ else
+  \c$app_arg_178\ <= resize((resize(x_72.Frame_sel22_fEqLowL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((to_unsigned(64,8) + \c$gain_app_arg_11\))))))))),48)), 48) when \on_5\ else
                      to_signed(0,48);
 
   \c$bv_46\ <= (x_72.Frame_sel3_fGate);
@@ -14359,7 +14775,7 @@ begin
 
   \c$shI_87\ <= (to_signed(3,64));
 
-  capp_arg_147_shiftR : block
+  capp_arg_179_shiftR : block
     signal sh_87 : natural;
   begin
     sh_87 <=
@@ -14367,18 +14783,18 @@ begin
         natural'high when (\c$shI_87\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_87\);
-    \c$app_arg_147\ <= shift_right(((resize(x_77.Frame_sel18_fWetL,25)) - (resize(ampToneHighPrev,25))),sh_87)
+    \c$app_arg_179\ <= shift_right(((resize(x_77.Frame_sel18_fWetL,25)) - (resize(ampToneHighPrev,25))),sh_87)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_156 <= ampToneHighPrev + (resize(\c$app_arg_147\,24));
+  result_156 <= ampToneHighPrev + (resize(\c$app_arg_179\,24));
 
   \c$shI_88\ <= (to_signed(6,64));
 
-  capp_arg_148_shiftR : block
+  capp_arg_180_shiftR : block
     signal sh_88 : natural;
   begin
     sh_88 <=
@@ -14386,14 +14802,14 @@ begin
         natural'high when (\c$shI_88\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_88\);
-    \c$app_arg_148\ <= shift_right(((resize(x_77.Frame_sel18_fWetL,25)) - (resize(ampToneLowPrev,25))),sh_88)
+    \c$app_arg_180\ <= shift_right(((resize(x_77.Frame_sel18_fWetL,25)) - (resize(ampToneLowPrev,25))),sh_88)
         -- pragma translate_off
         when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_157 <= ampToneLowPrev + (resize(\c$app_arg_148\,24));
+  result_157 <= ampToneLowPrev + (resize(\c$app_arg_180\,24));
 
   -- register begin
   ampToneHighPrev_register : process(clk,aresetn)
@@ -14658,7 +15074,7 @@ begin
   \c$app_arg_selection_res_5\ <= \c$bv_49\(6 downto 6);
 
   with (\c$app_arg_selection_res_5\) select
-    \c$app_arg_149\ <= ((resize((resize(x_82.Frame_sel18_fWetL,48)) * (resize(ds_7.Tuple3_sel0_signed_0,48)), 48)) + (resize((resize(ampScoopX1,48)) * (resize(ds_7.Tuple3_sel1_signed_1,48)), 48))) + (resize((resize(ampScoopX2,48)) * (resize(ds_7.Tuple3_sel2_signed_2,48)), 48)) when "1",
+    \c$app_arg_181\ <= ((resize((resize(x_82.Frame_sel18_fWetL,48)) * (resize(ds_7.Tuple3_sel0_signed_0,48)), 48)) + (resize((resize(ampScoopX1,48)) * (resize(ds_7.Tuple3_sel1_signed_1,48)), 48))) + (resize((resize(ampScoopX2,48)) * (resize(ds_7.Tuple3_sel2_signed_2,48)), 48)) when "1",
                        to_signed(0,48) when others;
 
   \c$bv_50\ <= (x_82.Frame_sel9_fAmpTone);
@@ -14718,7 +15134,7 @@ begin
                 , Frame_sel27_fEqHighR => x_82.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_82.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_82.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_149\
+                , Frame_sel30_fAccL => \c$app_arg_181\
                 , Frame_sel31_fAccR => to_signed(0,48)
                 , Frame_sel32_fAcc2L => x_82.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_82.Frame_sel33_fAcc2R
@@ -14898,7 +15314,7 @@ begin
 
   \c$shI_91\ <= (to_signed(4,64));
 
-  capp_arg_150_shiftR : block
+  capp_arg_182_shiftR : block
     signal sh_91 : natural;
   begin
     sh_91 <=
@@ -14906,14 +15322,14 @@ begin
         natural'high when (\c$shI_91\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_91\);
-    \c$app_arg_150\ <= shift_right(((resize(x_84.Frame_sel18_fWetL,25)) - (resize(ampDeEmphLpPrev,25))),sh_91)
+    \c$app_arg_182\ <= shift_right(((resize(x_84.Frame_sel18_fWetL,25)) - (resize(ampDeEmphLpPrev,25))),sh_91)
         -- pragma translate_off
         when ((to_signed(4,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_167 <= ampDeEmphLpPrev + (resize(\c$app_arg_150\,24));
+  result_167 <= ampDeEmphLpPrev + (resize(\c$app_arg_182\,24));
 
   \c$x_app_arg_34\ <= resize(x_84.Frame_sel18_fWetL,48);
 
@@ -15035,17 +15451,17 @@ begin
 
   result_selection_res_67 <= result_175 > to_signed(7500000,24);
 
-  result_171 <= resize((to_signed(7500000,25) + \c$app_arg_151\),24) when result_selection_res_67 else
+  result_171 <= resize((to_signed(7500000,25) + \c$app_arg_183\),24) when result_selection_res_67 else
                 \c$case_alt_69\;
 
   \c$case_alt_selection_res_50\ <= result_175 < to_signed(-7500000,24);
 
-  \c$case_alt_69\ <= resize((to_signed(-7500000,25) + \c$app_arg_152\),24) when \c$case_alt_selection_res_50\ else
+  \c$case_alt_69\ <= resize((to_signed(-7500000,25) + \c$app_arg_184\),24) when \c$case_alt_selection_res_50\ else
                      result_175;
 
   \c$shI_92\ <= (to_signed(2,64));
 
-  capp_arg_151_shiftR : block
+  capp_arg_183_shiftR : block
     signal sh_92 : natural;
   begin
     sh_92 <=
@@ -15053,7 +15469,7 @@ begin
         natural'high when (\c$shI_92\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_92\);
-    \c$app_arg_151\ <= shift_right((\c$app_arg_153\ - to_signed(7500000,25)),sh_92)
+    \c$app_arg_183\ <= shift_right((\c$app_arg_185\ - to_signed(7500000,25)),sh_92)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -15062,7 +15478,7 @@ begin
 
   \c$shI_93\ <= (to_signed(2,64));
 
-  capp_arg_152_shiftR : block
+  capp_arg_184_shiftR : block
     signal sh_93 : natural;
   begin
     sh_93 <=
@@ -15070,14 +15486,14 @@ begin
         natural'high when (\c$shI_93\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_93\);
-    \c$app_arg_152\ <= shift_right((\c$app_arg_153\ - to_signed(-7500000,25)),sh_93)
+    \c$app_arg_184\ <= shift_right((\c$app_arg_185\ - to_signed(-7500000,25)),sh_93)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_153\ <= resize(result_175,25);
+  \c$app_arg_185\ <= resize(result_175,25);
 
   drive <= (\c$idx_app_arg\(31 downto 31)) = std_logic_vector'("1");
 
@@ -15418,7 +15834,7 @@ begin
                      , Frame_sel27_fEqHighR => x_87.Frame_sel27_fEqHighR
                      , Frame_sel28_fEqHighLpL => x_87.Frame_sel28_fEqHighLpL
                      , Frame_sel29_fEqHighLpR => x_87.Frame_sel29_fEqHighLpR
-                     , Frame_sel30_fAccL => \c$app_arg_154\
+                     , Frame_sel30_fAccL => \c$app_arg_186\
                      , Frame_sel31_fAccR => to_signed(0,48)
                      , Frame_sel32_fAcc2L => x_87.Frame_sel32_fAcc2L
                      , Frame_sel33_fAcc2R => x_87.Frame_sel33_fAcc2R
@@ -15430,7 +15846,7 @@ begin
   \c$app_arg_selection_res_6\ <= \c$bv_54\(6 downto 6);
 
   with (\c$app_arg_selection_res_6\) select
-    \c$app_arg_154\ <= resize((resize(x_87.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((((to_unsigned(112,9) + (resize(\c$gain_app_arg_13\,9))) + (resize(\c$gain_case_alt_3\,9))) + \c$gain_app_arg_12\))))))))),48)), 48) when "1",
+    \c$app_arg_186\ <= resize((resize(x_87.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector((((to_unsigned(112,9) + (resize(\c$gain_app_arg_13\,9))) + (resize(\c$gain_case_alt_3\,9))) + \c$gain_app_arg_12\))))))))),48)), 48) when "1",
                        to_signed(0,48) when others;
 
   \c$gain_app_arg_selection_res\ <= \c$idx_app_arg_0\(31 downto 31);
@@ -15622,7 +16038,7 @@ begin
 
   \c$shI_100\ <= (to_signed(8,64));
 
-  capp_arg_155_shiftR : block
+  capp_arg_187_shiftR : block
     signal sh_101 : natural;
   begin
     sh_101 <=
@@ -15630,7 +16046,7 @@ begin
         natural'high when (\c$shI_100\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_100\);
-    \c$app_arg_155\ <= shift_right(((resize((resize(x_89.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha)))))))),48)), 48)) + (resize((resize(ampPreLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_8)))))))),48)), 48))),sh_101)
+    \c$app_arg_187\ <= shift_right(((resize((resize(x_89.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha)))))))),48)), 48)) + (resize((resize(ampPreLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_8)))))))),48)), 48))),sh_101)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -15639,12 +16055,12 @@ begin
 
   gain_8 <= to_unsigned(255,8) - alpha;
 
-  \c$case_alt_selection_res_53\ <= \c$app_arg_155\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_53\ <= \c$app_arg_187\ < to_signed(-8388608,48);
 
   \c$case_alt_73\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_53\ else
-                     resize(\c$app_arg_155\,24);
+                     resize(\c$app_arg_187\,24);
 
-  result_selection_res_71 <= \c$app_arg_155\ > to_signed(8388607,48);
+  result_selection_res_71 <= \c$app_arg_187\ > to_signed(8388607,48);
 
   result_179 <= to_signed(8388607,24) when result_selection_res_71 else
                 \c$case_alt_73\;
@@ -15838,17 +16254,17 @@ begin
 
   result_selection_res_72 <= x_93.Frame_sel18_fWetL > to_signed(7500000,24);
 
-  result_183 <= resize((to_signed(7500000,25) + \c$app_arg_156\),24) when result_selection_res_72 else
+  result_183 <= resize((to_signed(7500000,25) + \c$app_arg_188\),24) when result_selection_res_72 else
                 \c$case_alt_74\;
 
   \c$case_alt_selection_res_54\ <= x_93.Frame_sel18_fWetL < to_signed(-7500000,24);
 
-  \c$case_alt_74\ <= resize((to_signed(-7500000,25) + \c$app_arg_157\),24) when \c$case_alt_selection_res_54\ else
+  \c$case_alt_74\ <= resize((to_signed(-7500000,25) + \c$app_arg_189\),24) when \c$case_alt_selection_res_54\ else
                      x_93.Frame_sel18_fWetL;
 
   \c$shI_102\ <= (to_signed(2,64));
 
-  capp_arg_156_shiftR : block
+  capp_arg_188_shiftR : block
     signal sh_103 : natural;
   begin
     sh_103 <=
@@ -15856,7 +16272,7 @@ begin
         natural'high when (\c$shI_102\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_102\);
-    \c$app_arg_156\ <= shift_right((\c$app_arg_158\ - to_signed(7500000,25)),sh_103)
+    \c$app_arg_188\ <= shift_right((\c$app_arg_190\ - to_signed(7500000,25)),sh_103)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -15865,7 +16281,7 @@ begin
 
   \c$shI_103\ <= (to_signed(2,64));
 
-  capp_arg_157_shiftR : block
+  capp_arg_189_shiftR : block
     signal sh_104 : natural;
   begin
     sh_104 <=
@@ -15873,14 +16289,14 @@ begin
         natural'high when (\c$shI_103\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_103\);
-    \c$app_arg_157\ <= shift_right((\c$app_arg_158\ - to_signed(-7500000,25)),sh_104)
+    \c$app_arg_189\ <= shift_right((\c$app_arg_190\ - to_signed(-7500000,25)),sh_104)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_158\ <= resize(x_93.Frame_sel18_fWetL,25);
+  \c$app_arg_190\ <= resize(x_93.Frame_sel18_fWetL,25);
 
   drive_0 <= (\c$idx_app_arg_2\(31 downto 31)) = std_logic_vector'("1");
 
@@ -16234,7 +16650,7 @@ begin
 
   \c$shI_107\ <= (to_signed(4,64));
 
-  capp_arg_159_shiftR : block
+  capp_arg_191_shiftR : block
     signal sh_109 : natural;
   begin
     sh_109 <=
@@ -16242,14 +16658,14 @@ begin
         natural'high when (\c$shI_107\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_107\);
-    \c$app_arg_159\ <= shift_right(((resize(x_94.Frame_sel18_fWetL,25)) - (resize(ampPreEmphLpPrev,25))),sh_109)
+    \c$app_arg_191\ <= shift_right(((resize(x_94.Frame_sel18_fWetL,25)) - (resize(ampPreEmphLpPrev,25))),sh_109)
         -- pragma translate_off
         when ((to_signed(4,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_191 <= ampPreEmphLpPrev + (resize(\c$app_arg_159\,24));
+  result_191 <= ampPreEmphLpPrev + (resize(\c$app_arg_191\,24));
 
   \c$x_app_arg_39\ <= resize(x_94.Frame_sel18_fWetL,48);
 
@@ -16451,7 +16867,7 @@ begin
   \c$app_arg_selection_res_7\ <= \c$bv_61\(6 downto 6);
 
   with (\c$app_arg_selection_res_7\) select
-    \c$app_arg_160\ <= resize((resize(x_99.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_9)))))))),48)), 48) when "1",
+    \c$app_arg_192\ <= resize((resize(x_99.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_9)))))))),48)), 48) when "1",
                        to_signed(0,48) when others;
 
   \c$case_alt_79\ <= ( Frame_sel0_fL => x_99.Frame_sel0_fL
@@ -16484,7 +16900,7 @@ begin
                      , Frame_sel27_fEqHighR => x_99.Frame_sel27_fEqHighR
                      , Frame_sel28_fEqHighLpL => x_99.Frame_sel28_fEqHighLpL
                      , Frame_sel29_fEqHighLpR => x_99.Frame_sel29_fEqHighLpR
-                     , Frame_sel30_fAccL => \c$app_arg_160\
+                     , Frame_sel30_fAccL => \c$app_arg_192\
                      , Frame_sel31_fAccR => to_signed(0,48)
                      , Frame_sel32_fAcc2L => x_99.Frame_sel32_fAcc2L
                      , Frame_sel33_fAcc2R => x_99.Frame_sel33_fAcc2R
@@ -16755,35 +17171,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_0 : block
-    signal vec_index_50 : integer range 0 to 8-1;
+    signal vec_index_74 : integer range 0 to 8-1;
   begin
-    vec_index_50 <= to_integer((to_signed(5,64)))
+    vec_index_74 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_161\ <= \c$bv_65\(vec_index_50);
+    \c$app_arg_193\ <= \c$bv_65\(vec_index_74);
   end block;
   -- indexBitVector end
 
   \c$bv_66\ <= (x_103.Frame_sel3_fGate);
 
-  result_201 <= ((\c$bv_66\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_161\ = ('1'));
+  result_201 <= ((\c$bv_66\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_193\ = ('1'));
 
   result_selection_res_80 <= result_200 > to_signed(3000000,24);
 
-  result_202 <= resize((to_signed(3000000,25) + \c$app_arg_162\),24) when result_selection_res_80 else
+  result_202 <= resize((to_signed(3000000,25) + \c$app_arg_194\),24) when result_selection_res_80 else
                 \c$case_alt_82\;
 
   \c$case_alt_selection_res_61\ <= result_200 < to_signed(-3000000,24);
 
-  \c$case_alt_82\ <= resize((to_signed(-3000000,25) + \c$app_arg_163\),24) when \c$case_alt_selection_res_61\ else
+  \c$case_alt_82\ <= resize((to_signed(-3000000,25) + \c$app_arg_195\),24) when \c$case_alt_selection_res_61\ else
                      result_200;
 
   \c$shI_112\ <= (to_signed(2,64));
 
-  capp_arg_162_shiftR : block
+  capp_arg_194_shiftR : block
     signal sh_114 : natural;
   begin
     sh_114 <=
@@ -16791,7 +17207,7 @@ begin
         natural'high when (\c$shI_112\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_112\);
-    \c$app_arg_162\ <= shift_right((\c$app_arg_164\ - to_signed(3000000,25)),sh_114)
+    \c$app_arg_194\ <= shift_right((\c$app_arg_196\ - to_signed(3000000,25)),sh_114)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -16800,7 +17216,7 @@ begin
 
   \c$shI_113\ <= (to_signed(2,64));
 
-  capp_arg_163_shiftR : block
+  capp_arg_195_shiftR : block
     signal sh_115 : natural;
   begin
     sh_115 <=
@@ -16808,14 +17224,14 @@ begin
         natural'high when (\c$shI_113\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_113\);
-    \c$app_arg_163\ <= shift_right((\c$app_arg_164\ - to_signed(-3000000,25)),sh_115)
+    \c$app_arg_195\ <= shift_right((\c$app_arg_196\ - to_signed(-3000000,25)),sh_115)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_164\ <= resize(result_200,25);
+  \c$app_arg_196\ <= resize(result_200,25);
 
   result_203 <= ( Frame_sel0_fL => x_101
                 , Frame_sel1_fR => x_101
@@ -16990,27 +17406,27 @@ begin
 
   -- indexBitVector begin
   indexBitVector_1 : block
-    signal vec_index_51 : integer range 0 to 8-1;
+    signal vec_index_75 : integer range 0 to 8-1;
   begin
-    vec_index_51 <= to_integer((to_signed(5,64)))
+    vec_index_75 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_165\ <= \c$bv_69\(vec_index_51);
+    \c$app_arg_197\ <= \c$bv_69\(vec_index_75);
   end block;
   -- indexBitVector end
 
   \c$bv_70\ <= (x_105.Frame_sel3_fGate);
 
-  result_206 <= ((\c$bv_70\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_165\ = ('1'));
+  result_206 <= ((\c$bv_70\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_197\ = ('1'));
 
   alpha_0 <= to_unsigned(46,8) + \c$lp_app_arg\;
 
   \c$shI_114\ <= (to_signed(8,64));
 
-  capp_arg_166_shiftR : block
+  capp_arg_198_shiftR : block
     signal sh_116 : natural;
   begin
     sh_116 <=
@@ -17018,7 +17434,7 @@ begin
         natural'high when (\c$shI_114\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_114\);
-    \c$app_arg_166\ <= shift_right(((resize((resize(x_102,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_0)))))))),48)), 48)) + (resize((resize(fuzzFaceTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_11)))))))),48)), 48))),sh_116)
+    \c$app_arg_198\ <= shift_right(((resize((resize(x_102,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_0)))))))),48)), 48)) + (resize((resize(fuzzFaceTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_11)))))))),48)), 48))),sh_116)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -17027,12 +17443,12 @@ begin
 
   gain_11 <= to_unsigned(255,8) - alpha_0;
 
-  \c$case_alt_selection_res_62\ <= \c$app_arg_166\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_62\ <= \c$app_arg_198\ < to_signed(-8388608,48);
 
   \c$case_alt_83\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_62\ else
-                     resize(\c$app_arg_166\,24);
+                     resize(\c$app_arg_198\,24);
 
-  result_selection_res_81 <= \c$app_arg_166\ > to_signed(8388607,48);
+  result_selection_res_81 <= \c$app_arg_198\ > to_signed(8388607,48);
 
   result_207 <= to_signed(8388607,24) when result_selection_res_81 else
                 \c$case_alt_83\;
@@ -17148,21 +17564,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_2 : block
-    signal vec_index_52 : integer range 0 to 8-1;
+    signal vec_index_76 : integer range 0 to 8-1;
   begin
-    vec_index_52 <= to_integer((to_signed(5,64)))
+    vec_index_76 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_167\ <= \c$bv_73\(vec_index_52);
+    \c$app_arg_199\ <= \c$bv_73\(vec_index_76);
   end block;
   -- indexBitVector end
 
   \c$bv_74\ <= (x_106.Frame_sel3_fGate);
 
-  result_209 <= ((\c$bv_74\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_167\ = ('1'));
+  result_209 <= ((\c$bv_74\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_199\ = ('1'));
 
   \c$case_alt_selection_res_63\ <= \c$x_app_arg_44\ < to_signed(-8388608,48);
 
@@ -17304,23 +17720,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_3 : block
-    signal vec_index_53 : integer range 0 to 8-1;
+    signal vec_index_77 : integer range 0 to 8-1;
   begin
-    vec_index_53 <= to_integer((to_signed(5,64)))
+    vec_index_77 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_168\ <= \c$bv_76\(vec_index_53);
+    \c$app_arg_200\ <= \c$bv_76\(vec_index_77);
   end block;
   -- indexBitVector end
 
   \c$bv_77\ <= (x_107.Frame_sel3_fGate);
 
-  result_213 <= ((\c$bv_77\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_168\ = ('1'));
+  result_213 <= ((\c$bv_77\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_200\ = ('1'));
 
-  \c$app_arg_169\ <= ((resize((resize(x_107.Frame_sel0_fL,48)) * to_signed(16632,48), 48)) + (resize((resize(ffMidX1,48)) * to_signed(-31511,48), 48))) + (resize((resize(ffMidX2,48)) * to_signed(14933,48), 48)) when result_213 else
+  \c$app_arg_201\ <= ((resize((resize(x_107.Frame_sel0_fL,48)) * to_signed(16632,48), 48)) + (resize((resize(ffMidX1,48)) * to_signed(-31511,48), 48))) + (resize((resize(ffMidX2,48)) * to_signed(14933,48), 48)) when result_213 else
                      to_signed(0,48);
 
   result_214 <= ( Frame_sel0_fL => x_107.Frame_sel0_fL
@@ -17357,7 +17773,7 @@ begin
                 , Frame_sel31_fAccR => x_107.Frame_sel31_fAccR
                 , Frame_sel32_fAcc2L => x_107.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_107.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => \c$app_arg_169\
+                , Frame_sel34_fAcc3L => \c$app_arg_201\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
   -- register begin
@@ -17501,12 +17917,12 @@ begin
 
   result_selection_res_85 <= result_217 > kneeP;
 
-  result_218 <= resize((\c$app_arg_171\ + \c$app_arg_170\),24) when result_selection_res_85 else
+  result_218 <= resize((\c$app_arg_203\ + \c$app_arg_202\),24) when result_selection_res_85 else
                 result_219;
 
   \c$shI_119\ <= (to_signed(2,64));
 
-  capp_arg_170_shiftR : block
+  capp_arg_202_shiftR : block
     signal sh_121 : natural;
   begin
     sh_121 <=
@@ -17514,23 +17930,23 @@ begin
         natural'high when (\c$shI_119\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_119\);
-    \c$app_arg_170\ <= shift_right((\c$app_arg_173\ - \c$app_arg_171\),sh_121)
+    \c$app_arg_202\ <= shift_right((\c$app_arg_205\ - \c$app_arg_203\),sh_121)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_171\ <= resize(kneeP,25);
+  \c$app_arg_203\ <= resize(kneeP,25);
 
   result_selection_res_86 <= result_217 < negKneeN;
 
-  result_219 <= resize((\c$app_arg_174\ + \c$app_arg_172\),24) when result_selection_res_86 else
+  result_219 <= resize((\c$app_arg_206\ + \c$app_arg_204\),24) when result_selection_res_86 else
                 result_217;
 
   \c$shI_120\ <= (to_signed(3,64));
 
-  capp_arg_172_shiftR : block
+  capp_arg_204_shiftR : block
     signal sh_122 : natural;
   begin
     sh_122 <=
@@ -17538,16 +17954,16 @@ begin
         natural'high when (\c$shI_120\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_120\);
-    \c$app_arg_172\ <= shift_right((\c$app_arg_173\ - \c$app_arg_174\),sh_122)
+    \c$app_arg_204\ <= shift_right((\c$app_arg_205\ - \c$app_arg_206\),sh_122)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_173\ <= resize(result_217,25);
+  \c$app_arg_205\ <= resize(result_217,25);
 
-  \c$app_arg_174\ <= resize(negKneeN,25);
+  \c$app_arg_206\ <= resize(negKneeN,25);
 
   negKneeN <= -kneeN;
 
@@ -17557,21 +17973,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_4 : block
-    signal vec_index_54 : integer range 0 to 8-1;
+    signal vec_index_78 : integer range 0 to 8-1;
   begin
-    vec_index_54 <= to_integer((to_signed(5,64)))
+    vec_index_78 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_175\ <= \c$bv_79\(vec_index_54);
+    \c$app_arg_207\ <= \c$bv_79\(vec_index_78);
   end block;
   -- indexBitVector end
 
   \c$bv_80\ <= (x_109.Frame_sel3_fGate);
 
-  result_220 <= ((\c$bv_80\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_175\ = ('1'));
+  result_220 <= ((\c$bv_80\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_207\ = ('1'));
 
   result_221 <= ( Frame_sel0_fL => x_108
                 , Frame_sel1_fR => x_108
@@ -17647,15 +18063,15 @@ begin
 
   -- indexBitVector begin
   indexBitVector_5 : block
-    signal vec_index_55 : integer range 0 to 8-1;
+    signal vec_index_79 : integer range 0 to 8-1;
   begin
-    vec_index_55 <= to_integer((to_signed(5,64)))
+    vec_index_79 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_176\ <= \c$bv_82\(vec_index_55);
+    \c$app_arg_208\ <= \c$bv_82\(vec_index_79);
   end block;
   -- indexBitVector end
 
@@ -17698,7 +18114,7 @@ begin
 
   \c$bv_83\ <= (f_6.Frame_sel3_fGate);
 
-  \c$case_alt_selection_res_67\ <= not (((\c$bv_83\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_176\ = ('1')));
+  \c$case_alt_selection_res_67\ <= not (((\c$bv_83\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_208\ = ('1')));
 
   \c$case_alt_88\ <= to_signed(0,24) when \c$case_alt_selection_res_67\ else
                      result_223;
@@ -17777,23 +18193,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_6 : block
-    signal vec_index_56 : integer range 0 to 8-1;
+    signal vec_index_80 : integer range 0 to 8-1;
   begin
-    vec_index_56 <= to_integer((to_signed(5,64)))
+    vec_index_80 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_177\ <= \c$bv_85\(vec_index_56);
+    \c$app_arg_209\ <= \c$bv_85\(vec_index_80);
   end block;
   -- indexBitVector end
 
   \c$bv_86\ <= (x_110.Frame_sel3_fGate);
 
-  result_227 <= ((\c$bv_86\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_177\ = ('1'));
+  result_227 <= ((\c$bv_86\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_209\ = ('1'));
 
-  \c$app_arg_178\ <= resize((resize(x_110.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_12)))))))),48)), 48) when result_227 else
+  \c$app_arg_210\ <= resize((resize(x_110.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_12)))))))),48)), 48) when result_227 else
                      to_signed(0,48);
 
   \c$case_alt_90\ <= ( Frame_sel0_fL => x_110.Frame_sel0_fL
@@ -17826,7 +18242,7 @@ begin
                      , Frame_sel27_fEqHighR => x_110.Frame_sel27_fEqHighR
                      , Frame_sel28_fEqHighLpL => x_110.Frame_sel28_fEqHighLpL
                      , Frame_sel29_fEqHighLpR => x_110.Frame_sel29_fEqHighLpR
-                     , Frame_sel30_fAccL => \c$app_arg_178\
+                     , Frame_sel30_fAccL => \c$app_arg_210\
                      , Frame_sel31_fAccR => to_signed(0,48)
                      , Frame_sel32_fAcc2L => x_110.Frame_sel32_fAcc2L
                      , Frame_sel33_fAcc2R => x_110.Frame_sel33_fAcc2R
@@ -17922,35 +18338,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_7 : block
-    signal vec_index_57 : integer range 0 to 8-1;
+    signal vec_index_81 : integer range 0 to 8-1;
   begin
-    vec_index_57 <= to_integer((to_signed(4,64)))
+    vec_index_81 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_179\ <= \c$bv_89\(vec_index_57);
+    \c$app_arg_211\ <= \c$bv_89\(vec_index_81);
   end block;
   -- indexBitVector end
 
   \c$bv_90\ <= (x_113.Frame_sel3_fGate);
 
-  result_230 <= ((\c$bv_90\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_179\ = ('1'));
+  result_230 <= ((\c$bv_90\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_211\ = ('1'));
 
   result_selection_res_91 <= result_229 > to_signed(3100000,24);
 
-  result_231 <= resize((to_signed(3100000,25) + \c$app_arg_180\),24) when result_selection_res_91 else
+  result_231 <= resize((to_signed(3100000,25) + \c$app_arg_212\),24) when result_selection_res_91 else
                 \c$case_alt_92\;
 
   \c$case_alt_selection_res_70\ <= result_229 < to_signed(-3100000,24);
 
-  \c$case_alt_92\ <= resize((to_signed(-3100000,25) + \c$app_arg_181\),24) when \c$case_alt_selection_res_70\ else
+  \c$case_alt_92\ <= resize((to_signed(-3100000,25) + \c$app_arg_213\),24) when \c$case_alt_selection_res_70\ else
                      result_229;
 
   \c$shI_124\ <= (to_signed(2,64));
 
-  capp_arg_180_shiftR : block
+  capp_arg_212_shiftR : block
     signal sh_126 : natural;
   begin
     sh_126 <=
@@ -17958,7 +18374,7 @@ begin
         natural'high when (\c$shI_124\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_124\);
-    \c$app_arg_180\ <= shift_right((\c$app_arg_182\ - to_signed(3100000,25)),sh_126)
+    \c$app_arg_212\ <= shift_right((\c$app_arg_214\ - to_signed(3100000,25)),sh_126)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -17967,7 +18383,7 @@ begin
 
   \c$shI_125\ <= (to_signed(2,64));
 
-  capp_arg_181_shiftR : block
+  capp_arg_213_shiftR : block
     signal sh_127 : natural;
   begin
     sh_127 <=
@@ -17975,14 +18391,14 @@ begin
         natural'high when (\c$shI_125\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_125\);
-    \c$app_arg_181\ <= shift_right((\c$app_arg_182\ - to_signed(-3100000,25)),sh_127)
+    \c$app_arg_213\ <= shift_right((\c$app_arg_214\ - to_signed(-3100000,25)),sh_127)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_182\ <= resize(result_229,25);
+  \c$app_arg_214\ <= resize(result_229,25);
 
   result_232 <= ( Frame_sel0_fL => x_111
                 , Frame_sel1_fR => x_111
@@ -18157,27 +18573,27 @@ begin
 
   -- indexBitVector begin
   indexBitVector_8 : block
-    signal vec_index_58 : integer range 0 to 8-1;
+    signal vec_index_82 : integer range 0 to 8-1;
   begin
-    vec_index_58 <= to_integer((to_signed(4,64)))
+    vec_index_82 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_183\ <= \c$bv_93\(vec_index_58);
+    \c$app_arg_215\ <= \c$bv_93\(vec_index_82);
   end block;
   -- indexBitVector end
 
   \c$bv_94\ <= (x_115.Frame_sel3_fGate);
 
-  result_235 <= ((\c$bv_94\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_183\ = ('1'));
+  result_235 <= ((\c$bv_94\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_215\ = ('1'));
 
   alpha_1 <= to_unsigned(25,8) + \c$lp_app_arg_0\;
 
   \c$shI_126\ <= (to_signed(8,64));
 
-  capp_arg_184_shiftR : block
+  capp_arg_216_shiftR : block
     signal sh_128 : natural;
   begin
     sh_128 <=
@@ -18185,7 +18601,7 @@ begin
         natural'high when (\c$shI_126\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_126\);
-    \c$app_arg_184\ <= shift_right(((resize((resize(x_112,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_1)))))))),48)), 48)) + (resize((resize(bigMuffTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_14)))))))),48)), 48))),sh_128)
+    \c$app_arg_216\ <= shift_right(((resize((resize(x_112,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_1)))))))),48)), 48)) + (resize((resize(bigMuffTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_14)))))))),48)), 48))),sh_128)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -18194,12 +18610,12 @@ begin
 
   gain_14 <= to_unsigned(255,8) - alpha_1;
 
-  \c$case_alt_selection_res_71\ <= \c$app_arg_184\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_71\ <= \c$app_arg_216\ < to_signed(-8388608,48);
 
   \c$case_alt_93\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_71\ else
-                     resize(\c$app_arg_184\,24);
+                     resize(\c$app_arg_216\,24);
 
-  result_selection_res_92 <= \c$app_arg_184\ > to_signed(8388607,48);
+  result_selection_res_92 <= \c$app_arg_216\ > to_signed(8388607,48);
 
   result_236 <= to_signed(8388607,24) when result_selection_res_92 else
                 \c$case_alt_93\;
@@ -18298,21 +18714,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_9 : block
-    signal vec_index_59 : integer range 0 to 8-1;
+    signal vec_index_83 : integer range 0 to 8-1;
   begin
-    vec_index_59 <= to_integer((to_signed(4,64)))
+    vec_index_83 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_185\ <= \c$bv_97\(vec_index_59);
+    \c$app_arg_217\ <= \c$bv_97\(vec_index_83);
   end block;
   -- indexBitVector end
 
   \c$bv_98\ <= (x_116.Frame_sel3_fGate);
 
-  result_238 <= ((\c$bv_98\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_185\ = ('1'));
+  result_238 <= ((\c$bv_98\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_217\ = ('1'));
 
   \c$bv_99\ <= (x_116.Frame_sel5_fDist);
 
@@ -18320,21 +18736,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_10 : block
-    signal vec_index_60 : integer range 0 to 8-1;
+    signal vec_index_84 : integer range 0 to 8-1;
   begin
-    vec_index_60 <= to_integer((to_signed(6,64)))
+    vec_index_84 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_186\ <= \c$bv_100\(vec_index_60);
+    \c$app_arg_218\ <= \c$bv_100\(vec_index_84);
   end block;
   -- indexBitVector end
 
   \c$bv_101\ <= (x_116.Frame_sel3_fGate);
 
-  result_239 <= ((\c$bv_101\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_186\ = ('1'));
+  result_239 <= ((\c$bv_101\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_218\ = ('1'));
 
   \c$bv_102\ <= (x_116.Frame_sel5_fDist);
 
@@ -18342,21 +18758,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_11 : block
-    signal vec_index_61 : integer range 0 to 8-1;
+    signal vec_index_85 : integer range 0 to 8-1;
   begin
-    vec_index_61 <= to_integer((to_signed(3,64)))
+    vec_index_85 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_187\ <= \c$bv_103\(vec_index_61);
+    \c$app_arg_219\ <= \c$bv_103\(vec_index_85);
   end block;
   -- indexBitVector end
 
   \c$bv_104\ <= (x_116.Frame_sel3_fGate);
 
-  result_240 <= ((\c$bv_104\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_187\ = ('1'));
+  result_240 <= ((\c$bv_104\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_219\ = ('1'));
 
   \c$shI_128\ <= (to_signed(14,64));
 
@@ -18433,21 +18849,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_12 : block
-    signal vec_index_62 : integer range 0 to 8-1;
+    signal vec_index_86 : integer range 0 to 8-1;
   begin
-    vec_index_62 <= to_integer((to_signed(6,64)))
+    vec_index_86 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_188\ <= \c$bv_106\(vec_index_62);
+    \c$app_arg_220\ <= \c$bv_106\(vec_index_86);
   end block;
   -- indexBitVector end
 
   \c$bv_107\ <= (x_116.Frame_sel3_fGate);
 
-  result_243 <= ((\c$bv_107\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_188\ = ('1'));
+  result_243 <= ((\c$bv_107\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_220\ = ('1'));
 
   \c$case_alt_95\ <= ( Tuple2_0_sel0_signed_0 => to_signed(31581,16)
                      , Tuple2_0_sel1_signed_1 => to_signed(15214,16) ) when result_244 else
@@ -18460,21 +18876,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_13 : block
-    signal vec_index_63 : integer range 0 to 8-1;
+    signal vec_index_87 : integer range 0 to 8-1;
   begin
-    vec_index_63 <= to_integer((to_signed(3,64)))
+    vec_index_87 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_189\ <= \c$bv_109\(vec_index_63);
+    \c$app_arg_221\ <= \c$bv_109\(vec_index_87);
   end block;
   -- indexBitVector end
 
   \c$bv_110\ <= (x_116.Frame_sel3_fGate);
 
-  result_244 <= ((\c$bv_110\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_189\ = ('1'));
+  result_244 <= ((\c$bv_110\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_221\ = ('1'));
 
   result_245 <= ( Tuple2_0_sel0_signed_0 => to_signed(32025,16)
                 , Tuple2_0_sel1_signed_1 => to_signed(15685,16) ) when result_243 else
@@ -18570,21 +18986,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_14 : block
-    signal vec_index_64 : integer range 0 to 8-1;
+    signal vec_index_88 : integer range 0 to 8-1;
   begin
-    vec_index_64 <= to_integer((to_signed(4,64)))
+    vec_index_88 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_190\ <= \c$bv_112\(vec_index_64);
+    \c$app_arg_222\ <= \c$bv_112\(vec_index_88);
   end block;
   -- indexBitVector end
 
   \c$bv_113\ <= (x_117.Frame_sel3_fGate);
 
-  result_247 <= ((\c$bv_113\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_190\ = ('1'));
+  result_247 <= ((\c$bv_113\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_222\ = ('1'));
 
   \c$bv_114\ <= (x_117.Frame_sel5_fDist);
 
@@ -18592,21 +19008,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_15 : block
-    signal vec_index_65 : integer range 0 to 8-1;
+    signal vec_index_89 : integer range 0 to 8-1;
   begin
-    vec_index_65 <= to_integer((to_signed(6,64)))
+    vec_index_89 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_191\ <= \c$bv_115\(vec_index_65);
+    \c$app_arg_223\ <= \c$bv_115\(vec_index_89);
   end block;
   -- indexBitVector end
 
   \c$bv_116\ <= (x_117.Frame_sel3_fGate);
 
-  result_248 <= ((\c$bv_116\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_191\ = ('1'));
+  result_248 <= ((\c$bv_116\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_223\ = ('1'));
 
   \c$bv_117\ <= (x_117.Frame_sel5_fDist);
 
@@ -18614,25 +19030,25 @@ begin
 
   -- indexBitVector begin
   indexBitVector_16 : block
-    signal vec_index_66 : integer range 0 to 8-1;
+    signal vec_index_90 : integer range 0 to 8-1;
   begin
-    vec_index_66 <= to_integer((to_signed(3,64)))
+    vec_index_90 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_192\ <= \c$bv_118\(vec_index_66);
+    \c$app_arg_224\ <= \c$bv_118\(vec_index_90);
   end block;
   -- indexBitVector end
 
   \c$bv_119\ <= (x_117.Frame_sel3_fGate);
 
-  result_249 <= ((\c$bv_119\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_192\ = ('1'));
+  result_249 <= ((\c$bv_119\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_224\ = ('1'));
 
   \c$app_arg_selection_res_8\ <= result_247 or (result_248 or result_249);
 
-  \c$app_arg_193\ <= ((resize((resize(x_117.Frame_sel0_fL,48)) * (resize(result_252.Tuple3_sel0_signed_0,48)), 48)) + (resize((resize(bmScoopX1,48)) * (resize(result_252.Tuple3_sel1_signed_1,48)), 48))) + (resize((resize(bmScoopX2,48)) * (resize(result_252.Tuple3_sel2_signed_2,48)), 48)) when \c$app_arg_selection_res_8\ else
+  \c$app_arg_225\ <= ((resize((resize(x_117.Frame_sel0_fL,48)) * (resize(result_252.Tuple3_sel0_signed_0,48)), 48)) + (resize((resize(bmScoopX1,48)) * (resize(result_252.Tuple3_sel1_signed_1,48)), 48))) + (resize((resize(bmScoopX2,48)) * (resize(result_252.Tuple3_sel2_signed_2,48)), 48)) when \c$app_arg_selection_res_8\ else
                      to_signed(0,48);
 
   \c$bv_120\ <= (x_117.Frame_sel5_fDist);
@@ -18641,21 +19057,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_17 : block
-    signal vec_index_67 : integer range 0 to 8-1;
+    signal vec_index_91 : integer range 0 to 8-1;
   begin
-    vec_index_67 <= to_integer((to_signed(6,64)))
+    vec_index_91 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_194\ <= \c$bv_121\(vec_index_67);
+    \c$app_arg_226\ <= \c$bv_121\(vec_index_91);
   end block;
   -- indexBitVector end
 
   \c$bv_122\ <= (x_117.Frame_sel3_fGate);
 
-  result_250 <= ((\c$bv_122\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_194\ = ('1'));
+  result_250 <= ((\c$bv_122\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_226\ = ('1'));
 
   \c$case_alt_96\ <= ( Tuple3_sel0_signed_0 => to_signed(16032,16)
                      , Tuple3_sel1_signed_1 => to_signed(-31581,16)
@@ -18670,21 +19086,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_18 : block
-    signal vec_index_68 : integer range 0 to 8-1;
+    signal vec_index_92 : integer range 0 to 8-1;
   begin
-    vec_index_68 <= to_integer((to_signed(3,64)))
+    vec_index_92 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_195\ <= \c$bv_124\(vec_index_68);
+    \c$app_arg_227\ <= \c$bv_124\(vec_index_92);
   end block;
   -- indexBitVector end
 
   \c$bv_125\ <= (x_117.Frame_sel3_fGate);
 
-  result_251 <= ((\c$bv_125\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_195\ = ('1'));
+  result_251 <= ((\c$bv_125\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_227\ = ('1'));
 
   result_252 <= ( Tuple3_sel0_signed_0 => to_signed(16656,16)
                 , Tuple3_sel1_signed_1 => to_signed(-32025,16)
@@ -18725,7 +19141,7 @@ begin
                 , Frame_sel31_fAccR => x_117.Frame_sel31_fAccR
                 , Frame_sel32_fAcc2L => x_117.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_117.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => \c$app_arg_193\
+                , Frame_sel34_fAcc3L => \c$app_arg_225\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
   -- register begin
@@ -18837,21 +19253,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_19 : block
-    signal vec_index_69 : integer range 0 to 8-1;
+    signal vec_index_93 : integer range 0 to 8-1;
   begin
-    vec_index_69 <= to_integer((to_signed(4,64)))
+    vec_index_93 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_196\ <= \c$bv_127\(vec_index_69);
+    \c$app_arg_228\ <= \c$bv_127\(vec_index_93);
   end block;
   -- indexBitVector end
 
   \c$bv_128\ <= (x_119.Frame_sel3_fGate);
 
-  result_255 <= ((\c$bv_128\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_196\ = ('1'));
+  result_255 <= ((\c$bv_128\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_228\ = ('1'));
 
   \c$case_alt_selection_res_73\ <= \c$x_app_arg_49\ < to_signed(-8388608,48);
 
@@ -18956,221 +19372,221 @@ begin
                    & std_logic_vector(result_259.Frame_sel35_fAcc3R)))) when others;
 
   -- index begin
-  indexVec_49 : block
-    signal vec_index_70 : integer range 0 to 16-1;
+  indexVec_73 : block
+    signal vec_index_94 : integer range 0 to 16-1;
   begin
-    vec_index_70 <= to_integer((to_signed(0,64)))
+    vec_index_94 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_197\ <= bmClipHist(vec_index_70);
+    \c$app_arg_229\ <= bmClipHist(vec_index_94);
   end block;
   -- index end
 
   -- index begin
-  indexVec_50 : block
-    signal vec_index_71 : integer range 0 to 16-1;
+  indexVec_74 : block
+    signal vec_index_95 : integer range 0 to 16-1;
   begin
-    vec_index_71 <= to_integer((to_signed(14,64)))
+    vec_index_95 <= to_integer((to_signed(14,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_198\ <= bmClipHist(vec_index_71);
+    \c$app_arg_230\ <= bmClipHist(vec_index_95);
   end block;
   -- index end
 
-  \c$app_arg_199\ <= resize(((resize(\c$app_arg_197\,48)) + (resize(\c$app_arg_198\,48))) * to_signed(-2,48), 48);
+  \c$app_arg_231\ <= resize(((resize(\c$app_arg_229\,48)) + (resize(\c$app_arg_230\,48))) * to_signed(-2,48), 48);
 
   -- index begin
-  indexVec_51 : block
-    signal vec_index_72 : integer range 0 to 16-1;
+  indexVec_75 : block
+    signal vec_index_96 : integer range 0 to 16-1;
   begin
-    vec_index_72 <= to_integer((to_signed(1,64)))
+    vec_index_96 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_200\ <= bmClipHist(vec_index_72);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_52 : block
-    signal vec_index_73 : integer range 0 to 16-1;
-  begin
-    vec_index_73 <= to_integer((to_signed(13,64)))
-    -- pragma translate_off
-                 mod 16
-    -- pragma translate_on
-                 ;
-    \c$app_arg_201\ <= bmClipHist(vec_index_73);
-  end block;
-  -- index end
-
-  \c$app_arg_202\ <= resize(((resize(\c$app_arg_200\,48)) + (resize(\c$app_arg_201\,48))) * to_signed(-3,48), 48);
-
-  -- index begin
-  indexVec_53 : block
-    signal vec_index_74 : integer range 0 to 16-1;
-  begin
-    vec_index_74 <= to_integer((to_signed(2,64)))
-    -- pragma translate_off
-                 mod 16
-    -- pragma translate_on
-                 ;
-    \c$app_arg_203\ <= bmClipHist(vec_index_74);
+    \c$app_arg_232\ <= bmClipHist(vec_index_96);
   end block;
   -- index end
 
   -- index begin
-  indexVec_54 : block
-    signal vec_index_75 : integer range 0 to 16-1;
+  indexVec_76 : block
+    signal vec_index_97 : integer range 0 to 16-1;
   begin
-    vec_index_75 <= to_integer((to_signed(12,64)))
+    vec_index_97 <= to_integer((to_signed(13,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_204\ <= bmClipHist(vec_index_75);
+    \c$app_arg_233\ <= bmClipHist(vec_index_97);
   end block;
   -- index end
 
-  \c$app_arg_205\ <= resize(((resize(\c$app_arg_203\,48)) + (resize(\c$app_arg_204\,48))) * to_signed(-4,48), 48);
+  \c$app_arg_234\ <= resize(((resize(\c$app_arg_232\,48)) + (resize(\c$app_arg_233\,48))) * to_signed(-3,48), 48);
 
-  \c$app_arg_206\ <= (\c$app_arg_199\ + \c$app_arg_202\) + \c$app_arg_205\ when result_260 else
+  -- index begin
+  indexVec_77 : block
+    signal vec_index_98 : integer range 0 to 16-1;
+  begin
+    vec_index_98 <= to_integer((to_signed(2,64)))
+    -- pragma translate_off
+                 mod 16
+    -- pragma translate_on
+                 ;
+    \c$app_arg_235\ <= bmClipHist(vec_index_98);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_78 : block
+    signal vec_index_99 : integer range 0 to 16-1;
+  begin
+    vec_index_99 <= to_integer((to_signed(12,64)))
+    -- pragma translate_off
+                 mod 16
+    -- pragma translate_on
+                 ;
+    \c$app_arg_236\ <= bmClipHist(vec_index_99);
+  end block;
+  -- index end
+
+  \c$app_arg_237\ <= resize(((resize(\c$app_arg_235\,48)) + (resize(\c$app_arg_236\,48))) * to_signed(-4,48), 48);
+
+  \c$app_arg_238\ <= (\c$app_arg_231\ + \c$app_arg_234\) + \c$app_arg_237\ when result_260 else
                      to_signed(0,48);
 
   -- index begin
-  indexVec_55 : block
-    signal vec_index_76 : integer range 0 to 16-1;
+  indexVec_79 : block
+    signal vec_index_100 : integer range 0 to 16-1;
   begin
-    vec_index_76 <= to_integer((to_signed(3,64)))
+    vec_index_100 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_207\ <= bmClipHist(vec_index_76);
+    \c$app_arg_239\ <= bmClipHist(vec_index_100);
   end block;
   -- index end
 
   -- index begin
-  indexVec_56 : block
-    signal vec_index_77 : integer range 0 to 16-1;
+  indexVec_80 : block
+    signal vec_index_101 : integer range 0 to 16-1;
   begin
-    vec_index_77 <= to_integer((to_signed(11,64)))
+    vec_index_101 <= to_integer((to_signed(11,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_208\ <= bmClipHist(vec_index_77);
+    \c$app_arg_240\ <= bmClipHist(vec_index_101);
   end block;
   -- index end
 
-  \c$app_arg_209\ <= resize(((resize(\c$app_arg_207\,48)) + (resize(\c$app_arg_208\,48))) * to_signed(5,48), 48);
+  \c$app_arg_241\ <= resize(((resize(\c$app_arg_239\,48)) + (resize(\c$app_arg_240\,48))) * to_signed(5,48), 48);
 
   -- index begin
-  indexVec_57 : block
-    signal vec_index_78 : integer range 0 to 16-1;
+  indexVec_81 : block
+    signal vec_index_102 : integer range 0 to 16-1;
   begin
-    vec_index_78 <= to_integer((to_signed(4,64)))
+    vec_index_102 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_210\ <= bmClipHist(vec_index_78);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_58 : block
-    signal vec_index_79 : integer range 0 to 16-1;
-  begin
-    vec_index_79 <= to_integer((to_signed(10,64)))
-    -- pragma translate_off
-                 mod 16
-    -- pragma translate_on
-                 ;
-    \c$app_arg_211\ <= bmClipHist(vec_index_79);
-  end block;
-  -- index end
-
-  \c$app_arg_212\ <= resize(((resize(\c$app_arg_210\,48)) + (resize(\c$app_arg_211\,48))) * to_signed(29,48), 48);
-
-  -- index begin
-  indexVec_59 : block
-    signal vec_index_80 : integer range 0 to 16-1;
-  begin
-    vec_index_80 <= to_integer((to_signed(5,64)))
-    -- pragma translate_off
-                 mod 16
-    -- pragma translate_on
-                 ;
-    \c$app_arg_213\ <= bmClipHist(vec_index_80);
+    \c$app_arg_242\ <= bmClipHist(vec_index_102);
   end block;
   -- index end
 
   -- index begin
-  indexVec_60 : block
-    signal vec_index_81 : integer range 0 to 16-1;
+  indexVec_82 : block
+    signal vec_index_103 : integer range 0 to 16-1;
   begin
-    vec_index_81 <= to_integer((to_signed(9,64)))
+    vec_index_103 <= to_integer((to_signed(10,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_214\ <= bmClipHist(vec_index_81);
+    \c$app_arg_243\ <= bmClipHist(vec_index_103);
   end block;
   -- index end
 
-  \c$app_arg_215\ <= resize(((resize(\c$app_arg_213\,48)) + (resize(\c$app_arg_214\,48))) * to_signed(68,48), 48);
+  \c$app_arg_244\ <= resize(((resize(\c$app_arg_242\,48)) + (resize(\c$app_arg_243\,48))) * to_signed(29,48), 48);
 
-  \c$app_arg_216\ <= (\c$app_arg_209\ + \c$app_arg_212\) + \c$app_arg_215\ when result_260 else
+  -- index begin
+  indexVec_83 : block
+    signal vec_index_104 : integer range 0 to 16-1;
+  begin
+    vec_index_104 <= to_integer((to_signed(5,64)))
+    -- pragma translate_off
+                 mod 16
+    -- pragma translate_on
+                 ;
+    \c$app_arg_245\ <= bmClipHist(vec_index_104);
+  end block;
+  -- index end
+
+  -- index begin
+  indexVec_84 : block
+    signal vec_index_105 : integer range 0 to 16-1;
+  begin
+    vec_index_105 <= to_integer((to_signed(9,64)))
+    -- pragma translate_off
+                 mod 16
+    -- pragma translate_on
+                 ;
+    \c$app_arg_246\ <= bmClipHist(vec_index_105);
+  end block;
+  -- index end
+
+  \c$app_arg_247\ <= resize(((resize(\c$app_arg_245\,48)) + (resize(\c$app_arg_246\,48))) * to_signed(68,48), 48);
+
+  \c$app_arg_248\ <= (\c$app_arg_241\ + \c$app_arg_244\) + \c$app_arg_247\ when result_260 else
                      to_signed(0,48);
 
   -- index begin
-  indexVec_61 : block
-    signal vec_index_82 : integer range 0 to 16-1;
+  indexVec_85 : block
+    signal vec_index_106 : integer range 0 to 16-1;
   begin
-    vec_index_82 <= to_integer((to_signed(6,64)))
+    vec_index_106 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_217\ <= bmClipHist(vec_index_82);
+    \c$app_arg_249\ <= bmClipHist(vec_index_106);
   end block;
   -- index end
 
   -- index begin
-  indexVec_62 : block
-    signal vec_index_83 : integer range 0 to 16-1;
+  indexVec_86 : block
+    signal vec_index_107 : integer range 0 to 16-1;
   begin
-    vec_index_83 <= to_integer((to_signed(8,64)))
+    vec_index_107 <= to_integer((to_signed(8,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_218\ <= bmClipHist(vec_index_83);
+    \c$app_arg_250\ <= bmClipHist(vec_index_107);
   end block;
   -- index end
 
-  \c$app_arg_219\ <= resize(((resize(\c$app_arg_217\,48)) + (resize(\c$app_arg_218\,48))) * to_signed(104,48), 48);
+  \c$app_arg_251\ <= resize(((resize(\c$app_arg_249\,48)) + (resize(\c$app_arg_250\,48))) * to_signed(104,48), 48);
 
   -- index begin
-  indexVec_63 : block
-    signal vec_index_84 : integer range 0 to 16-1;
+  indexVec_87 : block
+    signal vec_index_108 : integer range 0 to 16-1;
   begin
-    vec_index_84 <= to_integer((to_signed(7,64)))
+    vec_index_108 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 16
     -- pragma translate_on
                  ;
-    \c$app_arg_220\ <= bmClipHist(vec_index_84);
+    \c$app_arg_252\ <= bmClipHist(vec_index_108);
   end block;
   -- index end
 
-  \c$app_arg_221\ <= \c$app_arg_219\ + (resize((resize(\c$app_arg_220\,48)) * to_signed(118,48), 48)) when result_260 else
+  \c$app_arg_253\ <= \c$app_arg_251\ + (resize((resize(\c$app_arg_252\,48)) * to_signed(118,48), 48)) when result_260 else
                      to_signed(0,48);
 
   result_259 <= ( Frame_sel0_fL => x_120.Frame_sel0_fL
@@ -19203,11 +19619,11 @@ begin
                 , Frame_sel27_fEqHighR => x_120.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_120.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_120.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_206\
+                , Frame_sel30_fAccL => \c$app_arg_238\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_216\
+                , Frame_sel32_fAcc2L => \c$app_arg_248\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
-                , Frame_sel34_fAcc3L => \c$app_arg_221\
+                , Frame_sel34_fAcc3L => \c$app_arg_253\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
   \c$bv_129\ <= (x_120.Frame_sel5_fDist);
@@ -19216,21 +19632,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_20 : block
-    signal vec_index_85 : integer range 0 to 8-1;
+    signal vec_index_109 : integer range 0 to 8-1;
   begin
-    vec_index_85 <= to_integer((to_signed(4,64)))
+    vec_index_109 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_222\ <= \c$bv_130\(vec_index_85);
+    \c$app_arg_254\ <= \c$bv_130\(vec_index_109);
   end block;
   -- indexBitVector end
 
   \c$bv_131\ <= (x_120.Frame_sel3_fGate);
 
-  result_260 <= ((\c$bv_131\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_222\ = ('1'));
+  result_260 <= ((\c$bv_131\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_254\ = ('1'));
 
   -- register begin
   bmClipHist_register : process(clk,aresetn)
@@ -19305,19 +19721,19 @@ begin
 
   f_7 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(bigMuffPrePipe(1067 downto 0)));
 
-  \c$case_alt_selection_res_75\ <= \c$app_arg_223\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_75\ <= \c$app_arg_255\ < to_signed(-8388608,48);
 
   \c$case_alt_99\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_75\ else
-                     resize(\c$app_arg_223\,24);
+                     resize(\c$app_arg_255\,24);
 
-  result_selection_res_96 <= \c$app_arg_223\ > to_signed(8388607,48);
+  result_selection_res_96 <= \c$app_arg_255\ > to_signed(8388607,48);
 
   result_263 <= to_signed(8388607,24) when result_selection_res_96 else
                 \c$case_alt_99\;
 
   \c$shI_131\ <= (to_signed(8,64));
 
-  capp_arg_223_shiftR : block
+  capp_arg_255_shiftR : block
     signal sh_133 : natural;
   begin
     sh_133 <=
@@ -19325,7 +19741,7 @@ begin
         natural'high when (\c$shI_131\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_131\);
-    \c$app_arg_223\ <= shift_right((resize((resize(result_264,48)) * to_signed(208,48), 48)),sh_133)
+    \c$app_arg_255\ <= shift_right((resize((resize(result_264,48)) * to_signed(208,48), 48)),sh_133)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19334,17 +19750,17 @@ begin
 
   result_selection_res_97 <= result_276.Tuple4_sel0_signed_0 > to_signed(1500000,24);
 
-  result_264 <= resize((to_signed(1500000,25) + \c$app_arg_224\),24) when result_selection_res_97 else
+  result_264 <= resize((to_signed(1500000,25) + \c$app_arg_256\),24) when result_selection_res_97 else
                 \c$case_alt_100\;
 
   \c$case_alt_selection_res_76\ <= result_276.Tuple4_sel0_signed_0 < to_signed(-1500000,24);
 
-  \c$case_alt_100\ <= resize((to_signed(-1500000,25) + \c$app_arg_225\),24) when \c$case_alt_selection_res_76\ else
+  \c$case_alt_100\ <= resize((to_signed(-1500000,25) + \c$app_arg_257\),24) when \c$case_alt_selection_res_76\ else
                       result_276.Tuple4_sel0_signed_0;
 
   \c$shI_132\ <= (to_signed(2,64));
 
-  capp_arg_224_shiftR : block
+  capp_arg_256_shiftR : block
     signal sh_134 : natural;
   begin
     sh_134 <=
@@ -19352,7 +19768,7 @@ begin
         natural'high when (\c$shI_132\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_132\);
-    \c$app_arg_224\ <= shift_right((\c$app_arg_226\ - to_signed(1500000,25)),sh_134)
+    \c$app_arg_256\ <= shift_right((\c$app_arg_258\ - to_signed(1500000,25)),sh_134)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19361,7 +19777,7 @@ begin
 
   \c$shI_133\ <= (to_signed(2,64));
 
-  capp_arg_225_shiftR : block
+  capp_arg_257_shiftR : block
     signal sh_135 : natural;
   begin
     sh_135 <=
@@ -19369,28 +19785,28 @@ begin
         natural'high when (\c$shI_133\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_133\);
-    \c$app_arg_225\ <= shift_right((\c$app_arg_226\ - to_signed(-1500000,25)),sh_135)
+    \c$app_arg_257\ <= shift_right((\c$app_arg_258\ - to_signed(-1500000,25)),sh_135)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_226\ <= resize(result_276.Tuple4_sel0_signed_0,25);
+  \c$app_arg_258\ <= resize(result_276.Tuple4_sel0_signed_0,25);
 
   result_selection_res_98 <= result_263 > to_signed(1250000,24);
 
-  result_265 <= resize((to_signed(1250000,25) + \c$app_arg_227\),24) when result_selection_res_98 else
+  result_265 <= resize((to_signed(1250000,25) + \c$app_arg_259\),24) when result_selection_res_98 else
                 \c$case_alt_101\;
 
   \c$case_alt_selection_res_77\ <= result_263 < to_signed(-1250000,24);
 
-  \c$case_alt_101\ <= resize((to_signed(-1250000,25) + \c$app_arg_228\),24) when \c$case_alt_selection_res_77\ else
+  \c$case_alt_101\ <= resize((to_signed(-1250000,25) + \c$app_arg_260\),24) when \c$case_alt_selection_res_77\ else
                       result_263;
 
   \c$shI_134\ <= (to_signed(2,64));
 
-  capp_arg_227_shiftR : block
+  capp_arg_259_shiftR : block
     signal sh_136 : natural;
   begin
     sh_136 <=
@@ -19398,7 +19814,7 @@ begin
         natural'high when (\c$shI_134\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_134\);
-    \c$app_arg_227\ <= shift_right((\c$app_arg_229\ - to_signed(1250000,25)),sh_136)
+    \c$app_arg_259\ <= shift_right((\c$app_arg_261\ - to_signed(1250000,25)),sh_136)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19407,7 +19823,7 @@ begin
 
   \c$shI_135\ <= (to_signed(2,64));
 
-  capp_arg_228_shiftR : block
+  capp_arg_260_shiftR : block
     signal sh_137 : natural;
   begin
     sh_137 <=
@@ -19415,28 +19831,28 @@ begin
         natural'high when (\c$shI_135\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_135\);
-    \c$app_arg_228\ <= shift_right((\c$app_arg_229\ - to_signed(-1250000,25)),sh_137)
+    \c$app_arg_260\ <= shift_right((\c$app_arg_261\ - to_signed(-1250000,25)),sh_137)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_229\ <= resize(result_263,25);
+  \c$app_arg_261\ <= resize(result_263,25);
 
-  \c$case_alt_selection_res_78\ <= \c$app_arg_230\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_78\ <= \c$app_arg_262\ < to_signed(-8388608,48);
 
   \c$case_alt_102\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_78\ else
-                      resize(\c$app_arg_230\,24);
+                      resize(\c$app_arg_262\,24);
 
-  result_selection_res_99 <= \c$app_arg_230\ > to_signed(8388607,48);
+  result_selection_res_99 <= \c$app_arg_262\ > to_signed(8388607,48);
 
   result_266 <= to_signed(8388607,24) when result_selection_res_99 else
                 \c$case_alt_102\;
 
   \c$shI_136\ <= (to_signed(8,64));
 
-  capp_arg_230_shiftR : block
+  capp_arg_262_shiftR : block
     signal sh_138 : natural;
   begin
     sh_138 <=
@@ -19444,7 +19860,7 @@ begin
         natural'high when (\c$shI_136\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_136\);
-    \c$app_arg_230\ <= shift_right((resize((resize(result_267,48)) * to_signed(208,48), 48)),sh_138)
+    \c$app_arg_262\ <= shift_right((resize((resize(result_267,48)) * to_signed(208,48), 48)),sh_138)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19453,17 +19869,17 @@ begin
 
   result_selection_res_100 <= result_276.Tuple4_sel1_signed_1 > to_signed(1500000,24);
 
-  result_267 <= resize((to_signed(1500000,25) + \c$app_arg_231\),24) when result_selection_res_100 else
+  result_267 <= resize((to_signed(1500000,25) + \c$app_arg_263\),24) when result_selection_res_100 else
                 \c$case_alt_103\;
 
   \c$case_alt_selection_res_79\ <= result_276.Tuple4_sel1_signed_1 < to_signed(-1500000,24);
 
-  \c$case_alt_103\ <= resize((to_signed(-1500000,25) + \c$app_arg_232\),24) when \c$case_alt_selection_res_79\ else
+  \c$case_alt_103\ <= resize((to_signed(-1500000,25) + \c$app_arg_264\),24) when \c$case_alt_selection_res_79\ else
                       result_276.Tuple4_sel1_signed_1;
 
   \c$shI_137\ <= (to_signed(2,64));
 
-  capp_arg_231_shiftR : block
+  capp_arg_263_shiftR : block
     signal sh_139 : natural;
   begin
     sh_139 <=
@@ -19471,7 +19887,7 @@ begin
         natural'high when (\c$shI_137\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_137\);
-    \c$app_arg_231\ <= shift_right((\c$app_arg_233\ - to_signed(1500000,25)),sh_139)
+    \c$app_arg_263\ <= shift_right((\c$app_arg_265\ - to_signed(1500000,25)),sh_139)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19480,7 +19896,7 @@ begin
 
   \c$shI_138\ <= (to_signed(2,64));
 
-  capp_arg_232_shiftR : block
+  capp_arg_264_shiftR : block
     signal sh_140 : natural;
   begin
     sh_140 <=
@@ -19488,28 +19904,28 @@ begin
         natural'high when (\c$shI_138\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_138\);
-    \c$app_arg_232\ <= shift_right((\c$app_arg_233\ - to_signed(-1500000,25)),sh_140)
+    \c$app_arg_264\ <= shift_right((\c$app_arg_265\ - to_signed(-1500000,25)),sh_140)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_233\ <= resize(result_276.Tuple4_sel1_signed_1,25);
+  \c$app_arg_265\ <= resize(result_276.Tuple4_sel1_signed_1,25);
 
   result_selection_res_101 <= result_266 > to_signed(1250000,24);
 
-  result_268 <= resize((to_signed(1250000,25) + \c$app_arg_234\),24) when result_selection_res_101 else
+  result_268 <= resize((to_signed(1250000,25) + \c$app_arg_266\),24) when result_selection_res_101 else
                 \c$case_alt_104\;
 
   \c$case_alt_selection_res_80\ <= result_266 < to_signed(-1250000,24);
 
-  \c$case_alt_104\ <= resize((to_signed(-1250000,25) + \c$app_arg_235\),24) when \c$case_alt_selection_res_80\ else
+  \c$case_alt_104\ <= resize((to_signed(-1250000,25) + \c$app_arg_267\),24) when \c$case_alt_selection_res_80\ else
                       result_266;
 
   \c$shI_139\ <= (to_signed(2,64));
 
-  capp_arg_234_shiftR : block
+  capp_arg_266_shiftR : block
     signal sh_141 : natural;
   begin
     sh_141 <=
@@ -19517,7 +19933,7 @@ begin
         natural'high when (\c$shI_139\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_139\);
-    \c$app_arg_234\ <= shift_right((\c$app_arg_236\ - to_signed(1250000,25)),sh_141)
+    \c$app_arg_266\ <= shift_right((\c$app_arg_268\ - to_signed(1250000,25)),sh_141)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19526,7 +19942,7 @@ begin
 
   \c$shI_140\ <= (to_signed(2,64));
 
-  capp_arg_235_shiftR : block
+  capp_arg_267_shiftR : block
     signal sh_142 : natural;
   begin
     sh_142 <=
@@ -19534,28 +19950,28 @@ begin
         natural'high when (\c$shI_140\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_140\);
-    \c$app_arg_235\ <= shift_right((\c$app_arg_236\ - to_signed(-1250000,25)),sh_142)
+    \c$app_arg_267\ <= shift_right((\c$app_arg_268\ - to_signed(-1250000,25)),sh_142)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_236\ <= resize(result_266,25);
+  \c$app_arg_268\ <= resize(result_266,25);
 
-  \c$case_alt_selection_res_81\ <= \c$app_arg_237\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_81\ <= \c$app_arg_269\ < to_signed(-8388608,48);
 
   \c$case_alt_105\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_81\ else
-                      resize(\c$app_arg_237\,24);
+                      resize(\c$app_arg_269\,24);
 
-  result_selection_res_102 <= \c$app_arg_237\ > to_signed(8388607,48);
+  result_selection_res_102 <= \c$app_arg_269\ > to_signed(8388607,48);
 
   result_269 <= to_signed(8388607,24) when result_selection_res_102 else
                 \c$case_alt_105\;
 
   \c$shI_141\ <= (to_signed(8,64));
 
-  capp_arg_237_shiftR : block
+  capp_arg_269_shiftR : block
     signal sh_143 : natural;
   begin
     sh_143 <=
@@ -19563,7 +19979,7 @@ begin
         natural'high when (\c$shI_141\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_141\);
-    \c$app_arg_237\ <= shift_right((resize((resize(result_270,48)) * to_signed(208,48), 48)),sh_143)
+    \c$app_arg_269\ <= shift_right((resize((resize(result_270,48)) * to_signed(208,48), 48)),sh_143)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19572,17 +19988,17 @@ begin
 
   result_selection_res_103 <= result_276.Tuple4_sel2_signed_2 > to_signed(1500000,24);
 
-  result_270 <= resize((to_signed(1500000,25) + \c$app_arg_238\),24) when result_selection_res_103 else
+  result_270 <= resize((to_signed(1500000,25) + \c$app_arg_270\),24) when result_selection_res_103 else
                 \c$case_alt_106\;
 
   \c$case_alt_selection_res_82\ <= result_276.Tuple4_sel2_signed_2 < to_signed(-1500000,24);
 
-  \c$case_alt_106\ <= resize((to_signed(-1500000,25) + \c$app_arg_239\),24) when \c$case_alt_selection_res_82\ else
+  \c$case_alt_106\ <= resize((to_signed(-1500000,25) + \c$app_arg_271\),24) when \c$case_alt_selection_res_82\ else
                       result_276.Tuple4_sel2_signed_2;
 
   \c$shI_142\ <= (to_signed(2,64));
 
-  capp_arg_238_shiftR : block
+  capp_arg_270_shiftR : block
     signal sh_144 : natural;
   begin
     sh_144 <=
@@ -19590,7 +20006,7 @@ begin
         natural'high when (\c$shI_142\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_142\);
-    \c$app_arg_238\ <= shift_right((\c$app_arg_240\ - to_signed(1500000,25)),sh_144)
+    \c$app_arg_270\ <= shift_right((\c$app_arg_272\ - to_signed(1500000,25)),sh_144)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19599,7 +20015,7 @@ begin
 
   \c$shI_143\ <= (to_signed(2,64));
 
-  capp_arg_239_shiftR : block
+  capp_arg_271_shiftR : block
     signal sh_145 : natural;
   begin
     sh_145 <=
@@ -19607,28 +20023,28 @@ begin
         natural'high when (\c$shI_143\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_143\);
-    \c$app_arg_239\ <= shift_right((\c$app_arg_240\ - to_signed(-1500000,25)),sh_145)
+    \c$app_arg_271\ <= shift_right((\c$app_arg_272\ - to_signed(-1500000,25)),sh_145)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_240\ <= resize(result_276.Tuple4_sel2_signed_2,25);
+  \c$app_arg_272\ <= resize(result_276.Tuple4_sel2_signed_2,25);
 
   result_selection_res_104 <= result_269 > to_signed(1250000,24);
 
-  result_271 <= resize((to_signed(1250000,25) + \c$app_arg_241\),24) when result_selection_res_104 else
+  result_271 <= resize((to_signed(1250000,25) + \c$app_arg_273\),24) when result_selection_res_104 else
                 \c$case_alt_107\;
 
   \c$case_alt_selection_res_83\ <= result_269 < to_signed(-1250000,24);
 
-  \c$case_alt_107\ <= resize((to_signed(-1250000,25) + \c$app_arg_242\),24) when \c$case_alt_selection_res_83\ else
+  \c$case_alt_107\ <= resize((to_signed(-1250000,25) + \c$app_arg_274\),24) when \c$case_alt_selection_res_83\ else
                       result_269;
 
   \c$shI_144\ <= (to_signed(2,64));
 
-  capp_arg_241_shiftR : block
+  capp_arg_273_shiftR : block
     signal sh_146 : natural;
   begin
     sh_146 <=
@@ -19636,7 +20052,7 @@ begin
         natural'high when (\c$shI_144\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_144\);
-    \c$app_arg_241\ <= shift_right((\c$app_arg_243\ - to_signed(1250000,25)),sh_146)
+    \c$app_arg_273\ <= shift_right((\c$app_arg_275\ - to_signed(1250000,25)),sh_146)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19645,7 +20061,7 @@ begin
 
   \c$shI_145\ <= (to_signed(2,64));
 
-  capp_arg_242_shiftR : block
+  capp_arg_274_shiftR : block
     signal sh_147 : natural;
   begin
     sh_147 <=
@@ -19653,28 +20069,28 @@ begin
         natural'high when (\c$shI_145\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_145\);
-    \c$app_arg_242\ <= shift_right((\c$app_arg_243\ - to_signed(-1250000,25)),sh_147)
+    \c$app_arg_274\ <= shift_right((\c$app_arg_275\ - to_signed(-1250000,25)),sh_147)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_243\ <= resize(result_269,25);
+  \c$app_arg_275\ <= resize(result_269,25);
 
-  \c$case_alt_selection_res_84\ <= \c$app_arg_244\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_84\ <= \c$app_arg_276\ < to_signed(-8388608,48);
 
   \c$case_alt_108\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_84\ else
-                      resize(\c$app_arg_244\,24);
+                      resize(\c$app_arg_276\,24);
 
-  result_selection_res_105 <= \c$app_arg_244\ > to_signed(8388607,48);
+  result_selection_res_105 <= \c$app_arg_276\ > to_signed(8388607,48);
 
   result_272 <= to_signed(8388607,24) when result_selection_res_105 else
                 \c$case_alt_108\;
 
   \c$shI_146\ <= (to_signed(8,64));
 
-  capp_arg_244_shiftR : block
+  capp_arg_276_shiftR : block
     signal sh_148 : natural;
   begin
     sh_148 <=
@@ -19682,7 +20098,7 @@ begin
         natural'high when (\c$shI_146\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_146\);
-    \c$app_arg_244\ <= shift_right((resize((resize(result_273,48)) * to_signed(208,48), 48)),sh_148)
+    \c$app_arg_276\ <= shift_right((resize((resize(result_273,48)) * to_signed(208,48), 48)),sh_148)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19691,17 +20107,17 @@ begin
 
   result_selection_res_106 <= result_276.Tuple4_sel3_signed_3 > to_signed(1500000,24);
 
-  result_273 <= resize((to_signed(1500000,25) + \c$app_arg_245\),24) when result_selection_res_106 else
+  result_273 <= resize((to_signed(1500000,25) + \c$app_arg_277\),24) when result_selection_res_106 else
                 \c$case_alt_109\;
 
   \c$case_alt_selection_res_85\ <= result_276.Tuple4_sel3_signed_3 < to_signed(-1500000,24);
 
-  \c$case_alt_109\ <= resize((to_signed(-1500000,25) + \c$app_arg_246\),24) when \c$case_alt_selection_res_85\ else
+  \c$case_alt_109\ <= resize((to_signed(-1500000,25) + \c$app_arg_278\),24) when \c$case_alt_selection_res_85\ else
                       result_276.Tuple4_sel3_signed_3;
 
   \c$shI_147\ <= (to_signed(2,64));
 
-  capp_arg_245_shiftR : block
+  capp_arg_277_shiftR : block
     signal sh_149 : natural;
   begin
     sh_149 <=
@@ -19709,7 +20125,7 @@ begin
         natural'high when (\c$shI_147\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_147\);
-    \c$app_arg_245\ <= shift_right((\c$app_arg_247\ - to_signed(1500000,25)),sh_149)
+    \c$app_arg_277\ <= shift_right((\c$app_arg_279\ - to_signed(1500000,25)),sh_149)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19718,7 +20134,7 @@ begin
 
   \c$shI_148\ <= (to_signed(2,64));
 
-  capp_arg_246_shiftR : block
+  capp_arg_278_shiftR : block
     signal sh_150 : natural;
   begin
     sh_150 <=
@@ -19726,28 +20142,28 @@ begin
         natural'high when (\c$shI_148\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_148\);
-    \c$app_arg_246\ <= shift_right((\c$app_arg_247\ - to_signed(-1500000,25)),sh_150)
+    \c$app_arg_278\ <= shift_right((\c$app_arg_279\ - to_signed(-1500000,25)),sh_150)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_247\ <= resize(result_276.Tuple4_sel3_signed_3,25);
+  \c$app_arg_279\ <= resize(result_276.Tuple4_sel3_signed_3,25);
 
   result_selection_res_107 <= result_272 > to_signed(1250000,24);
 
-  result_274 <= resize((to_signed(1250000,25) + \c$app_arg_248\),24) when result_selection_res_107 else
+  result_274 <= resize((to_signed(1250000,25) + \c$app_arg_280\),24) when result_selection_res_107 else
                 \c$case_alt_110\;
 
   \c$case_alt_selection_res_86\ <= result_272 < to_signed(-1250000,24);
 
-  \c$case_alt_110\ <= resize((to_signed(-1250000,25) + \c$app_arg_249\),24) when \c$case_alt_selection_res_86\ else
+  \c$case_alt_110\ <= resize((to_signed(-1250000,25) + \c$app_arg_281\),24) when \c$case_alt_selection_res_86\ else
                       result_272;
 
   \c$shI_149\ <= (to_signed(2,64));
 
-  capp_arg_248_shiftR : block
+  capp_arg_280_shiftR : block
     signal sh_151 : natural;
   begin
     sh_151 <=
@@ -19755,7 +20171,7 @@ begin
         natural'high when (\c$shI_149\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_149\);
-    \c$app_arg_248\ <= shift_right((\c$app_arg_250\ - to_signed(1250000,25)),sh_151)
+    \c$app_arg_280\ <= shift_right((\c$app_arg_282\ - to_signed(1250000,25)),sh_151)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19764,7 +20180,7 @@ begin
 
   \c$shI_150\ <= (to_signed(2,64));
 
-  capp_arg_249_shiftR : block
+  capp_arg_281_shiftR : block
     signal sh_152 : natural;
   begin
     sh_152 <=
@@ -19772,14 +20188,14 @@ begin
         natural'high when (\c$shI_150\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_150\);
-    \c$app_arg_249\ <= shift_right((\c$app_arg_250\ - to_signed(-1250000,25)),sh_152)
+    \c$app_arg_281\ <= shift_right((\c$app_arg_282\ - to_signed(-1250000,25)),sh_152)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_250\ <= resize(result_272,25);
+  \c$app_arg_282\ <= resize(result_272,25);
 
   result_275 <= ( Tuple4_sel0_signed_0 => result_265
                 , Tuple4_sel1_signed_1 => result_268
@@ -19795,19 +20211,19 @@ begin
                 , Tuple4_sel2_signed_2 => result_278
                 , Tuple4_sel3_signed_3 => result_277 );
 
-  \c$case_alt_selection_res_87\ <= \c$app_arg_251\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_87\ <= \c$app_arg_283\ < to_signed(-8388608,48);
 
   \c$case_alt_111\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_87\ else
-                      resize(\c$app_arg_251\,24);
+                      resize(\c$app_arg_283\,24);
 
-  result_selection_res_108 <= \c$app_arg_251\ > to_signed(8388607,48);
+  result_selection_res_108 <= \c$app_arg_283\ > to_signed(8388607,48);
 
   result_277 <= to_signed(8388607,24) when result_selection_res_108 else
                 \c$case_alt_111\;
 
   \c$shI_151\ <= (to_signed(2,64));
 
-  capp_arg_251_shiftR : block
+  capp_arg_283_shiftR : block
     signal sh_153 : natural;
   begin
     sh_153 <=
@@ -19815,7 +20231,7 @@ begin
         natural'high when (\c$shI_151\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_151\);
-    \c$app_arg_251\ <= shift_right(((x1w + \c$app_arg_252\) + xnw),sh_153)
+    \c$app_arg_283\ <= shift_right(((x1w + \c$app_arg_284\) + xnw),sh_153)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19824,7 +20240,7 @@ begin
 
   \c$shI_152\ <= (to_signed(1,64));
 
-  capp_arg_252_shiftL : block
+  capp_arg_284_shiftL : block
     signal sh_154 : natural;
   begin
     sh_154 <=
@@ -19832,26 +20248,26 @@ begin
         natural'high when (\c$shI_152\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_152\);
-    \c$app_arg_252\ <= shift_left(xnw,sh_154)
+    \c$app_arg_284\ <= shift_left(xnw,sh_154)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_88\ <= \c$app_arg_253\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_88\ <= \c$app_arg_285\ < to_signed(-8388608,48);
 
   \c$case_alt_112\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_88\ else
-                      resize(\c$app_arg_253\,24);
+                      resize(\c$app_arg_285\,24);
 
-  result_selection_res_109 <= \c$app_arg_253\ > to_signed(8388607,48);
+  result_selection_res_109 <= \c$app_arg_285\ > to_signed(8388607,48);
 
   result_278 <= to_signed(8388607,24) when result_selection_res_109 else
                 \c$case_alt_112\;
 
   \c$shI_153\ <= (to_signed(1,64));
 
-  capp_arg_253_shiftR : block
+  capp_arg_285_shiftR : block
     signal sh_155 : natural;
   begin
     sh_155 <=
@@ -19859,26 +20275,26 @@ begin
         natural'high when (\c$shI_153\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_153\);
-    \c$app_arg_253\ <= shift_right((x1w + xnw),sh_155)
+    \c$app_arg_285\ <= shift_right((x1w + xnw),sh_155)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_89\ <= \c$app_arg_254\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_89\ <= \c$app_arg_286\ < to_signed(-8388608,48);
 
   \c$case_alt_113\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_89\ else
-                      resize(\c$app_arg_254\,24);
+                      resize(\c$app_arg_286\,24);
 
-  result_selection_res_110 <= \c$app_arg_254\ > to_signed(8388607,48);
+  result_selection_res_110 <= \c$app_arg_286\ > to_signed(8388607,48);
 
   result_279 <= to_signed(8388607,24) when result_selection_res_110 else
                 \c$case_alt_113\;
 
   \c$shI_154\ <= (to_signed(2,64));
 
-  capp_arg_254_shiftR : block
+  capp_arg_286_shiftR : block
     signal sh_156 : natural;
   begin
     sh_156 <=
@@ -19886,7 +20302,7 @@ begin
         natural'high when (\c$shI_154\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_154\);
-    \c$app_arg_254\ <= shift_right(((\c$app_arg_255\ + x1w) + xnw),sh_156)
+    \c$app_arg_286\ <= shift_right(((\c$app_arg_287\ + x1w) + xnw),sh_156)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -19895,7 +20311,7 @@ begin
 
   \c$shI_155\ <= (to_signed(1,64));
 
-  capp_arg_255_shiftL : block
+  capp_arg_287_shiftL : block
     signal sh_157 : natural;
   begin
     sh_157 <=
@@ -19903,7 +20319,7 @@ begin
         natural'high when (\c$shI_155\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_155\);
-    \c$app_arg_255\ <= shift_left(x1w,sh_157)
+    \c$app_arg_287\ <= shift_left(x1w,sh_157)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -20014,23 +20430,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_21 : block
-    signal vec_index_86 : integer range 0 to 8-1;
+    signal vec_index_110 : integer range 0 to 8-1;
   begin
-    vec_index_86 <= to_integer((to_signed(4,64)))
+    vec_index_110 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_256\ <= \c$bv_133\(vec_index_86);
+    \c$app_arg_288\ <= \c$bv_133\(vec_index_110);
   end block;
   -- indexBitVector end
 
   \c$bv_134\ <= (x_121.Frame_sel3_fGate);
 
-  result_283 <= ((\c$bv_134\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_256\ = ('1'));
+  result_283 <= ((\c$bv_134\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_288\ = ('1'));
 
-  \c$app_arg_257\ <= resize((resize(x_121.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_15)))))))),48)), 48) when result_283 else
+  \c$app_arg_289\ <= resize((resize(x_121.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_15)))))))),48)), 48) when result_283 else
                      to_signed(0,48);
 
   \c$case_alt_115\ <= ( Frame_sel0_fL => x_121.Frame_sel0_fL
@@ -20063,7 +20479,7 @@ begin
                       , Frame_sel27_fEqHighR => x_121.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_121.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_121.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_257\
+                      , Frame_sel30_fAccL => \c$app_arg_289\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_121.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_121.Frame_sel33_fAcc2R
@@ -20159,35 +20575,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_22 : block
-    signal vec_index_87 : integer range 0 to 8-1;
+    signal vec_index_111 : integer range 0 to 8-1;
   begin
-    vec_index_87 <= to_integer((to_signed(3,64)))
+    vec_index_111 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_258\ <= \c$bv_137\(vec_index_87);
+    \c$app_arg_290\ <= \c$bv_137\(vec_index_111);
   end block;
   -- indexBitVector end
 
   \c$bv_138\ <= (x_124.Frame_sel3_fGate);
 
-  result_286 <= ((\c$bv_138\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_258\ = ('1'));
+  result_286 <= ((\c$bv_138\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_290\ = ('1'));
 
   result_selection_res_113 <= result_285 > to_signed(3000000,24);
 
-  result_287 <= resize((to_signed(3000000,25) + \c$app_arg_259\),24) when result_selection_res_113 else
+  result_287 <= resize((to_signed(3000000,25) + \c$app_arg_291\),24) when result_selection_res_113 else
                 \c$case_alt_117\;
 
   \c$case_alt_selection_res_92\ <= result_285 < to_signed(-3000000,24);
 
-  \c$case_alt_117\ <= resize((to_signed(-3000000,25) + \c$app_arg_260\),24) when \c$case_alt_selection_res_92\ else
+  \c$case_alt_117\ <= resize((to_signed(-3000000,25) + \c$app_arg_292\),24) when \c$case_alt_selection_res_92\ else
                       result_285;
 
   \c$shI_158\ <= (to_signed(2,64));
 
-  capp_arg_259_shiftR : block
+  capp_arg_291_shiftR : block
     signal sh_160 : natural;
   begin
     sh_160 <=
@@ -20195,7 +20611,7 @@ begin
         natural'high when (\c$shI_158\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_158\);
-    \c$app_arg_259\ <= shift_right((\c$app_arg_261\ - to_signed(3000000,25)),sh_160)
+    \c$app_arg_291\ <= shift_right((\c$app_arg_293\ - to_signed(3000000,25)),sh_160)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -20204,7 +20620,7 @@ begin
 
   \c$shI_159\ <= (to_signed(2,64));
 
-  capp_arg_260_shiftR : block
+  capp_arg_292_shiftR : block
     signal sh_161 : natural;
   begin
     sh_161 <=
@@ -20212,14 +20628,14 @@ begin
         natural'high when (\c$shI_159\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_159\);
-    \c$app_arg_260\ <= shift_right((\c$app_arg_261\ - to_signed(-3000000,25)),sh_161)
+    \c$app_arg_292\ <= shift_right((\c$app_arg_293\ - to_signed(-3000000,25)),sh_161)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_261\ <= resize(result_285,25);
+  \c$app_arg_293\ <= resize(result_285,25);
 
   result_288 <= ( Frame_sel0_fL => x_122
                 , Frame_sel1_fR => x_122
@@ -20394,27 +20810,27 @@ begin
 
   -- indexBitVector begin
   indexBitVector_23 : block
-    signal vec_index_88 : integer range 0 to 8-1;
+    signal vec_index_112 : integer range 0 to 8-1;
   begin
-    vec_index_88 <= to_integer((to_signed(3,64)))
+    vec_index_112 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_262\ <= \c$bv_141\(vec_index_88);
+    \c$app_arg_294\ <= \c$bv_141\(vec_index_112);
   end block;
   -- indexBitVector end
 
   \c$bv_142\ <= (x_125.Frame_sel3_fGate);
 
-  result_291 <= ((\c$bv_142\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_262\ = ('1'));
+  result_291 <= ((\c$bv_142\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_294\ = ('1'));
 
   alpha_2 <= to_unsigned(59,8) + \c$lp_app_arg_1\;
 
   \c$shI_160\ <= (to_signed(8,64));
 
-  capp_arg_263_shiftR : block
+  capp_arg_295_shiftR : block
     signal sh_162 : natural;
   begin
     sh_162 <=
@@ -20422,7 +20838,7 @@ begin
         natural'high when (\c$shI_160\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_160\);
-    \c$app_arg_263\ <= shift_right(((resize((resize(x_123,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_2)))))))),48)), 48)) + (resize((resize(ds1TonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_17)))))))),48)), 48))),sh_162)
+    \c$app_arg_295\ <= shift_right(((resize((resize(x_123,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_2)))))))),48)), 48)) + (resize((resize(ds1TonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_17)))))))),48)), 48))),sh_162)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -20431,12 +20847,12 @@ begin
 
   gain_17 <= to_unsigned(255,8) - alpha_2;
 
-  \c$case_alt_selection_res_93\ <= \c$app_arg_263\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_93\ <= \c$app_arg_295\ < to_signed(-8388608,48);
 
   \c$case_alt_118\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_93\ else
-                      resize(\c$app_arg_263\,24);
+                      resize(\c$app_arg_295\,24);
 
-  result_selection_res_114 <= \c$app_arg_263\ > to_signed(8388607,48);
+  result_selection_res_114 <= \c$app_arg_295\ > to_signed(8388607,48);
 
   result_292 <= to_signed(8388607,24) when result_selection_res_114 else
                 \c$case_alt_118\;
@@ -20564,35 +20980,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_24 : block
-    signal vec_index_89 : integer range 0 to 8-1;
+    signal vec_index_113 : integer range 0 to 8-1;
   begin
-    vec_index_89 <= to_integer((to_signed(3,64)))
+    vec_index_113 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_264\ <= \c$bv_145\(vec_index_89);
+    \c$app_arg_296\ <= \c$bv_145\(vec_index_113);
   end block;
   -- indexBitVector end
 
   \c$bv_146\ <= (x_127.Frame_sel3_fGate);
 
-  result_295 <= ((\c$bv_146\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_264\ = ('1'));
+  result_295 <= ((\c$bv_146\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_296\ = ('1'));
 
   result_selection_res_116 <= result_294 > to_signed(2150000,24);
 
-  result_296 <= resize((to_signed(2150000,25) + \c$app_arg_265\),24) when result_selection_res_116 else
+  result_296 <= resize((to_signed(2150000,25) + \c$app_arg_297\),24) when result_selection_res_116 else
                 \c$case_alt_120\;
 
   \c$case_alt_selection_res_95\ <= result_294 < to_signed(-2150000,24);
 
-  \c$case_alt_120\ <= resize((to_signed(-2150000,25) + \c$app_arg_266\),24) when \c$case_alt_selection_res_95\ else
+  \c$case_alt_120\ <= resize((to_signed(-2150000,25) + \c$app_arg_298\),24) when \c$case_alt_selection_res_95\ else
                       result_294;
 
   \c$shI_163\ <= (to_signed(2,64));
 
-  capp_arg_265_shiftR : block
+  capp_arg_297_shiftR : block
     signal sh_165 : natural;
   begin
     sh_165 <=
@@ -20600,7 +21016,7 @@ begin
         natural'high when (\c$shI_163\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_163\);
-    \c$app_arg_265\ <= shift_right((\c$app_arg_267\ - to_signed(2150000,25)),sh_165)
+    \c$app_arg_297\ <= shift_right((\c$app_arg_299\ - to_signed(2150000,25)),sh_165)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -20609,7 +21025,7 @@ begin
 
   \c$shI_164\ <= (to_signed(2,64));
 
-  capp_arg_266_shiftR : block
+  capp_arg_298_shiftR : block
     signal sh_166 : natural;
   begin
     sh_166 <=
@@ -20617,14 +21033,14 @@ begin
         natural'high when (\c$shI_164\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_164\);
-    \c$app_arg_266\ <= shift_right((\c$app_arg_267\ - to_signed(-2150000,25)),sh_166)
+    \c$app_arg_298\ <= shift_right((\c$app_arg_299\ - to_signed(-2150000,25)),sh_166)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_267\ <= resize(result_294,25);
+  \c$app_arg_299\ <= resize(result_294,25);
 
   result_297 <= ( Frame_sel0_fL => x_126
                 , Frame_sel1_fR => x_126
@@ -20724,23 +21140,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_25 : block
-    signal vec_index_90 : integer range 0 to 8-1;
+    signal vec_index_114 : integer range 0 to 8-1;
   begin
-    vec_index_90 <= to_integer((to_signed(3,64)))
+    vec_index_114 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_268\ <= \c$bv_148\(vec_index_90);
+    \c$app_arg_300\ <= \c$bv_148\(vec_index_114);
   end block;
   -- indexBitVector end
 
   \c$bv_149\ <= (x_130.Frame_sel3_fGate);
 
-  result_299 <= ((\c$bv_149\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_268\ = ('1'));
+  result_299 <= ((\c$bv_149\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_300\ = ('1'));
 
-  \c$app_arg_269\ <= resize((resize(x_130.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_18)))))))),48)), 48) when result_299 else
+  \c$app_arg_301\ <= resize((resize(x_130.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_18)))))))),48)), 48) when result_299 else
                      to_signed(0,48);
 
   \c$case_alt_121\ <= ( Frame_sel0_fL => x_130.Frame_sel0_fL
@@ -20773,7 +21189,7 @@ begin
                       , Frame_sel27_fEqHighR => x_130.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_130.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_130.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_269\
+                      , Frame_sel30_fAccL => \c$app_arg_301\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_130.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_130.Frame_sel33_fAcc2R
@@ -20913,21 +21329,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_26 : block
-    signal vec_index_91 : integer range 0 to 8-1;
+    signal vec_index_115 : integer range 0 to 8-1;
   begin
-    vec_index_91 <= to_integer((to_signed(3,64)))
+    vec_index_115 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_270\ <= \c$bv_152\(vec_index_91);
+    \c$app_arg_302\ <= \c$bv_152\(vec_index_115);
   end block;
   -- indexBitVector end
 
   \c$bv_153\ <= (x_131.Frame_sel3_fGate);
 
-  result_302 <= ((\c$bv_153\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_270\ = ('1'));
+  result_302 <= ((\c$bv_153\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_302\ = ('1'));
 
   x_128 <= (resize(x_129,48)) - (resize(result_304,48));
 
@@ -20945,7 +21361,7 @@ begin
 
   \c$shI_165\ <= (to_signed(8,64));
 
-  capp_arg_271_shiftR : block
+  capp_arg_303_shiftR : block
     signal sh_167 : natural;
   begin
     sh_167 <=
@@ -20953,7 +21369,7 @@ begin
         natural'high when (\c$shI_165\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_165\);
-    \c$app_arg_271\ <= shift_right(((resize((resize(x_129,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_3)))))))),48)), 48)) + (resize((resize(ds1HpfLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_19)))))))),48)), 48))),sh_167)
+    \c$app_arg_303\ <= shift_right(((resize((resize(x_129,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_3)))))))),48)), 48)) + (resize((resize(ds1HpfLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_19)))))))),48)), 48))),sh_167)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -20962,12 +21378,12 @@ begin
 
   gain_19 <= to_unsigned(255,8) - alpha_3;
 
-  \c$case_alt_selection_res_97\ <= \c$app_arg_271\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_97\ <= \c$app_arg_303\ < to_signed(-8388608,48);
 
   \c$case_alt_123\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_97\ else
-                      resize(\c$app_arg_271\,24);
+                      resize(\c$app_arg_303\,24);
 
-  result_selection_res_118 <= \c$app_arg_271\ > to_signed(8388607,48);
+  result_selection_res_118 <= \c$app_arg_303\ > to_signed(8388607,48);
 
   result_304 <= to_signed(8388607,24) when result_selection_res_118 else
                 \c$case_alt_123\;
@@ -21095,35 +21511,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_27 : block
-    signal vec_index_92 : integer range 0 to 8-1;
+    signal vec_index_116 : integer range 0 to 8-1;
   begin
-    vec_index_92 <= to_integer((to_signed(6,64)))
+    vec_index_116 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_272\ <= \c$bv_156\(vec_index_92);
+    \c$app_arg_304\ <= \c$bv_156\(vec_index_116);
   end block;
   -- indexBitVector end
 
   \c$bv_157\ <= (x_134.Frame_sel3_fGate);
 
-  result_307 <= ((\c$bv_157\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_272\ = ('1'));
+  result_307 <= ((\c$bv_157\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_304\ = ('1'));
 
   result_selection_res_120 <= result_306 > to_signed(4194304,24);
 
-  result_308 <= resize((to_signed(4194304,25) + \c$app_arg_273\),24) when result_selection_res_120 else
+  result_308 <= resize((to_signed(4194304,25) + \c$app_arg_305\),24) when result_selection_res_120 else
                 \c$case_alt_125\;
 
   \c$case_alt_selection_res_99\ <= result_306 < to_signed(-4194304,24);
 
-  \c$case_alt_125\ <= resize((to_signed(-4194304,25) + \c$app_arg_274\),24) when \c$case_alt_selection_res_99\ else
+  \c$case_alt_125\ <= resize((to_signed(-4194304,25) + \c$app_arg_306\),24) when \c$case_alt_selection_res_99\ else
                       result_306;
 
   \c$shI_168\ <= (to_signed(2,64));
 
-  capp_arg_273_shiftR : block
+  capp_arg_305_shiftR : block
     signal sh_170 : natural;
   begin
     sh_170 <=
@@ -21131,7 +21547,7 @@ begin
         natural'high when (\c$shI_168\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_168\);
-    \c$app_arg_273\ <= shift_right((\c$app_arg_275\ - to_signed(4194304,25)),sh_170)
+    \c$app_arg_305\ <= shift_right((\c$app_arg_307\ - to_signed(4194304,25)),sh_170)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21140,7 +21556,7 @@ begin
 
   \c$shI_169\ <= (to_signed(2,64));
 
-  capp_arg_274_shiftR : block
+  capp_arg_306_shiftR : block
     signal sh_171 : natural;
   begin
     sh_171 <=
@@ -21148,14 +21564,14 @@ begin
         natural'high when (\c$shI_169\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_169\);
-    \c$app_arg_274\ <= shift_right((\c$app_arg_275\ + to_signed(4194304,25)),sh_171)
+    \c$app_arg_306\ <= shift_right((\c$app_arg_307\ + to_signed(4194304,25)),sh_171)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_275\ <= resize(result_306,25);
+  \c$app_arg_307\ <= resize(result_306,25);
 
   result_309 <= ( Frame_sel0_fL => x_132
                 , Frame_sel1_fR => x_132
@@ -21330,27 +21746,27 @@ begin
 
   -- indexBitVector begin
   indexBitVector_28 : block
-    signal vec_index_93 : integer range 0 to 8-1;
+    signal vec_index_117 : integer range 0 to 8-1;
   begin
-    vec_index_93 <= to_integer((to_signed(6,64)))
+    vec_index_117 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_276\ <= \c$bv_160\(vec_index_93);
+    \c$app_arg_308\ <= \c$bv_160\(vec_index_117);
   end block;
   -- indexBitVector end
 
   \c$bv_161\ <= (x_135.Frame_sel3_fGate);
 
-  result_312 <= ((\c$bv_161\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_276\ = ('1'));
+  result_312 <= ((\c$bv_161\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_308\ = ('1'));
 
   alpha_4 <= to_unsigned(38,8) + \c$lp_app_arg_3\;
 
   \c$shI_170\ <= (to_signed(8,64));
 
-  capp_arg_277_shiftR : block
+  capp_arg_309_shiftR : block
     signal sh_172 : natural;
   begin
     sh_172 <=
@@ -21358,7 +21774,7 @@ begin
         natural'high when (\c$shI_170\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_170\);
-    \c$app_arg_277\ <= shift_right(((resize((resize(x_133,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_4)))))))),48)), 48)) + (resize((resize(metalPostLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_21)))))))),48)), 48))),sh_172)
+    \c$app_arg_309\ <= shift_right(((resize((resize(x_133,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_4)))))))),48)), 48)) + (resize((resize(metalPostLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_21)))))))),48)), 48))),sh_172)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21367,12 +21783,12 @@ begin
 
   gain_21 <= to_unsigned(255,8) - alpha_4;
 
-  \c$case_alt_selection_res_100\ <= \c$app_arg_277\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_100\ <= \c$app_arg_309\ < to_signed(-8388608,48);
 
   \c$case_alt_126\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_100\ else
-                      resize(\c$app_arg_277\,24);
+                      resize(\c$app_arg_309\,24);
 
-  result_selection_res_121 <= \c$app_arg_277\ > to_signed(8388607,48);
+  result_selection_res_121 <= \c$app_arg_309\ > to_signed(8388607,48);
 
   result_313 <= to_signed(8388607,24) when result_selection_res_121 else
                 \c$case_alt_126\;
@@ -21490,21 +21906,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_29 : block
-    signal vec_index_94 : integer range 0 to 8-1;
+    signal vec_index_118 : integer range 0 to 8-1;
   begin
-    vec_index_94 <= to_integer((to_signed(6,64)))
+    vec_index_118 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_278\ <= \c$bv_164\(vec_index_94);
+    \c$app_arg_310\ <= \c$bv_164\(vec_index_118);
   end block;
   -- indexBitVector end
 
   \c$bv_165\ <= (x_137.Frame_sel3_fGate);
 
-  result_315 <= ((\c$bv_165\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_278\ = ('1'));
+  result_315 <= ((\c$bv_165\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_310\ = ('1'));
 
   \c$case_alt_selection_res_101\ <= \c$x_app_arg_53\ < to_signed(-8388608,48);
 
@@ -21649,173 +22065,173 @@ begin
                 \c$case_alt_128\;
 
   -- index begin
-  indexVec_64 : block
-    signal vec_index_95 : integer range 0 to 12-1;
+  indexVec_88 : block
+    signal vec_index_119 : integer range 0 to 12-1;
   begin
-    vec_index_95 <= to_integer((to_signed(3,64)))
+    vec_index_119 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_279\ <= metalClipHist(vec_index_95);
+    \c$app_arg_311\ <= metalClipHist(vec_index_119);
   end block;
   -- index end
 
-  \c$app_arg_280\ <= resize(((resize(\c$app_arg_282\,48)) + (resize(\c$app_arg_281\,48))) * to_signed(104,48), 48);
+  \c$app_arg_312\ <= resize(((resize(\c$app_arg_314\,48)) + (resize(\c$app_arg_313\,48))) * to_signed(104,48), 48);
 
   -- index begin
-  indexVec_65 : block
-    signal vec_index_96 : integer range 0 to 12-1;
+  indexVec_89 : block
+    signal vec_index_120 : integer range 0 to 12-1;
   begin
-    vec_index_96 <= to_integer((to_signed(4,64)))
+    vec_index_120 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_281\ <= metalClipHist(vec_index_96);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_66 : block
-    signal vec_index_97 : integer range 0 to 12-1;
-  begin
-    vec_index_97 <= to_integer((to_signed(2,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    \c$app_arg_282\ <= metalClipHist(vec_index_97);
-  end block;
-  -- index end
-
-  \c$app_arg_283\ <= resize(((resize(\c$app_arg_285\,48)) + (resize(\c$app_arg_284\,48))) * to_signed(68,48), 48);
-
-  -- index begin
-  indexVec_67 : block
-    signal vec_index_98 : integer range 0 to 12-1;
-  begin
-    vec_index_98 <= to_integer((to_signed(5,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    \c$app_arg_284\ <= metalClipHist(vec_index_98);
+    \c$app_arg_313\ <= metalClipHist(vec_index_120);
   end block;
   -- index end
 
   -- index begin
-  indexVec_68 : block
-    signal vec_index_99 : integer range 0 to 12-1;
+  indexVec_90 : block
+    signal vec_index_121 : integer range 0 to 12-1;
   begin
-    vec_index_99 <= to_integer((to_signed(1,64)))
+    vec_index_121 <= to_integer((to_signed(2,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_285\ <= metalClipHist(vec_index_99);
+    \c$app_arg_314\ <= metalClipHist(vec_index_121);
   end block;
   -- index end
 
-  \c$app_arg_286\ <= resize(((resize(\c$app_arg_288\,48)) + (resize(\c$app_arg_287\,48))) * to_signed(29,48), 48);
+  \c$app_arg_315\ <= resize(((resize(\c$app_arg_317\,48)) + (resize(\c$app_arg_316\,48))) * to_signed(68,48), 48);
 
   -- index begin
-  indexVec_69 : block
-    signal vec_index_100 : integer range 0 to 12-1;
+  indexVec_91 : block
+    signal vec_index_122 : integer range 0 to 12-1;
   begin
-    vec_index_100 <= to_integer((to_signed(6,64)))
+    vec_index_122 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_287\ <= metalClipHist(vec_index_100);
+    \c$app_arg_316\ <= metalClipHist(vec_index_122);
   end block;
   -- index end
 
   -- index begin
-  indexVec_70 : block
-    signal vec_index_101 : integer range 0 to 12-1;
+  indexVec_92 : block
+    signal vec_index_123 : integer range 0 to 12-1;
   begin
-    vec_index_101 <= to_integer((to_signed(0,64)))
+    vec_index_123 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_288\ <= metalClipHist(vec_index_101);
+    \c$app_arg_317\ <= metalClipHist(vec_index_123);
   end block;
   -- index end
 
-  \c$app_arg_289\ <= resize(((resize(result_329.Tuple4_sel0_signed_0,48)) + (resize(\c$app_arg_290\,48))) * to_signed(5,48), 48);
+  \c$app_arg_318\ <= resize(((resize(\c$app_arg_320\,48)) + (resize(\c$app_arg_319\,48))) * to_signed(29,48), 48);
 
   -- index begin
-  indexVec_71 : block
-    signal vec_index_102 : integer range 0 to 12-1;
+  indexVec_93 : block
+    signal vec_index_124 : integer range 0 to 12-1;
   begin
-    vec_index_102 <= to_integer((to_signed(7,64)))
+    vec_index_124 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_290\ <= metalClipHist(vec_index_102);
+    \c$app_arg_319\ <= metalClipHist(vec_index_124);
   end block;
   -- index end
-
-  \c$app_arg_291\ <= resize(((resize(result_329.Tuple4_sel1_signed_1,48)) + (resize(\c$app_arg_292\,48))) * to_signed(-4,48), 48);
 
   -- index begin
-  indexVec_72 : block
-    signal vec_index_103 : integer range 0 to 12-1;
+  indexVec_94 : block
+    signal vec_index_125 : integer range 0 to 12-1;
   begin
-    vec_index_103 <= to_integer((to_signed(8,64)))
+    vec_index_125 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_292\ <= metalClipHist(vec_index_103);
+    \c$app_arg_320\ <= metalClipHist(vec_index_125);
   end block;
   -- index end
 
-  \c$app_arg_293\ <= resize(((resize(result_329.Tuple4_sel2_signed_2,48)) + (resize(\c$app_arg_294\,48))) * to_signed(-3,48), 48);
+  \c$app_arg_321\ <= resize(((resize(result_329.Tuple4_sel0_signed_0,48)) + (resize(\c$app_arg_322\,48))) * to_signed(5,48), 48);
 
   -- index begin
-  indexVec_73 : block
-    signal vec_index_104 : integer range 0 to 12-1;
+  indexVec_95 : block
+    signal vec_index_126 : integer range 0 to 12-1;
   begin
-    vec_index_104 <= to_integer((to_signed(9,64)))
+    vec_index_126 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_294\ <= metalClipHist(vec_index_104);
+    \c$app_arg_322\ <= metalClipHist(vec_index_126);
   end block;
   -- index end
 
-  \c$app_arg_295\ <= resize(((resize(result_329.Tuple4_sel3_signed_3,48)) + (resize(\c$app_arg_296\,48))) * to_signed(-2,48), 48);
+  \c$app_arg_323\ <= resize(((resize(result_329.Tuple4_sel1_signed_1,48)) + (resize(\c$app_arg_324\,48))) * to_signed(-4,48), 48);
 
   -- index begin
-  indexVec_74 : block
-    signal vec_index_105 : integer range 0 to 12-1;
+  indexVec_96 : block
+    signal vec_index_127 : integer range 0 to 12-1;
   begin
-    vec_index_105 <= to_integer((to_signed(10,64)))
+    vec_index_127 <= to_integer((to_signed(8,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_296\ <= metalClipHist(vec_index_105);
+    \c$app_arg_324\ <= metalClipHist(vec_index_127);
   end block;
   -- index end
 
-  result_322 <= ( Tuple3_0_sel0_signed_0 => (\c$app_arg_295\ + \c$app_arg_293\) + \c$app_arg_291\
-                , Tuple3_0_sel1_signed_1 => (\c$app_arg_289\ + \c$app_arg_286\) + \c$app_arg_283\
-                , Tuple3_0_sel2_signed_2 => \c$app_arg_280\ + (resize((resize(\c$app_arg_279\,48)) * to_signed(118,48), 48)) );
+  \c$app_arg_325\ <= resize(((resize(result_329.Tuple4_sel2_signed_2,48)) + (resize(\c$app_arg_326\,48))) * to_signed(-3,48), 48);
 
-  \c$app_arg_297\ <= result_322.Tuple3_0_sel0_signed_0 when result_324 else
+  -- index begin
+  indexVec_97 : block
+    signal vec_index_128 : integer range 0 to 12-1;
+  begin
+    vec_index_128 <= to_integer((to_signed(9,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    \c$app_arg_326\ <= metalClipHist(vec_index_128);
+  end block;
+  -- index end
+
+  \c$app_arg_327\ <= resize(((resize(result_329.Tuple4_sel3_signed_3,48)) + (resize(\c$app_arg_328\,48))) * to_signed(-2,48), 48);
+
+  -- index begin
+  indexVec_98 : block
+    signal vec_index_129 : integer range 0 to 12-1;
+  begin
+    vec_index_129 <= to_integer((to_signed(10,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    \c$app_arg_328\ <= metalClipHist(vec_index_129);
+  end block;
+  -- index end
+
+  result_322 <= ( Tuple3_0_sel0_signed_0 => (\c$app_arg_327\ + \c$app_arg_325\) + \c$app_arg_323\
+                , Tuple3_0_sel1_signed_1 => (\c$app_arg_321\ + \c$app_arg_318\) + \c$app_arg_315\
+                , Tuple3_0_sel2_signed_2 => \c$app_arg_312\ + (resize((resize(\c$app_arg_311\,48)) * to_signed(118,48), 48)) );
+
+  \c$app_arg_329\ <= result_322.Tuple3_0_sel0_signed_0 when result_324 else
                      to_signed(0,48);
 
-  \c$app_arg_298\ <= result_322.Tuple3_0_sel1_signed_1 when result_324 else
+  \c$app_arg_330\ <= result_322.Tuple3_0_sel1_signed_1 when result_324 else
                      to_signed(0,48);
 
-  \c$app_arg_299\ <= result_322.Tuple3_0_sel2_signed_2 when result_324 else
+  \c$app_arg_331\ <= result_322.Tuple3_0_sel2_signed_2 when result_324 else
                      to_signed(0,48);
 
   result_323 <= ( Frame_sel0_fL => x_140.Frame_sel0_fL
@@ -21848,11 +22264,11 @@ begin
                 , Frame_sel27_fEqHighR => x_140.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_140.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_140.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_297\
+                , Frame_sel30_fAccL => \c$app_arg_329\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_298\
+                , Frame_sel32_fAcc2L => \c$app_arg_330\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
-                , Frame_sel34_fAcc3L => \c$app_arg_299\
+                , Frame_sel34_fAcc3L => \c$app_arg_331\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
   \c$bv_167\ <= (x_140.Frame_sel5_fDist);
@@ -21861,69 +22277,69 @@ begin
 
   -- indexBitVector begin
   indexBitVector_30 : block
-    signal vec_index_106 : integer range 0 to 8-1;
+    signal vec_index_130 : integer range 0 to 8-1;
   begin
-    vec_index_106 <= to_integer((to_signed(6,64)))
+    vec_index_130 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_300\ <= \c$bv_168\(vec_index_106);
+    \c$app_arg_332\ <= \c$bv_168\(vec_index_130);
   end block;
   -- indexBitVector end
 
   \c$bv_169\ <= (x_140.Frame_sel3_fGate);
 
-  result_324 <= ((\c$bv_169\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_300\ = ('1'));
+  result_324 <= ((\c$bv_169\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_332\ = ('1'));
 
   result_selection_res_125 <= p0 > result_320;
 
   result_325 <= result_320 when result_selection_res_125 else
                 \c$case_alt_129\;
 
-  \c$case_alt_selection_res_103\ <= p0 < \c$app_arg_301\;
+  \c$case_alt_selection_res_103\ <= p0 < \c$app_arg_333\;
 
-  \c$case_alt_129\ <= \c$app_arg_301\ when \c$case_alt_selection_res_103\ else
+  \c$case_alt_129\ <= \c$app_arg_333\ when \c$case_alt_selection_res_103\ else
                       p0;
 
-  \c$app_arg_301\ <= -result_320;
+  \c$app_arg_333\ <= -result_320;
 
   result_selection_res_126 <= p1 > result_320;
 
   result_326 <= result_320 when result_selection_res_126 else
                 \c$case_alt_130\;
 
-  \c$case_alt_selection_res_104\ <= p1 < \c$app_arg_302\;
+  \c$case_alt_selection_res_104\ <= p1 < \c$app_arg_334\;
 
-  \c$case_alt_130\ <= \c$app_arg_302\ when \c$case_alt_selection_res_104\ else
+  \c$case_alt_130\ <= \c$app_arg_334\ when \c$case_alt_selection_res_104\ else
                       p1;
 
-  \c$app_arg_302\ <= -result_320;
+  \c$app_arg_334\ <= -result_320;
 
   result_selection_res_127 <= p2 > result_320;
 
   result_327 <= result_320 when result_selection_res_127 else
                 \c$case_alt_131\;
 
-  \c$case_alt_selection_res_105\ <= p2 < \c$app_arg_303\;
+  \c$case_alt_selection_res_105\ <= p2 < \c$app_arg_335\;
 
-  \c$case_alt_131\ <= \c$app_arg_303\ when \c$case_alt_selection_res_105\ else
+  \c$case_alt_131\ <= \c$app_arg_335\ when \c$case_alt_selection_res_105\ else
                       p2;
 
-  \c$app_arg_303\ <= -result_320;
+  \c$app_arg_335\ <= -result_320;
 
   result_selection_res_128 <= p3 > result_320;
 
   result_328 <= result_320 when result_selection_res_128 else
                 \c$case_alt_132\;
 
-  \c$case_alt_selection_res_106\ <= p3 < \c$app_arg_304\;
+  \c$case_alt_selection_res_106\ <= p3 < \c$app_arg_336\;
 
-  \c$case_alt_132\ <= \c$app_arg_304\ when \c$case_alt_selection_res_106\ else
+  \c$case_alt_132\ <= \c$app_arg_336\ when \c$case_alt_selection_res_106\ else
                       p3;
 
-  \c$app_arg_304\ <= -result_320;
+  \c$app_arg_336\ <= -result_320;
 
   result_329 <= ( Tuple4_sel0_signed_0 => result_325
                 , Tuple4_sel1_signed_1 => result_326
@@ -21947,19 +22363,19 @@ begin
                 , Tuple4_sel2_signed_2 => result_332
                 , Tuple4_sel3_signed_3 => result_331 );
 
-  \c$case_alt_selection_res_107\ <= \c$app_arg_305\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_107\ <= \c$app_arg_337\ < to_signed(-8388608,48);
 
   \c$case_alt_133\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_107\ else
-                      resize(\c$app_arg_305\,24);
+                      resize(\c$app_arg_337\,24);
 
-  result_selection_res_129 <= \c$app_arg_305\ > to_signed(8388607,48);
+  result_selection_res_129 <= \c$app_arg_337\ > to_signed(8388607,48);
 
   result_331 <= to_signed(8388607,24) when result_selection_res_129 else
                 \c$case_alt_133\;
 
   \c$shI_174\ <= (to_signed(2,64));
 
-  capp_arg_305_shiftR : block
+  capp_arg_337_shiftR : block
     signal sh_176 : natural;
   begin
     sh_176 <=
@@ -21967,7 +22383,7 @@ begin
         natural'high when (\c$shI_174\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_174\);
-    \c$app_arg_305\ <= shift_right(((x1w_0 + \c$app_arg_306\) + xnw_0),sh_176)
+    \c$app_arg_337\ <= shift_right(((x1w_0 + \c$app_arg_338\) + xnw_0),sh_176)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -21976,7 +22392,7 @@ begin
 
   \c$shI_175\ <= (to_signed(1,64));
 
-  capp_arg_306_shiftL : block
+  capp_arg_338_shiftL : block
     signal sh_177 : natural;
   begin
     sh_177 <=
@@ -21984,26 +22400,26 @@ begin
         natural'high when (\c$shI_175\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_175\);
-    \c$app_arg_306\ <= shift_left(xnw_0,sh_177)
+    \c$app_arg_338\ <= shift_left(xnw_0,sh_177)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_108\ <= \c$app_arg_307\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_108\ <= \c$app_arg_339\ < to_signed(-8388608,48);
 
   \c$case_alt_134\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_108\ else
-                      resize(\c$app_arg_307\,24);
+                      resize(\c$app_arg_339\,24);
 
-  result_selection_res_130 <= \c$app_arg_307\ > to_signed(8388607,48);
+  result_selection_res_130 <= \c$app_arg_339\ > to_signed(8388607,48);
 
   result_332 <= to_signed(8388607,24) when result_selection_res_130 else
                 \c$case_alt_134\;
 
   \c$shI_176\ <= (to_signed(1,64));
 
-  capp_arg_307_shiftR : block
+  capp_arg_339_shiftR : block
     signal sh_178 : natural;
   begin
     sh_178 <=
@@ -22011,26 +22427,26 @@ begin
         natural'high when (\c$shI_176\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_176\);
-    \c$app_arg_307\ <= shift_right((x1w_0 + xnw_0),sh_178)
+    \c$app_arg_339\ <= shift_right((x1w_0 + xnw_0),sh_178)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_109\ <= \c$app_arg_308\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_109\ <= \c$app_arg_340\ < to_signed(-8388608,48);
 
   \c$case_alt_135\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_109\ else
-                      resize(\c$app_arg_308\,24);
+                      resize(\c$app_arg_340\,24);
 
-  result_selection_res_131 <= \c$app_arg_308\ > to_signed(8388607,48);
+  result_selection_res_131 <= \c$app_arg_340\ > to_signed(8388607,48);
 
   result_333 <= to_signed(8388607,24) when result_selection_res_131 else
                 \c$case_alt_135\;
 
   \c$shI_177\ <= (to_signed(2,64));
 
-  capp_arg_308_shiftR : block
+  capp_arg_340_shiftR : block
     signal sh_179 : natural;
   begin
     sh_179 <=
@@ -22038,7 +22454,7 @@ begin
         natural'high when (\c$shI_177\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_177\);
-    \c$app_arg_308\ <= shift_right(((\c$app_arg_309\ + x1w_0) + xnw_0),sh_179)
+    \c$app_arg_340\ <= shift_right(((\c$app_arg_341\ + x1w_0) + xnw_0),sh_179)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22047,7 +22463,7 @@ begin
 
   \c$shI_178\ <= (to_signed(1,64));
 
-  capp_arg_309_shiftL : block
+  capp_arg_341_shiftL : block
     signal sh_180 : natural;
   begin
     sh_180 <=
@@ -22055,7 +22471,7 @@ begin
         natural'high when (\c$shI_178\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_178\);
-    \c$app_arg_309\ <= shift_left(x1w_0,sh_180)
+    \c$app_arg_341\ <= shift_left(x1w_0,sh_180)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22149,48 +22565,48 @@ begin
   result_338 <= result_335 when result_selection_res_134 else
                 \c$case_alt_137\;
 
-  \c$case_alt_selection_res_111\ <= p0_0 < \c$app_arg_310\;
+  \c$case_alt_selection_res_111\ <= p0_0 < \c$app_arg_342\;
 
-  \c$case_alt_137\ <= \c$app_arg_310\ when \c$case_alt_selection_res_111\ else
+  \c$case_alt_137\ <= \c$app_arg_342\ when \c$case_alt_selection_res_111\ else
                       p0_0;
 
-  \c$app_arg_310\ <= -result_335;
+  \c$app_arg_342\ <= -result_335;
 
   result_selection_res_135 <= p1_0 > result_335;
 
   result_339 <= result_335 when result_selection_res_135 else
                 \c$case_alt_138\;
 
-  \c$case_alt_selection_res_112\ <= p1_0 < \c$app_arg_311\;
+  \c$case_alt_selection_res_112\ <= p1_0 < \c$app_arg_343\;
 
-  \c$case_alt_138\ <= \c$app_arg_311\ when \c$case_alt_selection_res_112\ else
+  \c$case_alt_138\ <= \c$app_arg_343\ when \c$case_alt_selection_res_112\ else
                       p1_0;
 
-  \c$app_arg_311\ <= -result_335;
+  \c$app_arg_343\ <= -result_335;
 
   result_selection_res_136 <= p2_0 > result_335;
 
   result_340 <= result_335 when result_selection_res_136 else
                 \c$case_alt_139\;
 
-  \c$case_alt_selection_res_113\ <= p2_0 < \c$app_arg_312\;
+  \c$case_alt_selection_res_113\ <= p2_0 < \c$app_arg_344\;
 
-  \c$case_alt_139\ <= \c$app_arg_312\ when \c$case_alt_selection_res_113\ else
+  \c$case_alt_139\ <= \c$app_arg_344\ when \c$case_alt_selection_res_113\ else
                       p2_0;
 
-  \c$app_arg_312\ <= -result_335;
+  \c$app_arg_344\ <= -result_335;
 
   result_selection_res_137 <= p3_0 > result_335;
 
   result_341 <= result_335 when result_selection_res_137 else
                 \c$case_alt_140\;
 
-  \c$case_alt_selection_res_114\ <= p3_0 < \c$app_arg_313\;
+  \c$case_alt_selection_res_114\ <= p3_0 < \c$app_arg_345\;
 
-  \c$case_alt_140\ <= \c$app_arg_313\ when \c$case_alt_selection_res_114\ else
+  \c$case_alt_140\ <= \c$app_arg_345\ when \c$case_alt_selection_res_114\ else
                       p3_0;
 
-  \c$app_arg_313\ <= -result_335;
+  \c$app_arg_345\ <= -result_335;
 
   result_342 <= ( Tuple4_sel0_signed_0 => result_338
                 , Tuple4_sel1_signed_1 => result_339
@@ -22214,19 +22630,19 @@ begin
                 , Tuple4_sel2_signed_2 => result_345
                 , Tuple4_sel3_signed_3 => result_344 );
 
-  \c$case_alt_selection_res_115\ <= \c$app_arg_314\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_115\ <= \c$app_arg_346\ < to_signed(-8388608,48);
 
   \c$case_alt_141\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_115\ else
-                      resize(\c$app_arg_314\,24);
+                      resize(\c$app_arg_346\,24);
 
-  result_selection_res_138 <= \c$app_arg_314\ > to_signed(8388607,48);
+  result_selection_res_138 <= \c$app_arg_346\ > to_signed(8388607,48);
 
   result_344 <= to_signed(8388607,24) when result_selection_res_138 else
                 \c$case_alt_141\;
 
   \c$shI_180\ <= (to_signed(2,64));
 
-  capp_arg_314_shiftR : block
+  capp_arg_346_shiftR : block
     signal sh_182 : natural;
   begin
     sh_182 <=
@@ -22234,7 +22650,7 @@ begin
         natural'high when (\c$shI_180\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_180\);
-    \c$app_arg_314\ <= shift_right(((x1w_1 + \c$app_arg_315\) + xnw_1),sh_182)
+    \c$app_arg_346\ <= shift_right(((x1w_1 + \c$app_arg_347\) + xnw_1),sh_182)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22243,7 +22659,7 @@ begin
 
   \c$shI_181\ <= (to_signed(1,64));
 
-  capp_arg_315_shiftL : block
+  capp_arg_347_shiftL : block
     signal sh_183 : natural;
   begin
     sh_183 <=
@@ -22251,26 +22667,26 @@ begin
         natural'high when (\c$shI_181\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_181\);
-    \c$app_arg_315\ <= shift_left(xnw_1,sh_183)
+    \c$app_arg_347\ <= shift_left(xnw_1,sh_183)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_116\ <= \c$app_arg_316\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_116\ <= \c$app_arg_348\ < to_signed(-8388608,48);
 
   \c$case_alt_142\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_116\ else
-                      resize(\c$app_arg_316\,24);
+                      resize(\c$app_arg_348\,24);
 
-  result_selection_res_139 <= \c$app_arg_316\ > to_signed(8388607,48);
+  result_selection_res_139 <= \c$app_arg_348\ > to_signed(8388607,48);
 
   result_345 <= to_signed(8388607,24) when result_selection_res_139 else
                 \c$case_alt_142\;
 
   \c$shI_182\ <= (to_signed(1,64));
 
-  capp_arg_316_shiftR : block
+  capp_arg_348_shiftR : block
     signal sh_184 : natural;
   begin
     sh_184 <=
@@ -22278,26 +22694,26 @@ begin
         natural'high when (\c$shI_182\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_182\);
-    \c$app_arg_316\ <= shift_right((x1w_1 + xnw_1),sh_184)
+    \c$app_arg_348\ <= shift_right((x1w_1 + xnw_1),sh_184)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_117\ <= \c$app_arg_317\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_117\ <= \c$app_arg_349\ < to_signed(-8388608,48);
 
   \c$case_alt_143\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_117\ else
-                      resize(\c$app_arg_317\,24);
+                      resize(\c$app_arg_349\,24);
 
-  result_selection_res_140 <= \c$app_arg_317\ > to_signed(8388607,48);
+  result_selection_res_140 <= \c$app_arg_349\ > to_signed(8388607,48);
 
   result_346 <= to_signed(8388607,24) when result_selection_res_140 else
                 \c$case_alt_143\;
 
   \c$shI_183\ <= (to_signed(2,64));
 
-  capp_arg_317_shiftR : block
+  capp_arg_349_shiftR : block
     signal sh_185 : natural;
   begin
     sh_185 <=
@@ -22305,7 +22721,7 @@ begin
         natural'high when (\c$shI_183\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_183\);
-    \c$app_arg_317\ <= shift_right(((\c$app_arg_318\ + x1w_1) + xnw_1),sh_185)
+    \c$app_arg_349\ <= shift_right(((\c$app_arg_350\ + x1w_1) + xnw_1),sh_185)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22314,7 +22730,7 @@ begin
 
   \c$shI_184\ <= (to_signed(1,64));
 
-  capp_arg_318_shiftL : block
+  capp_arg_350_shiftL : block
     signal sh_186 : natural;
   begin
     sh_186 <=
@@ -22322,7 +22738,7 @@ begin
         natural'high when (\c$shI_184\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_184\);
-    \c$app_arg_318\ <= shift_left(x1w_1,sh_186)
+    \c$app_arg_350\ <= shift_left(x1w_1,sh_186)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22433,23 +22849,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_31 : block
-    signal vec_index_107 : integer range 0 to 8-1;
+    signal vec_index_131 : integer range 0 to 8-1;
   begin
-    vec_index_107 <= to_integer((to_signed(6,64)))
+    vec_index_131 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_319\ <= \c$bv_172\(vec_index_107);
+    \c$app_arg_351\ <= \c$bv_172\(vec_index_131);
   end block;
   -- indexBitVector end
 
   \c$bv_173\ <= (x_143.Frame_sel3_fGate);
 
-  result_350 <= ((\c$bv_173\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_319\ = ('1'));
+  result_350 <= ((\c$bv_173\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_351\ = ('1'));
 
-  \c$app_arg_320\ <= resize((resize(x_143.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_22)))))))),48)), 48) when result_350 else
+  \c$app_arg_352\ <= resize((resize(x_143.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_22)))))))),48)), 48) when result_350 else
                      to_signed(0,48);
 
   \c$case_alt_145\ <= ( Frame_sel0_fL => x_143.Frame_sel0_fL
@@ -22482,7 +22898,7 @@ begin
                       , Frame_sel27_fEqHighR => x_143.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_143.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_143.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_320\
+                      , Frame_sel30_fAccL => \c$app_arg_352\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_143.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_143.Frame_sel33_fAcc2R
@@ -22622,21 +23038,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_32 : block
-    signal vec_index_108 : integer range 0 to 8-1;
+    signal vec_index_132 : integer range 0 to 8-1;
   begin
-    vec_index_108 <= to_integer((to_signed(6,64)))
+    vec_index_132 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_321\ <= \c$bv_176\(vec_index_108);
+    \c$app_arg_353\ <= \c$bv_176\(vec_index_132);
   end block;
   -- indexBitVector end
 
   \c$bv_177\ <= (x_144.Frame_sel3_fGate);
 
-  result_353 <= ((\c$bv_177\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_321\ = ('1'));
+  result_353 <= ((\c$bv_177\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_353\ = ('1'));
 
   x_141 <= (resize(x_142,48)) - (resize(result_355,48));
 
@@ -22654,7 +23070,7 @@ begin
 
   \c$shI_186\ <= (to_signed(8,64));
 
-  capp_arg_322_shiftR : block
+  capp_arg_354_shiftR : block
     signal sh_188 : natural;
   begin
     sh_188 <=
@@ -22662,7 +23078,7 @@ begin
         natural'high when (\c$shI_186\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_186\);
-    \c$app_arg_322\ <= shift_right(((resize((resize(x_142,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_5)))))))),48)), 48)) + (resize((resize(metalHpfLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_23)))))))),48)), 48))),sh_188)
+    \c$app_arg_354\ <= shift_right(((resize((resize(x_142,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_5)))))))),48)), 48)) + (resize((resize(metalHpfLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_23)))))))),48)), 48))),sh_188)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22671,12 +23087,12 @@ begin
 
   gain_23 <= to_unsigned(255,8) - alpha_5;
 
-  \c$case_alt_selection_res_120\ <= \c$app_arg_322\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_120\ <= \c$app_arg_354\ < to_signed(-8388608,48);
 
   \c$case_alt_147\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_120\ else
-                      resize(\c$app_arg_322\,24);
+                      resize(\c$app_arg_354\,24);
 
-  result_selection_res_143 <= \c$app_arg_322\ > to_signed(8388607,48);
+  result_selection_res_143 <= \c$app_arg_354\ > to_signed(8388607,48);
 
   result_355 <= to_signed(8388607,24) when result_selection_res_143 else
                 \c$case_alt_147\;
@@ -22804,35 +23220,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_33 : block
-    signal vec_index_109 : integer range 0 to 8-1;
+    signal vec_index_133 : integer range 0 to 8-1;
   begin
-    vec_index_109 <= to_integer((to_signed(1,64)))
+    vec_index_133 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_323\ <= \c$bv_180\(vec_index_109);
+    \c$app_arg_355\ <= \c$bv_180\(vec_index_133);
   end block;
   -- indexBitVector end
 
   \c$bv_181\ <= (x_147.Frame_sel3_fGate);
 
-  result_358 <= ((\c$bv_181\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_323\ = ('1'));
+  result_358 <= ((\c$bv_181\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_355\ = ('1'));
 
   result_selection_res_145 <= result_357 > to_signed(4194304,24);
 
-  result_359 <= resize((to_signed(4194304,25) + \c$app_arg_324\),24) when result_selection_res_145 else
+  result_359 <= resize((to_signed(4194304,25) + \c$app_arg_356\),24) when result_selection_res_145 else
                 \c$case_alt_149\;
 
   \c$case_alt_selection_res_122\ <= result_357 < to_signed(-4194304,24);
 
-  \c$case_alt_149\ <= resize((to_signed(-4194304,25) + \c$app_arg_325\),24) when \c$case_alt_selection_res_122\ else
+  \c$case_alt_149\ <= resize((to_signed(-4194304,25) + \c$app_arg_357\),24) when \c$case_alt_selection_res_122\ else
                       result_357;
 
   \c$shI_189\ <= (to_signed(2,64));
 
-  capp_arg_324_shiftR : block
+  capp_arg_356_shiftR : block
     signal sh_191 : natural;
   begin
     sh_191 <=
@@ -22840,7 +23256,7 @@ begin
         natural'high when (\c$shI_189\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_189\);
-    \c$app_arg_324\ <= shift_right((\c$app_arg_326\ - to_signed(4194304,25)),sh_191)
+    \c$app_arg_356\ <= shift_right((\c$app_arg_358\ - to_signed(4194304,25)),sh_191)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -22849,7 +23265,7 @@ begin
 
   \c$shI_190\ <= (to_signed(2,64));
 
-  capp_arg_325_shiftR : block
+  capp_arg_357_shiftR : block
     signal sh_192 : natural;
   begin
     sh_192 <=
@@ -22857,14 +23273,14 @@ begin
         natural'high when (\c$shI_190\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_190\);
-    \c$app_arg_325\ <= shift_right((\c$app_arg_326\ + to_signed(4194304,25)),sh_192)
+    \c$app_arg_357\ <= shift_right((\c$app_arg_358\ + to_signed(4194304,25)),sh_192)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_326\ <= resize(result_357,25);
+  \c$app_arg_358\ <= resize(result_357,25);
 
   result_360 <= ( Frame_sel0_fL => x_145
                 , Frame_sel1_fR => x_145
@@ -23039,27 +23455,27 @@ begin
 
   -- indexBitVector begin
   indexBitVector_34 : block
-    signal vec_index_110 : integer range 0 to 8-1;
+    signal vec_index_134 : integer range 0 to 8-1;
   begin
-    vec_index_110 <= to_integer((to_signed(1,64)))
+    vec_index_134 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_327\ <= \c$bv_184\(vec_index_110);
+    \c$app_arg_359\ <= \c$bv_184\(vec_index_134);
   end block;
   -- indexBitVector end
 
   \c$bv_185\ <= (x_148.Frame_sel3_fGate);
 
-  result_363 <= ((\c$bv_185\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_327\ = ('1'));
+  result_363 <= ((\c$bv_185\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_359\ = ('1'));
 
   alpha_6 <= to_unsigned(30,8) + \c$lp_app_arg_5\;
 
   \c$shI_191\ <= (to_signed(8,64));
 
-  capp_arg_328_shiftR : block
+  capp_arg_360_shiftR : block
     signal sh_193 : natural;
   begin
     sh_193 <=
@@ -23067,7 +23483,7 @@ begin
         natural'high when (\c$shI_191\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_191\);
-    \c$app_arg_328\ <= shift_right(((resize((resize(x_146,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_6)))))))),48)), 48)) + (resize((resize(tsPostLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_25)))))))),48)), 48))),sh_193)
+    \c$app_arg_360\ <= shift_right(((resize((resize(x_146,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_6)))))))),48)), 48)) + (resize((resize(tsPostLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_25)))))))),48)), 48))),sh_193)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -23076,12 +23492,12 @@ begin
 
   gain_25 <= to_unsigned(255,8) - alpha_6;
 
-  \c$case_alt_selection_res_123\ <= \c$app_arg_328\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_123\ <= \c$app_arg_360\ < to_signed(-8388608,48);
 
   \c$case_alt_150\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_123\ else
-                      resize(\c$app_arg_328\,24);
+                      resize(\c$app_arg_360\,24);
 
-  result_selection_res_146 <= \c$app_arg_328\ > to_signed(8388607,48);
+  result_selection_res_146 <= \c$app_arg_360\ > to_signed(8388607,48);
 
   result_364 <= to_signed(8388607,24) when result_selection_res_146 else
                 \c$case_alt_150\;
@@ -23209,35 +23625,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_35 : block
-    signal vec_index_111 : integer range 0 to 8-1;
+    signal vec_index_135 : integer range 0 to 8-1;
   begin
-    vec_index_111 <= to_integer((to_signed(1,64)))
+    vec_index_135 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_329\ <= \c$bv_188\(vec_index_111);
+    \c$app_arg_361\ <= \c$bv_188\(vec_index_135);
   end block;
   -- indexBitVector end
 
   \c$bv_189\ <= (x_150.Frame_sel3_fGate);
 
-  result_367 <= ((\c$bv_189\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_329\ = ('1'));
+  result_367 <= ((\c$bv_189\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_361\ = ('1'));
 
   result_selection_res_148 <= result_366 > to_signed(3000000,24);
 
-  result_368 <= resize((to_signed(3000000,25) + \c$app_arg_330\),24) when result_selection_res_148 else
+  result_368 <= resize((to_signed(3000000,25) + \c$app_arg_362\),24) when result_selection_res_148 else
                 \c$case_alt_152\;
 
   \c$case_alt_selection_res_125\ <= result_366 < to_signed(-2850000,24);
 
-  \c$case_alt_152\ <= resize((to_signed(-2850000,25) + \c$app_arg_331\),24) when \c$case_alt_selection_res_125\ else
+  \c$case_alt_152\ <= resize((to_signed(-2850000,25) + \c$app_arg_363\),24) when \c$case_alt_selection_res_125\ else
                       result_366;
 
   \c$shI_194\ <= (to_signed(2,64));
 
-  capp_arg_330_shiftR : block
+  capp_arg_362_shiftR : block
     signal sh_196 : natural;
   begin
     sh_196 <=
@@ -23245,7 +23661,7 @@ begin
         natural'high when (\c$shI_194\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_194\);
-    \c$app_arg_330\ <= shift_right((\c$app_arg_332\ - to_signed(3000000,25)),sh_196)
+    \c$app_arg_362\ <= shift_right((\c$app_arg_364\ - to_signed(3000000,25)),sh_196)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -23254,7 +23670,7 @@ begin
 
   \c$shI_195\ <= (to_signed(3,64));
 
-  capp_arg_331_shiftR : block
+  capp_arg_363_shiftR : block
     signal sh_197 : natural;
   begin
     sh_197 <=
@@ -23262,14 +23678,14 @@ begin
         natural'high when (\c$shI_195\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_195\);
-    \c$app_arg_331\ <= shift_right((\c$app_arg_332\ - to_signed(-2850000,25)),sh_197)
+    \c$app_arg_363\ <= shift_right((\c$app_arg_364\ - to_signed(-2850000,25)),sh_197)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_332\ <= resize(result_366,25);
+  \c$app_arg_364\ <= resize(result_366,25);
 
   result_369 <= ( Frame_sel0_fL => x_149
                 , Frame_sel1_fR => x_149
@@ -23369,23 +23785,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_36 : block
-    signal vec_index_112 : integer range 0 to 8-1;
+    signal vec_index_136 : integer range 0 to 8-1;
   begin
-    vec_index_112 <= to_integer((to_signed(1,64)))
+    vec_index_136 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_333\ <= \c$bv_191\(vec_index_112);
+    \c$app_arg_365\ <= \c$bv_191\(vec_index_136);
   end block;
   -- indexBitVector end
 
   \c$bv_192\ <= (x_152.Frame_sel3_fGate);
 
-  result_371 <= ((\c$bv_192\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_333\ = ('1'));
+  result_371 <= ((\c$bv_192\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_365\ = ('1'));
 
-  \c$app_arg_334\ <= resize((resize(x_152.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_26)))))))),48)), 48) when result_371 else
+  \c$app_arg_366\ <= resize((resize(x_152.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_26)))))))),48)), 48) when result_371 else
                      to_signed(0,48);
 
   \c$case_alt_153\ <= ( Frame_sel0_fL => x_152.Frame_sel0_fL
@@ -23418,7 +23834,7 @@ begin
                       , Frame_sel27_fEqHighR => x_152.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_152.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_152.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_334\
+                      , Frame_sel30_fAccL => \c$app_arg_366\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_152.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_152.Frame_sel33_fAcc2R
@@ -23502,21 +23918,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_37 : block
-    signal vec_index_113 : integer range 0 to 8-1;
+    signal vec_index_137 : integer range 0 to 8-1;
   begin
-    vec_index_113 <= to_integer((to_signed(1,64)))
+    vec_index_137 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_335\ <= \c$bv_195\(vec_index_113);
+    \c$app_arg_367\ <= \c$bv_195\(vec_index_137);
   end block;
   -- indexBitVector end
 
   \c$bv_196\ <= (x_155.Frame_sel3_fGate);
 
-  result_373 <= ((\c$bv_196\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_335\ = ('1'));
+  result_373 <= ((\c$bv_196\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_367\ = ('1'));
 
   \c$case_alt_selection_res_126\ <= \c$x_app_arg_56\ < to_signed(-8388608,48);
 
@@ -23763,21 +24179,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_38 : block
-    signal vec_index_114 : integer range 0 to 8-1;
+    signal vec_index_138 : integer range 0 to 8-1;
   begin
-    vec_index_114 <= to_integer((to_signed(1,64)))
+    vec_index_138 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_336\ <= \c$bv_198\(vec_index_114);
+    \c$app_arg_368\ <= \c$bv_198\(vec_index_138);
   end block;
   -- indexBitVector end
 
   \c$bv_199\ <= (x_156.Frame_sel3_fGate);
 
-  result_378 <= ((\c$bv_199\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_336\ = ('1'));
+  result_378 <= ((\c$bv_199\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_368\ = ('1'));
 
   x_153 <= (resize(x_154,48)) - (resize(result_380,48));
 
@@ -23795,7 +24211,7 @@ begin
 
   \c$shI_197\ <= (to_signed(8,64));
 
-  capp_arg_337_shiftR : block
+  capp_arg_369_shiftR : block
     signal sh_199 : natural;
   begin
     sh_199 <=
@@ -23803,7 +24219,7 @@ begin
         natural'high when (\c$shI_197\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_197\);
-    \c$app_arg_337\ <= shift_right(((resize((resize(x_154,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_7)))))))),48)), 48)) + (resize((resize(tsHpfLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_27)))))))),48)), 48))),sh_199)
+    \c$app_arg_369\ <= shift_right(((resize((resize(x_154,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_7)))))))),48)), 48)) + (resize((resize(tsHpfLpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_27)))))))),48)), 48))),sh_199)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -23812,12 +24228,12 @@ begin
 
   gain_27 <= to_unsigned(255,8) - alpha_7;
 
-  \c$case_alt_selection_res_128\ <= \c$app_arg_337\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_128\ <= \c$app_arg_369\ < to_signed(-8388608,48);
 
   \c$case_alt_156\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_128\ else
-                      resize(\c$app_arg_337\,24);
+                      resize(\c$app_arg_369\,24);
 
-  result_selection_res_151 <= \c$app_arg_337\ > to_signed(8388607,48);
+  result_selection_res_151 <= \c$app_arg_369\ > to_signed(8388607,48);
 
   result_380 <= to_signed(8388607,24) when result_selection_res_151 else
                 \c$case_alt_156\;
@@ -23945,35 +24361,35 @@ begin
 
   -- indexBitVector begin
   indexBitVector_39 : block
-    signal vec_index_115 : integer range 0 to 8-1;
+    signal vec_index_139 : integer range 0 to 8-1;
   begin
-    vec_index_115 <= to_integer((to_signed(0,64)))
+    vec_index_139 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_338\ <= \c$bv_202\(vec_index_115);
+    \c$app_arg_370\ <= \c$bv_202\(vec_index_139);
   end block;
   -- indexBitVector end
 
   \c$bv_203\ <= (x_158.Frame_sel3_fGate);
 
-  result_383 <= ((\c$bv_203\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_338\ = ('1'));
+  result_383 <= ((\c$bv_203\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_370\ = ('1'));
 
   result_selection_res_153 <= result_382 > to_signed(3800000,24);
 
-  result_384 <= resize((to_signed(3800000,25) + \c$app_arg_339\),24) when result_selection_res_153 else
+  result_384 <= resize((to_signed(3800000,25) + \c$app_arg_371\),24) when result_selection_res_153 else
                 \c$case_alt_158\;
 
   \c$case_alt_selection_res_130\ <= result_382 < to_signed(-3800000,24);
 
-  \c$case_alt_158\ <= resize((to_signed(-3800000,25) + \c$app_arg_340\),24) when \c$case_alt_selection_res_130\ else
+  \c$case_alt_158\ <= resize((to_signed(-3800000,25) + \c$app_arg_372\),24) when \c$case_alt_selection_res_130\ else
                       result_382;
 
   \c$shI_200\ <= (to_signed(2,64));
 
-  capp_arg_339_shiftR : block
+  capp_arg_371_shiftR : block
     signal sh_202 : natural;
   begin
     sh_202 <=
@@ -23981,7 +24397,7 @@ begin
         natural'high when (\c$shI_200\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_200\);
-    \c$app_arg_339\ <= shift_right((\c$app_arg_341\ - to_signed(3800000,25)),sh_202)
+    \c$app_arg_371\ <= shift_right((\c$app_arg_373\ - to_signed(3800000,25)),sh_202)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -23990,7 +24406,7 @@ begin
 
   \c$shI_201\ <= (to_signed(2,64));
 
-  capp_arg_340_shiftR : block
+  capp_arg_372_shiftR : block
     signal sh_203 : natural;
   begin
     sh_203 <=
@@ -23998,14 +24414,14 @@ begin
         natural'high when (\c$shI_201\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_201\);
-    \c$app_arg_340\ <= shift_right((\c$app_arg_341\ - to_signed(-3800000,25)),sh_203)
+    \c$app_arg_372\ <= shift_right((\c$app_arg_373\ - to_signed(-3800000,25)),sh_203)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_341\ <= resize(result_382,25);
+  \c$app_arg_373\ <= resize(result_382,25);
 
   result_385 <= ( Frame_sel0_fL => x_157
                 , Frame_sel1_fR => x_157
@@ -24126,21 +24542,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_40 : block
-    signal vec_index_116 : integer range 0 to 8-1;
+    signal vec_index_140 : integer range 0 to 8-1;
   begin
-    vec_index_116 <= to_integer((to_signed(0,64)))
+    vec_index_140 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_342\ <= \c$bv_206\(vec_index_116);
+    \c$app_arg_374\ <= \c$bv_206\(vec_index_140);
   end block;
   -- indexBitVector end
 
   \c$bv_207\ <= (x_160.Frame_sel3_fGate);
 
-  result_387 <= ((\c$bv_207\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_342\ = ('1'));
+  result_387 <= ((\c$bv_207\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_374\ = ('1'));
 
   \c$case_alt_selection_res_131\ <= \c$x_app_arg_58\ < to_signed(-8388608,48);
 
@@ -24250,23 +24666,23 @@ begin
 
   -- indexBitVector begin
   indexBitVector_41 : block
-    signal vec_index_117 : integer range 0 to 8-1;
+    signal vec_index_141 : integer range 0 to 8-1;
   begin
-    vec_index_117 <= to_integer((to_signed(0,64)))
+    vec_index_141 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_343\ <= \c$bv_209\(vec_index_117);
+    \c$app_arg_375\ <= \c$bv_209\(vec_index_141);
   end block;
   -- indexBitVector end
 
   \c$bv_210\ <= (x_161.Frame_sel3_fGate);
 
-  result_391 <= ((\c$bv_210\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_343\ = ('1'));
+  result_391 <= ((\c$bv_210\(2 downto 2)) = std_logic_vector'("1")) and (\c$app_arg_375\ = ('1'));
 
-  \c$app_arg_344\ <= resize((resize(x_161.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_29)))))))),48)), 48) when result_391 else
+  \c$app_arg_376\ <= resize((resize(x_161.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_29)))))))),48)), 48) when result_391 else
                      to_signed(0,48);
 
   \c$case_alt_160\ <= ( Frame_sel0_fL => x_161.Frame_sel0_fL
@@ -24299,7 +24715,7 @@ begin
                       , Frame_sel27_fEqHighR => x_161.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_161.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_161.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_344\
+                      , Frame_sel30_fAccL => \c$app_arg_376\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_161.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_161.Frame_sel33_fAcc2R
@@ -24391,17 +24807,17 @@ begin
 
   result_selection_res_156 <= result_393 > to_signed(4194304,24);
 
-  result_394 <= resize((to_signed(4194304,25) + \c$app_arg_345\),24) when result_selection_res_156 else
+  result_394 <= resize((to_signed(4194304,25) + \c$app_arg_377\),24) when result_selection_res_156 else
                 \c$case_alt_162\;
 
   \c$case_alt_selection_res_133\ <= result_393 < to_signed(-4194304,24);
 
-  \c$case_alt_162\ <= resize((to_signed(-4194304,25) + \c$app_arg_346\),24) when \c$case_alt_selection_res_133\ else
+  \c$case_alt_162\ <= resize((to_signed(-4194304,25) + \c$app_arg_378\),24) when \c$case_alt_selection_res_133\ else
                       result_393;
 
   \c$shI_204\ <= (to_signed(2,64));
 
-  capp_arg_345_shiftR : block
+  capp_arg_377_shiftR : block
     signal sh_206 : natural;
   begin
     sh_206 <=
@@ -24409,7 +24825,7 @@ begin
         natural'high when (\c$shI_204\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_204\);
-    \c$app_arg_345\ <= shift_right((\c$app_arg_347\ - to_signed(4194304,25)),sh_206)
+    \c$app_arg_377\ <= shift_right((\c$app_arg_379\ - to_signed(4194304,25)),sh_206)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -24418,7 +24834,7 @@ begin
 
   \c$shI_205\ <= (to_signed(2,64));
 
-  capp_arg_346_shiftR : block
+  capp_arg_378_shiftR : block
     signal sh_207 : natural;
   begin
     sh_207 <=
@@ -24426,14 +24842,14 @@ begin
         natural'high when (\c$shI_205\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_205\);
-    \c$app_arg_346\ <= shift_right((\c$app_arg_347\ + to_signed(4194304,25)),sh_207)
+    \c$app_arg_378\ <= shift_right((\c$app_arg_379\ + to_signed(4194304,25)),sh_207)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_347\ <= resize(result_393,25);
+  \c$app_arg_379\ <= resize(result_393,25);
 
   result_395 <= ( Frame_sel0_fL => x_162
                 , Frame_sel1_fR => x_162
@@ -24687,7 +25103,7 @@ begin
 
   \c$shI_208\ <= (to_signed(8,64));
 
-  capp_arg_348_shiftR : block
+  capp_arg_380_shiftR : block
     signal sh_210 : natural;
   begin
     sh_210 <=
@@ -24695,7 +25111,7 @@ begin
         natural'high when (\c$shI_208\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_208\);
-    \c$app_arg_348\ <= shift_right(((resize((resize(x_168.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_8)))))))),48)), 48)) + (resize((resize(ratTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_32)))))))),48)), 48))),sh_210)
+    \c$app_arg_380\ <= shift_right(((resize((resize(x_168.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_8)))))))),48)), 48)) + (resize((resize(ratTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_32)))))))),48)), 48))),sh_210)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -24704,12 +25120,12 @@ begin
 
   gain_32 <= to_unsigned(255,8) - alpha_8;
 
-  \c$case_alt_selection_res_135\ <= \c$app_arg_348\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_135\ <= \c$app_arg_380\ < to_signed(-8388608,48);
 
   \c$case_alt_164\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_135\ else
-                      resize(\c$app_arg_348\,24);
+                      resize(\c$app_arg_380\,24);
 
-  result_selection_res_158 <= \c$app_arg_348\ > to_signed(8388607,48);
+  result_selection_res_158 <= \c$app_arg_380\ > to_signed(8388607,48);
 
   result_400 <= to_signed(8388607,24) when result_selection_res_158 else
                 \c$case_alt_164\;
@@ -24849,7 +25265,7 @@ begin
 
   \c$shI_210\ <= (to_signed(8,64));
 
-  capp_arg_349_shiftR : block
+  capp_arg_381_shiftR : block
     signal sh_212 : natural;
   begin
     sh_212 <=
@@ -24857,7 +25273,7 @@ begin
         natural'high when (\c$shI_210\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_210\);
-    \c$app_arg_349\ <= shift_right(((resize((resize(x_169.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_9)))))))),48)), 48)) + (resize((resize(ratPostPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_33)))))))),48)), 48))),sh_212)
+    \c$app_arg_381\ <= shift_right(((resize((resize(x_169.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_9)))))))),48)), 48)) + (resize((resize(ratPostPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_33)))))))),48)), 48))),sh_212)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -24866,12 +25282,12 @@ begin
 
   gain_33 <= to_unsigned(255,8) - alpha_9;
 
-  \c$case_alt_selection_res_136\ <= \c$app_arg_349\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_136\ <= \c$app_arg_381\ < to_signed(-8388608,48);
 
   \c$case_alt_165\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_136\ else
-                      resize(\c$app_arg_349\,24);
+                      resize(\c$app_arg_381\,24);
 
-  result_selection_res_159 <= \c$app_arg_349\ > to_signed(8388607,48);
+  result_selection_res_159 <= \c$app_arg_381\ > to_signed(8388607,48);
 
   result_403 <= to_signed(8388607,24) when result_selection_res_159 else
                 \c$case_alt_165\;
@@ -25128,173 +25544,173 @@ begin
   result_410 <= resize(result_409,24);
 
   -- index begin
-  indexVec_75 : block
-    signal vec_index_118 : integer range 0 to 12-1;
+  indexVec_99 : block
+    signal vec_index_142 : integer range 0 to 12-1;
   begin
-    vec_index_118 <= to_integer((to_signed(3,64)))
+    vec_index_142 <= to_integer((to_signed(3,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_350\ <= ratClipHist(vec_index_118);
+    \c$app_arg_382\ <= ratClipHist(vec_index_142);
   end block;
   -- index end
 
-  \c$app_arg_351\ <= resize(((resize(\c$app_arg_353\,48)) + (resize(\c$app_arg_352\,48))) * to_signed(104,48), 48);
+  \c$app_arg_383\ <= resize(((resize(\c$app_arg_385\,48)) + (resize(\c$app_arg_384\,48))) * to_signed(104,48), 48);
 
   -- index begin
-  indexVec_76 : block
-    signal vec_index_119 : integer range 0 to 12-1;
+  indexVec_100 : block
+    signal vec_index_143 : integer range 0 to 12-1;
   begin
-    vec_index_119 <= to_integer((to_signed(4,64)))
+    vec_index_143 <= to_integer((to_signed(4,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_352\ <= ratClipHist(vec_index_119);
-  end block;
-  -- index end
-
-  -- index begin
-  indexVec_77 : block
-    signal vec_index_120 : integer range 0 to 12-1;
-  begin
-    vec_index_120 <= to_integer((to_signed(2,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    \c$app_arg_353\ <= ratClipHist(vec_index_120);
-  end block;
-  -- index end
-
-  \c$app_arg_354\ <= resize(((resize(\c$app_arg_356\,48)) + (resize(\c$app_arg_355\,48))) * to_signed(68,48), 48);
-
-  -- index begin
-  indexVec_78 : block
-    signal vec_index_121 : integer range 0 to 12-1;
-  begin
-    vec_index_121 <= to_integer((to_signed(5,64)))
-    -- pragma translate_off
-                 mod 12
-    -- pragma translate_on
-                 ;
-    \c$app_arg_355\ <= ratClipHist(vec_index_121);
+    \c$app_arg_384\ <= ratClipHist(vec_index_143);
   end block;
   -- index end
 
   -- index begin
-  indexVec_79 : block
-    signal vec_index_122 : integer range 0 to 12-1;
+  indexVec_101 : block
+    signal vec_index_144 : integer range 0 to 12-1;
   begin
-    vec_index_122 <= to_integer((to_signed(1,64)))
+    vec_index_144 <= to_integer((to_signed(2,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_356\ <= ratClipHist(vec_index_122);
+    \c$app_arg_385\ <= ratClipHist(vec_index_144);
   end block;
   -- index end
 
-  \c$app_arg_357\ <= resize(((resize(\c$app_arg_359\,48)) + (resize(\c$app_arg_358\,48))) * to_signed(29,48), 48);
+  \c$app_arg_386\ <= resize(((resize(\c$app_arg_388\,48)) + (resize(\c$app_arg_387\,48))) * to_signed(68,48), 48);
 
   -- index begin
-  indexVec_80 : block
-    signal vec_index_123 : integer range 0 to 12-1;
+  indexVec_102 : block
+    signal vec_index_145 : integer range 0 to 12-1;
   begin
-    vec_index_123 <= to_integer((to_signed(6,64)))
+    vec_index_145 <= to_integer((to_signed(5,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_358\ <= ratClipHist(vec_index_123);
+    \c$app_arg_387\ <= ratClipHist(vec_index_145);
   end block;
   -- index end
 
   -- index begin
-  indexVec_81 : block
-    signal vec_index_124 : integer range 0 to 12-1;
+  indexVec_103 : block
+    signal vec_index_146 : integer range 0 to 12-1;
   begin
-    vec_index_124 <= to_integer((to_signed(0,64)))
+    vec_index_146 <= to_integer((to_signed(1,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_359\ <= ratClipHist(vec_index_124);
+    \c$app_arg_388\ <= ratClipHist(vec_index_146);
   end block;
   -- index end
 
-  \c$app_arg_360\ <= resize(((resize(result_417.Tuple4_sel0_signed_0,48)) + (resize(\c$app_arg_361\,48))) * to_signed(5,48), 48);
+  \c$app_arg_389\ <= resize(((resize(\c$app_arg_391\,48)) + (resize(\c$app_arg_390\,48))) * to_signed(29,48), 48);
 
   -- index begin
-  indexVec_82 : block
-    signal vec_index_125 : integer range 0 to 12-1;
+  indexVec_104 : block
+    signal vec_index_147 : integer range 0 to 12-1;
   begin
-    vec_index_125 <= to_integer((to_signed(7,64)))
+    vec_index_147 <= to_integer((to_signed(6,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_361\ <= ratClipHist(vec_index_125);
+    \c$app_arg_390\ <= ratClipHist(vec_index_147);
   end block;
   -- index end
-
-  \c$app_arg_362\ <= resize(((resize(result_417.Tuple4_sel1_signed_1,48)) + (resize(\c$app_arg_363\,48))) * to_signed(-4,48), 48);
 
   -- index begin
-  indexVec_83 : block
-    signal vec_index_126 : integer range 0 to 12-1;
+  indexVec_105 : block
+    signal vec_index_148 : integer range 0 to 12-1;
   begin
-    vec_index_126 <= to_integer((to_signed(8,64)))
+    vec_index_148 <= to_integer((to_signed(0,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_363\ <= ratClipHist(vec_index_126);
+    \c$app_arg_391\ <= ratClipHist(vec_index_148);
   end block;
   -- index end
 
-  \c$app_arg_364\ <= resize(((resize(result_417.Tuple4_sel2_signed_2,48)) + (resize(\c$app_arg_365\,48))) * to_signed(-3,48), 48);
+  \c$app_arg_392\ <= resize(((resize(result_417.Tuple4_sel0_signed_0,48)) + (resize(\c$app_arg_393\,48))) * to_signed(5,48), 48);
 
   -- index begin
-  indexVec_84 : block
-    signal vec_index_127 : integer range 0 to 12-1;
+  indexVec_106 : block
+    signal vec_index_149 : integer range 0 to 12-1;
   begin
-    vec_index_127 <= to_integer((to_signed(9,64)))
+    vec_index_149 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_365\ <= ratClipHist(vec_index_127);
+    \c$app_arg_393\ <= ratClipHist(vec_index_149);
   end block;
   -- index end
 
-  \c$app_arg_366\ <= resize(((resize(result_417.Tuple4_sel3_signed_3,48)) + (resize(\c$app_arg_367\,48))) * to_signed(-2,48), 48);
+  \c$app_arg_394\ <= resize(((resize(result_417.Tuple4_sel1_signed_1,48)) + (resize(\c$app_arg_395\,48))) * to_signed(-4,48), 48);
 
   -- index begin
-  indexVec_85 : block
-    signal vec_index_128 : integer range 0 to 12-1;
+  indexVec_107 : block
+    signal vec_index_150 : integer range 0 to 12-1;
   begin
-    vec_index_128 <= to_integer((to_signed(10,64)))
+    vec_index_150 <= to_integer((to_signed(8,64)))
     -- pragma translate_off
                  mod 12
     -- pragma translate_on
                  ;
-    \c$app_arg_367\ <= ratClipHist(vec_index_128);
+    \c$app_arg_395\ <= ratClipHist(vec_index_150);
   end block;
   -- index end
 
-  result_411 <= ( Tuple3_0_sel0_signed_0 => (\c$app_arg_366\ + \c$app_arg_364\) + \c$app_arg_362\
-                , Tuple3_0_sel1_signed_1 => (\c$app_arg_360\ + \c$app_arg_357\) + \c$app_arg_354\
-                , Tuple3_0_sel2_signed_2 => \c$app_arg_351\ + (resize((resize(\c$app_arg_350\,48)) * to_signed(118,48), 48)) );
+  \c$app_arg_396\ <= resize(((resize(result_417.Tuple4_sel2_signed_2,48)) + (resize(\c$app_arg_397\,48))) * to_signed(-3,48), 48);
 
-  \c$app_arg_368\ <= result_411.Tuple3_0_sel0_signed_0 when \on_6\ else
+  -- index begin
+  indexVec_108 : block
+    signal vec_index_151 : integer range 0 to 12-1;
+  begin
+    vec_index_151 <= to_integer((to_signed(9,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    \c$app_arg_397\ <= ratClipHist(vec_index_151);
+  end block;
+  -- index end
+
+  \c$app_arg_398\ <= resize(((resize(result_417.Tuple4_sel3_signed_3,48)) + (resize(\c$app_arg_399\,48))) * to_signed(-2,48), 48);
+
+  -- index begin
+  indexVec_109 : block
+    signal vec_index_152 : integer range 0 to 12-1;
+  begin
+    vec_index_152 <= to_integer((to_signed(10,64)))
+    -- pragma translate_off
+                 mod 12
+    -- pragma translate_on
+                 ;
+    \c$app_arg_399\ <= ratClipHist(vec_index_152);
+  end block;
+  -- index end
+
+  result_411 <= ( Tuple3_0_sel0_signed_0 => (\c$app_arg_398\ + \c$app_arg_396\) + \c$app_arg_394\
+                , Tuple3_0_sel1_signed_1 => (\c$app_arg_392\ + \c$app_arg_389\) + \c$app_arg_386\
+                , Tuple3_0_sel2_signed_2 => \c$app_arg_383\ + (resize((resize(\c$app_arg_382\,48)) * to_signed(118,48), 48)) );
+
+  \c$app_arg_400\ <= result_411.Tuple3_0_sel0_signed_0 when \on_6\ else
                      to_signed(0,48);
 
-  \c$app_arg_369\ <= result_411.Tuple3_0_sel1_signed_1 when \on_6\ else
+  \c$app_arg_401\ <= result_411.Tuple3_0_sel1_signed_1 when \on_6\ else
                      to_signed(0,48);
 
-  \c$app_arg_370\ <= result_411.Tuple3_0_sel2_signed_2 when \on_6\ else
+  \c$app_arg_402\ <= result_411.Tuple3_0_sel2_signed_2 when \on_6\ else
                      to_signed(0,48);
 
   result_412 <= ( Frame_sel0_fL => x_175.Frame_sel0_fL
@@ -25327,11 +25743,11 @@ begin
                 , Frame_sel27_fEqHighR => x_175.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_175.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_175.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_368\
+                , Frame_sel30_fAccL => \c$app_arg_400\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_369\
+                , Frame_sel32_fAcc2L => \c$app_arg_401\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
-                , Frame_sel34_fAcc3L => \c$app_arg_370\
+                , Frame_sel34_fAcc3L => \c$app_arg_402\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
   \c$bv_222\ <= (x_175.Frame_sel3_fGate);
@@ -25343,48 +25759,48 @@ begin
   result_413 <= result_410 when result_selection_res_162 else
                 \c$case_alt_167\;
 
-  \c$case_alt_selection_res_138\ <= p0_1 < \c$app_arg_371\;
+  \c$case_alt_selection_res_138\ <= p0_1 < \c$app_arg_403\;
 
-  \c$case_alt_167\ <= \c$app_arg_371\ when \c$case_alt_selection_res_138\ else
+  \c$case_alt_167\ <= \c$app_arg_403\ when \c$case_alt_selection_res_138\ else
                       p0_1;
 
-  \c$app_arg_371\ <= -result_410;
+  \c$app_arg_403\ <= -result_410;
 
   result_selection_res_163 <= p1_1 > result_410;
 
   result_414 <= result_410 when result_selection_res_163 else
                 \c$case_alt_168\;
 
-  \c$case_alt_selection_res_139\ <= p1_1 < \c$app_arg_372\;
+  \c$case_alt_selection_res_139\ <= p1_1 < \c$app_arg_404\;
 
-  \c$case_alt_168\ <= \c$app_arg_372\ when \c$case_alt_selection_res_139\ else
+  \c$case_alt_168\ <= \c$app_arg_404\ when \c$case_alt_selection_res_139\ else
                       p1_1;
 
-  \c$app_arg_372\ <= -result_410;
+  \c$app_arg_404\ <= -result_410;
 
   result_selection_res_164 <= p2_1 > result_410;
 
   result_415 <= result_410 when result_selection_res_164 else
                 \c$case_alt_169\;
 
-  \c$case_alt_selection_res_140\ <= p2_1 < \c$app_arg_373\;
+  \c$case_alt_selection_res_140\ <= p2_1 < \c$app_arg_405\;
 
-  \c$case_alt_169\ <= \c$app_arg_373\ when \c$case_alt_selection_res_140\ else
+  \c$case_alt_169\ <= \c$app_arg_405\ when \c$case_alt_selection_res_140\ else
                       p2_1;
 
-  \c$app_arg_373\ <= -result_410;
+  \c$app_arg_405\ <= -result_410;
 
   result_selection_res_165 <= p3_1 > result_410;
 
   result_416 <= result_410 when result_selection_res_165 else
                 \c$case_alt_170\;
 
-  \c$case_alt_selection_res_141\ <= p3_1 < \c$app_arg_374\;
+  \c$case_alt_selection_res_141\ <= p3_1 < \c$app_arg_406\;
 
-  \c$case_alt_170\ <= \c$app_arg_374\ when \c$case_alt_selection_res_141\ else
+  \c$case_alt_170\ <= \c$app_arg_406\ when \c$case_alt_selection_res_141\ else
                       p3_1;
 
-  \c$app_arg_374\ <= -result_410;
+  \c$app_arg_406\ <= -result_410;
 
   result_417 <= ( Tuple4_sel0_signed_0 => result_413
                 , Tuple4_sel1_signed_1 => result_414
@@ -25408,19 +25824,19 @@ begin
                 , Tuple4_sel2_signed_2 => result_420
                 , Tuple4_sel3_signed_3 => result_419 );
 
-  \c$case_alt_selection_res_142\ <= \c$app_arg_375\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_142\ <= \c$app_arg_407\ < to_signed(-8388608,48);
 
   \c$case_alt_171\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_142\ else
-                      resize(\c$app_arg_375\,24);
+                      resize(\c$app_arg_407\,24);
 
-  result_selection_res_166 <= \c$app_arg_375\ > to_signed(8388607,48);
+  result_selection_res_166 <= \c$app_arg_407\ > to_signed(8388607,48);
 
   result_419 <= to_signed(8388607,24) when result_selection_res_166 else
                 \c$case_alt_171\;
 
   \c$shI_212\ <= (to_signed(2,64));
 
-  capp_arg_375_shiftR : block
+  capp_arg_407_shiftR : block
     signal sh_214 : natural;
   begin
     sh_214 <=
@@ -25428,7 +25844,7 @@ begin
         natural'high when (\c$shI_212\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_212\);
-    \c$app_arg_375\ <= shift_right(((x1w_2 + \c$app_arg_376\) + xnw_2),sh_214)
+    \c$app_arg_407\ <= shift_right(((x1w_2 + \c$app_arg_408\) + xnw_2),sh_214)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25437,7 +25853,7 @@ begin
 
   \c$shI_213\ <= (to_signed(1,64));
 
-  capp_arg_376_shiftL : block
+  capp_arg_408_shiftL : block
     signal sh_215 : natural;
   begin
     sh_215 <=
@@ -25445,26 +25861,26 @@ begin
         natural'high when (\c$shI_213\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_213\);
-    \c$app_arg_376\ <= shift_left(xnw_2,sh_215)
+    \c$app_arg_408\ <= shift_left(xnw_2,sh_215)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_143\ <= \c$app_arg_377\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_143\ <= \c$app_arg_409\ < to_signed(-8388608,48);
 
   \c$case_alt_172\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_143\ else
-                      resize(\c$app_arg_377\,24);
+                      resize(\c$app_arg_409\,24);
 
-  result_selection_res_167 <= \c$app_arg_377\ > to_signed(8388607,48);
+  result_selection_res_167 <= \c$app_arg_409\ > to_signed(8388607,48);
 
   result_420 <= to_signed(8388607,24) when result_selection_res_167 else
                 \c$case_alt_172\;
 
   \c$shI_214\ <= (to_signed(1,64));
 
-  capp_arg_377_shiftR : block
+  capp_arg_409_shiftR : block
     signal sh_216 : natural;
   begin
     sh_216 <=
@@ -25472,26 +25888,26 @@ begin
         natural'high when (\c$shI_214\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_214\);
-    \c$app_arg_377\ <= shift_right((x1w_2 + xnw_2),sh_216)
+    \c$app_arg_409\ <= shift_right((x1w_2 + xnw_2),sh_216)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_144\ <= \c$app_arg_378\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_144\ <= \c$app_arg_410\ < to_signed(-8388608,48);
 
   \c$case_alt_173\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_144\ else
-                      resize(\c$app_arg_378\,24);
+                      resize(\c$app_arg_410\,24);
 
-  result_selection_res_168 <= \c$app_arg_378\ > to_signed(8388607,48);
+  result_selection_res_168 <= \c$app_arg_410\ > to_signed(8388607,48);
 
   result_421 <= to_signed(8388607,24) when result_selection_res_168 else
                 \c$case_alt_173\;
 
   \c$shI_215\ <= (to_signed(2,64));
 
-  capp_arg_378_shiftR : block
+  capp_arg_410_shiftR : block
     signal sh_217 : natural;
   begin
     sh_217 <=
@@ -25499,7 +25915,7 @@ begin
         natural'high when (\c$shI_215\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_215\);
-    \c$app_arg_378\ <= shift_right(((\c$app_arg_379\ + x1w_2) + xnw_2),sh_217)
+    \c$app_arg_410\ <= shift_right(((\c$app_arg_411\ + x1w_2) + xnw_2),sh_217)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25508,7 +25924,7 @@ begin
 
   \c$shI_216\ <= (to_signed(1,64));
 
-  capp_arg_379_shiftL : block
+  capp_arg_411_shiftL : block
     signal sh_218 : natural;
   begin
     sh_218 <=
@@ -25516,7 +25932,7 @@ begin
         natural'high when (\c$shI_216\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_216\);
-    \c$app_arg_379\ <= shift_left(x1w_2,sh_218)
+    \c$app_arg_411\ <= shift_left(x1w_2,sh_218)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25583,48 +25999,48 @@ begin
   result_425 <= result_423 when result_selection_res_170 else
                 \c$case_alt_174\;
 
-  \c$case_alt_selection_res_145\ <= p0_2 < \c$app_arg_380\;
+  \c$case_alt_selection_res_145\ <= p0_2 < \c$app_arg_412\;
 
-  \c$case_alt_174\ <= \c$app_arg_380\ when \c$case_alt_selection_res_145\ else
+  \c$case_alt_174\ <= \c$app_arg_412\ when \c$case_alt_selection_res_145\ else
                       p0_2;
 
-  \c$app_arg_380\ <= -result_423;
+  \c$app_arg_412\ <= -result_423;
 
   result_selection_res_171 <= p1_2 > result_423;
 
   result_426 <= result_423 when result_selection_res_171 else
                 \c$case_alt_175\;
 
-  \c$case_alt_selection_res_146\ <= p1_2 < \c$app_arg_381\;
+  \c$case_alt_selection_res_146\ <= p1_2 < \c$app_arg_413\;
 
-  \c$case_alt_175\ <= \c$app_arg_381\ when \c$case_alt_selection_res_146\ else
+  \c$case_alt_175\ <= \c$app_arg_413\ when \c$case_alt_selection_res_146\ else
                       p1_2;
 
-  \c$app_arg_381\ <= -result_423;
+  \c$app_arg_413\ <= -result_423;
 
   result_selection_res_172 <= p2_2 > result_423;
 
   result_427 <= result_423 when result_selection_res_172 else
                 \c$case_alt_176\;
 
-  \c$case_alt_selection_res_147\ <= p2_2 < \c$app_arg_382\;
+  \c$case_alt_selection_res_147\ <= p2_2 < \c$app_arg_414\;
 
-  \c$case_alt_176\ <= \c$app_arg_382\ when \c$case_alt_selection_res_147\ else
+  \c$case_alt_176\ <= \c$app_arg_414\ when \c$case_alt_selection_res_147\ else
                       p2_2;
 
-  \c$app_arg_382\ <= -result_423;
+  \c$app_arg_414\ <= -result_423;
 
   result_selection_res_173 <= p3_2 > result_423;
 
   result_428 <= result_423 when result_selection_res_173 else
                 \c$case_alt_177\;
 
-  \c$case_alt_selection_res_148\ <= p3_2 < \c$app_arg_383\;
+  \c$case_alt_selection_res_148\ <= p3_2 < \c$app_arg_415\;
 
-  \c$case_alt_177\ <= \c$app_arg_383\ when \c$case_alt_selection_res_148\ else
+  \c$case_alt_177\ <= \c$app_arg_415\ when \c$case_alt_selection_res_148\ else
                       p3_2;
 
-  \c$app_arg_383\ <= -result_423;
+  \c$app_arg_415\ <= -result_423;
 
   result_429 <= ( Tuple4_sel0_signed_0 => result_425
                 , Tuple4_sel1_signed_1 => result_426
@@ -25648,19 +26064,19 @@ begin
                 , Tuple4_sel2_signed_2 => result_432
                 , Tuple4_sel3_signed_3 => result_431 );
 
-  \c$case_alt_selection_res_149\ <= \c$app_arg_384\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_149\ <= \c$app_arg_416\ < to_signed(-8388608,48);
 
   \c$case_alt_178\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_149\ else
-                      resize(\c$app_arg_384\,24);
+                      resize(\c$app_arg_416\,24);
 
-  result_selection_res_174 <= \c$app_arg_384\ > to_signed(8388607,48);
+  result_selection_res_174 <= \c$app_arg_416\ > to_signed(8388607,48);
 
   result_431 <= to_signed(8388607,24) when result_selection_res_174 else
                 \c$case_alt_178\;
 
   \c$shI_217\ <= (to_signed(2,64));
 
-  capp_arg_384_shiftR : block
+  capp_arg_416_shiftR : block
     signal sh_219 : natural;
   begin
     sh_219 <=
@@ -25668,7 +26084,7 @@ begin
         natural'high when (\c$shI_217\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_217\);
-    \c$app_arg_384\ <= shift_right(((x1w_3 + \c$app_arg_385\) + xnw_3),sh_219)
+    \c$app_arg_416\ <= shift_right(((x1w_3 + \c$app_arg_417\) + xnw_3),sh_219)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25677,7 +26093,7 @@ begin
 
   \c$shI_218\ <= (to_signed(1,64));
 
-  capp_arg_385_shiftL : block
+  capp_arg_417_shiftL : block
     signal sh_220 : natural;
   begin
     sh_220 <=
@@ -25685,26 +26101,26 @@ begin
         natural'high when (\c$shI_218\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_218\);
-    \c$app_arg_385\ <= shift_left(xnw_3,sh_220)
+    \c$app_arg_417\ <= shift_left(xnw_3,sh_220)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_150\ <= \c$app_arg_386\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_150\ <= \c$app_arg_418\ < to_signed(-8388608,48);
 
   \c$case_alt_179\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_150\ else
-                      resize(\c$app_arg_386\,24);
+                      resize(\c$app_arg_418\,24);
 
-  result_selection_res_175 <= \c$app_arg_386\ > to_signed(8388607,48);
+  result_selection_res_175 <= \c$app_arg_418\ > to_signed(8388607,48);
 
   result_432 <= to_signed(8388607,24) when result_selection_res_175 else
                 \c$case_alt_179\;
 
   \c$shI_219\ <= (to_signed(1,64));
 
-  capp_arg_386_shiftR : block
+  capp_arg_418_shiftR : block
     signal sh_221 : natural;
   begin
     sh_221 <=
@@ -25712,26 +26128,26 @@ begin
         natural'high when (\c$shI_219\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_219\);
-    \c$app_arg_386\ <= shift_right((x1w_3 + xnw_3),sh_221)
+    \c$app_arg_418\ <= shift_right((x1w_3 + xnw_3),sh_221)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_151\ <= \c$app_arg_387\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_151\ <= \c$app_arg_419\ < to_signed(-8388608,48);
 
   \c$case_alt_180\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_151\ else
-                      resize(\c$app_arg_387\,24);
+                      resize(\c$app_arg_419\,24);
 
-  result_selection_res_176 <= \c$app_arg_387\ > to_signed(8388607,48);
+  result_selection_res_176 <= \c$app_arg_419\ > to_signed(8388607,48);
 
   result_433 <= to_signed(8388607,24) when result_selection_res_176 else
                 \c$case_alt_180\;
 
   \c$shI_220\ <= (to_signed(2,64));
 
-  capp_arg_387_shiftR : block
+  capp_arg_419_shiftR : block
     signal sh_222 : natural;
   begin
     sh_222 <=
@@ -25739,7 +26155,7 @@ begin
         natural'high when (\c$shI_220\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_220\);
-    \c$app_arg_387\ <= shift_right(((\c$app_arg_388\ + x1w_3) + xnw_3),sh_222)
+    \c$app_arg_419\ <= shift_right(((\c$app_arg_420\ + x1w_3) + xnw_3),sh_222)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25748,7 +26164,7 @@ begin
 
   \c$shI_221\ <= (to_signed(1,64));
 
-  capp_arg_388_shiftL : block
+  capp_arg_420_shiftL : block
     signal sh_223 : natural;
   begin
     sh_223 <=
@@ -25756,7 +26172,7 @@ begin
         natural'high when (\c$shI_221\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_221\);
-    \c$app_arg_388\ <= shift_left(x1w_3,sh_223)
+    \c$app_arg_420\ <= shift_left(x1w_3,sh_223)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25881,7 +26297,7 @@ begin
 
   \c$shI_222\ <= (to_signed(8,64));
 
-  capp_arg_389_shiftR : block
+  capp_arg_421_shiftR : block
     signal sh_224 : natural;
   begin
     sh_224 <=
@@ -25889,7 +26305,7 @@ begin
         natural'high when (\c$shI_222\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_222\);
-    \c$app_arg_389\ <= shift_right(((resize((resize(x_176.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_10)))))))),48)), 48)) + (resize((resize(ratOpAmpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_34)))))))),48)), 48))),sh_224)
+    \c$app_arg_421\ <= shift_right(((resize((resize(x_176.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(alpha_10)))))))),48)), 48)) + (resize((resize(ratOpAmpPrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_34)))))))),48)), 48))),sh_224)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -25898,12 +26314,12 @@ begin
 
   gain_34 <= to_unsigned(255,8) - alpha_10;
 
-  \c$case_alt_selection_res_152\ <= \c$app_arg_389\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_152\ <= \c$app_arg_421\ < to_signed(-8388608,48);
 
   \c$case_alt_181\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_152\ else
-                      resize(\c$app_arg_389\,24);
+                      resize(\c$app_arg_421\,24);
 
-  result_selection_res_177 <= \c$app_arg_389\ > to_signed(8388607,48);
+  result_selection_res_177 <= \c$app_arg_421\ > to_signed(8388607,48);
 
   result_437 <= to_signed(8388607,24) when result_selection_res_177 else
                 \c$case_alt_181\;
@@ -26144,7 +26560,7 @@ begin
   \c$app_arg_selection_res_9\ <= \c$bv_227\(4 downto 4);
 
   with (\c$app_arg_selection_res_9\) select
-    \c$app_arg_390\ <= resize((resize(x_181.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_35)))))))),48)), 48) when "1",
+    \c$app_arg_422\ <= resize((resize(x_181.Frame_sel18_fWetL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_35)))))))),48)), 48) when "1",
                        to_signed(0,48) when others;
 
   \c$case_alt_183\ <= ( Frame_sel0_fL => x_181.Frame_sel0_fL
@@ -26177,7 +26593,7 @@ begin
                       , Frame_sel27_fEqHighR => x_181.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_181.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_181.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_390\
+                      , Frame_sel30_fAccL => \c$app_arg_422\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_181.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_181.Frame_sel33_fAcc2R
@@ -26676,19 +27092,19 @@ begin
                 , Frame_sel27_fEqHighR => x_187.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_187.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_187.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_392\
+                , Frame_sel30_fAccL => \c$app_arg_424\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_391\
+                , Frame_sel32_fAcc2L => \c$app_arg_423\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
                 , Frame_sel34_fAcc3L => x_187.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_187.Frame_sel35_fAcc3R );
 
-  \c$app_arg_391\ <= resize((resize(distTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_37)))))))),48)), 48) when \on_7\ else
+  \c$app_arg_423\ <= resize((resize(distTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_37)))))))),48)), 48) when \on_7\ else
                      to_signed(0,48);
 
   gain_37 <= to_unsigned(255,8) - tone_0;
 
-  \c$app_arg_392\ <= resize((resize(x_187.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_0)))))))),48)), 48) when \on_7\ else
+  \c$app_arg_424\ <= resize((resize(x_187.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_0)))))))),48)), 48) when \on_7\ else
                      to_signed(0,48);
 
   \c$bv_233\ <= (x_187.Frame_sel3_fGate);
@@ -26819,12 +27235,12 @@ begin
   result_455 <= resize(x_189.Frame_sel32_fAcc2L,24) when result_selection_res_182 else
                 \c$case_alt_187\;
 
-  \c$case_alt_selection_res_157\ <= x_189.Frame_sel18_fWetL < \c$app_arg_393\;
+  \c$case_alt_selection_res_157\ <= x_189.Frame_sel18_fWetL < \c$app_arg_425\;
 
-  \c$case_alt_187\ <= \c$app_arg_393\ when \c$case_alt_selection_res_157\ else
+  \c$case_alt_187\ <= \c$app_arg_425\ when \c$case_alt_selection_res_157\ else
                       x_189.Frame_sel18_fWetL;
 
-  \c$app_arg_393\ <= -(resize(x_189.Frame_sel32_fAcc2L,24));
+  \c$app_arg_425\ <= -(resize(x_189.Frame_sel32_fAcc2L,24));
 
   x_189 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_47(1067 downto 0)));
 
@@ -27033,7 +27449,7 @@ begin
                 , Frame_sel27_fEqHighR => x_192.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_192.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_192.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_394\
+                , Frame_sel30_fAccL => \c$app_arg_426\
                 , Frame_sel31_fAccR => to_signed(0,48)
                 , Frame_sel32_fAcc2L => resize((resize(result_461,24)),48)
                 , Frame_sel33_fAcc2R => x_192.Frame_sel33_fAcc2R
@@ -27051,7 +27467,7 @@ begin
 
   \c$app_arg_selection_res_10\ <= ((\c$bv_238\(2 downto 2)) = std_logic_vector'("1")) and (not ((unsigned((\c$amount_app_arg\(31 downto 24)))) /= to_unsigned(0,8)));
 
-  \c$app_arg_394\ <= resize((resize(x_192.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_38)))))))),48)), 48) when \c$app_arg_selection_res_10\ else
+  \c$app_arg_426\ <= resize((resize(x_192.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_38)))))))),48)), 48) when \c$app_arg_selection_res_10\ else
                      to_signed(0,48);
 
   gain_38 <= resize((to_unsigned(256,11) + (resize((resize(amount,11)) * to_unsigned(9,11), 11))),12);
@@ -27159,12 +27575,12 @@ begin
 
   result_selection_res_185 <= result_466 > \c$x_app_arg_75\;
 
-  result_464 <= resize((\c$app_arg_396\ + \c$app_arg_395\),24) when result_selection_res_185 else
+  result_464 <= resize((\c$app_arg_428\ + \c$app_arg_427\),24) when result_selection_res_185 else
                 result_465;
 
   \c$shI_230\ <= (to_signed(2,64));
 
-  capp_arg_395_shiftR : block
+  capp_arg_427_shiftR : block
     signal sh_232 : natural;
   begin
     sh_232 <=
@@ -27172,23 +27588,23 @@ begin
         natural'high when (\c$shI_230\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_230\);
-    \c$app_arg_395\ <= shift_right((\c$app_arg_398\ - \c$app_arg_396\),sh_232)
+    \c$app_arg_427\ <= shift_right((\c$app_arg_430\ - \c$app_arg_428\),sh_232)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_396\ <= resize(\c$x_app_arg_75\,25);
+  \c$app_arg_428\ <= resize(\c$x_app_arg_75\,25);
 
   result_selection_res_186 <= result_466 < negKnee_7;
 
-  result_465 <= resize((\c$app_arg_399\ + \c$app_arg_397\),24) when result_selection_res_186 else
+  result_465 <= resize((\c$app_arg_431\ + \c$app_arg_429\),24) when result_selection_res_186 else
                 result_466;
 
   \c$shI_231\ <= (to_signed(2,64));
 
-  capp_arg_397_shiftR : block
+  capp_arg_429_shiftR : block
     signal sh_233 : natural;
   begin
     sh_233 <=
@@ -27196,16 +27612,16 @@ begin
         natural'high when (\c$shI_231\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_231\);
-    \c$app_arg_397\ <= shift_right((\c$app_arg_398\ - \c$app_arg_399\),sh_233)
+    \c$app_arg_429\ <= shift_right((\c$app_arg_430\ - \c$app_arg_431\),sh_233)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_398\ <= resize(result_466,25);
+  \c$app_arg_430\ <= resize(result_466,25);
 
-  \c$app_arg_399\ <= resize(negKnee_7,25);
+  \c$app_arg_431\ <= resize(negKnee_7,25);
 
   negKnee_7 <= -\c$x_app_arg_75\;
 
@@ -27467,10 +27883,10 @@ begin
                    & std_logic_vector(result_474.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_474.Frame_sel35_fAcc3R)))) when others;
 
-  \c$app_arg_400\ <= resize((resize(x_198.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_1)))))))),48)), 48) when \on_8\ else
+  \c$app_arg_432\ <= resize((resize(x_198.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(tone_1)))))))),48)), 48) when \on_8\ else
                      to_signed(0,48);
 
-  \c$app_arg_401\ <= resize((resize(odTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_41)))))))),48)), 48) when \on_8\ else
+  \c$app_arg_433\ <= resize((resize(odTonePrev,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_41)))))))),48)), 48) when \on_8\ else
                      to_signed(0,48);
 
   result_474 <= ( Frame_sel0_fL => x_198.Frame_sel0_fL
@@ -27503,9 +27919,9 @@ begin
                 , Frame_sel27_fEqHighR => x_198.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_198.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_198.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_400\
+                , Frame_sel30_fAccL => \c$app_arg_432\
                 , Frame_sel31_fAccR => to_signed(0,48)
-                , Frame_sel32_fAcc2L => \c$app_arg_401\
+                , Frame_sel32_fAcc2L => \c$app_arg_433\
                 , Frame_sel33_fAcc2R => to_signed(0,48)
                 , Frame_sel34_fAcc3L => x_198.Frame_sel34_fAcc3L
                 , Frame_sel35_fAcc3R => x_198.Frame_sel35_fAcc3R );
@@ -27609,12 +28025,12 @@ begin
 
   result_selection_res_191 <= x_201.Frame_sel18_fWetL > \c$odKneePOut\;
 
-  result_476 <= resize((\c$app_arg_403\ + \c$app_arg_402\),24) when result_selection_res_191 else
+  result_476 <= resize((\c$app_arg_435\ + \c$app_arg_434\),24) when result_selection_res_191 else
                 result_477;
 
   \c$shI_235\ <= (to_signed(2,64));
 
-  capp_arg_402_shiftR : block
+  capp_arg_434_shiftR : block
     signal sh_237 : natural;
   begin
     sh_237 <=
@@ -27622,23 +28038,23 @@ begin
         natural'high when (\c$shI_235\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_235\);
-    \c$app_arg_402\ <= shift_right((\c$app_arg_405\ - \c$app_arg_403\),sh_237)
+    \c$app_arg_434\ <= shift_right((\c$app_arg_437\ - \c$app_arg_435\),sh_237)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_403\ <= resize(\c$odKneePOut\,25);
+  \c$app_arg_435\ <= resize(\c$odKneePOut\,25);
 
   result_selection_res_192 <= x_201.Frame_sel18_fWetL < negKneeN_0;
 
-  result_477 <= resize((\c$app_arg_406\ + \c$app_arg_404\),24) when result_selection_res_192 else
+  result_477 <= resize((\c$app_arg_438\ + \c$app_arg_436\),24) when result_selection_res_192 else
                 x_201.Frame_sel18_fWetL;
 
   \c$shI_236\ <= (to_signed(2,64));
 
-  capp_arg_404_shiftR : block
+  capp_arg_436_shiftR : block
     signal sh_238 : natural;
   begin
     sh_238 <=
@@ -27646,27 +28062,27 @@ begin
         natural'high when (\c$shI_236\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_236\);
-    \c$app_arg_404\ <= shift_right((\c$app_arg_405\ - \c$app_arg_406\),sh_238)
+    \c$app_arg_436\ <= shift_right((\c$app_arg_437\ - \c$app_arg_438\),sh_238)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_405\ <= resize(x_201.Frame_sel18_fWetL,25);
+  \c$app_arg_437\ <= resize(x_201.Frame_sel18_fWetL,25);
 
-  \c$app_arg_406\ <= resize(negKneeN_0,25);
+  \c$app_arg_438\ <= resize(negKneeN_0,25);
 
   negKneeN_0 <= -\c$odKneeNOut\;
 
   result_selection_res_193 <= x_201.Frame_sel18_fWetL > \c$odKneePOut\;
 
-  result_478 <= resize((\c$app_arg_408\ + \c$app_arg_407\),24) when result_selection_res_193 else
+  result_478 <= resize((\c$app_arg_440\ + \c$app_arg_439\),24) when result_selection_res_193 else
                 result_479;
 
   \c$shI_237\ <= (to_signed(3,64));
 
-  capp_arg_407_shiftR : block
+  capp_arg_439_shiftR : block
     signal sh_239 : natural;
   begin
     sh_239 <=
@@ -27674,23 +28090,23 @@ begin
         natural'high when (\c$shI_237\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_237\);
-    \c$app_arg_407\ <= shift_right((\c$app_arg_410\ - \c$app_arg_408\),sh_239)
+    \c$app_arg_439\ <= shift_right((\c$app_arg_442\ - \c$app_arg_440\),sh_239)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_408\ <= resize(\c$odKneePOut\,25);
+  \c$app_arg_440\ <= resize(\c$odKneePOut\,25);
 
   result_selection_res_194 <= x_201.Frame_sel18_fWetL < negKneeN_1;
 
-  result_479 <= resize((\c$app_arg_411\ + \c$app_arg_409\),24) when result_selection_res_194 else
+  result_479 <= resize((\c$app_arg_443\ + \c$app_arg_441\),24) when result_selection_res_194 else
                 x_201.Frame_sel18_fWetL;
 
   \c$shI_238\ <= (to_signed(4,64));
 
-  capp_arg_409_shiftR : block
+  capp_arg_441_shiftR : block
     signal sh_240 : natural;
   begin
     sh_240 <=
@@ -27698,27 +28114,27 @@ begin
         natural'high when (\c$shI_238\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_238\);
-    \c$app_arg_409\ <= shift_right((\c$app_arg_410\ - \c$app_arg_411\),sh_240)
+    \c$app_arg_441\ <= shift_right((\c$app_arg_442\ - \c$app_arg_443\),sh_240)
         -- pragma translate_off
         when ((to_signed(4,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_410\ <= resize(x_201.Frame_sel18_fWetL,25);
+  \c$app_arg_442\ <= resize(x_201.Frame_sel18_fWetL,25);
 
-  \c$app_arg_411\ <= resize(negKneeN_1,25);
+  \c$app_arg_443\ <= resize(negKneeN_1,25);
 
   negKneeN_1 <= -\c$odKneeNOut\;
 
   result_selection_res_195 <= x_201.Frame_sel18_fWetL > \c$odKneePOut\;
 
-  result_480 <= resize((\c$app_arg_413\ + \c$app_arg_412\),24) when result_selection_res_195 else
+  result_480 <= resize((\c$app_arg_445\ + \c$app_arg_444\),24) when result_selection_res_195 else
                 result_481;
 
   \c$shI_239\ <= (to_signed(2,64));
 
-  capp_arg_412_shiftR : block
+  capp_arg_444_shiftR : block
     signal sh_241 : natural;
   begin
     sh_241 <=
@@ -27726,23 +28142,23 @@ begin
         natural'high when (\c$shI_239\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_239\);
-    \c$app_arg_412\ <= shift_right((\c$app_arg_415\ - \c$app_arg_413\),sh_241)
+    \c$app_arg_444\ <= shift_right((\c$app_arg_447\ - \c$app_arg_445\),sh_241)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_413\ <= resize(\c$odKneePOut\,25);
+  \c$app_arg_445\ <= resize(\c$odKneePOut\,25);
 
   result_selection_res_196 <= x_201.Frame_sel18_fWetL < negKneeN_2;
 
-  result_481 <= resize((\c$app_arg_416\ + \c$app_arg_414\),24) when result_selection_res_196 else
+  result_481 <= resize((\c$app_arg_448\ + \c$app_arg_446\),24) when result_selection_res_196 else
                 x_201.Frame_sel18_fWetL;
 
   \c$shI_240\ <= (to_signed(3,64));
 
-  capp_arg_414_shiftR : block
+  capp_arg_446_shiftR : block
     signal sh_242 : natural;
   begin
     sh_242 <=
@@ -27750,27 +28166,27 @@ begin
         natural'high when (\c$shI_240\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_240\);
-    \c$app_arg_414\ <= shift_right((\c$app_arg_415\ - \c$app_arg_416\),sh_242)
+    \c$app_arg_446\ <= shift_right((\c$app_arg_447\ - \c$app_arg_448\),sh_242)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_415\ <= resize(x_201.Frame_sel18_fWetL,25);
+  \c$app_arg_447\ <= resize(x_201.Frame_sel18_fWetL,25);
 
-  \c$app_arg_416\ <= resize(negKneeN_2,25);
+  \c$app_arg_448\ <= resize(negKneeN_2,25);
 
   negKneeN_2 <= -\c$odKneeNOut\;
 
   result_selection_res_197 <= x_201.Frame_sel18_fWetL > \c$odKneePOut\;
 
-  result_482 <= resize((\c$app_arg_418\ + \c$app_arg_417\),24) when result_selection_res_197 else
+  result_482 <= resize((\c$app_arg_450\ + \c$app_arg_449\),24) when result_selection_res_197 else
                 result_483;
 
   \c$shI_241\ <= (to_signed(1,64));
 
-  capp_arg_417_shiftR : block
+  capp_arg_449_shiftR : block
     signal sh_243 : natural;
   begin
     sh_243 <=
@@ -27778,23 +28194,23 @@ begin
         natural'high when (\c$shI_241\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_241\);
-    \c$app_arg_417\ <= shift_right((\c$app_arg_420\ - \c$app_arg_418\),sh_243)
+    \c$app_arg_449\ <= shift_right((\c$app_arg_452\ - \c$app_arg_450\),sh_243)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_418\ <= resize(\c$odKneePOut\,25);
+  \c$app_arg_450\ <= resize(\c$odKneePOut\,25);
 
   result_selection_res_198 <= x_201.Frame_sel18_fWetL < negKneeN_3;
 
-  result_483 <= resize((\c$app_arg_421\ + \c$app_arg_419\),24) when result_selection_res_198 else
+  result_483 <= resize((\c$app_arg_453\ + \c$app_arg_451\),24) when result_selection_res_198 else
                 x_201.Frame_sel18_fWetL;
 
   \c$shI_242\ <= (to_signed(2,64));
 
-  capp_arg_419_shiftR : block
+  capp_arg_451_shiftR : block
     signal sh_244 : natural;
   begin
     sh_244 <=
@@ -27802,27 +28218,27 @@ begin
         natural'high when (\c$shI_242\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_242\);
-    \c$app_arg_419\ <= shift_right((\c$app_arg_420\ - \c$app_arg_421\),sh_244)
+    \c$app_arg_451\ <= shift_right((\c$app_arg_452\ - \c$app_arg_453\),sh_244)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_420\ <= resize(x_201.Frame_sel18_fWetL,25);
+  \c$app_arg_452\ <= resize(x_201.Frame_sel18_fWetL,25);
 
-  \c$app_arg_421\ <= resize(negKneeN_3,25);
+  \c$app_arg_453\ <= resize(negKneeN_3,25);
 
   negKneeN_3 <= -\c$odKneeNOut\;
 
   result_selection_res_199 <= x_201.Frame_sel18_fWetL > \c$odKneePOut\;
 
-  result_484 <= resize((\c$app_arg_423\ + \c$app_arg_422\),24) when result_selection_res_199 else
+  result_484 <= resize((\c$app_arg_455\ + \c$app_arg_454\),24) when result_selection_res_199 else
                 result_485;
 
   \c$shI_243\ <= (to_signed(1,64));
 
-  capp_arg_422_shiftR : block
+  capp_arg_454_shiftR : block
     signal sh_245 : natural;
   begin
     sh_245 <=
@@ -27830,23 +28246,23 @@ begin
         natural'high when (\c$shI_243\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_243\);
-    \c$app_arg_422\ <= shift_right((\c$app_arg_425\ - \c$app_arg_423\),sh_245)
+    \c$app_arg_454\ <= shift_right((\c$app_arg_457\ - \c$app_arg_455\),sh_245)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_423\ <= resize(\c$odKneePOut\,25);
+  \c$app_arg_455\ <= resize(\c$odKneePOut\,25);
 
   result_selection_res_200 <= x_201.Frame_sel18_fWetL < negKneeN_4;
 
-  result_485 <= resize((\c$app_arg_426\ + \c$app_arg_424\),24) when result_selection_res_200 else
+  result_485 <= resize((\c$app_arg_458\ + \c$app_arg_456\),24) when result_selection_res_200 else
                 x_201.Frame_sel18_fWetL;
 
   \c$shI_244\ <= (to_signed(1,64));
 
-  capp_arg_424_shiftR : block
+  capp_arg_456_shiftR : block
     signal sh_246 : natural;
   begin
     sh_246 <=
@@ -27854,16 +28270,16 @@ begin
         natural'high when (\c$shI_244\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_244\);
-    \c$app_arg_424\ <= shift_right((\c$app_arg_425\ - \c$app_arg_426\),sh_246)
+    \c$app_arg_456\ <= shift_right((\c$app_arg_457\ - \c$app_arg_458\),sh_246)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_425\ <= resize(x_201.Frame_sel18_fWetL,25);
+  \c$app_arg_457\ <= resize(x_201.Frame_sel18_fWetL,25);
 
-  \c$app_arg_426\ <= resize(negKneeN_4,25);
+  \c$app_arg_458\ <= resize(negKneeN_4,25);
 
   negKneeN_4 <= -\c$odKneeNOut\;
 
@@ -27876,7 +28292,7 @@ begin
 
   \c$app_arg_selection_res_11\ <= \on_9\ and (model_1 = to_unsigned(5,3));
 
-  \c$app_arg_427\ <= resize(x_201.Frame_sel18_fWetL,48) when \c$app_arg_selection_res_11\ else
+  \c$app_arg_459\ <= resize(x_201.Frame_sel18_fWetL,48) when \c$app_arg_selection_res_11\ else
                      to_signed(0,48);
 
   result_487 <= ( Frame_sel0_fL => x_199
@@ -27913,7 +28329,7 @@ begin
                 , Frame_sel31_fAccR => x_201.Frame_sel31_fAccR
                 , Frame_sel32_fAcc2L => x_201.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_201.Frame_sel33_fAcc2R
-                , Frame_sel34_fAcc3L => \c$app_arg_427\
+                , Frame_sel34_fAcc3L => \c$app_arg_459\
                 , Frame_sel35_fAcc3R => to_signed(0,48) );
 
   x_199 <= result_486 when \on_9\ else
@@ -28167,7 +28583,7 @@ begin
   \c$app_arg_selection_res_12\ <= \c$bv_247\(1 downto 1);
 
   with (\c$app_arg_selection_res_12\) select
-    \c$app_arg_428\ <= ((resize((resize(x_203.Frame_sel18_fWetL,48)) * (resize(ds_8.Tuple3_sel0_signed_0,48)), 48)) + (resize((resize(odMidX1,48)) * (resize(ds_8.Tuple3_sel1_signed_1,48)), 48))) + (resize((resize(odMidX2,48)) * (resize(ds_8.Tuple3_sel2_signed_2,48)), 48)) when "1",
+    \c$app_arg_460\ <= ((resize((resize(x_203.Frame_sel18_fWetL,48)) * (resize(ds_8.Tuple3_sel0_signed_0,48)), 48)) + (resize((resize(odMidX1,48)) * (resize(ds_8.Tuple3_sel1_signed_1,48)), 48))) + (resize((resize(odMidX2,48)) * (resize(ds_8.Tuple3_sel2_signed_2,48)), 48)) when "1",
                        to_signed(0,48) when others;
 
   \c$bv_248\ <= (x_203.Frame_sel4_fOd);
@@ -28227,7 +28643,7 @@ begin
                 , Frame_sel27_fEqHighR => x_203.Frame_sel27_fEqHighR
                 , Frame_sel28_fEqHighLpL => x_203.Frame_sel28_fEqHighLpL
                 , Frame_sel29_fEqHighLpR => x_203.Frame_sel29_fEqHighLpR
-                , Frame_sel30_fAccL => \c$app_arg_428\
+                , Frame_sel30_fAccL => \c$app_arg_460\
                 , Frame_sel31_fAccR => to_signed(0,48)
                 , Frame_sel32_fAcc2L => x_203.Frame_sel32_fAcc2L
                 , Frame_sel33_fAcc2R => x_203.Frame_sel33_fAcc2R
@@ -28474,7 +28890,7 @@ begin
                       , Frame_sel27_fEqHighR => x_206.Frame_sel27_fEqHighR
                       , Frame_sel28_fEqHighLpL => x_206.Frame_sel28_fEqHighLpL
                       , Frame_sel29_fEqHighLpR => x_206.Frame_sel29_fEqHighLpR
-                      , Frame_sel30_fAccL => \c$app_arg_429\
+                      , Frame_sel30_fAccL => \c$app_arg_461\
                       , Frame_sel31_fAccR => to_signed(0,48)
                       , Frame_sel32_fAcc2L => x_206.Frame_sel32_fAcc2L
                       , Frame_sel33_fAcc2R => x_206.Frame_sel33_fAcc2R
@@ -28486,7 +28902,7 @@ begin
   \c$app_arg_selection_res_13\ <= \c$bv_250\(1 downto 1);
 
   with (\c$app_arg_selection_res_13\) select
-    \c$app_arg_429\ <= resize((resize(x_206.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_42)))))))),48)), 48) when "1",
+    \c$app_arg_461\ <= resize((resize(x_206.Frame_sel0_fL,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(gain_42)))))))),48)), 48) when "1",
                        to_signed(0,48) when others;
 
   gain_42 <= resize((to_unsigned(256,11) + (resize((resize((unsigned((\c$gain_app_arg_15\(23 downto 16)))),11)) * (resize(\c$gain_app_arg_14\,11)), 11))),12);
@@ -28555,7 +28971,7 @@ begin
                    & std_logic_vector(result_498.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_498.Frame_sel35_fAcc3R)))) when others;
 
-  result_selection_res_203 <= not (\c$app_arg_431\ = ('1'));
+  result_selection_res_203 <= not (\c$app_arg_463\ = ('1'));
 
   result_498 <= x_212 when result_selection_res_203 else
                 ( Frame_sel0_fL => result_499
@@ -28624,7 +29040,7 @@ begin
 
   \c$shI_248\ <= (to_signed(1,64));
 
-  capp_arg_430_shiftL : block
+  capp_arg_462_shiftL : block
     signal sh_250 : natural;
   begin
     sh_250 <=
@@ -28632,35 +29048,35 @@ begin
         natural'high when (\c$shI_248\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_248\);
-    \c$app_arg_430\ <= shift_left((resize(((unsigned((\c$app_arg_432\(23 downto 16)))) - to_unsigned(128,8)),10)),sh_250)
+    \c$app_arg_462\ <= shift_left((resize(((unsigned((\c$app_arg_464\(23 downto 16)))) - to_unsigned(128,8)),10)),sh_250)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  result_selection_res_205 <= (unsigned((\c$app_arg_432\(23 downto 16)))) <= to_unsigned(128,8);
+  result_selection_res_205 <= (unsigned((\c$app_arg_464\(23 downto 16)))) <= to_unsigned(128,8);
 
-  result_500 <= to_unsigned(128,10) + (resize((unsigned((\c$app_arg_432\(23 downto 16)))),10)) when result_selection_res_205 else
-                to_unsigned(256,10) + \c$app_arg_430\;
+  result_500 <= to_unsigned(128,10) + (resize((unsigned((\c$app_arg_464\(23 downto 16)))),10)) when result_selection_res_205 else
+                to_unsigned(256,10) + \c$app_arg_462\;
 
-  \c$bv_251\ <= ((std_logic_vector((unsigned((\c$app_arg_432\(31 downto 24)))))));
+  \c$bv_251\ <= ((std_logic_vector((unsigned((\c$app_arg_464\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_42 : block
-    signal vec_index_129 : integer range 0 to 8-1;
+    signal vec_index_153 : integer range 0 to 8-1;
   begin
-    vec_index_129 <= to_integer((to_signed(7,64)))
+    vec_index_153 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_431\ <= \c$bv_251\(vec_index_129);
+    \c$app_arg_463\ <= \c$bv_251\(vec_index_153);
   end block;
   -- indexBitVector end
 
-  \c$app_arg_432\ <= x_212.Frame_sel14_fWah;
+  \c$app_arg_464\ <= x_212.Frame_sel14_fWah;
 
   -- register begin
   wahBand_register : process(clk,aresetn)
@@ -28679,21 +29095,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_43 : block
-    signal vec_index_130 : integer range 0 to 8-1;
+    signal vec_index_154 : integer range 0 to 8-1;
   begin
-    vec_index_130 <= to_integer((to_signed(7,64)))
+    vec_index_154 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_433\ <= \c$bv_253\(vec_index_130);
+    \c$app_arg_465\ <= \c$bv_253\(vec_index_154);
   end block;
   -- indexBitVector end
 
   \c$shI_249\ <= (to_signed(8,64));
 
-  capp_arg_434_shiftR : block
+  capp_arg_466_shiftR : block
     signal sh_251 : natural;
   begin
     sh_251 <=
@@ -28701,19 +29117,19 @@ begin
         natural'high when (\c$shI_249\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_249\);
-    \c$app_arg_434\ <= shift_right((resize((resize(result_503,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_251)
+    \c$app_arg_466\ <= shift_right((resize((resize(result_503,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_251)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_165\ <= \c$app_arg_434\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_165\ <= \c$app_arg_466\ < to_signed(-8388608,48);
 
   \c$case_alt_196\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_165\ else
-                      resize(\c$app_arg_434\,24);
+                      resize(\c$app_arg_466\,24);
 
-  result_selection_res_206 <= \c$app_arg_434\ > to_signed(8388607,48);
+  result_selection_res_206 <= \c$app_arg_466\ > to_signed(8388607,48);
 
   result_501 <= to_signed(8388607,24) when result_selection_res_206 else
                 \c$case_alt_196\;
@@ -28730,7 +29146,7 @@ begin
   result_502 <= to_signed(8388607,24) when result_selection_res_207 else
                 \c$case_alt_197\;
 
-  \c$case_alt_selection_res_167\ <= not (\c$app_arg_433\ = ('1'));
+  \c$case_alt_selection_res_167\ <= not (\c$app_arg_465\ = ('1'));
 
   \c$case_alt_198\ <= to_signed(0,24) when \c$case_alt_selection_res_167\ else
                       result_502;
@@ -28768,24 +29184,24 @@ begin
     result_505 <= wahQBandR when "0",
                   \c$case_alt_200\ when others;
 
-  \c$case_alt_selection_res_169\ <= not (\c$app_arg_436\ = ('1'));
+  \c$case_alt_selection_res_169\ <= not (\c$app_arg_468\ = ('1'));
 
   \c$case_alt_200\ <= to_signed(0,24) when \c$case_alt_selection_res_169\ else
                       result_506;
 
-  \c$case_alt_selection_res_170\ <= \c$app_arg_435\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_170\ <= \c$app_arg_467\ < to_signed(-8388608,48);
 
   \c$case_alt_201\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_170\ else
-                      resize(\c$app_arg_435\,24);
+                      resize(\c$app_arg_467\,24);
 
-  result_selection_res_209 <= \c$app_arg_435\ > to_signed(8388607,48);
+  result_selection_res_209 <= \c$app_arg_467\ > to_signed(8388607,48);
 
   result_506 <= to_signed(8388607,24) when result_selection_res_209 else
                 \c$case_alt_201\;
 
   \c$shI_250\ <= (to_signed(8,64));
 
-  capp_arg_435_shiftR : block
+  capp_arg_467_shiftR : block
     signal sh_252 : natural;
   begin
     sh_252 <=
@@ -28793,7 +29209,7 @@ begin
         natural'high when (\c$shI_250\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_250\);
-    \c$app_arg_435\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_507)))))))),48)), 48)),sh_252)
+    \c$app_arg_467\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_507)))))))),48)), 48)),sh_252)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -28817,30 +29233,30 @@ begin
         natural'high when (\c$shI_251\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_251\);
-    \c$raw_app_arg\ <= shift_right((unsigned((\c$app_arg_437\(15 downto 8)))),sh_253)
+    \c$raw_app_arg\ <= shift_right((unsigned((\c$app_arg_469\(15 downto 8)))),sh_253)
         -- pragma translate_off
         when ((to_signed(1,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$bv_254\ <= ((std_logic_vector((unsigned((\c$app_arg_437\(31 downto 24)))))));
+  \c$bv_254\ <= ((std_logic_vector((unsigned((\c$app_arg_469\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_44 : block
-    signal vec_index_131 : integer range 0 to 8-1;
+    signal vec_index_155 : integer range 0 to 8-1;
   begin
-    vec_index_131 <= to_integer((to_signed(7,64)))
+    vec_index_155 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_436\ <= \c$bv_254\(vec_index_131);
+    \c$app_arg_468\ <= \c$bv_254\(vec_index_155);
   end block;
   -- indexBitVector end
 
-  \c$app_arg_437\ <= f_11.Frame_sel14_fWah;
+  \c$app_arg_469\ <= f_11.Frame_sel14_fWah;
 
   f_11 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1067 downto 0)));
 
@@ -28861,21 +29277,21 @@ begin
 
   -- indexBitVector begin
   indexBitVector_45 : block
-    signal vec_index_132 : integer range 0 to 8-1;
+    signal vec_index_156 : integer range 0 to 8-1;
   begin
-    vec_index_132 <= to_integer((to_signed(7,64)))
+    vec_index_156 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_438\ <= \c$bv_256\(vec_index_132);
+    \c$app_arg_470\ <= \c$bv_256\(vec_index_156);
   end block;
   -- indexBitVector end
 
   \c$shI_252\ <= (to_signed(8,64));
 
-  capp_arg_439_shiftR : block
+  capp_arg_471_shiftR : block
     signal sh_254 : natural;
   begin
     sh_254 <=
@@ -28883,19 +29299,19 @@ begin
         natural'high when (\c$shI_252\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_252\);
-    \c$app_arg_439\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_254)
+    \c$app_arg_471\ <= shift_right((resize((resize(wahBand,48)) * (resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahFByteR)))))))),48)), 48)),sh_254)
         -- pragma translate_off
         when ((to_signed(8,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$case_alt_selection_res_171\ <= \c$app_arg_439\ < to_signed(-8388608,48);
+  \c$case_alt_selection_res_171\ <= \c$app_arg_471\ < to_signed(-8388608,48);
 
   \c$case_alt_202\ <= to_signed(-8388608,24) when \c$case_alt_selection_res_171\ else
-                      resize(\c$app_arg_439\,24);
+                      resize(\c$app_arg_471\,24);
 
-  result_selection_res_211 <= \c$app_arg_439\ > to_signed(8388607,48);
+  result_selection_res_211 <= \c$app_arg_471\ > to_signed(8388607,48);
 
   result_508 <= to_signed(8388607,24) when result_selection_res_211 else
                 \c$case_alt_202\;
@@ -28912,7 +29328,7 @@ begin
   result_509 <= to_signed(8388607,24) when result_selection_res_212 else
                 \c$case_alt_203\;
 
-  \c$case_alt_selection_res_173\ <= not (\c$app_arg_438\ = ('1'));
+  \c$case_alt_selection_res_173\ <= not (\c$app_arg_470\ = ('1'));
 
   \c$case_alt_204\ <= to_signed(0,24) when \c$case_alt_selection_res_173\ else
                       result_509;
@@ -28938,12 +29354,12 @@ begin
     result_511 <= wahFByteR when "0",
                   \c$case_alt_205\ when others;
 
-  \c$case_alt_selection_res_174\ <= not (\c$app_arg_442\ = ('1'));
+  \c$case_alt_selection_res_174\ <= not (\c$app_arg_474\ = ('1'));
 
   \c$case_alt_205\ <= to_unsigned(0,8) when \c$case_alt_selection_res_174\ else
                       result_512;
 
-  biasByte <= \c$app_arg_443\ and to_unsigned(127,8);
+  biasByte <= \c$app_arg_475\ and to_unsigned(127,8);
 
   baseSigned <= resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(result_513)))))))),18);
 
@@ -28957,9 +29373,9 @@ begin
   \c$case_alt_selection_res_175\ <= x_210 > to_signed(100,18);
 
   \c$case_alt_206\ <= to_unsigned(100,8) when \c$case_alt_selection_res_175\ else
-                      resize(unsigned(std_logic_vector(\c$app_arg_440\)),8);
+                      resize(unsigned(std_logic_vector(\c$app_arg_472\)),8);
 
-  \c$app_arg_440\ <= resize(x_210,64);
+  \c$app_arg_472\ <= resize(x_210,64);
 
   \c$shI_253\ <= (to_signed(6,64));
 
@@ -28980,18 +29396,18 @@ begin
 
   result_513 <= resize(result_514,8);
 
-  result_514 <= to_unsigned(8,16) + \c$app_arg_441\ when \c$tupIn_case_scrut_1\ else
+  result_514 <= to_unsigned(8,16) + \c$app_arg_473\ when \c$tupIn_case_scrut_1\ else
                 \c$case_alt_207\;
 
-  \c$case_alt_207\ <= to_unsigned(12,16) + \c$app_arg_441\ when \c$tupIn_case_scrut_0\ else
+  \c$case_alt_207\ <= to_unsigned(12,16) + \c$app_arg_473\ when \c$tupIn_case_scrut_0\ else
                       \c$case_alt_208\;
 
-  \c$case_alt_208\ <= to_unsigned(19,16) + \c$app_arg_441\ when \c$tupIn_case_scrut\ else
-                      to_unsigned(27,16) + \c$app_arg_441\;
+  \c$case_alt_208\ <= to_unsigned(19,16) + \c$app_arg_473\ when \c$tupIn_case_scrut\ else
+                      to_unsigned(27,16) + \c$app_arg_473\;
 
   \c$shI_254\ <= (to_signed(6,64));
 
-  capp_arg_441_shiftL : block
+  capp_arg_473_shiftL : block
     signal sh_256 : natural;
   begin
     sh_256 <=
@@ -28999,7 +29415,7 @@ begin
         natural'high when (\c$shI_254\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_254\);
-    \c$app_arg_441\ <= shift_right((resize(\c$tupIn\.Tuple2_1_sel0_unsigned_0 * \c$tupIn\.Tuple2_1_sel1_unsigned_1, 16)),sh_256)
+    \c$app_arg_473\ <= shift_right((resize(\c$tupIn\.Tuple2_1_sel0_unsigned_0 * \c$tupIn\.Tuple2_1_sel1_unsigned_1, 16)),sh_256)
         -- pragma translate_off
         when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -29027,25 +29443,25 @@ begin
 
   \c$tupIn_case_scrut_1\ <= wahPosSmooth < to_unsigned(64,8);
 
-  \c$bv_257\ <= ((std_logic_vector(\c$app_arg_443\)));
+  \c$bv_257\ <= ((std_logic_vector(\c$app_arg_475\)));
 
   -- indexBitVector begin
   indexBitVector_46 : block
-    signal vec_index_133 : integer range 0 to 8-1;
+    signal vec_index_157 : integer range 0 to 8-1;
   begin
-    vec_index_133 <= to_integer((to_signed(7,64)))
+    vec_index_157 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_442\ <= \c$bv_257\(vec_index_133);
+    \c$app_arg_474\ <= \c$bv_257\(vec_index_157);
   end block;
   -- indexBitVector end
 
   \c$bv_258\ <= (f_13.Frame_sel14_fWah);
 
-  \c$app_arg_443\ <= unsigned((\c$bv_258\(31 downto 24)));
+  \c$app_arg_475\ <= unsigned((\c$bv_258\(31 downto 24)));
 
   f_13 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1067 downto 0)));
 
@@ -29064,17 +29480,17 @@ begin
     result_515 <= wahPosSmooth when "0",
                   \c$case_alt_209\ when others;
 
-  \c$case_alt_selection_res_176\ <= not (\c$app_arg_445\ = ('1'));
+  \c$case_alt_selection_res_176\ <= not (\c$app_arg_477\ = ('1'));
 
   \c$case_alt_209\ <= x_211 when \c$case_alt_selection_res_176\ else
                       resize(unsigned(std_logic_vector(result_516)),8);
 
-  result_selection_res_214 <= \c$app_arg_444\ and (delta > to_signed(0,11));
+  result_selection_res_214 <= \c$app_arg_476\ and (delta > to_signed(0,11));
 
   result_516 <= result_517 when result_selection_res_214 else
                 \c$case_alt_210\;
 
-  \c$case_alt_selection_res_177\ <= \c$app_arg_444\ and (delta < to_signed(0,11));
+  \c$case_alt_selection_res_177\ <= \c$app_arg_476\ and (delta < to_signed(0,11));
 
   \c$case_alt_210\ <= result_518 when \c$case_alt_selection_res_177\ else
                       result_519;
@@ -29121,7 +29537,7 @@ begin
 
   nudged_1 <= prevSigned + stepDelta;
 
-  \c$app_arg_444\ <= stepDelta = to_signed(0,11);
+  \c$app_arg_476\ <= stepDelta = to_signed(0,11);
 
   \c$shI_255\ <= (to_signed(5,64));
 
@@ -29144,25 +29560,25 @@ begin
 
   prevSigned <= resize((signed((std_logic_vector'(std_logic_vector'(std_logic_vector'("0")) & std_logic_vector'(((std_logic_vector(wahPosSmooth)))))))),11);
 
-  x_211 <= unsigned((\c$app_arg_446\(7 downto 0)));
+  x_211 <= unsigned((\c$app_arg_478\(7 downto 0)));
 
-  \c$bv_259\ <= ((std_logic_vector((unsigned((\c$app_arg_446\(31 downto 24)))))));
+  \c$bv_259\ <= ((std_logic_vector((unsigned((\c$app_arg_478\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_47 : block
-    signal vec_index_134 : integer range 0 to 8-1;
+    signal vec_index_158 : integer range 0 to 8-1;
   begin
-    vec_index_134 <= to_integer((to_signed(7,64)))
+    vec_index_158 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_445\ <= \c$bv_259\(vec_index_134);
+    \c$app_arg_477\ <= \c$bv_259\(vec_index_158);
   end block;
   -- indexBitVector end
 
-  \c$app_arg_446\ <= f_14.Frame_sel14_fWah;
+  \c$app_arg_478\ <= f_14.Frame_sel14_fWah;
 
   f_14 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compMakeupPipe(1067 downto 0)));
 
@@ -29218,7 +29634,7 @@ begin
                    & std_logic_vector(result_521.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_521.Frame_sel35_fAcc3R)))) when others;
 
-  result_selection_res_218 <= not (\c$app_arg_447\ = ('1'));
+  result_selection_res_218 <= not (\c$app_arg_479\ = ('1'));
 
   result_521 <= x_213 when result_selection_res_218 else
                 ( Frame_sel0_fL => result_522
@@ -29285,27 +29701,27 @@ begin
         ;
   end block;
 
-  gain_43 <= to_unsigned(192,9) + (resize((\c$app_arg_448\ and to_unsigned(127,8)),9));
+  gain_43 <= to_unsigned(192,9) + (resize((\c$app_arg_480\ and to_unsigned(127,8)),9));
 
-  \c$bv_260\ <= ((std_logic_vector(\c$app_arg_448\)));
+  \c$bv_260\ <= ((std_logic_vector(\c$app_arg_480\)));
 
   -- indexBitVector begin
   indexBitVector_48 : block
-    signal vec_index_135 : integer range 0 to 8-1;
+    signal vec_index_159 : integer range 0 to 8-1;
   begin
-    vec_index_135 <= to_integer((to_signed(7,64)))
+    vec_index_159 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_447\ <= \c$bv_260\(vec_index_135);
+    \c$app_arg_479\ <= \c$bv_260\(vec_index_159);
   end block;
   -- indexBitVector end
 
   \c$bv_261\ <= (x_213.Frame_sel13_fComp);
 
-  \c$app_arg_448\ <= unsigned((\c$bv_261\(31 downto 24)));
+  \c$app_arg_480\ <= unsigned((\c$bv_261\(31 downto 24)));
 
   x_213 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(ds1_55(1067 downto 0)));
 
@@ -29359,7 +29775,7 @@ begin
                    & std_logic_vector(result_524.Frame_sel34_fAcc3L)
                    & std_logic_vector(result_524.Frame_sel35_fAcc3R)))) when others;
 
-  result_selection_res_220 <= not (\c$app_arg_449\ = ('1'));
+  result_selection_res_220 <= not (\c$app_arg_481\ = ('1'));
 
   result_524 <= x_215 when result_selection_res_220 else
                 ( Frame_sel0_fL => result_525
@@ -29432,15 +29848,15 @@ begin
 
   -- indexBitVector begin
   indexBitVector_49 : block
-    signal vec_index_136 : integer range 0 to 8-1;
+    signal vec_index_160 : integer range 0 to 8-1;
   begin
-    vec_index_136 <= to_integer((to_signed(7,64)))
+    vec_index_160 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_449\ <= \c$bv_263\(vec_index_136);
+    \c$app_arg_481\ <= \c$bv_263\(vec_index_160);
   end block;
   -- indexBitVector end
 
@@ -29504,16 +29920,16 @@ begin
   with (compLevelPipe(1068 downto 1068)) select
     result_527 <= std_logic_vector'("0" & "-------------------------") when "0",
                   std_logic_vector'("1" & ((clash_lowpass_fir_types.toSLV(\on_11\)
-                   & std_logic_vector(\c$app_arg_451\)
-                   & std_logic_vector(\c$app_arg_450\)))) when others;
+                   & std_logic_vector(\c$app_arg_483\)
+                   & std_logic_vector(\c$app_arg_482\)))) when others;
 
   with (result_532) select
-    \c$app_arg_450\ <= to_unsigned(1,12) when x"00",
+    \c$app_arg_482\ <= to_unsigned(1,12) when x"00",
                        resize(result_532,12) when others;
 
   \c$app_arg_selection_res_14\ <= not \on_11\;
 
-  \c$app_arg_451\ <= to_unsigned(4095,12) when \c$app_arg_selection_res_14\ else
+  \c$app_arg_483\ <= to_unsigned(4095,12) when \c$app_arg_selection_res_14\ else
                      \c$case_alt_224\;
 
   \c$case_alt_selection_res_188\ <= compEnv <= result_530;
@@ -29532,15 +29948,15 @@ begin
 
   -- indexBitVector begin
   indexBitVector_50 : block
-    signal vec_index_137 : integer range 0 to 8-1;
+    signal vec_index_161 : integer range 0 to 8-1;
   begin
-    vec_index_137 <= to_integer((to_signed(7,64)))
+    vec_index_161 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$on_app_arg\ <= \c$bv_264\(vec_index_137);
+    \c$on_app_arg\ <= \c$bv_264\(vec_index_161);
   end block;
   -- indexBitVector end
 
@@ -29652,11 +30068,11 @@ begin
         ;
   end block;
 
-  result_531 <= base - \c$app_arg_452\;
+  result_531 <= base - \c$app_arg_484\;
 
   \c$shI_263\ <= (to_signed(3,64));
 
-  capp_arg_452_shiftR : block
+  capp_arg_484_shiftR : block
     signal sh_265 : natural;
   begin
     sh_265 <=
@@ -29664,7 +30080,7 @@ begin
         natural'high when (\c$shI_263\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_263\);
-    \c$app_arg_452\ <= shift_right(base,sh_265)
+    \c$app_arg_484\ <= shift_right(base,sh_265)
         -- pragma translate_off
         when ((to_signed(3,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -29732,7 +30148,7 @@ begin
     result_533 <= compEnv when "0",
                   \c$case_alt_226\ when others;
 
-  \c$case_alt_selection_res_190\ <= not (\c$app_arg_453\ = ('1'));
+  \c$case_alt_selection_res_190\ <= not (\c$app_arg_485\ = ('1'));
 
   \c$case_alt_226\ <= to_signed(0,24) when \c$case_alt_selection_res_190\ else
                       result_534;
@@ -29806,7 +30222,7 @@ begin
         ;
   end block;
 
-  distance <= to_unsigned(255,8) - (unsigned((\c$app_arg_454\(23 downto 16))));
+  distance <= to_unsigned(255,8) - (unsigned((\c$app_arg_486\(23 downto 16))));
 
   \c$case_alt_selection_res_191\ <= f_16.Frame_sel0_fL < to_signed(0,24);
 
@@ -29818,23 +30234,23 @@ begin
   result_537 <= to_signed(8388607,24) when result_selection_res_226 else
                 \c$case_alt_227\;
 
-  \c$bv_267\ <= ((std_logic_vector((unsigned((\c$app_arg_454\(31 downto 24)))))));
+  \c$bv_267\ <= ((std_logic_vector((unsigned((\c$app_arg_486\(31 downto 24)))))));
 
   -- indexBitVector begin
   indexBitVector_51 : block
-    signal vec_index_138 : integer range 0 to 8-1;
+    signal vec_index_162 : integer range 0 to 8-1;
   begin
-    vec_index_138 <= to_integer((to_signed(7,64)))
+    vec_index_162 <= to_integer((to_signed(7,64)))
     -- pragma translate_off
                  mod 8
     -- pragma translate_on
                  ;
 
-    \c$app_arg_453\ <= \c$bv_267\(vec_index_138);
+    \c$app_arg_485\ <= \c$bv_267\(vec_index_162);
   end block;
   -- indexBitVector end
 
-  \c$app_arg_454\ <= f_16.Frame_sel13_fComp;
+  \c$app_arg_486\ <= f_16.Frame_sel13_fComp;
 
   f_16 <= clash_lowpass_fir_types.Frame'(clash_lowpass_fir_types.fromSLV(compLevelPipe(1067 downto 0)));
 
@@ -30110,7 +30526,7 @@ begin
   result_547 <= to_unsigned(4095,12) when result_selection_res_233 else
                 result_548;
 
-  result_selection_res_234 <= nsEnv <= (threshold - \c$app_arg_455\);
+  result_selection_res_234 <= nsEnv <= (threshold - \c$app_arg_487\);
 
   result_548 <= result_549 when result_selection_res_234 else
                 \c$case_alt_233\;
@@ -30122,7 +30538,7 @@ begin
 
   \c$shI_270\ <= (to_signed(2,64));
 
-  capp_arg_455_shiftR : block
+  capp_arg_487_shiftR : block
     signal sh_272 : natural;
   begin
     sh_272 <=
@@ -30130,7 +30546,7 @@ begin
         natural'high when (\c$shI_270\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_270\);
-    \c$app_arg_455\ <= shift_right(threshold,sh_272)
+    \c$app_arg_487\ <= shift_right(threshold,sh_272)
         -- pragma translate_off
         when ((to_signed(2,64)) >= 0) else (others => 'X')
         -- pragma translate_on
@@ -30168,14 +30584,14 @@ begin
         natural'high when (\c$shI_272\(64-1 downto 31) /= 0) else
         -- pragma translate_on
         to_integer(\c$shI_272\);
-    result_550 <= shift_right((resize(\c$app_arg_456\ * \c$app_arg_456\, 16)),sh_274)
+    result_550 <= shift_right((resize(\c$app_arg_488\ * \c$app_arg_488\, 16)),sh_274)
         -- pragma translate_off
         when ((to_signed(6,64)) >= 0) else (others => 'X')
         -- pragma translate_on
         ;
   end block;
 
-  \c$app_arg_456\ <= resize(inv8,16);
+  \c$app_arg_488\ <= resize(inv8,16);
 
   inv8 <= to_unsigned(255,8) - (unsigned((\c$nsClosedGainOut_app_arg\(23 downto 16))));
 
@@ -30385,10 +30801,10 @@ begin
 
   validIn <= axis_in_tvalid and axis_out_tready;
 
-  result_560 <= ( Tuple2_2_sel0_signed_0 => signed((\c$app_arg_457\(23 downto 0)))
-                , Tuple2_2_sel1_signed_1 => signed((\c$app_arg_457\(47 downto 24))) );
+  result_560 <= ( Tuple2_2_sel0_signed_0 => signed((\c$app_arg_489\(23 downto 0)))
+                , Tuple2_2_sel1_signed_1 => signed((\c$app_arg_489\(47 downto 24))) );
 
-  \c$app_arg_457\ <= axis_in_tdata;
+  \c$app_arg_489\ <= axis_in_tdata;
 
   mono_0 <= result_560.Tuple2_2_sel0_signed_0;
 

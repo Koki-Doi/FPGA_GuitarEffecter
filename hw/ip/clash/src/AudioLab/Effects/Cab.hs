@@ -221,35 +221,49 @@ cabLevelMixFrame f =
 -- -11.3 -> -26.6 dB/oct, all three cab targets PASS (cab_ir.py --rolloff-only
 -- --taps 31 --check). The full 128-tap BRAM convolution (step B2) is deferred.
 --
--- Coefficients are the folded HALF (c0..c15, c15 = centre) of the per-model
--- 31-tap windowed-sinc kernels, hand-designed magnitude targets (NOT captured
+-- Coefficients are the folded HALF (c0..c23, c23 = centre) of the per-model
+-- windowed-sinc kernels, hand-designed magnitude targets (NOT captured
 -- commercial IRs, D7), Signed 16, unity-DC sum 2^16 (=> mix shift >> 16).
--- Symmetric, so it folds to 16 DSP48 MACs (15 pre-adder pairs + 1 centre).
--- `hist` = [x[n-1] .. x[n-30]] (cab output history). Bit-exact bypass when the
--- cab is off. 96 kHz design (cab_ir.py FS=96000). Re-emit with
--- `cab_ir.py --rolloff-only --taps 31 --emit-clash`, do not hand-edit.
-cabSpeakerFirCoeff :: Unsigned 8 -> Vec 16 (Signed 16)
+-- Symmetric, so it folds to 24 DSP48 MACs (23 pre-adder pairs + 1 centre).
+-- D155: extended 31-tap -> 47-tap (Option Y, the plan's low-risk folded-FIR
+-- path -- NOT the high-risk 128-tap BRAM MAC "B2", which the sim showed gives
+-- only marginal extra rolloff over the already-target-passing 31-tap while
+-- adding a BRAM + time-mux MAC FSM + handshake = a new knife-edge class). 47
+-- taps sharpens the >5 kHz rolloff toward the real-4x12 band: 5-12 kHz open
+-- -13.0 -> -14.9, british -19.5 -> -22.0, closed -26.6 -> -28.9 dB/oct, all
+-- three cab targets still PASS (cab_ir.py --rolloff-only --taps 47 --check); the
+-- existing presence biquad keeps the 2-4 kHz peak (the D151 brightness band is
+-- untouched -- this only steepens the >5 kHz fizz rolloff). Pure extension of the
+-- accepted D149 folded-pair structure: no BRAM, no MAC FSM, no handshake change,
+-- bit-exact bypass; +8 DSP (16 -> 24 folded).
+-- `hist` = [x[n-1] .. x[n-46]] (cab output history). 96 kHz design. Re-emit with
+-- `cab_ir.py --rolloff-only --taps 47 --emit-clash` (folded half = first 24), do
+-- not hand-edit.
+cabSpeakerFirCoeff :: Unsigned 8 -> Vec 24 (Signed 16)
 cabSpeakerFirCoeff model = case model `shiftR` 6 of
-  -- open 1x12 (sum 65537)
-  0 ->   (-6) :> (-17) :> (-39) :> (-82) :> (-145) :> (-221) :> (-271) :> (-228)
-      :> 26 :> 634 :> 1738 :> 3366 :> 5417 :> 7546 :> 9527 :> 11047 :> Nil
-  -- british 2x12 (sum 65537)
-  1 ->   (-46) :> (-64) :> (-96) :> (-137) :> (-169) :> (-156) :> (-46) :> 223
-      :> 720 :> 1504 :> 2600 :> 3962 :> 5457 :> 6853 :> 7926 :> 8475 :> Nil
-  -- closed 4x12 (sum 65538)
-  _ ->   (-62) :> (-70) :> (-83) :> (-87) :> (-54) :> 55 :> 284 :> 675
-      :> 1262 :> 2054 :> 3026 :> 4108 :> 5188 :> 6125 :> 6797 :> 7102 :> Nil
+  -- open 1x12 (sum 65526)
+  0 ->   4 :> 7 :> 10 :> 14 :> 16 :> 16 :> 13 :> 1 :> (-24) :> (-71) :> (-145)
+      :> (-245) :> (-355) :> (-447) :> (-469) :> (-346) :> 35 :> 786 :> 2006
+      :> 3671 :> 5661 :> 7655 :> 9496 :> 10948 :> Nil
+  -- british 2x12 (sum 65540)
+  1 ->   19 :> 18 :> 16 :> 11 :> (-1) :> (-24) :> (-60) :> (-114) :> (-186)
+      :> (-269) :> (-351) :> (-408) :> (-408) :> (-313) :> (-79) :> 334 :> 968
+      :> 1848 :> 2972 :> 4280 :> 5648 :> 6885 :> 7825 :> 8318 :> Nil
+  -- closed 4x12 (sum 65533)
+  _ ->   9 :> 3 :> (-7) :> (-23) :> (-48) :> (-84) :> (-132) :> (-188) :> (-243)
+      :> (-286) :> (-297) :> (-252) :> (-126) :> 108 :> 472 :> 984 :> 1648
+      :> 2452 :> 3361 :> 4311 :> 5218 :> 5980 :> 6520 :> 6773 :> Nil
 
 -- The FIR is split into two pipeline stages (it is feedforward, so it
 -- pipelines freely -- unlike the biquads' feedback). A single combinational
--- 31-tap sum would be far too deep. Stage 1 computes all 16 folded products
+-- 47-tap sum would be far too deep. Stage 1 computes all 24 folded products
 -- from ONE history snapshot into the SIX available Wide partial-sum fields
--- (<= 3 products each = the SAME add depth as the accepted 15-tap stage); stage
--- 2 combines (balanced tree) + scales. The folded pair sum (a+b)*c maps onto
--- the DSP48 pre-adder, so each pair is one DSP. Folded pairs: tap_k pairs with
--- tap_(30-k) for k=0..14 (tap0 = x, tap_j = hist!!(j-1)); centre = tap15 =
--- hist!!14.
-cabSpeakerFirProductsFrame :: Vec 30 Sample -> Frame -> Frame
+-- (4 products each = one extra add level over the D149 16-tap stage; the 33 MHz
+-- island has the margin); stage 2 combines (balanced tree) + scales. The folded
+-- pair sum (a+b)*c maps onto the DSP48 pre-adder, so each pair is one DSP. Folded
+-- pairs: tap_k pairs with tap_(46-k) for k=0..22 (tap0 = x, tap_j = hist!!(j-1));
+-- centre = tap23 = hist!!22.
+cabSpeakerFirProductsFrame :: Vec 46 Sample -> Frame -> Frame
 cabSpeakerFirProductsFrame hist f =
   f { fAccL  = if on then p0 else 0, fAccR  = if on then p1 else 0
     , fAcc2L = if on then p2 else 0, fAcc2R = if on then p3 else 0
@@ -259,22 +273,30 @@ cabSpeakerFirProductsFrame hist f =
   x = monoSample f
   c = cabSpeakerFirCoeff (ctrlC (fCab f))
   pm = foldTap16   -- (a+b)*g, Signed 16 coeff, one DSP48 pre-adder MAC
-  p0 = pm x           (hist !! 29) (c !! 0)
-         + pm (hist !! 0)  (hist !! 28) (c !! 1)
-         + pm (hist !! 1)  (hist !! 27) (c !! 2)
-  p1 = pm (hist !! 2)  (hist !! 26) (c !! 3)
-         + pm (hist !! 3)  (hist !! 25) (c !! 4)
-         + pm (hist !! 4)  (hist !! 24) (c !! 5)
-  p2 = pm (hist !! 5)  (hist !! 23) (c !! 6)
-         + pm (hist !! 6)  (hist !! 22) (c !! 7)
-         + pm (hist !! 7)  (hist !! 21) (c !! 8)
-  p3 = pm (hist !! 8)  (hist !! 20) (c !! 9)
-         + pm (hist !! 9)  (hist !! 19) (c !! 10)
-         + pm (hist !! 10) (hist !! 18) (c !! 11)
-  p4 = pm (hist !! 11) (hist !! 17) (c !! 12)
-         + pm (hist !! 12) (hist !! 16) (c !! 13)
-  p5 = pm (hist !! 13) (hist !! 15) (c !! 14)
-         + mulS16 (hist !! 14) (c !! 15)
+  p0 = pm x           (hist !! 45) (c !! 0)
+         + pm (hist !! 0)  (hist !! 44) (c !! 1)
+         + pm (hist !! 1)  (hist !! 43) (c !! 2)
+         + pm (hist !! 2)  (hist !! 42) (c !! 3)
+  p1 = pm (hist !! 3)  (hist !! 41) (c !! 4)
+         + pm (hist !! 4)  (hist !! 40) (c !! 5)
+         + pm (hist !! 5)  (hist !! 39) (c !! 6)
+         + pm (hist !! 6)  (hist !! 38) (c !! 7)
+  p2 = pm (hist !! 7)  (hist !! 37) (c !! 8)
+         + pm (hist !! 8)  (hist !! 36) (c !! 9)
+         + pm (hist !! 9)  (hist !! 35) (c !! 10)
+         + pm (hist !! 10) (hist !! 34) (c !! 11)
+  p3 = pm (hist !! 11) (hist !! 33) (c !! 12)
+         + pm (hist !! 12) (hist !! 32) (c !! 13)
+         + pm (hist !! 13) (hist !! 31) (c !! 14)
+         + pm (hist !! 14) (hist !! 30) (c !! 15)
+  p4 = pm (hist !! 15) (hist !! 29) (c !! 16)
+         + pm (hist !! 16) (hist !! 28) (c !! 17)
+         + pm (hist !! 17) (hist !! 27) (c !! 18)
+         + pm (hist !! 18) (hist !! 26) (c !! 19)
+  p5 = pm (hist !! 19) (hist !! 25) (c !! 20)
+         + pm (hist !! 20) (hist !! 24) (c !! 21)
+         + pm (hist !! 21) (hist !! 23) (c !! 22)
+         + mulS16 (hist !! 22) (c !! 23)
 
 cabSpeakerFirMixFrame :: Frame -> Frame
 cabSpeakerFirMixFrame f =
@@ -284,7 +306,7 @@ cabSpeakerFirMixFrame f =
   out = satShift16 (((fAccL f + fAccR f) + (fAcc2L f + fAcc2R f))
                     + (fAcc3L f + fAcc3R f))
 
-cabSpeakerFirHistNext :: Vec 30 Sample -> Maybe Frame -> Vec 30 Sample
+cabSpeakerFirHistNext :: Vec 46 Sample -> Maybe Frame -> Vec 46 Sample
 cabSpeakerFirHistNext hist Nothing = hist
 cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 

@@ -6606,6 +6606,62 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D155 — Cab speaker FIR 31->47 taps (Option Y folded extension); BUILT + COMMITTED, NOT deployed (low CDC margin), PENDING BENCH (2026-06-21, overnight C)
+
+- **Decision (overnight "ABC", C).** The user asked for "Cab IR B2". The full
+  128-tap BRAM time-mux MAC (the literal B2) was DECLINED: the sim (cab_ir.py,
+  CAB_IR_R4_STEP_B_PLAN.md) shows the already-shipped 31-tap folded FIR (D149)
+  passes ALL cab targets and reaches the real-4x12 rolloff band, so B2's extra
+  rolloff is marginal/largely inaudible while it adds a BRAM + MAC FSM + handshake
+  = a new knife-edge class. Instead, take the plan's LOW-RISK Option-Y path:
+  extend the accepted folded-pair speaker FIR 31 -> 47 taps (`cabSpeakerFirCoeff`
+  Vec 16 -> Vec 24, history Vec 30 -> Vec 46, 24 folded products across the 6 Wide
+  fields, 4 each). No BRAM, no FSM, no handshake change; bypass bit-exact.
+- **Sim.** rolloff 5-12 kHz open -13.0 -> -14.9, british -19.5 -> -22.0, closed
+  -26.6 -> -28.9 dB/oct; `measure --check` 28/28 (all cab/rig targets still PASS,
+  presence biquad keeps the 2-4 kHz peak = the D151 brightness band untouched;
+  only the >5 kHz fizz rolloff steepens). Regression: ONLY the `cab` golden
+  changed (re-blessed); bypass + every amp/OD/DIST byte-identical.
+- **Build.** WNS `+0.319` / WHS `+0.013`, route 0 failed; **D109 CDC pair fwd
+  `+0.989`** / rev `+6.738` -- MET but the LOWEST of the D149-D155 arc (vs D153
+  +2.059; the +8-DSP FIR tightened placement); D146 pblock intact (112 cells);
+  DSP `206/220`. bit md5 `8d875cc8a0154a86673ab22e5b142d27`, hwh
+  `e0469cf593e97d582c14bb09ea98d3d3`.
+- **NOT deployed (deliberate).** Built + committed on branch
+  `feature/overnight-d154-d155`, but the board was LEFT ON the accepted D153.
+  Rationale: (1) CDC fwd +0.989 = elevated safe-bypass-buzz risk (lowest margin
+  of the arc), unbench-able while the user sleeps; (2) the 47-tap benefit over the
+  target-passing 31-tap is marginal/likely inaudible AND trends darker, possibly
+  against the just-accepted D151 brightness; (3) an unattended deploy + the
+  download=True smoke re-risks the D153 board-hang/data-loss. Bench needs the user
+  anyway.
+- **Status.** CANDIDATE on `feature/overnight-d154-d155`; `main` stays accepted
+  D153 (+ the A deploy hardening). **PENDING USER: deploy + ear-bench** -- listen
+  hard to all-off bypass for ANY buzz (the +0.989 CDC flag) and judge whether the
+  slightly darker/steeper cab top is wanted. Deploy: `git checkout
+  <D155 commit> -- hw/Pynq-Z2/bitstreams/ && bash scripts/deploy_to_pynq.sh` then
+  load once. If buzzy or too dark, stay on D153 (`git checkout b86c88a --
+  hw/Pynq-Z2/bitstreams/`).
+
+## D154 — gain-amp chord IMD: investigated, NO safe blind fix (NOT shipped) (2026-06-21, overnight B)
+
+- **Decision (overnight "ABC", B).** Reduce the gain amps' (AC30/Rockerverb/
+  JCM800/TriAmp) remaining chord HF IMD. Sim-first investigation -> **no safe,
+  effective, blind change found; nothing shipped.**
+- **Findings.** (1) Drive-mode post-clip darken (`ampPreLpfDriveDarken`) bumped on
+  all four gain amps = ZERO effect on the rig chord HF (verified: bit-identical
+  numbers) -- the post-clip LPF is regenerated/reshaped by the downstream tone
+  stack + cab, so it does not move the rig output (same dead-lever class as the
+  D152 anti-alias-emphasis attempt). (2) The only effective levers are the same
+  ones D152/D153 found: less clipping (gain/headroom reduction) or a level trim --
+  both CHANGE the gain amps' character/loudness, which the user did not ask for
+  and which would partly undo the D151 brightness; the gain-amp chord mud is also
+  "partly intended" (a real cranked amp muds on chords). (3) The fundamental fix
+  (in-band IMD, oversampling proven useless in D152) is multiband distortion = a
+  large change. None of these is safe to ship blind overnight.
+- **Status.** Investigated, reverted to clean (no code change). Deferred for
+  ear-in-the-loop tuning or a future multiband-distortion phase. `main` unchanged.
+
 ## D153 — JC-120 / Twin too hot (音割れ); restore cab peak-limit + JC/Twin level trim; bench-ACCEPTED, current baseline (`b86c88a`, bit `5c0086b0`) (2026-06-21)
 
 - **Symptom.** Benching D152: JC-120 + Fender/Twin output too large -> 音割れ
