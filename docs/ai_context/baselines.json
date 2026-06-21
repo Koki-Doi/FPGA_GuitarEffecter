@@ -1,44 +1,267 @@
 {
-  "_comment": "Single source of truth for committed deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). current_deployed is a historical field name; it marks the current accepted committed baseline, not an uncommitted live-board candidate. Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
-  "bit_path": "hw/Pynq-Z2/bitstreams/audio_lab.bit",
-  "hwh_path": "hw/Pynq-Z2/bitstreams/audio_lab.hwh",
-  "current_deployed": "1468e93",
-  "baselines": [
-    {"decision": "D90", "commit": "74412c6", "status": "accepted-superseded", "date": "2026-06-03", "note": "4x oversampled Big Muff clip cascade; pre-realism-amp baseline"},
-    {"decision": "D92", "commit": "20b3f25", "status": "superseded", "date": "2026-06-03", "note": "dedicated-stage voicings (JC-120 clean / OD biquad TS9+BD-2 / Klon / AC30 sag); superseded by D93"},
-    {"decision": "D93", "commit": "cf66570", "status": "accepted-superseded", "date": "2026-06-04", "note": "anti-alias pre/de-emphasis around amp clip stages"},
-    {"decision": "D94", "commit": "688784d", "status": "accepted-superseded", "date": "2026-06-04", "note": "DSP island 40->33MHz + output-transformer LF saturation"},
-    {"decision": "D95", "commit": "84c745d", "status": "accepted-superseded", "date": "2026-06-04", "note": "amp waveshaper hysteresis (per-sample memory)"},
-    {"decision": "D96", "commit": "2dd369b", "status": "accepted-superseded", "date": "2026-06-04", "note": "transformer HF droop + cab output micro-modulation"},
-    {"decision": "D97", "commit": "3732b7b", "status": "accepted-superseded", "date": "2026-06-04", "note": "transformer LF resonance + multiband mid-sat + reverb diffusion"},
-    {"decision": "D98", "commit": "0e4350a", "status": "accepted-baseline", "date": "2026-06-05", "note": "96 kHz conversion + whole-chain re-voicing; major baseline (D107 fell back here)"},
-    {"decision": "D99", "commit": "9651572", "status": "accepted-rollback-target", "date": "2026-06-05", "note": "behaviour-preserving DSP helper refactor; behaviour == D98. rollback target after D120 rejection"},
-    {"decision": "D101", "commit": "6832f8c", "status": "accepted-superseded", "date": "2026-06-05", "note": "amp/RAT input-HP pole at higher corner; later found bypass-muffled, superseded"},
-    {"decision": "D112", "commit": "0d2f743", "status": "accepted-superseded", "date": "2026-06-07", "note": "amp full revoicing on the D109 CDC knife-edge fix; the long-standing accepted baseline before the D113-D120 amp-retune line"},
-    {"decision": "D113", "commit": "857e19e", "status": "built-superseded", "date": "2026-06-07", "note": "amp model-identity constant retune; superseded by later accepted lines"},
-    {"decision": "D114", "commit": "324ca9f", "status": "built-superseded", "date": "2026-06-07", "note": "non-amp effect constant retune (OD/Dist/Cab/Reverb); PL smoke blocked and later superseded"},
-    {"decision": "D117", "commit": "7e06fe0", "status": "built-superseded", "date": "2026-06-10", "note": "RAT highpass dead-pole fix + RAT identity retune; superseded by later accepted RAT/DIST passes"},
-    {"decision": "D118", "commit": "d5d0f9d", "status": "built-superseded", "date": "2026-06-11", "note": "amp de-muffle constant retune; superseded by later accepted lines"},
-    {"decision": "D119", "commit": "c16ac5c", "status": "bench-rejected", "date": "2026-06-11", "note": "disable amp power-sag master modulation; bench-REJECTED, reverted to D118"},
-    {"decision": "D120", "commit": "634f0dc", "status": "bench-rejected-sourceonly", "date": "2026-06-13", "note": "remove dynamic sag + static master trim; bench-REJECTED. Source only on branch feature/amp-static-sag-d120 (no committed bit)"},
-    {"decision": "ROLLBACK->D99", "commit": "ea6bf94", "status": "accepted-superseded", "date": "2026-06-13", "note": "rolled the deployed baseline all the way back to D99 (== D98 96 kHz amp) after the whole D113-D120 amp-retune line was bench-rejected"},
-    {"decision": "D121", "commit": "d07c8e9", "status": "accepted-superseded", "date": "2026-06-14", "note": "off-target non-amp voicing on the D99 amp baseline: BD-2/OCD, Metal scoop, Cab presence"},
-    {"decision": "D122", "commit": "2a4ae6c", "status": "accepted-superseded", "date": "2026-06-14", "note": "amp per-model voicing: JC-120 flatter, Rockerverb low-mid, TriAmp scoop"},
-    {"decision": "D123", "commit": "1af841f", "status": "accepted-superseded", "date": "2026-06-14", "note": "cab per-model presence biquad; Open/British/Closed separation"},
-    {"decision": "D124", "commit": "dbca714", "status": "accepted-superseded", "date": "2026-06-14", "note": "RAT live-pole highpass fix; RAT now distorts"},
-    {"decision": "D125", "commit": "4b2236e", "status": "accepted-superseded", "date": "2026-06-14", "note": "Compressor Dyna/Ross sustain; RATIO now effective"},
-    {"decision": "D126+D127", "commit": "d723df1", "status": "accepted-superseded", "date": "2026-06-15", "note": "reference-alignment pass: OD-1/DS-1/RAT pedals + JCM800 bright-cap"},
-    {"decision": "D128", "commit": "4a8fb90", "status": "accepted-superseded", "date": "2026-06-15", "note": "amp realism: PRESENCE effective + high-gain Drive/Clean separation; aggressive first build rejected, moderate retune accepted"},
-    {"decision": "D129", "commit": "837a482", "status": "accepted-superseded", "date": "2026-06-15", "note": "OD/DS/RAT EQ re-collation: Metal MT-2 mid boost, Klon mid bump, OD-1/BD-2/JanRay/DS-1/Fuzz tweaks"},
-    {"decision": "D130", "commit": "fffa2b1", "status": "accepted-superseded", "date": "2026-06-15", "note": "amp 2nd-pass EQ re-collation: JC-120 flat, AC30 sparkle, JCM800 modest top"},
-    {"decision": "D131", "commit": "37114b9", "status": "accepted-superseded", "date": "2026-06-15", "note": "DIST realism: low-end + saturation/sustain fixes and offline dist_eval/targets tooling"},
-    {"decision": "REALISM-0617a", "commit": "55ef823", "status": "accepted-superseded", "date": "2026-06-17", "note": "all-effects sim survey + comprehensive sim problem-detectors (muffled/clean-distort) + bass(amp HP dead->live)/HF-restore(un-muffle)/Metal drive/RESONANCE dead-knob/AC30 amp re-voicing; 3-cycle target calibration"},
-    {"decision": "REALISM-0617b", "commit": "21c0b5a", "status": "accepted-superseded", "date": "2026-06-17", "note": "Metal full saturation (os4x clip floor 1.05M->600k + post-LPF open) + clean-amp power headroom (per-model ampPowerKnee, JC-120/Twin); superseded by D134"},
-    {"decision": "D134", "commit": "f62f132", "status": "accepted-superseded", "date": "2026-06-17", "note": "sim-scale all-effect objective evaluation + knob-visibility fixes for Amp PRESENCE/RESONANCE, Cab AIR, and Noise Suppressor DECAY/DAMP; superseded by D135"},
-    {"decision": "D135", "commit": "765323b", "status": "accepted-superseded", "date": "2026-06-17", "note": "large non-IR realism: Fuzz Face 900Hz mid-hump biquad + tighter clip knees + opened tone LPF; AC30/JCM800 stronger ampScoop + model-local presence; Amp MIDDLE more audible; AC30 clean headroom; Cab non-IR body tap. Merge commit 765323b. Long-standing accepted baseline; superseded by D148. Rollback target (git checkout 765323b -- hw/Pynq-Z2/bitstreams/)"},
-    {"decision": "D141", "commit": "8a811e3", "status": "bench-rejected", "date": "2026-06-18", "note": "chord-IMD fix (slew-limit the power-sag attack). Bench: chords improved but part of the rolled-back amp-clean-headroom line. Branch feature/amp-clean-headroom; rolled back to D135. NOTE the sag-attack slew itself was later re-accepted as part of D148 (via D147)"},
-    {"decision": "D142", "commit": "041a007", "status": "bench-rejected", "date": "2026-06-19", "note": "cleaner clean chords + clean<=drive level. Bench-REJECTED: safe-bypass CDC knife-edge = amp-on/amp-off DIGITAL BUZZ (bypass passthrough corrupted; D135 amp-off confirmed clean). Re-place (Explore = byte-identical placement) AND tighter CDC max_delay 10->6ns BOTH failed to clear the buzz. Rolled back to D135. Branch feature/amp-clean-headroom"},
-    {"decision": "D148", "commit": "96ef899", "status": "accepted-superseded", "date": "2026-06-20", "note": "JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ; bypass confirmed clean = not CDC). Localized with new tools/dsp_sim/clip_onset.py: JC broke up ~0.18 FS at the power/master soft knee, Twin ~0.12-0.18 FS at the ampAsymClip waveshaper. Fix (placement-safe constants/mux, no new multiply): ampPowerKnee JC 6.8M->8.2M + Twin 4.6M->6.8M + clean-mode-only ampCleanKneeBonus (Twin 2.5M); both now clean to ~0.25 FS. Surgical -- golden 20/20 NO re-bless (bypass bit-exact). Merge commit 96ef899 ALSO carries D146 hard pblock (placement-locked audio-output CDC, SLICE_X100Y116:SLICE_X113Y137) + D147 amp sag-attack slew (ampSagAttackStep=96, chord-IMD fix). Build MET WNS+0.526/WHS+0.014, route 0, D109 CDC pair MET, XDC max_delay 10ns. BENCH-ACCEPTED. Superseded by D149 (cab real-IR B1). Rollback target (git checkout 96ef899 -- hw/Pynq-Z2/bitstreams/)"},
-    {"decision": "D149", "commit": "1468e93", "status": "accepted-current", "date": "2026-06-20", "note": "Cab real-IR R4 step B1: 15-tap -> 31-tap rolloff-only folded speaker FIR (Signed-16 Q16, unity-DC sum 2^16, +8 DSP = 16 folded MACs) for a real-4x12 sharp >5 kHz rolloff. Option Y: the FIR supplies ONLY the rolloff, the existing per-model presence biquad keeps the 2-4 kHz peak (so 31 taps suffice; full 128-tap time-mux MAC = B2 deferred). Sim-first via new tools/dsp_sim/cab_ir.py + docs/ai_context/CAB_IR_R4_STEP_B_PLAN.md. Offline rolloff 5-12k open -9->-17 / brit -11->-23 / closed -11->-28 dB/oct, measure.py --check all PASS, regression = cab golden re-blessed only (bypass bit-exact, all else unchanged). Nonlinear 4-tap core + presence biquad + micro-mod untouched. Build MET WNS+0.597/WHS+0.008/WPWS+2.845, route 0, D109 CDC pair fwd +1.416 / rev +7.154, D146 hard pblock intact (112 cells SLICE_X100Y116:SLICE_X113Y137), DSP 181/220. PL smoke PASS (mode 2 ~96.1 kHz). BENCH-ACCEPTED, CURRENT ACCEPTED / COMMITTED BASELINE. Rollback to D148: git checkout 96ef899 -- hw/Pynq-Z2/bitstreams/"}
-  ]
+ "_comment": "Single source of truth for committed deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). current_deployed is a historical field name; it marks the current accepted committed baseline, not an uncommitted live-board candidate. Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
+ "bit_path": "hw/Pynq-Z2/bitstreams/audio_lab.bit",
+ "hwh_path": "hw/Pynq-Z2/bitstreams/audio_lab.hwh",
+ "current_deployed": "112ae9a",
+ "baselines": [
+  {
+   "decision": "D90",
+   "commit": "74412c6",
+   "status": "accepted-superseded",
+   "date": "2026-06-03",
+   "note": "4x oversampled Big Muff clip cascade; pre-realism-amp baseline"
+  },
+  {
+   "decision": "D92",
+   "commit": "20b3f25",
+   "status": "superseded",
+   "date": "2026-06-03",
+   "note": "dedicated-stage voicings (JC-120 clean / OD biquad TS9+BD-2 / Klon / AC30 sag); superseded by D93"
+  },
+  {
+   "decision": "D93",
+   "commit": "cf66570",
+   "status": "accepted-superseded",
+   "date": "2026-06-04",
+   "note": "anti-alias pre/de-emphasis around amp clip stages"
+  },
+  {
+   "decision": "D94",
+   "commit": "688784d",
+   "status": "accepted-superseded",
+   "date": "2026-06-04",
+   "note": "DSP island 40->33MHz + output-transformer LF saturation"
+  },
+  {
+   "decision": "D95",
+   "commit": "84c745d",
+   "status": "accepted-superseded",
+   "date": "2026-06-04",
+   "note": "amp waveshaper hysteresis (per-sample memory)"
+  },
+  {
+   "decision": "D96",
+   "commit": "2dd369b",
+   "status": "accepted-superseded",
+   "date": "2026-06-04",
+   "note": "transformer HF droop + cab output micro-modulation"
+  },
+  {
+   "decision": "D97",
+   "commit": "3732b7b",
+   "status": "accepted-superseded",
+   "date": "2026-06-04",
+   "note": "transformer LF resonance + multiband mid-sat + reverb diffusion"
+  },
+  {
+   "decision": "D98",
+   "commit": "0e4350a",
+   "status": "accepted-baseline",
+   "date": "2026-06-05",
+   "note": "96 kHz conversion + whole-chain re-voicing; major baseline (D107 fell back here)"
+  },
+  {
+   "decision": "D99",
+   "commit": "9651572",
+   "status": "accepted-rollback-target",
+   "date": "2026-06-05",
+   "note": "behaviour-preserving DSP helper refactor; behaviour == D98. rollback target after D120 rejection"
+  },
+  {
+   "decision": "D101",
+   "commit": "6832f8c",
+   "status": "accepted-superseded",
+   "date": "2026-06-05",
+   "note": "amp/RAT input-HP pole at higher corner; later found bypass-muffled, superseded"
+  },
+  {
+   "decision": "D112",
+   "commit": "0d2f743",
+   "status": "accepted-superseded",
+   "date": "2026-06-07",
+   "note": "amp full revoicing on the D109 CDC knife-edge fix; the long-standing accepted baseline before the D113-D120 amp-retune line"
+  },
+  {
+   "decision": "D113",
+   "commit": "857e19e",
+   "status": "built-superseded",
+   "date": "2026-06-07",
+   "note": "amp model-identity constant retune; superseded by later accepted lines"
+  },
+  {
+   "decision": "D114",
+   "commit": "324ca9f",
+   "status": "built-superseded",
+   "date": "2026-06-07",
+   "note": "non-amp effect constant retune (OD/Dist/Cab/Reverb); PL smoke blocked and later superseded"
+  },
+  {
+   "decision": "D117",
+   "commit": "7e06fe0",
+   "status": "built-superseded",
+   "date": "2026-06-10",
+   "note": "RAT highpass dead-pole fix + RAT identity retune; superseded by later accepted RAT/DIST passes"
+  },
+  {
+   "decision": "D118",
+   "commit": "d5d0f9d",
+   "status": "built-superseded",
+   "date": "2026-06-11",
+   "note": "amp de-muffle constant retune; superseded by later accepted lines"
+  },
+  {
+   "decision": "D119",
+   "commit": "c16ac5c",
+   "status": "bench-rejected",
+   "date": "2026-06-11",
+   "note": "disable amp power-sag master modulation; bench-REJECTED, reverted to D118"
+  },
+  {
+   "decision": "D120",
+   "commit": "634f0dc",
+   "status": "bench-rejected-sourceonly",
+   "date": "2026-06-13",
+   "note": "remove dynamic sag + static master trim; bench-REJECTED. Source only on branch feature/amp-static-sag-d120 (no committed bit)"
+  },
+  {
+   "decision": "ROLLBACK->D99",
+   "commit": "ea6bf94",
+   "status": "accepted-superseded",
+   "date": "2026-06-13",
+   "note": "rolled the deployed baseline all the way back to D99 (== D98 96 kHz amp) after the whole D113-D120 amp-retune line was bench-rejected"
+  },
+  {
+   "decision": "D121",
+   "commit": "d07c8e9",
+   "status": "accepted-superseded",
+   "date": "2026-06-14",
+   "note": "off-target non-amp voicing on the D99 amp baseline: BD-2/OCD, Metal scoop, Cab presence"
+  },
+  {
+   "decision": "D122",
+   "commit": "2a4ae6c",
+   "status": "accepted-superseded",
+   "date": "2026-06-14",
+   "note": "amp per-model voicing: JC-120 flatter, Rockerverb low-mid, TriAmp scoop"
+  },
+  {
+   "decision": "D123",
+   "commit": "1af841f",
+   "status": "accepted-superseded",
+   "date": "2026-06-14",
+   "note": "cab per-model presence biquad; Open/British/Closed separation"
+  },
+  {
+   "decision": "D124",
+   "commit": "dbca714",
+   "status": "accepted-superseded",
+   "date": "2026-06-14",
+   "note": "RAT live-pole highpass fix; RAT now distorts"
+  },
+  {
+   "decision": "D125",
+   "commit": "4b2236e",
+   "status": "accepted-superseded",
+   "date": "2026-06-14",
+   "note": "Compressor Dyna/Ross sustain; RATIO now effective"
+  },
+  {
+   "decision": "D126+D127",
+   "commit": "d723df1",
+   "status": "accepted-superseded",
+   "date": "2026-06-15",
+   "note": "reference-alignment pass: OD-1/DS-1/RAT pedals + JCM800 bright-cap"
+  },
+  {
+   "decision": "D128",
+   "commit": "4a8fb90",
+   "status": "accepted-superseded",
+   "date": "2026-06-15",
+   "note": "amp realism: PRESENCE effective + high-gain Drive/Clean separation; aggressive first build rejected, moderate retune accepted"
+  },
+  {
+   "decision": "D129",
+   "commit": "837a482",
+   "status": "accepted-superseded",
+   "date": "2026-06-15",
+   "note": "OD/DS/RAT EQ re-collation: Metal MT-2 mid boost, Klon mid bump, OD-1/BD-2/JanRay/DS-1/Fuzz tweaks"
+  },
+  {
+   "decision": "D130",
+   "commit": "fffa2b1",
+   "status": "accepted-superseded",
+   "date": "2026-06-15",
+   "note": "amp 2nd-pass EQ re-collation: JC-120 flat, AC30 sparkle, JCM800 modest top"
+  },
+  {
+   "decision": "D131",
+   "commit": "37114b9",
+   "status": "accepted-superseded",
+   "date": "2026-06-15",
+   "note": "DIST realism: low-end + saturation/sustain fixes and offline dist_eval/targets tooling"
+  },
+  {
+   "decision": "REALISM-0617a",
+   "commit": "55ef823",
+   "status": "accepted-superseded",
+   "date": "2026-06-17",
+   "note": "all-effects sim survey + comprehensive sim problem-detectors (muffled/clean-distort) + bass(amp HP dead->live)/HF-restore(un-muffle)/Metal drive/RESONANCE dead-knob/AC30 amp re-voicing; 3-cycle target calibration"
+  },
+  {
+   "decision": "REALISM-0617b",
+   "commit": "21c0b5a",
+   "status": "accepted-superseded",
+   "date": "2026-06-17",
+   "note": "Metal full saturation (os4x clip floor 1.05M->600k + post-LPF open) + clean-amp power headroom (per-model ampPowerKnee, JC-120/Twin); superseded by D134"
+  },
+  {
+   "decision": "D134",
+   "commit": "f62f132",
+   "status": "accepted-superseded",
+   "date": "2026-06-17",
+   "note": "sim-scale all-effect objective evaluation + knob-visibility fixes for Amp PRESENCE/RESONANCE, Cab AIR, and Noise Suppressor DECAY/DAMP; superseded by D135"
+  },
+  {
+   "decision": "D135",
+   "commit": "765323b",
+   "status": "accepted-superseded",
+   "date": "2026-06-17",
+   "note": "large non-IR realism: Fuzz Face 900Hz mid-hump biquad + tighter clip knees + opened tone LPF; AC30/JCM800 stronger ampScoop + model-local presence; Amp MIDDLE more audible; AC30 clean headroom; Cab non-IR body tap. Merge commit 765323b. Long-standing accepted baseline; superseded by D148. Rollback target (git checkout 765323b -- hw/Pynq-Z2/bitstreams/)"
+  },
+  {
+   "decision": "D141",
+   "commit": "8a811e3",
+   "status": "bench-rejected",
+   "date": "2026-06-18",
+   "note": "chord-IMD fix (slew-limit the power-sag attack). Bench: chords improved but part of the rolled-back amp-clean-headroom line. Branch feature/amp-clean-headroom; rolled back to D135. NOTE the sag-attack slew itself was later re-accepted as part of D148 (via D147)"
+  },
+  {
+   "decision": "D142",
+   "commit": "041a007",
+   "status": "bench-rejected",
+   "date": "2026-06-19",
+   "note": "cleaner clean chords + clean<=drive level. Bench-REJECTED: safe-bypass CDC knife-edge = amp-on/amp-off DIGITAL BUZZ (bypass passthrough corrupted; D135 amp-off confirmed clean). Re-place (Explore = byte-identical placement) AND tighter CDC max_delay 10->6ns BOTH failed to clear the buzz. Rolled back to D135. Branch feature/amp-clean-headroom"
+  },
+  {
+   "decision": "D148",
+   "commit": "96ef899",
+   "status": "accepted-superseded",
+   "date": "2026-06-20",
+   "note": "JC-120 / Fender-Twin clean-headroom fix (playing-only \u97f3\u5272\u308c; bypass confirmed clean = not CDC). Localized with new tools/dsp_sim/clip_onset.py: JC broke up ~0.18 FS at the power/master soft knee, Twin ~0.12-0.18 FS at the ampAsymClip waveshaper. Fix (placement-safe constants/mux, no new multiply): ampPowerKnee JC 6.8M->8.2M + Twin 4.6M->6.8M + clean-mode-only ampCleanKneeBonus (Twin 2.5M); both now clean to ~0.25 FS. Surgical -- golden 20/20 NO re-bless (bypass bit-exact). Merge commit 96ef899 ALSO carries D146 hard pblock (placement-locked audio-output CDC, SLICE_X100Y116:SLICE_X113Y137) + D147 amp sag-attack slew (ampSagAttackStep=96, chord-IMD fix). Build MET WNS+0.526/WHS+0.014, route 0, D109 CDC pair MET, XDC max_delay 10ns. BENCH-ACCEPTED. Superseded by D149 (cab real-IR B1). Rollback target (git checkout 96ef899 -- hw/Pynq-Z2/bitstreams/)"
+  },
+  {
+   "decision": "D149",
+   "commit": "1468e93",
+   "status": "accepted-superseded",
+   "date": "2026-06-20",
+   "note": "Cab real-IR R4 step B1: 15-tap -> 31-tap rolloff-only folded speaker FIR (Signed-16 Q16, unity-DC sum 2^16, +8 DSP = 16 folded MACs) for a real-4x12 sharp >5 kHz rolloff. Option Y: the FIR supplies ONLY the rolloff, the existing per-model presence biquad keeps the 2-4 kHz peak (so 31 taps suffice; full 128-tap time-mux MAC = B2 deferred). Sim-first via new tools/dsp_sim/cab_ir.py + docs/ai_context/CAB_IR_R4_STEP_B_PLAN.md. Offline rolloff 5-12k open -9->-17 / brit -11->-23 / closed -11->-28 dB/oct, measure.py --check all PASS, regression = cab golden re-blessed only (bypass bit-exact, all else unchanged). Nonlinear 4-tap core + presence biquad + micro-mod untouched. Build MET WNS+0.597/WHS+0.008/WPWS+2.845, route 0, D109 CDC pair fwd +1.416 / rev +7.154, D146 hard pblock intact (112 cells SLICE_X100Y116:SLICE_X113Y137), DSP 181/220. PL smoke PASS (mode 2 ~96.1 kHz). BENCH-ACCEPTED, CURRENT ACCEPTED / COMMITTED BASELINE. Rollback to D148: git checkout 96ef899 -- hw/Pynq-Z2/bitstreams/"
+  },
+  {
+   "decision": "D150",
+   "commit": "112ae9a",
+   "status": "accepted-current",
+   "date": "2026-06-21",
+   "note": "OD/DS symmetric-clip chord-IMD fix: symmetrise gainy OD models (OD-1/BD-2/OCD/Klon) + DS-1 clip slope (new FixedPoint.symSoftClipMed; odClipHardness 4/OCD->3; odKneeN raised; DS-1->symSoftClipMed knee 2.15M) to remove even-order chord IMD; placement-safe, no os4x, bypass bit-exact (only od_ocd+distortion_ds1 goldens changed)"
+  }
+ ]
 }

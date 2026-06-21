@@ -5,11 +5,11 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
-## Current status (2026-06-21, D150 OD/DS chord-IMD fix — CANDIDATE built+deployed, PENDING BENCH)
+## Current status (2026-06-21, D150 OD/DS chord-IMD fix — BENCH-ACCEPTED, merged to main)
 
-> **D149 remains the accepted committed baseline on `main`** (cab real-IR B1,
-> bit `f536711c`). **D150 is a built+deployed CANDIDATE on branch
-> `feature/d150-od-ds-chord-imd`, pending the user's ear-bench.** The user
+> **D150 is the new accepted committed baseline on `main`** (merge `112ae9a`,
+> bit `29f5fe01` / hwh `fbb69e36`), superseding D149. User bench: "合格"; the
+> fwd-slack caveat (+1.009) did NOT manifest as a bypass buzz. The user
 > reported "OD、DS の歪かたが変。特に和音". Sim先行 found the chord mud is IN-BAND
 > intermodulation (oversampling proven useless via a numpy 1x-vs-4x test), and
 > the gainy OD models (OD-1/BD-2/OCD/Klon) + DS-1 used ASYMMETRIC clip slopes →
@@ -24,11 +24,11 @@ asking it to re-discover the project from scratch.
 > `+1.009`** (lower than D149's +1.416 — a RISK INDICATOR, ear-bench all-off
 > bypass carefully; D146 pblock intact 112 cells); DSP 183/220. bit/hwh md5
 > `29f5fe01…` / `fbb69e36…`. Deployed (4 copies md5-match), mode-2 smoke PASS
-> (`+288369/3 s`), board mode 3 mute. **NEXT: user ear-bench.** If 合格 → merge
-> `feature/d150-od-ds-chord-imd` to `main` + update `baselines.json` (D150
-> accepted-current, D149 accepted-superseded). If rejected → redeploy D149
-> (`git checkout 1468e93 -- hw/Pynq-Z2/bitstreams/`). Read `CURRENT_STATE.md` +
-> `DECISIONS.md` D150 before continuing.
+> (`+288369/3 s`), board mode 3 mute. **BENCH-ACCEPTED + merged to `main`
+> (`112ae9a`); `baselines.json` updated (D150 accepted-current, D149
+> accepted-superseded).** Rollback to D149: `git checkout 1468e93 --
+> hw/Pynq-Z2/bitstreams/` + deploy. Read `CURRENT_STATE.md` + `DECISIONS.md`
+> D150 before continuing.
 
 ## Current status (2026-06-20, D148 clean-headroom fix BENCH-ACCEPTED + merged to main)
 

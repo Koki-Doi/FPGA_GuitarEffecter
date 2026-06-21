@@ -6606,7 +6606,7 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1 (CANDIDATE, built+deployed, PENDING BENCH) (2026-06-21)
+## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1; bench-ACCEPTED, current baseline (`112ae9a`, bit `29f5fe01`) (2026-06-21)
 
 - **Symptom.** User: "OD、DS の歪かたが変。特に和音" (the Overdrive and
   Distortion drive sounds wrong, especially on chords). Sim先行で調査。
@@ -6654,11 +6654,11 @@ pre-existing 3 failures + 1 error baseline.
 - **Deploy + PL smoke.** 4 board copies md5-match `29f5fe01`; overlay loads, ADC
   HPF True; mode-2 ADC->DSP->DAC frame_count `+288369/3 s` (~96 kHz) PASS. Board
   left in mode 3 mute.
-- **Status.** CANDIDATE on branch `feature/d150-od-ds-chord-imd`; `main` stays at
-  the accepted D149. **PENDING USER EAR-BENCH** — listen to (a) all-off bypass
-  for any CDC buzz (the fwd-slack caveat above) and (b) OD/DS chords vs D149.
-  If accepted, merge to `main` + update `baselines.json`. If rejected, `main` is
-  already clean (redeploy D149: `git checkout 1468e93 -- hw/Pynq-Z2/bitstreams/`).
+- **Status.** **User bench: "合格".** `--no-ff` merged into `main` (merge
+  `112ae9a`); D150 supersedes D149. `baselines.json` updated (D150
+  accepted-current, D149 accepted-superseded). The fwd-slack caveat (+1.009)
+  did NOT manifest as a bypass buzz — accepted clean.
+- **Rollback.** `git checkout 1468e93 -- hw/Pynq-Z2/bitstreams/` + redeploy (D149).
 
 ## D149 — Cab real-IR step B1: 31-tap rolloff-only speaker FIR (Option Y); bench-ACCEPTED, current baseline (`1468e93`, bit `f536711c`) (2026-06-20)
 
