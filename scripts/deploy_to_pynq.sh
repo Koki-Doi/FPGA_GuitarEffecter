@@ -200,6 +200,56 @@ ssh_remote "
     echo \"  overlays registry: \$OVERLAYS_DIR\"
 "
 
+# --- 5.6 Bitstream integrity check (NO overlay download) -----------------
+#
+# Verify every board bit/hwh copy md5-matches the local repo, WITHOUT loading
+# the overlay. This catches partial/0-byte syncs and post-crash corruption
+# (e.g. the D153 incident: a board hang + cold power-cycle left all 15 notebooks
+# and several bit copies 0-byte = unclean-poweroff data loss). It deliberately
+# does NOT instantiate AudioLabOverlay(): a repeated `download=True` is exactly
+# what hangs the board, so the deploy never loads the PL. Load the bitstream once
+# per power-cycle from a notebook/script, not from the deploy.
+LOCAL_BIT_MD5=$(md5sum "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.bit" | awk '{print $1}')
+LOCAL_HWH_MD5=$(md5sum "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.hwh" | awk '{print $1}')
+log "verifying board bit/hwh integrity vs repo (md5; no overlay download)"
+log "  repo bit md5 $LOCAL_BIT_MD5"
+ssh_remote "python3 - <<PY
+import hashlib, os, pynq
+exp_bit = '$LOCAL_BIT_MD5'
+exp_hwh = '$LOCAL_HWH_MD5'
+ovl = os.path.join(os.path.dirname(pynq.__file__), 'overlays', 'audio_lab')
+copies = [
+    '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams',
+    os.path.dirname(__import__('audio_lab_pynq').__file__) + '/bitstreams',
+    ovl,
+    '${REMOTE_JUPYTER_ROOT:-$PYNQ_NB_DIR}/audio_lab/bitstreams',
+]
+def md5(p):
+    h = hashlib.md5()
+    with open(p, 'rb') as f:
+        for c in iter(lambda: f.read(65536), b''):
+            h.update(c)
+    return h.hexdigest()
+bad = 0
+seen = set()
+for d in copies:
+    if d in seen:
+        continue
+    seen.add(d)
+    b = os.path.join(d, 'audio_lab.bit')
+    w = os.path.join(d, 'audio_lab.hwh')
+    if not os.path.exists(b):
+        print('  MISSING', b); bad += 1; continue
+    mb = md5(b); mw = md5(w) if os.path.exists(w) else 'NO-HWH'
+    ok = (mb == exp_bit) and (mw == exp_hwh)
+    print('  %-7s %s bit=%s hwh=%s' % ('OK' if ok else 'BAD', d, mb[:8], mw[:8]))
+    if not ok:
+        bad += 1
+if bad:
+    raise SystemExit('bitstream integrity check FAILED on %d copy/copies' % bad)
+print('  all board bit/hwh copies md5-match the repo')
+PY"
+
 # --- 6. Import sanity check ----------------------------------------------
 
 log "verifying imports on PYNQ"
@@ -314,13 +364,18 @@ Deploy complete.
   HDMI 800x480 test  ssh ${SSH_TARGET} \\
                      'cd ${PYNQ_REPO_DIR} && sudo env PYTHONPATH=${PYNQ_REPO_DIR} python3 scripts/test_hdmi_800x480_frame.py'
 
-Quick smoke test (run on the board):
-  ssh ${SSH_TARGET} 'sudo python3 -c "
-from audio_lab_pynq.AudioLabOverlay import AudioLabOverlay
-ovl = AudioLabOverlay()
-ovl.dump_codec_registers()
-print(\"ADC HPF:\", ovl.codec.get_adc_hpf_state())
-print(\"input vol:\", ovl.codec.get_input_digital_volume())
-"'
+Smoke test (run on the board):
+  NO-DOWNLOAD check (safe to repeat -- which bit is currently loaded?):
+  ssh ${SSH_TARGET} 'python3 -c "import pynq; print(pynq.PL.bitfile_name)"'
+  (the deploy already md5-verified every board bit/hwh copy vs the repo.)
+
+  FULL audio smoke = ONE overlay download (do at most ONCE per power-cycle):
+  ssh ${SSH_TARGET} 'cd ${PYNQ_REPO_DIR} && sudo python3 scripts/test_pmod_i2s2.py --mode dsp --confirm-dsp --duration 3'
+
+  WARNING: repeated AudioLabOverlay(download=True) / Overlay(download=True) hangs
+  the board (LCD black / kernel dies); recovery is a COLD power-cycle, and an
+  unclean power-off can zero board files (notebooks/bitstreams) -- then just
+  re-run this deploy (it does NOT download) to restore them. Prefer the
+  no-download check above; reserve the full smoke for one run per power-cycle.
 ----------------------------------------------------------------------
 EOF
