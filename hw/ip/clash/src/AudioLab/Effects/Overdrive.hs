@@ -83,20 +83,22 @@ odKneeP m = case m of
 odKneeN :: Unsigned 3 -> Sample
 odKneeN m = case m of
   0 -> 2_850_000   -- TS9: near-symmetric
-  1 -> 1_750_000   -- OD-1: stronger asym
-  2 -> 1_900_000   -- BD-2: D62, strong asym (was 2_700_000). The BD-2 op-amps
-                   -- run from a single supply with the rail offset documented
-                   -- in source [1]; the resulting saturation is asymmetric.
-                   -- P/N gap is now 500k (vs OCD's 400k, OD-1's 500k) so
-                   -- BD-2 carries the most pronounced even-harmonic colour
-                   -- in the six-model lineup, matching the "tube-like"
-                   -- breakup the real pedal is known for.
+  1 -> 2_400_000   -- OD-1: D150 chord-IMD fix. Was 1_750_000 (800k P/N gap = very
+                   -- asymmetric); the resulting even-order difference tones made
+                   -- chords sound detuned. Raised toward kneeP (now 150k gap) and
+                   -- the slope is symmetrised (odClipHardness 4 = symSoftClipMed),
+                   -- so only a touch of even-harmonic warmth remains.
+  2 -> 2_300_000   -- BD-2: D150 chord-IMD fix. Was 1_900_000 (strong asym). Now
+                   -- 100k gap + symmetric slope (odClipHardness 4) -- still the
+                   -- brightest upper-mid bite via its mid biquad, but no longer
+                   -- the farty even-order chord mud.
   3 -> 3_450_000   -- Jan Ray: barely asymmetric
-  4 -> 2_150_000   -- OCD: firm but more open than BD-2
-  5 -> 2_050_000   -- CENTAUR/Klon: germanium asym (refined, was 2_900_000). The
-                   -- 350k P/N gap (2_400k vs 2_050k) gives the wet path a stronger
-                   -- even-harmonic germanium colour; the clean blend keeps it
-                   -- transparent overall.
+  4 -> 2_350_000   -- OCD: D150 chord-IMD fix. Was 2_150_000. Now 100k gap +
+                   -- symmetric hard slope (odClipHardness 3 = asymSoftClipHard
+                   -- pos>>1 neg>>1) for the MOSFET edge without the even-order IMD.
+  5 -> 2_300_000   -- CENTAUR/Klon: D150 chord-IMD fix. Was 2_050_000 (350k gap).
+                   -- Now 100k gap + symmetric slope (odClipHardness 4); the
+                   -- germanium grit + parallel clean blend keep its identity.
   _ -> 2_850_000
 
 -- | Per-model output safety knee. Caps the level stage so a hot LEVEL
@@ -133,22 +135,27 @@ overdriveDriveBoostFrame f =
  where
   on = flag1 (fGate f)
 
--- | Per-model clip hardness class (D79 realism item 4). Selects the
--- compression slope of the asymmetric soft clip per model so the six models
--- differ in knee *hardness* (harmonic order), not just at what level they
--- engage. Real op-amp clip (TS9) is soft; MOSFET (OCD) is harder; the
--- germanium/clean-blend Klon stays smooth (its grit comes from the clean
--- blend, item 5a). 0=softest .. 3=hardest; see FixedPoint asymSoftClip*.
-odClipHardness :: Unsigned 3 -> Unsigned 2
+-- | Per-model clip hardness class (D79 realism item 4; D150 chord-IMD fix).
+-- Selects the compression-slope shape of the soft clip per model so the six
+-- models differ in knee *hardness* (harmonic order), not just at what level
+-- they engage. Real op-amp clip (TS9) is soft; MOSFET (OCD) is harder.
+-- D150: the gainy models (OD-1/BD-2/OCD/Klon) used ASYMMETRIC slopes (neg half
+-- steeper than pos), which produce strong even-order sum/difference IMD on
+-- chords = the "和音で歪かたが変" detune the user heard. They now use SYMMETRIC
+-- slopes (4 = symSoftClipMed pos>>2 neg>>2, 3 = asymSoftClipHard pos>>1 neg>>1
+-- which is symmetric), so chord IMD is odd-order only; a small kneeP/kneeN gap
+-- keeps a touch of tube warmth. TS9 / Jan Ray stay soft+near-symmetric.
+--   0 -> asymSoftClipSoft (pos>>3 neg>>4)  1 -> asymSoftClip (pos>>2 neg>>3)
+--   2 -> asymSoftClipMed (pos>>1 neg>>2)   3 -> asymSoftClipHard (pos>>1 neg>>1, symmetric)
+--   4 -> symSoftClipMed  (pos>>2 neg>>2, symmetric)
+odClipHardness :: Unsigned 3 -> Unsigned 3
 odClipHardness m = case m of
-  0 -> 0   -- TS9      : op-amp soft clip
-  1 -> 1   -- OD-1     : medium (legacy 2/3 shape)
-  2 -> 1   -- BD-2     : medium, keep even-harmonic asym
+  0 -> 0   -- TS9      : op-amp soft clip (near-symmetric, already clean)
+  1 -> 4   -- OD-1     : symmetric medium (was 1 = pos>>2 neg>>3 asym)
+  2 -> 4   -- BD-2     : symmetric medium (was 1); bite kept by its mid biquad
   3 -> 0   -- Jan Ray  : transparent / softest
-  4 -> 2   -- OCD      : harder MOSFET-style knee
-  5 -> 1   -- CENTAUR/Klon : germanium wet path now firmer (was 0). Medium knee
-           -- (pos>>2 neg>>3) on the wet path; the clean blend supplies the
-           -- transparency, the wet path supplies the germanium grit (refined).
+  4 -> 3   -- OCD      : symmetric hard MOSFET knee (was 2 = pos>>1 neg>>2 asym)
+  5 -> 4   -- CENTAUR/Klon : symmetric medium (was 1); grit via clean blend
   _ -> 0
 
 -- | Klon / CENTAUR clean-blend weight (realism item 5a). The real Klon mixes
@@ -275,7 +282,8 @@ overdriveDriveClipFrame f =
     0 -> asymSoftClipSoft kneeP kneeN x
     1 -> asymSoftClip     kneeP kneeN x
     2 -> asymSoftClipMed  kneeP kneeN x
-    _ -> asymSoftClipHard kneeP kneeN x
+    3 -> asymSoftClipHard kneeP kneeN x
+    _ -> symSoftClipMed   kneeP kneeN x   -- D150: symmetric medium (OD-1/BD-2/Klon)
 
 overdriveToneMultiplyFrame :: Sample -> Frame -> Frame
 overdriveToneMultiplyFrame prev f =

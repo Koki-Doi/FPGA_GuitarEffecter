@@ -185,6 +185,22 @@ asymSoftClipHard kneeP kneeN x
  where
   negKneeN = negate kneeN
 
+-- | Symmetric soft clip (1/4 slope BOTH halves) with independent pos/neg
+-- knees -- the symmetric-slope sibling of 'asymSoftClip' (which uses pos>>2
+-- neg>>3). Symmetric clipping produces only ODD-order intermodulation, which
+-- lands near the chord's own harmonic series; the asymmetric siblings add
+-- strong EVEN-order sum/difference tones (e.g. f2-f1 sub-bass beating) that
+-- make a distorted CHORD sound detuned / "farty". Keeping a small kneeP/kneeN
+-- gap still leaves a touch of even-harmonic warmth on single notes. (D150 OD/DS
+-- chord-IMD fix.)
+symSoftClipMed :: Sample -> Sample -> Sample -> Sample
+symSoftClipMed kneeP kneeN x
+  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 2) :: Signed 25)
+  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 2) :: Signed 25)
+  | otherwise = x
+ where
+  negKneeN = negate kneeN
+
 -- | Hard clip with independent positive/negative thresholds. Used by
 -- bias-shifted fuzz models where the waveform centre is offset.
 asymHardClip :: Sample -> Sample -> Sample -> Sample

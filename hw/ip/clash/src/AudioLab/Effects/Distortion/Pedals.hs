@@ -270,15 +270,20 @@ ds1MulFrame f =
 
 ds1ClipFrame :: Frame -> Frame
 ds1ClipFrame f =
-  setMonoSample (if on then asymSoftClip kneeP kneeN boosted else monoSample f) f
+  setMonoSample (if on then symSoftClipMed kneeP kneeN boosted else monoSample f) f
  where
   on = ds1On f
   boosted = satShift8 (fAccL f)
   -- Lower knees than TS for a harder edge but still soft (DS-1 has
-  -- diode-pair hard clip; we approximate with asym soft to keep
+  -- diode-pair hard clip; we approximate with soft clip to keep
   -- timing comparable to the existing pedals).
-  kneeP = 1_900_000 :: Sample
-  kneeN = 1_900_000 :: Sample
+  -- D150 chord-IMD fix: the old asymSoftClip (pos>>2 neg>>3) added even-order
+  -- sum/difference tones that made DS-1 chords sound detuned. The diode pair in
+  -- a real DS-1 is SYMMETRIC, so use symSoftClipMed (pos>>2 neg>>2) -- odd-order
+  -- IMD only -- and raise the knee slightly so a hard-strummed chord clips a bit
+  -- later (less mud) while single-note grit/aggression is preserved.
+  kneeP = 2_150_000 :: Sample   -- was 1_900_000
+  kneeN = 2_150_000 :: Sample   -- was 1_900_000
 
 ds1ToneFrame :: Sample -> Frame -> Frame
 ds1ToneFrame prevLp f =

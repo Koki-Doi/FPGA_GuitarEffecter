@@ -6606,6 +6606,60 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1 (CANDIDATE, built+deployed, PENDING BENCH) (2026-06-21)
+
+- **Symptom.** User: "OD、DS の歪かたが変。特に和音" (the Overdrive and
+  Distortion drive sounds wrong, especially on chords). Sim先行で調査。
+- **Root cause (sim, NOT aliasing).** Built an OD/DS chord-IMD probe on top of
+  `chord_eval.analyse` + `measure.build_config` (power/major chords through
+  `od_0..5` and `ds1`). Two findings: (1) **oversampling does nothing** — a pure-numpy
+  1x-vs-4x test (`/tmp/alias_test*.py`) showed the inharmonic energy on these
+  LOW chords is dominated by IN-BAND intermodulation (f_i±f_j), not by aliased
+  high harmonics, so the os4x machinery that fixed Metal/BigMuff/RAT fizz would
+  NOT help here. (2) The real Clash sim showed the gainy OD models (OD-1/BD-2/
+  OCD/Klon) used **asymmetric clip slopes** (neg half steeper than pos:
+  `asymSoftClip` pos>>2 neg>>3, `asymSoftClipMed` pos>>1 neg>>2) plus a wide
+  kneeP/kneeN gap, giving very strong EVEN-order IMD (single-note h2 ~ -21..-25
+  dB). Even-order distortion makes sum/difference tones (f2-f1 sub-bass beating)
+  that land OFF the chord's harmonic series = the "detuned/farty chord" the user
+  heard. DS-1 was knee-symmetric but slope-asymmetric (same problem).
+- **Fix (placement-safe constants + ONE new clip helper, no new pipeline/DSP
+  structure, no os4x).** Symmetrise the clip SLOPE on the offending models so
+  chord IMD becomes odd-order only (lands near the chord's own harmonics =
+  consonant), keeping a small kneeP/kneeN gap for a touch of warmth:
+  - `FixedPoint.symSoftClipMed kneeP kneeN x` = soft clip with pos>>2 neg>>2
+    (the symmetric-slope sibling of `asymSoftClip`).
+  - `Overdrive.odClipHardness` widened `Unsigned 2`->`Unsigned 3`, new class
+    `4 -> symSoftClipMed`; OD-1/BD-2/Klon `1 -> 4`, OCD `2 -> 3`
+    (`asymSoftClipHard` pos>>1 neg>>1, already symmetric). `odKneeN` raised
+    toward kneeP: OD-1 1.75M->2.4M, BD-2 1.9M->2.3M, OCD 2.15M->2.35M, Klon
+    2.05M->2.3M. TS9 (0) / JanRay (3) untouched (already soft/near-symmetric).
+  - `Pedals.ds1ClipFrame`: `asymSoftClip` -> `symSoftClipMed`, knee 1.9M->2.15M.
+- **Acceptance (sim).** Chord IMD improved at every level (major @0.20 FS:
+  OD-1 -4.5->-7.3, BD-2 -4.4->-6.5, OCD -6.9->-11.1, Klon -20.7->-22.1, DS-1
+  -6.5->-8.3 dB) AND, more important, the residual shifted from dissonant
+  even-order to consonant odd-order. `measure.py --check` 28/28 (tone curves
+  unchanged — only the clip nonlinearity moved), `dist_eval.py --check` 7/7 +
+  6/6 (DS-1 still THD 50% / crest 5.0 = aggression preserved). dsp_sim
+  regression: ONLY `od_ocd` + `distortion_ds1` goldens changed (re-blessed);
+  bypass bit-exact; amps + every other dist byte-identical. (od_bd2 golden
+  unchanged because the 0.04-FS test level is below BD-2's clip knee; the change
+  is real at playing levels.)
+- **Build.** Clash regen (git M verified, mtime trap avoided) -> IP repackage ->
+  Vivado. Routed: WNS `+0.522` / WHS `+0.012`, route 0 failed nets; D109 CDC
+  pair clk_fpga_0->clk fwd `+1.009` / rev `+5.988` (MET, but **fwd is lower than
+  D149's +1.416** — a risk indicator, not a strict predictor; the D146 pblock is
+  the real defense); D146 pblock intact (112 cells); DSP `183/220`. bit md5
+  `29f5fe014d065dc904cb0fda78cadbb0`, hwh `fbb69e36d9ca6da21cb50490d1852d22`.
+- **Deploy + PL smoke.** 4 board copies md5-match `29f5fe01`; overlay loads, ADC
+  HPF True; mode-2 ADC->DSP->DAC frame_count `+288369/3 s` (~96 kHz) PASS. Board
+  left in mode 3 mute.
+- **Status.** CANDIDATE on branch `feature/d150-od-ds-chord-imd`; `main` stays at
+  the accepted D149. **PENDING USER EAR-BENCH** — listen to (a) all-off bypass
+  for any CDC buzz (the fwd-slack caveat above) and (b) OD/DS chords vs D149.
+  If accepted, merge to `main` + update `baselines.json`. If rejected, `main` is
+  already clean (redeploy D149: `git checkout 1468e93 -- hw/Pynq-Z2/bitstreams/`).
+
 ## D149 — Cab real-IR step B1: 31-tap rolloff-only speaker FIR (Option Y); bench-ACCEPTED, current baseline (`1468e93`, bit `f536711c`) (2026-06-20)
 
 - **Decision.** Take on R4 (the biggest remaining cab realism lever) sim-first.
