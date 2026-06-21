@@ -435,12 +435,20 @@ fxPipeline gateControl odControl distControl eqControl ratControl ampControl amp
     register Nothing $
       mapPipe <$> (ampXfmrResFrame <$> ampXfmrResX1 <*> ampXfmrResX2 <*> ampXfmrResY1 <*> ampXfmrResY2) <*> ampXfmrHfPipe
 
-  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampXfmrResPipe) <*> ampXfmrResPipe)
-  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampXfmrResPipe)
-  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampXfmrResPipe)
+  -- D151 post-amp HF presence shelf: a shift-only one-pole HF boost on the amp
+  -- output, AFTER all clip/sag/master/transformer stages and BEFORE the cab, so
+  -- it adds the 2-5 kHz top the pre-clip TREBLE/PRESENCE bands could not (in a
+  -- rig they barely moved 2-4 kHz even cranked). State in the reuse-safe fEqLowL.
+  -- Feeds the cab in place of ampXfmrResPipe.
+  ampHfShelfPrev = register 0 (frameOr monoEqLow <$> ampHfShelfPrev <*> ampHfShelfPipe)
+  ampHfShelfPipe = register Nothing (mapPipe <$> (ampHfShelfFrame <$> ampHfShelfPrev) <*> ampXfmrResPipe)
+
+  cabD1 = register 0 (delayNext <$> cabD1 <*> (frameOr monoSample 0 <$> ampHfShelfPipe) <*> ampHfShelfPipe)
+  cabD2 = register 0 (delayNext <$> cabD2 <*> cabD1 <*> ampHfShelfPipe)
+  cabD3 = register 0 (delayNext <$> cabD3 <*> cabD2 <*> ampHfShelfPipe)
   cabProductsPipe =
     register Nothing $
-      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampXfmrResPipe
+      mapPipe <$> (cabProductsFrame <$> cabD1 <*> cabD2 <*> cabD3) <*> ampHfShelfPipe
   cabSatPipe = register Nothing (mapPipe cabSatFrame <$> cabProductsPipe)
   cabIrPipe = register Nothing (mapPipe cabIrFrame <$> cabSatPipe)
   cabMixPipe = register Nothing (mapPipe cabLevelMixFrame <$> cabIrPipe)

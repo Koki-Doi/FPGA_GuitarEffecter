@@ -294,21 +294,30 @@ cabSpeakerFirHistNext hist (Just f) = monoSample f +>> hist
 -- to give the three cabs distinct presence identities. The step-4 measurement
 -- (REALISM_CAB_MEASUREMENT.md) showed all three peaked at the SAME 2806 Hz
 -- (shared coeffs) -- no model separation. RBJ peaking, 96 kHz, Q14:
---   open 1x12   3400 Hz, Q 0.8, +3.0 dB  (brighter / airier, higher center)
---   british 2x12 2800 Hz, Q 1.0, +3.5 dB (mid-forward identity, UNCHANGED)
---   closed 4x12 2300 Hz, Q 1.2, +4.0 dB  (lower / thicker presence honk)
+--   open 1x12   3400 Hz, Q 0.8, +6.0 dB  (brighter / airier, higher center)
+--   british 2x12 2800 Hz, Q 1.0, +6.5 dB (mid-forward identity)
+--   closed 4x12 2300 Hz, Q 1.2, +7.0 dB  (lower / thicker presence honk)
 -- b1 == a1 for RBJ peaking, so na1 = -b1; only b0/b1/b2 + a2 differ per model.
+-- D151 (user: "amp の高音成分が足りない", rig use): the presence peak gains were
+-- raised +3.0/+3.5/+4.0 -> +6.0/+6.5/+7.0 dB. The amp-side TREBLE/PRESENCE bands
+-- (and a new amp HF shelf) move a RIG's 2-4 kHz <1 dB because the cab dominates
+-- the rig's surviving top; THIS biquad is the post-FIR last cab shaping, so its
+-- 2-4 kHz peak passes straight to the rig output = the effective rig-brightness
+-- lever. f0/Q unchanged; the D149 >5 kHz rolloff FIR is untouched. Coeffs from
+-- the RBJ peaking formula (verified to reproduce the old gains exactly).
 cabPresenceFFCoeff :: Unsigned 8 -> (Signed 16, Signed 16, Signed 16)
 cabPresenceFFCoeff model = case model `shiftR` 6 of
-  0 -> (17087, -28637, 12274)
-  1 -> (16948, -29986, 13549)
-  _ -> (16837, -30865, 14381)
+  0 -> (17835, -29117, 12018)
+  1 -> (17460, -30319, 13375)
+  _ -> (17198, -31099, 14257)
 
 cabPresenceFBCoeff :: Unsigned 8 -> (Signed 16, Signed 16)
 cabPresenceFBCoeff model = case model `shiftR` 6 of
-  0 -> (28637, 12976)
-  1 -> (29986, 14112)
-  _ -> (30865, 14834)
+  0 -> (29117, 13469)
+  1 -> (30319, 14451)
+  _ -> (31099, 15070)
+-- NB: raising these gains (D151) is what actually brightens the RIG; the amp-side
+-- HF shelf / TREBLE / PRESENCE move a rig's 2-4 kHz <1 dB (the cab dominates).
 
 cabPresenceFeedforwardFrame :: Sample -> Sample -> Frame -> Frame
 cabPresenceFeedforwardFrame x1 x2 f =

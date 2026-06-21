@@ -5,6 +5,29 @@ after a rate-limit, context reset, or session restart. Each one is
 self-contained and points the agent at the right docs instead of
 asking it to re-discover the project from scratch.
 
+## Current status (2026-06-21, D151 amp HF brighten — CANDIDATE built+deployed, PENDING BENCH)
+
+> **D150 remains the accepted committed baseline on `main`** (OD/DS symmetric
+> clip, bit `29f5fe01`). **D151 is a built+deployed CANDIDATE on branch
+> `feature/d151-amp-hf-brighten`, pending the user's ear-bench.** User: "amp の
+> 高音成分が足りない" (rig use). Sim showed amp-side levers barely move a RIG
+> (TREBLE/PRESENCE knobs + a post-amp HF shelf each moved rig 2-4 kHz <1 dB; the
+> cab dominates). Fix (placement-safe, no new DSP): (1) a new shift-only post-amp
+> HF shelf `ampHfShelfFrame` (corner ~1.9 kHz, +3.5 dB), wired before the cab,
+> amp-on, skips JC-120; (2) the per-model cab presence-peak biquad raised
+> +3.0/+3.5/+4.0 -> +6.0/+6.5/+7.0 dB (D149 >5 kHz rolloff FIR untouched) = the
+> real rig lever. Rig 2-4 kHz +2-3 dB. `measure --check` 28/28 (2 intentional
+> re-targets), `dist_eval --check` 7/7+6/6, regression = only the 5 tube-amp
+> goldens + cab changed (re-blessed), bypass bit-exact. Build MET WNS `+0.451`;
+> D109 CDC pair fwd `+1.697` (safer than D150/D149); D146 pblock 112; DSP
+> 181/220. bit/hwh `9f9e71a2…` / `70c4e3f8…`. Deployed (3 copies md5-match),
+> mode-2 smoke PASS (`+288333/3 s`), board mute. **NEXT: user ear-bench**
+> (brighter rig amps + all-off bypass clean). If 合格 -> merge
+> `feature/d151-amp-hf-brighten` to `main` + update `baselines.json` (D151
+> accepted-current, D150 accepted-superseded). If rejected -> redeploy D150
+> (`git checkout 112ae9a -- hw/Pynq-Z2/bitstreams/`). Read `CURRENT_STATE.md` +
+> `DECISIONS.md` D151 before continuing.
+
 ## Current status (2026-06-21, D150 OD/DS chord-IMD fix — BENCH-ACCEPTED, merged to main)
 
 > **D150 is the new accepted committed baseline on `main`** (merge `112ae9a`,

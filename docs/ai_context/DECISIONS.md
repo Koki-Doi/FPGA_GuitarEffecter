@@ -6606,6 +6606,54 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
+## D151 — amp HF brighten: post-amp HF shelf + raised cab presence peak (CANDIDATE, built+deployed, PENDING BENCH) (2026-06-21)
+
+- **Symptom.** User: "amp の高音成分が足りない" (rig use, cab ON).
+- **Sim findings.** measure --check already PASSed all amp/rig/cab HF targets (the
+  rig matches a real amp+cab dark rolloff by design), so this is a taste boost
+  beyond target. Critically, **amp-side levers barely move a RIG**: the pre-clip
+  TREBLE and PRESENCE knobs swept 50->100 moved the rig 2-4 kHz only ~0.3-0.8 dB,
+  and a +3.5 dB / +6 dB post-amp HF shelf moved it only ~+1 dB -- because the cab
+  dominates the rig's surviving 2-5 kHz (amp-alone the same shelf brightens
+  +4 dB). So the cab is the effective rig-brightness lever (confirmed with the
+  user, who approved touching the cab presence peak but NOT the D149 rolloff).
+- **Fix (two levers; placement-safe -- shift-only stage + coeff-only biquad, no
+  new DSP).**
+  1. `Amp/Tone.hs ampHfShelfFrame` -- a new shift-only one-pole HF shelf on the
+     amp output, wired in `Pipeline.hs` AFTER all clip/sag/master/transformer
+     stages and BEFORE the cab (so the boost is not clip-masked). corner ~1.9 kHz
+     (shift 3), boost `h>>1` (~+3.5 dB asymptotic). Gated amp-on; **skips JC-120**
+     (idx 0, the flat clean SS reference -- it would get a honky 2.4 kHz bump).
+     State stashed in the reuse-safe fEqLowL. Mostly audible amp-alone.
+  2. `Cab.hs cabPresence{FF,FB}Coeff` -- the per-model cone-breakup presence-peak
+     biquad gains raised +3.0/+3.5/+4.0 -> +6.0/+6.5/+7.0 dB (open/british/closed).
+     f0/Q unchanged; the D149 >5 kHz rolloff FIR is UNTOUCHED. This is the
+     post-FIR last cab shaping, so its 2-4 kHz peak passes straight to the rig
+     output = the main rig-brightness lever. Coeffs from the RBJ peaking formula
+     (verified to reproduce the old gains exactly).
+- **Result (sim).** Rig 2-4 kHz vs D150: JC120 -5.2->-3.4, Twin -3.8->-1.5,
+  AC30 -6.2->-3.2, Rockerv -6.3->-3.1 dB (~+2-3 dB, clearly audible). `measure
+  --check` 28/28 after two intentional re-targets (RIG JCM800 low_vs_mid bound
+  -11.0 -> -12.5; AMP Rockerv amp-alone @300 peak -> "any", both because the
+  brighter 2-4 kHz raises the relative mid reference -- absolute bass intact, RIG
+  Rockerv low_vs_mid still guards thickness). `dist_eval --check` 7/7 + 6/6 (the
+  HF shelf is linear = adds no THD, amps stay clean). dsp_sim regression: only
+  amp_twin/ac30/rockerverb/jcm800/triamp (shelf) + cab (presence) goldens changed
+  (re-blessed); **bypass bit-exact**; amp_jc120 (shelf-exempt) + all OD/DIST
+  byte-identical.
+- **Build.** WNS `+0.451` / WHS `+0.014`, route 0 failed; D109 CDC pair fwd
+  `+1.697` / rev `+6.641` (MET, and a SAFER margin than D150 +1.009 / D149
+  +1.416); D146 pblock intact (112 cells); DSP `181/220` (shelf is shift-only,
+  presence is coeff-only = no new DSP). bit md5
+  `9f9e71a2b47012dedea7c93b75f844fc`, hwh `70c4e3f85c3888656a55017e5d620532`.
+- **Deploy + PL smoke.** 3 board copies md5-match `9f9e71a2`; mode-2 ADC->DSP->DAC
+  `FRAME_COUNT +288333/3 s` (~96 kHz) PASS. Board left in mode 3 mute.
+- **Status.** CANDIDATE on branch `feature/d151-amp-hf-brighten`; `main` stays at
+  the accepted D150. **PENDING USER EAR-BENCH** -- listen for (a) brighter amps in
+  the rig and (b) all-off bypass still clean. If accepted, merge to `main` +
+  update `baselines.json`. If rejected, redeploy D150:
+  `git checkout 112ae9a -- hw/Pynq-Z2/bitstreams/`.
+
 ## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1; bench-ACCEPTED, current baseline (`112ae9a`, bit `29f5fe01`) (2026-06-21)
 
 - **Symptom.** User: "OD、DS の歪かたが変。特に和音" (the Overdrive and

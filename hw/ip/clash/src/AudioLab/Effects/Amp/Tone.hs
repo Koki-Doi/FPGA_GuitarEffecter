@@ -350,6 +350,42 @@ ampTransformerHfFrame prevLp f =
   h = satWide (resize x - resize lp :: Wide)            -- HF band
   out = satWide (resize x - (resize h `shiftR` ampTransformerHfDroop) :: Wide)
 
+-- D151: post-amp HF presence shelf ("amp の高音成分が足りない", rig use). The
+-- pre-clip tone-stack TREBLE and PRESENCE bands could not deliver the top the
+-- user wanted: in a rig they moved the 2-4 kHz band only ~0.3-0.8 dB even cranked
+-- 50->100 (the bands are structurally weak there, and the power/master clip
+-- masks them). This is a dedicated shift-only one-pole HF shelf on the amp output
+-- BEFORE the cab and AFTER all the clip/sag/master/transformer stages, so the
+-- boost is not masked; the cab still rolls off >5 kHz so only ~2-5 kHz survives.
+-- Applies to ALL amp models (incl JC-120 -- the user wants every amp brighter),
+-- gated amp-on only so bypass stays bit-exact. Its one-pole state is stashed in
+-- the reuse-safe fEqLowL (overwritten by the cab's first stage), exactly like
+-- ampTransformerHfFrame. ampHfShelfShift / ampHfShelfBoost are bench-tunable.
+ampHfShelfShift :: Int
+ampHfShelfShift = 3            -- HF band corner ~1.9 kHz (96k/(2*pi*2^3)); the
+                              -- boost RISES from the corner (the rig's surviving
+                              -- presence/air sits 2-5 kHz, above the corner)
+
+ampHfShelfBoost :: Int
+ampHfShelfBoost = 1            -- out = x + h>>1 = ~+3.5 dB asymptotic HF shelf. A
+                              -- gentle amp-side top lift (mostly audible amp-alone;
+                              -- in a RIG the cab dominates the 2-5 kHz, so the
+                              -- D151 cab presence-peak raise is the main rig lever)
+
+ampHfShelfFrame :: Sample -> Frame -> Frame
+ampHfShelfFrame prevLp f =
+  setMonoSample (if on then out else monoSample f) (setMonoEqLow lp f)
+ where
+  -- Skip JC-120 (idx 0): it is the flat/full-range clean SS reference and
+  -- already the brightest amp; the shelf would give it a honky 2.4 kHz bump.
+  -- Its rig brightness still comes from the D151 cab presence raise. Same
+  -- JC-120 exemption policy as the transformer / multiband stages.
+  on = flag6 (fGate f) && ampModelIdxF f /= 0
+  x = monoSample f
+  lp = onePoleShift ampHfShelfShift prevLp x
+  h = satWide (resize x - resize lp :: Wide)            -- HF band (>~2 kHz)
+  out = satWide (resize x + (resize h `shiftR` ampHfShelfBoost) :: Wide)
+
 -- Transformer low-end resonance bump (D97, #9 final sub-item). A real output
 -- transformer's primary inductance + reflected load make a gentle low-frequency
 -- resonance (a slight bass bump ~110 Hz) on top of the LF saturation. A fixed
