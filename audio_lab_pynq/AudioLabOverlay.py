@@ -9,6 +9,7 @@ from . import knob_tapers as _kt
 from .overlay import register_writers as _writers
 from .overlay import model_lookup as _model_lookup
 from .overlay import effect_settings as _settings
+from .overlay import chain_preset_apply as _chain_preset_apply
 from .effect_defaults import (
     DISTORTION_DEFAULTS as _DISTORTION_DEFAULTS,
     DISTORTION_PEDALS as _DISTORTION_PEDALS,
@@ -946,53 +947,12 @@ class AudioLabOverlay(Overlay):
                 mix=dist.get("mix"),
             )
 
-        # The remaining sections ride on set_guitar_effects. We pass
-        # noise_gate_on / noise_gate_threshold so the gate flag bit
-        # tracks the suppressor's enabled state and the legacy
-        # gate_control.ctrlB stays in sync.
-        rat_preset_on = bool(dist.get("enabled", False)) \
-            and dist.get("pedal") == "rat"
-        kwargs = dict(
-            noise_gate_on=bool(ns.get("enabled", False)),
-            noise_gate_threshold=ns.get("threshold", 35),
-            overdrive_on=bool(od.get("enabled", False)),
-            overdrive_drive=od.get("drive", 0),
-            overdrive_tone=od.get("tone", 50),
-            overdrive_level=od.get("level", 100),
-            overdrive_model=_pinned.get("overdrive", od.get("model", 0)),
-            distortion_on=bool(dist.get("enabled", False)),
-            rat_on=rat_preset_on,
-            amp_on=bool(amp.get("enabled", False)),
-            amp_input_gain=amp.get("input_gain", 35),
-            amp_bass=amp.get("bass", 50),
-            amp_middle=amp.get("middle", 50),
-            amp_treble=amp.get("treble", 50),
-            amp_presence=amp.get("presence", 45),
-            amp_resonance=amp.get("resonance", 35),
-            amp_master=amp.get("master", 80),
-            amp_character=amp.get("character", 35),
-            amp_model_idx=_pinned.get("amp"),
-            cab_on=bool(cab.get("enabled", False)),
-            cab_mix=cab.get("mix", 100),
-            cab_level=cab.get("level", 100),
-            cab_model=cab.get("model", 1),
-            cab_air=cab.get("air", 50),
-            eq_on=bool(eq.get("enabled", False)),
-            eq_low=eq.get("low", 100),
-            eq_mid=eq.get("mid", 100),
-            eq_high=eq.get("high", 100),
-            reverb_on=bool(rev.get("enabled", False)),
-            reverb_decay=rev.get("decay", 0),
-            reverb_tone=rev.get("tone", 65),
-            reverb_mix=rev.get("mix", 0),
-        )
-        if rat_preset_on:
-            kwargs.update(
-                rat_drive=dist.get("drive", 20),
-                rat_filter=_cm.rat_filter_from_tone(dist.get("tone", 50)),
-                rat_level=dist.get("level", 35),
-                rat_mix=dist.get("mix", 100),
-            )
+        # The remaining sections ride on set_guitar_effects. The pure kwargs dict
+        # (noise_gate_on / overdrive / distortion-rat / amp / cab / eq / reverb,
+        # with the model pins applied) is built by the extracted helper (P1 tail);
+        # noise_gate_on / noise_gate_threshold keep the gate flag bit + legacy
+        # gate_control.ctrlB in sync with the suppressor's enabled state.
+        kwargs = _chain_preset_apply.build_guitar_effects_kwargs(spec, _pinned)
         self.set_guitar_effects(**kwargs)
         return self.get_current_pedalboard_state()
 
