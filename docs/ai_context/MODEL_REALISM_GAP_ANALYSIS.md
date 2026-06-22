@@ -10,9 +10,10 @@ hardware does, (2) what the current Clash DSP does, (3) the gap, (4) how to
 get closer. Exact current constants live in the source files cited per
 section; this doc is the analysis layer on top of them.
 
-Current boundary (2026-06-20): accepted deployed baseline is D148
-(`96ef899`, bit `972d9ba6...`) = JC/Twin clean-headroom fix + D146 hard CDC
-pblock + D147 sag slew, superseding D135 (`533d5869...`). D144's
+Current boundary (2026-06-22): accepted deployed baseline is D155
+(`09c8a95`, bit `8d875cc8...`) = cab speaker FIR 31->47 taps capping the
+D150-D155 voicing arc on top of D148 (JC/Twin clean-headroom + D146/D147),
+superseding D153 (`b86c88a`). D144's
 simulation-proven chord-detune candidate was bench-rejected and rolled back to
 D135 because the rebuilt placement did not pass the hardware acceptance gate;
 the D146 hard pblock is what finally let a clean-headroom voicing land. New

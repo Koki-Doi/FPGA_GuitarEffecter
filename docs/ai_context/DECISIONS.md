@@ -6661,7 +6661,7 @@ pre-existing 3 failures + 1 error baseline.
 - **Status.** Investigated, reverted to clean (no code change). Deferred for
   ear-in-the-loop tuning or a future multiband-distortion phase. `main` unchanged.
 
-## D153 — JC-120 / Twin too hot (音割れ); restore cab peak-limit + JC/Twin level trim; bench-ACCEPTED, current baseline (`b86c88a`, bit `5c0086b0`) (2026-06-21)
+## D153 — JC-120 / Twin too hot (音割れ); restore cab peak-limit + JC/Twin level trim; bench-ACCEPTED, superseded by D155 (`b86c88a`, bit `5c0086b0`) (2026-06-21)
 
 - **Symptom.** Benching D152: JC-120 + Fender/Twin output too large -> 音割れ
   (clipping). The D152 cab-headroom raise lifted `cabSpeakerKnee` (the cab's FINAL
@@ -6769,7 +6769,7 @@ pre-existing 3 failures + 1 error baseline.
   headroom (trades loudness/character) or multiband distortion (big change). The
   brightness<->chord-cleanliness tradeoff is fundamental to a clipping amp.
 
-## D151 — amp HF brighten: post-amp HF shelf + raised cab presence peak; bench-ACCEPTED, current baseline (`238ec53`, bit `9f9e71a2`) (2026-06-21)
+## D151 — amp HF brighten: post-amp HF shelf + raised cab presence peak; bench-ACCEPTED, superseded by D155 (`238ec53`, bit `9f9e71a2`) (2026-06-21)
 
 - **Symptom.** User: "amp の高音成分が足りない" (rig use, cab ON).
 - **Sim findings.** measure --check already PASSed all amp/rig/cab HF targets (the
@@ -6819,7 +6819,7 @@ pre-existing 3 failures + 1 error baseline.
   and Fender/Twin CHORD high-end is "汚い" (dirty/harsh). Investigate next.
 - **Rollback.** `git checkout 112ae9a -- hw/Pynq-Z2/bitstreams/` + redeploy (D150).
 
-## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1; bench-ACCEPTED, current baseline (`112ae9a`, bit `29f5fe01`) (2026-06-21)
+## D150 — OD/DS chord-IMD fix: symmetric clip on the gainy OD models + DS-1; bench-ACCEPTED, superseded by D155 (`112ae9a`, bit `29f5fe01`) (2026-06-21)
 
 - **Symptom.** User: "OD、DS の歪かたが変。特に和音" (the Overdrive and
   Distortion drive sounds wrong, especially on chords). Sim先行で調査。
@@ -6873,7 +6873,7 @@ pre-existing 3 failures + 1 error baseline.
   did NOT manifest as a bypass buzz — accepted clean.
 - **Rollback.** `git checkout 1468e93 -- hw/Pynq-Z2/bitstreams/` + redeploy (D149).
 
-## D149 — Cab real-IR step B1: 31-tap rolloff-only speaker FIR (Option Y); bench-ACCEPTED, current baseline (`1468e93`, bit `f536711c`) (2026-06-20)
+## D149 — Cab real-IR step B1: 31-tap rolloff-only speaker FIR (Option Y); bench-ACCEPTED, superseded by D155 (extended 31->47 taps) (`1468e93`, bit `f536711c`) (2026-06-20)
 
 - **Decision.** Take on R4 (the biggest remaining cab realism lever) sim-first.
   Replace the 15-tap symmetric speaker FIR (`cabSpeakerFirCoeff` /

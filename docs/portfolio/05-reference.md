@@ -64,37 +64,40 @@ submodule へ分割されており、ポートフォリオで見るべき top-le
 | **D99** | D120 rollback 後にユーザーが選んだ Amp character の基準。D121 はこの Amp を触らず非 Amp だけ補正 |
 | **D121** | 最初の measured non-Amp voicing baseline。bit md5 `9a57c50a...`、D99 Amp untouched + non-Amp measured voicing |
 | **D131** | DIST low-end + saturation/sustain + offline distortion-eval tooling を確立した accepted baseline |
-| **D135** | Fuzz Face mid-hump + Amp/Cab character。bit md5 `533d5869...`、D148 までの rollback target |
-| **D144** | chord-detune sim candidate。offline 改善したが bench-rejected、D135 へ rollback |
-| **D146** | audio-output CDC を hard pblock（`SLICE_X100Y116:SLICE_X113Y137`）で物理固定 = knife-edge への robust attack |
-| **D147** | amp sag-attack slew（`ampSagAttackStep=96`）= chord-IMD 修正 |
-| **D148** | 現行 canonical deployed baseline。bit md5 `972d9ba6...`、JC-120 / Fender-Twin clean-headroom fix（`clip_onset.py` 局在化）、D135 を supersede |
+| **D135** | Fuzz Face mid-hump + Amp/Cab character。bit md5 `533d5869...` |
+| **D146-D148** | audio-output CDC hard pblock（`SLICE_X100Y116:SLICE_X113Y137`）+ amp sag-attack slew + JC/Twin clean-headroom fix。`96ef899` |
+| **D149** | cab real-IR step B1 = 31-tap rolloff-only speaker FIR（Option Y）。`1468e93` |
+| **D150-D153** | OD/DS 対称クリップ（和音 IMD）+ amp 高音増強（HF シェルフ + cab presence）+ 和音高音 cab 修正 + JC/Twin 音割れ修正。`b86c88a` |
+| **D154** | ゲイン機の和音 IMD（multiband 含め非改善）= 未採用 |
+| **D155** | 現行 canonical deployed baseline。bit md5 `8d875cc8...`、cab speaker FIR を 31→47 タップへ拡張、D153 を supersede |
 
 ## 22. 現状
 
-採用済みデプロイベースラインは **D148**（merge commit `96ef899`、bit md5
-`972d9ba6645dd966e6bdcb5bc3daf478`、hwh md5
-`2b888ff1ec3168cd64e1b679bbbc71be`）。2026-06-20 に build / timing /
-deploy / PL smoke / user bench を通過（「完璧」）し、main へ `--no-ff` merge されています。
+採用済みデプロイベースラインは **D155**（merge commit `09c8a95`、bit md5
+`8d875cc8a0154a86673ab22e5b142d27`、hwh md5
+`e0469cf593e97d582c14bb09ea98d3d3`）。2026-06-22 に build / timing /
+deploy / PL smoke / user bench を通過し、main へ `--no-ff` merge されています。
 
-D148 の位置づけ：
+D155 とそこへ至る 2026-06 の D150-D155 voicing アークの位置づけ：
 
-- D109 の CDC hardening を保持しつつ、D146 で audio-output CDC を hard pblock
-  （`SLICE_X100Y116:SLICE_X113Y137`）で物理固定 = knife-edge への robust attack。
-  これにより D136-D144 で詰まっていた clean-headroom 系の voicing が land 可能に。
-- D147 は amp sag-attack slew（`ampSagAttackStep=96`）で chord-IMD を修正。
-- D148 は JC-120 / Fender-Twin の演奏時のみの音割れ（bypass は clean = CDC ではない）を
-  新規 `clip_onset.py` で局在化し、placement-safe な knee 定数のみで修正
-  （`ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M + clean-mode-only `ampCleanKneeBonus`）。
-  golden 20/20 NO re-bless（bypass bit-exact）。
-- D135 までの累積（D131 の DIST tooling、D134 の全 knob 評価、D135 の Fuzz Face
-  mid-hump + Amp/Cab character）は D148 にそのまま含まれます。
-- Vivado routed timing は WNS `+0.526 ns`、WHS `+0.014 ns`、route errors `0`。
+- ベースは D109 CDC hardening + D146 hard pblock（audio-output CDC を
+  `SLICE_X100Y116:SLICE_X113Y137` で物理固定）+ D147 sag slew + D148 clean-headroom
+  + D149 cab real-IR 31-tap rolloff FIR。
+- D150：OD/DS の和音 IMD（非対称クリップの偶数次差音）を対称クリップ
+  （`symSoftClipMed`）で偶数次→奇数次へ。
+- D151：amp 高音増強 = post-amp HF シェルフ + cab presence +3 dB。**rig の高域は cab が
+  支配し、amp の TREBLE/PRESENCE はほぼ効かない**と実測で確定したのが設計上の学び。
+- D152/D153：和音高音の "汚い/ブツブツ" = 帯域内 IMD（**オーバーサンプリングは無効と実証**、
+  エイリアスではない）。cab ヘッドルーム + presence 戻し → 出力ホット化分の
+  `cabSpeakerKnee` peak-limit 復帰 + JC/Twin master -1.3 dB トリム（音割れ修正）。
+- D154：ゲイン機の和音 IMD は multiband 含め非改善（AC30 悪化）＝未採用、Drive つまみが制御。
+- D155：cab speaker FIR を 31→47 タップへ拡張（Option-Y 折返し、real-4x12 寄りロールオフ、
+  128-tap BRAM "B2" は不採用）。Vivado routed timing は WNS `+0.319 ns`、WHS `+0.013 ns`、
+  route errors `0`、D109 CDC fwd `+0.989`（bench-clean）、DSP `206/220`。
 
-D113-D120 の amp-retune / sag-disable / static-trim 系は、履歴上の候補または rejected branch として
-扱い、現行値としては語りません。D136-D144 も bench rejected です（D146 の hard pblock 前）。
-後で問題が出た場合の直近 accepted rollback は D135 bitstreams を `765323b` から
-復元して deploy します。
+D113-D120 の amp-retune / sag 系、D136-D144、D152 単独、D154 multiband は履歴上の
+rejected / 非改善候補として扱い、現行値としては語りません。直近 accepted rollback は
+D153 bitstreams を `b86c88a` から復元して deploy します。
 
-最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D148）/
+最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` / `DECISIONS.md`（D109-D155）/
 `TIMING_AND_FPGA_NOTES.md` を参照してください。

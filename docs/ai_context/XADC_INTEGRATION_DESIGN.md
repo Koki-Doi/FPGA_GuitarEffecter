@@ -1,7 +1,7 @@
 # XADC Wizard integration (ACCEPTED + committed on the D75 island; D76 baseline)
 
 Status: **accepted on bench and committed** as part of **D76**
-(2026-05-31), and still present in the current D148 bitstream. The D74 build
+(2026-05-31), and still present in the current D155 bitstream. The D74 build
 (below) had been deployed but held out of git
 because of a bitcrusher on the ADC path; that defect was later proven to
 be the D74 100 MHz audio-AXIS P&R degradation, **not** the XADC. On the

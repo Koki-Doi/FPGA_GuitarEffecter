@@ -34,10 +34,10 @@ Current implementation:
   `audio_lab_pynq/notebooks/PmodI2S2HdmiGuiOneCell.ipynb`,
   `scripts/test_pmod_i2s2.py`, `scripts/pmod_i2s2_mode.py`,
   `scripts/pmod_i2s2_capture_probe.py`.
-- Latest accepted deployed bitstream baseline is D148 (merge `96ef899`):
-  overall WNS `+0.526 ns`, WHS `+0.014 ns`, bit/hwh md5
-  `972d9ba6645dd966e6bdcb5bc3daf478` /
-  `731517487c6218f0e181c2b74485d7a6`. The Pmod I2S2 RTL / Tcl / XDC
+- Latest accepted deployed bitstream baseline is D155 (merge `09c8a95`):
+  overall WNS `+0.319 ns`, WHS `+0.013 ns`, bit/hwh md5
+  `8d875cc8a0154a86673ab22e5b142d27` /
+  `e0469cf593e97d582c14bb09ea98d3d3`. The Pmod I2S2 RTL / Tcl / XDC
   path itself remains the D48-D50 design, with D98 changing its dividers to
   96 kHz and later decisions changing the downstream Clash DSP voicing.
 
@@ -46,7 +46,7 @@ sections that say "planning only" or "do not change RTL/XDC/Tcl" describe
 that earlier docs-only phase, not the current repository state.
 
 関連:
-- `docs/ai_context/CURRENT_STATE.md` (current D148 / Pmod mode 2 state)
+- `docs/ai_context/CURRENT_STATE.md` (current D155 / Pmod mode 2 state)
 - `docs/ai_context/EXTERNAL_PCM1808_PCM5102_AUDIO_PLAN.md` (retired PCM5102 / PCM1808 history)
 - `docs/ai_context/IO_PIN_RESERVATION.md` (PMOD / RPi / Arduino header の pin 予約台帳)
 - `docs/ai_context/AUDIO_SIGNAL_PATH.md` (内部 AXIS DSP 経路と外付け codec 接続点)

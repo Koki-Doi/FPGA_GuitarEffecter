@@ -44,9 +44,9 @@ accepted bitstream history and later rejected chord/amp-clean experiments.
 ## Baseline status
 
 This plan was first measured against **D124** (RAT live-pole highpass fix,
-bench-ACCEPTED, merged). The current canonical deployed baseline is **D148**
-(merge `96ef899`, bit `972d9ba6645dd966e6bdcb5bc3daf478`; supersedes D135
-`765323b`). Relevant D124
+bench-ACCEPTED, merged). The current canonical deployed baseline is **D155**
+(merge `09c8a95`, bit `8d875cc8a0154a86673ab22e5b142d27`; cab speaker FIR 31->47
+taps, supersedes D153 `b86c88a`). Relevant D124
 facts at the time of this plan:
 
 - OD 6 models were measured on-target in `REALISM_OD_DIST_MEASUREMENT.md`.

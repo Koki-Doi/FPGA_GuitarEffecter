@@ -1,11 +1,20 @@
 # Cab real-IR (R4 step B) -- sim-first design + implementation plan
 
-Status: **B1 BUILT + DEPLOYED + PL-SMOKED + BENCH-ACCEPTED = D149, the new
-deployed baseline (supersedes D148).** Sim-first design proved the win, B1 was
-implemented (31-tap rolloff-only folded FIR), built timing-clean, and the user
-bench-accepted it ("合格"). Created 2026-06-20. Triggered by the user choosing
-"real-IR cab を sim 先行" after D148 shipped. Companion tool:
-`tools/dsp_sim/cab_ir.py`. B2 (full 128-tap time-mux MAC) remains deferred.
+Status: **B1 BUILT + DEPLOYED + PL-SMOKED + BENCH-ACCEPTED = D149, then EXTENDED
+31->47 taps = D155, the current deployed baseline (`09c8a95`, supersedes D153).**
+Sim-first design proved the win; B1 was implemented (31-tap rolloff-only folded
+FIR, D149), bench-accepted ("合格"), and the same Option-Y folded structure was
+later extended to 47 taps for a sharper rolloff (D155, bit
+`8d875cc8a0154a86673ab22e5b142d27` / hwh `e0469cf593e97d582c14bb09ea98d3d3`;
+`cabSpeakerFirCoeff` Vec16->Vec24, history Vec30->Vec46, 24 folded products; WNS
++0.319, D109 CDC fwd +0.989, DSP 206/220; rolloff open -14.9 / brit -22.0 /
+closed -28.9 dB/oct; measure 28/28, only cab golden re-blessed, bypass bit-exact;
+bench-accepted). Created 2026-06-20. Triggered by the user choosing "real-IR cab
+を sim 先行" after D148 shipped. Companion tool: `tools/dsp_sim/cab_ir.py`.
+**B2 (full 128-tap time-mux MAC) remains deferred** -- the folded FIR already
+reaches the real-4x12 rolloff and passes all cab targets, so B2's gain is marginal
+while it adds a BRAM + MAC FSM + handshake = a new knife-edge class. Rollback D155
+-> D153: `git checkout b86c88a -- hw/Pynq-Z2/bitstreams/` + redeploy.
 
 D149 build: bit md5 `f536711c0c93006bcb55c2da211064dd`, hwh
 `bfff6f2ea665573cd1340e30c29b2364`; Vivado timing MET (WNS +0.597, WHS +0.008,

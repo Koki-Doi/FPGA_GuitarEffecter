@@ -185,8 +185,26 @@ The script:
   top-level `.ipynb` count to match the repository source count, and JSON-parses
   every Notebook. A zero-byte or truncated file fails deploy.
 - Runs an import sanity check.
+- **Bitstream integrity check (no overlay download).** After the Notebook
+  install (step 7.5), the deploy md5-verifies every board bit/hwh copy
+  (`/home/xilinx/Audio-Lab-PYNQ/hw/Pynq-Z2/bitstreams`, the
+  `audio_lab_pynq` package `bitstreams/`, the `pynq/overlays/audio_lab`
+  registry, and `<jupyter_root>/audio_lab/bitstreams`) against the local repo
+  and FAILS the deploy on any mismatch. It deliberately does NOT instantiate
+  `AudioLabOverlay()` -- the deploy never loads the PL. This catches the
+  partial-sync / 0-byte corruption class (the D153 incident: a board hang + cold
+  power-cycle + unclean power-off left several bit copies and all 15 Notebooks
+  0-byte; re-running the no-download deploy restored them). It must run AFTER
+  the Notebook install because that step refreshes the
+  `<jupyter_root>/audio_lab/bitstreams` copy.
 
 It never stores or logs the board password.
+
+> **download hazard.** Loading the overlay (`AudioLabOverlay(download=True)`) at
+> most ONCE per board power-cycle. Repeated `download=True` in one session hangs
+> the board (the rgb2dvi PLL / PL state) and only a cold power-cycle recovers --
+> and an unclean power-off can zero board files. The deploy is therefore
+> no-download; do the single live load from a Notebook or one smoke run.
 
 The current board resolves the Jupyter root to
 `/home/xilinx/jupyter_notebooks`; open the installed tree directly:

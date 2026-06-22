@@ -9,8 +9,9 @@ cost, timing risk, GPIO impact, and the build/validation gate.
 ## Implementation progress (2026-06-01) — item 4 & 5a accepted as D79
 
 > This section is a historical D79 implementation record. The current accepted
-> deployed baseline is D148 (`96ef899`, bit `972d9ba6...`) = JC/Twin
-> clean-headroom fix + D146 hard CDC pblock + D147 sag slew, superseding D135
+> deployed baseline is D155 (`09c8a95`, bit `8d875cc8...`) = cab speaker FIR
+> 31->47 taps capping the D150-D155 arc on top of D148 (JC/Twin clean-headroom +
+> D146 hard CDC pblock + D147 sag slew), superseding D153
 > (`765323b`); D144 was bench-rejected and rolled back. Use `CURRENT_STATE.md` /
 > `BASELINES.md` for current status before applying any recipe below.
 >
@@ -161,8 +162,8 @@ From the source (verified):
   D136-D144 showed that even unrelated footprint changes can cause audible
   corruption.
   **Every item here must be followed by a WNS-vs-baseline review + bench
-  audio.** Current accepted baseline: D148 (`96ef899`, overall WNS
-  `+0.526 ns`, bit `972d9ba6...`); D135 (`765323b`, bit `533d5869...`) is
+  audio.** Current accepted baseline: D155 (`09c8a95`, overall WNS
+  `+0.319 ns`, bit `8d875cc8...`); D153 (`b86c88a`) is
   the immediate accepted rollback.
 - **Helpers available** (`FixedPoint.hs`): `mulU8/9/10/12` (Sample×unsigned →
   Wide), `mulS10` (Sample×Signed10 → Wide), `satWide`, `satShift7..12`,

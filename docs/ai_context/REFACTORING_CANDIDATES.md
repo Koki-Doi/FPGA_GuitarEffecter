@@ -35,9 +35,9 @@ bit from this source -- that build gets the usual timing/CDC check + ear-bench.
 Remaining DSP: **B** (biquad kernels), **D/B2** (Pipeline combinators, deferred).
 Remaining Python: **P1** orchestration tail, **P2** renderer panel split, **P3**.
 
-**2026-06-20 current baseline:** D148 (`96ef899`, bit `972d9ba6...`) = JC/Twin
-clean-headroom fix + D146 hard CDC pblock + D147 sag slew, superseding D135
-(`765323b`). The D136-D142 line and D144 candidate were bench-rejected and rolled
+**2026-06-22 current baseline:** D155 (`09c8a95`, bit `8d875cc8...`) = cab speaker
+FIR 31->47 taps capping the D150-D155 voicing arc on top of D148 (JC/Twin
+clean-headroom + D146 hard CDC pblock + D147 sag slew), superseding D153 (`b86c88a`). The D136-D142 line and D144 candidate were bench-rejected and rolled
 back to D135 before the D146 pblock let the clean-headroom voicing land; future
 DSP refactor builds must still treat the safe-bypass CDC as a live placement risk.
 

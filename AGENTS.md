@@ -85,17 +85,25 @@ When a previous turn stopped mid-implementation:
   eliminate) the safe-bypass CDC knife-edge, so a DSP voicing rebuild is allowed
   but EACH new bitstream must be ear-benched for a constant DIGITAL BUZZ on the
   bypass passthrough -- the slack number does not predict it. **Accepted deployed
-  baseline is D148**: merge commit `96ef899`, bit md5
-  `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
-  `2b888ff1ec3168cd64e1b679bbbc71be` -- the JC-120 / Fender-Twin clean-headroom
-  fix for a playing-only `音割れ` (bypass confirmed clean = NOT CDC), localized
-  with the new `tools/dsp_sim/clip_onset.py` (JC ~0.18 FS at the power/master
-  soft knee, Twin ~0.12-0.18 FS at the `ampAsymClip` waveshaper) and fixed with
-  placement-safe knee constants only (`ampPowerKnee` JC 6.8M->8.2M + Twin
-  4.6M->6.8M + clean-mode-only `ampCleanKneeBonus`, Twin 2.5M); golden 20/20 NO
-  re-bless. The merge ALSO carries D146 (hard pblock locking the audio-output CDC
-  cells to `SLICE_X100Y116:SLICE_X113Y137` -- the robust knife-edge attack) and
-  D147 (amp sag-attack slew `ampSagAttackStep=96`). It supersedes the
+  baseline is D155**: merge commit `09c8a95`, bit md5
+  `8d875cc8a0154a86673ab22e5b142d27`, hwh md5
+  `e0469cf593e97d582c14bb09ea98d3d3` -- the cab speaker FIR extended 31 -> 47 taps
+  (Option-Y folded extension, NOT the high-risk 128-tap BRAM "B2"): sharper
+  real-4x12 >5 kHz rolloff while the presence biquad keeps the 2-4 kHz peak; build
+  MET WNS +0.319, D109 CDC fwd +0.989 (bench-clean), DSP 206/220, bypass bit-exact.
+  Rollback to D153: `git checkout b86c88a -- hw/Pynq-Z2/bitstreams/`. **The
+  D150-D155 voicing arc (sim-first via `tools/dsp_sim`, all placement-safe
+  constants/coeffs): D150 (`112ae9a`) OD/DS symmetric clip for chord IMD; D151
+  (`238ec53`) amp HF brighten (post-amp HF shelf + cab presence; the cab dominates
+  a rig's HF, not the amp TREBLE/PRESENCE); D152/D153 (`b86c88a`) chord-HF IMD =
+  cab headroom + presence pull-back, then restore the `cabSpeakerKnee` peak-limit
+  + trim JC/Twin -1.3 dB after D152 ran too hot (音割れ); D154 gain-amp chord IMD
+  has NO net-improving fix (incl multiband -- deep saturation; the Drive knob is
+  the control) = NOT shipped; D155 the cab 47-tap FIR.** `scripts/deploy_to_pynq.sh`
+  also gained a no-download bit/hwh md5 integrity check (the deploy NEVER loads
+  the PL; repeated `download=True` hangs the board). The immediate prior accepted
+  baseline was D153 (`b86c88a`); before that D148 (`96ef899`, JC/Twin
+  clean-headroom + D146 hard pblock + D147 sag slew). It supersedes the
   long-standing **D135** (`765323b`, bit `533d586901dc3669285a49c6d82bab9f`) =
   large non-IR realism (Fuzz Face 900 Hz mid-hump biquad + tighter clip knees +
   opened tone LPF; AC30/JCM800 stronger `ampScoop` + model-local presence; Amp
@@ -112,7 +120,7 @@ When a previous turn stopped mid-implementation:
   (D119/D120) remains abandoned; do not re-attempt Amp sag removal or static sag
   trimming without explicit direction. Roll back to D135 via
   `git checkout 765323b -- hw/Pynq-Z2/bitstreams/`.
-  See `DECISIONS.md` D109-D148, `CURRENT_STATE.md`, and `baselines.json`.
+  See `DECISIONS.md` D109-D155, `CURRENT_STATE.md`, and `baselines.json`.
 - For effect voicing work, prefer the offline DSP sim / measurement loop before
   paying the Vivado cost: build/run `tools/dsp_sim`, use
   `tools/dsp_sim/measure.py` for net tone-curve checks, and keep golden/bypass

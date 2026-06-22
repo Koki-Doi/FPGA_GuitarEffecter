@@ -86,10 +86,11 @@ the codec/status IPs, and control effect parameters via AXI GPIO.
   `pmod_master_0/dsp_dac_sdin_i` and still fans out to ADAU `sdata_o`
   G18 for debug visibility. Mode 2 output is mono RIGHT-to-both-channels
   via `mode2_right_snapshot` (D50).
-- The current **accepted** deployed bitstream baseline is **D148** (merge
-  commit `96ef899`, `audio_lab.bit` md5
-  `972d9ba6645dd966e6bdcb5bc3daf478`, `audio_lab.hwh` md5
-  `2b888ff1ec3168cd64e1b679bbbc71be`). It is the JC-120 / Fender-Twin
+- The current **accepted** deployed bitstream baseline is **D155** (merge
+  commit `09c8a95`, `audio_lab.bit` md5
+  `8d875cc8a0154a86673ab22e5b142d27`, `audio_lab.hwh` md5
+  `e0469cf593e97d582c14bb09ea98d3d3`) -- cab speaker FIR 31->47 taps, the cap of
+  the D150-D155 voicing arc. The prior D148 baseline was the JC-120 / Fender-Twin
   clean-headroom fix for a playing-only `音割れ` (bypass confirmed clean = NOT
   CDC): the new `tools/dsp_sim/clip_onset.py` localized JC breaking up
   ~0.18 FS at the power/master soft knee and Twin ~0.12-0.18 FS at the

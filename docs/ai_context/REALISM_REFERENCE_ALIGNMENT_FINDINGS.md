@@ -7,9 +7,10 @@ links. It is no longer "NO implementation": D126/D127 implemented the first
 OD-1 / DS-1 / RAT / JCM800 alignment pass, D128-D130 continued Amp and
 OD/DS/RAT re-collation, and D131 added DIST low-end / saturation / sustain plus
 distortion-eval tooling. These findings are historical inputs to later passes;
-the current canonical baseline is **D148** (`96ef899`, bit
-`972d9ba6645dd966e6bdcb5bc3daf478`) = JC/Twin clean-headroom fix + D146 hard CDC
-pblock + D147 sag slew, superseding D135 (`765323b`). D144's chord-detune
+the current canonical baseline is **D155** (`09c8a95`, bit
+`8d875cc8a0154a86673ab22e5b142d27`) = cab speaker FIR 31->47 taps capping the
+D150-D155 voicing arc on top of D148 (JC/Twin clean-headroom + D146/D147),
+superseding D153 (`b86c88a`). D144's chord-detune
 candidate was bench-rejected and rolled back to D135.
 
 Method: each user link was fetched and reduced to concrete circuit numbers

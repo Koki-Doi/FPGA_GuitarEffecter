@@ -61,9 +61,10 @@ The current load-bearing facts:
   `AMP_MODEL_RESEARCH_D55.md` for the per-model DSP coefficient
   table (D55 + D58.2 columns), `DECISIONS.md` D53 / D54 / D55 /
   D58.2, and `DSP_EFFECT_CHAIN.md` Amp Simulator section.
-- **Current accepted deployed baseline = D148**: merge commit `96ef899`, bit
-  md5 `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
-  `2b888ff1ec3168cd64e1b679bbbc71be`. It is the JC-120 / Fender-Twin
+- **Current accepted deployed baseline = D155**: merge commit `09c8a95`, bit
+  md5 `8d875cc8a0154a86673ab22e5b142d27`, hwh md5
+  `e0469cf593e97d582c14bb09ea98d3d3` (cab speaker FIR 31->47 taps, the cap of the
+  D150-D155 voicing arc -- see `CURRENT_STATE.md`). The prior D148 baseline was the JC-120 / Fender-Twin
   clean-headroom fix for a playing-only `音割れ` (bypass confirmed clean = NOT the
   CDC knife-edge), localized with the new `tools/dsp_sim/clip_onset.py` and fixed
   with placement-safe knee constants (`ampPowerKnee` JC 6.8M->8.2M + Twin

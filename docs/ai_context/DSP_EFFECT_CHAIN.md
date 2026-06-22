@@ -61,9 +61,10 @@ measurement findings. These passes change constants and clip-helper
 choice inside the existing register stages; they do not change the
 pipeline shape, the GPIO inventory, or the `topEntity` ports.
 
-The latest accepted baseline is **D148** (merge `96ef899`): the JC-120 /
-Fender-Twin clean-headroom fix on top of D135. It targets a playing-only
-`音割れ` (bypass confirmed clean = NOT the CDC knife-edge), localized with the new
+The latest accepted baseline is **D155** (merge `09c8a95`): the cab speaker FIR
+extended 31->47 taps (real-4x12 rolloff), capping the D150-D155 voicing arc. The
+prior D148 fix targeted a playing-only `音割れ` on JC-120 / Fender-Twin (bypass
+confirmed clean = NOT the CDC knife-edge), localized with the new
 `tools/dsp_sim/clip_onset.py` (JC broke up ~0.18 FS at the power/master soft
 knee, Twin ~0.12-0.18 FS at the `ampAsymClip` waveshaper) and fixed with
 placement-safe knee constants only (`ampPowerKnee` JC 6.8M->8.2M + Twin
@@ -102,8 +103,8 @@ timing-clean DSP rebuilds can still re-trigger the safe-bypass knife-edge.
 D76 re-added the FP02M XADC path on this island, D78 added the
 `axi_footswitch_input` IP plus load-bearing `phys_opt_design`, D79 added the
 Overdrive realism changes described below, D121-D134 formed the measured 96 kHz
-realism line, D135 extended it, and D148 (carrying D146/D147) is the current
-accepted extension. D148 routed timing is `WNS = +0.526 ns`, `WHS = +0.014 ns`;
+realism line, D135 extended it, and the D149-D155 voicing arc (D155 carrying the cab 47-tap
+FIR) is the current accepted extension. D155 routed timing is `WNS = +0.319 ns`, `WHS = +0.013 ns`;
 user bench accepted the sound ("完璧"). Full
 records: `DSP_ISLAND_CLOCK_DESIGN.md`,
 `FOOTSWITCH_INTEGRATION.md`, `MODEL_REALISM_IMPLEMENTATION_GUIDE.md`, and

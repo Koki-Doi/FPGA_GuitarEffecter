@@ -119,34 +119,37 @@ When a previous turn stopped mid-implementation:
   that reintroduces the knife-edge. D109 bounds the crossing but does not
   eliminate placement sensitivity: D136-D144 proved that timing-clean rebuilds
   can still produce a constant safe-bypass buzz. Every new bitstream still
-  requires an ear-bench.** See `DECISIONS.md` D109-D148 +
+  requires an ear-bench.** See `DECISIONS.md` D109-D155 +
   `project_safebypass_knifeedge_cdc_rootcause`.
-  **Accepted deployed baseline is D149 (bit md5 `f536711c0c93006bcb55c2da211064dd`,
-  hwh md5 `bfff6f2ea665573cd1340e30c29b2364`, commit `1468e93`)** -- cab real-IR
-  step B1 = a 31-tap rolloff-only speaker FIR (Signed-16 Q16, +8 DSP) giving a
-  real-4x12 sharp >5 kHz rolloff while the existing presence biquad keeps the
-  2-4 kHz peak (Option Y; sim-first via `tools/dsp_sim/cab_ir.py` +
-  `docs/ai_context/CAB_IR_R4_STEP_B_PLAN.md`; the full 128-tap time-mux MAC = B2
-  is deferred). Bypass bit-exact (only the cab golden re-blessed); build MET
-  WNS +0.597, D109 CDC pair fwd +1.416, D146 pblock intact, DSP 181/220.
-  The immediate accepted rollback is **D148 (bit md5
-  `972d9ba6645dd966e6bdcb5bc3daf478`, hwh md5
-  `2b888ff1ec3168cd64e1b679bbbc71be`, merge commit `96ef899`)** -- the
-  JC-120 / Fender-Twin clean-headroom fix (playing-only 音割れ; bypass confirmed
-  clean = NOT CDC). Localized with the new `tools/dsp_sim/clip_onset.py`: JC
-  broke up ~0.18 FS at the power/master soft knee, Twin ~0.12-0.18 FS at the
-  `ampAsymClip` waveshaper. Fix = placement-safe constants/mux (no new
-  multiply): `ampPowerKnee` JC 6.8M->8.2M + Twin 4.6M->6.8M + a clean-mode-only
-  `ampCleanKneeBonus` (Twin 2.5M); both now clean to ~0.25 FS. Surgical -- golden
-  20/20 NO re-bless (bypass bit-exact). The D148 merge `96ef899` ALSO carries
-  **D146** (hard pblock locking the audio-output CDC cells to
-  `SLICE_X100Y116:SLICE_X113Y137`, the robust knife-edge attack) and **D147**
-  (amp sag-attack slew `ampSagAttackStep=96`, the chord-IMD fix re-accepted from
-  the rolled-back D141). D148 supersedes the long-standing D135 baseline
-  (`533d5869`, merge `765323b`) = large non-IR realism (Fuzz Face 900 Hz mid-hump
-  biquad + tighter clip knees + opened tone LPF; AC30/JCM800 stronger `ampScoop`
-  + model-local presence; Amp MIDDLE more audible; AC30 clean headroom; Cab
-  non-IR body tap).
+  **Accepted deployed baseline is D155 (bit md5 `8d875cc8a0154a86673ab22e5b142d27`,
+  hwh md5 `e0469cf593e97d582c14bb09ea98d3d3`, merge commit `09c8a95`)** -- the cab
+  speaker FIR extended 31 -> 47 taps (Option-Y folded extension, NOT the high-risk
+  128-tap BRAM "B2"): sharper real-4x12 >5 kHz rolloff (open -14.9 / british -22.0
+  / closed -28.9 dB/oct) while the existing per-model presence biquad keeps the
+  2-4 kHz peak (so the D151 brightness band is untouched). `cabSpeakerFirCoeff`
+  `Vec 16`->`Vec 24`, history `Vec 30`->`Vec 46`, 24 folded products. Bypass
+  bit-exact (only the cab golden re-blessed); build MET WNS +0.319, D109 CDC pair
+  fwd +0.989 (lowest of the D149-D155 arc but bench-clean), D146 pblock intact,
+  DSP 206/220. Rollback to D153: `git checkout b86c88a -- hw/Pynq-Z2/bitstreams/`.
+  **The D150-D155 voicing arc (all bench-accepted unless noted), each a
+  placement-safe constants/coeff change, sim-first via `tools/dsp_sim`:**
+  D150 (`112ae9a`) OD/DS chord-IMD = symmetric clip on the gainy OD models +
+  DS-1 (asymmetric clip's even-order difference tones were the "和音で歪が変");
+  D151 (`238ec53`) amp HF brighten = a post-amp HF shelf (`ampHfShelfFrame`,
+  skips JC-120) + cab presence-peak +3 dB -- KEY: amp-side TREBLE/PRESENCE move a
+  RIG <1 dB (the cab dominates), so the cab presence is the rig-brightness lever;
+  D152/D153 (`b86c88a`) the chord-HF "汚い/ブツブツ" = in-band IMD (oversampling
+  proven USELESS, NOT aliasing) -- D152 raised cab headroom + pulled the presence
+  back, D153 restored the `cabSpeakerKnee` peak-limit + trimmed JC/Twin master
+  -1.3 dB after D152 came out too hot (音割れ); D154 gain-amp chord IMD was
+  investigated and has NO net-improving constant/multiband fix (deep saturation;
+  the Drive knob is the control) = NOT shipped; D155 the cab 47-tap FIR above.
+  Also: `scripts/deploy_to_pynq.sh` now runs a no-download bit/hwh md5 integrity
+  check (catches partial/0-byte board copies; the deploy NEVER downloads -- repeated
+  `download=True` hangs the board, cold power-cycle, and an unclean power-off can
+  zero board files). **Prior accepted baselines for rollback context: D149
+  (`1468e93`, cab 31-tap rolloff FIR), D148 (`96ef899`, JC/Twin clean-headroom +
+  D146 hard pblock + D147 sag slew), D135 (`765323b`, large non-IR realism).**
   **History: the D136-D142 `feature/amp-clean-headroom` amp-clean line
   (clean-channel headroom, Clean/Drive separation, Fender level, sustain,
   chord-IMD sag fix, cleaner-clean knee) was BENCH-REJECTED and rolled back to
@@ -160,7 +163,7 @@ When a previous turn stopped mid-implementation:
   `tools/dsp_sim/chord_eval.py` chord-IMD detector and `clip_onset.py` from this
   arc were KEPT). Roll back to D135 via
   `git checkout 765323b -- hw/Pynq-Z2/bitstreams/` and redeploy. See
-  `CURRENT_STATE.md`, `DECISIONS.md` D109-D148, and `baselines.json`.
+  `CURRENT_STATE.md`, `DECISIONS.md` D109-D155, and `baselines.json`.
   XADC is live as `xadc_wiz_a0` for the FP02M Wah pedal. A `CRITICAL WARNING
   12-4739` on the `set_clock_groups` line is expected and harmless (BD
   clocks undefined at synth elaboration, applied at impl).

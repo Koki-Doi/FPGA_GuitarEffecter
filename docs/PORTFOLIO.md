@@ -8,16 +8,26 @@ DSP は関数型 HDL（Clash/Haskell）で記述し、HDMI GUI・ロータリー
 > 本ページはポートフォリオサイト向けの概要。実装値・係数・アルゴリズム・設計の物語は
 > **[深掘り技術付録](#深掘り技術付録)**（全 5 部）を参照。
 
-**現行の採用済みデプロイベースライン**は **D148**（merge commit `96ef899`、
-bit md5 `972d9ba6645dd966e6bdcb5bc3daf478`、hwh md5
-`2b888ff1ec3168cd64e1b679bbbc71be`）。JC-120 / Fender-Twin の演奏時のみの音割れを
-新規 `tools/dsp_sim/clip_onset.py` で局在化し、placement-safe な knee 定数のみで
-修正したビルドで、D146 hard CDC pblock と D147 amp sag-attack slew も同梱し、D135
-（`765323b`）を supersede します。Vivado routed timing は **WNS +0.526 ns /
-WHS +0.014 ns**、実機 PL smoke とユーザー bench で合格（「完璧」）しています。
-D136-D142 と D144 は timing-clean / sim-good でも safe-bypass を含む bench
-acceptance を通せず一旦 D135 へ rollback しましたが、D146 の hard pblock で
-audio-output CDC を物理固定してから clean-headroom voicing が land しました。
+**現行の採用済みデプロイベースライン**は **D155**（merge commit `09c8a95`、
+bit md5 `8d875cc8a0154a86673ab22e5b142d27`、hwh md5
+`e0469cf593e97d582c14bb09ea98d3d3`）。cab speaker FIR を 31→47 タップに拡張した
+Option-Y 折返し拡張で、real-4x12 寄りの >5 kHz ロールオフを鋭く（open -14.9 /
+british -22.0 / closed -28.9 dB/oct）しつつ、presence biquad が 2-4 kHz ピークを
+保つビルドです（高リスクな 128-tap BRAM "B2" は不採用）。Vivado routed timing は
+**WNS +0.319 ns / WHS +0.013 ns**、D109 CDC fwd +0.989（bench-clean）、DSP
+206/220、bypass bit-exact、実機 PL smoke とユーザー bench で合格しています。
+これは **2026-06 の D150–D155 voicing アーク**の締めくくりです（全て sim 先行
+`tools/dsp_sim`・placement-safe）: D150 OD/DS の和音 IMD を対称クリップで修正、
+D151 amp の高音増強（post-amp HF シェルフ + cab presence。rig の高域は cab が
+支配し amp の TREBLE/PRESENCE はほぼ効かないと実測で判明）、D152/D153 和音高音の
+"汚い/ブツブツ"（帯域内 IMD・オーバーサンプリング無効を実証）を cab ヘッドルーム +
+presence 戻し→出力ホット化分の `cabSpeakerKnee` peak-limit 復帰 + JC/Twin -1.3 dB
+トリム（音割れ修正）、D154 ゲイン機の和音 IMD はマルチバンド含め非改善＝未出荷、
+D155 が cab 47-tap。直前の accepted は D153（`b86c88a`）、その前は D148
+（`96ef899`、JC/Twin clean-headroom + D146 hard CDC pblock + D147 amp sag-attack
+slew、D135 `765323b` を supersede）。D136-D142 / D144 は timing-clean でも
+safe-bypass の bench を通せず一旦 D135 へ rollback、D146 hard pblock で
+audio-output CDC を物理固定してから以降の voicing が land しました。
 
 ---
 
@@ -83,9 +93,9 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 | サンプルレート | 96 kHz / 24-bit |
 | DSP アイランドクロック | 33.33 MHz（1 サンプル/サイクル、約 347 サイクル/サンプルの余裕） |
 | タイミング改善（アイランド導入） | WNS -10.387 ns → -0.706 ns |
-| 採用ベースライン（D148）の WNS | +0.526 ns（フルタイミング MET、WHS +0.014 ns、route errors 0） |
+| 採用ベースライン（D155）の WNS | +0.319 ns（フルタイミング MET、WHS +0.013 ns、route errors 0、D109 CDC fwd +0.989） |
 | エフェクト | 9 ブロック（Amp 6 / OD 6 / Distortion 7 / Cab 3 機種） |
-| 現行 bit / hwh | `533d586901dc3669285a49c6d82bab9f` / `731517487c6218f0e181c2b74485d7a6` |
+| 現行 bit / hwh | `8d875cc8a0154a86673ab22e5b142d27` / `e0469cf593e97d582c14bb09ea98d3d3` |
 | `set_guitar_effects` レイテンシ | 940 ms → 2.6 ms（IP ハンドルキャッシュ後） |
 | 物理操作系 | エンコーダ ×3 / フットスイッチ ×3 / エクスプレッションペダル ×1 |
 
@@ -121,13 +131,12 @@ IN → Noise Sup → Compressor → Wah → Overdrive → Distortion(7ペダル)
 
 ---
 
-## 現状（2026-06-20）
+## 現状（2026-06-22）
 
-採用済みデプロイベースラインは **D148**（`96ef899`、D135 を supersede）。D121 の
-非 Amp 測定駆動 pass から D131 の distortion tooling、D134 の dynamics/knob 全体
-評価、D135 の Fuzz Face / Amp / Cab character 強化、D146 hard CDC pblock、D147 amp
-sag-attack slew、D148 JC/Twin clean-headroom fix までを段階的に実装・bench-ACCEPTED
-したビットストリームです。
+採用済みデプロイベースラインは **D155**（`09c8a95`、D153 を supersede）。D121 の
+非 Amp 測定駆動 pass、D131 distortion tooling、D134/D135 全 effect 評価・character
+強化、D146-D148 の hard CDC pblock + sag slew + clean-headroom、そして 2026-06 の
+**D150-D155 voicing アーク**までを段階的に実装・bench-ACCEPTED したビットストリームです。
 
 主な音作り / 安定化変更：
 
@@ -138,14 +147,20 @@ sag-attack slew、D148 JC/Twin clean-headroom fix までを段階的に実装・
    `dist_eval.py` / `targets.py` で distortion-character を自動評価。
 5. **D134-D135**：全 effect / knob の objective check を拡張し、Fuzz Face
    mid-hump、Amp MIDDLE / AC30 / JCM800、Cab body を改善。
-6. **D146-D148**：safe-bypass CDC を hard pblock（`SLICE_X100Y116:SLICE_X113Y137`）で
-   物理固定し、amp sag-attack slew（chord-IMD 修正）と JC-120 / Fender-Twin の
-   clean-headroom fix（`clip_onset.py` で局在化）を land。
+6. **D146-D149**：safe-bypass CDC を hard pblock（`SLICE_X100Y116:SLICE_X113Y137`）で
+   物理固定し、amp sag-attack slew・JC/Twin clean-headroom fix・cab real-IR 31-tap
+   rolloff FIR を land。
+7. **D150-D155（2026-06 voicing アーク）**：D150 OD/DS の和音 IMD（非対称クリップの
+   偶数次差音）を対称クリップで修正、D151 amp の高音増強（post-amp HF シェルフ + cab
+   presence。rig の高域は cab が支配し amp の TREBLE/PRESENCE はほぼ効かないと実測で判明）、
+   D152/D153 和音高音の "汚い/ブツブツ"（帯域内 IMD・オーバーサンプリング無効と実証）を
+   cab ヘッドルーム + presence 戻し → 出力ホット化分の `cabSpeakerKnee` peak-limit 復帰 +
+   JC/Twin -1.3 dB トリム（音割れ修正）、D154 ゲイン機の和音 IMD はマルチバンド含め
+   非改善＝未出荷、D155 cab speaker FIR を 31→47 タップへ拡張（real-4x12 寄りロールオフ）。
 
 すべて offline sim / golden / bypass invariant で Vivado 前に絞り込み、Vivado timing、
 deploy、programmatic smoke、ユーザー bench を通過したものだけを採用しています。D120 / D119 の
-Amp sag 変更は bench-reject 済みです。D136-D142 と D144 の chord-detune 候補も
-offline sim では改善したものの bench-reject され一旦 D135 へ rollback しましたが、
-D146 の hard pblock で crossing を物理固定してから clean-headroom voicing が
-land しました。最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` /
-`docs/ai_context/DECISIONS.md`（D109-D148）を参照。
+Amp sag 変更、D136-D142 / D144 chord-detune、D152 の単独（音割れ）、D154 マルチバンドは
+いずれも bench-reject または非改善で未採用です（sim 先行で安価に絞り込む規律）。
+最新の正確な状態は `docs/ai_context/CURRENT_STATE.md` /
+`docs/ai_context/DECISIONS.md`（D109-D155）を参照。
