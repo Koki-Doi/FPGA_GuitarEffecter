@@ -46,6 +46,7 @@ from audio_lab_pynq.hdmi_state.amps import (
     AMP_MODEL_ALIASES,
     normalize_amp_model,
     amp_model_label,
+    amp_model_from_character,
 )
 from audio_lab_pynq.hdmi_state.cabs import (
     CAB_MODELS,
@@ -96,6 +97,7 @@ from audio_lab_pynq.hdmi_state.common import (
     _model_key,
     _normalize_index_or_name,
 )
+from audio_lab_pynq.hdmi_state import summary as _summary
 
 
 class HdmiEffectStateMirror(object):
@@ -300,30 +302,9 @@ class HdmiEffectStateMirror(object):
         self._sync_model_state_to_app_state("OVERDRIVE")
 
     def _amp_model_from_character(self, value):
-        """D55 fallback: when a legacy chain preset / notebook writes a
-        continuous ``amp_character`` percent value (instead of an
-        explicit ``amp_model_idx``), pick the closest D55 voicing band
-        so the HDMI mirror still displays a sensible model name.
-
-        Six band centres (10 / 35 / 60 / 72 / 80 / 90 from
-        ``AMP_MODEL_CHARACTER``) map onto the six D55 voicings in
-        order; the boundaries below sit halfway between each centre.
-        """
-        try:
-            v = float(value)
-        except Exception:
-            v = AMP_MODEL_CHARACTER[self.current_amp_model]
-        if v < 22:
-            return "jc_120"          # 0..21
-        if v < 47:
-            return "twin_reverb"     # 22..46
-        if v < 66:
-            return "ac30"            # 47..65
-        if v < 76:
-            return "rockerverb"      # 66..75
-        if v < 85:
-            return "jcm800"          # 76..84
-        return "triamp_mk3"          # 85..
+        """D55 fallback amp-model-from-character (delegates to
+        hdmi_state.amps; refactor M)."""
+        return amp_model_from_character(value, self.current_amp_model)
 
     def _set_effect_index_for_selected_fx(self, effect_name):
         canonical = canonical_selected_fx(effect_name)
@@ -1070,137 +1051,29 @@ class HdmiEffectStateMirror(object):
         return snapshot
 
     # ---- summaries ---------------------------------------------------
+    # Reporting / summary methods are thin delegates to hdmi_state.summary
+    # (refactor M, 2026-06-22): read-only dict/JSON building moved out of the
+    # class body; behaviour is byte-for-byte unchanged.
     def get_state_summary(self):
-        status = {}
-        errors = {}
-        if self.hdmi_backend is not None:
-            try:
-                status = self.hdmi_backend.status()
-            except Exception as exc:
-                status = {"error": str(exc)}
-            try:
-                errors = self.hdmi_backend.errors()
-            except Exception as exc:
-                errors = {"error": str(exc)}
-        return {
-            "last_edited_effect": self.last_edited_effect,
-            "selected_fx_actual": self.get_selected_fx_actual(),
-            "selected_fx_expected": self.last_selected_fx_expected,
-            "current_pedal_model": self.current_pedal_model,
-            "current_amp_model": self.current_amp_model,
-            "current_cab_model": self.current_cab_model,
-            "current_pedal_label": self.current_pedal_label,
-            "current_amp_label": self.current_amp_label,
-            "current_cab_label": self.current_cab_label,
-            "active_pedals": list(self.active_pedals),
-            "selected_fx_history": list(self.selected_fx_history),
-            "render_count": len(self.render_history),
-            "last_render_info": dict(self.last_render_info),
-            "hdmi_status": status,
-            "hdmi_errors": errors,
-            "app_state": {
-                "preset_id": getattr(self.app_state, "preset_id", None),
-                "preset_name": getattr(self.app_state, "preset_name", None),
-                "preset_idx": getattr(self.app_state, "preset_idx", None),
-                "selected_effect": getattr(self.app_state, "selected_effect", None),
-                "selected_fx": getattr(self.app_state, "selected_fx", None),
-                "pedal_model": getattr(self.app_state, "pedal_model", None),
-                "amp_model": getattr(self.app_state, "amp_model", None),
-                "cab_model": getattr(self.app_state, "cab_model", None),
-                "pedal_model_label": getattr(
-                    self.app_state, "pedal_model_label", None),
-                "amp_model_label": getattr(
-                    self.app_state, "amp_model_label", None),
-                "cab_model_label": getattr(
-                    self.app_state, "cab_model_label", None),
-                "active_model_category": getattr(
-                    self.app_state, "active_model_category", None),
-                "active_pedals": list(
-                    getattr(self.app_state, "active_pedals", []) or []),
-                "effect_on": list(getattr(self.app_state, "effect_on", []) or []),
-                "knob_values": list(getattr(self.app_state, "knob_values", []) or []),
-            },
-        }
+        return _summary.get_state_summary(self)
 
     def print_selected_fx_history(self):
-        print("SELECTED FX history:")
-        for item in self.selected_fx_history:
-            print("[{index:02d}] {selected_fx}  reason={reason}".format(**item))
+        return _summary.print_selected_fx_history(self)
 
     def selected_history(self):
         """Return a copy of the SELECTED FX history list."""
-        return [dict(item) for item in self.selected_fx_history]
+        return _summary.selected_history(self)
 
     def resource_summary(self):
-        """Return a snapshot of PS / GUI / HDMI resource usage.
-
-        The dict is safe to print or render in a Notebook widget. Includes
-        the latest /proc CPU and memory sample, the last render/compose/
-        framebuffer-copy timings, VDMA / VTC status, and the SELECTED FX
-        bookkeeping fields the user typically wants to display alongside
-        these numbers.
-        """
-        sample = self.resource_sampler.sample()
-        self.last_resource_sample = sample
-        info = dict(self.last_render_info or {})
-        status = info.get("hdmi_status") or {}
-        errors = info.get("hdmi_errors") or {}
-        last_write = info.get("last_frame_write") or status.get(
-            "last_frame_write", {}) or {}
-        return {
-            "time_s": sample.get("time_s"),
-            "proc_rss_kb": sample.get("proc_rss_kb"),
-            "proc_vmsize_kb": sample.get("proc_vmsize_kb"),
-            "mem_total_kb": sample.get("mem_total_kb"),
-            "mem_avail_kb": sample.get("mem_avail_kb"),
-            "mem_free_kb": sample.get("mem_free_kb"),
-            "sys_cpu_pct": sample.get("sys_cpu_pct"),
-            "proc_cpu_pct": sample.get("proc_cpu_pct"),
-            "cpu_count": sample.get("cpu_count"),
-            "temperature_c": sample.get("temperature_c"),
-            "render_s": info.get("render_s"),
-            "backend_update_s": info.get("backend_update_s"),
-            "compose_s": info.get("compose_s"),
-            "framebuffer_copy_s": info.get("framebuffer_copy_s"),
-            "total_update_s": info.get("total_update_s"),
-            "vdma_dmacr": status.get("vdma_dmacr"),
-            "vdma_dmasr": status.get("vdma_dmasr"),
-            "vdma_error_raw": errors.get("raw"),
-            "vdma_error_bits": {
-                "halted": errors.get("halted"),
-                "idle": errors.get("idle"),
-                "dmainterr": errors.get("dmainterr"),
-                "dmaslverr": errors.get("dmaslverr"),
-                "dmadecerr": errors.get("dmadecerr"),
-            },
-            "vtc_ctl": status.get("vtc_ctl"),
-            "last_frame_write": last_write,
-            "selected_fx": self.get_selected_fx_actual(),
-            "selected_model_category": getattr(
-                self.app_state, "selected_model_category", None),
-            "dropdown_label": getattr(self.app_state, "dropdown_label", None),
-            "dropdown_short_label": getattr(
-                self.app_state, "dropdown_short_label", None),
-            "current_pedal_model": self.current_pedal_model,
-            "current_amp_model": self.current_amp_model,
-            "current_cab_model": self.current_cab_model,
-            "current_pedal_label": self.current_pedal_label,
-            "current_amp_label": self.current_amp_label,
-            "current_cab_label": self.current_cab_label,
-            "last_edited_effect": self.last_edited_effect,
-            "render_count": len(self.render_history),
-            "pl_utilization": dict(STATIC_PL_UTILIZATION),
-        }
+        """Return a snapshot of PS / GUI / HDMI resource usage."""
+        return _summary.resource_summary(self)
 
     def summary(self):
         """Phase 6C: combined state + resource snapshot for Notebook UIs."""
-        data = self.get_state_summary()
-        data["resource"] = self.resource_summary()
-        return data
+        return _summary.summary(self)
 
     def summary_json(self):
-        return json.dumps(self.get_state_summary(), indent=2, sort_keys=True,
-                          default=str)
+        return _summary.summary_json(self)
 
 
 __all__ = [
