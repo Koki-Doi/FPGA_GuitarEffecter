@@ -129,3 +129,30 @@ def normalize_amp_model(value):
 
 def amp_model_label(value):
     return AMP_MODEL_LABELS[normalize_amp_model(value)]
+
+
+def amp_model_from_character(value, fallback_model):
+    """D55 fallback: when a legacy chain preset / notebook writes a continuous
+    ``amp_character`` percent value (instead of an explicit ``amp_model_idx``),
+    pick the closest D55 voicing band so the HDMI mirror still displays a
+    sensible model name. Six band centres (10 / 35 / 60 / 72 / 80 / 90 from
+    ``AMP_MODEL_CHARACTER``) map onto the six D55 voicings in order; the
+    boundaries below sit halfway between each centre. ``fallback_model`` supplies
+    the percent when ``value`` is not numeric. (Refactor M: moved out of
+    HdmiEffectStateMirror.)
+    """
+    try:
+        v = float(value)
+    except Exception:
+        v = AMP_MODEL_CHARACTER[fallback_model]
+    if v < 22:
+        return "jc_120"          # 0..21
+    if v < 47:
+        return "twin_reverb"     # 22..46
+    if v < 66:
+        return "ac30"            # 47..65
+    if v < 76:
+        return "rockerverb"      # 66..75
+    if v < 85:
+        return "jcm800"          # 76..84
+    return "triamp_mk3"          # 85..
