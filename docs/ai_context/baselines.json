@@ -2,7 +2,7 @@
  "_comment": "Single source of truth for committed deployed-bitstream baselines. md5s are NOT stored here -- they are computed live from git by tools/baselines.py (git show <commit>:<bit_path> | md5sum) so they can never drift / be copy-pasted wrong (e.g. the D99 hwh once recorded as D98's). current_deployed is a historical field name; it marks the current accepted committed baseline, not an uncommitted live-board candidate. Edit only the seed fields below; regenerate docs/ai_context/BASELINES.md with `python3 tools/baselines.py render`.",
  "bit_path": "hw/Pynq-Z2/bitstreams/audio_lab.bit",
  "hwh_path": "hw/Pynq-Z2/bitstreams/audio_lab.hwh",
- "current_deployed": "b86c88a",
+ "current_deployed": "09c8a95",
  "baselines": [
   {
    "decision": "D90",
@@ -273,9 +273,16 @@
   {
    "decision": "D153",
    "commit": "b86c88a",
-   "status": "accepted-current",
+   "status": "accepted-superseded",
    "date": "2026-06-21",
    "note": "JC-120/Twin \u97f3\u5272\u308c fix (D152 cab-headroom made the clean amps too hot): restore cabSpeakerKnee to D151 (peak limiter) + keep D152 early-stage cab headroom (body/presence knees) + presence-peak pull-back (+4.5/5.0/5.5 dB) + trim JC/Twin master ~-1.3 dB (ampMasterFrame, shift-only). Carries the D152 chord-IMD cleanup. Placement-safe constant/shift-only, no new DSP; bypass bit-exact (only amp_jc120+amp_twin goldens changed)"
+  },
+  {
+   "decision": "D155",
+   "commit": "09c8a95",
+   "status": "accepted-current",
+   "date": "2026-06-22",
+   "note": "cab speaker FIR 31->47 taps (Option-Y folded extension, NOT the 128-tap BRAM B2): sharper real-4x12 >5kHz rolloff (open -14.9/brit -22.0/closed -28.9 dB/oct), presence biquad keeps the 2-4kHz peak so D151 brightness untouched; cabSpeakerFirCoeff Vec16->Vec24, history Vec30->Vec46, 24 folded products; only cab golden changed, bypass bit-exact. Build WNS +0.319, D109 CDC fwd +0.989 (lowest of arc, bench-clean), DSP 206/220. Also carries the A deploy no-download integrity check (+ step-7.5 ordering fix). D154 (gain-amp chord IMD) investigated, no net-improving fix (incl multiband), not shipped"
   }
  ]
 }

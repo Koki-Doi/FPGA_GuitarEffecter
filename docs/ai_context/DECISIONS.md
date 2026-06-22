@@ -6606,7 +6606,7 @@ pre-existing 3 failures + 1 error baseline.
   smoke, then bench safe-bypass plus tube-model Amp volume stability before
   acceptance. D112 (`c1e3de50`) remains the accepted baseline.
 
-## D155 — Cab speaker FIR 31->47 taps (Option Y folded extension); BUILT + COMMITTED, NOT deployed (low CDC margin), PENDING BENCH (2026-06-21, overnight C)
+## D155 — Cab speaker FIR 31->47 taps (Option Y folded extension); bench-ACCEPTED, current baseline (`09c8a95`, bit `8d875cc8`) (2026-06-22, overnight C)
 
 - **Decision (overnight "ABC", C).** The user asked for "Cab IR B2". The full
   128-tap BRAM time-mux MAC (the literal B2) was DECLINED: the sim (cab_ir.py,
@@ -6635,13 +6635,12 @@ pre-existing 3 failures + 1 error baseline.
   against the just-accepted D151 brightness; (3) an unattended deploy + the
   download=True smoke re-risks the D153 board-hang/data-loss. Bench needs the user
   anyway.
-- **Status.** CANDIDATE on `feature/overnight-d154-d155`; `main` stays accepted
-  D153 (+ the A deploy hardening). **PENDING USER: deploy + ear-bench** -- listen
-  hard to all-off bypass for ANY buzz (the +0.989 CDC flag) and judge whether the
-  slightly darker/steeper cab top is wanted. Deploy: `git checkout
-  <D155 commit> -- hw/Pynq-Z2/bitstreams/ && bash scripts/deploy_to_pynq.sh` then
-  load once. If buzzy or too dark, stay on D153 (`git checkout b86c88a --
-  hw/Pynq-Z2/bitstreams/`).
+- **Status.** **User bench: 合格** (deployed via the fixed integrity-check deploy,
+  mode-2 smoke PASS, ear-bench clean -- the +0.989 CDC margin did NOT buzz).
+  `--no-ff` merged into `main` (merge `09c8a95`); D155 supersedes D153 and carries
+  the A deploy integrity-check (+ the step-7.5 ordering fix). `baselines.json`
+  updated (D155 accepted-current, D153 accepted-superseded).
+- **Rollback.** `git checkout b86c88a -- hw/Pynq-Z2/bitstreams/` + redeploy (D153).
 
 ## D154 — gain-amp chord IMD: investigated, NO safe blind fix (NOT shipped) (2026-06-21, overnight B)
 
