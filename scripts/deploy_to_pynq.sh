@@ -200,56 +200,6 @@ ssh_remote "
     echo \"  overlays registry: \$OVERLAYS_DIR\"
 "
 
-# --- 5.6 Bitstream integrity check (NO overlay download) -----------------
-#
-# Verify every board bit/hwh copy md5-matches the local repo, WITHOUT loading
-# the overlay. This catches partial/0-byte syncs and post-crash corruption
-# (e.g. the D153 incident: a board hang + cold power-cycle left all 15 notebooks
-# and several bit copies 0-byte = unclean-poweroff data loss). It deliberately
-# does NOT instantiate AudioLabOverlay(): a repeated `download=True` is exactly
-# what hangs the board, so the deploy never loads the PL. Load the bitstream once
-# per power-cycle from a notebook/script, not from the deploy.
-LOCAL_BIT_MD5=$(md5sum "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.bit" | awk '{print $1}')
-LOCAL_HWH_MD5=$(md5sum "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.hwh" | awk '{print $1}')
-log "verifying board bit/hwh integrity vs repo (md5; no overlay download)"
-log "  repo bit md5 $LOCAL_BIT_MD5"
-ssh_remote "python3 - <<PY
-import hashlib, os, pynq
-exp_bit = '$LOCAL_BIT_MD5'
-exp_hwh = '$LOCAL_HWH_MD5'
-ovl = os.path.join(os.path.dirname(pynq.__file__), 'overlays', 'audio_lab')
-copies = [
-    '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams',
-    os.path.dirname(__import__('audio_lab_pynq').__file__) + '/bitstreams',
-    ovl,
-    '${REMOTE_JUPYTER_ROOT:-$PYNQ_NB_DIR}/audio_lab/bitstreams',
-]
-def md5(p):
-    h = hashlib.md5()
-    with open(p, 'rb') as f:
-        for c in iter(lambda: f.read(65536), b''):
-            h.update(c)
-    return h.hexdigest()
-bad = 0
-seen = set()
-for d in copies:
-    if d in seen:
-        continue
-    seen.add(d)
-    b = os.path.join(d, 'audio_lab.bit')
-    w = os.path.join(d, 'audio_lab.hwh')
-    if not os.path.exists(b):
-        print('  MISSING', b); bad += 1; continue
-    mb = md5(b); mw = md5(w) if os.path.exists(w) else 'NO-HWH'
-    ok = (mb == exp_bit) and (mw == exp_hwh)
-    print('  %-7s %s bit=%s hwh=%s' % ('OK' if ok else 'BAD', d, mb[:8], mw[:8]))
-    if not ok:
-        bad += 1
-if bad:
-    raise SystemExit('bitstream integrity check FAILED on %d copy/copies' % bad)
-print('  all board bit/hwh copies md5-match the repo')
-PY"
-
 # --- 6. Import sanity check ----------------------------------------------
 
 log "verifying imports on PYNQ"
@@ -346,6 +296,57 @@ print('  valid notebooks:', len(paths))
 print('  main notebook:', os.path.join(root, 'AudioLab.ipynb'))
 PY"
 done
+
+# --- 7.5 Bitstream integrity check (NO overlay download) -----------------
+#
+# Verify every board bit/hwh copy md5-matches the local repo, WITHOUT loading
+# the overlay. Runs AFTER the notebook install so the notebooks/audio_lab/
+# bitstreams copy is already refreshed. Catches partial/0-byte syncs and
+# post-crash corruption (e.g. the D153 incident: a board hang + cold power-cycle
+# left all 15 notebooks and several bit copies 0-byte = unclean-poweroff data
+# loss). It deliberately does NOT instantiate AudioLabOverlay(): a repeated
+# `download=True` is exactly what hangs the board, so the deploy never loads the
+# PL. Load the bitstream once per power-cycle from a notebook/script.
+LOCAL_BIT_MD5=$(md5sum "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.bit" | awk '{print $1}')
+LOCAL_HWH_MD5=$(md5sum "$REPO_ROOT/hw/Pynq-Z2/bitstreams/audio_lab.hwh" | awk '{print $1}')
+log "verifying board bit/hwh integrity vs repo (md5; no overlay download)"
+log "  repo bit md5 $LOCAL_BIT_MD5"
+ssh_remote "python3 - <<PY
+import hashlib, os, pynq
+exp_bit = '$LOCAL_BIT_MD5'
+exp_hwh = '$LOCAL_HWH_MD5'
+ovl = os.path.join(os.path.dirname(pynq.__file__), 'overlays', 'audio_lab')
+copies = [
+    '$PYNQ_REPO_DIR/hw/Pynq-Z2/bitstreams',
+    os.path.dirname(__import__('audio_lab_pynq').__file__) + '/bitstreams',
+    ovl,
+    '${REMOTE_JUPYTER_ROOT:-$PYNQ_NB_DIR}/audio_lab/bitstreams',
+]
+def md5(p):
+    h = hashlib.md5()
+    with open(p, 'rb') as f:
+        for c in iter(lambda: f.read(65536), b''):
+            h.update(c)
+    return h.hexdigest()
+bad = 0
+seen = set()
+for d in copies:
+    if d in seen:
+        continue
+    seen.add(d)
+    b = os.path.join(d, 'audio_lab.bit')
+    w = os.path.join(d, 'audio_lab.hwh')
+    if not os.path.exists(b):
+        print('  MISSING', b); bad += 1; continue
+    mb = md5(b); mw = md5(w) if os.path.exists(w) else 'NO-HWH'
+    ok = (mb == exp_bit) and (mw == exp_hwh)
+    print('  %-7s %s bit=%s hwh=%s' % ('OK' if ok else 'BAD', d, mb[:8], mw[:8]))
+    if not ok:
+        bad += 1
+if bad:
+    raise SystemExit('bitstream integrity check FAILED on %d copy/copies' % bad)
+print('  all board bit/hwh copies md5-match the repo')
+PY"
 
 # --- 8. Summary ----------------------------------------------------------
 
