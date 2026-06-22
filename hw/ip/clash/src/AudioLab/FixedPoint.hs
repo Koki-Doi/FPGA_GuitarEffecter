@@ -142,64 +142,46 @@ softClipK knee x
 -- | Asymmetric soft clip. The negative half uses a steeper compression
 -- (1/8 slope) than the positive half (1/4 slope). Generates even-harmonic
 -- content for tube-style overdrive.
-asymSoftClip :: Sample -> Sample -> Sample -> Sample
-asymSoftClip kneeP kneeN x
-  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 2) :: Signed 25)
-  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 3) :: Signed 25)
+-- | Asymmetric soft clip with independent positive/negative compression
+-- shifts (refactor J, 2026-06-22). The slope above each knee is 1 / 2^shift, so
+-- a smaller shift = harder knee (more odd harmonics, diode/MOSFET-like) and a
+-- larger shift = softer (gentle op-amp). The named siblings below partially
+-- apply fixed compile-time shifts, so each synthesises as identical fixed wiring
+-- (a per-model mux, see Overdrive.odClipHardness, selects one). They were five
+-- copy-pasted bodies differing only in the two `shiftR` constants; this is the
+-- one shared kernel. D150 added the symmetric (pos==neg) variant: symmetric
+-- clipping produces only ODD-order intermodulation (near the chord's own
+-- harmonic series), where the asymmetric siblings add strong EVEN-order
+-- sum/difference tones (f2-f1 sub-bass beating) that make a distorted CHORD
+-- sound detuned / "farty". A small kneeP/kneeN gap still leaves a touch of
+-- even-harmonic warmth on single notes.
+softClipShift :: Int -> Int -> Sample -> Sample -> Sample -> Sample
+softClipShift posSh negSh kneeP kneeN x
+  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` posSh) :: Signed 25)
+  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` negSh) :: Signed 25)
   | otherwise = x
  where
   negKneeN = negate kneeN
 
--- | Per-model clip hardness siblings (realism item 4). Same asymmetric
--- soft-clip shape as 'asymSoftClip' but with different compile-time-constant
--- compression shifts, so each synthesises as fixed wiring. A per-model mux
--- (see Overdrive.odClipHardness) selects one; the slope above the knee is
--- 1 / 2^shift, so a smaller shift = harder knee (more odd harmonics, closer
--- to a diode/MOSFET clip) and a larger shift = softer (gentle op-amp-style).
---
 --   asymSoftClipSoft : pos>>3 neg>>4  -- softest (TS9 / Jan Ray / Klon)
 --   asymSoftClip     : pos>>2 neg>>3  -- medium  (OD-1 / BD-2, the legacy shape)
 --   asymSoftClipMed  : pos>>1 neg>>2  -- harder  (OCD MOSFET knee)
---   asymSoftClipHard : pos>>1 neg>>1  -- hardest (reserved for near-hard clip)
+--   asymSoftClipHard : pos>>1 neg>>1  -- hardest (near-hard clip, symmetric)
+--   symSoftClipMed   : pos>>2 neg>>2  -- symmetric medium (D150 OD/DS chord-IMD)
+asymSoftClip :: Sample -> Sample -> Sample -> Sample
+asymSoftClip = softClipShift 2 3
+
 asymSoftClipSoft :: Sample -> Sample -> Sample -> Sample
-asymSoftClipSoft kneeP kneeN x
-  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 3) :: Signed 25)
-  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 4) :: Signed 25)
-  | otherwise = x
- where
-  negKneeN = negate kneeN
+asymSoftClipSoft = softClipShift 3 4
 
 asymSoftClipMed :: Sample -> Sample -> Sample -> Sample
-asymSoftClipMed kneeP kneeN x
-  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 1) :: Signed 25)
-  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 2) :: Signed 25)
-  | otherwise = x
- where
-  negKneeN = negate kneeN
+asymSoftClipMed = softClipShift 1 2
 
 asymSoftClipHard :: Sample -> Sample -> Sample -> Sample
-asymSoftClipHard kneeP kneeN x
-  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 1) :: Signed 25)
-  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 1) :: Signed 25)
-  | otherwise = x
- where
-  negKneeN = negate kneeN
+asymSoftClipHard = softClipShift 1 1
 
--- | Symmetric soft clip (1/4 slope BOTH halves) with independent pos/neg
--- knees -- the symmetric-slope sibling of 'asymSoftClip' (which uses pos>>2
--- neg>>3). Symmetric clipping produces only ODD-order intermodulation, which
--- lands near the chord's own harmonic series; the asymmetric siblings add
--- strong EVEN-order sum/difference tones (e.g. f2-f1 sub-bass beating) that
--- make a distorted CHORD sound detuned / "farty". Keeping a small kneeP/kneeN
--- gap still leaves a touch of even-harmonic warmth on single notes. (D150 OD/DS
--- chord-IMD fix.)
 symSoftClipMed :: Sample -> Sample -> Sample -> Sample
-symSoftClipMed kneeP kneeN x
-  | x > kneeP = resize (resize kneeP + (((resize x :: Signed 25) - resize kneeP) `shiftR` 2) :: Signed 25)
-  | x < negKneeN = resize (resize negKneeN + (((resize x :: Signed 25) - resize negKneeN) `shiftR` 2) :: Signed 25)
-  | otherwise = x
- where
-  negKneeN = negate kneeN
+symSoftClipMed = softClipShift 2 2
 
 -- | Hard clip with independent positive/negative thresholds. Used by
 -- bias-shifted fuzz models where the waveform centre is offset.
