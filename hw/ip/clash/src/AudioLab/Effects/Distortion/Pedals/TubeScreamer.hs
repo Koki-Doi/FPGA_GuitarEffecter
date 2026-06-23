@@ -47,13 +47,8 @@ tubeScreamerMidFrame x1 x2 y1 y2 f =
   on = tubeScreamerOn f
   x = monoSample f
   -- 96 kHz RBJ coeffs (720 Hz, Q 0.8, +6 dB); was 17036/-31323/14422/31323/15075 @48k.
-  acc =
-    mulS16 x 16717
-      + mulS16 x1 (-32063)
-      + mulS16 x2 15382
-      + mulS16 y1 32063
-      - mulS16 y2 15715 :: Wide
-  y = satShift14 acc
+  -- refactor B: shared FixedPoint.biquad5 (single-stage DF-I)
+  y = biquad5 x x1 x2 y1 y2 16717 (-32063) 15382 32063 15715
 
 tubeScreamerMulFrame :: Frame -> Frame
 tubeScreamerMulFrame f =

@@ -73,6 +73,30 @@ satShift12 = satWide . (`shiftR` 12)
 satShift14 :: Wide -> Sample
 satShift14 = satWide . (`shiftR` 14)
 
+-- | Shared Direct-Form-I biquad kernels (refactor B). The 5+ resonant tone
+-- biquads (TS mid hump, Big Muff / DS-1 / Metal scoop, amp scoop mux,
+-- transformer resonance, OD mid, Fuzz Face mid) all hand-inlined the same Q14
+-- fixed-point structure. These are the one shared kernel; coefficients stay
+-- per-site (the caller selects them), and Clash inlines so each site
+-- synthesises identically to the old inline form (golden byte-identical).
+--
+-- 'biquadFf' is the feedforward sum b0*x + b1*x1 + b2*x2 (no feedback, pipelines
+-- freely -- the D82/D83 split precomputes this one stage early into an
+-- accumulator). 'biquadRec' closes the loop: ffSum + na1*y1 - a2*y2, scaled back
+-- by 2^14, where na1 = -a1 (sites that store the true negative a1 pass
+-- `negate a1`). 'biquad5' is the single-stage 5-multiply form (ff + rec in one
+-- frame, used where the island has the timing margin).
+biquadFf :: Sample -> Sample -> Sample -> Signed 16 -> Signed 16 -> Signed 16 -> Wide
+biquadFf x x1 x2 b0 b1 b2 = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2
+
+biquadRec :: Wide -> Sample -> Sample -> Signed 16 -> Signed 16 -> Sample
+biquadRec ffSum y1 y2 na1 a2 = satShift14 (ffSum + mulS16 y1 na1 - mulS16 y2 a2)
+
+biquad5 :: Sample -> Sample -> Sample -> Sample -> Sample
+        -> Signed 16 -> Signed 16 -> Signed 16 -> Signed 16 -> Signed 16 -> Sample
+biquad5 x x1 x2 y1 y2 b0 b1 b2 na1 a2 =
+  biquadRec (biquadFf x x1 x2 b0 b1 b2) y1 y2 na1 a2
+
 -- | Q16 accumulator scale-back for the cab speaker FIR (B1 / R4 step B): the
 -- 31-tap rolloff FIR uses Signed-16 coeffs whose unity-DC sum is 2^16, so the
 -- accumulated convolution is scaled back by 16 (was satShift8 / sum 256 for the

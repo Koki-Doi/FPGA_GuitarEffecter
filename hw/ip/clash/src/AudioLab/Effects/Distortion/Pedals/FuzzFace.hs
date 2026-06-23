@@ -82,10 +82,8 @@ fuzzFaceMidFeedforwardFrame x1 x2 f =
  where
   on = fuzzFaceOn f
   x = monoSample f
-  ff =
-    mulS16 x 16632
-      + mulS16 x1 (-31511)
-      + mulS16 x2 14933 :: Wide
+  -- refactor B: shared FixedPoint.biquadFf
+  ff = biquadFf x x1 x2 16632 (-31511) 14933
 
 fuzzFaceMidRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 fuzzFaceMidRecursiveFrame y1 y2 f =
@@ -93,7 +91,8 @@ fuzzFaceMidRecursiveFrame y1 y2 f =
  where
   on = fuzzFaceOn f
   -- a1 = -31511, a2 = 15181; fAcc3L holds the feedforward sum.
-  y = satShift14 (fAcc3L f + mulS16 y1 31511 - mulS16 y2 15181)
+  -- refactor B: shared FixedPoint.biquadRec (na1 = 31511)
+  y = biquadRec (fAcc3L f) y1 y2 31511 15181
 
 fuzzFaceToneFrame :: Sample -> Frame -> Frame
 fuzzFaceToneFrame prevLp f =
