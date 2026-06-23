@@ -147,7 +147,7 @@ bigMuffScoopFeedforwardFrame x1 x2 f =
   on = bigMuffOn f || metalDistortionOn f || ds1On f
   x = monoSample f
   (b0, b1, b2) = bigMuffScoopFfCoeff f
-  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
+  ff = biquadFf x x1 x2 b0 b1 b2   -- refactor B: shared FixedPoint.biquadFf
 
 bigMuffScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 bigMuffScoopRecursiveFrame y1 y2 f =
@@ -155,8 +155,8 @@ bigMuffScoopRecursiveFrame y1 y2 f =
  where
   on = bigMuffOn f || metalDistortionOn f || ds1On f   -- shared scoop (see FF note)
   (na1, a2) = bigMuffScoopFbCoeff f
-  -- fAcc3L holds the FF sum; -a1 = +na1.
-  y = satShift14 (fAcc3L f + mulS16 y1 na1 - mulS16 y2 a2)
+  -- fAcc3L holds the FF sum; -a1 = +na1. refactor B: shared FixedPoint.biquadRec
+  y = biquadRec (fAcc3L f) y1 y2 na1 a2
 
 bigMuffToneFrame :: Sample -> Frame -> Frame
 bigMuffToneFrame prevLp f =

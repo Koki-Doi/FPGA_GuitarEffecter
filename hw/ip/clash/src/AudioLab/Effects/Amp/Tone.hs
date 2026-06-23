@@ -53,7 +53,7 @@ ampToneScoopFeedforwardFrame x1 x2 f =
   on = flag6 (fGate f)
   (b0, b1, b2) = ampScoopFeedforwardCoeffs (ampModelIdxF f)
   x = monoWet f
-  ff = mulS16 x b0 + mulS16 x1 b1 + mulS16 x2 b2 :: Wide
+  ff = biquadFf x x1 x2 b0 b1 b2   -- refactor B: shared FixedPoint.biquadFf
 
 ampToneScoopRecursiveFrame :: Sample -> Sample -> Frame -> Frame
 ampToneScoopRecursiveFrame y1 y2 f =
@@ -61,8 +61,9 @@ ampToneScoopRecursiveFrame y1 y2 f =
  where
   on = flag6 (fGate f)
   (a1, a2) = ampScoopFeedbackCoeffs (ampModelIdxF f)
-  -- fAccL already holds the feedforward sum; y = satShift14(FF - a1*y1 - a2*y2).
-  y = satShift14 (fAccL f - mulS16 y1 a1 - mulS16 y2 a2)
+  -- fAccL already holds the feedforward sum. refactor B: shared
+  -- FixedPoint.biquadRec (na1 = -a1) -> satShift14(FF - a1*y1 - a2*y2).
+  y = biquadRec (fAccL f) y1 y2 (negate a1) a2
 
 ampToneFilterFrame :: Sample -> Sample -> Frame -> Frame
 ampToneFilterFrame prevLow prevHighLp f =
@@ -415,13 +416,8 @@ ampXfmrResFrame x1 x2 y1 y2 f =
   on = flag6 (fGate f) && ampModelIdxF f /= 0
   x = monoSample f
   -- 96 kHz RBJ coeffs (110 Hz, Q 0.8, +2 dB); was 16418/-32504/16090/32504/16123 @48k.
-  acc =
-    mulS16 x 16401
-      + mulS16 x1 (-32636)
-      + mulS16 x2 16236
-      + mulS16 y1 32636
-      - mulS16 y2 16253 :: Wide
-  y = satShift14 acc
+  -- refactor B: shared FixedPoint.biquad5 (single-stage DF-I)
+  y = biquad5 x x1 x2 y1 y2 16401 (-32636) 16236 32636 16253
 
 -- Multiband (3-band) mid-focused saturation (D97, digital-sound #12). The D93
 -- pre/de-emphasis is a single-band crude version; real circuits clip the bands
