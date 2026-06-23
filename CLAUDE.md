@@ -296,18 +296,41 @@ When a previous turn stopped mid-implementation:
   theme you are changing (palette / panel boxes -> `layout.py`,
   render functions -> `renderer.py`, knob layout / model tables ->
   `knobs.py`, AppState / save-load -> `state.py`, click mapping ->
-  `hit_test.py`), not the shim. The HDMI GUI state mirror in
+  `hit_test.py`), not the shim. As of **refactor P2** the renderer's
+  low-level draw primitives + the shared render-cache holder live in
+  `GUI/compact_v2/_render_primitives.py` (the cache is set/restored via
+  `set_active_render_cache()`, NOT a cross-module `global` rebind) and the
+  per-panel draw functions in `GUI/compact_v2/_render_panels.py`; `renderer.py`
+  keeps the frame builders + dispatch and re-exports both, so
+  `from compact_v2.renderer import X` is unchanged (panels -> primitives,
+  renderer -> both = no circular import). The HDMI GUI state mirror in
   `audio_lab_pynq/hdmi_effect_state_mirror.py` is similarly split
   per-effect under `audio_lab_pynq/hdmi_state/` (`pedals.py` /
   `amps.py` / `cabs.py` / `selected_fx.py` / `knobs.py` /
-  `resource_sampler.py` / `common.py`); the `hdmi_effect_state_mirror`
-  file remains the home of the `HdmiEffectStateMirror` class and
-  re-exports every constant / helper. `AudioLabOverlay.set_guitar_effects`
-  is also split into six private helpers (`_require_effect_gpios`,
+  `resource_sampler.py` / `common.py` / `summary.py` -- the last holds
+  the read-only `get_state_summary` / `resource_summary` / `summary*`
+  reporting, refactor M); the `hdmi_effect_state_mirror` file remains
+  the home of the `HdmiEffectStateMirror` class and re-exports every
+  constant / helper. `AudioLabOverlay.set_guitar_effects` is also split
+  into six private helpers (`_require_effect_gpios`,
   `_merge_cached_distortion_state`,
   `_merge_cached_noise_suppressor_state`, `_write_effect_gpios`,
-  `_refresh_cached_words`, `_route_effect_chain`); behaviour and
-  return value are byte-for-byte preserved.
+  `_refresh_cached_words`, `_route_effect_chain`), and
+  `apply_chain_preset`'s pure kwargs-builder lives in
+  `audio_lab_pynq/overlay/chain_preset_apply.py` (refactor P1); behaviour
+  and return value are byte-for-byte preserved.
+- The selectable distortion pedals are split one-module-per-pedal under
+  `hw/ip/clash/src/AudioLab/Effects/Distortion/Pedals/`
+  (`CleanBoost` / `TubeScreamer` / `Metal` / `Ds1` / `BigMuff` /
+  `FuzzFace`; `BigMuff` hosts the shared mid-scoop biquad Metal/DS-1 drive),
+  with `Distortion/Pedals.hs` a re-export shim (**refactor K**). Shared DSP
+  kernels live in `AudioLab.FixedPoint`: the clip family is one
+  `softClipShift posSh negSh` with thin named wrappers (`asymSoftClip*` /
+  `symSoftClipMed`, **refactor J**), and the resonant tone biquads use
+  `biquadFf` / `biquadRec` / `biquad5` (**refactor B**). All of J/K/M/P2/P1/B
+  are byte-equivalent (golden 20/20 or the 108-frame render digest); the
+  Clash ones LEFT the deployed `vhdl/bit` at D155 (F-pattern) -- a future
+  bit rebuild from this source still needs the usual timing/CDC/ear-bench.
 - `git push`, `git pull`, `git fetch`, and other remote operations are
   forbidden. Local commits only.
 - Do not clone reference repositories into the tree. Do not paste GPL code

@@ -8,7 +8,7 @@
 > sag D86); a 15-tap symmetric cab speaker-rolloff FIR (D87, pipeline-split);
 > and **4x oversampling of the hard/cascade-clip aliasers Metal (D88), RAT
 > (D89), and Big Muff (D90)** -- linear-interp upsample + per-sub-sample clip +
-> 15-tap decimation FIR via the shared `os4x*` helpers in `Distortion.hs`, each
+> 15-tap decimation FIR via the shared `os4x*` helpers in `Distortion/Common.hs`, each
 > split products/mix (a FIR is feedforward -> pipelines freely; the IIR biquads
 > are NOT split across the feedback). The DSP island was lowered to **40 MHz** at
 > D89 for oversampler headroom and to **33.33 MHz** at D94 for the later realism

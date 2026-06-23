@@ -172,10 +172,25 @@ When a previous turn stopped mid-implementation:
   runner polls footswitches by default; use `--no-footswitch` only for a
   deliberate diagnostic.
 - The compact-v2 800x480 GUI renderer is split under `GUI/compact_v2/`
-  (`knobs.py` / `state.py` / `layout.py` / `renderer.py` / `hit_test.py`);
+  (`knobs.py` / `state.py` / `layout.py` / `renderer.py` / `hit_test.py`, plus
+  `_render_primitives.py` = draw primitives + the shared render-cache holder and
+  `_render_panels.py` = per-panel draw functions, refactor P2); the renderer
+  re-exports both so `from compact_v2.renderer import X` is unchanged.
   `GUI/pynq_multi_fx_gui.py` is a thin re-export shim. The HDMI state mirror is
-  split under `audio_lab_pynq/hdmi_state/`. Edit the owning submodule, not the
-  shim.
+  split under `audio_lab_pynq/hdmi_state/` (incl. `summary.py` = the read-only
+  reporting group, refactor M); `AudioLabOverlay.apply_chain_preset`'s pure
+  kwargs-builder is `audio_lab_pynq/overlay/chain_preset_apply.py` (refactor P1).
+  Edit the owning submodule, not the shim.
+- The selectable distortion pedals are one-module-per-pedal under
+  `hw/ip/clash/src/AudioLab/Effects/Distortion/Pedals/`
+  (`CleanBoost`/`TubeScreamer`/`Metal`/`Ds1`/`BigMuff`/`FuzzFace`; `BigMuff`
+  hosts the shared mid-scoop biquad) behind a `Pedals.hs` re-export shim
+  (refactor K). Shared Clash DSP kernels in `AudioLab.FixedPoint`: the clip
+  family is one `softClipShift posSh negSh` + named wrappers (refactor J), and
+  the resonant tone biquads use `biquadFf`/`biquadRec`/`biquad5` (refactor B).
+  J/K/M/P2/P1/B are byte-equivalent (golden 20/20 or the 108-frame render
+  digest); the Clash ones LEFT the deployed `vhdl/bit` at D155 (F-pattern) -- a
+  future bit rebuild from this source still needs timing/CDC/ear-bench.
 - Notebook-only edits do **not** rebuild the bitstream. Update the notebook,
   run `bash scripts/deploy_to_pynq.sh`, and sync through the deploy script. The
   deploy path maintains the required bit/hwh copies documented in

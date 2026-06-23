@@ -277,10 +277,10 @@ DSP は **Clash**（Haskell ベースの関数型 HDL）で記述し、Clash →
 | モジュール | 役割 |
 | --- | --- |
 | `AudioLab.Types` | コア型定義 |
-| `AudioLab.FixedPoint` | 固定小数点の数値ヘルパー |
+| `AudioLab.FixedPoint` | 固定小数点の数値ヘルパー＋共有 DSP カーネル: クリップ族 `softClipShift`（J）、共鳴 biquad `biquadFf`/`biquadRec`/`biquad5`（B）、折返し FIR `foldTap`（E） |
 | `AudioLab.Control` | バイト / フラグ分解ヘルパー |
 | `AudioLab.Axis` | AXIS パック/アンパック、パケットヘルパー |
-| `AudioLab.Effects.*` | 各エフェクト段（Amp / Overdrive / Distortion / Cab / Reverb …） |
+| `AudioLab.Effects.*` | 各エフェクト段。Amp は `Amp/{Models,Clip,Tone}`、Distortion は `Distortion/{Common,Legacy,Rat}` ＋ `Distortion/Pedals/{CleanBoost,TubeScreamer,Metal,Ds1,BigMuff,FuzzFace}`（K）に分割、各々 re-export shim 付き |
 | `AudioLab.Pipeline` | `fxPipeline`（段の接続） |
 | `tools/dsp_sim/Sim.hs` | Clash `topEntity` をホスト CPU 上で実行する offline DSP sim |
 | `tools/dsp_sim/measure.py` | bypass 比の net tone-curve / peak / dip を測る解析ハーネス |
